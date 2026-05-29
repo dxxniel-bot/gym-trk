@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>gym//TRK · macros</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700;800&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg:      #1e1e1e;
+    --frame:   #0c0c0c;
+    --fg:      #ededed;
+    --fg-soft: #a6a6a6;
+    --dim:     #6a6a6a;
+    --faint:   #3a3a3a;
+    --line:    #242424;
+    --track:   #20201f;
+    --fill:    #e6e6e6;
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+
+  html, body {
+    background: var(--bg); color: var(--fg);
+    font-family: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+    min-height: 100%;
+    display: flex; flex-direction: column; align-items: center;
+    gap: 14px; padding: 40px 16px;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .frame {
+    position: relative; width: 393px; height: 852px;
+    background: var(--frame); overflow: hidden; border-radius: 2px;
+    box-shadow: 0 0 0 1px #000, 0 24px 60px rgba(0,0,0,.6);
+    display: flex; flex-direction: column;
+  }
+  .scroll { flex: 1; overflow-y: auto; padding: 26px 24px 30px 24px; }
+  .scroll::-webkit-scrollbar { width: 0; }
+
+  .status { display: flex; justify-content: space-between; align-items: flex-start; font-size: 10px; color: var(--dim); letter-spacing: .2px; }
+  .status .center { text-align: center; line-height: 1.4; }
+  .status .right  { text-align: right; }
+  .status b { color: var(--fg-soft); font-weight: 500; }
+
+  .rule { border: 0; border-top: 1px solid var(--line); margin: 24px 0; }
+  .rule.soft { margin: 20px 0; }
+
+  .section { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 22px; }
+  .section .h { font-size: 16px; font-weight: 800; letter-spacing: -.2px; }
+  .section .h .slash { color: var(--dim); }
+  .section .meta { font-size: 10px; color: var(--dim); }
+
+  /* ---- kcal hero (linear, tappable) ---- */
+  .hero { width: 100%; background: none; border: 0; color: inherit; font: inherit; text-align: left; cursor: pointer; display: block; }
+  .kcal-top { display: flex; align-items: baseline; gap: 9px; }
+  .kcal-top .big { font-size: 29px; font-weight: 800; letter-spacing: -1px; line-height: 1; }
+  .kcal-top .of  { font-size: 11px; color: var(--dim); }
+  .bar { height: 5px; background: var(--track); margin-top: 9px; }
+  .bar > i { display:block; height:100%; background: var(--fill); }
+  .bar.thin { height: 3px; }
+  .kcal-sub { display:flex; align-items:center; justify-content: space-between; font-size: 10px; color: var(--dim); margin-top: 11px; }
+  .kcal-sub .left { color: var(--fg-soft); }
+  .chev { display:inline-block; color: var(--faint); transition: transform .2s ease; font-size: 9px; }
+  .hero.open .chev { transform: rotate(180deg); color: var(--dim); }
+
+  /* ---- details ---- */
+  .details[hidden] { display: none; }
+  .grp-label { font-size: 9px; color: var(--dim); letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 16px; }
+
+  /* macros = radial rings (the only radial) */
+  .rings { display:flex; justify-content: space-between; padding: 0 4px; }
+  .cell { display:flex; flex-direction:column; align-items:center; text-align:center; flex:1; }
+  .ring { position: relative; width: 74px; height: 74px; }
+  .ring svg { display:block; width:100%; height:100%; }
+  .ring-track { fill:none; stroke: var(--track); stroke-width: 2.2; }
+  .ring-fill  { fill:none; stroke: var(--fill); stroke-width: 2.2; stroke-linecap: round; }
+  .ring-center { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; }
+  .ring-center .num { font-size: 13px; font-weight: 700; }
+  .cap { font-size: 10px; color: var(--fg); margin-top: 9px; }
+  .sub { font-size: 9px; color: var(--dim); margin-top: 2px; }
+
+  /* everything else = linear rows (label | bar | value) */
+  .row { display: grid; grid-template-columns: 80px 1fr auto; align-items: center; column-gap: 16px; margin-top: 18px; font-size: 11px; }
+  .row.first { margin-top: 0; }
+  .row .lbl { color: var(--dim); }
+  .row .val { color: var(--fg-soft); font-size: 10px; white-space: nowrap; }
+  .row .val .goal { color: var(--dim); }
+  .row .val .pill { font-size: 9px; color: var(--dim); border:1px solid var(--faint); padding: 1px 5px; border-radius: 2px; margin-left: 7px; }
+  .note { font-size: 9px; color: var(--dim); margin-top: 10px; }
+
+  /* ---- food log ---- */
+  .log-day { font-size: 11px; }
+  .group { margin-bottom: 18px; }
+  .group:last-child { margin-bottom: 0; }
+  .group .ghead { display:flex; align-items:baseline; gap: 10px; color: var(--dim); font-size: 10px; margin-bottom: 9px; }
+  .group .ghead .time { color: var(--fg-soft); }
+  .group .ghead .tag .hash { color: var(--faint); }
+  .item { display: flex; align-items: baseline; gap: 10px; padding: 4px 0 4px 30px; font-size: 11px; }
+  .item .name { color: var(--fg-soft); }
+  .item .dots { flex:1; border-bottom: 1px dotted var(--line); transform: translateY(-3px); }
+  .item .kcal { color: var(--fg); }
+  .item .caf  { color: var(--dim); font-size: 9px; width: 44px; text-align: right; }
+
+  .actions { display: flex; gap: 10px; margin-top: 26px; }
+  .btn { flex:1; text-align:center; font-size: 11px; padding: 11px 0; border: 1px solid var(--faint); color: var(--fg); background: transparent; letter-spacing: .3px; }
+  .btn.primary { background: var(--fg); color: #000; border-color: var(--fg); font-weight: 700; }
+
+  .nav { flex: 0 0 62px; display: flex; align-items: center; justify-content: center; gap: 30px; background: var(--frame); border-top: 1px solid var(--line); font-size: 11px; }
+  .nav a { color: var(--dim); text-decoration: none; letter-spacing: .4px; }
+  .nav a.active { background: var(--fg); color:#000; font-weight:700; padding: 4px 10px; border-radius: 2px; }
+
+  .caption { font-size: 10px; color: var(--dim); }
+  .caption b { color: var(--fg-soft); font-weight: 500; }
+</style>
+</head>
+<body>
+
+  <div class="frame">
+    <div class="scroll">
+
+      <div class="status">
+        <div class="left"><b>u/dxxniel</b></div>
+        <div class="center">01 abr 2026<br/>12:17</div>
+        <div class="right">streak: <b>0</b></div>
+      </div>
+
+      <hr class="rule" />
+
+      <div class="section">
+        <div class="h"><span class="slash">//</span>TODAY&nbsp; macros</div>
+        <div class="meta">[edit goals]</div>
+      </div>
+
+      <!-- KCAL HERO (linear, tap to reveal specs) -->
+      <button class="hero" id="hero" aria-expanded="false">
+        <div class="kcal-top">
+          <div class="big">1,840</div>
+          <div class="of">/ 2,200 kcal</div>
+        </div>
+        <div class="bar"><i style="width:83.6%"></i></div>
+        <div class="kcal-sub"><span class="left">360 left</span><span>83% <span class="chev">▾</span></span></div>
+      </button>
+
+      <!-- DETAILS (hidden until hero is tapped) -->
+      <div class="details" id="details" hidden>
+
+        <hr class="rule" />
+
+        <!-- macros = radial -->
+        <div class="rings">
+          <div class="cell">
+            <div class="ring"><svg viewBox="0 0 36 36"><circle class="ring-track" cx="18" cy="18" r="15.7"/><circle class="ring-fill" cx="18" cy="18" r="15.7" pathLength="100" transform="rotate(-90 18 18)" style="stroke-dasharray:86 100"/></svg><div class="ring-center"><div class="num">142</div></div></div>
+            <div class="cap">protein</div><div class="sub">/ 165 g</div>
+          </div>
+          <div class="cell">
+            <div class="ring"><svg viewBox="0 0 36 36"><circle class="ring-track" cx="18" cy="18" r="15.7"/><circle class="ring-fill" cx="18" cy="18" r="15.7" pathLength="100" transform="rotate(-90 18 18)" style="stroke-dasharray:75 100"/></svg><div class="ring-center"><div class="num">180</div></div></div>
+            <div class="cap">carbs</div><div class="sub">/ 240 g</div>
+          </div>
+          <div class="cell">
+            <div class="ring"><svg viewBox="0 0 36 36"><circle class="ring-track" cx="18" cy="18" r="15.7"/><circle class="ring-fill" cx="18" cy="18" r="15.7" pathLength="100" transform="rotate(-90 18 18)" style="stroke-dasharray:89 100"/></svg><div class="ring-center"><div class="num">58</div></div></div>
+            <div class="cap">fat</div><div class="sub">/ 65 g</div>
+          </div>
+        </div>
+
+        <hr class="rule soft" />
+
+        <!-- intake = linear -->
+        <div class="grp-label">intake</div>
+        <div class="row first">
+          <div class="lbl">sodium</div>
+          <div class="bar thin"><i style="width:80%"></i></div>
+          <div class="val">1,850 <span class="goal">/ 2,300 mg</span></div>
+        </div>
+        <div class="row">
+          <div class="lbl">potassium</div>
+          <div class="bar thin"><i style="width:83%"></i></div>
+          <div class="val">2,900 <span class="goal">/ 3,500 mg</span></div>
+        </div>
+        <div class="row">
+          <div class="lbl">sugar</div>
+          <div class="bar thin"><i style="width:76%"></i></div>
+          <div class="val">38 <span class="goal">/ 50 g</span></div>
+        </div>
+        <div class="row">
+          <div class="lbl">fiber</div>
+          <div class="bar thin"><i style="width:73%"></i></div>
+          <div class="val">22 <span class="goal">/ 30 g</span></div>
+        </div>
+        <div class="row">
+          <div class="lbl">water</div>
+          <div class="bar thin"><i style="width:60%"></i></div>
+          <div class="val">1.8 <span class="goal">/ 3.0 L</span></div>
+        </div>
+
+        <hr class="rule soft" />
+
+        <!-- bloat risk = linear -->
+        <div class="row first">
+          <div class="lbl">bloat risk</div>
+          <div class="bar thin"><i style="width:38%"></i></div>
+          <div class="val">38 <span class="goal">/ 100</span><span class="pill">low</span></div>
+        </div>
+        <div class="note">est. from sodium · potassium · water</div>
+
+      </div>
+
+      <hr class="rule" />
+
+      <!-- food log -->
+      <div class="section" style="margin-bottom:16px">
+        <div class="h"><span class="slash">//</span>LOG&nbsp; today</div>
+        <div class="meta">[+ quick add]</div>
+      </div>
+
+      <div class="log-day">
+        <div class="group">
+          <div class="ghead"><span class="time">08:14</span><span class="tag"><span class="hash">#</span>breakfast</span></div>
+          <div class="item"><span class="name">eggs x3</span><span class="dots"></span><span class="kcal">220</span><span class="caf"></span></div>
+          <div class="item"><span class="name">oats 80g</span><span class="dots"></span><span class="kcal">300</span><span class="caf"></span></div>
+          <div class="item"><span class="name">coffee black</span><span class="dots"></span><span class="kcal">0</span><span class="caf">95mg</span></div>
+        </div>
+        <div class="group">
+          <div class="ghead"><span class="time">13:02</span><span class="tag"><span class="hash">#</span>lunch</span></div>
+          <div class="item"><span class="name">chicken 200g</span><span class="dots"></span><span class="kcal">330</span><span class="caf"></span></div>
+          <div class="item"><span class="name">rice 150g</span><span class="dots"></span><span class="kcal">200</span><span class="caf"></span></div>
+          <div class="item"><span class="name">avocado &frac12;</span><span class="dots"></span><span class="kcal">240</span><span class="caf"></span></div>
+        </div>
+        <div class="group">
+          <div class="ghead"><span class="time">16:30</span><span class="tag"><span class="hash">#</span>snack</span></div>
+          <div class="item"><span class="name">whey 1 scoop</span><span class="dots"></span><span class="kcal">120</span><span class="caf"></span></div>
+          <div class="item"><span class="name">espresso</span><span class="dots"></span><span class="kcal">0</span><span class="caf">115mg</span></div>
+        </div>
+        <div class="group">
+          <div class="ghead"><span class="time">19:10</span><span class="tag"><span class="hash">#</span>dinner</span></div>
+          <div class="item"><span class="name">salmon 180g</span><span class="dots"></span><span class="kcal">385</span><span class="caf"></span></div>
+          <div class="item"><span class="name">broccoli 100g</span><span class="dots"></span><span class="kcal">45</span><span class="caf"></span></div>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button class="btn primary">&lt;add meal&gt;</button>
+        <button class="btn">&lt;add drink&gt;</button>
+      </div>
+
+    </div>
+
+    <nav class="nav">
+      <a href="#">progress</a>
+      <a href="#">gym</a>
+      <a href="#" class="active">macros</a>
+    </nav>
+  </div>
+
+  <div class="caption"><b>gym//TRK</b> · macros (prototype) · tap the kcal summary to expand</div>
+
+  <script>
+    const hero = document.getElementById('hero');
+    const details = document.getElementById('details');
+    hero.addEventListener('click', () => {
+      const willOpen = details.hasAttribute('hidden');
+      if (willOpen) details.removeAttribute('hidden'); else details.setAttribute('hidden', '');
+      hero.classList.toggle('open', willOpen);
+      hero.setAttribute('aria-expanded', String(willOpen));
+    });
+  </script>
+
+</body>
+</html>

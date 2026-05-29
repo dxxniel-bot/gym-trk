@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>gym//TRK · workout</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700;800&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --bg:#1e1e1e; --frame:#0c0c0c; --fg:#ededed;
+    --o80:rgba(237,237,237,.8); --o60:rgba(237,237,237,.6); --o50:rgba(237,237,237,.5);
+    --o40:rgba(237,237,237,.4); --o35:rgba(237,237,237,.35); --o30:rgba(237,237,237,.3);
+    --o20:rgba(237,237,237,.2); --o12:rgba(237,237,237,.12); --o10:rgba(237,237,237,.1);
+    --abort:rgba(190,110,110,.55);
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{
+    background:var(--bg); color:var(--fg);
+    font-family:"JetBrains Mono",ui-monospace,Menlo,monospace;
+    min-height:100%; display:flex; flex-direction:column; align-items:center;
+    gap:14px; padding:40px 16px; -webkit-font-smoothing:antialiased;
+  }
+  .frame{position:relative; width:393px; height:852px; background:var(--frame);
+    overflow:hidden; border-radius:2px; box-shadow:0 0 0 1px #000,0 24px 60px rgba(0,0,0,.6);
+    display:flex; flex-direction:column;}
+  .scroll{flex:1; overflow-y:auto; padding:22px 16px 16px;}
+  .scroll::-webkit-scrollbar{width:0}
+
+  /* status bar */
+  .top{display:flex; justify-content:space-between; align-items:flex-start;}
+  .top .uname{font-weight:800; font-size:12px;}
+  .top .back{display:inline-block; margin-top:7px; font-size:9px; color:var(--o50);
+    border:1px solid var(--o20); padding:2px 7px;}
+  .top .center{text-align:center; font-size:10px; color:var(--o50); line-height:1.5;}
+  .top .streak{font-size:12px; font-weight:800; color:var(--o50);}
+
+  /* rotation + progress */
+  .rot{display:flex; justify-content:space-between; align-items:center; margin-top:18px;}
+  .rot .lbl{font-size:8px; letter-spacing:1px; color:var(--o80);}
+  .rot .gym{font-size:8px; color:var(--o50);}
+  .prog{height:2px; background:var(--o10); margin-top:8px;}
+  .prog>i{display:block; height:100%; width:42%; background:var(--fg);}
+
+  /* day row */
+  .day{display:flex; justify-content:space-between; align-items:flex-start; margin-top:16px;}
+  .day .name{font-size:24px; font-weight:800; letter-spacing:-.5px;}
+  .day .meta{text-align:right;}
+  .day .split{font-size:10px; font-weight:700; color:var(--o60);}
+  .day .gym{font-size:9px; color:var(--o40); margin-top:2px;}
+
+  /* muscle group */
+  .mgroup{margin-top:22px;}
+  .mhead{font-size:11px; color:var(--o50); margin-bottom:12px;}
+  .mhead b{color:var(--o50); font-weight:400;}
+  .mbody{border-left:1px solid var(--o12); padding-left:14px; margin-left:4px;}
+
+  .ex{margin-bottom:18px;}
+  .ex:last-child{margin-bottom:0;}
+  .exhead{display:flex; align-items:baseline; flex-wrap:wrap; gap:7px; margin-bottom:9px;}
+  .exhead .n{font-size:17px; font-weight:800; letter-spacing:-.3px;}
+  .exhead .mch{font-size:11px; color:var(--o50);}
+  .exhead .note{font-size:10px; color:var(--o35); font-weight:300;}
+
+  /* sets table */
+  .thead,.srow{display:grid; gap:4px; align-items:center;}
+  .thead{margin-bottom:5px;}
+  .thead .cl{font-size:8px; color:var(--o35); text-align:center; letter-spacing:.5px;}
+  .thead .cl.w{text-align:left; padding-left:2px;}
+  .gc-free{grid-template-columns:22px 1fr 34px 32px 30px 18px;}
+  .gc-mach{grid-template-columns:22px 26px 1fr 34px 32px 30px 18px;}
+  .gc-uni {grid-template-columns:20px 1fr 34px 32px 30px 18px;}  /* inside pair, after #num */
+
+  .srow{margin-bottom:5px;}
+  .setn{font-size:11px; color:var(--o50); text-align:center;}
+  .side{font-size:10px; font-weight:700; color:var(--o50); text-align:center;}
+  .inp{height:30px; border:.5px solid var(--o20); display:flex; align-items:center;
+    justify-content:center; font-size:12px;}
+  .inp.weight{justify-content:flex-start; padding-left:8px;}
+  .inp.ph{color:var(--o30);}
+  .pick{height:30px; border:.5px solid var(--o20); display:flex; align-items:center;
+    justify-content:center; font-size:12px; color:var(--fg);}
+  .fs{height:30px; border:.5px solid var(--o20); display:flex; align-items:center;
+    justify-content:center; font-size:9px; color:var(--o50);}
+  .fs.on{background:var(--o12); color:var(--fg);}
+  .del{font-size:13px; color:var(--o30); text-align:center;}
+
+  /* unilateral pair */
+  .pair{display:flex; align-items:center; gap:4px; margin-bottom:5px;}
+  .pair .setn{width:22px; flex:0 0 22px;}
+  .pair .prows{flex:1;}
+
+  .addrow{display:flex; align-items:center; gap:16px; margin-top:9px;}
+  .addbtn{font-size:9px; color:var(--o60); white-space:nowrap;}
+  /* aligned add-rows: left btns start at first input box (weight / FS) · [+ exercise] right edge = rir right edge */
+  .addrow.afree{display:grid; grid-template-columns:22px 1fr 34px 32px 30px 18px; gap:4px; margin-top:9px;}
+  .addrow.amach{display:grid; grid-template-columns:22px 26px 1fr 34px 32px 30px 18px; gap:4px; margin-top:9px;}
+  .addrow.auni {display:grid; grid-template-columns:22px 20px 1fr 34px 32px 30px 18px; gap:4px; margin-top:9px;}
+  .addrow .aleft{display:flex; gap:16px;}
+  .addrow.afree .aleft{grid-column:2 / 6;}
+  .addrow.amach .aleft{grid-column:2 / 6;}
+  .addrow.auni  .aleft{grid-column:3 / 6;}
+  .addrow.amach .aex{grid-column:6 / 7; justify-self:end;}
+  .addrow.auni  .aex{grid-column:6 / 7; justify-self:end;}
+
+  /* footer */
+  .footer{flex:0 0 auto; display:flex; gap:10px; padding:12px 16px;
+    border-top:1px solid var(--o12); background:var(--frame);}
+  .footer .abort{font-size:10px; color:var(--o60); border:1px solid var(--abort); padding:9px 16px;}
+  .footer .save{flex:1; text-align:center; font-size:10px; font-weight:700; color:#000;
+    background:var(--fg); padding:9px 0;}
+
+  .caption{font-size:10px; color:var(--o40);}
+  .caption b{color:var(--o60); font-weight:500;}
+</style>
+</head>
+<body>
+
+  <div class="frame">
+    <div class="scroll">
+
+      <!-- status bar -->
+      <div class="top">
+        <div class="left">
+          <div class="uname">u/dxxniel</div>
+          <span class="back">← back</span>
+        </div>
+        <div class="center">11 abr 2026<br/>12:17</div>
+        <div class="streak">streak: 0</div>
+      </div>
+
+      <!-- rotation + progress -->
+      <div class="rot">
+        <div class="lbl">ROTATION - DAY 1/6</div>
+        <div class="gym">[change gym]</div>
+      </div>
+      <div class="prog"><i></i></div>
+
+      <!-- day -->
+      <div class="day">
+        <div class="name">chest/push A</div>
+        <div class="meta">
+          <div class="split">push/pull A/B</div>
+          <div class="gym">PRO GYM — arandas</div>
+        </div>
+      </div>
+
+      <!-- MUSCLE: chest -->
+      <div class="mgroup">
+        <div class="mhead">chest <b>|</b> 5 sets</div>
+        <div class="mbody">
+
+          <!-- bb incline (freeweight) -->
+          <div class="ex">
+            <div class="exhead"><span class="n">bb incline</span><span class="mch">barbell</span></div>
+            <div class="thead gc-free">
+              <div class="cl"></div><div class="cl w">weight</div><div class="cl">unit</div><div class="cl">reps</div><div class="cl">rir</div><div class="cl"></div>
+            </div>
+            <div class="srow gc-free">
+              <div class="setn">#1</div><div class="inp weight">115</div><div class="pick">lbs</div><div class="pick">7</div><div class="pick">9</div><div class="del">×</div>
+            </div>
+            <div class="srow gc-free">
+              <div class="setn">#2</div><div class="inp weight">115</div><div class="pick">lbs</div><div class="pick">8</div><div class="pick">9</div><div class="del">×</div>
+            </div>
+            <div class="addrow afree"><span class="aleft"><span class="addbtn">[+ set]</span></span></div>
+          </div>
+
+          <!-- flat press (freeweight) -->
+          <div class="ex">
+            <div class="exhead"><span class="n">flat press</span></div>
+            <div class="thead gc-free">
+              <div class="cl"></div><div class="cl w">weight</div><div class="cl">unit</div><div class="cl">reps</div><div class="cl">rir</div><div class="cl"></div>
+            </div>
+            <div class="srow gc-free">
+              <div class="setn">#1</div><div class="inp weight">100</div><div class="pick">lbs</div><div class="pick">7</div><div class="pick">9</div><div class="del">×</div>
+            </div>
+            <div class="addrow afree"><span class="aleft"><span class="addbtn">[+ set]</span></span></div>
+          </div>
+
+          <!-- pec fly (machine -> FS) -->
+          <div class="ex">
+            <div class="exhead"><span class="n">pec fly</span><span class="mch">pulley</span></div>
+            <div class="thead gc-mach">
+              <div class="cl"></div><div class="cl"></div><div class="cl w">weight</div><div class="cl">unit</div><div class="cl">reps</div><div class="cl">rir</div><div class="cl"></div>
+            </div>
+            <div class="srow gc-mach">
+              <div class="setn">#1</div><div class="fs on">FS</div><div class="inp weight">130</div><div class="pick">lbs</div><div class="pick">9</div><div class="pick">F</div><div class="del">×</div>
+            </div>
+            <div class="srow gc-mach">
+              <div class="setn">↓</div><div class="fs on">DS</div><div class="inp weight">90</div><div class="pick">lbs</div><div class="pick">6</div><div class="pick">F</div><div class="del">×</div>
+            </div>
+            <div class="addrow amach"><span class="aleft"><span class="addbtn">[+ set]</span><span class="addbtn">[↓ drop set]</span></span><span class="addbtn aex">[+ exercise]</span></div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- MUSCLE: delts -->
+      <div class="mgroup">
+        <div class="mhead">delts <b>|</b> 4 sets</div>
+        <div class="mbody">
+
+          <!-- shoulder press (unilateral -> L/R) -->
+          <div class="ex">
+            <div class="exhead"><span class="n">shoulder press</span><span class="mch">dumbbell</span><span class="note">[unilateral]</span></div>
+            <div class="thead" style="grid-template-columns:22px 20px 1fr 34px 32px 30px 18px;">
+              <div class="cl"></div><div class="cl">L/R</div><div class="cl w">weight</div><div class="cl">unit</div><div class="cl">reps</div><div class="cl">rir</div><div class="cl"></div>
+            </div>
+
+            <div class="pair">
+              <div class="setn">#1</div>
+              <div class="prows">
+                <div class="srow gc-uni"><div class="side">R</div><div class="inp weight">55</div><div class="pick">lbs</div><div class="pick">8</div><div class="pick">9</div><div class="del">×</div></div>
+                <div class="srow gc-uni"><div class="side">L</div><div class="inp weight">55</div><div class="pick">lbs</div><div class="pick">8</div><div class="pick">9</div><div class="del" style="color:transparent"> </div></div>
+              </div>
+            </div>
+            <div class="pair">
+              <div class="setn">#2</div>
+              <div class="prows">
+                <div class="srow gc-uni"><div class="side">R</div><div class="inp weight">50</div><div class="pick">lbs</div><div class="pick">6</div><div class="pick">F</div><div class="del">×</div></div>
+                <div class="srow gc-uni"><div class="side">L</div><div class="inp weight">50</div><div class="pick">lbs</div><div class="pick">6</div><div class="pick">F</div><div class="del" style="color:transparent"> </div></div>
+              </div>
+            </div>
+            <div class="addrow auni"><span class="aleft"><span class="addbtn">[+ set]</span></span><span class="addbtn aex">[+ exercise]</span></div>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+
+    <!-- footer -->
+    <div class="footer">
+      <span class="abort">abort</span>
+      <span class="save">save session</span>
+    </div>
+  </div>
+
+  <div class="caption"><b>gym//TRK</b> · workout / session (prototype) · faithful to Expo layout</div>
+
+</body>
+</html>

@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>gym//TRK · gym home</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700;800&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --bg:#1e1e1e; --frame:#0c0c0c; --fg:#ededed;
+    --o60:rgba(237,237,237,.6); --o50:rgba(237,237,237,.5); --o40:rgba(237,237,237,.4);
+    --o30:rgba(237,237,237,.3); --o20:rgba(237,237,237,.2); --o12:rgba(237,237,237,.12);
+    --o10:rgba(237,237,237,.1); --faint:#3a3a3a; --line:#242424; --track:#20201f; --fill:#e6e6e6;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{background:var(--bg); color:var(--fg);
+    font-family:"JetBrains Mono",ui-monospace,Menlo,monospace; min-height:100%;
+    display:flex; flex-direction:column; align-items:center; gap:14px; padding:40px 16px;
+    -webkit-font-smoothing:antialiased;}
+  .frame{position:relative; width:393px; height:852px; background:var(--frame); overflow:hidden;
+    border-radius:2px; box-shadow:0 0 0 1px #000,0 24px 60px rgba(0,0,0,.6);
+    display:flex; flex-direction:column;}
+  .scroll{flex:1; overflow-y:auto; padding:24px 22px 24px;}
+  .scroll::-webkit-scrollbar{width:0}
+
+  /* status bar */
+  .status{display:flex; justify-content:space-between; align-items:flex-start; font-size:10px; color:var(--o50);}
+  .status .center{text-align:center; line-height:1.4;}
+  .status b{color:var(--o60); font-weight:500;}
+
+  .rule{border:0; border-top:1px solid var(--line); margin:20px 0;}
+
+  /* rotation strip */
+  .rot{display:flex; justify-content:space-between; align-items:center; margin:16px 0 10px;}
+  .rot .lbl{font-size:10px; color:var(--o60); letter-spacing:.5px;}
+  .rot .n{font-size:10px; color:var(--o40);}
+  .segs{display:flex; gap:3px; margin-bottom:14px;}
+  .segs i{flex:1; height:4px; background:var(--track);}
+  .segs i.on{background:var(--fill);}
+  .ctrls{display:flex; gap:14px; font-size:9px; color:var(--o50); margin-bottom:24px;}
+  .ctrls a{color:var(--o50); text-decoration:none;}
+
+  /* section header */
+  .section{display:flex; align-items:baseline; justify-content:space-between; margin-bottom:14px;}
+  .section .h{font-size:16px; font-weight:800; letter-spacing:-.2px;}
+  .section .h .slash{color:var(--o50);}
+  .section .meta{font-size:10px; color:var(--o50);}
+
+  /* //NEXT WORKOUT and //PREV SESSION headers (original acomodo) */
+  .whdr{display:grid; grid-template-columns:auto 1fr; column-gap:14px; row-gap:3px; align-items:baseline; margin-bottom:8px;}
+  .whdr .l1{grid-column:1; grid-row:1; font-size:12px; font-weight:700; letter-spacing:.5px;}
+  .whdr .l1 .slash{color:var(--o50);}
+  .whdr .l2{grid-column:1; grid-row:2; font-size:13px; font-weight:800; color:var(--o50); letter-spacing:2px;}
+  .whdr .wname{grid-column:2; grid-row:1; font-size:19px; font-weight:800; letter-spacing:-.3px;}
+  .whdr .wmeta{grid-column:2; grid-row:2; font-size:10px; color:var(--o50);}
+  .wgym{text-align:center; font-size:10px; color:var(--o40); margin-top:8px;}
+
+  .cta{margin-top:18px;}
+  .start{display:block; width:100%; text-align:center; background:var(--fill); color:#000;
+    font-weight:700; font-size:13px; padding:13px 0; letter-spacing:.3px; text-decoration:none;}
+  .secondary{display:flex; gap:10px; margin-top:10px;}
+  .secondary .b{flex:1; text-align:center; font-size:11px; color:var(--fg);
+    border:1px solid var(--faint); padding:9px 0; letter-spacing:.3px;}
+
+  /* prev session compact */
+  .prevline{display:flex; align-items:baseline; gap:10px; font-size:11px; padding:3px 0;}
+  .prevline .ex{color:var(--o60);}
+  .prevline .dots{flex:1; border-bottom:1px dotted var(--line); transform:translateY(-3px);}
+  .prevline .load{color:var(--fg);}
+  .prevmore{font-size:10px; color:var(--o40); padding:4px 0 0;}
+  .prevsum{display:flex; justify-content:space-between; align-items:baseline; margin-top:12px; font-size:10px; color:var(--o50);}
+  .prevsum .view{color:var(--o60);}
+
+  /* stats */
+  .stat{display:flex; align-items:baseline; gap:10px; font-size:11px; padding:5px 0;}
+  .stat .k{color:var(--o50);}
+  .stat .dots{flex:1; border-bottom:1px dotted var(--line); transform:translateY(-3px);}
+  .stat .v{color:var(--fg); font-weight:700;}
+
+  /* nav */
+  .nav{flex:0 0 62px; display:flex; align-items:center; justify-content:center; gap:30px;
+    background:var(--frame); border-top:1px solid var(--line); font-size:11px;}
+  .nav a{color:var(--o50); text-decoration:none; letter-spacing:.4px;}
+  .nav a.active{background:var(--fill); color:#000; font-weight:700; padding:4px 10px; border-radius:2px;}
+
+  .caption{font-size:10px; color:var(--o40);}
+  .caption b{color:var(--o60); font-weight:500;}
+</style>
+</head>
+<body>
+
+  <div class="frame">
+    <div class="scroll">
+
+      <!-- status bar -->
+      <div class="status">
+        <div class="left"><b>u/dxxniel</b></div>
+        <div class="center">01 abr 2026<br/>12:17</div>
+        <div class="right">streak: <b>0</b></div>
+      </div>
+
+      <hr class="rule" />
+
+      <!-- rotation -->
+      <div class="rot">
+        <div class="lbl">ROTATION</div>
+        <div class="n">day 1/6</div>
+      </div>
+      <div class="segs"><i class="on"></i><i></i><i></i><i></i><i></i><i></i></div>
+      <div class="ctrls"><a href="#">[change split]</a><a href="#">[change gym]</a><a href="#">[schedule]</a></div>
+
+      <!-- NEXT workout -->
+      <div class="whdr">
+        <div class="l1"><span class="slash">//</span>NEXT</div>
+        <div class="wname">chest/push A</div>
+        <div class="l2">WORKOUT</div>
+        <div class="wmeta">push/pull A/B · @ RIR · F</div>
+      </div>
+      <div class="wgym">@ PRO GYM — arandas · 8 exercises · ~14 sets</div>
+
+      <div class="cta">
+        <a class="start" href="gym-workout-prototype.html">▶ start workout</a>
+        <div class="secondary"><span class="b">rest day</span><span class="b">skip day</span></div>
+      </div>
+
+      <hr class="rule" />
+
+      <!-- PREV session (compact) -->
+      <div class="whdr">
+        <div class="l1"><span class="slash">//</span>PREV</div>
+        <div class="wname">chest/push A</div>
+        <div class="l2">SESSION</div>
+        <div class="wmeta">24 mar · 8 exercises</div>
+      </div>
+      <div class="prevline"><span class="ex">bb incline</span><span class="dots"></span><span class="load">115lb · 7,8</span></div>
+      <div class="prevline"><span class="ex">flat press</span><span class="dots"></span><span class="load">100lb · 7</span></div>
+      <div class="prevline"><span class="ex">shoulder press</span><span class="dots"></span><span class="load">55lb · 8,6</span></div>
+      <div class="prevmore">+ 5 more exercises</div>
+      <div class="prevsum"><span>8 exercises · 8.2k lb · 1h 04m</span><span class="view">[view session]</span></div>
+
+      <hr class="rule" />
+
+      <!-- STATS -->
+      <div class="section" style="margin-bottom:10px">
+        <div class="h"><span class="slash">//</span>STATS</div>
+        <div class="meta">last 7 days</div>
+      </div>
+      <div class="stat"><span class="k">volume</span><span class="dots"></span><span class="v">32.4k lb</span></div>
+      <div class="stat"><span class="k">sessions</span><span class="dots"></span><span class="v">4</span></div>
+      <div class="stat"><span class="k">streak</span><span class="dots"></span><span class="v">0 days</span></div>
+      <div class="stat"><span class="k">top lift</span><span class="dots"></span><span class="v">bb incline</span></div>
+
+    </div>
+
+    <!-- nav -->
+    <nav class="nav">
+      <a href="#">progress</a>
+      <a href="#" class="active">gym</a>
+      <a href="macros-prototype.html">macros</a>
+    </nav>
+  </div>
+
+  <div class="caption"><b>gym//TRK</b> · gym home (prototype) · tap ▶ start workout → WorkoutScreen</div>
+
+</body>
+</html>
