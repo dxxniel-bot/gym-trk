@@ -4,6 +4,11 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>gym//TRK</title>
+<link rel="manifest" href="manifest.json"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black"/>
+<meta name="apple-mobile-web-app-title" content="gym//TRK"/>
+<meta name="theme-color" content="#0c0c0c"/>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700;800&display=swap" rel="stylesheet" />
@@ -418,6 +423,28 @@ function renderMacros(){
     +log;
 }
 
+// ---------- render: landing (log in / create account) ----------
+function renderLanding(){
+  return `<div style="padding-top:84px;text-align:center">
+    <div style="font-size:34px;font-weight:800;letter-spacing:-1px">gym<span style="color:var(--o50)">//</span>TRK</div>
+    <div style="font-size:11px;color:var(--o50);margin:8px 0 48px">workout · macros · tracker</div>
+    <button class="start" data-act="lcreate" style="margin-bottom:12px">▶ create account</button>
+    <button data-act="llogin" style="width:100%;text-align:center;font-size:12px;color:var(--fg);border:1px solid var(--faint);padding:12px 0;background:transparent;cursor:pointer;letter-spacing:.3px">log in</button>
+    <div class="submeta" style="margin-top:26px">¿ya tienes cuenta en otro equipo? entra con <b style="color:var(--o60)">log in</b> y pega tu backup (sync).</div>
+  </div>`;
+}
+function renderLogin(){
+  return `<div style="padding-top:36px">
+    <div style="font-size:24px;font-weight:800;letter-spacing:-.5px">gym<span style="color:var(--o50)">//</span>TRK</div>
+    <div style="font-size:11px;color:var(--o50);margin:6px 0 20px">// log in · restaurar cuenta</div>
+    <div class="submeta" style="margin-bottom:8px">pega tu backup (el texto que copiaste en sync de tu otro equipo) para restaurar tu cuenta aquí.</div>
+    <textarea id="li_txt" style="width:100%;height:150px;border:.5px solid var(--o20);background:transparent;color:var(--fg);font-family:'JetBrains Mono',monospace;font-size:10px;padding:8px" placeholder="pega tu backup json aquí"></textarea>
+    <button class="start" data-act="dologin" style="margin-top:12px">▶ restore &amp; log in</button>
+    <div class="secondary" style="margin-top:10px"><button class="b" data-act="loginfile">import file</button><button class="b" data-act="backlanding">← back</button></div>
+    <div id="li_msg" class="submeta" style="margin-top:10px"></div>
+  </div>`;
+}
+
 // ---------- render: onboarding ----------
 function renderOnboard(){
   return `<div style="padding-top:26px">
@@ -456,9 +483,9 @@ let state={screen:'home',work:null,macroOpen:false};
 function render(){
   const v=document.getElementById('view');
   let sc=state.screen;
-  if(!db.profile.username){ sc='onboard'; }
+  if(!db.profile.username){ sc = (state.screen==='onboard'||state.screen==='login') ? state.screen : 'landing'; }
   if(sc==='workout'){ state.work=db.activeWork; if(!state.work){ state.screen=sc='home'; } }
-  v.innerHTML = sc==='onboard'?renderOnboard() : sc==='home'?renderHome() : sc==='workout'?renderWorkout() : sc==='macros'?renderMacros() : sc==='progress'?renderProgress() : sc==='settings'?renderSettings() : renderHome();
+  v.innerHTML = sc==='landing'?renderLanding() : sc==='login'?renderLogin() : sc==='onboard'?renderOnboard() : sc==='home'?renderHome() : sc==='workout'?renderWorkout() : sc==='macros'?renderMacros() : sc==='progress'?renderProgress() : sc==='settings'?renderSettings() : renderHome();
   document.getElementById('wfooter').style.display = sc==='workout'?'flex':'none';
   renderNav();
   v.scrollTop = state._scroll||0; state._scroll=0;
@@ -482,6 +509,11 @@ document.getElementById('app').addEventListener('click',e=>{
   else if(a==='skip'){ db.rotIdx++; state.selDay=null; save(); go('home'); }
   else if(a==='changegym'){ openGymPicker(); }
   else if(a==='pickgym'){ db.activeGym=el.dataset.g; if(db.activeWork)db.activeWork.gym=el.dataset.g; save(); closeModal(); render(); }
+  else if(a==='lcreate'){ state.screen='onboard'; render(); }
+  else if(a==='llogin'){ state.screen='login'; render(); }
+  else if(a==='backlanding'){ state.screen='landing'; render(); }
+  else if(a==='loginfile'){ doImport(); }
+  else if(a==='dologin'){ try{ const d=JSON.parse(val('li_txt')); if(!d.split||!d.profile||!d.profile.username) throw 0; db=migrate(d); save(); state.screen='home'; render(); }catch(e){ const m=document.getElementById('li_msg'); if(m)m.textContent='texto inválido · revisa que sea el backup completo'; } }
   else if(a==='optpick'){ el.parentElement.querySelectorAll('.t').forEach(x=>x.classList.remove('on')); el.classList.add('on'); }
   else if(a==='onboardgo'){
     const u=val('ob_user'); if(!u){ alert('Pon tu handle.'); return; }
@@ -512,6 +544,7 @@ document.getElementById('app').addEventListener('click',e=>{
   else if(a==='pickfood'){ const f=(db.foods||[]).find(x=>x.id===el.dataset.id); if(f) openVerify(f,{qty:1,fromId:f.id,tag:curTag()}); }
   else if(a==='fbarcode'){ openBarcode(); }
   else if(a==='fsearch'){ window._faTag=curTag(); openNameSearch(''); }
+  else if(a==='fphoto'){ window._faTag=curTag(); const inp=document.createElement('input'); inp.type='file'; inp.accept='image/*'; inp.setAttribute('capture','environment'); inp.onchange=()=>{ if(inp.files&&inp.files[0]) ocrPhoto(inp.files[0]); }; inp.click(); }
   else if(a==='nspick'){ const f=(window._nsRes||[])[+el.dataset.i]; if(!f)return; if(window._linkBarcode)f.barcode=window._linkBarcode; openVerify(f,{isNew:true,tag:window._faTag||curTag()}); }
   else if(a==='ftext'){ openTextParse(); }
   else if(a==='fmanual'){ openVerify({name:'',serving:'1 serving',per:foodPer()},{isNew:true,tag:curTag()}); }
@@ -546,7 +579,7 @@ function saveSession(){
 
 // ---------- modals ----------
 function openModal(html){ closeModal(); const m=document.createElement('div'); m.className='modal'; m.id='modal'; m.innerHTML=`<div class="sheet">${html}</div>`; m.addEventListener('click',ev=>{if(ev.target===m)closeModal();}); document.getElementById('app').appendChild(m); }
-function closeModal(){ const m=document.getElementById('modal'); if(m)m.remove(); }
+function closeModal(){ if(window._scanner){ try{window._scanner.stop();}catch(_){} window._scanner=null; } const m=document.getElementById('modal'); if(m)m.remove(); }
 function val(id){ const e=document.getElementById(id); return e?e.value.trim():''; }
 function openGymPicker(){
   const items=(db.gyms||[]).map(g=>`<div class="pickitem" data-act="pickgym" data-g="${(g+'').replace(/"/g,'&quot;')}">${g}${g===db.activeGym?'  ·':''}</div>`).join('');
@@ -582,7 +615,7 @@ function openFoodAdd(){
    <div class="field"><label>YOUR FOODS</label><input id="fa_q" placeholder="search saved foods" autocomplete="off"/></div>
    <div id="fa_list" style="max-height:148px;overflow-y:auto;margin-bottom:8px"></div>
    <div class="sheetbtns"><button class="ok" data-act="fbarcode">⌗ barcode</button><button class="ok" data-act="fsearch">🔍 search</button></div>
-   <div class="sheetbtns" style="margin-top:8px"><button class="cancel" data-act="ftext">¶ text</button><button class="cancel" data-act="fmanual">+ manual</button></div>`);
+   <div class="sheetbtns" style="margin-top:8px"><button class="cancel" data-act="fphoto">📷 photo</button><button class="cancel" data-act="ftext">¶ text</button><button class="cancel" data-act="fmanual">+ manual</button></div>`);
   const q=document.getElementById('fa_q');
   const renderList=()=>{ const s=(q.value||'').toLowerCase(); const items=(db.foods||[]).filter(f=>!s||(f.name||'').toLowerCase().includes(s)).slice(0,15);
     document.getElementById('fa_list').innerHTML = items.length ? items.map(f=>`<div class="pickitem" data-act="pickfood" data-id="${f.id}">${f.name} <span style="float:right;color:var(--o50)">${Math.round(f.per.kcal)} kcal</span></div>`).join('') : '<div class="submeta" style="padding:8px 0">sin alimentos guardados · usa barcode / text / manual</div>'; };
@@ -590,16 +623,25 @@ function openFoodAdd(){
 }
 function openBarcode(){
   window._faTag=curTag();
-  openModal(`<h3>barcode</h3><div class="submeta" style="margin-bottom:10px">escaneo con cámara llega pronto · escribe el código</div>
-   <div class="field"><label>BARCODE</label><input id="bc_code" inputmode="numeric" placeholder="7501..." autocomplete="off"/></div>
-   <div class="sheetbtns"><button class="ok" id="bc_go">look up</button><button class="cancel" data-act="closemodal">cancel</button></div>
+  openModal(`<h3>barcode</h3>
+   <div class="sheetbtns" style="margin-bottom:10px"><button class="ok" id="bc_scan">📷 scan</button><button class="cancel" data-act="closemodal">cancel</button></div>
+   <div id="bc_reader" style="overflow:hidden;border-radius:2px"></div>
+   <div class="field" style="margin-top:10px"><label>O ESCRIBE EL CÓDIGO</label><input id="bc_code" inputmode="numeric" placeholder="7501..." autocomplete="off"/></div>
+   <div class="sheetbtns"><button class="ok" id="bc_go">look up</button></div>
    <div id="bc_msg" class="submeta" style="margin-top:10px"></div>`);
-  document.getElementById('bc_go').onclick=async()=>{ const code=val('bc_code'); if(!code)return; const m=document.getElementById('bc_msg'); m.textContent='buscando...';
+  const doLookup=async()=>{ const code=val('bc_code'); if(!code)return; const m=document.getElementById('bc_msg'); m.textContent='buscando...';
     const local=(db.foods||[]).find(f=>f.barcode===code);
     if(local){ openVerify(local,{fromId:local.id,qty:1,tag:window._faTag}); return; }
     const food=await lookupBarcode(code);
     if(food&&food.name){ openVerify(food,{isNew:true,tag:window._faTag}); return; }
     m.textContent='código no encontrado → busca por nombre y lo vinculo a este código:'; openNameSearch(code); };
+  document.getElementById('bc_go').onclick=doLookup;
+  document.getElementById('bc_scan').onclick=async()=>{ const m=document.getElementById('bc_msg'); m.textContent='abriendo cámara...';
+    try{ await loadScript('https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js');
+      const q=new Html5Qrcode('bc_reader'); window._scanner=q;
+      await q.start({facingMode:'environment'},{fps:10,qrbox:{width:240,height:150}}, async(txt)=>{ try{await q.stop();}catch(_){} window._scanner=null; const rd=document.getElementById('bc_reader'); if(rd)rd.innerHTML=''; const c=document.getElementById('bc_code'); if(c)c.value=txt; doLookup(); });
+      m.textContent='apunta al código de barras...';
+    }catch(e){ m.textContent='cámara no disponible aquí · escribe el código'; } };
 }
 function mapProduct(p){
   const n=p.nutriments||{}; const hasSv = n['energy-kcal_serving']!=null;
@@ -722,7 +764,17 @@ function doImport(){
 }
 
 // ---------- init ----------
+function loadScript(src){ return new Promise((res,rej)=>{ if(document.querySelector('script[data-x="'+src+'"]')){res();return;} const s=document.createElement('script'); s.src=src; s.setAttribute('data-x',src); s.onload=()=>res(); s.onerror=()=>rej(new Error('load fail')); document.head.appendChild(s); }); }
+async function ocrPhoto(file){ if(!file)return; window._faTag=window._faTag||curTag();
+  openModal('<h3>reading label…</h3><div id="ocr_msg" class="submeta">cargando OCR (unos segundos la 1ª vez)…</div>');
+  try{ await loadScript('https://cdn.jsdelivr.net/npm/tesseract.js@5.0.4/dist/tesseract.min.js');
+    const mm=document.getElementById('ocr_msg');
+    const {data}=await Tesseract.recognize(file,'eng+spa',{logger:p=>{ if(mm&&p.status==='recognizing text') mm.textContent='leyendo… '+Math.round(p.progress*100)+'%'; }});
+    openVerify({name:'',serving:'1 serving',per:parseNutritionText(data.text||'')},{isNew:true,tag:window._faTag});
+  }catch(e){ const mm=document.getElementById('ocr_msg'); if(mm)mm.textContent='no se pudo leer la foto · usa text o manual'; }
+}
 db=load(); save(); render();
+if('serviceWorker' in navigator){ window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{})); }
 </script>
 </body>
 </html>
