@@ -204,7 +204,8 @@ function seed(){
       ]}
     ]},
     sessions:[],
-    meals:{}
+    meals:{},
+    foods:[]
   };
 }
 function seedPrev(){
@@ -225,7 +226,7 @@ function seedPrev(){
 // ---------- persistence ----------
 let db;
 function load(){ try{const r=localStorage.getItem(LS_KEY); if(!r)return seed(); const d=JSON.parse(r); return migrate(d);}catch(e){console.warn('load failed',e);return seed();} }
-function migrate(d){ if(!d.version){d.version=1;} if(!d.meals)d.meals={}; if(!d.settings)d.settings={goals:seed().settings.goals}; return d; }
+function migrate(d){ if(!d.version){d.version=1;} if(!d.meals)d.meals={}; if(!d.foods)d.foods=[]; if(!d.settings)d.settings={goals:seed().settings.goals}; return d; }
 function save(){ try{localStorage.setItem(LS_KEY,JSON.stringify(db));}catch(e){console.warn('save failed',e);} }
 
 // ---------- helpers ----------
@@ -507,7 +508,13 @@ document.getElementById('app').addEventListener('click',e=>{
   else if(a==='addex'){ openAddExercise(); }
   else if(a==='save'){ saveSession(); }
   else if(a==='togglemacros'){ state.macroOpen=!state.macroOpen; render(); }
-  else if(a==='addmeal'){ openAddMeal(); }
+  else if(a==='addmeal'||a==='foodadd'){ openFoodAdd(); }
+  else if(a==='pickfood'){ const f=(db.foods||[]).find(x=>x.id===el.dataset.id); if(f) openVerify(f,{qty:1,fromId:f.id,tag:curTag()}); }
+  else if(a==='fbarcode'){ openBarcode(); }
+  else if(a==='ftext'){ openTextParse(); }
+  else if(a==='fmanual'){ openVerify({name:'',serving:'1 serving',per:foodPer()},{isNew:true,tag:curTag()}); }
+  else if(a==='verifysave'){ commitFood(true); }
+  else if(a==='verifylog'){ commitFood(false); }
   else if(a==='delmeal'){ const t=todayISO(); db.meals[t]=(db.meals[t]||[]).filter(m=>m.id!==el.dataset.id); save(); render(); }
   else if(a==='editgoals'){ openGoals(); }
   else if(a==='export'){ doExport(); }
@@ -565,23 +572,95 @@ function openAddExercise(){
     save(); closeModal(); render();
   };
 }
-function openAddMeal(){
-  openModal(`<h3>+ add meal / drink</h3>
-   <div class="field"><label>MEAL</label><div class="toggles"><button class="mt on" data-t="breakfast">breakfast</button><button class="mt" data-t="lunch">lunch</button><button class="mt" data-t="snack">snack</button><button class="mt" data-t="dinner">dinner</button></div></div>
-   <div class="field"><label>NAME</label><input id="fm_name" placeholder="chicken 200g"/></div>
-   <div class="field row2"><div><label>KCAL</label><input id="fm_kcal" type="number" inputmode="numeric"/></div><div><label>CAFFEINE mg</label><input id="fm_caffeine" type="number" inputmode="numeric"/></div></div>
-   <div class="field row2"><div><label>PROTEIN g</label><input id="fm_protein" type="number"/></div><div><label>CARBS g</label><input id="fm_carbs" type="number"/></div></div>
-   <div class="field row2"><div><label>FAT g</label><input id="fm_fat" type="number"/></div><div><label>SUGAR g</label><input id="fm_sugar" type="number"/></div></div>
-   <div class="field row2"><div><label>SODIUM mg</label><input id="fm_sodium" type="number"/></div><div><label>POTASSIUM mg</label><input id="fm_potassium" type="number"/></div></div>
-   <div class="field row2"><div><label>FIBER g</label><input id="fm_fiber" type="number"/></div><div><label>WATER L</label><input id="fm_water" type="number" step="0.1"/></div></div>
-   <div class="sheetbtns"><button class="ok" data-act="okaddmeal">add</button><button class="cancel" data-act="closemodal">cancel</button></div>`);
-  let tag='breakfast'; document.querySelectorAll('.mt').forEach(b=>b.onclick=()=>{document.querySelectorAll('.mt').forEach(x=>x.classList.remove('on'));b.classList.add('on');tag=b.dataset.t;});
-  document.querySelector('[data-act="okaddmeal"]').onclick=()=>{
-    const name=val('fm_name'); if(!name)return; const t=todayISO(); db.meals[t]=db.meals[t]||[];
-    const num=id=>parseFloat(val(id))||0;
-    db.meals[t].push({id:uid(),time:nowHM(),tag,name,kcal:num('fm_kcal'),protein:num('fm_protein'),carbs:num('fm_carbs'),fat:num('fm_fat'),sugar:num('fm_sugar'),sodium:num('fm_sodium'),potassium:num('fm_potassium'),fiber:num('fm_fiber'),water:num('fm_water'),caffeine:num('fm_caffeine')});
-    save(); closeModal(); render();
-  };
+function foodPer(){ return {kcal:0,protein:0,carbs:0,fat:0,sugar:0,sodium:0,potassium:0,fiber:0,caffeine:0,water:0}; }
+function curTag(){ const e=document.querySelector('#fa_tag .t.on'); return e?e.dataset.v:'breakfast'; }
+function openFoodAdd(){
+  openModal(`<h3>add food</h3>
+   <div class="field"><label>MEAL</label><div class="toggles" id="fa_tag"><button class="t on" data-act="optpick" data-v="breakfast">breakfast</button><button class="t" data-act="optpick" data-v="lunch">lunch</button><button class="t" data-act="optpick" data-v="snack">snack</button><button class="t" data-act="optpick" data-v="dinner">dinner</button></div></div>
+   <div class="field"><label>YOUR FOODS</label><input id="fa_q" placeholder="search saved foods" autocomplete="off"/></div>
+   <div id="fa_list" style="max-height:148px;overflow-y:auto;margin-bottom:8px"></div>
+   <div class="sheetbtns"><button class="cancel" data-act="fbarcode">⌗ barcode</button><button class="cancel" data-act="ftext">¶ text</button><button class="cancel" data-act="fmanual">+ manual</button></div>`);
+  const q=document.getElementById('fa_q');
+  const renderList=()=>{ const s=(q.value||'').toLowerCase(); const items=(db.foods||[]).filter(f=>!s||(f.name||'').toLowerCase().includes(s)).slice(0,15);
+    document.getElementById('fa_list').innerHTML = items.length ? items.map(f=>`<div class="pickitem" data-act="pickfood" data-id="${f.id}">${f.name} <span style="float:right;color:var(--o50)">${Math.round(f.per.kcal)} kcal</span></div>`).join('') : '<div class="submeta" style="padding:8px 0">sin alimentos guardados · usa barcode / text / manual</div>'; };
+  q.oninput=renderList; renderList();
+}
+function openBarcode(){
+  window._faTag=curTag();
+  openModal(`<h3>barcode</h3><div class="submeta" style="margin-bottom:10px">escaneo con cámara llega pronto · por ahora escribe el código</div>
+   <div class="field"><label>BARCODE</label><input id="bc_code" inputmode="numeric" placeholder="7501..." autocomplete="off"/></div>
+   <div class="sheetbtns"><button class="ok" id="bc_go">look up</button><button class="cancel" data-act="closemodal">cancel</button></div>
+   <div id="bc_msg" class="submeta" style="margin-top:10px"></div>`);
+  document.getElementById('bc_go').onclick=async()=>{ const code=val('bc_code'); if(!code)return; const m=document.getElementById('bc_msg'); m.textContent='buscando...';
+    const food=await lookupBarcode(code); if(food&&food.name){ openVerify(food,{isNew:true,tag:window._faTag}); } else { m.textContent='no encontrado · usa text o manual'; } };
+}
+async function lookupBarcode(code){
+  try{
+    const r=await fetch('https://world.openfoodfacts.org/api/v2/product/'+encodeURIComponent(code)+'.json?fields=product_name,brands,serving_size,nutriments');
+    const j=await r.json(); if(j.status!==1||!j.product) return null; const p=j.product, n=p.nutriments||{};
+    const hasSv = n['energy-kcal_serving']!=null;
+    const g=base=> hasSv ? (n[base+'_serving']!=null?+n[base+'_serving']:0) : (n[base+'_100g']!=null?+n[base+'_100g']:0);
+    const per={ kcal: hasSv?(+n['energy-kcal_serving']||0):(+n['energy-kcal_100g']||0),
+      protein:g('proteins'), carbs:g('carbohydrates'), fat:g('fat'), sugar:g('sugars'), fiber:g('fiber'),
+      sodium:Math.round((g('sodium')||0)*1000), potassium:Math.round((g('potassium')||0)*1000), caffeine:g('caffeine')||0, water:0 };
+    return { barcode:code, name:p.product_name||'', brand:p.brands||'', serving: hasSv?(p.serving_size||'1 serving'):'100 g', per };
+  }catch(e){ return null; }
+}
+function openTextParse(){
+  window._faTag=curTag();
+  openModal(`<h3>from text</h3><div class="submeta" style="margin-bottom:10px">pega la tabla nutrimental (o escribe los valores)</div>
+   <textarea id="tx_in" style="width:100%;height:118px;border:.5px solid var(--o20);background:transparent;color:var(--fg);font-family:'JetBrains Mono',monospace;font-size:11px;padding:8px" placeholder="calories 250 · protein 20g · carbs 30g · fat 8g · sodium 400mg ..."></textarea>
+   <div class="field" style="margin-top:8px"><label>NAME</label><input id="tx_name" placeholder="food name"/></div>
+   <div class="sheetbtns"><button class="ok" id="tx_go">parse →</button><button class="cancel" data-act="closemodal">cancel</button></div>`);
+  document.getElementById('tx_go').onclick=()=>{ openVerify({name:val('tx_name'),serving:'1 serving',per:parseNutritionText(val('tx_in'))},{isNew:true,tag:window._faTag}); };
+}
+function parseNutritionText(txt){
+  txt=(txt||'').toLowerCase(); const per=foodPer();
+  const grab=re=>{ const m=txt.match(re); return m?parseFloat(m[1]):0; };
+  per.kcal=grab(/(?:cal(?:ories|or[ií]as)?|kcal|energ[ií]a)[^0-9]{0,8}(\d+(?:\.\d+)?)/)||grab(/(\d+(?:\.\d+)?)\s*kcal/);
+  per.protein=grab(/(?:prote[ií]nas?|protein)[^0-9]{0,8}(\d+(?:\.\d+)?)/);
+  per.carbs=grab(/(?:carbo?(?:hydrates?)?|hidratos|carbs)[^0-9]{0,8}(\d+(?:\.\d+)?)/);
+  per.fat=grab(/(?:fat|grasas?)[^0-9]{0,8}(\d+(?:\.\d+)?)/);
+  per.sugar=grab(/(?:sugars?|az[úu]cares?)[^0-9]{0,8}(\d+(?:\.\d+)?)/);
+  per.fiber=grab(/(?:fib(?:er|ra))[^0-9]{0,8}(\d+(?:\.\d+)?)/);
+  per.sodium=grab(/(?:sodio|sodium)[^0-9]{0,8}(\d+(?:\.\d+)?)/);
+  per.potassium=grab(/(?:potasio|potassium)[^0-9]{0,8}(\d+(?:\.\d+)?)/);
+  per.caffeine=grab(/(?:cafe[íi]na|caffeine)[^0-9]{0,8}(\d+(?:\.\d+)?)/);
+  return per;
+}
+function openVerify(food, opts){
+  opts=opts||{}; const p=Object.assign(foodPer(), food.per||{});
+  const f=(id,lbl,v,step)=>`<div><label>${lbl}</label><input id="${id}" type="number" inputmode="decimal"${step?' step="'+step+'"':''} value="${(v===0||v)?v:''}"/></div>`;
+  window._verify={tag:opts.tag||curTag(),barcode:food.barcode||'',fromId:opts.fromId||null};
+  openModal(`<h3>${opts.isNew?'verify &amp; add':'log food'}</h3>
+   <div class="field"><label>NAME</label><input id="v_name" value="${(food.name||'').replace(/"/g,'&quot;')}" placeholder="food name"/></div>
+   <div class="field row2"><div><label>SERVING</label><input id="v_serv" value="${(food.serving||'1 serving').replace(/"/g,'&quot;')}"/></div><div><label>QTY (servings)</label><input id="v_qty" type="number" inputmode="decimal" step="0.25" value="${opts.qty||1}"/></div></div>
+   <div class="field row2">${f('v_kcal','KCAL',p.kcal)}${f('v_protein','PROTEIN g',p.protein)}</div>
+   <div class="field row2">${f('v_carbs','CARBS g',p.carbs)}${f('v_fat','FAT g',p.fat)}</div>
+   <div class="field row2">${f('v_sugar','SUGAR g',p.sugar)}${f('v_fiber','FIBER g',p.fiber)}</div>
+   <div class="field row2">${f('v_sodium','SODIUM mg',p.sodium)}${f('v_potassium','POTASSIUM mg',p.potassium)}</div>
+   <div class="field row2">${f('v_caffeine','CAFFEINE mg',p.caffeine)}${f('v_water','WATER L',p.water,'0.1')}</div>
+   <div class="submeta" style="margin:2px 0 8px">valores por 1 serving · qty multiplica al loggear</div>
+   <div class="sheetbtns"><button class="ok" data-act="verifysave">save + log</button><button class="cancel" data-act="verifylog">log only</button></div>`);
+}
+function readVerify(){
+  const n=id=>parseFloat(val(id))||0;
+  const per={kcal:n('v_kcal'),protein:n('v_protein'),carbs:n('v_carbs'),fat:n('v_fat'),sugar:n('v_sugar'),sodium:n('v_sodium'),potassium:n('v_potassium'),fiber:n('v_fiber'),caffeine:n('v_caffeine'),water:n('v_water')};
+  const vv=window._verify||{};
+  return {name:val('v_name'),serving:val('v_serv'),qty:parseFloat(val('v_qty'))||1,per,barcode:vv.barcode||'',tag:vv.tag||'breakfast',fromId:vv.fromId||null};
+}
+function commitFood(saveToDb){
+  const v=readVerify(); if(!v.name){ alert('Pon nombre.'); return; }
+  const t=todayISO(); db.meals[t]=db.meals[t]||[];
+  const item={id:uid(),time:nowHM(),tag:v.tag,name:v.name+(v.qty!==1?' ×'+v.qty:''),qty:v.qty};
+  for(const k in v.per){ item[k]=(v.per[k]||0)*v.qty; }
+  db.meals[t].push(item);
+  if(saveToDb){ db.foods=db.foods||[];
+    const ex = v.fromId ? db.foods.find(f=>f.id===v.fromId) : (v.barcode? db.foods.find(f=>f.barcode===v.barcode):null);
+    if(ex){ ex.name=v.name; ex.serving=v.serving; ex.per=v.per; if(v.barcode)ex.barcode=v.barcode; }
+    else { db.foods.push({id:uid(),barcode:v.barcode,name:v.name,brand:'',serving:v.serving,per:v.per}); }
+  }
+  save(); closeModal(); render();
 }
 function openGoals(){
   const g=db.settings.goals;
