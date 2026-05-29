@@ -127,6 +127,7 @@
   .field input,.field select{width:100%; height:34px; border:.5px solid var(--o20); background:transparent; color:var(--fg); font-size:13px; padding:0 8px; appearance:none;}
   .field.row2{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
   .toggles{display:flex; gap:8px;} .toggles button{flex:1; height:32px; border:.5px solid var(--o20); background:transparent; color:var(--o50); font-size:11px; cursor:pointer;} .toggles button.on{background:var(--fill); color:#000;}
+  .toggles.wrap{flex-wrap:wrap;} .toggles.wrap button{flex:1 1 44%;}
   .sheetbtns{display:flex; gap:10px; margin-top:8px;} .sheetbtns .ok{flex:1; height:38px; background:var(--fill); color:#000; font-weight:700; border:0; font-size:12px; cursor:pointer;} .sheetbtns .cancel{height:38px; padding:0 16px; border:1px solid var(--o20); background:none; color:var(--o60); font-size:11px; cursor:pointer;}
   .pickitem{padding:11px 4px; font-size:13px; border-bottom:1px solid var(--line); cursor:pointer;} .pickitem:hover{color:#fff;}
 
@@ -418,14 +419,19 @@ function renderMacros(){
 
 // ---------- render: onboarding ----------
 function renderOnboard(){
-  return `<div style="padding-top:54px">
-    <div style="font-size:26px;font-weight:800;letter-spacing:-.5px">gym<span style="color:var(--o50)">//</span>TRK</div>
-    <div style="font-size:11px;color:var(--o50);margin:6px 0 32px">// setup</div>
+  return `<div style="padding-top:26px">
+    <div style="font-size:24px;font-weight:800;letter-spacing:-.5px">gym<span style="color:var(--o50)">//</span>TRK</div>
+    <div style="font-size:11px;color:var(--o50);margin:6px 0 20px">// create account</div>
     <div class="field"><label>HANDLE</label><input id="ob_user" placeholder="your handle" autocomplete="off" autocapitalize="off"/></div>
-    <div class="field"><label>GYM (where you train)</label><input id="ob_gym" placeholder="my gym" autocomplete="off"/></div>
-    <div class="field"><label>UNITS</label><div class="toggles"><button class="obu on" data-act="obunit" data-u="lbs">lbs</button><button class="obu" data-act="obunit" data-u="kg">kg</button></div></div>
-    <button class="start" data-act="onboardgo" style="margin-top:18px">▶ enter</button>
-    <div class="submeta" style="margin-top:16px">tus datos se guardan en este dispositivo (localStorage). exporta en settings para respaldar.</div>
+    <div class="field"><label>SEX</label><div class="toggles" id="ob_sex"><button class="t on" data-act="optpick" data-v="M">male</button><button class="t" data-act="optpick" data-v="F">female</button></div></div>
+    <div class="field row2"><div><label>AGE</label><input id="ob_age" type="number" inputmode="numeric" placeholder="24"/></div><div><label>BODYWEIGHT (kg)</label><input id="ob_w" type="number" inputmode="decimal" placeholder="70"/></div></div>
+    <div class="field"><label>HEIGHT (cm)</label><input id="ob_h" type="number" inputmode="numeric" placeholder="175"/></div>
+    <div class="field"><label>ACTIVITY</label><div class="toggles wrap" id="ob_act"><button class="t" data-act="optpick" data-v="1.2">sedentary</button><button class="t on" data-act="optpick" data-v="1.375">light</button><button class="t" data-act="optpick" data-v="1.55">moderate</button><button class="t" data-act="optpick" data-v="1.725">high</button></div></div>
+    <div class="field"><label>GOAL</label><div class="toggles" id="ob_goal"><button class="t" data-act="optpick" data-v="cut">cut</button><button class="t on" data-act="optpick" data-v="maintain">maintain</button><button class="t" data-act="optpick" data-v="bulk">bulk</button></div></div>
+    <div class="field"><label>GYM</label><input id="ob_gym" placeholder="my gym" autocomplete="off"/></div>
+    <div class="field"><label>LIFTING UNITS</label><div class="toggles" id="ob_unit"><button class="t on" data-act="optpick" data-v="lbs">lbs</button><button class="t" data-act="optpick" data-v="kg">kg</button></div></div>
+    <button class="start" data-act="onboardgo" style="margin-top:14px">▶ create account</button>
+    <div class="submeta" style="margin:14px 0 10px">calculamos tus metas (kcal/macros) desde tus datos; las puedes editar luego. todo se guarda en este dispositivo.</div>
   </div>`;
 }
 
@@ -475,8 +481,22 @@ document.getElementById('app').addEventListener('click',e=>{
   else if(a==='skip'){ db.rotIdx++; state.selDay=null; save(); go('home'); }
   else if(a==='changegym'){ openGymPicker(); }
   else if(a==='pickgym'){ db.activeGym=el.dataset.g; if(db.activeWork)db.activeWork.gym=el.dataset.g; save(); closeModal(); render(); }
-  else if(a==='onboardgo'){ const u=val('ob_user'); if(!u){ alert('Pon tu handle.'); return; } const g=val('ob_gym')||'home'; db.profile.username=u; db.gyms=[g]; db.activeGym=g; const ut=document.querySelector('.obu.on'); db.settings.unit=ut?ut.dataset.u:'lbs'; state.screen='home'; save(); render(); }
-  else if(a==='obunit'){ document.querySelectorAll('.obu').forEach(x=>x.classList.remove('on')); el.classList.add('on'); }
+  else if(a==='optpick'){ el.parentElement.querySelectorAll('.t').forEach(x=>x.classList.remove('on')); el.classList.add('on'); }
+  else if(a==='onboardgo'){
+    const u=val('ob_user'); if(!u){ alert('Pon tu handle.'); return; }
+    const pv=id=>{ const e=document.querySelector('#'+id+' .t.on'); return e?e.dataset.v:''; };
+    const sex=pv('ob_sex')||'M', goal=pv('ob_goal')||'maintain', unit=pv('ob_unit')||'lbs';
+    const act=parseFloat(pv('ob_act'))||1.375;
+    const age=+val('ob_age')||25, w=+val('ob_w')||70, hh=+val('ob_h')||175;
+    const bmr=10*w+6.25*hh-5*age+(sex==='M'?5:-161);
+    const kcal=Math.round((bmr*act*(goal==='cut'?0.8:goal==='bulk'?1.1:1.0))/10)*10;
+    const protein=Math.round(2.0*w), fat=Math.round(0.9*w);
+    const carbs=Math.max(0,Math.round((kcal-protein*4-fat*9)/4));
+    db.profile={username:u,sex,age,weightKg:w,heightCm:hh,activity:act,goal};
+    const g=val('ob_gym')||'home'; db.gyms=[g]; db.activeGym=g; db.settings.unit=unit;
+    db.settings.goals={kcal,protein,carbs,fat,sodium:2300,potassium:3500,sugar:Math.round(kcal*0.10/4),fiber:Math.max(25,Math.round(kcal/100)),water:Math.max(2,Math.round(0.035*w*10)/10),caffeine:400};
+    state.screen='home'; save(); render();
+  }
   else if(a==='changesplit'||a==='schedule'){ alert('Editor de split / schedule — próximamente. (Por ahora la rotación usa el split sembrado; dime y lo hacemos editable.)'); }
   else if(a==='settings'){ go('settings'); }
   else if(a==='done'){ const w=db.activeWork; const ex=w.exercises[exi]; if(ex.unilateral){ const v=!(ex.sets[si]&&ex.sets[si].done); if(ex.sets[si])ex.sets[si].done=v; if(ex.sets[si+1])ex.sets[si+1].done=v; } else { ex.sets[si].done=!ex.sets[si].done; } save(); render(); }
