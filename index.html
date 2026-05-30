@@ -127,6 +127,7 @@
   /* modal / forms */
   .modal{position:absolute; inset:0; background:rgba(0,0,0,.6); display:flex; align-items:flex-end; z-index:5;}
   .sheet{width:100%; background:#0c0c0c; border-top:1px solid var(--o20); padding:16px 18px 22px; max-height:80%; overflow-y:auto;}
+  #bc_cam video{width:100%; height:auto; display:block;} #bc_cam canvas.drawingBuffer{display:none;}
   .sheet h3{font-size:11px; color:var(--o50); letter-spacing:1px; margin-bottom:14px; font-weight:800;}
   .field{margin-bottom:11px;} .field label{display:block; font-size:8px; color:var(--o40); letter-spacing:.5px; margin-bottom:4px;}
   .field input,.field select{width:100%; height:34px; border:.5px solid var(--o20); background:transparent; color:var(--fg); font-size:13px; padding:0 8px; appearance:none;}
@@ -602,7 +603,7 @@ function saveSession(){
 
 // ---------- modals ----------
 function openModal(html){ closeModal(); const m=document.createElement('div'); m.className='modal'; m.id='modal'; m.innerHTML=`<div class="sheet">${html}</div>`; m.addEventListener('click',ev=>{if(ev.target===m)closeModal();}); document.getElementById('app').appendChild(m); }
-function closeModal(){ if(window._scanner){ try{window._scanner.reset&&window._scanner.reset();}catch(_){} try{window._scanner.stop&&window._scanner.stop();}catch(_){} window._scanner=null; } const m=document.getElementById('modal'); if(m)m.remove(); }
+function closeModal(){ const s=window._scanner; if(s){ try{ if(s._q&&typeof Quagga!=='undefined'){ if(s._fn)Quagga.offDetected(s._fn); Quagga.stop(); } }catch(_){} window._scanner=null; } const m=document.getElementById('modal'); if(m)m.remove(); }
 function val(id){ const e=document.getElementById(id); return e?e.value.trim():''; }
 function openGymPicker(){
   const items=(db.gyms||[]).map(g=>`<div class="pickitem" data-act="pickgym" data-g="${(g+'').replace(/"/g,'&quot;')}">${g}${g===db.activeGym?'  ·':''}</div>`).join('');
@@ -658,7 +659,7 @@ function openFoodAdd(){
 function openBarcode(){
   window._faTag=curTag();
   openModal(`<h3>barcode</h3>
-   <video id="bc_video" playsinline muted autoplay style="width:100%;max-height:240px;border-radius:2px;background:#000;display:none;object-fit:cover"></video>
+   <div id="bc_cam" style="position:relative;width:100%;max-height:260px;overflow:hidden;border-radius:2px;background:#000"></div>
    <div id="bc_msg" class="submeta" style="margin:8px 0">iniciando cámara…</div>
    <div class="field"><label>O ESCRIBE EL CÓDIGO</label><input id="bc_code" inputmode="numeric" placeholder="7501..." autocomplete="off"/></div>
    <div class="sheetbtns"><button class="ok" id="bc_go">look up</button><button class="cancel" id="bc_rescan">↻ reescanear</button><button class="cancel" data-act="closemodal">cancel</button></div>`);
@@ -672,20 +673,27 @@ function openBarcode(){
     document.getElementById('bc_photo').onclick=()=>{ const inp=document.createElement('input'); inp.type='file'; inp.accept='image/*'; inp.setAttribute('capture','environment'); inp.onchange=()=>{ if(inp.files&&inp.files[0]) ocrPhoto(inp.files[0],code); }; inp.click(); };
     document.getElementById('bc_name').onclick=()=>openNameSearch(code); };
   document.getElementById('bc_go').onclick=doLookup;
-  const startScan=async()=>{ const m=document.getElementById('bc_msg'); const video=document.getElementById('bc_video'); if(!video)return;
+  const stopScan=()=>{ if(window._scanner&&window._scanner._q){ try{Quagga.offDetected(window._scanner._fn);}catch(_){} try{Quagga.stop();}catch(_){} } window._scanner=null; };
+  const startScan=async()=>{ const m=document.getElementById('bc_msg'); const cam=document.getElementById('bc_cam'); if(!cam)return;
     m.textContent='iniciando cámara…';
-    try{ await loadScript('https://unpkg.com/@zxing/library@0.21.3/umd/index.min.js');
-      const hints=new Map();
-      hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS,[ZXing.BarcodeFormat.EAN_13,ZXing.BarcodeFormat.EAN_8,ZXing.BarcodeFormat.UPC_A,ZXing.BarcodeFormat.UPC_E,ZXing.BarcodeFormat.CODE_128,ZXing.BarcodeFormat.CODE_39,ZXing.BarcodeFormat.ITF]);
-      hints.set(ZXing.DecodeHintType.TRY_HARDER,true);
-      const reader=new ZXing.BrowserMultiFormatReader(hints,300); window._scanner=reader;
-      video.style.display='block';
-      await reader.decodeFromConstraints({video:{facingMode:{ideal:'environment'}}},video,(result)=>{
-        if(result){ const txt=result.getText(); try{reader.reset();}catch(_){} window._scanner=null; video.style.display='none';
-          const c=document.getElementById('bc_code'); if(c)c.value=txt; doLookup(); } });
-      m.textContent='apunta al código de barras (detecta solo)…';
-    }catch(e){ video.style.display='none'; m.textContent='cámara no disponible · escribe el código'; } };
-  document.getElementById('bc_rescan').onclick=()=>{ if(window._scanner){try{window._scanner.reset();}catch(_){}window._scanner=null;} startScan(); };
+    try{ await loadScript('https://cdn.jsdelivr.net/npm/@ericblade/quagga2@1.8.4/dist/quagga.min.js');
+      stopScan(); cam.innerHTML='';
+      const votes={}; let done=false; let frames=0;
+      const onDet=data=>{ const code=data&&data.codeResult&&data.codeResult.code; if(!code||done)return;
+        votes[code]=(votes[code]||0)+1;
+        if(votes[code]>=2){ done=true; stopScan(); const c=document.getElementById('bc_code'); if(c)c.value=code; doLookup(); } };
+      Quagga.init({
+        inputStream:{ type:'LiveStream', target:cam, constraints:{ facingMode:'environment', width:{ideal:1280}, height:{ideal:720} } },
+        locator:{ patchSize:'medium', halfSample:true }, numOfWorkers:0, frequency:10,
+        decoder:{ readers:['ean_reader','ean_8_reader','upc_reader','upc_e_reader','code_128_reader'] }
+      }, err=>{
+        if(err){ m.textContent='cámara no disponible · escribe el código'; return; }
+        window._scanner={_q:true,_fn:onDet}; Quagga.offDetected(onDet); Quagga.onDetected(onDet);
+        Quagga.onProcessed(()=>{ if(!done&&++frames===3) m.textContent='apunta al código de barras (detecta solo)…'; });
+        Quagga.start();
+      });
+    }catch(e){ m.textContent='cámara no disponible · escribe el código'; } };
+  document.getElementById('bc_rescan').onclick=()=>{ stopScan(); startScan(); };
   startScan();
 }
 function mapProduct(p){
