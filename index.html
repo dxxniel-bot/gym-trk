@@ -233,7 +233,7 @@ function seedPrev(){
 // ---------- persistence ----------
 let db;
 function load(){ try{const r=localStorage.getItem(LS_KEY); if(!r)return seed(); const d=JSON.parse(r); return migrate(d);}catch(e){console.warn('load failed',e);return seed();} }
-function migrate(d){ if(!d.version){d.version=1;} if(!d.meals)d.meals={}; if(!d.foods)d.foods=[]; if(!d.machines)d.machines={}; if(!d.settings)d.settings={goals:seed().settings.goals}; return d; }
+function migrate(d){ if(!d.version){d.version=1;} if(!d.meals)d.meals={}; if(!d.foods)d.foods=[]; if(!d.steps)d.steps={}; if(!d.machines)d.machines={}; if(!d.settings)d.settings={goals:seed().settings.goals}; return d; }
 function save(){ try{localStorage.setItem(LS_KEY,JSON.stringify(db));}catch(e){console.warn('save failed',e);} }
 
 // ---------- helpers ----------
@@ -324,7 +324,7 @@ function renderHome(){
     +`<div class="line stat"><span class="k">volume · 7d</span><span class="dots"></span><span class="v">${kfmt(s7.vol)} lb</span></div>`
     +`<div class="line stat"><span class="k">sessions · 7d</span><span class="dots"></span><span class="v">${s7.count}</span></div>`
     +`<div class="line stat"><span class="k">streak</span><span class="dots"></span><span class="v">${streak()} days</span></div>`
-    +`<div class="line stat"><span class="k">top lift</span><span class="dots"></span><span class="v">${topLift()}</span></div>`;
+    +`<div class="line stat"><span class="k">top lift</span><span class="dots"></span><span class="v">${topLift()}</span></div><div class="line stat"><span class="k">steps · today</span><span class="dots"></span><span class="v" data-act="editsteps" style="cursor:pointer">${(db.steps&&db.steps[todayISO()])?db.steps[todayISO()].toLocaleString():'— tap'}</span></div>`;
 }
 
 // ---------- render: workout ----------
@@ -580,6 +580,7 @@ document.getElementById('app').addEventListener('click',e=>{
   else if(a==='verifylog'){ commitFood(false); }
   else if(a==='delmeal'){ const t=todayISO(); db.meals[t]=(db.meals[t]||[]).filter(m=>m.id!==el.dataset.id); save(); render(); }
   else if(a==='editgoals'){ openGoals(); }
+  else if(a==='editsteps'){ const cur=(db.steps&&db.steps[todayISO()])||''; const v=prompt('pasos de hoy (de Apple Health):',cur); if(v!=null){ const n=parseInt(String(v).replace(/[^0-9]/g,''),10); if(!isNaN(n)){ db.steps=db.steps||{}; db.steps[todayISO()]=n; save(); render(); } } }
   else if(a==='export'){ doExport(); }
   else if(a==='import'){ doImport(); }
   else if(a==='sync'){ openSync(); }
@@ -868,7 +869,7 @@ async function ocrPhoto(file,barcode){ if(!file)return; window._faTag=window._fa
     openVerify({name:'',serving:'1 serving',barcode:barcode||'',per:parseNutritionText(text)},{isNew:true,tag:window._faTag,ocrText:text});
   }catch(e){ const mm=document.getElementById('ocr_msg'); if(mm)mm.textContent='no se pudo leer la foto · usa text o manual'; }
 }
-db=load(); save(); render();
+db=load(); try{ const _sp=new URLSearchParams(location.search); if(_sp.has('steps')){ const _n=parseInt(_sp.get('steps'),10); if(!isNaN(_n)){ db.steps=db.steps||{}; db.steps[todayISO()]=_n; } if(history.replaceState)history.replaceState(null,'',location.pathname); } }catch(_){} save(); render();
 if('serviceWorker' in navigator){ window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{})); }
 </script>
 </body>
