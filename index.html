@@ -602,7 +602,7 @@ function saveSession(){
 
 // ---------- modals ----------
 function openModal(html){ closeModal(); const m=document.createElement('div'); m.className='modal'; m.id='modal'; m.innerHTML=`<div class="sheet">${html}</div>`; m.addEventListener('click',ev=>{if(ev.target===m)closeModal();}); document.getElementById('app').appendChild(m); }
-function closeModal(){ if(window._scanner){ try{window._scanner.stop();}catch(_){} window._scanner=null; } const m=document.getElementById('modal'); if(m)m.remove(); }
+function closeModal(){ if(window._scanner){ try{window._scanner.reset&&window._scanner.reset();}catch(_){} try{window._scanner.stop&&window._scanner.stop();}catch(_){} window._scanner=null; } const m=document.getElementById('modal'); if(m)m.remove(); }
 function val(id){ const e=document.getElementById(id); return e?e.value.trim():''; }
 function openGymPicker(){
   const items=(db.gyms||[]).map(g=>`<div class="pickitem" data-act="pickgym" data-g="${(g+'').replace(/"/g,'&quot;')}">${g}${g===db.activeGym?'  ·':''}</div>`).join('');
@@ -658,11 +658,10 @@ function openFoodAdd(){
 function openBarcode(){
   window._faTag=curTag();
   openModal(`<h3>barcode</h3>
-   <div class="sheetbtns" style="margin-bottom:10px"><button class="ok" id="bc_scan">📷 scan</button><button class="cancel" data-act="closemodal">cancel</button></div>
-   <div id="bc_reader" style="overflow:hidden;border-radius:2px"></div>
-   <div class="field" style="margin-top:10px"><label>O ESCRIBE EL CÓDIGO</label><input id="bc_code" inputmode="numeric" placeholder="7501..." autocomplete="off"/></div>
-   <div class="sheetbtns"><button class="ok" id="bc_go">look up</button></div>
-   <div id="bc_msg" class="submeta" style="margin-top:10px"></div>`);
+   <video id="bc_video" playsinline muted autoplay style="width:100%;max-height:240px;border-radius:2px;background:#000;display:none;object-fit:cover"></video>
+   <div id="bc_msg" class="submeta" style="margin:8px 0">iniciando cámara…</div>
+   <div class="field"><label>O ESCRIBE EL CÓDIGO</label><input id="bc_code" inputmode="numeric" placeholder="7501..." autocomplete="off"/></div>
+   <div class="sheetbtns"><button class="ok" id="bc_go">look up</button><button class="cancel" id="bc_rescan">↻ reescanear</button><button class="cancel" data-act="closemodal">cancel</button></div>`);
   const doLookup=async()=>{ const code=val('bc_code'); if(!code)return; const m=document.getElementById('bc_msg'); m.textContent='buscando...';
     const local=(db.foods||[]).find(f=>f.barcode===code);
     if(local){ openVerify(local,{fromId:local.id,qty:1,tag:window._faTag}); return; }
@@ -673,12 +672,21 @@ function openBarcode(){
     document.getElementById('bc_photo').onclick=()=>{ const inp=document.createElement('input'); inp.type='file'; inp.accept='image/*'; inp.setAttribute('capture','environment'); inp.onchange=()=>{ if(inp.files&&inp.files[0]) ocrPhoto(inp.files[0],code); }; inp.click(); };
     document.getElementById('bc_name').onclick=()=>openNameSearch(code); };
   document.getElementById('bc_go').onclick=doLookup;
-  document.getElementById('bc_scan').onclick=async()=>{ const m=document.getElementById('bc_msg'); m.textContent='abriendo cámara...';
-    try{ await loadScript('https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js');
-      const q=new Html5Qrcode('bc_reader'); window._scanner=q;
-      await q.start({facingMode:'environment'},{fps:10,qrbox:{width:240,height:150}}, async(txt)=>{ try{await q.stop();}catch(_){} window._scanner=null; const rd=document.getElementById('bc_reader'); if(rd)rd.innerHTML=''; const c=document.getElementById('bc_code'); if(c)c.value=txt; doLookup(); });
-      m.textContent='apunta al código de barras...';
-    }catch(e){ m.textContent='cámara no disponible aquí · escribe el código'; } };
+  const startScan=async()=>{ const m=document.getElementById('bc_msg'); const video=document.getElementById('bc_video'); if(!video)return;
+    m.textContent='iniciando cámara…';
+    try{ await loadScript('https://unpkg.com/@zxing/library@0.21.3/umd/index.min.js');
+      const hints=new Map();
+      hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS,[ZXing.BarcodeFormat.EAN_13,ZXing.BarcodeFormat.EAN_8,ZXing.BarcodeFormat.UPC_A,ZXing.BarcodeFormat.UPC_E,ZXing.BarcodeFormat.CODE_128,ZXing.BarcodeFormat.CODE_39,ZXing.BarcodeFormat.ITF]);
+      hints.set(ZXing.DecodeHintType.TRY_HARDER,true);
+      const reader=new ZXing.BrowserMultiFormatReader(hints,300); window._scanner=reader;
+      video.style.display='block';
+      await reader.decodeFromConstraints({video:{facingMode:{ideal:'environment'}}},video,(result)=>{
+        if(result){ const txt=result.getText(); try{reader.reset();}catch(_){} window._scanner=null; video.style.display='none';
+          const c=document.getElementById('bc_code'); if(c)c.value=txt; doLookup(); } });
+      m.textContent='apunta al código de barras (detecta solo)…';
+    }catch(e){ video.style.display='none'; m.textContent='cámara no disponible · escribe el código'; } };
+  document.getElementById('bc_rescan').onclick=()=>{ if(window._scanner){try{window._scanner.reset();}catch(_){}window._scanner=null;} startScan(); };
+  startScan();
 }
 function mapProduct(p){
   const n=p.nutriments||{}; const hasSv = n['energy-kcal_serving']!=null;
