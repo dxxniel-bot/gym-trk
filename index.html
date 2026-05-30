@@ -394,7 +394,7 @@ function renderWorkout(){
   });
   return statusBar(true)
     +(w.loggedAfter
-      ? `<div class="rot" style="margin-top:14px"><span class="lbl">LOGGED AFTER</span><span class="n"><input type="date" value="${w.date}" max="${todayISO()}" data-act="setdate" style="background:transparent;border:.5px solid var(--o20);color:var(--fg);font:inherit;font-size:10px;padding:3px 5px"/></span></div><div class="rot" style="margin-top:6px"><span class="lbl">duración (min) · opcional</span><span class="n"><input type="number" value="${w.manualDur||''}" data-act="setdur" inputmode="numeric" placeholder="—" style="width:70px;background:transparent;border:.5px solid var(--o20);color:var(--fg);font:inherit;font-size:10px;padding:3px 5px;text-align:right"/></span></div>`
+      ? `<div class="rot" style="margin-top:14px"><span class="lbl">LOGGED AFTER</span><span class="n"><input type="date" value="${w.date}" max="${todayISO()}" data-act="setdate" style="background:transparent;border:.5px solid var(--o20);color:var(--fg);font:inherit;font-size:10px;padding:3px 5px"/></span></div><div class="rot" style="margin-top:6px"><span class="lbl">duración (min) · opcional</span><span class="n"><input type="number" value="${w.manualDur||''}" data-act="setdur" inputmode="numeric" placeholder="—" style="width:70px;background:transparent;border:.5px solid var(--o20);color:var(--fg);font:inherit;font-size:10px;padding:3px 5px;text-align:right"/></span></div><div class="rot" style="margin-top:6px"><span class="lbl">avanzar rotación</span><span class="n"><a data-act="togglenoadv" style="cursor:pointer;border:.5px solid var(--o20);padding:2px 10px;font-size:10px">${w.noAdvance?'no':'sí'}</a></span></div>`
       : `<div class="rot" style="margin-top:14px"><span class="lbl">ROTATION - DAY ${curDayIdx()+1}/${dayCount()}${w.startMs?' · '+elapsedStr(w.startMs):''}</span><span class="n" data-act="changegym" style="cursor:pointer">[change gym]</span></div>`)
     +`<div class="wprog"><i style="width:${total?Math.round(done/total*100):0}%"></i></div>`
     +`<div class="whdr" style="margin-top:16px"><div class="l1"><span class="s">//</span>NOW</div><div class="wname">${w.dayName}</div><div class="l2"></div><div class="wmeta">${db.split.name} · ${day.tag}</div></div>`
@@ -528,6 +528,7 @@ document.getElementById('app').addEventListener('click',e=>{
   if(a==='nav'){ go(el.dataset.screen); }
   else if(a==='start'){ db.activeWork=newWorkSession(); save(); go('workout'); }
   else if(a==='loglater'){ const w=newWorkSession(); w.loggedAfter=true; w.startMs=null; const y=new Date(); y.setDate(y.getDate()-1); w.date=todayISO(y); db.activeWork=w; save(); go('workout'); }
+  else if(a==='togglenoadv'){ if(db.activeWork){ db.activeWork.noAdvance=!db.activeWork.noAdvance; render(); } }
   else if(a==='resume'){ go('workout'); }
   else if(a==='leave'){ go('home'); }
   else if(a==='abort'){ if(confirm('Abort workout? Lo registrado se descarta.')){ db.activeWork=null; save(); go('home'); } }
@@ -609,7 +610,7 @@ function saveSession(){
   if(!has && !confirm('No registraste sets. ¿Guardar de todos modos?')){return;}
   const sess={id:w.id,date:w.date,dayId:w.dayId,dayName:w.dayName,gym:w.gym,type:'training',loggedAfter:!!w.loggedAfter,durSec:w.loggedAfter?((parseInt(w.manualDur,10)||0)*60):(w.startMs?Math.round((Date.now()-w.startMs)/1000):0),
     exercises:w.exercises.map(e=>{const r=machineRec(w.gym,e); return {name:e.name,muscle:e.muscle,machine:r.na?'':r.brand,setup:r.na?'':r.setup,sets:e.sets.filter(s=>s.w||s.r)};})};
-  const idx=db.split.days.findIndex(d=>d.id===w.dayId); db.rotIdx=(idx>=0?idx:db.rotIdx)+1; db.activeWork=null; state.selDay=null; db.sessions.push(sess); save(); go('home');
+  if(!(w.loggedAfter&&w.noAdvance)){ const idx=db.split.days.findIndex(d=>d.id===w.dayId); db.rotIdx=(idx>=0?idx:db.rotIdx)+1; } db.activeWork=null; state.selDay=null; db.sessions.push(sess); save(); go('home');
 }
 
 // ---------- modals ----------
