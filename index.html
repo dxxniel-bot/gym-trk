@@ -656,6 +656,14 @@ function openFoodAdd(){
     document.getElementById('fa_list').innerHTML = items.length ? items.map(f=>`<div class="pickitem" data-act="pickfood" data-id="${f.id}">${f.name} <span style="float:right;color:var(--o50)">${Math.round(f.per.kcal)} kcal</span></div>`).join('') : '<div class="submeta" style="padding:8px 0">sin alimentos guardados · usa barcode / text / manual</div>'; };
   q.oninput=renderList; renderList();
 }
+async function decodeBarcodeImage(file){
+  try{ await loadScript('https://cdn.jsdelivr.net/npm/@ericblade/quagga2@1.8.4/dist/quagga.min.js'); }catch(_){ return null; }
+  const url=URL.createObjectURL(file);
+  const one=(patch,size)=> new Promise(res=>{ try{ Quagga.decodeSingle({ src:url, numOfWorkers:0, locate:true, inputStream:{ size:size }, locator:{ patchSize:patch, halfSample:false }, decoder:{ readers:['ean_reader','ean_8_reader','upc_reader','upc_e_reader','code_128_reader','code_39_reader'] } }, r=>res(r&&r.codeResult?r.codeResult.code:null)); }catch(_){ res(null); } });
+  let code=null;
+  for(const cb of [['medium',1600],['large',1600],['x-large',1920],['medium',1024],['large',800]]){ code=await one(cb[0],cb[1]); if(code)break; }
+  URL.revokeObjectURL(url); return code;
+}
 function openBarcode(){
   window._faTag=curTag();
   openModal(`<h3>barcode</h3>
@@ -695,8 +703,10 @@ function openBarcode(){
         try{ const tr=Quagga.CameraAccess&&Quagga.CameraAccess.getActiveTrack&&Quagga.CameraAccess.getActiveTrack(); if(tr&&tr.applyConstraints){ const caps=tr.getCapabilities?tr.getCapabilities():{}; const adv=[]; if(caps.zoom)adv.push({zoom:Math.min((caps.zoom.max||1),1)}); if(caps.focusMode&&[].concat(caps.focusMode).includes('continuous'))adv.push({focusMode:'continuous'}); if(adv.length)tr.applyConstraints({advanced:adv}).catch(()=>{}); } }catch(_){}
       });
     }catch(e){ m.textContent='cámara no disponible · escribe el código'; } };
-  document.getElementById('bc_rescan').onclick=()=>{ stopScan(); startScan(); };
-  startScan();
+  const cv=document.getElementById('bc_cam'); if(cv)cv.style.display='none';
+  const bm=document.getElementById('bc_msg'); if(bm)bm.textContent='toma una foto nítida del código de barras (de frente, que llene el cuadro)';
+  const br=document.getElementById('bc_rescan'); if(br){ br.textContent='📷 foto del código';
+    br.onclick=()=>{ const inp=document.createElement('input'); inp.type='file'; inp.accept='image/*'; inp.setAttribute('capture','environment'); inp.onchange=async()=>{ const f=inp.files&&inp.files[0]; if(!f)return; const mm=document.getElementById('bc_msg'); if(mm)mm.textContent='leyendo código…'; const code=await decodeBarcodeImage(f); if(code){ const c=document.getElementById('bc_code'); if(c)c.value=code; doLookup(); } else if(mm){ mm.textContent='no se leyó · acerca el código de frente y enfocado (que llene el cuadro), o escríbelo'; } }; inp.click(); }; }
 }
 function mapProduct(p){
   const n=p.nutriments||{}; const hasSv = n['energy-kcal_serving']!=null;
