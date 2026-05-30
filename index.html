@@ -678,19 +678,21 @@ function openBarcode(){
     m.textContent='iniciando cámara…';
     try{ await loadScript('https://cdn.jsdelivr.net/npm/@ericblade/quagga2@1.8.4/dist/quagga.min.js');
       stopScan(); cam.innerHTML='';
+      window._bcConstraints = await (async()=>{ try{ const tmp=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}}); tmp.getTracks().forEach(t=>t.stop()); const cams=(await navigator.mediaDevices.enumerateDevices()).filter(d=>d.kind==='videoinput'); const back=cams.filter(d=>/back|rear|tras|environment/i.test(d.label)); const pool=back.length?back:cams; const wide=pool.find(d=>!/ultra|triple|dual|tele|depth|wide angle/i.test(d.label))||pool.find(d=>!/ultra/i.test(d.label))||pool[0]; return wide?{ deviceId:{exact:wide.deviceId}, width:{ideal:1920}, height:{ideal:1080} }:{ facingMode:'environment', width:{ideal:1920}, height:{ideal:1080} }; }catch(_){ return null; } })();
       const votes={}; let done=false; let frames=0;
       const onDet=data=>{ const code=data&&data.codeResult&&data.codeResult.code; if(!code||done)return;
         votes[code]=(votes[code]||0)+1;
         if(votes[code]>=2){ done=true; stopScan(); const c=document.getElementById('bc_code'); if(c)c.value=code; doLookup(); } };
       Quagga.init({
-        inputStream:{ type:'LiveStream', target:cam, constraints:{ facingMode:'environment', width:{ideal:1280}, height:{ideal:720} } },
-        locator:{ patchSize:'medium', halfSample:true }, numOfWorkers:0, frequency:10,
+        inputStream:{ type:'LiveStream', target:cam, constraints: window._bcConstraints || { facingMode:'environment', width:{ideal:1920}, height:{ideal:1080} } },
+        locator:{ patchSize:'large', halfSample:false }, numOfWorkers:0, frequency:10,
         decoder:{ readers:['ean_reader','ean_8_reader','upc_reader','upc_e_reader','code_128_reader'] }
       }, err=>{
         if(err){ m.textContent='cámara no disponible · escribe el código'; return; }
         window._scanner={_q:true,_fn:onDet}; Quagga.offDetected(onDet); Quagga.onDetected(onDet);
         Quagga.onProcessed(()=>{ if(!done&&++frames===3) m.textContent='apunta al código de barras (detecta solo)…'; });
         Quagga.start();
+        try{ const tr=Quagga.CameraAccess&&Quagga.CameraAccess.getActiveTrack&&Quagga.CameraAccess.getActiveTrack(); if(tr&&tr.applyConstraints){ const caps=tr.getCapabilities?tr.getCapabilities():{}; const adv=[]; if(caps.zoom)adv.push({zoom:Math.min((caps.zoom.max||1),1)}); if(caps.focusMode&&[].concat(caps.focusMode).includes('continuous'))adv.push({focusMode:'continuous'}); if(adv.length)tr.applyConstraints({advanced:adv}).catch(()=>{}); } }catch(_){}
       });
     }catch(e){ m.textContent='cámara no disponible · escribe el código'; } };
   document.getElementById('bc_rescan').onclick=()=>{ stopScan(); startScan(); };
