@@ -20,15 +20,21 @@
     --o12:rgba(237,237,237,.12); --o10:rgba(237,237,237,.1);
     --faint:#3a3a3a; --line:#242424; --track:#20201f; --fill:#e6e6e6; --abort:rgba(190,110,110,.55);
   }
-  *{margin:0;padding:0;box-sizing:border-box}
-  html,body{background:var(--bg); color:var(--fg);
-    font-family:"JetBrains Mono",ui-monospace,Menlo,monospace; min-height:100%;
-    display:flex; flex-direction:column; align-items:center; gap:12px; padding:24px 16px 60px;
-    -webkit-font-smoothing:antialiased;}
-  .frame{position:relative; width:393px; height:852px; background:var(--frame); overflow:hidden;
+  *{margin:0;padding:0;box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html{height:100%;}
+  body{background:var(--bg); color:var(--fg);
+    font-family:"JetBrains Mono",ui-monospace,Menlo,monospace;
+    position:fixed; inset:0; overflow:hidden; overscroll-behavior:none;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    -webkit-font-smoothing:antialiased; touch-action:manipulation;
+    -webkit-user-select:none; user-select:none;}
+  .frame{position:relative; width:393px; height:852px; max-width:100%; max-height:100%; background:var(--frame); overflow:hidden;
     border-radius:2px; box-shadow:0 0 0 1px #000,0 24px 60px rgba(0,0,0,.6);
     display:flex; flex-direction:column;}
-  .scroll{flex:1; overflow-y:auto; padding:22px 18px 24px;}
+  /* on a real phone: frame fills the screen, no floating card */
+  @media (max-width:440px){ body{display:block;} .frame{width:100%; height:100%; max-height:none; border-radius:0; box-shadow:none;} }
+  input,select,textarea{font-size:16px; -webkit-user-select:text; user-select:text;}
+  .scroll{flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; overscroll-behavior-y:contain; padding:22px 18px calc(24px + env(safe-area-inset-bottom));}
   .scroll::-webkit-scrollbar{width:6px} .scroll::-webkit-scrollbar-thumb{background:var(--o10)}
   input,select,button{font-family:inherit;}
 
@@ -178,7 +184,7 @@ function seed(){
         mk('bb incline','chest',{machine:'barbell',sets:2}),
         mk('flat press','chest',{sets:1}),
         mk('pec fly','chest',{type:'machine',machine:'pulley',sets:1}),
-        mk('shoulder press','delts',{machine:'dumbbell',unilateral:true,sets:2}),
+        mk('shoulder press','delts',{machine:'dumbbell',sets:2}),
         mk('calf extension','calfs',{type:'machine',sets:2}),
         mk('leg ext + pad','quads',{type:'machine',sets:2}),
         mk('laying neck curl','neck',{sets:2})
