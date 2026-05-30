@@ -820,10 +820,18 @@ function openGoals(){
   openModal(`<h3>edit goals</h3>
    <div class="field row2">${f('g_kcal','KCAL',g.kcal)}${f('g_protein','PROTEIN g',g.protein)}</div>
    <div class="field row2">${f('g_carbs','CARBS g',g.carbs)}${f('g_fat','FAT g',g.fat)}</div>
+   <div id="g_sum" class="submeta" style="margin:2px 0 8px"></div>
    <div class="field row2">${f('g_sodium','SODIUM mg',g.sodium)}${f('g_potassium','POTASSIUM mg',g.potassium)}</div>
    <div class="field row2">${f('g_sugar','SUGAR g',g.sugar)}${f('g_fiber','FIBER g',g.fiber)}</div>
    <div class="field row2">${f('g_water','WATER L',g.water)}${f('g_caffeine','CAFFEINE mg',g.caffeine)}</div>
    <div class="sheetbtns"><button class="ok" data-act="okgoals">save</button><button class="cancel" data-act="closemodal">cancel</button></div>`);
+  const gn=id=>parseFloat(val(id))||0;
+  const setv=(id,v)=>{ const e=document.getElementById(id); if(e)e.value=Math.round(v); };
+  const gsum=()=>{ const P=gn('g_protein'),C=gn('g_carbs'),F=gn('g_fat'),K=gn('g_kcal'); const mk=P*4+C*4+F*9; const s=document.getElementById('g_sum'); if(!s)return; const ok=!K||Math.abs(mk-K)/Math.max(mk,K)<=0.05; s.innerHTML='macros = <b style="color:var(--fg)">'+Math.round(mk)+'</b> kcal · meta '+Math.round(K)+(ok?' ✓':' <span style="color:#c8a24d">⚠</span>')+' · '+(K?Math.round(P*4/K*100):0)+'/'+(K?Math.round(C*4/K*100):0)+'/'+(K?Math.round(F*9/K*100):0)+'% P/C/F'; };
+  let gbusy=false;
+  const kc=document.getElementById('g_kcal'); if(kc)kc.addEventListener('input',()=>{ if(gbusy)return; gbusy=true; const K=gn('g_kcal'); let P=gn('g_protein'),C=gn('g_carbs'),F=gn('g_fat'); let mk=P*4+C*4+F*9; if(mk<=0){P=K*0.3/4;C=K*0.4/4;F=K*0.3/9;mk=P*4+C*4+F*9;} const sc=mk?K/mk:0; setv('g_protein',P*sc); setv('g_carbs',C*sc); setv('g_fat',F*sc); gbusy=false; gsum(); });
+  ['g_protein','g_carbs','g_fat'].forEach(id=>{ const e=document.getElementById(id); if(e)e.addEventListener('input',()=>{ if(gbusy)return; gbusy=true; setv('g_kcal',gn('g_protein')*4+gn('g_carbs')*4+gn('g_fat')*9); gbusy=false; gsum(); }); });
+  gsum();
   document.querySelector('[data-act="okgoals"]').onclick=()=>{
     ['kcal','protein','carbs','fat','sodium','potassium','sugar','fiber','water','caffeine'].forEach(k=>{const v=parseFloat(val('g_'+k)); if(!isNaN(v))g[k]=v;});
     save(); closeModal(); render();
