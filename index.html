@@ -97,8 +97,8 @@
   .pill{font-size:9px; color:var(--o50); border:1px solid var(--faint); padding:1px 5px; margin-left:6px;}
 
   /* food log */
-  .grp{margin-bottom:14px;} .ghead{display:flex; gap:10px; color:var(--o50); font-size:10px; margin-bottom:7px;} .ghead .t{color:var(--o60);} .ghead .hash{color:var(--faint);}
-  .item{display:flex; align-items:baseline; gap:10px; padding:3px 0 3px 26px; font-size:11px;} .item .nm{color:var(--o60);} .item .d{flex:1; border-bottom:1px dotted var(--line); transform:translateY(-3px);} .item .kc{color:var(--fg);} .item .cf{color:var(--o40); font-size:9px; width:42px; text-align:right;} .item .x{color:var(--o30); cursor:pointer; font-size:12px;}
+  .grp{margin-bottom:14px;} .ghead{display:flex; justify-content:space-between; align-items:baseline; gap:10px; color:var(--o50); font-size:10px; margin-bottom:7px;} .ghead .t{color:var(--o60);} .ghead .hash{color:var(--faint);} .ghead .mtot{color:var(--o40); font-size:9px; white-space:nowrap;}
+  .item{display:flex; align-items:baseline; gap:8px; padding:5px 0 5px 22px; font-size:11px; cursor:pointer;} .item:active{background:var(--o10);} .item .nm{color:var(--o60); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:48%;} .item .d{flex:1; border-bottom:1px dotted var(--line); transform:translateY(-3px);} .item .kc{color:var(--fg); width:34px; text-align:right;} .item .macq{color:var(--o40); font-size:9px; white-space:nowrap;}
 
   /* workout sets table */
   .wprog{height:2px; background:var(--o10); margin:8px 0 0;} .wprog>i{display:block; height:100%; background:var(--fill);}
@@ -140,6 +140,7 @@
   .field.row2{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
   .toggles{display:flex; gap:8px;} .toggles button{flex:1; height:32px; border:.5px solid var(--o20); background:transparent; color:var(--o50); font-size:11px; cursor:pointer;} .toggles button.on{background:var(--fill); color:#000;}
   .toggles.wrap{flex-wrap:wrap;} .toggles.wrap button{flex:1 1 44%;}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;} .chip{font-size:9px;color:var(--o50);border:.5px solid var(--o20);padding:3px 8px;cursor:pointer;} .chip:active{background:var(--o12);}
   .sheetbtns{display:flex; gap:10px; margin-top:8px;} .sheetbtns .ok{flex:1; height:38px; background:var(--fill); color:#000; font-weight:700; border:0; font-size:12px; cursor:pointer;} .sheetbtns .cancel{height:38px; padding:0 16px; border:1px solid var(--o20); background:none; color:var(--o60); font-size:11px; cursor:pointer;}
   .pickitem{padding:11px 4px; font-size:13px; border-bottom:1px solid var(--line); cursor:pointer;} .pickitem:hover{color:#fff;}
 
@@ -420,11 +421,12 @@ function renderMacros(){
   const left=Math.round(g.kcal-t.kcal); const pct=g.kcal?t.kcal/g.kcal*100:0;
   const open=state.macroOpen;
   const mkcal=(t.protein*4+t.carbs*4+t.fat*9)||1;
-  const macroRing=(lbl,val,goal,unit,kpg)=>{const p=goal?val/goal*100:0;const ctr=state.macroPct?Math.round(val*kpg/mkcal*100)+'%':Math.round(val);return `<div class="cell">${ringHTML(p,'<div class="num">'+ctr+'</div>')}<div class="cap">${lbl}</div><div class="sub">${state.macroPct?'de kcal':'/ '+goal+' '+unit}</div></div>`;};
+  const rem=state.macroRem; // false=logged (default), true=remaining
+  const macroRing=(lbl,val,goal,unit,kpg)=>{const p=goal?val/goal*100:0;let ctr;if(state.macroPct){ctr=Math.round(val*kpg/mkcal*100)+'%';}else if(rem){ctr=Math.round(goal-val);}else{ctr=Math.round(val);}return `<div class="cell">${ringHTML(p,'<div class="num">'+ctr+'</div>')}<div class="cap">${lbl}</div><div class="sub">${state.macroPct?'de kcal':(rem?'left of '+goal:'/ '+goal+' '+unit)}</div></div>`;};
   const intakeRow=(lbl,val,goal,unit,extra,dec)=>{const p=goal?val/goal*100:0;const disp=dec?(+val).toFixed(dec):Math.round(val);return `<div class="mrow"><span class="ml">${lbl}</span><div class="bar"><i style="width:${Math.min(100,p)}%"></i></div><span class="mv">${disp} <span class="g">/ ${goal} ${unit}</span>${extra||''}</span></div>`;};
   const bl=bloating(t,g);
   let details = !open?'' : `<hr class="rule"/>`
-    +`<div style="display:flex;justify-content:flex-end;margin-bottom:8px"><a data-act="toggleMacroUnit" style="font-size:9px;color:var(--o50);cursor:pointer">[${state.macroPct?'ver gramos':'ver %'}]</a></div>`
+    +`<div style="display:flex;justify-content:space-between;margin-bottom:8px"><a data-act="toggleMacroRem" style="font-size:9px;color:var(--o50);cursor:pointer">[${rem?'ver loggeado':'ver restante'}]</a><a data-act="toggleMacroUnit" style="font-size:9px;color:var(--o50);cursor:pointer">[${state.macroPct?'ver gramos':'ver %'}]</a></div>`
     +`<div class="rings">${macroRing('protein',t.protein,g.protein,'g',4)}${macroRing('carbs',t.carbs,g.carbs,'g',4)}${macroRing('fat',t.fat,g.fat,'g',9)}</div>`
     +`<hr class="rule"/><div class="grp-label">INTAKE</div>`
     +intakeRow('sodium',t.sodium,g.sodium,'mg')
@@ -443,8 +445,9 @@ function renderMacros(){
   const tags=Object.keys(byTag).sort((a,b)=>order.indexOf(a)-order.indexOf(b));
   if(!items.length){ log=`<div class="empty">no meals logged today<br/>tap [+ add] to start</div>`; }
   tags.forEach(tag=>{ const list=byTag[tag];
-    log+=`<div class="grp"><div class="ghead"><span class="t">${list[0].time||''}</span><span><span class="hash">#</span>${tag}</span></div>`;
-    list.forEach(m=>{ log+=`<div class="item"><span class="nm">${m.name}</span><span class="d"></span><span class="kc">${Math.round(m.kcal)||0}</span><span class="cf">${m.caffeine?Math.round(m.caffeine)+'mg':''}</span><span class="x" data-act="delmeal" data-id="${m.id}">×</span></div>`; });
+    const mt={kcal:0,protein:0,carbs:0,fat:0}; list.forEach(m=>{mt.kcal+=+m.kcal||0;mt.protein+=+m.protein||0;mt.carbs+=+m.carbs||0;mt.fat+=+m.fat||0;});
+    log+=`<div class="grp"><div class="ghead"><span><span class="hash">#</span>${tag}</span><span class="mtot">${Math.round(mt.kcal)} kcal · ${Math.round(mt.protein)}P ${Math.round(mt.carbs)}C ${Math.round(mt.fat)}F</span></div>`;
+    list.forEach(m=>{ log+=`<div class="item" data-act="viewmeal" data-id="${m.id}"><span class="nm">${m.name}</span><span class="d"></span><span class="macq">${Math.round(m.protein)||0}/${Math.round(m.carbs)||0}/${Math.round(m.fat)||0}</span><span class="kc">${Math.round(m.kcal)||0}</span></div>`; });
     log+=`</div>`;
   });
 
@@ -578,6 +581,11 @@ document.getElementById('app').addEventListener('click',e=>{
   else if(a==='save'){ saveSession(); }
   else if(a==='togglemacros'){ state.macroOpen=!state.macroOpen; render(); }
   else if(a==='toggleMacroUnit'){ state.macroPct=!state.macroPct; render(); }
+  else if(a==='toggleMacroRem'){ state.macroRem=!state.macroRem; render(); }
+  else if(a==='viewmeal'){ openMealDetail(el.dataset.id); }
+  else if(a==='pickmealtag'){ const e=document.getElementById('fa_tagtxt'); if(e)e.value=el.dataset.v; }
+  else if(a==='editmeal'){ const t=todayISO(); const m=(db.meals[t]||[]).find(x=>x.id===window._mealId); if(m){ const q=m.qty||1; const per={}; ['kcal','protein','carbs','fat','sugar','sodium','potassium','fiber','caffeine','water'].forEach(k=>per[k]=(+m[k]||0)/q); closeModal(); openVerify({name:(m.name||'').replace(/ ×[\\d.]+$/,''),serving:m.serving||'1 serving',per},{isNew:false,tag:m.tag,qty:q,editId:m.id}); } }
+  else if(a==='delmealnow'){ const t=todayISO(); db.meals[t]=(db.meals[t]||[]).filter(m=>m.id!==window._mealId); save(); closeModal(); render(); }
   else if(a==='vfixkcal'){ const P=parseFloat(val('v_protein'))||0,C=parseFloat(val('v_carbs'))||0,F=parseFloat(val('v_fat'))||0; const e=document.getElementById('v_kcal'); if(e){ e.value=Math.round(P*4+C*4+F*9); e.dispatchEvent(new Event('input',{bubbles:true})); } }
   else if(a==='addmeal'||a==='foodadd'){ openFoodAdd(); }
   else if(a==='pickfood'){ const f=(db.foods||[]).find(x=>x.id===el.dataset.id); if(f) openVerify(f,{qty:1,fromId:f.id,tag:curTag()}); }
@@ -661,10 +669,13 @@ function openMachineEdit(exi){
   document.getElementById('mc_na').onclick=()=>{ setMachine(w.gym,ex,{brand:'',setup:'',na:true}); closeModal(); render(); };
 }
 function foodPer(){ return {kcal:0,protein:0,carbs:0,fat:0,sugar:0,sodium:0,potassium:0,fiber:0,caffeine:0,water:0}; }
-function curTag(){ const e=document.querySelector('#fa_tag .t.on'); return e?e.dataset.v:'breakfast'; }
+function mealSuggestions(){ const def=['breakfast','lunch','snack','dinner']; const used=new Set(); Object.values(db.meals||{}).forEach(arr=>arr.forEach(m=>{ if(m.tag)used.add(m.tag); })); return [...new Set([...def,...used])]; }
+function curTag(){ const e=document.getElementById('fa_tagtxt'); const v=e?e.value.trim():''; return v||'meal'; }
 function openFoodAdd(){
+  const sugg=mealSuggestions();
   openModal(`<h3>add food</h3>
-   <div class="field"><label>MEAL</label><div class="toggles" id="fa_tag"><button class="t on" data-act="optpick" data-v="breakfast">breakfast</button><button class="t" data-act="optpick" data-v="lunch">lunch</button><button class="t" data-act="optpick" data-v="snack">snack</button><button class="t" data-act="optpick" data-v="dinner">dinner</button></div></div>
+   <div class="field"><label>MEAL (escribe o elige)</label><input id="fa_tagtxt" value="breakfast" placeholder="ej. pre-workout, cena tardía" autocomplete="off"/>
+   <div class="chips" id="fa_sugg">${sugg.map(s=>`<span class="chip" data-act="pickmealtag" data-v="${s.replace(/"/g,'&quot;')}">${s}</span>`).join('')}</div></div>
    <div class="field"><label>YOUR FOODS</label><input id="fa_q" placeholder="search saved foods" autocomplete="off"/></div>
    <div id="fa_list" style="max-height:148px;overflow-y:auto;margin-bottom:8px"></div>
    <div class="sheetbtns"><button class="ok" data-act="fbarcode">⌗ barcode</button><button class="ok" data-act="fsearch">🔍 search</button></div>
@@ -790,7 +801,7 @@ function parseNutritionText(txt){
 function openVerify(food, opts){
   opts=opts||{}; const p=Object.assign(foodPer(), food.per||{});
   const f=(id,lbl,v,step)=>`<div><label>${lbl}</label><input id="${id}" type="number" inputmode="decimal"${step?' step="'+step+'"':''} value="${(v===0||v)?v:''}"/></div>`;
-  window._verify={tag:opts.tag||curTag(),barcode:food.barcode||'',fromId:opts.fromId||null};
+  window._verify={tag:opts.tag||curTag(),barcode:food.barcode||'',fromId:opts.fromId||null,editId:opts.editId||null};
   openModal(`<h3>${opts.isNew?'verify &amp; add':'log food'}</h3>
    <div class="field"><label>NAME</label><input id="v_name" value="${(food.name||'').replace(/"/g,'&quot;')}" placeholder="food name"/></div>
    <div class="field row2"><div><label>SERVING</label><input id="v_serv" value="${(food.serving||'1 serving').replace(/"/g,'&quot;')}"/></div><div><label>QTY (servings)</label><input id="v_qty" type="number" inputmode="decimal" step="0.25" value="${opts.qty||1}"/></div></div>
@@ -812,12 +823,21 @@ function readVerify(){
   const n=id=>parseFloat(val(id))||0;
   const per={kcal:n('v_kcal'),protein:n('v_protein'),carbs:n('v_carbs'),fat:n('v_fat'),sugar:n('v_sugar'),sodium:n('v_sodium'),potassium:n('v_potassium'),fiber:n('v_fiber'),caffeine:n('v_caffeine'),water:n('v_water')};
   const vv=window._verify||{};
-  return {name:val('v_name'),serving:val('v_serv'),qty:parseFloat(val('v_qty'))||1,per,barcode:vv.barcode||'',tag:vv.tag||'breakfast',fromId:vv.fromId||null};
+  return {name:val('v_name'),serving:val('v_serv'),qty:parseFloat(val('v_qty'))||1,per,barcode:vv.barcode||'',tag:vv.tag||'breakfast',fromId:vv.fromId||null,editId:vv.editId||null};
+}
+function openMealDetail(id){
+  const t=todayISO(); const m=(db.meals[t]||[]).find(x=>x.id===id); if(!m)return; window._mealId=id;
+  const row=(lbl,v,u)=>`<div class="line"><span class="k">${lbl}</span><span class="dots"></span><span class="v">${v?(Math.round(v)+' '+u):'—'}</span></div>`;
+  openModal(`<h3>${m.name}</h3>
+   <div class="submeta" style="margin-bottom:8px">#${m.tag}${m.time?' · '+m.time:''}${m.serving?' · '+m.serving:''}${m.qty&&m.qty!==1?' · ×'+m.qty:''}</div>
+   ${row('kcal',m.kcal,'')}${row('protein',m.protein,'g')}${row('carbs',m.carbs,'g')}${row('fat',m.fat,'g')}${row('sugar',m.sugar,'g')}${row('fiber',m.fiber,'g')}${row('sodium',m.sodium,'mg')}${row('potassium',m.potassium,'mg')}${row('caffeine',m.caffeine,'mg')}${row('liquid',m.water,'L')}
+   <div class="sheetbtns" style="margin-top:12px"><button class="ok" data-act="editmeal">edit</button><button class="cancel" data-act="delmealnow">delete</button><button class="cancel" data-act="closemodal">close</button></div>`);
 }
 function commitFood(saveToDb){
   const v=readVerify(); if(!v.name){ alert('Pon nombre.'); return; }
   const t=todayISO(); db.meals[t]=db.meals[t]||[];
-  const item={id:uid(),time:nowHM(),tag:v.tag,name:v.name+(v.qty!==1?' ×'+v.qty:''),qty:v.qty};
+  if(v.editId){ const m=(db.meals[t]||[]).find(x=>x.id===v.editId); if(m){ m.tag=v.tag; m.name=v.name+(v.qty!==1?' ×'+v.qty:''); m.qty=v.qty; m.serving=v.serving; for(const k in v.per){ m[k]=(v.per[k]||0)*v.qty; } save(); closeModal(); render(); return; } }
+  const item={id:uid(),time:nowHM(),tag:v.tag,name:v.name+(v.qty!==1?' ×'+v.qty:''),qty:v.qty,serving:v.serving};
   for(const k in v.per){ item[k]=(v.per[k]||0)*v.qty; }
   db.meals[t].push(item);
   if(saveToDb){ db.foods=db.foods||[];
