@@ -410,20 +410,22 @@ function renderMacros(){
   const g=db.settings.goals; const {items,t}=macroTotals();
   const left=Math.round(g.kcal-t.kcal); const pct=g.kcal?t.kcal/g.kcal*100:0;
   const open=state.macroOpen;
-  const macroRing=(lbl,val,goal,unit)=>{const p=goal?val/goal*100:0;return `<div class="cell">${ringHTML(p,'<div class="num">'+Math.round(val)+'</div>')}<div class="cap">${lbl}</div><div class="sub">/ ${goal} ${unit}</div></div>`;};
+  const mkcal=(t.protein*4+t.carbs*4+t.fat*9)||1;
+  const macroRing=(lbl,val,goal,unit,kpg)=>{const p=goal?val/goal*100:0;const ctr=state.macroPct?Math.round(val*kpg/mkcal*100)+'%':Math.round(val);return `<div class="cell">${ringHTML(p,'<div class="num">'+ctr+'</div>')}<div class="cap">${lbl}</div><div class="sub">${state.macroPct?'de kcal':'/ '+goal+' '+unit}</div></div>`;};
   const intakeRow=(lbl,val,goal,unit,extra,dec)=>{const p=goal?val/goal*100:0;const disp=dec?(+val).toFixed(dec):Math.round(val);return `<div class="mrow"><span class="ml">${lbl}</span><div class="bar"><i style="width:${Math.min(100,p)}%"></i></div><span class="mv">${disp} <span class="g">/ ${goal} ${unit}</span>${extra||''}</span></div>`;};
   const bl=bloating(t,g);
   let details = !open?'' : `<hr class="rule"/>`
-    +`<div class="rings">${macroRing('protein',t.protein,g.protein,'g')}${macroRing('carbs',t.carbs,g.carbs,'g')}${macroRing('fat',t.fat,g.fat,'g')}</div>`
+    +`<div style="display:flex;justify-content:flex-end;margin-bottom:8px"><a data-act="toggleMacroUnit" style="font-size:9px;color:var(--o50);cursor:pointer">[${state.macroPct?'ver gramos':'ver %'}]</a></div>`
+    +`<div class="rings">${macroRing('protein',t.protein,g.protein,'g',4)}${macroRing('carbs',t.carbs,g.carbs,'g',4)}${macroRing('fat',t.fat,g.fat,'g',9)}</div>`
     +`<hr class="rule"/><div class="grp-label">INTAKE</div>`
     +intakeRow('sodium',t.sodium,g.sodium,'mg')
     +intakeRow('potassium',t.potassium,g.potassium,'mg')
     +intakeRow('sugar',t.sugar,g.sugar,'g')
     +intakeRow('fiber',t.fiber,g.fiber,'g')
-    +intakeRow('water',t.water,g.water,'L',null,1)
+    +intakeRow('liquids',t.water,g.water,'L',null,1)
     +`<hr class="rule"/>`
     +intakeRow('bloat risk',bl.sc,100,'',`<span class="pill">${bl.label}</span>`)
-    +`<div class="submeta">est. from sodium · potassium · water</div>`;
+    +`<div class="submeta">est. from sodium · potassium · liquids</div>`;
 
   // food log grouped by tag
   const order=['breakfast','lunch','snack','dinner']; const byTag={};
@@ -564,6 +566,8 @@ document.getElementById('app').addEventListener('click',e=>{
   else if(a==='editmach'){ openMachineEdit(exi); }
   else if(a==='save'){ saveSession(); }
   else if(a==='togglemacros'){ state.macroOpen=!state.macroOpen; render(); }
+  else if(a==='toggleMacroUnit'){ state.macroPct=!state.macroPct; render(); }
+  else if(a==='vfixkcal'){ const P=parseFloat(val('v_protein'))||0,C=parseFloat(val('v_carbs'))||0,F=parseFloat(val('v_fat'))||0; const e=document.getElementById('v_kcal'); if(e){ e.value=Math.round(P*4+C*4+F*9); e.dispatchEvent(new Event('input',{bubbles:true})); } }
   else if(a==='addmeal'||a==='foodadd'){ openFoodAdd(); }
   else if(a==='pickfood'){ const f=(db.foods||[]).find(x=>x.id===el.dataset.id); if(f) openVerify(f,{qty:1,fromId:f.id,tag:curTag()}); }
   else if(a==='fbarcode'){ openBarcode(); }
@@ -780,10 +784,15 @@ function openVerify(food, opts){
    <div class="field row2">${f('v_carbs','CARBS g',p.carbs)}${f('v_fat','FAT g',p.fat)}</div>
    <div class="field row2">${f('v_sugar','SUGAR g',p.sugar)}${f('v_fiber','FIBER g',p.fiber)}</div>
    <div class="field row2">${f('v_sodium','SODIUM mg',p.sodium)}${f('v_potassium','POTASSIUM mg',p.potassium)}</div>
-   <div class="field row2">${f('v_caffeine','CAFFEINE mg',p.caffeine)}${f('v_water','WATER L',p.water,'0.1')}</div>
-   <div class="submeta" style="margin:2px 0 8px">valores por 1 serving · qty multiplica al loggear</div>
+   <div class="field row2">${f('v_caffeine','CAFFEINE mg',p.caffeine)}${f('v_water','LIQUID L',p.water,'0.1')}</div>
+   <div class="submeta" style="margin:2px 0 2px">valores por 1 serving · qty multiplica</div>
+   <div id="v_sum" class="submeta" style="margin:0 0 8px"></div>
    ${opts.ocrText?`<details style="margin-bottom:8px"><summary class="submeta" style="cursor:pointer">texto leído (revisa y corrige arriba)</summary><pre style="white-space:pre-wrap;font-size:9px;color:var(--o50);max-height:120px;overflow:auto;margin:6px 0 0">${(opts.ocrText||'').replace(/[<&]/g,c=>c==='<'?'&lt;':'&amp;')}</pre></details>`:''}
    <div class="sheetbtns"><button class="ok" data-act="verifysave">save + log</button><button class="cancel" data-act="verifylog">log only</button></div>`);
+  const vq=id=>parseFloat(val(id))||0;
+  const vrecalc=()=>{ const q=vq('v_qty')||1,P=vq('v_protein'),C=vq('v_carbs'),F=vq('v_fat'),K=vq('v_kcal'); const mk=Math.round(P*4+C*4+F*9); const sum=document.getElementById('v_sum'); if(!sum)return; const warn=(K&&mk&&Math.abs(K-mk)/Math.max(K,mk)>0.12)?' · <span style="color:#c8a24d">⚠ kcal≠macros</span> <a data-act="vfixkcal" style="text-decoration:underline;cursor:pointer">usar '+mk+'</a>':''; sum.innerHTML='→ loggea: <b style="color:var(--fg)">'+Math.round(K*q)+'</b> kcal · '+Math.round(P*q)+'P '+Math.round(C*q)+'C '+Math.round(F*q)+'F'+warn; };
+  ['v_qty','v_kcal','v_protein','v_carbs','v_fat'].forEach(id=>{ const e=document.getElementById(id); if(e)e.addEventListener('input',vrecalc); });
+  vrecalc();
 }
 function readVerify(){
   const n=id=>parseFloat(val(id))||0;
