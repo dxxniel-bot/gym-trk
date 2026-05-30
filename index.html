@@ -99,7 +99,7 @@
   .mgroup{margin-top:20px;} .mhead{font-size:11px; color:var(--o50); margin-bottom:11px;}
   .mbody{border-left:1px solid var(--o12); padding-left:14px; margin-left:4px;}
   .ex{margin-bottom:16px;} .ex:last-child{margin-bottom:0;}
-  .exhead{display:flex; align-items:baseline; flex-wrap:wrap; gap:7px; margin-bottom:9px;} .exhead .n{font-size:16px; font-weight:800;} .exhead .mch{font-size:11px; color:var(--o50);} .exhead .note{font-size:10px; color:var(--o35);}
+  .exhead{display:flex; align-items:baseline; flex-wrap:wrap; gap:7px; margin-bottom:9px;} .exhead .n{font-size:16px; font-weight:800;} .exhead .mch{font-size:11px; color:var(--o50); cursor:pointer; border-bottom:.5px dashed var(--o20);} .exhead .mch.empty{color:var(--o35); border-bottom:none;} .exhead .mch:active{color:var(--fg);} .exhead .mset{font-size:10px; color:var(--o40); cursor:pointer;} .exhead .note{font-size:10px; color:var(--o35);}
   .thead,.srow{display:grid; gap:4px; align-items:center;} .thead{margin-bottom:5px;} .thead .cl{font-size:8px; color:var(--o35); text-align:center; letter-spacing:.5px;} .thead .cl.w{text-align:left; padding-left:2px;}
   .gc-free{grid-template-columns:22px 1fr 38px 44px 40px 18px;} .gc-mach{grid-template-columns:22px 26px 1fr 38px 44px 40px 18px;} .gc-uni{grid-template-columns:20px 1fr 38px 44px 40px 18px;}
   .srow{margin-bottom:5px;} .setn{font-size:11px; color:var(--o50); text-align:center; cursor:pointer;} .setn.done{color:var(--fill); font-weight:700;}
@@ -169,6 +169,7 @@ function seed(){
     settings:{unit:'lbs',goals:{kcal:2200,protein:165,carbs:240,fat:65,sodium:2300,potassium:3500,sugar:50,fiber:30,water:3.0,caffeine:400}},
     activeGym:'',
     gyms:[],
+    machines:{},
     rotIdx:0,
     split:{name:'push/pull A/B', days:[
       {id:'d1',name:'chest/push A',tag:'@ RIR · F',metric:'rir',allowFailure:true,exercises:[
@@ -231,7 +232,7 @@ function seedPrev(){
 // ---------- persistence ----------
 let db;
 function load(){ try{const r=localStorage.getItem(LS_KEY); if(!r)return seed(); const d=JSON.parse(r); return migrate(d);}catch(e){console.warn('load failed',e);return seed();} }
-function migrate(d){ if(!d.version){d.version=1;} if(!d.meals)d.meals={}; if(!d.foods)d.foods=[]; if(!d.settings)d.settings={goals:seed().settings.goals}; return d; }
+function migrate(d){ if(!d.version){d.version=1;} if(!d.meals)d.meals={}; if(!d.foods)d.foods=[]; if(!d.machines)d.machines={}; if(!d.settings)d.settings={goals:seed().settings.goals}; return d; }
 function save(){ try{localStorage.setItem(LS_KEY,JSON.stringify(db));}catch(e){console.warn('save failed',e);} }
 
 // ---------- helpers ----------
@@ -251,6 +252,19 @@ function newWorkSession(){
   });
   return {id:uid(),date:todayISO(),dayId:day.id,dayName:day.name,gym:db.activeGym,startTs:nowHM(),exercises:exs};
 }
+// ---- per-gym machine/brand/setup linking ----
+function escTxt(s){ return (s||'').replace(/[<&]/g,c=>c==='<'?'&lt;':'&amp;'); }
+function exKey(ex){ return ((ex&&ex.name)||'').toLowerCase().trim(); }
+// resolved record {brand,setup,na} for an exercise at a given gym (falls back to split default)
+function machineRec(gym,ex){
+  const m=gym&&db.machines&&db.machines[gym]; const k=exKey(ex);
+  if(m&&Object.prototype.hasOwnProperty.call(m,k)){ const r=m[k];
+    if(typeof r==='string') return {brand:r,setup:'',na:false};
+    return {brand:r.brand||'',setup:r.setup||'',na:!!r.na}; }
+  return {brand:(ex&&ex.machine)||'',setup:'',na:false};
+}
+function setMachine(gym,ex,rec){ if(!gym)return; db.machines=db.machines||{}; db.machines[gym]=db.machines[gym]||{};
+  db.machines[gym][exKey(ex)]={brand:(rec.brand||'').trim(),setup:(rec.setup||'').trim(),na:!!rec.na}; save(); }
 
 // stats
 function stat7(){
@@ -327,7 +341,15 @@ function renderSetRow(exi,si,set,ex,allowF){
 }
 function renderExercise(exi,ex,allowF){
   const sets=ex.sets||[]; const isM=ex.type==='machine'; const isU=ex.unilateral;
-  let head=`<div class="exhead"><span class="n">${ex.name}</span>${ex.machine?`<span class="mch">${ex.machine}</span>`:''}${isU?'<span class="note">[unilateral]</span>':''}</div>`;
+  const rec=machineRec((db.activeWork||{}).gym,ex); const ed=`data-act="editmach" data-exi="${exi}"`;
+  let mhtml;
+  if(rec.na){ mhtml=`<span class="mch empty" ${ed}>n/a</span>`; }
+  else { let p='';
+    if(rec.brand) p+=`<span class="mch" ${ed}>${escTxt(rec.brand)}</span>`;
+    if(rec.setup) p+=`<span class="mset" ${ed}>⚙ ${escTxt(rec.setup)}</span>`;
+    if(!rec.brand&&!rec.setup) p=`<span class="mch empty" ${ed}>+ machine</span>`;
+    mhtml=p; }
+  let head=`<div class="exhead"><span class="n">${ex.name}</span>${mhtml}${isU?'<span class="note">[unilateral]</span>':''}</div>`;
   let rows='';
   if(isU){
     let thead=`<div class="thead" style="grid-template-columns:22px 20px 1fr 38px 44px 40px 18px;"><div class="cl"></div><div class="cl">L/R</div><div class="cl w">weight</div><div class="cl">unit</div><div class="cl">reps</div><div class="cl">rir</div><div class="cl"></div></div>`;
@@ -538,6 +560,7 @@ document.getElementById('app').addEventListener('click',e=>{
   else if(a==='dropset'){ const ex=db.activeWork.exercises[exi]; ex.sets.push(Object.assign(emptySet(ex),{isDrop:true,fsOn:true})); save(); state._scroll=document.getElementById('view').scrollTop; render(); }
   else if(a==='delset'){ const ex=db.activeWork.exercises[exi]; if(ex.unilateral){const p=Math.floor(si/2)*2; ex.sets.splice(p,2);} else ex.sets.splice(si,1); save(); state._scroll=document.getElementById('view').scrollTop; render(); }
   else if(a==='addex'){ openAddExercise(); }
+  else if(a==='editmach'){ openMachineEdit(exi); }
   else if(a==='save'){ saveSession(); }
   else if(a==='togglemacros'){ state.macroOpen=!state.macroOpen; render(); }
   else if(a==='addmeal'||a==='foodadd'){ openFoodAdd(); }
@@ -573,7 +596,7 @@ function saveSession(){
   const has=w.exercises.some(e=>e.sets.some(s=>s.w||s.r));
   if(!has && !confirm('No registraste sets. ¿Guardar de todos modos?')){return;}
   const sess={id:w.id,date:w.date,dayId:w.dayId,dayName:w.dayName,gym:w.gym,type:'training',
-    exercises:w.exercises.map(e=>({name:e.name,muscle:e.muscle,sets:e.sets.filter(s=>s.w||s.r)}))};
+    exercises:w.exercises.map(e=>{const r=machineRec(w.gym,e); return {name:e.name,muscle:e.muscle,machine:r.na?'':r.brand,setup:r.na?'':r.setup,sets:e.sets.filter(s=>s.w||s.r)};})};
   const idx=db.split.days.findIndex(d=>d.id===w.dayId); db.rotIdx=(idx>=0?idx:db.rotIdx)+1; db.activeWork=null; state.selDay=null; db.sessions.push(sess); save(); go('home');
 }
 
@@ -606,6 +629,17 @@ function openAddExercise(){
     for(let i=0;i<n;i++){ if(ex.unilateral){ex.sets.push(emptySet(ex,'R'));ex.sets.push(emptySet(ex,'L'));} else ex.sets.push(emptySet(ex)); }
     save(); closeModal(); render();
   };
+}
+function openMachineEdit(exi){
+  const w=db.activeWork; if(!w)return; const ex=w.exercises[exi]; if(!ex)return; const rec=machineRec(w.gym,ex);
+  openModal(`<h3>machine / setup</h3>
+   <div class="submeta" style="margin-bottom:10px">${escTxt(ex.name)} · en <b>${escTxt(w.gym)}</b></div>
+   <div class="field"><label>MÁQUINA / MARCA</label><input id="mc_brand" value="${(rec.brand||'').replace(/"/g,'&quot;')}" placeholder="ej. Hammer Strength, Technogym" autocomplete="off"/></div>
+   <div class="field"><label>SETUP (opcional)</label><textarea id="mc_setup" style="width:100%;height:54px;border:.5px solid var(--o20);background:transparent;color:var(--fg);font-family:'JetBrains Mono',monospace;font-size:11px;padding:8px" placeholder="asiento 4 · respaldo 2 · pin 60kg">${escTxt(rec.setup||'')}</textarea></div>
+   <div class="submeta" style="margin:2px 0 10px">queda vinculado a <b>${escTxt(w.gym)}</b> · al cambiar de gym se muestra el suyo</div>
+   <div class="sheetbtns"><button class="ok" id="mc_save">guardar</button><button class="cancel" id="mc_na">N/A</button><button class="cancel" data-act="closemodal">cancel</button></div>`);
+  document.getElementById('mc_save').onclick=()=>{ setMachine(w.gym,ex,{brand:val('mc_brand'),setup:val('mc_setup'),na:false}); closeModal(); render(); };
+  document.getElementById('mc_na').onclick=()=>{ setMachine(w.gym,ex,{brand:'',setup:'',na:true}); closeModal(); render(); };
 }
 function foodPer(){ return {kcal:0,protein:0,carbs:0,fat:0,sugar:0,sodium:0,potassium:0,fiber:0,caffeine:0,water:0}; }
 function curTag(){ const e=document.querySelector('#fa_tag .t.on'); return e?e.dataset.v:'breakfast'; }
