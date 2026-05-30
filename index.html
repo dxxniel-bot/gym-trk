@@ -86,7 +86,7 @@
   /* macros rings */
   .hero{width:100%; background:none; border:0; color:inherit; font:inherit; display:flex; flex-direction:column; align-items:center; cursor:pointer;}
   .ring{position:relative;} .ring svg{display:block; width:100%; height:100%;}
-  .ring-track{fill:none; stroke:var(--track);} .ring-fill{fill:none; stroke:var(--fill); stroke-linecap:round;}
+  .ring-track{fill:none; stroke:var(--track); transition:stroke .28s ease;} .ring-fill{fill:none; stroke:var(--fill); stroke-linecap:round; transition:stroke-dasharray .32s ease, stroke .28s ease;}
   .ring-center{position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; line-height:1;}
   .ring.lg{width:132px; height:132px;} .ring.lg .ring-track,.ring.lg .ring-fill{stroke-width:1.9;} .ring.lg .num{font-size:26px; font-weight:800; letter-spacing:-1px;} .ring.lg .of{font-size:10px; color:var(--o40); margin-top:6px;}
   .ring.md{width:72px; height:72px;} .ring.md .ring-track,.ring.md .ring-fill{stroke-width:2.2;} .ring.md .num{font-size:13px; font-weight:700;}
@@ -94,18 +94,28 @@
   .rings{display:flex; justify-content:space-between; padding:0 4px;} .cell{display:flex; flex-direction:column; align-items:center; text-align:center; flex:1;}
   .cap{font-size:10px; color:var(--fg); margin-top:9px;} .sub{font-size:9px; color:var(--o40); margin-top:2px;}
   .cell{cursor:pointer;}
-  /* remaining mode: inverted theme — bright base ring with a notch cut out, dimmed number */
-  .ring.inv .ring-track{stroke:var(--o40);} .ring.inv .ring-fill{stroke:var(--frame);} .ring.inv .ring-center .num{color:var(--o50);}
-  .cell .sub{transition:color .15s;}
+  /* remaining: TRUE inversion — full ring = bright (fill color), consumed arc = dark notch, only remaining arc glows */
+  .ring.inv .ring-track{stroke:var(--fill);} .ring.inv .ring-fill{stroke:var(--bg);}
+  .ring.inv .ring-center .num{color:var(--o60); transition:color .25s;}
+  .cell .sub{transition:color .25s;} .cell .cap{transition:color .25s;}
   .grp-label{font-size:9px; color:var(--o50); letter-spacing:1.5px; margin-bottom:14px;}
   .mrow{display:grid; grid-template-columns:78px 1fr auto; align-items:center; column-gap:14px; margin-top:16px; font-size:11px;}
   .mrow:first-of-type{margin-top:0;} .mrow .ml{color:var(--o50);} .mrow .mv{color:var(--o60); font-size:10px; white-space:nowrap;} .mrow .mv .g{color:var(--o40);}
   .bar{height:4px; background:var(--track);} .bar>i{display:block; height:100%; background:var(--fill);}
   .pill{font-size:9px; color:var(--o50); border:1px solid var(--faint); padding:1px 5px; margin-left:6px;}
 
-  /* food log */
-  .grp{margin-bottom:14px;} .ghead{display:flex; justify-content:space-between; align-items:baseline; gap:10px; color:var(--o50); font-size:10px; margin-bottom:7px;} .ghead .t{color:var(--o60);} .ghead .hash{color:var(--faint);} .ghead .mtot{color:var(--o40); font-size:9px; white-space:nowrap;}
-  .item{display:flex; align-items:baseline; gap:8px; padding:5px 0 5px 22px; font-size:11px; cursor:pointer;} .item:active{background:var(--o10);} .item .nm{color:var(--o60); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:48%;} .item .d{flex:1; border-bottom:1px dotted var(--line); transform:translateY(-3px);} .item .kc{color:var(--fg); width:34px; text-align:right;} .item .macq{color:var(--o40); font-size:9px; white-space:nowrap;}
+  /* food log — grid 3-col: name | macros(76px) | kcal(40px) */
+  .grp{margin-bottom:14px;}
+  .ghead,.item{display:grid; grid-template-columns:1fr 76px 40px; column-gap:8px; align-items:baseline; padding:0 0 0 22px; font-size:10px; margin-bottom:0;}
+  .ghead{color:var(--o50); margin-bottom:7px; padding-bottom:0;}
+  .ghead .hash{color:var(--faint);}
+  .ghead .gmac{color:var(--o40); font-size:9px; text-align:right;}
+  .ghead .gkc{color:var(--o60); font-size:9px; text-align:right;}
+  .item{padding:5px 0 5px 22px; font-size:11px; cursor:pointer;}
+  .item:active{background:var(--o10);}
+  .item .nm{color:var(--o60); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .item .macq{color:var(--o40); font-size:9px; text-align:right; white-space:nowrap;}
+  .item .kc{color:var(--fg); font-size:11px; text-align:right;}
 
   /* workout sets table */
   .wprog{height:2px; background:var(--o10); margin:8px 0 0;} .wprog>i{display:block; height:100%; background:var(--fill);}
@@ -499,8 +509,8 @@ function renderMacros(){
   if(!items.length){ log=`<div class="empty">no meals logged today<br/>tap [+ add] to start</div>`; }
   tags.forEach(tag=>{ const list=byTag[tag];
     const mt={kcal:0,protein:0,carbs:0,fat:0}; list.forEach(m=>{mt.kcal+=+m.kcal||0;mt.protein+=+m.protein||0;mt.carbs+=+m.carbs||0;mt.fat+=+m.fat||0;});
-    log+=`<div class="grp"><div class="ghead"><span><span class="hash">#</span>${tag}</span><span class="mtot">${Math.round(mt.protein)}P ${Math.round(mt.carbs)}C ${Math.round(mt.fat)}F · ${Math.round(mt.kcal)} kcal</span></div>`;
-    list.forEach(m=>{ log+=`<div class="item" data-act="viewmeal" data-id="${m.id}"><span class="nm">${m.name}</span><span class="d"></span><span class="macq">${Math.round(m.protein)||0}P ${Math.round(m.carbs)||0}C ${Math.round(m.fat)||0}F</span><span class="kc">${Math.round(m.kcal)||0}</span></div>`; });
+    log+=`<div class="grp"><div class="ghead"><span><span class="hash">#</span>${tag}</span><span class="gmac">${Math.round(mt.protein)}P ${Math.round(mt.carbs)}C ${Math.round(mt.fat)}F</span><span class="gkc">${Math.round(mt.kcal)}</span></div>`;
+    list.forEach(m=>{ log+=`<div class="item" data-act="viewmeal" data-id="${m.id}"><span class="nm">${m.name}</span><span class="macq">${Math.round(m.protein)||0}P ${Math.round(m.carbs)||0}C ${Math.round(m.fat)||0}F</span><span class="kc">${Math.round(m.kcal)||0}</span></div>`; });
     log+=`</div>`;
   });
 
