@@ -13,7 +13,7 @@ A mobile-first web app (works on iPhone via "Add to Home Screen") to log gym wor
 ## How to run / deploy
 - **Run locally:** static files; serve the folder and open the port. On **mopo** the repo is cloned at `G:\My Drive\AI_SYSTEM\projects\gym-trk\repo\` and there's a `.claude/launch.json` (one dir up) that serves it via `python -m http.server 4599 -d repo` for the Claude Code preview. On XboxL it was `X:\freelance\gym-trk\`.
 - **Deploy:** `git push` to `main` → GitHub Pages auto-rebuilds (~1-2 min). No backend. **The iPhone is the test field** — camera/PWA need HTTPS, so always commit+push to deploy; localhost isn't enough for on-device testing.
-- **Bump `sw.js` cache** (`gymtrk-vN`) on every shippable change so devices pick up the new build. Currently at **v6**.
+- **Bump `sw.js` cache** (`gymtrk-vN`) on every shippable change so devices pick up the new build. Currently at **v19**.
 - **Git identity** (set locally in the clone): `dxxniel-bot <dxxniel-bot@users.noreply.github.com>`. Commit directly to `main` (that IS the deploy flow — don't branch).
 - **Continue from another machine:** `git clone https://github.com/dxxniel-bot/gym-trk` (or `git pull` in the existing clone), edit, push.
 
@@ -36,7 +36,9 @@ A mobile-first web app (works on iPhone via "Add to Home Screen") to log gym wor
 - **No-data-loss rule:** keep the LS key stable, never clear it, migrate additively in `migrate()`. Editing code never touches LS. `[settings]` has export/import JSON (backup) + "log in" restores from a pasted backup.
 
 ### Screens (state.screen)
-`landing` (create account / log in) → `onboard` (biometrics → auto-calc goals, Mifflin-St Jeor) → `home` (gym: rotation day, //NEXT, start/rest/skip, //PREV, //STATS) → `workout` (live set logging) · `macros` (kcal ring + macro rings + intake bars + bloat risk + food log) · `progress` (stub) · `settings` (export/import/reset).
+`landing` → `onboard` → `home` (gym: rotation w/ ‹›day picker, //NEXT, start/rest/skip, log-later, **//VOLUME** weekly-sets-per-muscle vs MEV/MAV/MRV, //STATS) · `workout` (live logging + bg duration; log-later mode = backdated + date/dur + advance-rotation toggle) · `macros` (kcal ring + macro rings w/ g⇄% & logged⇄remaining toggles + intake bars + bloat + food log w/ per-item P/C/F + per-meal totals + tap-to-detail) · `splitedit` (rename/add/remove days & exercises, edit exercise) · `history` (past sessions → view/edit/delete) · `settings` (//PROFILE editable, //TRAINING, //DATA export/import) · `progress` (stub).
+Gym stats helpers: `weeklySets(days)`, `VOL_LANDMARKS` (RP MEV/MAV/MRV), `volStatus()`, `isHardSet()` (RIR≤4), `e1rmTrend()` (Epley, not yet surfaced). Top-lift & raw-volume removed on purpose.
+Native-feel: viewport `maximum-scale=1,user-scalable=no`, body `position:fixed`, inputs `font-size:16px`, frame fills screen `@media(max-width:440px)`.
 
 ### External (client-side, no keys/backend)
 - **OpenFoodFacts** — barcode lookup (`/api/v2/product/{code}.json`) + name search (`/cgi/search.pl`). Barcode-not-found → offers **photo-of-label OCR** (primary) and name search (both link the food to the scanned code in `foods[]`).
