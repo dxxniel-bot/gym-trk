@@ -277,6 +277,7 @@ function stat7(){
 function streak(){ const ds=[...new Set(db.sessions.filter(s=>s.type!=='rest').map(s=>s.date))].sort().reverse(); if(!ds.length)return 0; let st=0; let d=new Date(); for(;;){const iso=todayISO(d); if(ds.includes(iso)){st++;d.setDate(d.getDate()-1);} else {if(iso===todayISO())d.setDate(d.getDate()-1); else break;}} return st; }
 function topLift(){ const m={}; db.sessions.forEach(s=>{if(s.type==='rest')return;(s.exercises||[]).forEach(e=>{let v=0;(e.sets||[]).forEach(st=>v+=(parseFloat(st.w)||0)*(parseFloat(st.r)||0)); m[e.name]=(m[e.name]||0)+v;});}); let best='—',bv=-1; for(const k in m){if(m[k]>bv){bv=m[k];best=k;}} return best; }
 function kfmt(n){ return n>=1000? (n/1000).toFixed(1)+'k' : String(Math.round(n)); }
+function elapsedStr(ms){ if(!ms)return''; const s=Math.max(0,Math.round((Date.now()-ms)/1000)); const h=Math.floor(s/3600),m=Math.floor(s%3600/60); return h?h+'h '+pad(m)+'m':m+'m'; }
 
 // ---------- render: nav ----------
 function renderNav(){
@@ -592,6 +593,8 @@ document.getElementById('app').addEventListener('click',e=>{
   else if(a==='changegym'){}
 });
 document.getElementById('app').addEventListener('change',e=>{
+  const sd=e.target.closest('[data-act="setdate"]'); if(sd){ if(db.activeWork){db.activeWork.date=sd.value;save();} return; }
+  const du=e.target.closest('[data-act="setdur"]'); if(du){ if(db.activeWork){db.activeWork.manualDur=du.value;save();} return; }
   const el=e.target.closest('[data-act="setf"]'); if(!el)return;
   setField(+el.dataset.exi,+el.dataset.si,el.dataset.f,el.value);
 });
