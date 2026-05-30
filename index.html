@@ -93,6 +93,10 @@
   .hero-meta{margin-top:13px; font-size:10px; color:var(--o40); display:flex; gap:8px; align-items:center;} .hero-meta .left{color:var(--o60);} .chev{font-size:9px; color:var(--faint); transition:transform .2s;} .hero.open .chev{transform:rotate(180deg);}
   .rings{display:flex; justify-content:space-between; padding:0 4px;} .cell{display:flex; flex-direction:column; align-items:center; text-align:center; flex:1;}
   .cap{font-size:10px; color:var(--fg); margin-top:9px;} .sub{font-size:9px; color:var(--o40); margin-top:2px;}
+  .cell{cursor:pointer;}
+  /* remaining mode: inverted theme — bright base ring with a notch cut out, dimmed number */
+  .ring.inv .ring-track{stroke:var(--o40);} .ring.inv .ring-fill{stroke:var(--frame);} .ring.inv .ring-center .num{color:var(--o50);}
+  .cell .sub{transition:color .15s;}
   .grp-label{font-size:9px; color:var(--o50); letter-spacing:1.5px; margin-bottom:14px;}
   .mrow{display:grid; grid-template-columns:78px 1fr auto; align-items:center; column-gap:14px; margin-top:16px; font-size:11px;}
   .mrow:first-of-type{margin-top:0;} .mrow .ml{color:var(--o50);} .mrow .mv{color:var(--o60); font-size:10px; white-space:nowrap;} .mrow .mv .g{color:var(--o40);}
@@ -452,7 +456,7 @@ function renderWorkout(){
 }
 
 // ---------- render: macros ----------
-function ringHTML(pct,center,size){ pct=Math.max(0,Math.min(100,pct||0)); return `<div class="ring ${size||'md'}"><svg viewBox="0 0 36 36"><circle class="ring-track" cx="18" cy="18" r="15.7"/><circle class="ring-fill" cx="18" cy="18" r="15.7" pathLength="100" transform="rotate(-90 18 18)" style="stroke-dasharray:${pct} 100"/></svg><div class="ring-center">${center}</div></div>`; }
+function ringHTML(pct,center,size,inv){ pct=Math.max(0,Math.min(100,pct||0)); return `<div class="ring ${size||'md'}${inv?' inv':''}"><svg viewBox="0 0 36 36"><circle class="ring-track" cx="18" cy="18" r="15.7"/><circle class="ring-fill" cx="18" cy="18" r="15.7" pathLength="100" transform="rotate(-90 18 18)" style="stroke-dasharray:${pct} 100"/></svg><div class="ring-center">${center}</div></div>`; }
 function macroTotals(){
   const today=todayISO(); const items=db.meals[today]||[]; const t={kcal:0,protein:0,carbs:0,fat:0,sodium:0,potassium:0,sugar:0,fiber:0,water:0,caffeine:0};
   items.forEach(m=>{ for(const k in t){ t[k]+=parseFloat(m[k])||0; } }); return {items,t};
@@ -463,13 +467,20 @@ function renderMacros(){
   const left=Math.round(g.kcal-t.kcal); const pct=g.kcal?t.kcal/g.kcal*100:0;
   const open=state.macroOpen;
   const mkcal=(t.protein*4+t.carbs*4+t.fat*9)||1;
-  const rem=state.macroRem; // false=logged (default), true=remaining
-  const macroRing=(lbl,val,goal,unit,kpg)=>{const p=goal?val/goal*100:0;let ctr;if(state.macroPct){ctr=Math.round(val*kpg/mkcal*100)+'%';}else if(rem){ctr=Math.round(goal-val);}else{ctr=Math.round(val);}return `<div class="cell">${ringHTML(p,'<div class="num">'+ctr+'</div>')}<div class="cap">${lbl}</div><div class="sub">${state.macroPct?'de kcal':(rem?'left of '+goal:'/ '+goal+' '+unit)}</div></div>`;};
+  state.ringRem=state.ringRem||{};
+  const macroRing=(key,lbl,val,goal,unit,kpg)=>{
+    const isRem=!!state.ringRem[key];
+    let p,ctr,sub;
+    if(state.macroPct){ p=goal?val/goal*100:0; ctr=Math.round(val*kpg/mkcal*100)+'%'; sub='de kcal'; }
+    else if(isRem){ const r=goal-val; p=goal?r/goal*100:0; ctr=Math.round(r); sub='restante'; }
+    else { p=goal?val/goal*100:0; ctr=Math.round(val); sub='/ '+goal+' '+unit; }
+    return `<div class="cell" data-act="ringtog" data-k="${key}">${ringHTML(p,'<div class="num">'+ctr+'</div>',null,isRem)}<div class="cap">${lbl}</div><div class="sub">${sub}</div></div>`;
+  };
   const intakeRow=(lbl,val,goal,unit,extra,dec)=>{const p=goal?val/goal*100:0;const disp=dec?(+val).toFixed(dec):Math.round(val);return `<div class="mrow"><span class="ml">${lbl}</span><div class="bar"><i style="width:${Math.min(100,p)}%"></i></div><span class="mv">${disp} <span class="g">/ ${goal} ${unit}</span>${extra||''}</span></div>`;};
   const bl=bloating(t,g);
   let details = !open?'' : `<hr class="rule"/>`
-    +`<div style="display:flex;justify-content:space-between;margin-bottom:8px"><a data-act="toggleMacroRem" style="font-size:9px;color:var(--o50);cursor:pointer">[${rem?'ver loggeado':'ver restante'}]</a><a data-act="toggleMacroUnit" style="font-size:9px;color:var(--o50);cursor:pointer">[${state.macroPct?'ver gramos':'ver %'}]</a></div>`
-    +`<div class="rings">${macroRing('protein',t.protein,g.protein,'g',4)}${macroRing('carbs',t.carbs,g.carbs,'g',4)}${macroRing('fat',t.fat,g.fat,'g',9)}</div>`
+    +`<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px"><span style="font-size:9px;color:var(--o40)">toca un anillo: loggeado ⇄ restante</span><a data-act="toggleMacroUnit" style="font-size:9px;color:var(--o50);cursor:pointer">[${state.macroPct?'ver gramos':'ver %'}]</a></div>`
+    +`<div class="rings">${macroRing('protein','protein',t.protein,g.protein,'g',4)}${macroRing('carbs','carbs',t.carbs,g.carbs,'g',4)}${macroRing('fat','fat',t.fat,g.fat,'g',9)}</div>`
     +`<hr class="rule"/><div class="grp-label">INTAKE</div>`
     +intakeRow('sodium',t.sodium,g.sodium,'mg')
     +intakeRow('potassium',t.potassium,g.potassium,'mg')
@@ -488,8 +499,8 @@ function renderMacros(){
   if(!items.length){ log=`<div class="empty">no meals logged today<br/>tap [+ add] to start</div>`; }
   tags.forEach(tag=>{ const list=byTag[tag];
     const mt={kcal:0,protein:0,carbs:0,fat:0}; list.forEach(m=>{mt.kcal+=+m.kcal||0;mt.protein+=+m.protein||0;mt.carbs+=+m.carbs||0;mt.fat+=+m.fat||0;});
-    log+=`<div class="grp"><div class="ghead"><span><span class="hash">#</span>${tag}</span><span class="mtot">${Math.round(mt.kcal)} kcal · ${Math.round(mt.protein)}P ${Math.round(mt.carbs)}C ${Math.round(mt.fat)}F</span></div>`;
-    list.forEach(m=>{ log+=`<div class="item" data-act="viewmeal" data-id="${m.id}"><span class="nm">${m.name}</span><span class="d"></span><span class="macq">${Math.round(m.protein)||0}/${Math.round(m.carbs)||0}/${Math.round(m.fat)||0}</span><span class="kc">${Math.round(m.kcal)||0}</span></div>`; });
+    log+=`<div class="grp"><div class="ghead"><span><span class="hash">#</span>${tag}</span><span class="mtot">${Math.round(mt.protein)}P ${Math.round(mt.carbs)}C ${Math.round(mt.fat)}F · ${Math.round(mt.kcal)} kcal</span></div>`;
+    list.forEach(m=>{ log+=`<div class="item" data-act="viewmeal" data-id="${m.id}"><span class="nm">${m.name}</span><span class="d"></span><span class="macq">${Math.round(m.protein)||0}P ${Math.round(m.carbs)||0}C ${Math.round(m.fat)||0}F</span><span class="kc">${Math.round(m.kcal)||0}</span></div>`; });
     log+=`</div>`;
   });
 
@@ -636,7 +647,7 @@ document.getElementById('app').addEventListener('click',e=>{
   else if(a==='save'){ saveSession(); }
   else if(a==='togglemacros'){ state.macroOpen=!state.macroOpen; render(); }
   else if(a==='toggleMacroUnit'){ state.macroPct=!state.macroPct; render(); }
-  else if(a==='toggleMacroRem'){ state.macroRem=!state.macroRem; render(); }
+  else if(a==='ringtog'){ const k=el.dataset.k; state.ringRem=state.ringRem||{}; state.ringRem[k]=!state.ringRem[k]; render(); }
   else if(a==='viewmeal'){ openMealDetail(el.dataset.id); }
   else if(a==='pickmealtag'){ const e=document.getElementById('fa_tagtxt'); if(e)e.value=el.dataset.v; }
   else if(a==='editmeal'){ const t=todayISO(); const m=(db.meals[t]||[]).find(x=>x.id===window._mealId); if(m){ const q=m.qty||1; const per={}; ['kcal','protein','carbs','fat','sugar','sodium','potassium','fiber','caffeine','water'].forEach(k=>per[k]=(+m[k]||0)/q); closeModal(); openVerify({name:(m.name||'').replace(/ ×[\\d.]+$/,''),serving:m.serving||'1 serving',per},{isNew:false,tag:m.tag,qty:q,editId:m.id}); } }
