@@ -858,20 +858,32 @@ function servingToLiters(sz){
 }
 function mapProduct(p){
   const n=p.nutriments||{};
-  // ALWAYS use per-100g/100ml — _serving values from OFF are inconsistent across products.
-  // This is unambiguous: qty=10 × "100 ml" = 1 L, every time.
-  const svStr=(p.serving_size||p.quantity||'').trim();
+  const svStr=(p.serving_size||'').trim();
+  // Detect liquid from serving label or product name
   const isLiquid=/\d+\s*(ml|cl|dl|fl)/i.test(svStr) || /\bl\b/i.test(svStr) ||
-                 /beverage|drink|juice|milk|leche|bebida|jugo/i.test((p.product_name||'')+(p.categories||''));
-  const g=base=> +n[base+'_100g']||0;
+                 /beverage|drink|juice|milk|leche|bebida|jugo|agua/i.test((p.product_name||'')+(p.categories||''));
+  // For liquids: always per 100ml (unambiguous, no inconsistency).
+  // For solids: use _serving if declared (natural unit like "1 galleta 28g"); fall back to 100g.
+  const useSv = !isLiquid && !!svStr && n['energy-kcal_serving']!=null;
+  const g=base=> useSv ? (+n[base+'_serving']||0) : (+n[base+'_100g']||0);
+  const kcal = useSv ? (+n['energy-kcal_serving']||0) : (+n['energy-kcal_100g']||0);
+  // validate serving math: if kcal_serving and kcal_100g both present, check ratio vs serving_g
+  // if wildly off (>3×), fall back to per-100g to avoid bad data
+  let serving = useSv ? svStr : (isLiquid ? '100 ml' : '100 g');
+  let finalKcal = kcal;
+  if(useSv && n['energy-kcal_100g']){
+    const sg=parseFloat(svStr)||0; const k100=+n['energy-kcal_100g']; const ksv=+n['energy-kcal_serving'];
+    if(sg>0 && k100>0 && Math.abs(ksv/(k100*sg/100)-1)>0.5){ // >50% mismatch → fallback to 100g
+      serving='100 g'; finalKcal=k100;
+    }
+  }
+  const waterPer = isLiquid ? 0.1 : 0;
   const per={
-    kcal: +n['energy-kcal_100g']||Math.round((+n['energy-kj_100g']||0)/4.184),
-    protein:g('proteins'), carbs:g('carbohydrates'), fat:g('fat'),
+    kcal:finalKcal, protein:g('proteins'), carbs:g('carbohydrates'), fat:g('fat'),
     sugar:g('sugars'), fiber:g('fiber'),
     sodium:Math.round((g('sodium'))*1000), potassium:Math.round((g('potassium'))*1000),
-    caffeine:g('caffeine'), water:isLiquid?0.1:0   // 0.1L per 100ml serving
+    caffeine:g('caffeine'), water:waterPer
   };
-  const serving=isLiquid?'100 ml':'100 g';
   return { barcode:p.code||'', name:p.product_name||'', brand:p.brands||'', serving, isLiquid:!!isLiquid, per };
 }
 async function lookupBarcode(code){
@@ -931,9 +943,11 @@ function openVerify(food, opts){
   opts=opts||{}; const p=Object.assign(foodPer(), food.per||{});
   const f=(id,lbl,v,step)=>`<div><label>${lbl}</label><input id="${id}" type="number" inputmode="decimal"${step?' step="'+step+'"':''} value="${(v===0||v)?v:''}"/></div>`;
   window._verify={tag:opts.tag||curTag(),barcode:food.barcode||'',fromId:opts.fromId||null,editId:opts.editId||null};
+  const sv=food.serving||'1 serving';
   openModal(`<h3>${opts.isNew?'verify &amp; add':'log food'}</h3>
    <div class="field"><label>NAME</label><input id="v_name" value="${(food.name||'').replace(/"/g,'&quot;')}" placeholder="food name"/></div>
-   <div class="field row2"><div><label>SERVING</label><input id="v_serv" value="${(food.serving||'1 serving').replace(/"/g,'&quot;')}"/></div><div><label>QTY (servings)</label><input id="v_qty" type="number" inputmode="decimal" step="0.25" value="${opts.qty||1}"/></div></div>
+   <div class="field row2"><div><label>SERVING (define la unidad)</label><input id="v_serv" value="${sv.replace(/"/g,'&quot;')}" placeholder="1g · 1 galleta · 100ml"/></div><div><label>QTY</label><input id="v_qty" type="number" inputmode="decimal" step="0.25" value="${opts.qty||1}"/></div></div>
+   <div class="submeta" style="margin:2px 0 6px;color:var(--o50)">valores = por 1 serving · qty lo multiplica</div>
    <div class="field row2">${f('v_kcal','KCAL',p.kcal)}${f('v_protein','PROTEIN g',p.protein)}</div>
    <div class="field row2">${f('v_carbs','CARBS g',p.carbs)}${f('v_fat','FAT g',p.fat)}</div>
    <div class="field row2">${f('v_sugar','SUGAR g',p.sugar)}${f('v_fiber','FIBER g',p.fiber)}</div>
