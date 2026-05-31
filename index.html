@@ -496,6 +496,7 @@ function renderMacros(){
     +intakeRow('potassium',t.potassium,g.potassium,'mg')
     +intakeRow('sugar',t.sugar,g.sugar,'g')
     +intakeRow('fiber',t.fiber,g.fiber,'g')
+    +intakeRow('caffeine',t.caffeine,g.caffeine,'mg')
     +intakeRow('liquids',t.water,g.water,'L',null,1)
     +`<hr class="rule"/>`
     +intakeRow('bloat risk',bl.sc,100,'',`<span class="pill">${bl.label}</span>`)
@@ -857,20 +858,21 @@ function servingToLiters(sz){
 }
 function mapProduct(p){
   const n=p.nutriments||{};
-  // prefer _serving if available AND serving_size is explicit (not just 100g/100ml)
-  const svStr=p.serving_size||'';
-  const hasSv = n['energy-kcal_serving']!=null && !!svStr;
-  const g=base=> hasSv ? (n[base+'_serving']!=null?+n[base+'_serving']:0) : (n[base+'_100g']!=null?+n[base+'_100g']:0);
-  const servingLabel = hasSv ? svStr : '100 g';
-  // auto-detect liquid: if serving_size contains ml/cl/L, populate water field
-  const waterL = servingToLiters(hasSv ? svStr : (n['energy-kcal_100g']!=null?'100 ml':''));
+  // ALWAYS use per-100g/100ml — _serving values from OFF are inconsistent across products.
+  // This is unambiguous: qty=10 × "100 ml" = 1 L, every time.
+  const svStr=(p.serving_size||p.quantity||'').trim();
+  const isLiquid=/\d+\s*(ml|cl|dl|fl)/i.test(svStr) || /\bl\b/i.test(svStr) ||
+                 /beverage|drink|juice|milk|leche|bebida|jugo/i.test((p.product_name||'')+(p.categories||''));
+  const g=base=> +n[base+'_100g']||0;
   const per={
-    kcal: hasSv?(+n['energy-kcal_serving']||0):(+n['energy-kcal_100g']||0),
-    protein:g('proteins'), carbs:g('carbohydrates'), fat:g('fat'), sugar:g('sugars'), fiber:g('fiber'),
-    sodium:Math.round((g('sodium')||0)*1000), potassium:Math.round((g('potassium')||0)*1000),
-    caffeine:g('caffeine')||0, water:waterL
+    kcal: +n['energy-kcal_100g']||Math.round((+n['energy-kj_100g']||0)/4.184),
+    protein:g('proteins'), carbs:g('carbohydrates'), fat:g('fat'),
+    sugar:g('sugars'), fiber:g('fiber'),
+    sodium:Math.round((g('sodium'))*1000), potassium:Math.round((g('potassium'))*1000),
+    caffeine:g('caffeine'), water:isLiquid?0.1:0   // 0.1L per 100ml serving
   };
-  return { barcode:p.code||'', name:p.product_name||'', brand:p.brands||'', serving:servingLabel, per };
+  const serving=isLiquid?'100 ml':'100 g';
+  return { barcode:p.code||'', name:p.product_name||'', brand:p.brands||'', serving, isLiquid:!!isLiquid, per };
 }
 async function lookupBarcode(code){
   try{ const r=await fetch('https://world.openfoodfacts.org/api/v2/product/'+encodeURIComponent(code)+'.json?fields=code,product_name,brands,serving_size,nutriments');
@@ -974,6 +976,8 @@ function commitFood(saveToDb){
   const v=readVerify(); if(!v.name){ alert('Pon nombre.'); return; }
   const t=todayISO(); db.meals[t]=db.meals[t]||[];
   if(v.editId){ const m=(db.meals[t]||[]).find(x=>x.id===v.editId); if(m){ m.tag=v.tag; m.name=v.name+(v.qty!==1?' ×'+v.qty:''); m.qty=v.qty; m.serving=v.serving; for(const k in v.per){ m[k]=(v.per[k]||0)*v.qty; } save(); closeModal(); render(); return; } }
+  // auto-detect liquid from serving string and fill water if not set
+  if(!v.per.water){ const svL=servingToLiters(v.serving); if(svL>0) v.per.water=svL; }
   const item={id:uid(),time:nowHM(),tag:v.tag,name:v.name+(v.qty!==1?' ×'+v.qty:''),qty:v.qty,serving:v.serving};
   for(const k in v.per){ item[k]=(v.per[k]||0)*v.qty; }
   db.meals[t].push(item);
