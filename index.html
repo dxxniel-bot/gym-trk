@@ -508,8 +508,9 @@ function renderMacros(){
   const tags=Object.keys(byTag).sort((a,b)=>order.indexOf(a)-order.indexOf(b));
   if(!items.length){ log=`<div class="empty">no meals logged today<br/>tap [+ add] to start</div>`; }
   tags.forEach(tag=>{ const list=byTag[tag];
-    const mt={kcal:0,protein:0,carbs:0,fat:0}; list.forEach(m=>{mt.kcal+=+m.kcal||0;mt.protein+=+m.protein||0;mt.carbs+=+m.carbs||0;mt.fat+=+m.fat||0;});
-    log+=`<div class="grp"><div class="ghead"><span><span class="hash">#</span>${tag}</span><span class="gmac">${Math.round(mt.protein)}P ${Math.round(mt.carbs)}C ${Math.round(mt.fat)}F</span><span class="gkc">${Math.round(mt.kcal)}</span></div>`;
+    const mt={kcal:0,protein:0,carbs:0,fat:0,caffeine:0}; list.forEach(m=>{mt.kcal+=+m.kcal||0;mt.protein+=+m.protein||0;mt.carbs+=+m.carbs||0;mt.fat+=+m.fat||0;mt.caffeine+=+m.caffeine||0;});
+    const gcaf=mt.caffeine>0?` · ${Math.round(mt.caffeine)}mg☕`:'';
+    log+=`<div class="grp"><div class="ghead"><span><span class="hash">#</span>${tag}</span><span class="gmac">${Math.round(mt.protein)}P ${Math.round(mt.carbs)}C ${Math.round(mt.fat)}F</span><span class="gkc">${Math.round(mt.kcal)}${gcaf}</span></div>`;
     list.forEach(m=>{ log+=`<div class="item" data-act="viewmeal" data-id="${m.id}"><span class="nm">${m.name}</span><span class="macq">${Math.round(m.protein)||0}P ${Math.round(m.carbs)||0}C ${Math.round(m.fat)||0}F</span><span class="kc">${Math.round(m.kcal)||0}</span></div>`; });
     log+=`</div>`;
   });
@@ -664,6 +665,7 @@ document.getElementById('app').addEventListener('click',e=>{
   else if(a==='delmealnow'){ const t=todayISO(); db.meals[t]=(db.meals[t]||[]).filter(m=>m.id!==window._mealId); save(); closeModal(); render(); }
   else if(a==='vfixkcal'){ const P=parseFloat(val('v_protein'))||0,C=parseFloat(val('v_carbs'))||0,F=parseFloat(val('v_fat'))||0; const e=document.getElementById('v_kcal'); if(e){ e.value=Math.round(P*4+C*4+F*9); e.dispatchEvent(new Event('input',{bubbles:true})); } }
   else if(a==='addmeal'||a==='foodadd'){ openFoodAdd(); }
+  else if(a==='fregister'){ openRegisterMenu(null); }
   else if(a==='pickfood'){ const f=(db.foods||[]).find(x=>x.id===el.dataset.id); if(f) openVerify(f,{qty:1,fromId:f.id,tag:curTag()}); }
   else if(a==='fbarcode'){ openBarcode(); }
   else if(a==='fsearch'){ window._faTag=curTag(); openNameSearch(''); }
@@ -772,16 +774,23 @@ function curTag(){ const e=document.getElementById('fa_tagtxt'); const v=e?e.val
 function openFoodAdd(){
   const sugg=mealSuggestions();
   openModal(`<h3>add food</h3>
-   <div class="field"><label>MEAL (escribe o elige)</label><input id="fa_tagtxt" value="breakfast" placeholder="ej. pre-workout, cena tardía" autocomplete="off"/>
+   <div class="field"><label>MEAL</label><input id="fa_tagtxt" value="breakfast" placeholder="ej. pre-workout, cena tardía" autocomplete="off"/>
    <div class="chips" id="fa_sugg">${sugg.map(s=>`<span class="chip" data-act="pickmealtag" data-v="${s.replace(/"/g,'&quot;')}">${s}</span>`).join('')}</div></div>
-   <div class="field"><label>YOUR FOODS</label><input id="fa_q" placeholder="search saved foods" autocomplete="off"/></div>
-   <div id="fa_list" style="max-height:148px;overflow-y:auto;margin-bottom:8px"></div>
-   <div class="sheetbtns"><button class="ok" data-act="fbarcode">⌗ barcode</button><button class="ok" data-act="fsearch">🔍 search</button></div>
-   <div class="sheetbtns" style="margin-top:8px"><button class="cancel" data-act="fphoto">📷 photo</button><button class="cancel" data-act="ftext">¶ text</button><button class="cancel" data-act="fmanual">+ manual</button></div>`);
+   <div class="field" style="margin-bottom:4px"><input id="fa_q" placeholder="buscar en tus alimentos guardados" autocomplete="off"/></div>
+   <div id="fa_list" style="max-height:120px;overflow-y:auto;margin-bottom:12px"></div>
+   <button class="start" data-act="fbarcode" style="margin-bottom:8px">scan</button>
+   <div class="secondary"><button class="b" data-act="fsearch">search</button><button class="b" data-act="fregister">register</button></div>`);
   const q=document.getElementById('fa_q');
-  const renderList=()=>{ const s=(q.value||'').toLowerCase(); const items=(db.foods||[]).filter(f=>!s||(f.name||'').toLowerCase().includes(s)).slice(0,15);
-    document.getElementById('fa_list').innerHTML = items.length ? items.map(f=>`<div class="pickitem" data-act="pickfood" data-id="${f.id}">${f.name} <span style="float:right;color:var(--o50)">${Math.round(f.per.kcal)} kcal</span></div>`).join('') : '<div class="submeta" style="padding:8px 0">sin alimentos guardados · usa barcode / text / manual</div>'; };
+  const renderList=()=>{ const s=(q.value||'').toLowerCase(); const items=(db.foods||[]).filter(f=>!s||(f.name||'').toLowerCase().includes(s)).slice(0,12);
+    document.getElementById('fa_list').innerHTML = items.length ? items.map(f=>`<div class="pickitem" data-act="pickfood" data-id="${f.id}">${f.name} <span style="float:right;color:var(--o50)">${Math.round(f.per.kcal)} kcal</span></div>`).join('') : (s?'<div class="submeta" style="padding:6px 0">sin resultados</div>':''); };
   q.oninput=renderList; renderList();
+}
+function openRegisterMenu(barcode){
+  window._linkBarcode=barcode||''; window._faTag=window._faTag||'meal';
+  openModal(`<h3>registrar alimento${barcode?' · vincular a '+barcode:''}</h3>
+   <div class="submeta" style="margin-bottom:10px">no encontrado · elige cómo registrar:</div>
+   <button class="start" data-act="fphoto" style="margin-bottom:8px">📷 foto de tabla nutricional</button>
+   <div class="secondary"><button class="b" data-act="ftext">¶ pegar texto</button><button class="b" data-act="fmanual">✏️ manual</button></div>`);
 }
 async function decodeBarcodeImage(file){
   try{ await loadScript('https://cdn.jsdelivr.net/npm/@ericblade/quagga2@1.8.4/dist/quagga.min.js'); }catch(_){ return null; }
@@ -803,10 +812,11 @@ function openBarcode(){
     if(local){ openVerify(local,{fromId:local.id,qty:1,tag:window._faTag}); return; }
     const food=await lookupBarcode(code);
     if(food&&food.name){ openVerify(food,{isNew:true,tag:window._faTag}); return; }
-    m.innerHTML='código no encontrado en la base. Llena la info y lo vinculo a <b>'+code+'</b>:'+
-      '<div class="sheetbtns" style="margin-top:8px"><button class="ok" id="bc_photo">📷 foto de la etiqueta</button><button class="cancel" id="bc_name">🔍 buscar por nombre</button></div>';
+    m.innerHTML='no encontrado en la base · <b>'+code+'</b>'+
+      '<div class="sheetbtns" style="margin-top:8px"><button class="ok" id="bc_photo">📷 foto etiqueta</button><button class="cancel" id="bc_name">🔍 buscar</button><button class="cancel" id="bc_reg">✏️ manual</button></div>';
     document.getElementById('bc_photo').onclick=()=>{ const inp=document.createElement('input'); inp.type='file'; inp.accept='image/*'; inp.setAttribute('capture','environment'); inp.onchange=()=>{ if(inp.files&&inp.files[0]) ocrPhoto(inp.files[0],code); }; inp.click(); };
-    document.getElementById('bc_name').onclick=()=>openNameSearch(code); };
+    document.getElementById('bc_name').onclick=()=>openNameSearch(code);
+    document.getElementById('bc_reg').onclick=()=>{ window._linkBarcode=code; openVerify({name:'',serving:'1 serving',per:foodPer()},{isNew:true,tag:window._faTag}); }; };
   document.getElementById('bc_go').onclick=doLookup;
   const stopScan=()=>{ if(window._scanner&&window._scanner._q){ try{Quagga.offDetected(window._scanner._fn);}catch(_){} try{Quagga.stop();}catch(_){} } window._scanner=null; };
   const startScan=async()=>{ const m=document.getElementById('bc_msg'); const cam=document.getElementById('bc_cam'); if(!cam)return;
@@ -835,13 +845,32 @@ function openBarcode(){
   const br=document.getElementById('bc_rescan'); if(br){ br.textContent='📷 foto del código';
     br.onclick=()=>{ const inp=document.createElement('input'); inp.type='file'; inp.accept='image/*'; inp.setAttribute('capture','environment'); inp.onchange=async()=>{ const f=inp.files&&inp.files[0]; if(!f)return; const mm=document.getElementById('bc_msg'); if(mm)mm.textContent='leyendo código…'; const code=await decodeBarcodeImage(f); if(code){ const c=document.getElementById('bc_code'); if(c)c.value=code; doLookup(); } else if(mm){ mm.textContent='no se leyó · acerca el código de frente y enfocado (que llene el cuadro), o escríbelo'; } }; inp.click(); }; }
 }
+function servingToLiters(sz){
+  if(!sz)return 0;
+  const m=(sz+'').toLowerCase().match(/(\d+(?:[.,]\d+)?)\s*(ml|cl|dl|l\b|litre|liter)/);
+  if(!m)return 0;
+  const v=parseFloat(m[1].replace(',','.'));
+  if(m[2]==='ml')return v/1000;
+  if(m[2]==='cl')return v/100;
+  if(m[2]==='dl')return v/10;
+  return v; // l / litre / liter
+}
 function mapProduct(p){
-  const n=p.nutriments||{}; const hasSv = n['energy-kcal_serving']!=null;
+  const n=p.nutriments||{};
+  // prefer _serving if available AND serving_size is explicit (not just 100g/100ml)
+  const svStr=p.serving_size||'';
+  const hasSv = n['energy-kcal_serving']!=null && !!svStr;
   const g=base=> hasSv ? (n[base+'_serving']!=null?+n[base+'_serving']:0) : (n[base+'_100g']!=null?+n[base+'_100g']:0);
-  const per={ kcal: hasSv?(+n['energy-kcal_serving']||0):(+n['energy-kcal_100g']||0),
+  const servingLabel = hasSv ? svStr : '100 g';
+  // auto-detect liquid: if serving_size contains ml/cl/L, populate water field
+  const waterL = servingToLiters(hasSv ? svStr : (n['energy-kcal_100g']!=null?'100 ml':''));
+  const per={
+    kcal: hasSv?(+n['energy-kcal_serving']||0):(+n['energy-kcal_100g']||0),
     protein:g('proteins'), carbs:g('carbohydrates'), fat:g('fat'), sugar:g('sugars'), fiber:g('fiber'),
-    sodium:Math.round((g('sodium')||0)*1000), potassium:Math.round((g('potassium')||0)*1000), caffeine:g('caffeine')||0, water:0 };
-  return { barcode:p.code||'', name:p.product_name||'', brand:p.brands||'', serving: hasSv?(p.serving_size||'1 serving'):'100 g', per };
+    sodium:Math.round((g('sodium')||0)*1000), potassium:Math.round((g('potassium')||0)*1000),
+    caffeine:g('caffeine')||0, water:waterL
+  };
+  return { barcode:p.code||'', name:p.product_name||'', brand:p.brands||'', serving:servingLabel, per };
 }
 async function lookupBarcode(code){
   try{ const r=await fetch('https://world.openfoodfacts.org/api/v2/product/'+encodeURIComponent(code)+'.json?fields=code,product_name,brands,serving_size,nutriments');
@@ -908,13 +937,23 @@ function openVerify(food, opts){
    <div class="field row2">${f('v_sugar','SUGAR g',p.sugar)}${f('v_fiber','FIBER g',p.fiber)}</div>
    <div class="field row2">${f('v_sodium','SODIUM mg',p.sodium)}${f('v_potassium','POTASSIUM mg',p.potassium)}</div>
    <div class="field row2">${f('v_caffeine','CAFFEINE mg',p.caffeine)}${f('v_water','LIQUID L',p.water,'0.1')}</div>
-   <div class="submeta" style="margin:2px 0 2px">valores por 1 serving · qty multiplica</div>
-   <div id="v_sum" class="submeta" style="margin:0 0 8px"></div>
+   <div id="v_liquid_hint" class="submeta" style="margin:2px 0 0;color:var(--o50)"></div>
+   <div id="v_sum" class="submeta" style="margin:2px 0 8px"></div>
    ${opts.ocrText?`<details style="margin-bottom:8px"><summary class="submeta" style="cursor:pointer">texto leído (revisa y corrige arriba)</summary><pre style="white-space:pre-wrap;font-size:9px;color:var(--o50);max-height:120px;overflow:auto;margin:6px 0 0">${(opts.ocrText||'').replace(/[<&]/g,c=>c==='<'?'&lt;':'&amp;')}</pre></details>`:''}
    <div class="sheetbtns"><button class="ok" data-act="verifysave">save + log</button><button class="cancel" data-act="verifylog">log only</button></div>`);
   const vq=id=>parseFloat(val(id))||0;
-  const vrecalc=()=>{ const q=vq('v_qty')||1,P=vq('v_protein'),C=vq('v_carbs'),F=vq('v_fat'),K=vq('v_kcal'); const mk=Math.round(P*4+C*4+F*9); const sum=document.getElementById('v_sum'); if(!sum)return; const warn=(K&&mk&&Math.abs(K-mk)/Math.max(K,mk)>0.12)?' · <span style="color:#c8a24d">⚠ kcal≠macros</span> <a data-act="vfixkcal" style="text-decoration:underline;cursor:pointer">usar '+mk+'</a>':''; sum.innerHTML='→ loggea: <b style="color:var(--fg)">'+Math.round(K*q)+'</b> kcal · '+Math.round(P*q)+'P '+Math.round(C*q)+'C '+Math.round(F*q)+'F'+warn; };
-  ['v_qty','v_kcal','v_protein','v_carbs','v_fat'].forEach(id=>{ const e=document.getElementById(id); if(e)e.addEventListener('input',vrecalc); });
+  const vrecalc=()=>{
+    const q=vq('v_qty')||1,P=vq('v_protein'),C=vq('v_carbs'),F=vq('v_fat'),K=vq('v_kcal'),W=vq('v_water'),CAF=vq('v_caffeine');
+    const mk=Math.round(P*4+C*4+F*9); const sum=document.getElementById('v_sum'); if(!sum)return;
+    const warn=(K&&mk&&Math.abs(K-mk)/Math.max(K,mk)>0.12)?' · <span style="color:#c8a24d">⚠ kcal≠macros</span> <a data-act="vfixkcal" style="text-decoration:underline;cursor:pointer">usar '+mk+'</a>':'';
+    const cafStr=CAF>0?' · '+Math.round(CAF*q)+'mg caf':'';
+    sum.innerHTML='→ <b style="color:var(--fg)">'+Math.round(K*q)+'</b> kcal · '+Math.round(P*q)+'P '+Math.round(C*q)+'C '+Math.round(F*q)+'F'+cafStr+warn;
+    // liquid hint: show total volume when serving has ml/L
+    const sv=val('v_serv'); const lh=document.getElementById('v_liquid_hint');
+    if(lh){ const litPerSv=servingToLiters(sv)||(W>0?W:0); if(litPerSv>0){ const tot=(litPerSv*q).toFixed(2).replace(/\.?0+$/,''); lh.textContent='💧 '+q+' × '+sv+' = '+tot+' L'; } else { lh.textContent=''; } }
+  };
+  ['v_qty','v_kcal','v_protein','v_carbs','v_fat','v_water','v_caffeine'].forEach(id=>{ const e=document.getElementById(id); if(e)e.addEventListener('input',vrecalc); });
+  const vs=document.getElementById('v_serv'); if(vs)vs.addEventListener('input',vrecalc);
   vrecalc();
 }
 function readVerify(){
