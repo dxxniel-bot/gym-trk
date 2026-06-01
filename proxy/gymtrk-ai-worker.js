@@ -3,7 +3,7 @@
  * --------------------------------------------------------
  * Holds the OWNER's Google Gemini API key (as a secret) so end users never need one.
  * The app POSTs a label photo; this reads it with Gemini vision and returns structured
- * nutrition JSON that maps straight into the app's verify screen.
+ * nutrition JSON that maps straight into the app's canonical per-100 food model.
  *
  * Deploy: see proxy/README.md. Set secret GEMINI_KEY. Optionally bind a KV namespace
  * named RL to enable per-IP daily rate limiting.
@@ -14,27 +14,38 @@ const ALLOWED_ORIGINS = [
   'http://localhost:4599',
   'http://127.0.0.1:4599',
 ];
-const MODEL = 'gemini-2.0-flash';      // free-tier, vision-capable
+const MODEL = 'gemini-2.0-flash';        // free-tier, vision-capable
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024; // ~5MB decoded
-const DAILY_IP_LIMIT = 60;             // only enforced if a KV namespace `RL` is bound
+const DAILY_IP_LIMIT = 60;               // only enforced if a KV namespace `RL` is bound
 
 const PROMPT = `You are reading a photo of a packaged food's nutrition label. It may be from any country/language ("Informacion Nutrimental", "Nutrition Facts", etc.) and need NOT follow the US format.
 Extract the values into the JSON schema. Rules:
-- "basis": what the numbers are per. "serving" if the primary column is per portion/serving; "100g" if per 100 g; "100ml" if per 100 ml; else "unknown". If both per-serving and per-100 columns exist, PREFER per-serving and set basis="serving".
-- "serving": serving size text exactly as printed (e.g. "30 g", "1 galleta (28 g)", "240 ml"). "" if not shown.
+- "basis": what the "per" numbers are per. "serving" if the primary column is per portion/serving; "100g" if per 100 g; "100ml" if per 100 ml; "package" if the only figures are totals for the whole container; else "unknown". If both per-serving and per-100 columns exist, PREFER per-serving and set basis="serving".
 - "per" units: kcal = number; protein/carbs/fat/sugar/fiber in GRAMS; sodium/potassium/caffeine in MILLIGRAMS; water = 0.
-  Convert when needed: sodium/potassium given in g -> multiply by 1000 (mg). Energy given only in kJ -> kcal = kJ / 4.184.
-- "found": array listing ONLY the nutrient keys actually printed on the label (subset of kcal,protein,carbs,fat,sugar,fiber,sodium,potassium,caffeine). For any nutrient NOT on the label, set its "per" value to 0 and DO NOT include it in "found".
+  Convert when needed: sodium/potassium in g -> x1000 (mg). Energy only in kJ -> kcal = kJ / 4.184.
+- Sizes (for serving math — read what the label shows, else 0/""):
+  - "serving_g": grams/ml of ONE serving as a number ("30 g" -> 30, "240 ml" -> 240). 0 if absent.
+  - "serving_label": human serving text ("4 galletas", "1 taza"). "" if none.
+  - "servings_per_container": servings per package ("Porciones por envase: 8" -> 8). 0 if absent.
+  - "container_g": net weight/volume of the whole package in g/ml ("Contenido neto 240 g" -> 240). 0 if absent.
+  - "piece_g": grams of ONE piece if countable (weight per cookie/bar). 0 if N/A.
+  - "pieces_per_container": pieces in the package if shown. 0 otherwise.
+- "found": array of ONLY the nutrient keys actually printed (subset of kcal,protein,carbs,fat,sugar,fiber,sodium,potassium,caffeine). For any not on the label, set its "per" value to 0 and omit from "found".
 - "name": product name if clearly visible, else "".
-- Numbers only in numeric fields (no units, no ranges). If a value is unreadable, use 0 and omit it from "found".
+- Numbers only in numeric fields (no units, no ranges). Unreadable -> 0.
 Return ONLY the JSON object.`;
 
 const SCHEMA = {
   type: 'OBJECT',
   properties: {
     name: { type: 'STRING' },
-    serving: { type: 'STRING' },
-    basis: { type: 'STRING', enum: ['serving', '100g', '100ml', 'unknown'] },
+    basis: { type: 'STRING', enum: ['serving', '100g', '100ml', 'package', 'unknown'] },
+    serving_g: { type: 'NUMBER' },
+    serving_label: { type: 'STRING' },
+    servings_per_container: { type: 'NUMBER' },
+    container_g: { type: 'NUMBER' },
+    piece_g: { type: 'NUMBER' },
+    pieces_per_container: { type: 'NUMBER' },
     found: { type: 'ARRAY', items: { type: 'STRING' } },
     per: {
       type: 'OBJECT',
@@ -69,7 +80,7 @@ export default {
 
     let body;
     try { body = await req.json(); } catch { return json({ error: 'badjson' }, 400, origin); }
-    const m = /^data:(image\/[\w.+-]+);base64,(.+)$/s.exec(body && body.image || '');
+    const m = /^data:(image\/[\w.+-]+);base64,(.+)$/s.exec((body && body.image) || '');
     if (!m) return json({ error: 'noimage' }, 400, origin);
     const mime = m[1], b64 = m[2];
     if (b64.length * 0.75 > MAX_IMAGE_BYTES) return json({ error: 'toobig' }, 413, origin);
@@ -91,9 +102,9 @@ export default {
       return json({ error: 'upstream ' + gr.status, detail: t.slice(0, 300) }, 502, origin);
     }
     const g = await gr.json();
-    const txt = g && g.candidates && g.candidates[0] && g.candidates[0].content
+    const txt = (g && g.candidates && g.candidates[0] && g.candidates[0].content
       && g.candidates[0].content.parts && g.candidates[0].content.parts[0]
-      && g.candidates[0].content.parts[0].text || '';
+      && g.candidates[0].content.parts[0].text) || '';
     let data;
     try { data = JSON.parse(txt); } catch { return json({ error: 'parse', raw: txt.slice(0, 400) }, 502, origin); }
     return json({ ok: true, data }, 200, origin);
