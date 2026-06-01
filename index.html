@@ -180,6 +180,9 @@
 <script>
 "use strict";
 const LS_KEY='gymtrk_db_v1';
+// AI vision proxy (Cloudflare Worker holding the owner's Gemini key). Empty => fall back to on-device OCR.
+// After deploying proxy/gymtrk-ai-worker.js, paste its URL here, e.g. 'https://gymtrk-ai.tucuenta.workers.dev'.
+const AI_PROXY_URL='';
 const pad=n=>String(n).padStart(2,'0');
 const MON=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
 function todayISO(d){d=d||new Date();return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());}
@@ -670,7 +673,7 @@ document.getElementById('app').addEventListener('click',e=>{
   else if(a==='pickfood'){ const f=(db.foods||[]).find(x=>x.id===el.dataset.id); if(f) openVerify(f,{qty:1,fromId:f.id,tag:curTag()}); }
   else if(a==='fbarcode'){ openBarcode(); }
   else if(a==='fsearch'){ window._faTag=curTag(); openNameSearch(''); }
-  else if(a==='fphoto'){ window._faTag=curTag(); const inp=document.createElement('input'); inp.type='file'; inp.accept='image/*'; inp.setAttribute('capture','environment'); inp.onchange=()=>{ if(inp.files&&inp.files[0]) ocrPhoto(inp.files[0]); }; inp.click(); }
+  else if(a==='fphoto'){ window._faTag=curTag(); const inp=document.createElement('input'); inp.type='file'; inp.accept='image/*'; inp.setAttribute('capture','environment'); inp.onchange=()=>{ if(inp.files&&inp.files[0]) labelPhoto(inp.files[0]); }; inp.click(); }
   else if(a==='nspick'){ const f=(window._nsRes||[])[+el.dataset.i]; if(!f)return; if(window._linkBarcode)f.barcode=window._linkBarcode; openVerify(f,{isNew:true,tag:window._faTag||curTag()}); }
   else if(a==='ftext'){ openTextParse(); }
   else if(a==='fmanual'){ openVerify({name:'',serving:'1 serving',per:foodPer()},{isNew:true,tag:curTag()}); }
@@ -815,7 +818,7 @@ function openBarcode(){
     if(food&&food.name){ openVerify(food,{isNew:true,tag:window._faTag}); return; }
     m.innerHTML='no encontrado en la base · <b>'+code+'</b>'+
       '<div class="sheetbtns" style="margin-top:8px"><button class="ok" id="bc_photo">📷 foto etiqueta</button><button class="cancel" id="bc_name">🔍 buscar</button><button class="cancel" id="bc_reg">✏️ manual</button></div>';
-    document.getElementById('bc_photo').onclick=()=>{ const inp=document.createElement('input'); inp.type='file'; inp.accept='image/*'; inp.setAttribute('capture','environment'); inp.onchange=()=>{ if(inp.files&&inp.files[0]) ocrPhoto(inp.files[0],code); }; inp.click(); };
+    document.getElementById('bc_photo').onclick=()=>{ const inp=document.createElement('input'); inp.type='file'; inp.accept='image/*'; inp.setAttribute('capture','environment'); inp.onchange=()=>{ if(inp.files&&inp.files[0]) labelPhoto(inp.files[0],code); }; inp.click(); };
     document.getElementById('bc_name').onclick=()=>openNameSearch(code);
     document.getElementById('bc_reg').onclick=()=>{ window._linkBarcode=code; openVerify({name:'',serving:'1 serving',per:foodPer()},{isNew:true,tag:window._faTag}); }; };
   document.getElementById('bc_go').onclick=doLookup;
@@ -1065,6 +1068,42 @@ async function ocrPhoto(file,barcode){ if(!file)return; window._faTag=window._fa
     openVerify({name:'',serving:'1 serving',barcode:barcode||'',per:parseNutritionText(text)},{isNew:true,tag:window._faTag,ocrText:text});
   }catch(e){ const mm=document.getElementById('ocr_msg'); if(mm)mm.textContent='no se pudo leer la foto · usa text o manual'; }
 }
+// ---- AI label reading (Gemini via Cloudflare Worker proxy) ----
+function fileToDataURL(file,maxDim,q){ maxDim=maxDim||1280; q=q||0.82; return new Promise(res=>{
+  const img=new Image(); const url=URL.createObjectURL(file);
+  img.onload=()=>{ let w=img.width,h=img.height; const sc=Math.min(1,maxDim/Math.max(w,h)); w=Math.max(1,Math.round(w*sc)); h=Math.max(1,Math.round(h*sc));
+    const c=document.createElement('canvas'); c.width=w; c.height=h; c.getContext('2d').drawImage(img,0,0,w,h);
+    URL.revokeObjectURL(url); let out=null; try{ out=c.toDataURL('image/jpeg',q); }catch(_){} res(out); };
+  img.onerror=()=>{ URL.revokeObjectURL(url); res(null); };
+  img.src=url; }); }
+function sanitizePer(o){ const p=foodPer(); if(o&&typeof o==='object'){ for(const k in p){ const v=parseFloat(o[k]); if(!isNaN(v)&&isFinite(v)) p[k]=v<0?0:v; } } return p; }
+function labelFallback(msgEl,barcode,reason){ if(!msgEl)return;
+  msgEl.innerHTML=(reason||'no se pudo leer la etiqueta')+'<div class="secondary" style="margin-top:10px"><button class="b" id="ai_retry">📷 otra foto</button><button class="b" id="ai_text">¶ texto</button><button class="b" id="ai_man">✏️ manual</button></div>';
+  const pick=()=>{ const inp=document.createElement('input'); inp.type='file'; inp.accept='image/*'; inp.setAttribute('capture','environment'); inp.onchange=()=>{ if(inp.files&&inp.files[0]) labelPhoto(inp.files[0],barcode); }; inp.click(); };
+  const r=document.getElementById('ai_retry'); if(r)r.onclick=pick;
+  const tx=document.getElementById('ai_text'); if(tx)tx.onclick=()=>openTextParse();
+  const mn=document.getElementById('ai_man'); if(mn)mn.onclick=()=>{ if(barcode)window._linkBarcode=barcode; openVerify({name:'',serving:'1 serving',barcode:barcode||'',per:foodPer()},{isNew:true,tag:window._faTag||curTag()}); };
+}
+async function aiPhoto(file,barcode){ if(!file)return; window._faTag=window._faTag||curTag();
+  openModal('<h3>analizando…</h3><div id="ai_msg" class="submeta">leyendo la etiqueta con IA…</div>');
+  const msg=()=>document.getElementById('ai_msg');
+  try{
+    const dataUrl=await fileToDataURL(file); if(!dataUrl) throw new Error('imagen inválida');
+    const ctrl=new AbortController(); const to=setTimeout(()=>ctrl.abort(),30000); let r;
+    try{ r=await fetch(AI_PROXY_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({image:dataUrl,barcode:barcode||''}),signal:ctrl.signal}); }
+    finally{ clearTimeout(to); }
+    if(!r.ok) throw new Error('servidor '+r.status);
+    const j=await r.json(); if(!j||!j.ok||!j.data) throw new Error((j&&j.error)||'sin datos');
+    const d=j.data; const per=sanitizePer(d.per); const found=Array.isArray(d.found)?d.found.filter(Boolean):[];
+    if(!(found.length||per.kcal||per.protein||per.carbs||per.fat)){ labelFallback(msg(),barcode,'la IA no encontró valores en esa foto. Acerca la tabla, de frente y con buena luz.'); return; }
+    const basis=d.basis||'serving';
+    const serving=d.serving||(basis==='100ml'?'100 ml':basis==='100g'?'100 g':'1 serving');
+    const summary='IA leyó '+(found.length||'varios')+' campos'+(d.serving?' · porción: '+d.serving:'')+(basis!=='serving'?' · valores por '+basis:'')+(found.length?('\ncampos: '+found.join(', ')):'')+'.\nrevisa y corrige los números antes de guardar.';
+    openVerify({name:d.name||'',serving:serving,barcode:barcode||'',per:per},{isNew:true,tag:window._faTag,ocrText:summary});
+  }catch(e){ labelFallback(msg(),barcode,(e&&e.name==='AbortError')?'tardó demasiado · reintenta':('no se pudo analizar ('+((e&&e.message)||'error')+')')); }
+}
+// Pick AI when the proxy is configured, else on-device OCR.
+function labelPhoto(file,barcode){ if(AI_PROXY_URL) return aiPhoto(file,barcode); return ocrPhoto(file,barcode); }
 db=load(); try{ const _sp=new URLSearchParams(location.search); if(_sp.has('steps')){ const _n=parseInt(_sp.get('steps'),10); if(!isNaN(_n)){ db.steps=db.steps||{}; db.steps[todayISO()]=_n; } if(history.replaceState)history.replaceState(null,'',location.pathname); } }catch(_){} save(); render();
 if('serviceWorker' in navigator){ window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{})); }
 </script>
