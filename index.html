@@ -477,7 +477,21 @@ function macroTotals(){
   const today=todayISO(); const items=db.meals[today]||[]; const t={kcal:0,protein:0,carbs:0,fat:0,sodium:0,potassium:0,sugar:0,fiber:0,water:0,caffeine:0};
   items.forEach(m=>{ for(const k in t){ t[k]+=parseFloat(m[k])||0; } }); return {items,t};
 }
-function bloating(t,g){ const na=t.sodium/(g.sodium||2300); const k=t.potassium/(g.potassium||3500); const wat=t.water/(g.water||3); let sc=na*55 + (1-Math.min(wat,1))*25 - k*15 + 10; sc=Math.max(0,Math.min(100,Math.round(sc))); return {sc,label:sc<34?'low':sc<67?'mod':'high'}; }
+function bloating(t,g){
+  // Subcutaneous (extracellular) water-retention tendency — acute, day-level heuristic.
+  // Evidence-weighted: Na:K balance dominates (validated retention marker; K drives natriuresis),
+  // plus acute Na load, hydration status (low intake -> RAAS/ADH retention) and sugar/insulin-driven
+  // renal Na reabsorption. Carbs/glycogen water excluded on purpose (that's muscle fullness, not skin puffiness).
+  const c=x=>Math.max(0,Math.min(1,x));
+  const naK=t.sodium/Math.max(t.potassium,1);                  // Na:K mass ratio
+  const naKterm=c((naK-0.5)/1.5);                              // ~0.5 balanced (WHO 2000/3500), >=2.0 high
+  const naAbs=c(((t.sodium/(g.sodium||2300))-0.8)/0.7);        // big acute sodium load
+  const hyd=c(1-t.water/(g.water||3));                         // under-drinking -> retention
+  const sugar=c((t.sugar/(g.sugar||50))-1);                    // sugar/insulin -> acute Na reabsorption
+  let sc=45*naKterm + 15*naAbs + 25*hyd + 15*sugar;
+  sc=Math.max(0,Math.min(100,Math.round(sc)));
+  return {sc,label:sc<34?'low':sc<67?'mod':'high'};
+}
 function renderMacros(){
   const g=db.settings.goals; const {items,t}=macroTotals();
   const left=Math.round(g.kcal-t.kcal); const pct=g.kcal?t.kcal/g.kcal*100:0;
@@ -505,8 +519,8 @@ function renderMacros(){
     +intakeRow('caffeine',t.caffeine,g.caffeine,'mg')
     +intakeRow('liquids',t.water,g.water,'L',null,1)
     +`<hr class="rule"/>`
-    +intakeRow('bloat risk',bl.sc,100,'',`<span class="pill">${bl.label}</span>`)
-    +`<div class="submeta">est. from sodium · potassium · liquids</div>`;
+    +intakeRow('water retention',bl.sc,100,'',`<span class="pill">${bl.label}</span>`)
+    +`<div class="submeta">retención subcutánea estimada · ratio Na:K + hidratación + azúcar (no es gas/GI)</div>`;
 
   // food log grouped by tag
   const order=['breakfast','lunch','snack','dinner','drink']; const byTag={};
