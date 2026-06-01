@@ -679,7 +679,8 @@ document.getElementById('app').addEventListener('click',e=>{
   else if(a==='nspick'){ const f=(window._nsRes||[])[+el.dataset.i]; if(!f)return; if(window._linkBarcode)f.barcode=window._linkBarcode; openVerify(f,{isNew:true,tag:window._faTag||curTag()}); }
   else if(a==='ftext'){ openTextParse(); }
   else if(a==='fmanual'){ openVerify({name:'',base:'g',per100:{},sizes:{}},{isNew:true,tag:curTag()}); }
-  else if(a==='vcontinue'){ const f=readRegister(); if(!f.name){ alert('Pon nombre.'); return; } const vv=window._verify||{}; openLog(f,{tag:vv.tag,barcode:vv.barcode,fromId:vv.fromId,isNew:true}); }
+  else if(a==='vcontinue'){ const f=readRegister(); if(!f.name){ alert('Pon nombre.'); return; } if(!f.barcode && !confirm('No pusiste código de barras. ¿Registrar sin código?')) return; const vv=window._verify||{}; openLog(f,{tag:vv.tag,barcode:f.barcode,fromId:vv.fromId,isNew:true}); }
+  else if(a==='mealcode'){ openMealCode(); }
   else if(a==='logsave'){ commitLog(true); }
   else if(a==='logonly'){ commitLog(false); }
   else if(a==='delmeal'){ const t=todayISO(); db.meals[t]=(db.meals[t]||[]).filter(m=>m.id!==el.dataset.id); save(); render(); }
@@ -976,7 +977,7 @@ function readRegister(){ const n=id=>{ const v=parseFloat(val(id)); return (isNa
   const sizes={}; if(sg>0)sizes.serving=sg; const pcg=n('v_piece_g'); if(pcg>0)sizes.piece=pcg;
   const packG=n('v_pack_g'), packN=n('v_pack_servings'); if(packG>0)sizes.container=packG; else if(sg>0&&packN>0)sizes.container=Math.round(sg*packN*100)/100;
   const vv=window._verify||{};
-  return {id:vv.fromId||undefined,barcode:vv.barcode||'',name:val('v_name'),brand:'',base,per100,sizes,servingLabel:val('v_serv_label')||'',gramsUnknown:false}; }
+  return {id:vv.fromId||undefined,barcode:val('v_barcode')||vv.barcode||'',name:val('v_name'),brand:'',base,per100,sizes,servingLabel:val('v_serv_label')||'',gramsUnknown:false}; }
 // REGISTER screen: name + serving size + macros (per serving) + package. NO unit/qty (that's the LOG step).
 function openVerify(food, opts){
   opts=opts||{}; const fd=asCanonical(food); const base=fd.base; const sg=fd.sizes.serving||0; const factor=sg?sg/100:1;
@@ -987,6 +988,8 @@ function openVerify(food, opts){
   const sz=(id,lbl,v)=>`<div><label>${lbl}</label><input id="${id}" type="number" inputmode="decimal" value="${v?numTxt(v):''}" placeholder="—"/></div>`;
   openModal(`<h3>registrar alimento</h3>
    <div class="field"><label>NOMBRE</label><input id="v_name" value="${(fd.name||'').replace(/"/g,'&quot;')}" placeholder="nombre del alimento"/></div>
+   <div class="field"><label>CÓDIGO DE BARRAS (obligatorio)</label><input id="v_barcode" inputmode="numeric" value="${(window._verify.barcode||'').replace(/"/g,'&quot;')}" placeholder="escanea o escribe los dígitos"/></div>
+   <button class="b" id="v_bc_scan" style="width:100%;margin-bottom:8px">📷 escanear código (foto)</button>
    <div class="field row2"><div><label>TIPO</label><select id="v_base" class="pick"><option value="g"${base==='g'?' selected':''}>sólido · g</option><option value="ml"${base==='ml'?' selected':''}>líquido · ml</option></select></div>${sz('v_serv_g','PORCIÓN ('+base+')',sg)}</div>
    <div class="field"><label>ETIQUETA PORCIÓN (opc)</label><input id="v_serv_label" value="${(fd.servingLabel||'').replace(/"/g,'&quot;')}" placeholder="ej. 4 galletas, 1 taza"/></div>
    <div class="submeta" id="v_perlbl" style="margin:4px 0 4px;color:var(--o50)"></div>
@@ -1006,6 +1009,7 @@ function openVerify(food, opts){
     const s=document.getElementById('v_reg_sum'); if(s){ const c=f.sizes.container||0; const env=c?(' · envase '+numTxt(c)+f.base+' = <b style="color:var(--fg)">'+Math.round(f.per100.kcal*c/100)+'</b> kcal'):''; s.innerHTML='por 100 '+f.base+': <b style="color:var(--fg)">'+Math.round(f.per100.kcal)+'</b> kcal'+env; } };
   ['v_serv_g','v_kcal','v_protein','v_carbs','v_fat','v_sugar','v_fiber','v_sodium','v_potassium','v_caffeine','v_pack_g','v_pack_servings','v_piece_g'].forEach(id=>{ const e=document.getElementById(id); if(e)e.addEventListener('input',rsum); });
   const vb=document.getElementById('v_base'); if(vb)vb.addEventListener('change',rsum);
+  const bcs=document.getElementById('v_bc_scan'); if(bcs)bcs.onclick=()=>scanCodeToInput('v_barcode');
   rsum();
 }
 // LOG screen: pick unit (dropdown of defaults) + qty → add to meal.
@@ -1025,27 +1029,55 @@ function openLog(food, opts){ opts=opts||{}; const fd=asCanonical(food);
   const lq=document.getElementById('l_qty'); if(lq)lq.addEventListener('input',lrecalc);
   lrecalc();
 }
+// take a photo of a barcode and decode it into an input field (manual edit still allowed)
+function scanCodeToInput(inputId){
+  const inp=document.createElement('input'); inp.type='file'; inp.accept='image/*'; inp.setAttribute('capture','environment');
+  inp.onchange=async()=>{ const f=inp.files&&inp.files[0]; if(!f)return; const t=document.getElementById(inputId); if(!t)return;
+    const old=t.value; t.value='leyendo…'; t.disabled=true;
+    const code=await decodeBarcodeImage(f); t.disabled=false; t.value=code||old;
+    if(!code) alert('No se leyó el código. Acércalo de frente que llene el cuadro, o escríbelo.');
+    else t.dispatchEvent(new Event('input',{bubbles:true})); };
+  inp.click();
+}
+function barcodeOf(m){ return (m&&m._food&&m._food.barcode)||(m&&m.barcode)||''; }
+function openMealCode(){
+  const t=todayISO(); const m=(db.meals[t]||[]).find(x=>x.id===window._mealId); if(!m)return;
+  openModal(`<h3>código de barras</h3>
+   <div class="submeta" style="margin-bottom:8px">${(m.name||'').replace(/[<&]/g,c=>c==='<'?'&lt;':'&amp;')}</div>
+   <div class="field"><label>CÓDIGO</label><input id="mc_code" inputmode="numeric" value="${barcodeOf(m).replace(/"/g,'&quot;')}" placeholder="escanea o escribe los dígitos"/></div>
+   <button class="b" id="mc_scan" style="width:100%;margin-bottom:10px">📷 escanear código (foto)</button>
+   <div class="sheetbtns"><button class="ok" id="mc_save">guardar</button><button class="cancel" data-act="closemodal">cancel</button></div>`);
+  document.getElementById('mc_scan').onclick=()=>scanCodeToInput('mc_code');
+  document.getElementById('mc_save').onclick=()=>{ const code=val('mc_code'); m._food=m._food||{}; m._food.barcode=code; m.barcode=code;
+    const baseName=(m.name||'').replace(/ ×[\d.]+$/,'');
+    const fdb=(db.foods||[]).find(x=>(m._food.id&&x.id===m._food.id)||x.name===baseName); if(fdb)fdb.barcode=code;
+    save(); closeModal(); render(); };
+}
 function openMealDetail(id){
   const t=todayISO(); const m=(db.meals[t]||[]).find(x=>x.id===id); if(!m)return; window._mealId=id;
   const row=(lbl,v,u)=>`<div class="line"><span class="k">${lbl}</span><span class="dots"></span><span class="v">${v?(Math.round(v)+' '+u):'—'}</span></div>`;
+  const bc=barcodeOf(m);
   openModal(`<h3>${m.name}</h3>
    <div class="submeta" style="margin-bottom:8px">#${m.tag}${m.time?' · '+m.time:''}${m.serving?' · '+m.serving:''}${m.qty&&m.qty!==1?' · ×'+m.qty:''}</div>
    ${row('kcal',m.kcal,'')}${row('protein',m.protein,'g')}${row('carbs',m.carbs,'g')}${row('fat',m.fat,'g')}${row('sugar',m.sugar,'g')}${row('fiber',m.fiber,'g')}${row('sodium',m.sodium,'mg')}${row('potassium',m.potassium,'mg')}${row('caffeine',m.caffeine,'mg')}${row('liquid',m.water,'L')}
-   <div class="sheetbtns" style="margin-top:12px"><button class="ok" data-act="editmeal">edit</button><button class="cancel" data-act="delmealnow">delete</button><button class="cancel" data-act="closemodal">close</button></div>`);
+   <div class="line"><span class="k">código</span><span class="dots"></span><span class="v">${bc?bc:'<a data-act="mealcode" style="text-decoration:underline;cursor:pointer">+ añadir</a>'}</span></div>
+   <div class="sheetbtns" style="margin-top:12px"><button class="ok" data-act="editmeal">edit</button>${bc?'<button class="cancel" data-act="mealcode">código</button>':''}<button class="cancel" data-act="delmealnow">delete</button><button class="cancel" data-act="closemodal">close</button></div>`);
 }
 function commitLog(saveToDb){
   const L=window._log||{}; const f=L.food; if(!f){ closeModal(); return; } if(!f.name){ alert('Pon nombre.'); return; }
   const unit=(document.getElementById('l_unit')||{}).value; const qty=parseFloat(val('l_qty'))||1;
   const nut=computeNutrients(f,unit,qty); const unitLabel=(foodUnits(f).find(u=>u.key===unit)||{}).label||unit;
+  const bc=L.barcode||f.barcode||'';
+  let foodId=L.fromId||null;
+  if(saveToDb){ db.foods=db.foods||[];
+    const ex=L.fromId?db.foods.find(x=>x.id===L.fromId):(bc?db.foods.find(x=>x.barcode===bc):null);
+    const stored={id:(ex&&ex.id)||f.id||uid(),barcode:bc||(ex&&ex.barcode)||'',name:f.name,brand:f.brand||'',base:f.base,per100:f.per100,sizes:f.sizes,servingLabel:f.servingLabel};
+    if(ex)Object.assign(ex,stored); else db.foods.push(stored); foodId=stored.id;
+  }
   const t=todayISO(); db.meals[t]=db.meals[t]||[];
-  const apply=m=>{ m.tag=L.tag; m.name=f.name+(qty!==1?' ×'+numTxt(qty):''); m.qty=qty; m.serving=unitLabel; MACROKEYS.forEach(k=>m[k]=nut[k]); m.water=nut.water; m._food={base:f.base,per100:f.per100,sizes:f.sizes,servingLabel:f.servingLabel,name:f.name,barcode:L.barcode||''}; m._unit=unit; };
+  const apply=m=>{ m.tag=L.tag; m.name=f.name+(qty!==1?' ×'+numTxt(qty):''); m.qty=qty; m.serving=unitLabel; MACROKEYS.forEach(k=>m[k]=nut[k]); m.water=nut.water; m._food={id:foodId,base:f.base,per100:f.per100,sizes:f.sizes,servingLabel:f.servingLabel,name:f.name,barcode:bc}; m._unit=unit; };
   if(L.editId){ const m=(db.meals[t]||[]).find(x=>x.id===L.editId); if(m){ apply(m); save(); closeModal(); render(); return; } }
   const item={id:uid(),time:nowHM()}; apply(item); db.meals[t].push(item);
-  if(saveToDb){ db.foods=db.foods||[];
-    const ex=L.fromId?db.foods.find(x=>x.id===L.fromId):(L.barcode?db.foods.find(x=>x.barcode===L.barcode):null);
-    const stored={id:(ex&&ex.id)||f.id||uid(),barcode:L.barcode||(ex&&ex.barcode)||'',name:f.name,brand:f.brand||'',base:f.base,per100:f.per100,sizes:f.sizes,servingLabel:f.servingLabel};
-    if(ex)Object.assign(ex,stored); else db.foods.push(stored);
-  }
   save(); closeModal(); render();
 }
 function openGoals(){
