@@ -114,6 +114,7 @@
   .item{padding:5px 0 5px 22px; font-size:11px; cursor:pointer;}
   .item:active{background:var(--o10);}
   .item .nm{color:var(--o60); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .item .nm .q{color:var(--fg); font-weight:700; margin-right:6px;} .item .nm .br{color:var(--o35); font-size:9px; margin-left:4px;}
   .item .macq{color:var(--o40); font-size:9px; text-align:right; white-space:nowrap;}
   .item .kc{color:var(--fg); font-size:11px; text-align:right;}
 
@@ -515,7 +516,9 @@ function renderMacros(){
     const mt={kcal:0,protein:0,carbs:0,fat:0,caffeine:0}; list.forEach(m=>{mt.kcal+=+m.kcal||0;mt.protein+=+m.protein||0;mt.carbs+=+m.carbs||0;mt.fat+=+m.fat||0;mt.caffeine+=+m.caffeine||0;});
     const gcaf=mt.caffeine>0?` · ${Math.round(mt.caffeine)}mg☕`:'';
     log+=`<div class="grp"><div class="ghead"><span><span class="hash">#</span>${tag}</span><span class="gmac">${Math.round(mt.protein)}P ${Math.round(mt.carbs)}C ${Math.round(mt.fat)}F</span><span class="gkc">${Math.round(mt.kcal)}${gcaf}</span></div>`;
-    list.forEach(m=>{ log+=`<div class="item" data-act="viewmeal" data-id="${m.id}"><span class="nm">${m.name}</span><span class="macq">${Math.round(m.protein)||0}P ${Math.round(m.carbs)||0}C ${Math.round(m.fat)||0}F</span><span class="kc">${Math.round(m.kcal)||0}</span></div>`; });
+    const ushort={serving:'porc',container:'env',piece:'pza','100':'100',g:'g',ml:'ml'};
+    list.forEach(m=>{ const q=m.qty||1; const nm=(m.name||'').replace(/ ×[\d.]+$/,''); const br=(m._food&&m._food.brand)||''; const us=ushort[m._unit]||''; const qtxt=numTxt(q)+(us?(' '+us):'×');
+      log+=`<div class="item" data-act="viewmeal" data-id="${m.id}"><span class="nm"><b class="q">${qtxt}</b>${nm}${br?' <span class="br">'+br+'</span>':''}</span><span class="macq">${Math.round(m.protein)||0}P ${Math.round(m.carbs)||0}C ${Math.round(m.fat)||0}F</span><span class="kc">${Math.round(m.kcal)||0}</span></div>`; });
     log+=`</div>`;
   });
 
@@ -524,7 +527,9 @@ function renderMacros(){
     +`<div class="section"><div class="h"><span class="s">//</span>TODAY&nbsp; macros</div><div class="meta" data-act="editgoals">[edit goals]</div></div>`
     +`<button class="hero ${open?'open':''}" data-act="togglemacros">${ringHTML(pct,`<div class="num">${Math.round(t.kcal).toLocaleString()}</div><div class="of">/ ${g.kcal.toLocaleString()} kcal</div>`,'lg')}<div class="hero-meta"><span class="left">${left>=0?left+' left':Math.abs(left)+' over'}</span> · ${Math.round(pct)}% <span class="chev">▾</span></div></button>`
     +details
-    +`<hr class="rule"/><div class="section" style="margin-bottom:14px"><div class="h"><span class="s">//</span>LOG&nbsp; today</div><div class="meta" data-act="addmeal">[+ add]</div></div>`
+    +`<hr class="rule"/><div class="section" style="margin-bottom:10px"><div class="h"><span class="s">//</span>LOG&nbsp; today</div></div>`
+    +`<button class="start" data-act="addnext" style="margin-bottom:8px">＋ agregar a ${nextMealTag()}</button>`
+    +`<div class="secondary" style="margin-bottom:14px"><button class="b" data-act="addsnack">＋ snack</button></div>`
     +log;
 }
 
@@ -671,6 +676,8 @@ document.getElementById('app').addEventListener('click',e=>{
   else if(a==='delmealnow'){ const t=todayISO(); db.meals[t]=(db.meals[t]||[]).filter(m=>m.id!==window._mealId); save(); closeModal(); render(); }
   else if(a==='vfixkcal'){ const P=parseFloat(val('v_protein'))||0,C=parseFloat(val('v_carbs'))||0,F=parseFloat(val('v_fat'))||0; const e=document.getElementById('v_kcal'); if(e){ e.value=Math.round(P*4+C*4+F*9); e.dispatchEvent(new Event('input',{bubbles:true})); } }
   else if(a==='addmeal'||a==='foodadd'){ openFoodAdd(); }
+  else if(a==='addnext'){ openFoodAdd(nextMealTag()); }
+  else if(a==='addsnack'){ openFoodAdd('snack'); }
   else if(a==='fregister'){ openRegisterMenu(null); }
   else if(a==='pickfood'){ const f=(db.foods||[]).find(x=>x.id===el.dataset.id); if(f) openLog(f,{fromId:f.id,tag:curTag()}); }
   else if(a==='fbarcode'){ openBarcode(); }
@@ -817,10 +824,11 @@ function normalizeExtract(d){ d=d||{}; const svStr=d.serving||d.serving_label||'
   return {name:d.name||'',brand:d.brand||'',barcode:d.barcode||'',base,per100,sizes,servingLabel:(gramsUnknown?svStr:(d.serving_label||'')),gramsUnknown}; }
 function mealSuggestions(){ const def=['breakfast','lunch','snack','dinner']; const used=new Set(); Object.values(db.meals||{}).forEach(arr=>arr.forEach(m=>{ if(m.tag)used.add(m.tag); })); return [...new Set([...def,...used])]; }
 function curTag(){ const e=document.getElementById('fa_tagtxt'); const v=e?e.value.trim():''; return v||'meal'; }
-function openFoodAdd(){
-  const sugg=mealSuggestions();
+function nextMealTag(){ const h=(new Date()).getHours(); if(h<11)return 'breakfast'; if(h<16)return 'lunch'; if(h<21)return 'dinner'; return 'snack'; }
+function openFoodAdd(preset){
+  const sugg=mealSuggestions(); const tag=preset||nextMealTag();
   openModal(`<h3>add food</h3>
-   <div class="field"><label>MEAL</label><input id="fa_tagtxt" value="breakfast" placeholder="ej. pre-workout, cena tardía" autocomplete="off"/>
+   <div class="field"><label>MEAL</label><input id="fa_tagtxt" value="${(tag+'').replace(/"/g,'&quot;')}" placeholder="ej. pre-workout, cena tardía" autocomplete="off"/>
    <div class="chips" id="fa_sugg">${sugg.map(s=>`<span class="chip" data-act="pickmealtag" data-v="${s.replace(/"/g,'&quot;')}">${s}</span>`).join('')}</div></div>
    <div class="field" style="margin-bottom:4px"><input id="fa_q" placeholder="buscar en tus alimentos guardados" autocomplete="off"/></div>
    <div id="fa_list" style="max-height:120px;overflow-y:auto;margin-bottom:12px"></div>
@@ -828,7 +836,7 @@ function openFoodAdd(){
    <div class="secondary"><button class="b" data-act="fsearch">search</button><button class="b" data-act="fregister">register</button></div>`);
   const q=document.getElementById('fa_q');
   const renderList=()=>{ const s=(q.value||'').toLowerCase(); const items=(db.foods||[]).filter(f=>!s||(f.name||'').toLowerCase().includes(s)).slice(0,12);
-    document.getElementById('fa_list').innerHTML = items.length ? items.map(f=>`<div class="pickitem" data-act="pickfood" data-id="${f.id}">${f.name} <span style="float:right;color:var(--o50)">${Math.round(foodKcal100(f))} /100${f.base==='ml'?'ml':'g'}</span></div>`).join('') : (s?'<div class="submeta" style="padding:6px 0">sin resultados</div>':''); };
+    document.getElementById('fa_list').innerHTML = items.length ? items.map(f=>`<div class="pickitem" data-act="pickfood" data-id="${f.id}">${f.name}${f.brand?' <span style="color:var(--o35);font-size:10px">'+f.brand+'</span>':''} <span style="float:right;color:var(--o50)">${Math.round(foodKcal100(f))} /100${f.base==='ml'?'ml':'g'}</span></div>`).join('') : (s?'<div class="submeta" style="padding:6px 0">sin resultados</div>':''); };
   q.oninput=renderList; renderList();
 }
 function openRegisterMenu(barcode){
@@ -977,7 +985,7 @@ function readRegister(){ const n=id=>{ const v=parseFloat(val(id)); return (isNa
   const sizes={}; if(sg>0)sizes.serving=sg; const pcg=n('v_piece_g'); if(pcg>0)sizes.piece=pcg;
   const packG=n('v_pack_g'), packN=n('v_pack_servings'); if(packG>0)sizes.container=packG; else if(sg>0&&packN>0)sizes.container=Math.round(sg*packN*100)/100;
   const vv=window._verify||{};
-  return {id:vv.fromId||undefined,barcode:val('v_barcode')||vv.barcode||'',name:val('v_name'),brand:'',base,per100,sizes,servingLabel:val('v_serv_label')||'',gramsUnknown:false}; }
+  return {id:vv.fromId||undefined,barcode:val('v_barcode')||vv.barcode||'',name:val('v_name'),brand:val('v_brand')||'',base,per100,sizes,servingLabel:val('v_serv_label')||'',gramsUnknown:false}; }
 // REGISTER screen: name + serving size + macros (per serving) + package. NO unit/qty (that's the LOG step).
 function openVerify(food, opts){
   opts=opts||{}; const fd=asCanonical(food); const base=fd.base; const sg=fd.sizes.serving||0; const factor=sg?sg/100:1;
@@ -987,7 +995,8 @@ function openVerify(food, opts){
   const nf=(id,lbl,v)=>`<div><label>${lbl}</label><input id="${id}" type="number" inputmode="decimal" value="${(v===0||v)?numTxt(v):''}"/></div>`;
   const sz=(id,lbl,v)=>`<div><label>${lbl}</label><input id="${id}" type="number" inputmode="decimal" value="${v?numTxt(v):''}" placeholder="—"/></div>`;
   openModal(`<h3>registrar alimento</h3>
-   <div class="field"><label>NOMBRE</label><input id="v_name" value="${(fd.name||'').replace(/"/g,'&quot;')}" placeholder="nombre del alimento"/></div>
+   <div class="field"><label>NOMBRE DEL PRODUCTO</label><input id="v_name" value="${(fd.name||'').replace(/"/g,'&quot;')}" placeholder="ej. galletas marías"/></div>
+   <div class="field"><label>MARCA (opcional)</label><input id="v_brand" value="${(fd.brand||'').replace(/"/g,'&quot;')}" placeholder="ej. Gamesa"/></div>
    <div class="field"><label>CÓDIGO DE BARRAS (obligatorio)</label><input id="v_barcode" inputmode="numeric" value="${(window._verify.barcode||'').replace(/"/g,'&quot;')}" placeholder="escanea o escribe los dígitos"/></div>
    <button class="b" id="v_bc_scan" style="width:100%;margin-bottom:8px">📷 escanear código (foto)</button>
    <div class="field row2"><div><label>TIPO</label><select id="v_base" class="pick"><option value="g"${base==='g'?' selected':''}>sólido · g</option><option value="ml"${base==='ml'?' selected':''}>líquido · ml</option></select></div>${sz('v_serv_g','PORCIÓN ('+base+')',sg)}</div>
@@ -1058,7 +1067,7 @@ function openMealDetail(id){
   const row=(lbl,v,u)=>`<div class="line"><span class="k">${lbl}</span><span class="dots"></span><span class="v">${v?(Math.round(v)+' '+u):'—'}</span></div>`;
   const bc=barcodeOf(m);
   openModal(`<h3>${m.name}</h3>
-   <div class="submeta" style="margin-bottom:8px">#${m.tag}${m.time?' · '+m.time:''}${m.serving?' · '+m.serving:''}${m.qty&&m.qty!==1?' · ×'+m.qty:''}</div>
+   <div class="submeta" style="margin-bottom:8px">#${m.tag}${(m._food&&m._food.brand)?' · '+m._food.brand:''}${m.time?' · '+m.time:''}${m.serving?' · '+m.serving:''}${m.qty&&m.qty!==1?' · ×'+numTxt(m.qty):''}</div>
    ${row('kcal',m.kcal,'')}${row('protein',m.protein,'g')}${row('carbs',m.carbs,'g')}${row('fat',m.fat,'g')}${row('sugar',m.sugar,'g')}${row('fiber',m.fiber,'g')}${row('sodium',m.sodium,'mg')}${row('potassium',m.potassium,'mg')}${row('caffeine',m.caffeine,'mg')}${row('liquid',m.water,'L')}
    <div class="line"><span class="k">código</span><span class="dots"></span><span class="v">${bc?bc:'<a data-act="mealcode" style="text-decoration:underline;cursor:pointer">+ añadir</a>'}</span></div>
    <div class="sheetbtns" style="margin-top:12px"><button class="ok" data-act="editmeal">edit</button>${bc?'<button class="cancel" data-act="mealcode">código</button>':''}<button class="cancel" data-act="delmealnow">delete</button><button class="cancel" data-act="closemodal">close</button></div>`);
@@ -1075,7 +1084,7 @@ function commitLog(saveToDb){
     if(ex)Object.assign(ex,stored); else db.foods.push(stored); foodId=stored.id;
   }
   const t=todayISO(); db.meals[t]=db.meals[t]||[];
-  const apply=m=>{ m.tag=L.tag; m.name=f.name+(qty!==1?' ×'+numTxt(qty):''); m.qty=qty; m.serving=unitLabel; MACROKEYS.forEach(k=>m[k]=nut[k]); m.water=nut.water; m._food={id:foodId,base:f.base,per100:f.per100,sizes:f.sizes,servingLabel:f.servingLabel,name:f.name,barcode:bc}; m._unit=unit; };
+  const apply=m=>{ m.tag=L.tag; m.name=f.name+(qty!==1?' ×'+numTxt(qty):''); m.qty=qty; m.serving=unitLabel; MACROKEYS.forEach(k=>m[k]=nut[k]); m.water=nut.water; m._food={id:foodId,base:f.base,per100:f.per100,sizes:f.sizes,servingLabel:f.servingLabel,name:f.name,brand:f.brand||'',barcode:bc}; m._unit=unit; };
   if(L.editId){ const m=(db.meals[t]||[]).find(x=>x.id===L.editId); if(m){ apply(m); save(); closeModal(); render(); return; } }
   const item={id:uid(),time:nowHM()}; apply(item); db.meals[t].push(item);
   save(); closeModal(); render();
