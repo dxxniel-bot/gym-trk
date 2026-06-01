@@ -665,20 +665,23 @@ document.getElementById('app').addEventListener('click',e=>{
   else if(a==='ringtog'){ const k=el.dataset.k; state.ringRem=state.ringRem||{}; state.ringRem[k]=!state.ringRem[k]; render(); }
   else if(a==='viewmeal'){ openMealDetail(el.dataset.id); }
   else if(a==='pickmealtag'){ const e=document.getElementById('fa_tagtxt'); if(e)e.value=el.dataset.v; }
-  else if(a==='editmeal'){ const t=todayISO(); const m=(db.meals[t]||[]).find(x=>x.id===window._mealId); if(m){ const q=m.qty||1; const per={}; ['kcal','protein','carbs','fat','sugar','sodium','potassium','fiber','caffeine','water'].forEach(k=>per[k]=(+m[k]||0)/q); closeModal(); openVerify({name:(m.name||'').replace(/ ×[\\d.]+$/,''),serving:m.serving||'1 serving',per},{isNew:false,tag:m.tag,qty:q,editId:m.id}); } }
+  else if(a==='editmeal'){ const t=todayISO(); const m=(db.meals[t]||[]).find(x=>x.id===window._mealId); if(m){ closeModal();
+      if(m._food){ openLog(m._food,{editId:m.id,qty:m.qty||1,unit:m._unit,tag:m.tag}); }
+      else { const q=m.qty||1; const per={}; ['kcal','protein','carbs','fat','sugar','sodium','potassium','fiber','caffeine','water'].forEach(k=>per[k]=(+m[k]||0)/q); openLog({name:(m.name||'').replace(/ ×[\d.]+$/,''),serving:m.serving||'1 serving',per},{editId:m.id,qty:q,tag:m.tag}); } } }
   else if(a==='delmealnow'){ const t=todayISO(); db.meals[t]=(db.meals[t]||[]).filter(m=>m.id!==window._mealId); save(); closeModal(); render(); }
   else if(a==='vfixkcal'){ const P=parseFloat(val('v_protein'))||0,C=parseFloat(val('v_carbs'))||0,F=parseFloat(val('v_fat'))||0; const e=document.getElementById('v_kcal'); if(e){ e.value=Math.round(P*4+C*4+F*9); e.dispatchEvent(new Event('input',{bubbles:true})); } }
   else if(a==='addmeal'||a==='foodadd'){ openFoodAdd(); }
   else if(a==='fregister'){ openRegisterMenu(null); }
-  else if(a==='pickfood'){ const f=(db.foods||[]).find(x=>x.id===el.dataset.id); if(f) openVerify(f,{qty:1,fromId:f.id,tag:curTag()}); }
+  else if(a==='pickfood'){ const f=(db.foods||[]).find(x=>x.id===el.dataset.id); if(f) openLog(f,{fromId:f.id,tag:curTag()}); }
   else if(a==='fbarcode'){ openBarcode(); }
   else if(a==='fsearch'){ window._faTag=curTag(); openNameSearch(''); }
   else if(a==='fphoto'){ window._faTag=curTag(); const inp=document.createElement('input'); inp.type='file'; inp.accept='image/*'; inp.setAttribute('capture','environment'); inp.onchange=()=>{ if(inp.files&&inp.files[0]) labelPhoto(inp.files[0]); }; inp.click(); }
   else if(a==='nspick'){ const f=(window._nsRes||[])[+el.dataset.i]; if(!f)return; if(window._linkBarcode)f.barcode=window._linkBarcode; openVerify(f,{isNew:true,tag:window._faTag||curTag()}); }
   else if(a==='ftext'){ openTextParse(); }
   else if(a==='fmanual'){ openVerify({name:'',base:'g',per100:{},sizes:{}},{isNew:true,tag:curTag()}); }
-  else if(a==='verifysave'){ commitFood(true); }
-  else if(a==='verifylog'){ commitFood(false); }
+  else if(a==='vcontinue'){ const f=readRegister(); if(!f.name){ alert('Pon nombre.'); return; } const vv=window._verify||{}; openLog(f,{tag:vv.tag,barcode:vv.barcode,fromId:vv.fromId,isNew:true}); }
+  else if(a==='logsave'){ commitLog(true); }
+  else if(a==='logonly'){ commitLog(false); }
   else if(a==='delmeal'){ const t=todayISO(); db.meals[t]=(db.meals[t]||[]).filter(m=>m.id!==el.dataset.id); save(); render(); }
   else if(a==='editgoals'){ openGoals(); }
   else if(a==='editsteps'){ const cur=(db.steps&&db.steps[todayISO()])||''; const v=prompt('pasos de hoy (de Apple Health):',cur); if(v!=null){ const n=parseInt(String(v).replace(/[^0-9]/g,''),10); if(!isNaN(n)){ db.steps=db.steps||{}; db.steps[todayISO()]=n; save(); render(); } } }
@@ -965,51 +968,62 @@ function parseNutritionText(txt){
   const caf=afterU('cafe[íi]na|caffeine'); per.caffeine=caf.u==='g'?caf.v*1000:caf.v;
   return per;
 }
-function readCanonicalFood(){ const n=id=>{ const v=parseFloat(val(id)); return (isNaN(v)||v<0)?0:v; };
+// build a canonical food from the REGISTER screen (macros are per the typed porción; empty porción = per 100)
+function readRegister(){ const n=id=>{ const v=parseFloat(val(id)); return (isNaN(v)||v<0)?0:v; };
   const base=(document.getElementById('v_base')||{}).value||'g';
-  const per100={}; MACROKEYS.forEach(k=>per100[k]=n('v_'+k));
-  const sizes={}; const sv=n('v_sz_serving'); if(sv>0)sizes.serving=sv; const pc=n('v_sz_piece'); if(pc>0)sizes.piece=pc; const ct=n('v_sz_container'); if(ct>0)sizes.container=ct;
+  const sg=n('v_serv_g'); const per={}; MACROKEYS.forEach(k=>per[k]=n('v_'+k));
+  const per100={}; if(sg>0){ const f=100/sg; MACROKEYS.forEach(k=>per100[k]=Math.round((per[k]||0)*f*100)/100); } else { MACROKEYS.forEach(k=>per100[k]=per[k]||0); }
+  const sizes={}; if(sg>0)sizes.serving=sg; const pcg=n('v_piece_g'); if(pcg>0)sizes.piece=pcg;
+  const packG=n('v_pack_g'), packN=n('v_pack_servings'); if(packG>0)sizes.container=packG; else if(sg>0&&packN>0)sizes.container=Math.round(sg*packN*100)/100;
   const vv=window._verify||{};
   return {id:vv.fromId||undefined,barcode:vv.barcode||'',name:val('v_name'),brand:'',base,per100,sizes,servingLabel:val('v_serv_label')||'',gramsUnknown:false}; }
+// REGISTER screen: name + serving size + macros (per serving) + package. NO unit/qty (that's the LOG step).
 function openVerify(food, opts){
-  opts=opts||{}; const fd=asCanonical(food); const p=fd.per100, base=fd.base;
-  window._verify={tag:opts.tag||curTag(),barcode:fd.barcode||(food&&food.barcode)||'',fromId:opts.fromId||null,editId:opts.editId||null};
+  opts=opts||{}; const fd=asCanonical(food); const base=fd.base; const sg=fd.sizes.serving||0; const factor=sg?sg/100:1;
+  window._verify={tag:opts.tag||curTag(),barcode:fd.barcode||(food&&food.barcode)||'',fromId:opts.fromId||null};
+  const disp={}; MACROKEYS.forEach(k=>disp[k]=Math.round((fd.per100[k]||0)*factor*100)/100);
+  const packServings=(fd.sizes.container&&sg)?Math.round(fd.sizes.container/sg*100)/100:'';
   const nf=(id,lbl,v)=>`<div><label>${lbl}</label><input id="${id}" type="number" inputmode="decimal" value="${(v===0||v)?numTxt(v):''}"/></div>`;
   const sz=(id,lbl,v)=>`<div><label>${lbl}</label><input id="${id}" type="number" inputmode="decimal" value="${v?numTxt(v):''}" placeholder="—"/></div>`;
-  openModal(`<h3>${opts.isNew?'verify &amp; add':'log food'}</h3>
-   <div class="field"><label>NAME</label><input id="v_name" value="${(fd.name||'').replace(/"/g,'&quot;')}" placeholder="food name"/></div>
-   <div class="field row2"><div><label>UNIDAD</label><select id="v_unit" class="pick"></select></div><div><label>CANTIDAD</label><input id="v_qty" type="number" inputmode="decimal" step="0.25" value="${opts.qty||1}"/></div></div>
-   <div id="v_sum" class="submeta" style="margin:2px 0 2px"></div>
-   <div id="v_liquid_hint" class="submeta" style="margin:0 0 6px;color:var(--o50)"></div>
-   <details ${opts.isNew?'open':''} style="margin-bottom:8px"><summary class="submeta" style="cursor:pointer">valores y tamaños (editar)</summary>
-   <div class="field row2" style="margin-top:8px"><div><label>BASE</label><select id="v_base" class="pick"><option value="g"${base==='g'?' selected':''}>sólido · g</option><option value="ml"${base==='ml'?' selected':''}>líquido · ml</option></select></div>${sz('v_sz_serving','PORCIÓN ('+base+')',fd.sizes.serving)}</div>
-   <div class="field row2">${sz('v_sz_piece','PIEZA ('+base+', opc)',fd.sizes.piece)}${sz('v_sz_container','ENVASE ('+base+', opc)',fd.sizes.container)}</div>
-   <div class="field"><label>ETIQUETA PORCIÓN (opc)</label><input id="v_serv_label" value="${(fd.servingLabel||'').replace(/"/g,'&quot;')}" placeholder="ej. 4 galletas"/></div>
-   <div class="submeta" style="margin:4px 0 4px;color:var(--o50)">VALORES POR 100 ${base.toUpperCase()}:</div>
-   <div class="field row2">${nf('v_kcal','KCAL',p.kcal)}${nf('v_protein','PROTEIN g',p.protein)}</div>
-   <div class="field row2">${nf('v_carbs','CARBS g',p.carbs)}${nf('v_fat','FAT g',p.fat)}</div>
-   <div class="field row2">${nf('v_sugar','SUGAR g',p.sugar)}${nf('v_fiber','FIBER g',p.fiber)}</div>
-   <div class="field row2">${nf('v_sodium','SODIUM mg',p.sodium)}${nf('v_potassium','POTASSIUM mg',p.potassium)}</div>
-   <div class="field row2">${nf('v_caffeine','CAFFEINE mg',p.caffeine)}<div></div></div>
-   </details>
+  openModal(`<h3>registrar alimento</h3>
+   <div class="field"><label>NOMBRE</label><input id="v_name" value="${(fd.name||'').replace(/"/g,'&quot;')}" placeholder="nombre del alimento"/></div>
+   <div class="field row2"><div><label>TIPO</label><select id="v_base" class="pick"><option value="g"${base==='g'?' selected':''}>sólido · g</option><option value="ml"${base==='ml'?' selected':''}>líquido · ml</option></select></div>${sz('v_serv_g','PORCIÓN ('+base+')',sg)}</div>
+   <div class="field"><label>ETIQUETA PORCIÓN (opc)</label><input id="v_serv_label" value="${(fd.servingLabel||'').replace(/"/g,'&quot;')}" placeholder="ej. 4 galletas, 1 taza"/></div>
+   <div class="submeta" id="v_perlbl" style="margin:4px 0 4px;color:var(--o50)"></div>
+   <div class="field row2">${nf('v_kcal','KCAL',disp.kcal)}${nf('v_protein','PROTEÍNA g',disp.protein)}</div>
+   <div class="field row2">${nf('v_carbs','CARBS g',disp.carbs)}${nf('v_fat','GRASA g',disp.fat)}</div>
+   <div class="field row2">${nf('v_sugar','AZÚCAR g',disp.sugar)}${nf('v_fiber','FIBRA g',disp.fiber)}</div>
+   <div class="field row2">${nf('v_sodium','SODIO mg',disp.sodium)}${nf('v_potassium','POTASIO mg',disp.potassium)}</div>
+   <div class="field row2">${nf('v_caffeine','CAFEÍNA mg',disp.caffeine)}<div></div></div>
+   <div class="submeta" style="margin:6px 0 2px;color:var(--o50)">ENVASE (opcional · para loguear "1 envase"):</div>
+   <div class="field row2">${sz('v_pack_g','ENVASE NETO ('+base+')',fd.sizes.container)}${sz('v_pack_servings','PORCIONES/ENVASE',packServings)}</div>
+   <div class="field">${sz('v_piece_g','PESO POR PIEZA ('+base+', opc)',fd.sizes.piece)}</div>
+   <div id="v_reg_sum" class="submeta" style="margin:6px 0 4px"></div>
    ${opts.ocrText?`<details style="margin-bottom:8px"><summary class="submeta" style="cursor:pointer">qué leyó la IA</summary><pre style="white-space:pre-wrap;font-size:9px;color:var(--o50);max-height:120px;overflow:auto;margin:6px 0 0">${(opts.ocrText||'').replace(/[<&]/g,c=>c==='<'?'&lt;':'&amp;')}</pre></details>`:''}
-   <div class="sheetbtns"><button class="ok" data-act="verifysave">save + log</button><button class="cancel" data-act="verifylog">log only</button></div>`);
-  const rebuildUnits=keep=>{ const sel=document.getElementById('v_unit'); if(!sel)return; const cur=keep||sel.value; const units=foodUnits(readCanonicalFood()); sel.innerHTML=units.map(u=>`<option value="${u.key}">${u.label}</option>`).join(''); if(units.some(u=>u.key===cur))sel.value=cur; };
-  rebuildUnits(opts.isNew?(fd.sizes.serving?'serving':undefined):'serving');
-  const vrecalc=()=>{ const f=readCanonicalFood(); const unit=(document.getElementById('v_unit')||{}).value||'serving'; const q=parseFloat(val('v_qty'))||1;
-    const nut=computeNutrients(f,unit,q); const sum=document.getElementById('v_sum');
-    if(sum){ const k100=f.per100.kcal, mk100=Math.round(f.per100.protein*4+f.per100.carbs*4+f.per100.fat*9);
-      const warn=(k100&&mk100&&Math.abs(k100-mk100)/Math.max(k100,mk100)>0.12)?' · <span style="color:#c8a24d">⚠ kcal≠macros</span> <a data-act="vfixkcal" style="text-decoration:underline;cursor:pointer">usar '+mk100+'</a>':'';
-      sum.innerHTML='→ <b style="color:var(--fg)">'+Math.round(nut.kcal)+'</b> kcal · '+Math.round(nut.protein)+'P '+Math.round(nut.carbs)+'C '+Math.round(nut.fat)+'F'+(nut.caffeine?(' · '+Math.round(nut.caffeine)+'mg caf'):'')+' · '+numTxt(nut._grams)+' '+f.base+warn; }
-    const lh=document.getElementById('v_liquid_hint'); if(lh)lh.textContent=(f.base==='ml'&&nut.water>0)?('💧 '+numTxt(nut.water)+' L a líquidos'):''; };
-  ['v_qty','v_name','v_kcal','v_protein','v_carbs','v_fat','v_sugar','v_fiber','v_sodium','v_potassium','v_caffeine','v_serv_label'].forEach(id=>{ const e=document.getElementById(id); if(e)e.addEventListener('input',vrecalc); });
-  const us=document.getElementById('v_unit'); if(us)us.addEventListener('change',vrecalc);
-  ['v_sz_serving','v_sz_piece','v_sz_container','v_base'].forEach(id=>{ const e=document.getElementById(id); if(e)e.addEventListener(id==='v_base'?'change':'input',()=>{ rebuildUnits(); vrecalc(); }); });
-  vrecalc();
+   <div class="sheetbtns"><button class="ok" data-act="vcontinue">continuar → loguear</button><button class="cancel" data-act="closemodal">cancel</button></div>`);
+  const rsum=()=>{ const f=readRegister(); const sgn=f.sizes.serving||0; const lbl=document.getElementById('v_perlbl');
+    if(lbl)lbl.textContent=sgn?('VALORES POR PORCIÓN ('+numTxt(sgn)+' '+f.base+'):'):('VALORES POR 100 '+f.base.toUpperCase()+' (no pusiste porción):');
+    const s=document.getElementById('v_reg_sum'); if(s){ const c=f.sizes.container||0; const env=c?(' · envase '+numTxt(c)+f.base+' = <b style="color:var(--fg)">'+Math.round(f.per100.kcal*c/100)+'</b> kcal'):''; s.innerHTML='por 100 '+f.base+': <b style="color:var(--fg)">'+Math.round(f.per100.kcal)+'</b> kcal'+env; } };
+  ['v_serv_g','v_kcal','v_protein','v_carbs','v_fat','v_sugar','v_fiber','v_sodium','v_potassium','v_caffeine','v_pack_g','v_pack_servings','v_piece_g'].forEach(id=>{ const e=document.getElementById(id); if(e)e.addEventListener('input',rsum); });
+  const vb=document.getElementById('v_base'); if(vb)vb.addEventListener('change',rsum);
+  rsum();
 }
-function readVerify(){ const f=readCanonicalFood(); const vv=window._verify||{};
-  return {food:f,unit:(document.getElementById('v_unit')||{}).value||'serving',qty:parseFloat(val('v_qty'))||1,
-    tag:vv.tag||'meal',fromId:vv.fromId||null,editId:vv.editId||null,barcode:vv.barcode||''};
+// LOG screen: pick unit (dropdown of defaults) + qty → add to meal.
+function openLog(food, opts){ opts=opts||{}; const fd=asCanonical(food);
+  window._log={food:fd,tag:opts.tag||curTag(),fromId:opts.fromId||fd.id||null,editId:opts.editId||null,barcode:fd.barcode||'',isNew:!!opts.isNew};
+  const units=foodUnits(fd); const defUnit=opts.unit||(fd.sizes.serving?'serving':units[0].key);
+  const editing=!!opts.editId; const primary=editing?'guardar cambios':(window._log.isNew?'guardar + loguear':'loguear');
+  openModal(`<h3>${editing?'editar registro':'loguear'} · ${(fd.name||'alimento').replace(/[<&]/g,c=>c==='<'?'&lt;':'&amp;')}</h3>
+   <div class="field row2"><div><label>UNIDAD</label><select id="l_unit" class="pick">${units.map(u=>`<option value="${u.key}"${u.key===defUnit?' selected':''}>${u.label}</option>`).join('')}</select></div><div><label>CANTIDAD</label><input id="l_qty" type="number" inputmode="decimal" step="0.25" value="${opts.qty||1}"/></div></div>
+   <div id="l_sum" class="submeta" style="margin:4px 0 2px"></div>
+   <div id="l_liquid" class="submeta" style="margin:0 0 8px;color:var(--o50)"></div>
+   <div class="sheetbtns"><button class="ok" data-act="logsave">${primary}</button>${editing?'<button class="cancel" data-act="closemodal">cancel</button>':('<button class="cancel" data-act="logonly">'+(window._log.isNew?'loguear sin guardar':'cancel')+'</button>')}</div>`);
+  const lrecalc=()=>{ const u=(document.getElementById('l_unit')||{}).value; const q=parseFloat(val('l_qty'))||1; const nut=computeNutrients(fd,u,q);
+    const s=document.getElementById('l_sum'); if(s)s.innerHTML='→ <b style="color:var(--fg)">'+Math.round(nut.kcal)+'</b> kcal · '+Math.round(nut.protein)+'P '+Math.round(nut.carbs)+'C '+Math.round(nut.fat)+'F'+(nut.caffeine?(' · '+Math.round(nut.caffeine)+'mg caf'):'')+' · '+numTxt(nut._grams)+' '+fd.base;
+    const lh=document.getElementById('l_liquid'); if(lh)lh.textContent=(fd.base==='ml'&&nut.water>0)?('💧 '+numTxt(nut.water)+' L a líquidos'):''; };
+  const us=document.getElementById('l_unit'); if(us)us.addEventListener('change',lrecalc);
+  const lq=document.getElementById('l_qty'); if(lq)lq.addEventListener('input',lrecalc);
+  lrecalc();
 }
 function openMealDetail(id){
   const t=todayISO(); const m=(db.meals[t]||[]).find(x=>x.id===id); if(!m)return; window._mealId=id;
@@ -1019,16 +1033,17 @@ function openMealDetail(id){
    ${row('kcal',m.kcal,'')}${row('protein',m.protein,'g')}${row('carbs',m.carbs,'g')}${row('fat',m.fat,'g')}${row('sugar',m.sugar,'g')}${row('fiber',m.fiber,'g')}${row('sodium',m.sodium,'mg')}${row('potassium',m.potassium,'mg')}${row('caffeine',m.caffeine,'mg')}${row('liquid',m.water,'L')}
    <div class="sheetbtns" style="margin-top:12px"><button class="ok" data-act="editmeal">edit</button><button class="cancel" data-act="delmealnow">delete</button><button class="cancel" data-act="closemodal">close</button></div>`);
 }
-function commitFood(saveToDb){
-  const v=readVerify(); const f=v.food; if(!f.name){ alert('Pon nombre.'); return; }
-  const nut=computeNutrients(f,v.unit,v.qty); const unitLabel=(foodUnits(f).find(u=>u.key===v.unit)||{}).label||v.unit;
+function commitLog(saveToDb){
+  const L=window._log||{}; const f=L.food; if(!f){ closeModal(); return; } if(!f.name){ alert('Pon nombre.'); return; }
+  const unit=(document.getElementById('l_unit')||{}).value; const qty=parseFloat(val('l_qty'))||1;
+  const nut=computeNutrients(f,unit,qty); const unitLabel=(foodUnits(f).find(u=>u.key===unit)||{}).label||unit;
   const t=todayISO(); db.meals[t]=db.meals[t]||[];
-  const apply=m=>{ m.tag=v.tag; m.name=f.name+(v.qty!==1?' ×'+numTxt(v.qty):''); m.qty=v.qty; m.serving=unitLabel; MACROKEYS.forEach(k=>m[k]=nut[k]); m.water=nut.water; };
-  if(v.editId){ const m=(db.meals[t]||[]).find(x=>x.id===v.editId); if(m){ apply(m); save(); closeModal(); render(); return; } }
+  const apply=m=>{ m.tag=L.tag; m.name=f.name+(qty!==1?' ×'+numTxt(qty):''); m.qty=qty; m.serving=unitLabel; MACROKEYS.forEach(k=>m[k]=nut[k]); m.water=nut.water; m._food={base:f.base,per100:f.per100,sizes:f.sizes,servingLabel:f.servingLabel,name:f.name,barcode:L.barcode||''}; m._unit=unit; };
+  if(L.editId){ const m=(db.meals[t]||[]).find(x=>x.id===L.editId); if(m){ apply(m); save(); closeModal(); render(); return; } }
   const item={id:uid(),time:nowHM()}; apply(item); db.meals[t].push(item);
   if(saveToDb){ db.foods=db.foods||[];
-    const ex=v.fromId?db.foods.find(x=>x.id===v.fromId):(v.barcode?db.foods.find(x=>x.barcode===v.barcode):null);
-    const stored={id:(ex&&ex.id)||uid(),barcode:v.barcode||(ex&&ex.barcode)||'',name:f.name,brand:f.brand||'',base:f.base,per100:f.per100,sizes:f.sizes,servingLabel:f.servingLabel};
+    const ex=L.fromId?db.foods.find(x=>x.id===L.fromId):(L.barcode?db.foods.find(x=>x.barcode===L.barcode):null);
+    const stored={id:(ex&&ex.id)||f.id||uid(),barcode:L.barcode||(ex&&ex.barcode)||'',name:f.name,brand:f.brand||'',base:f.base,per100:f.per100,sizes:f.sizes,servingLabel:f.servingLabel};
     if(ex)Object.assign(ex,stored); else db.foods.push(stored);
   }
   save(); closeModal(); render();
