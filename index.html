@@ -11,15 +11,16 @@
 <meta name="theme-color" content="#0c0c0c"/>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Cormorant:wght@400;500;600;700&family=JetBrains+Mono:wght@300;400;500;700;800&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700;800&display=swap" rel="stylesheet" />
 <style>
   :root{
-    --bg:#15130f; --frame:#0b0a08; --fg:#ece6da;
-    --o60:rgba(236,230,218,.68); --o50:rgba(236,230,218,.6); --o40:rgba(236,230,218,.55);
-    --o35:rgba(236,230,218,.5); --o30:rgba(236,230,218,.44); --o20:rgba(236,230,218,.3);
-    --o12:rgba(236,230,218,.12); --o10:rgba(236,230,218,.1);
-    --faint:#544f45; --line:#211e17; --track:#1b1812; --fill:#e8e1d2; --abort:rgba(190,110,110,.55);
-    --accent:#c8a24d; --accent-dim:rgba(200,162,77,.5); --serif:"Cormorant",Georgia,serif;
+    --bg:#000; --frame:#000; --fg:#f3f3f4;
+    --o60:rgba(243,243,244,.66); --o50:rgba(243,243,244,.56); --o40:rgba(243,243,244,.5);
+    --o35:rgba(243,243,244,.46); --o30:rgba(243,243,244,.4); --o20:rgba(243,243,244,.26);
+    --o12:rgba(243,243,244,.1); --o10:rgba(243,243,244,.06);
+    --faint:#3a3a3e; --line:rgba(243,243,244,.08); --track:#191920; --fill:#f3f3f4; --abort:rgba(190,110,110,.55);
+    --card:#0d0d10; --card2:#16161c; --border:rgba(243,243,244,.09); --radius:16px;
+    --good:#43c98b; --bad:#e5675c; --warn:#e3b34f; --info:#6aa6ff;
   }
   *{margin:0;padding:0;box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
   :focus{outline:none;}
@@ -176,28 +177,42 @@
   .empty{font-size:11px; color:var(--o40); text-align:center; padding:30px 0;}
   .caption{font-size:10px; color:var(--o40);} .caption b{color:var(--o60);}
 
-  /* ===== luxury terminal layer ===== */
-  /* faint CRT scanline texture over the frame */
-  .frame::after{content:""; position:absolute; inset:0; pointer-events:none; z-index:3;
-    background:repeating-linear-gradient(0deg, rgba(236,230,218,.018) 0 1px, transparent 1px 3px);}
-  /* editorial serif for the big focal numerals — keeps mono everywhere else */
-  .ring.lg .num{font-family:var(--serif); font-weight:600; letter-spacing:0;}
-  .whdr .wname{font-family:var(--serif); font-weight:600; letter-spacing:0; font-size:26px;}
-  .hero .of{letter-spacing:.5px;}
-  /* champagne accent, used sparingly */
-  .ring.lg .ring-fill{stroke:var(--accent);}
-  .section .h .s, .whdr .l1 .s, .whdr .l2 .s{color:var(--accent);}
+  /* ===== rimu-inspired card system (JetBrains Mono kept) ===== */
+  .card{background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:15px; margin-bottom:12px;}
+  /* food-log meal groups become rounded cards */
+  .grp{background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:4px 14px; margin-bottom:12px;}
+  .ghead{padding:12px 0 10px; margin-bottom:0; border-bottom:1px solid var(--border);}
+  .grp .item{padding:12px 2px;} .grp .item:not(:last-child){border-bottom:1px solid var(--border);}
+  .item:active{background:var(--card2);}
+  /* rounded controls */
+  .start{border-radius:13px; font-weight:600;}
+  .secondary .b{border-radius:13px; border-color:var(--border);} .secondary .b:active{background:var(--card2);}
+  .field input,.field select{border-radius:11px; background:var(--card); border:1px solid var(--border);}
+  .field input::placeholder{color:var(--o30);}
+  /* bottom sheet + buttons */
+  .sheet{border-radius:22px 22px 0 0; background:#0a0a0c; border-top:1px solid var(--border);}
+  .sheetbtns .ok{border-radius:13px;} .sheetbtns .cancel{border-radius:13px; border-color:var(--border);}
+  .pickitem{border-bottom-color:var(--border);}
+  /* pill chips & toggles */
+  .chip{border-radius:999px; border-color:var(--border);}
+  .toggles button{border-radius:11px; border-color:var(--border);} .toggles button.on{background:var(--fill); color:#000;}
+  /* bottom nav as pill tabs */
+  .nav{border-top:1px solid var(--border); gap:6px;}
+  .nav a{border-radius:999px; padding:10px 16px;} .nav a.active{background:var(--fill); color:#000; font-weight:700;}
+  /* rounded progress bars */
+  .bar,.wprog,.vbar{border-radius:999px;} .bar>i,.wprog>i,.vbar>i{border-radius:999px;}
+  /* workout / session / split inputs rounded */
+  .inp,.pick,.fs{border-radius:9px; border-color:var(--border);} .srowm .sm{border-radius:9px; border-color:var(--border);}
+  .senm{border-bottom-color:var(--border);} .seday{border-left-color:var(--border);} .mbody{border-left-color:var(--border);}
+  /* fab */
+  .fab{background:var(--fill); color:#000; box-shadow:0 4px 22px rgba(0,0,0,.7);}
+  /* tiny tracked section labels (rimu style) */
   .grp-label{color:var(--o40); letter-spacing:2.5px;}
-  .nav a.active{background:none; color:var(--accent); font-weight:700; position:relative;}
-  .nav a.active::after{content:""; position:absolute; left:14px; right:14px; bottom:7px; height:1px; background:var(--accent);}
-  .fab{background:var(--fill);}
-  /* blinking ASCII cursor utility */
-  .cur::after{content:"▌"; color:var(--accent); margin-left:3px; animation:blink 1.15s step-end infinite;}
+  /* subtle ascii cursor kept on the landing wordmark */
+  .cur::after{content:"▌"; color:var(--o50); margin-left:3px; animation:blink 1.15s step-end infinite;}
   @keyframes blink{50%{opacity:0}}
   @media (prefers-reduced-motion:reduce){ .cur::after{animation:none;} }
-  /* refined hairlines + a touch more air */
-  .rule{border-top-color:var(--line); margin:20px 0;}
-  .status .uname{letter-spacing:.3px;}
+  .rule{border-top-color:var(--line); margin:18px 0;}
 </style>
 </head>
 <body>
@@ -569,9 +584,8 @@ function renderMacros(){
   return statusBar(false)
     +`<hr class="rule"/>`
     +`<div class="section"><div class="h"><span class="s">//</span>TODAY&nbsp; macros</div><div class="meta" data-act="editgoals">[edit goals]</div></div>`
-    +`<button class="hero ${open?'open':''}" data-act="togglemacros">${ringHTML(pct,`<div class="num">${Math.round(t.kcal).toLocaleString()}</div><div class="of">/ ${g.kcal.toLocaleString()} kcal</div>`,'lg')}<div class="hero-meta"><span class="left">${left>=0?left+' left':Math.abs(left)+' over'}</span> · ${Math.round(pct)}% <span class="chev">▾</span></div></button>`
-    +details
-    +`<hr class="rule"/><div class="section" style="margin-bottom:10px"><div class="h"><span class="s">//</span>LOG&nbsp; today</div></div>`
+    +`<div class="card" style="padding:18px 16px 16px"><button class="hero ${open?'open':''}" data-act="togglemacros">${ringHTML(pct,`<div class="num">${Math.round(t.kcal).toLocaleString()}</div><div class="of">/ ${g.kcal.toLocaleString()} kcal</div>`,'lg')}<div class="hero-meta"><span class="left">${left>=0?left+' left':Math.abs(left)+' over'}</span> · ${Math.round(pct)}% <span class="chev">▾</span></div></button>${details}</div>`
+    +`<div class="section" style="margin-bottom:10px"><div class="h"><span class="s">//</span>LOG&nbsp; today</div></div>`
     +log
     +`<div style="height:84px" aria-hidden="true"></div>`
     +`<button class="fab" data-act="addmenu" aria-label="agregar">＋</button>`;
@@ -580,8 +594,8 @@ function renderMacros(){
 // ---------- render: landing (log in / create account) ----------
 function renderLanding(){
   return `<div style="padding-top:84px;text-align:center">
-    <div style="font-size:34px;font-weight:800;letter-spacing:-1px">gym<span style="color:var(--accent)">//</span>TRK<span class="cur"></span></div>
-    <div style="font-family:var(--serif);font-style:italic;font-size:15px;color:var(--o50);margin:10px 0 48px;letter-spacing:.5px">workout · macros · tracker</div>
+    <div style="font-size:34px;font-weight:800;letter-spacing:-1px">gym<span style="color:var(--o40)">//</span>TRK<span class="cur"></span></div>
+    <div style="font-size:11px;color:var(--o50);margin:9px 0 48px;letter-spacing:.4px">workout · macros · tracker</div>
     <button class="start" data-act="lcreate" style="margin-bottom:12px">▶ create account</button>
     <button data-act="llogin" style="width:100%;text-align:center;font-size:12px;color:var(--fg);border:1px solid var(--faint);padding:12px 0;background:transparent;cursor:pointer;letter-spacing:.3px">log in</button>
     <div class="submeta" style="margin-top:26px">¿ya tienes cuenta en otro equipo? entra con <b style="color:var(--o60)">log in</b> y pega tu backup (sync).</div>
