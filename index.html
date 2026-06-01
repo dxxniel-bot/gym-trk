@@ -271,7 +271,7 @@ function seedPrev(){
 // ---------- persistence ----------
 let db;
 function load(){ try{const r=localStorage.getItem(LS_KEY); if(!r)return seed(); const d=JSON.parse(r); return migrate(d);}catch(e){console.warn('load failed',e);return seed();} }
-function migrate(d){ if(!d.version){d.version=1;} if(!d.meals)d.meals={}; if(!d.foods)d.foods=[]; d.foods=d.foods.map(f=>(f&&f.per100)?f:asCanonical(f)); if(!d.steps)d.steps={}; if(!d.machines)d.machines={}; if(!d.settings)d.settings={goals:seed().settings.goals}; return d; }
+function migrate(d){ if(!d.version){d.version=1;} if(!d.meals)d.meals={}; if(!d.foods)d.foods=[]; d.foods=d.foods.map(f=>(f&&f.per100)?f:asCanonical(f)); if(!d.steps)d.steps={}; if(!d.machines)d.machines={}; if(!d.bodyweight)d.bodyweight={}; if(!d.settings)d.settings={goals:seed().settings.goals}; return d; }
 function save(){ try{localStorage.setItem(LS_KEY,JSON.stringify(db));}catch(e){console.warn('save failed',e);} }
 
 // ---------- helpers ----------
@@ -594,7 +594,98 @@ function renderOnboard(){
 }
 
 // ---------- render: progress (stub) ----------
-function renderProgress(){ return statusBar(false)+`<hr class="rule"/><div class="section"><div class="h"><span class="s">//</span>PROGRESS</div></div><div class="empty">progress charts<br/>coming soon</div>`; }
+// monochrome mini bar chart (last bar = bright "now"); opt.norm = min-max scale (for bodyweight)
+function miniBars(vals,labels,opt){ opt=opt||{}; const nums=(vals||[]).map(v=>+v||0); if(!nums.length)return '';
+  let lo=opt.norm?Math.min(...nums):0, hi=Math.max(...nums); if(hi<=lo)hi=lo+1; const h=opt.h||44;
+  return `<div style="display:flex;gap:4px;align-items:flex-end;margin:8px 0 2px;height:${h+11}px">`+nums.map((v,i)=>{
+    const ph=Math.round(((v-lo)/(hi-lo))*92)+(v>0||opt.norm?6:0); const cur=i===nums.length-1;
+    return `<div style="flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;height:100%"><div title="${v}" style="width:78%;height:${Math.max(ph,2)}%;background:${cur?'var(--fill)':'var(--o30)'}"></div><span style="font-size:7px;color:var(--o40);margin-top:3px;height:8px;line-height:1">${(labels&&labels[i])||''}</span></div>`;
+  }).join('')+`</div>`; }
+function progWeekly(n){ const now=new Date(); const buckets=[]; for(let i=n-1;i>=0;i--){ const a=new Date(now); a.setDate(now.getDate()-7*i-6); const b=new Date(now); b.setDate(now.getDate()-7*i); buckets.push({a:todayISO(a),b:todayISO(b)}); }
+  const counts=buckets.map(()=>0), vols=buckets.map(()=>0);
+  (db.sessions||[]).forEach(s=>{ if(s.type==='rest')return; for(let i=0;i<buckets.length;i++){ if(s.date>=buckets[i].a&&s.date<=buckets[i].b){ counts[i]++; (s.exercises||[]).forEach(e=>(e.sets||[]).forEach(st=>{vols[i]+=(parseFloat(st.w)||0)*(parseFloat(st.r)||0);})); break; } } });
+  return {counts,vols}; }
+function avgKcal7(){ const now=new Date(); let sum=0,days=0; for(let i=0;i<7;i++){ const d=new Date(now); d.setDate(now.getDate()-i); const arr=db.meals[todayISO(d)]; if(arr&&arr.length){ days++; sum+=arr.reduce((a,m)=>a+(+m.kcal||0),0); } } return days?Math.round(sum/days):0; }
+function openWeightLog(){ const ks=Object.keys(db.bodyweight||{}).sort(); const last=ks.length?db.bodyweight[ks[ks.length-1]]:(db.profile.weightKg||'');
+  openModal(`<h3>peso corporal</h3>
+   <div class="field"><label>PESO (kg)</label><input id="bw_kg" type="number" inputmode="decimal" value="${last||''}" placeholder="ej. 72.5"/></div>
+   <div class="submeta" style="margin-bottom:10px">se guarda con la fecha de hoy</div>
+   <div class="sheetbtns"><button class="ok" id="bw_save">guardar</button><button class="cancel" data-act="closemodal">cancel</button></div>`);
+  document.getElementById('bw_save').onclick=()=>{ const v=parseFloat(val('bw_kg')); if(!v||v<=0){ alert('Pon un peso válido.'); return; } db.bodyweight=db.bodyweight||{}; db.bodyweight[todayISO()]=v; db.profile.weightKg=v; save(); closeModal(); render(); };
+}
+function renderProgress(){
+  const totalSessions=(db.sessions||[]).filter(s=>s.type!=='rest').length;
+  const bwKeys=Object.keys(db.bodyweight||{}).sort(); const bwVals=bwKeys.map(k=>db.bodyweight[k]);
+  const curBw=bwVals.length?bwVals[bwVals.length-1]:(db.profile.weightKg||0);
+  let out=statusBar(false)+`<hr class="rule"/><div class="section"><div class="h"><span class="s">//</span>PROGRESS</div><div class="meta">${totalSessions} sesiones</div></div>`;
+  if(!totalSessions && !bwVals.length){
+    return out+`<div class="empty">aún no hay datos<br/>entrena o registra tu peso para ver progreso</div>`
+      +`<button class="start" data-act="logweight" style="margin-top:14px">＋ registrar peso corporal</button>`;
+  }
+  const w=progWeekly(8); const str=streak(); const s7=stat7(); const e1=e1rmTrend();
+  // consistency
+  out+=`<div class="grp-label">CONSISTENCIA</div>`
+    +`<div class="line"><span class="k">racha</span><span class="dots"></span><span class="v">${str} día${str===1?'':'s'}</span></div>`
+    +`<div class="line"><span class="k">esta semana</span><span class="dots"></span><span class="v">${s7.count} sesiones</span></div>`
+    +`<div class="submeta">sesiones / semana · últimas 8</div>`
+    +miniBars(w.counts, w.counts.map((c,i)=>i===w.counts.length-1?'now':''));
+  // volume
+  out+=`<hr class="rule"/><div class="grp-label">VOLUMEN · Σ peso×reps / semana</div>`
+    +miniBars(w.vols, w.vols.map((v,i)=>i===w.vols.length-1?'now':''))
+    +`<div class="submeta">esta semana: ${Math.round(w.vols[w.vols.length-1]).toLocaleString()}</div>`;
+  // strength e1RM
+  if(e1.length){ out+=`<hr class="rule"/><div class="grp-label">FUERZA · e1RM Epley (vs semana previa)</div>`;
+    e1.forEach(x=>{ const d=x.prev!=null?Math.round(x.cur-x.prev):null; const arr=d==null?'·':(d>0?'▲':d<0?'▼':'='); const col=d>0?'var(--fill)':d<0?'#c8553d':'var(--o40)';
+      out+=`<div class="line"><span class="k">${escTxt(x.name)}</span><span class="dots"></span><span class="v">${Math.round(x.cur)} <span style="color:${col};font-size:9px">${arr}${d?Math.abs(d):''}</span></span></div>`; }); }
+  // bodyweight
+  out+=`<hr class="rule"/><div class="section" style="margin-bottom:6px"><div class="grp-label" style="margin-bottom:0">PESO CORPORAL</div><a class="meta" data-act="logweight">[+ log]</a></div>`;
+  if(bwVals.length>=2){ const ch=Math.round((bwVals[bwVals.length-1]-bwVals[0])*10)/10;
+    out+=miniBars(bwVals.slice(-12),[],{norm:true})
+      +`<div class="line"><span class="k">actual</span><span class="dots"></span><span class="v">${curBw} kg</span></div>`
+      +`<div class="submeta">${ch>=0?'+':''}${ch} kg desde el 1er registro · ${bwVals.length} registros</div>`;
+  } else { out+=`<div class="line"><span class="k">actual</span><span class="dots"></span><span class="v">${curBw?curBw+' kg':'—'}</span></div><div class="submeta">registra tu peso varios días para ver la tendencia</div>`; }
+  // nutrition
+  out+=`<hr class="rule"/><div class="grp-label">NUTRICIÓN · promedio 7 días</div>`
+    +`<div class="line"><span class="k">kcal / día</span><span class="dots"></span><span class="v">${avgKcal7()||'—'} <span style="color:var(--o40);font-size:9px">/ ${db.settings.goals.kcal}</span></span></div>`;
+  return out;
+}
+// ---------- render: split editor ----------
+function renderSplitEdit(){
+  const sp=db.split||{name:'',days:[]};
+  let body=statusBar(true)
+   +`<hr class="rule"/><div class="section"><div class="h"><span class="s">//</span>SPLIT</div><div class="meta">${(sp.days||[]).length} días</div></div>`
+   +`<div class="field" style="margin-bottom:16px"><label>NOMBRE DEL SPLIT</label><input data-act="sd_splitname" value="${(sp.name||'').replace(/"/g,'&quot;')}" placeholder="ej. Push/Pull/Legs"/></div>`;
+  (sp.days||[]).forEach((d,di)=>{
+    body+=`<div class="seday"><div class="sehead"><input class="senm" data-act="sd_name" data-di="${di}" value="${(d.name||'').replace(/"/g,'&quot;')}"/>${sp.days.length>1?`<span class="sedel" data-act="sd_deld" data-di="${di}">✕</span>`:''}</div>`;
+    (d.exercises||[]).forEach((e,ei)=>{
+      body+=`<div class="seex"><span class="seexn" data-act="sd_ex" data-di="${di}" data-ei="${ei}">${escTxt(e.name)} <span class="seexm">${escTxt(e.muscle||'')}${e.unilateral?' · R/L':''}${e.type==='machine'?' · mach':''} · ${e.sets||1}×</span></span><span class="sedel" data-act="sd_delex" data-di="${di}" data-ei="${ei}">✕</span></div>`;
+    });
+    body+=`<div class="seadd" data-act="sd_addex" data-di="${di}">+ ejercicio</div></div>`;
+  });
+  return body+`<div class="secondary" style="margin-top:6px"><button class="b" data-act="sd_addday">+ agregar día</button></div>`;
+}
+// ---------- render: history ----------
+function renderHistory(){
+  const sess=(db.sessions||[]).filter(s=>s.type!=='rest').slice().sort((a,b)=>String(b.date).localeCompare(String(a.date)));
+  let body=statusBar(true)+`<hr class="rule"/><div class="section"><div class="h"><span class="s">//</span>HISTORY</div><div class="meta">${sess.length}</div></div>`;
+  if(!sess.length) return body+`<div class="empty">sin sesiones registradas<br/>termina un entreno para verlo aquí</div>`;
+  sess.slice(0,80).forEach(s=>{ let sets=0; (s.exercises||[]).forEach(e=>sets+=(e.sets||[]).length); const exn=(s.exercises||[]).length;
+    body+=`<div class="item" data-act="vieweditsession" data-id="${s.id}" style="grid-template-columns:1fr auto"><span class="nm">${escTxt(s.dayName||'sesión')} <span class="br">${s.date}</span></span><span class="kc" style="color:var(--o50)">${exn} ej · ${sets} sets</span></div>`;
+  });
+  return body;
+}
+function openSessionEdit(id){
+  const s=(db.sessions||[]).find(x=>x.id===id); if(!s)return; window._sessId=id;
+  const exHtml=(s.exercises||[]).map((e,ei)=>{
+    const rows=(e.sets||[]).map((st,si)=>`<div class="srowm"><span class="sn">#${si+1}</span><input class="sm" data-act="ss_f" data-ei="${ei}" data-si="${si}" data-f="w" type="number" inputmode="decimal" value="${st.w!=null?st.w:''}" placeholder="w"/><input class="sm" data-act="ss_f" data-ei="${ei}" data-si="${si}" data-f="r" type="number" inputmode="numeric" value="${st.r!=null?st.r:''}" placeholder="reps"/><input class="sm" data-act="ss_f" data-ei="${ei}" data-si="${si}" data-f="rir" value="${st.rir!=null?st.rir:''}" placeholder="rir"/></div>`).join('');
+    return `<div style="margin-bottom:12px"><div class="submeta" style="color:var(--o60);padding:0 0 5px">${escTxt(e.name)} <span style="color:var(--o40)">${escTxt(e.muscle||'')}</span></div>${rows||'<div class="submeta">sin sets</div>'}</div>`;
+  }).join('');
+  openModal(`<h3>${escTxt(s.dayName||'sesión')}</h3>
+   <div class="field"><label>FECHA</label><input id="ss_date" type="date" value="${s.date||''}"/></div>
+   <div class="submeta" style="margin:2px 0 10px">${(s.exercises||[]).length} ejercicios · edita sets directo</div>
+   ${exHtml||'<div class="submeta">sin ejercicios</div>'}
+   <div class="sheetbtns" style="margin-top:12px"><button class="ok" data-act="ss_save">guardar</button><button class="cancel" data-act="ss_del">borrar</button><button class="cancel" data-act="closemodal">close</button></div>`);
+}
 
 // ---------- render: settings ----------
 function renderSettings(){
@@ -662,7 +753,8 @@ document.getElementById('app').addEventListener('click',e=>{
     db.settings.goals={kcal,protein,carbs,fat,sodium:2300,potassium:3500,sugar:Math.round(kcal*0.10/4),fiber:Math.max(25,Math.round(kcal/100)),water:Math.max(2,Math.round(0.035*w*10)/10),caffeine:400};
     state.screen='home'; save(); render();
   }
-  else if(a==='changesplit'||a==='schedule'){ alert('Editor de split / schedule — próximamente. (Por ahora la rotación usa el split sembrado; dime y lo hacemos editable.)'); }
+  else if(a==='changesplit'||a==='schedule'){ go('splitedit'); }
+  else if(a==='logweight'){ openWeightLog(); }
   else if(a==='settings'){ go('settings'); }
   else if(a==='profile'){ go('settings'); }
   else if(a==='editprofile'){ openProfileEdit(); }
@@ -723,7 +815,6 @@ document.getElementById('app').addEventListener('click',e=>{
   else if(a==='sync'){ openSync(); }
   else if(a==='reset'){ if(confirm('¿Borrar TODOS los datos? (exporta primero)')){ localStorage.removeItem(LS_KEY); db=seed(); save(); go('home'); } }
   else if(a==='closemodal'){ closeModal(); }
-  else if(a==='changegym'){}
 });
 document.getElementById('app').addEventListener('change',e=>{
   const sd=e.target.closest('[data-act="setdate"]'); if(sd){ if(db.activeWork){db.activeWork.date=sd.value;save();} return; }
