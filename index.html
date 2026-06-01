@@ -117,6 +117,8 @@
   .item .nm .q{color:var(--fg); font-weight:700; margin-right:6px;} .item .nm .br{color:var(--o35); font-size:9px; margin-left:4px;}
   .item .macq{color:var(--o40); font-size:9px; text-align:right; white-space:nowrap;}
   .item .kc{color:var(--fg); font-size:11px; text-align:right;}
+  .fab{position:fixed; right:18px; bottom:80px; width:54px; height:54px; border-radius:50%; background:var(--fg); color:#0c0c0c; border:none; font-size:30px; font-weight:300; line-height:0; display:flex; align-items:center; justify-content:center; box-shadow:0 3px 16px rgba(0,0,0,.55); z-index:4; cursor:pointer;}
+  .fab:active{transform:scale(.93);}
 
   /* workout sets table */
   .wprog{height:2px; background:var(--o10); margin:8px 0 0;} .wprog>i{display:block; height:100%; background:var(--fill);}
@@ -507,7 +509,7 @@ function renderMacros(){
     +`<div class="submeta">est. from sodium · potassium · liquids</div>`;
 
   // food log grouped by tag
-  const order=['breakfast','lunch','snack','dinner']; const byTag={};
+  const order=['breakfast','lunch','snack','dinner','drink']; const byTag={};
   items.forEach(m=>{(byTag[m.tag]=byTag[m.tag]||[]).push(m);});
   let log='';
   const tags=Object.keys(byTag).sort((a,b)=>order.indexOf(a)-order.indexOf(b));
@@ -528,9 +530,8 @@ function renderMacros(){
     +`<button class="hero ${open?'open':''}" data-act="togglemacros">${ringHTML(pct,`<div class="num">${Math.round(t.kcal).toLocaleString()}</div><div class="of">/ ${g.kcal.toLocaleString()} kcal</div>`,'lg')}<div class="hero-meta"><span class="left">${left>=0?left+' left':Math.abs(left)+' over'}</span> · ${Math.round(pct)}% <span class="chev">▾</span></div></button>`
     +details
     +`<hr class="rule"/><div class="section" style="margin-bottom:10px"><div class="h"><span class="s">//</span>LOG&nbsp; today</div></div>`
-    +`<button class="start" data-act="addnext" style="margin-bottom:8px">＋ agregar a ${nextMealTag()}</button>`
-    +`<div class="secondary" style="margin-bottom:14px"><button class="b" data-act="addsnack">＋ snack</button></div>`
-    +log;
+    +log
+    +`<button class="fab" data-act="addmenu" aria-label="agregar">＋</button>`;
 }
 
 // ---------- render: landing (log in / create account) ----------
@@ -676,8 +677,13 @@ document.getElementById('app').addEventListener('click',e=>{
   else if(a==='delmealnow'){ const t=todayISO(); db.meals[t]=(db.meals[t]||[]).filter(m=>m.id!==window._mealId); save(); closeModal(); render(); }
   else if(a==='vfixkcal'){ const P=parseFloat(val('v_protein'))||0,C=parseFloat(val('v_carbs'))||0,F=parseFloat(val('v_fat'))||0; const e=document.getElementById('v_kcal'); if(e){ e.value=Math.round(P*4+C*4+F*9); e.dispatchEvent(new Event('input',{bubbles:true})); } }
   else if(a==='addmeal'||a==='foodadd'){ openFoodAdd(); }
-  else if(a==='addnext'){ openFoodAdd(nextMealTag()); }
+  else if(a==='addmenu'){ openAddMenu(); }
+  else if(a==='addfood'||a==='addnext'){ openFoodAdd(nextMealTag()); }
+  else if(a==='addmealnext'){ openFoodAdd(nextAfterCurrent()); }
   else if(a==='addsnack'){ openFoodAdd('snack'); }
+  else if(a==='adddrink'){ openDrink(); }
+  else if(a==='drml'){ const e=document.getElementById('dr_ml'); if(e)e.value=el.dataset.v; }
+  else if(a==='drinkcal'){ openVerify({name:'',base:'ml',per100:{},sizes:{}},{isNew:true,tag:'drink'}); }
   else if(a==='fregister'){ openRegisterMenu(null); }
   else if(a==='pickfood'){ const f=(db.foods||[]).find(x=>x.id===el.dataset.id); if(f) openLog(f,{fromId:f.id,tag:curTag()}); }
   else if(a==='fbarcode'){ openBarcode(); }
@@ -825,6 +831,24 @@ function normalizeExtract(d){ d=d||{}; const svStr=d.serving||d.serving_label||'
 function mealSuggestions(){ const def=['breakfast','lunch','snack','dinner']; const used=new Set(); Object.values(db.meals||{}).forEach(arr=>arr.forEach(m=>{ if(m.tag)used.add(m.tag); })); return [...new Set([...def,...used])]; }
 function curTag(){ const e=document.getElementById('fa_tagtxt'); const v=e?e.value.trim():''; return v||'meal'; }
 function nextMealTag(){ const h=(new Date()).getHours(); if(h<11)return 'breakfast'; if(h<16)return 'lunch'; if(h<21)return 'dinner'; return 'snack'; }
+function nextAfterCurrent(){ const seq=['breakfast','lunch','dinner']; const i=seq.indexOf(nextMealTag()); return (i>=0&&i<2)?seq[i+1]:'snack'; }
+// thumb-reachable add menu (opened by the FAB)
+function openAddMenu(){
+  openModal(`<h3>agregar a hoy</h3>
+   <button class="start" data-act="addfood" style="margin-bottom:8px">🍽️ add food <span style="opacity:.55;font-weight:400">· ${nextMealTag()}</span></button>
+   <div class="secondary" style="margin-bottom:8px"><button class="b" data-act="addmealnext">＋ add meal</button><button class="b" data-act="addsnack">＋ add snack</button></div>
+   <button class="b" data-act="adddrink" style="width:100%">💧 add drink</button>`);
+}
+function logWater(ml){ if(!(ml>0))return; const t=todayISO(); db.meals[t]=db.meals[t]||[];
+  db.meals[t].push({id:uid(),time:nowHM(),tag:'drink',name:'agua',qty:1,serving:numTxt(ml)+' ml',kcal:0,protein:0,carbs:0,fat:0,sugar:0,fiber:0,sodium:0,potassium:0,caffeine:0,water:Math.round(ml/1000*1000)/1000}); save(); }
+function openDrink(){
+  openModal(`<h3>add drink</h3>
+   <div class="submeta" style="margin-bottom:10px">agua y bebidas · suma a líquidos</div>
+   <div class="field"><label>AGUA (ml)</label><input id="dr_ml" type="number" inputmode="numeric" value="500"/></div>
+   <div class="chips" id="dr_chips">${[250,500,750,1000].map(v=>`<span class="chip" data-act="drml" data-v="${v}">${v} ml</span>`).join('')}</div>
+   <div class="sheetbtns" style="margin-top:10px"><button class="ok" id="dr_go">💧 agregar agua</button><button class="cancel" data-act="drinkcal">bebida con kcal →</button></div>`);
+  document.getElementById('dr_go').onclick=()=>{ logWater(parseFloat(val('dr_ml'))||0); closeModal(); render(); };
+}
 function openFoodAdd(preset){
   const sugg=mealSuggestions(); const tag=preset||nextMealTag();
   openModal(`<h3>add food</h3>
