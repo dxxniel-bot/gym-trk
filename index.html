@@ -646,8 +646,9 @@ function renderMacros(){
 // display quantity: always grams/ml for weight-based units (clearer for screenshots); keep pieces for piece unit
 function itemQtyLabel(m){ const f=m._food, u=m._unit, q=m.qty||1;
   if(u==='piece') return numTxt(q)+' pza';
+  if(u==='serving') return numTxt(q)+(q===1?' porción':' porciones');
   if(f&&f.sizes&&u){ const g=unitGrams(f,u); if(g>0) return numTxt(Math.round(q*g))+' '+((f.base==='ml')?'ml':'g'); }
-  const us={serving:'porc',container:'env','100':'100',g:'g',ml:'ml'}[u]||''; return numTxt(q)+(us?(' '+us):'×'); }
+  const us={container:'env','100':'100',g:'g',ml:'ml'}[u]||''; return numTxt(q)+(us?(' '+us):'×'); }
 function mealFoodRows(items){
   return items.map(m=>{ const nm=(m.name||'').replace(/ ×[\d.]+$/,''); const br=(m._food&&m._food.brand)||'';
     return `<div class="sitem"><span class="sn"><b class="q">${itemQtyLabel(m)}</b> ${escTxt(nm)}${br?` <span class="sb">${escTxt(br)}</span>`:''}</span><span class="sk">${Math.round(m.kcal)||0}</span></div>`; }).join(''); }
