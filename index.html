@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
 <title>gym//TRK</title>
 <link rel="manifest" href="manifest.json"/>
 <meta name="apple-mobile-web-app-capable" content="yes"/>
@@ -161,7 +161,7 @@
   .nav a{color:var(--o50); cursor:pointer; letter-spacing:.4px; padding:11px 14px; border-radius:2px;} .nav a.active{background:var(--fill); color:#000; font-weight:700;}
 
   /* modal / forms */
-  .modal{position:absolute; inset:0; background:rgba(0,0,0,.6); display:flex; align-items:flex-end; z-index:5;}
+  .modal{position:absolute; inset:0; background:rgba(0,0,0,.6); display:flex; align-items:flex-start; z-index:5;}
   .sheet{width:100%; background:#0c0c0c; border-top:1px solid var(--o20); padding:16px 18px 22px; max-height:80%; overflow-y:auto;}
   #bc_cam video{width:100%; height:auto; display:block;} #bc_cam canvas.drawingBuffer{display:none;}
   .sheet h3{font-size:11px; color:var(--o50); letter-spacing:1px; margin-bottom:14px; font-weight:800;}
@@ -194,7 +194,7 @@
   .field input,.field select{border-radius:11px; background:var(--card); border:1px solid var(--border);}
   .field input::placeholder{color:var(--o30);}
   /* bottom sheet + buttons */
-  .sheet{border-radius:22px 22px 0 0; background:#0a0a0c; border-top:1px solid var(--border);}
+  .sheet{border-radius:0 0 22px 22px; background:#0a0a0c; border-top:0; border-bottom:1px solid var(--border); padding-top:calc(14px + env(safe-area-inset-top));}
   .sheetbtns .ok{border-radius:13px;} .sheetbtns .cancel{border-radius:13px; border-color:var(--border);}
   .pickitem{border-bottom-color:var(--border);}
   /* pill chips & toggles */
@@ -231,6 +231,10 @@
   /* meal-summary popup banner */
   .mbanner{display:flex; align-items:baseline; justify-content:space-between; border:1px solid var(--border); border-radius:12px; padding:13px 15px; margin-top:4px;}
   .mb-k{font-size:25px; font-weight:800; letter-spacing:-.5px;} .mb-k span{font-size:11px; color:var(--o40); font-weight:400;} .mb-m{font-size:13px; color:var(--o60);}
+  /* day navigator (macros) */
+  .dnavh{display:flex; align-items:center; gap:2px;}
+  .dnav{font-size:22px; color:var(--o50); cursor:pointer; padding:0 9px; line-height:1; user-select:none;} .dnav:active{color:var(--fg);}
+  .dnlbl{font-size:14px; font-weight:800; letter-spacing:.5px; cursor:pointer; min-width:96px; text-align:center;}
 </style>
 </head>
 <body>
@@ -539,8 +543,11 @@ function renderWorkout(){
 
 // ---------- render: macros ----------
 function ringHTML(pct,center,size,inv){ pct=Math.max(0,Math.min(100,pct||0)); return `<div class="ring ${size||'md'}${inv?' inv':''}"><svg viewBox="0 0 36 36"><circle class="ring-track" cx="18" cy="18" r="15.7"/><circle class="ring-fill" cx="18" cy="18" r="15.7" pathLength="100" transform="rotate(-90 18 18)" style="stroke-dasharray:${pct} 100"/></svg><div class="ring-center">${center}</div></div>`; }
+function curDate(){ return state.macroDate||todayISO(); }
+function shiftDate(iso,delta){ const d=new Date(iso+'T12:00:00'); d.setDate(d.getDate()+delta); return todayISO(d); }
+function dayLabel(iso){ if(iso===todayISO())return 'HOY'; const d=new Date(iso+'T12:00:00'); const wd=['dom','lun','mar','mié','jue','vie','sáb'][d.getDay()]; return wd+' '+fmtShort(iso); }
 function macroTotals(){
-  const today=todayISO(); const items=db.meals[today]||[]; const t={kcal:0,protein:0,carbs:0,fat:0,sodium:0,potassium:0,sugar:0,fiber:0,water:0,caffeine:0};
+  const today=curDate(); const items=db.meals[today]||[]; const t={kcal:0,protein:0,carbs:0,fat:0,sodium:0,potassium:0,sugar:0,fiber:0,water:0,caffeine:0};
   items.forEach(m=>{ for(const k in t){ t[k]+=parseFloat(m[k])||0; } }); return {items,t};
 }
 function bloating(t,g){
@@ -606,7 +613,7 @@ function renderMacros(){
 
   return statusBar(false)
     +`<hr class="rule"/>`
-    +`<div class="section"><div class="h"><span class="s">//</span>TODAY&nbsp; macros</div><div class="meta"><a data-act="share" style="cursor:pointer">[share]</a> <a data-act="editgoals" style="cursor:pointer;margin-left:8px">[goals]</a></div></div>`
+    +`<div class="section"><div class="h dnavh"><a data-act="dayprev" class="dnav">‹</a><span data-act="daytoday" class="dnlbl">${dayLabel(curDate())}</span><a data-act="daynext" class="dnav">›</a></div><div class="meta"><a data-act="share" style="cursor:pointer">[share]</a> <a data-act="editgoals" style="cursor:pointer;margin-left:8px">[goals]</a></div></div>`
     +`<div class="card" style="padding:18px 16px 16px"><button class="hero ${open?'open':''}" data-act="togglemacros">${ringHTML(pct,`<div class="num">${Math.round(t.kcal).toLocaleString()}</div><div class="of">/ ${g.kcal.toLocaleString()} kcal</div>`,'lg')}<div class="hero-meta"><span class="left">${left>=0?left+' left':Math.abs(left)+' over'}</span> · ${Math.round(pct)}% <span class="chev">▾</span></div></button>${details}</div>`
     +`<div class="section" style="margin-bottom:10px"><div class="h"><span class="s">//</span>LOG&nbsp; today</div></div>`
     +log
@@ -635,14 +642,14 @@ function renderShare(){
   });
   return statusBar(true)
    +`<div class="sharecard">`
-   +`<div class="shtitle">// resumen · ${fmtShort(todayISO())}</div>`
+   +`<div class="shtitle">// resumen · ${dayLabel(curDate())}</div>`
    +banner
    +(items.length?`<div class="shlog">${log}</div>`:`<div class="empty">sin alimentos hoy</div>`)
    +`<div class="shfoot">gym<span style="color:var(--o40)">//</span>TRK</div>`
    +`</div>`;
 }
 function openMealSummary(tag){
-  const items=(db.meals[todayISO()]||[]).filter(m=>m.tag===tag); if(!items.length)return;
+  const items=(db.meals[curDate()]||[]).filter(m=>m.tag===tag); if(!items.length)return;
   const t={kcal:0,protein:0,carbs:0,fat:0}; items.forEach(m=>{t.kcal+=+m.kcal||0;t.protein+=+m.protein||0;t.carbs+=+m.carbs||0;t.fat+=+m.fat||0;});
   openModal(`<h3>// ${escTxt(tag)}</h3>
    <div class="mbanner"><div class="mb-k">${Math.round(t.kcal)} <span>kcal</span></div><div class="mb-m">${Math.round(t.protein)}P · ${Math.round(t.carbs)}C · ${Math.round(t.fat)}F</div></div>
@@ -881,15 +888,18 @@ document.getElementById('app').addEventListener('click',e=>{
   else if(a==='ringtog'){ const k=el.dataset.k; state.ringRem=state.ringRem||{}; state.ringRem[k]=!state.ringRem[k]; render(); }
   else if(a==='viewmeal'){ openMealDetail(el.dataset.id); }
   else if(a==='pickmealtag'){ const e=document.getElementById('fa_tagtxt'); if(e)e.value=el.dataset.v; }
-  else if(a==='editmeal'){ const t=todayISO(); const m=(db.meals[t]||[]).find(x=>x.id===window._mealId); if(m){ closeModal();
+  else if(a==='editmeal'){ const t=curDate(); const m=(db.meals[t]||[]).find(x=>x.id===window._mealId); if(m){ closeModal();
       if(m._food){ openLog(m._food,{editId:m.id,qty:m.qty||1,unit:m._unit,tag:m.tag}); }
       else { const q=m.qty||1; const per={}; ['kcal','protein','carbs','fat','sugar','sodium','potassium','fiber','caffeine','water'].forEach(k=>per[k]=(+m[k]||0)/q); openLog({name:(m.name||'').replace(/ ×[\d.]+$/,''),serving:m.serving||'1 serving',per},{editId:m.id,qty:q,tag:m.tag}); } } }
-  else if(a==='delmealnow'){ const t=todayISO(); db.meals[t]=(db.meals[t]||[]).filter(m=>m.id!==window._mealId); save(); closeModal(); render(); }
+  else if(a==='delmealnow'){ const t=curDate(); db.meals[t]=(db.meals[t]||[]).filter(m=>m.id!==window._mealId); save(); closeModal(); render(); }
   else if(a==='vfixkcal'){ const P=parseFloat(val('v_protein'))||0,C=parseFloat(val('v_carbs'))||0,F=parseFloat(val('v_fat'))||0; const e=document.getElementById('v_kcal'); if(e){ e.value=Math.round(P*4+C*4+F*9); e.dispatchEvent(new Event('input',{bubbles:true})); } }
   else if(a==='addmeal'||a==='foodadd'){ openFoodAdd(); }
   else if(a==='addmenu'){ openAddMenu(); }
   else if(a==='share'){ go('share'); }
   else if(a==='mealsummary'){ openMealSummary(el.dataset.tag); }
+  else if(a==='dayprev'){ state.macroDate=shiftDate(curDate(),-1); render(); }
+  else if(a==='daynext'){ state.macroDate=shiftDate(curDate(),1); render(); }
+  else if(a==='daytoday'){ state.macroDate=todayISO(); render(); }
   else if(a==='addfood'||a==='addnext'){ openFoodAdd(nextMealTag()); }
   else if(a==='addmealnext'){ openFoodAdd(nextAfterCurrent()); }
   else if(a==='addsnack'){ openFoodAdd('snack'); }
@@ -908,7 +918,7 @@ document.getElementById('app').addEventListener('click',e=>{
   else if(a==='mealcode'){ openMealCode(); }
   else if(a==='logsave'){ commitLog(true); }
   else if(a==='logonly'){ commitLog(false); }
-  else if(a==='delmeal'){ const t=todayISO(); db.meals[t]=(db.meals[t]||[]).filter(m=>m.id!==el.dataset.id); save(); render(); }
+  else if(a==='delmeal'){ const t=curDate(); db.meals[t]=(db.meals[t]||[]).filter(m=>m.id!==el.dataset.id); save(); render(); }
   else if(a==='editgoals'){ openGoals(); }
   else if(a==='editsteps'){ const cur=(db.steps&&db.steps[todayISO()])||''; const v=prompt('pasos de hoy (de Apple Health):',cur); if(v!=null){ const n=parseInt(String(v).replace(/[^0-9]/g,''),10); if(!isNaN(n)){ db.steps=db.steps||{}; db.steps[todayISO()]=n; save(); render(); } } }
   else if(a==='export'){ doExport(); }
@@ -1078,7 +1088,7 @@ function openAddMenu(){
    <div class="secondary" style="margin-bottom:8px"><button class="b" data-act="addmealnext">＋ add meal</button><button class="b" data-act="addsnack">＋ add snack</button></div>
    <button class="b" data-act="adddrink" style="width:100%">💧 add drink</button>`);
 }
-function logWater(ml){ if(!(ml>0))return; const t=todayISO(); db.meals[t]=db.meals[t]||[];
+function logWater(ml){ if(!(ml>0))return; const t=curDate(); db.meals[t]=db.meals[t]||[];
   db.meals[t].push({id:uid(),time:nowHM(),tag:'drink',name:'agua',qty:1,serving:numTxt(ml)+' ml',kcal:0,protein:0,carbs:0,fat:0,sugar:0,fiber:0,sodium:0,potassium:0,caffeine:0,water:Math.round(ml/1000*1000)/1000}); save(); }
 function openDrink(){
   openModal(`<h3>add drink</h3>
@@ -1313,7 +1323,7 @@ function scanCodeToInput(inputId){
 }
 function barcodeOf(m){ return (m&&m._food&&m._food.barcode)||(m&&m.barcode)||''; }
 function openMealCode(){
-  const t=todayISO(); const m=(db.meals[t]||[]).find(x=>x.id===window._mealId); if(!m)return;
+  const t=curDate(); const m=(db.meals[t]||[]).find(x=>x.id===window._mealId); if(!m)return;
   openModal(`<h3>código de barras</h3>
    <div class="submeta" style="margin-bottom:8px">${(m.name||'').replace(/[<&]/g,c=>c==='<'?'&lt;':'&amp;')}</div>
    <div class="field"><label>CÓDIGO</label><input id="mc_code" inputmode="numeric" value="${barcodeOf(m).replace(/"/g,'&quot;')}" placeholder="escanea o escribe los dígitos"/></div>
@@ -1326,7 +1336,7 @@ function openMealCode(){
     save(); closeModal(); render(); };
 }
 function openMealDetail(id){
-  const t=todayISO(); const m=(db.meals[t]||[]).find(x=>x.id===id); if(!m)return; window._mealId=id;
+  const t=curDate(); const m=(db.meals[t]||[]).find(x=>x.id===id); if(!m)return; window._mealId=id;
   const row=(lbl,v,u)=>`<div class="line"><span class="k">${lbl}</span><span class="dots"></span><span class="v">${v?(Math.round(v)+' '+u):'—'}</span></div>`;
   const bc=barcodeOf(m);
   openModal(`<h3>${m.name}</h3>
@@ -1346,7 +1356,7 @@ function commitLog(saveToDb){
     const stored={id:(ex&&ex.id)||f.id||uid(),barcode:bc||(ex&&ex.barcode)||'',name:f.name,brand:f.brand||'',base:f.base,per100:f.per100,sizes:f.sizes,servingLabel:f.servingLabel};
     if(ex)Object.assign(ex,stored); else db.foods.push(stored); foodId=stored.id;
   }
-  const t=todayISO(); db.meals[t]=db.meals[t]||[];
+  const t=curDate(); db.meals[t]=db.meals[t]||[];
   const apply=m=>{ m.tag=L.tag; m.name=f.name+(qty!==1?' ×'+numTxt(qty):''); m.qty=qty; m.serving=unitLabel; MACROKEYS.forEach(k=>m[k]=nut[k]); m.water=nut.water; m._food={id:foodId,base:f.base,per100:f.per100,sizes:f.sizes,servingLabel:f.servingLabel,name:f.name,brand:f.brand||'',barcode:bc}; m._unit=unit; };
   if(L.editId){ const m=(db.meals[t]||[]).find(x=>x.id===L.editId); if(m){ apply(m); save(); closeModal(); render(); return; } }
   const item={id:uid(),time:nowHM()}; apply(item); db.meals[t].push(item);
