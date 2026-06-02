@@ -201,8 +201,8 @@
   .nav a{border-radius:999px; padding:10px 16px;} .nav a.active{background:var(--fill); color:#000; font-weight:700;}
   /* rounded progress bars */
   .bar,.wprog,.vbar{border-radius:999px;} .bar>i,.wprog>i,.vbar>i{border-radius:999px;}
-  /* workout / session / split inputs rounded */
-  .inp,.pick,.fs{border-radius:9px; border-color:var(--border);} .srowm .sm{border-radius:9px; border-color:var(--border);}
+  /* workout sets table: terminal style (sharp, dense) — like Expo/ironLOG */
+  .inp,.pick,.fs,.srowm .sm{border-radius:2px; border-color:var(--o20);}
   .senm{border-bottom-color:var(--border);} .seday{border-left-color:var(--border);} .mbody{border-left-color:var(--border);}
   /* fab */
   .fab{background:var(--fill); color:#000; box-shadow:0 4px 22px rgba(0,0,0,.7);}
@@ -320,7 +320,7 @@ const curDay=()=>db.split.days[curDayIdx()];
 function selIdx(){ return state.selDay==null?curDayIdx():((state.selDay%dayCount())+dayCount())%dayCount(); }
 function lastSession(dayId){ const s=db.sessions.filter(x=>x.dayId===dayId&&x.type!=='rest').sort((a,b)=>b.date<a.date?-1:1); return s[0]||null; }
 function setsList(ex){ return ex.sets||[]; }
-function emptySet(ex,side,isDrop){ return {w:'',r:'',rir:'',unit:db.settings.unit||'lbs',side:side||null,fsOn:false,extraW:'',isDrop:!!isDrop,done:false}; }
+function emptySet(ex,side,isDrop){ return {w:'',r:'',rir:'',unit:(ex&&ex.unit)||db.settings.unit||'lbs',side:side||null,fsOn:!!(ex&&ex.useFS),extraW:'',isDrop:!!isDrop,done:false}; }
 function newWorkSession(){
   const day=db.split.days[selIdx()];
   const exs=day.exercises.map(e=>{
@@ -448,8 +448,8 @@ function unitOpts(sel){ return ['kg','lbs','pla'].map(u=>`<option ${sel===u?'sel
 function renderSetRow(exi,si,set,ex,allowF){
   const w=`<input class="inp weight" data-act="setf" data-exi="${exi}" data-si="${si}" data-f="w" value="${set.w}" placeholder="—" inputmode="decimal"/>`;
   const u=`<select class="pick" data-act="setf" data-exi="${exi}" data-si="${si}" data-f="unit">${unitOpts(set.unit)}</select>`;
-  const r=`<select class="pick" data-act="setf" data-exi="${exi}" data-si="${si}" data-f="r">${repsOpts(set.r)}</select>`;
-  const rr=`<select class="pick" data-act="setf" data-exi="${exi}" data-si="${si}" data-f="rir">${rirOpts(set.rir,allowF)}</select>`;
+  const r=`<input class="inp" data-act="setf" data-exi="${exi}" data-si="${si}" data-f="r" value="${set.r}" placeholder="—" inputmode="numeric"/>`;
+  const rr=`<input class="inp" data-act="setf" data-exi="${exi}" data-si="${si}" data-f="rir" value="${set.rir}" placeholder="—" inputmode="text" maxlength="2"/>`;
   const del=`<button class="del" data-act="delset" data-exi="${exi}" data-si="${si}">×</button>`;
   return {w,u,r,rr,del};
 }
@@ -463,7 +463,7 @@ function renderExercise(exi,ex,allowF){
     if(rec.setup) p+=`<span class="mset" ${ed}>⚙ ${escTxt(rec.setup)}</span>`;
     if(!rec.brand&&!rec.setup) p=`<span class="mch empty" ${ed}>+ machine</span>`;
     mhtml=p; }
-  let head=`<div class="exhead"><span class="n">${ex.name}</span>${mhtml}${isU?'<span class="note">[unilateral]</span>':''}</div>`;
+  let head=`<div class="exhead"><span class="n">${ex.name}</span>${mhtml}${ex.note?`<span class="note">${escTxt(ex.note)}</span>`:''}${isU?'<span class="note">[uni]</span>':''}</div>`;
   let rows='';
   if(isU){
     let thead=`<div class="thead" style="grid-template-columns:22px 20px 1fr 38px 44px 40px 18px;"><div class="cl"></div><div class="cl">L/R</div><div class="cl w">weight</div><div class="cl">unit</div><div class="cl">reps</div><div class="cl">rir</div><div class="cl"></div></div>`;
@@ -692,7 +692,8 @@ function renderSplitEdit(){
   const sp=db.split||{name:'',days:[]};
   let body=statusBar(true)
    +`<hr class="rule"/><div class="section"><div class="h"><span class="s">//</span>SPLIT</div><div class="meta">${(sp.days||[]).length} días</div></div>`
-   +`<div class="field" style="margin-bottom:16px"><label>NOMBRE DEL SPLIT</label><input data-act="sd_splitname" value="${(sp.name||'').replace(/"/g,'&quot;')}" placeholder="ej. Push/Pull/Legs"/></div>`;
+   +`<div class="field" style="margin-bottom:10px"><label>NOMBRE DEL SPLIT</label><input data-act="sd_splitname" value="${(sp.name||'').replace(/"/g,'&quot;')}" placeholder="ej. Push/Pull/Legs"/></div>`
+   +`<div class="secondary" style="margin-bottom:16px"><button class="b" data-act="importsplit">↑ importar split (ironLOG)</button></div>`;
   (sp.days||[]).forEach((d,di)=>{
     body+=`<div class="seday"><div class="sehead"><input class="senm" data-act="sd_name" data-di="${di}" value="${(d.name||'').replace(/"/g,'&quot;')}"/>${sp.days.length>1?`<span class="sedel" data-act="sd_deld" data-di="${di}">✕</span>`:''}</div>`;
     (d.exercises||[]).forEach((e,ei)=>{
@@ -797,6 +798,7 @@ document.getElementById('app').addEventListener('click',e=>{
   else if(a==='profile'){ go('settings'); }
   else if(a==='editprofile'){ openProfileEdit(); }
   else if(a==='editsplit'){ go('splitedit'); }
+  else if(a==='importsplit'){ openImportSplit(); }
   else if(a==='history'){ go('history'); }
   else if(a==='vieweditsession'){ openSessionEdit(el.dataset.id); }
   else if(a==='sd_deld'){ if(db.split.days.length>1&&confirm('¿Borrar este día?')){ db.split.days.splice(+el.dataset.di,1); save(); render(); } }
@@ -887,6 +889,34 @@ function saveExEdit(){
   save(); closeModal(); render();
 }
 
+function importIronlogSplit(d){
+  if(!d||!Array.isArray(d.days)) throw new Error('formato inválido (falta days[])');
+  const days=d.days.map((dy,i)=>({
+    id: dy.id||('d'+i+uid()),
+    name:(dy.name||('día '+(i+1))).trim(),
+    tag:'@ '+(dy.metric||'RIR')+(dy.allowFailure!==false?' · F':''),
+    focus:dy.focus||'', metric:(dy.metric||'rir').toLowerCase(), allowFailure:dy.allowFailure!==false,
+    exercises:(dy.exercises||[]).map(e=>({
+      name:(e.name||'').trim(),
+      muscle:(e.muscleTag||e.muscle||'other').replace(/^#/,'').toLowerCase(),
+      type:e.type==='machine'?'machine':'free',
+      machine:e.machine||'', unilateral:!!e.unilateral,
+      sets:Math.max(1,+e.sets||1), unit:e.unit||'', useFS:!!e.useFS, note:e.note||''
+    }))
+  }));
+  return {name:(d.name||'imported split').trim(), days};
+}
+function openImportSplit(){
+  openModal(`<h3>importar split · ironLOG</h3>
+   <div class="submeta" style="margin-bottom:8px">pega el JSON de tu split. reemplaza el split actual · tus sesiones guardadas no se tocan.</div>
+   <textarea id="imp_txt" style="width:100%;height:160px;border:1px solid var(--border);border-radius:11px;background:var(--card);color:var(--fg);font-family:inherit;font-size:11px;padding:10px" placeholder='{ "name": "...", "days": [ ... ] }'></textarea>
+   <div id="imp_msg" class="submeta" style="margin-top:6px"></div>
+   <div class="sheetbtns" style="margin-top:10px"><button class="ok" id="imp_go">importar</button><button class="cancel" data-act="closemodal">cancel</button></div>`);
+  document.getElementById('imp_go').onclick=()=>{ const m=document.getElementById('imp_msg');
+    try{ const d=JSON.parse(val('imp_txt')); const sp=importIronlogSplit(d); if(!sp.days.length)throw new Error('sin días');
+      db.split=sp; db.rotIdx=0; state.selDay=null; save(); closeModal(); go('splitedit'); alert('Split importado: '+sp.days.length+' días · '+sp.days.reduce((a,x)=>a+x.exercises.length,0)+' ejercicios.');
+    }catch(e){ if(m)m.textContent='no se pudo importar: '+(e.message||'JSON inválido'); } };
+}
 function saveSession(){
   const w=db.activeWork; if(!w){go('home');return;}
   const has=w.exercises.some(e=>e.sets.some(s=>s.w||s.r));
