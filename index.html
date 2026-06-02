@@ -142,6 +142,10 @@
   .fs{height:30px; border:.5px solid var(--o20); background:transparent; color:var(--o50); font-size:9px; cursor:pointer;} .fs.on{background:var(--o12); color:var(--fg);}
   .del{font-size:14px; color:var(--o40); text-align:center; cursor:pointer; background:none; border:0; height:30px; line-height:30px; padding:0;}
   .pair{display:flex; align-items:center; gap:4px; margin-bottom:5px;} .pair .setn{width:22px; flex:0 0 22px;} .pair .prows{flex:1;}
+  /* prev session full preview */
+  .prevsess{margin-top:12px;} .psd{margin-bottom:11px;} .psd:last-child{margin-bottom:2px;}
+  .psd .pex{font-size:13px; font-weight:700; color:var(--fg); margin-bottom:3px;} .psd .pex .pm{font-size:10px; font-weight:400; color:var(--o40);}
+  .psd .psets{font-size:11px; color:var(--o60); line-height:1.6;} .psets .pr{color:var(--o40);} .psets .pk{color:var(--o40); font-weight:700;} .psets .pdot{color:var(--o30);}
   .addrow{display:grid; gap:4px; margin-top:9px;} .addrow.afree{grid-template-columns:22px 1fr 38px 44px 40px 18px;} .addrow.amach{grid-template-columns:22px 26px 1fr 38px 44px 40px 18px;} .addrow.auni{grid-template-columns:22px 20px 1fr 38px 44px 40px 18px;}
   .addbtn{font-size:9px; color:var(--o60); background:none; border:0; cursor:pointer; white-space:nowrap; text-align:left; padding:0;}
   .aleft{display:flex; gap:16px;} .addrow.afree .aleft{grid-column:2/6;} .addrow.amach .aleft{grid-column:2/6;} .addrow.auni .aleft{grid-column:3/6;}
@@ -396,16 +400,22 @@ function renderHome(){
   const segs=db.split.days.map((_,i)=>`<i class="seg ${i===di?'on':''}" data-act="selday" data-i="${i}"></i>`).join('');
   let prevHTML='';
   if(prev){
-    const lifts=prev.exercises.filter(e=>(e.sets||[]).length).slice(0,3).map(e=>{
-      const top=e.sets.reduce((a,b)=>((parseFloat(b.w)||0)>(parseFloat(a.w)||0)?b:a),e.sets[0]);
-      const reps=[...new Set(e.sets.map(s=>s.r).filter(Boolean))].join(',');
-      return `<div class="line"><span class="k">${e.name}</span><span class="dots"></span><span class="v">${top.w?top.w+top.unit:'—'}${reps?' · '+reps:''}</span></div>`;
+    const exItems=prev.exercises.filter(e=>(e.sets||[]).length);
+    const exHtml=exItems.map(e=>{
+      const sets=e.sets.map(s=>{
+        const w=s.w?(numTxt(s.w)+(s.unit||'')):'—';
+        const reps=(s.r!==''&&s.r!=null)?s.r:'—';
+        const rir=(s.rir!==''&&s.rir!=null)?(' <span class="pr">@'+s.rir+'</span>'):'';
+        const mk=s.isDrop?'<span class="pk">↓</span> ':(s.fsOn?'<span class="pk">FS</span> ':'');
+        const side=s.side?('<span class="pk">'+s.side+'</span> '):'';
+        return `${mk}${side}${w}×${reps}${rir}`;
+      }).join('<span class="pdot"> · </span>');
+      return `<div class="psd"><div class="pex">${escTxt(e.name)}${e.machine?` <span class="pm">${escTxt(e.machine)}</span>`:''}</div><div class="psets">${sets}</div></div>`;
     }).join('');
-    const more=prev.exercises.length-3;
     let vol=0; prev.exercises.forEach(e=>(e.sets||[]).forEach(s=>vol+=(parseFloat(s.w)||0)*(parseFloat(s.r)||0)));
     const dur=prev.durSec?Math.floor(prev.durSec/3600)+'h '+pad(Math.floor(prev.durSec%3600/60))+'m':'';
-    prevHTML=`<hr class="rule"/><div class="whdr"><div class="l1"><span class="s">//</span>PREV</div><div class="wname">${prev.dayName}</div><div class="l2">SESSION</div><div class="wmeta">${fmtShort(prev.date)} · ${prev.exercises.filter(e=>e.sets&&e.sets.length).length} exercises</div></div>`
-      +lifts+(more>0?`<div class="submeta">+ ${more} more exercises</div>`:'')
+    prevHTML=`<hr class="rule"/><div class="whdr"><div class="l1"><span class="s">//</span>PREV</div><div class="wname">${prev.dayName}</div><div class="l2">SESSION</div><div class="wmeta">${fmtShort(prev.date)} · ${exItems.length} exercises</div></div>`
+      +`<div class="prevsess">${exHtml}</div>`
       +`<div class="rowend"><span>${kfmt(vol)} lb${dur?' · '+dur:''}</span></div>`;
   }
   return statusBar(false)
