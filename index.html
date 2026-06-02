@@ -250,6 +250,14 @@
   .scan-reticle .scl{position:absolute; left:11%; right:11%; height:2px; background:var(--bad); box-shadow:0 0 8px var(--bad); animation:scanmove 2s ease-in-out infinite;}
   @keyframes scanmove{0%,100%{top:30%}50%{top:70%}}
   @media (prefers-reduced-motion:reduce){ .scan-reticle .scl{animation:none; top:50%;} }
+  /* barcode detected → green lock-on */
+  .scan-reticle.hit .scl{display:none;}
+  .scan-reticle.hit .frame2{border-color:var(--good); border-width:2.5px; box-shadow:0 0 0 2000px rgba(0,0,0,.35), 0 0 22px var(--good); animation:bcpop .42s cubic-bezier(.2,1.3,.4,1);}
+  .scan-reticle .chk{position:absolute; opacity:0; color:var(--good); font-size:40px; font-weight:800; text-shadow:0 0 14px rgba(70,201,139,.6);}
+  .scan-reticle.hit .chk{animation:bcchk .5s ease forwards;}
+  @keyframes bcpop{0%{transform:scale(1)}40%{transform:scale(1.06)}100%{transform:scale(1)}}
+  @keyframes bcchk{0%{opacity:0;transform:scale(.4)}55%{opacity:1;transform:scale(1.15)}100%{opacity:1;transform:scale(1)}}
+  .bc-check{color:var(--good); font-weight:800; margin-right:5px;}
   /* loading spinner / dots */
   .spin{display:inline-block; width:11px; height:11px; border:1.5px solid var(--o20); border-top-color:var(--fg); border-radius:50%; animation:spin .7s linear infinite; vertical-align:middle; margin-right:6px;}
   @keyframes spin{to{transform:rotate(360deg)}}
@@ -1049,7 +1057,7 @@ function saveSession(){
 
 // ---------- modals ----------
 function openModal(html,cls){ closeModal(); const m=document.createElement('div'); m.className='modal'; m.id='modal'; m.innerHTML=`<div class="sheet ${cls||''}">${html}</div>`; m.addEventListener('click',ev=>{if(ev.target===m)closeModal();}); document.getElementById('app').appendChild(m); }
-function closeModal(){ const s=window._scanner; if(s){ try{ if(s._q&&typeof Quagga!=='undefined'){ if(s._fn)Quagga.offDetected(s._fn); Quagga.stop(); } }catch(_){} try{ if(s.stream)s.stream.getTracks().forEach(t=>t.stop()); }catch(_){} window._scanner=null; } const m=document.getElementById('modal'); if(m)m.remove(); }
+function closeModal(){ const s=window._scanner; if(s){ try{ if(s.timer)clearTimeout(s.timer); }catch(_){} try{ if(s._q&&typeof Quagga!=='undefined'){ if(s._fn)Quagga.offDetected(s._fn); Quagga.stop(); } }catch(_){} try{ if(s.stream)s.stream.getTracks().forEach(t=>t.stop()); }catch(_){} window._scanner=null; } const m=document.getElementById('modal'); if(m)m.remove(); }
 function val(id){ const e=document.getElementById(id); return e?e.value.trim():''; }
 function openGymPicker(){
   const items=(db.gyms||[]).map(g=>`<div class="pickitem" data-act="pickgym" data-g="${(g+'').replace(/"/g,'&quot;')}">${g}${g===db.activeGym?'  ·':''}</div>`).join('');
@@ -1175,53 +1183,67 @@ function openRegisterMenu(barcode){
    <button class="start" data-act="fphoto" style="margin-bottom:8px">📷 foto de tabla nutricional</button>
    <div class="secondary"><button class="b" data-act="ftext">¶ pegar texto</button><button class="b" data-act="fmanual">✏️ manual</button></div>`);
 }
-async function decodeBarcodeImage(file){
+async function decodeImgSrc(url){
   try{ await loadScript('https://cdn.jsdelivr.net/npm/@ericblade/quagga2@1.8.4/dist/quagga.min.js'); }catch(_){ return null; }
-  const url=URL.createObjectURL(file);
   const one=(patch,size)=> new Promise(res=>{ try{ Quagga.decodeSingle({ src:url, numOfWorkers:0, locate:true, inputStream:{ size:size }, locator:{ patchSize:patch, halfSample:false }, decoder:{ readers:['ean_reader','ean_8_reader','upc_reader','upc_e_reader','code_128_reader','code_39_reader'] } }, r=>res(r&&r.codeResult?r.codeResult.code:null)); }catch(_){ res(null); } });
   let code=null;
   for(const cb of [['medium',1600],['large',1600],['x-large',1920],['medium',1024],['large',800]]){ code=await one(cb[0],cb[1]); if(code)break; }
-  URL.revokeObjectURL(url); return code;
+  return code;
 }
+async function decodeBarcodeImage(file){ const url=URL.createObjectURL(file); const code=await decodeImgSrc(url); URL.revokeObjectURL(url); return code; }
 function openBarcode(){
   window._faTag=curTag();
-  openModal(`<h3>barcode</h3>
-   <div id="bc_cam" style="position:relative;width:100%;max-height:260px;overflow:hidden;border-radius:2px;background:#000"></div>
-   <div id="bc_msg" class="submeta" style="margin:8px 0">iniciando cámara…</div>
+  openModal(`<h3>escanear código</h3>
+   <div id="bc_cam" style="position:relative;width:100%;height:260px;overflow:hidden;border-radius:8px;background:#000;display:flex;align-items:center;justify-content:center"></div>
+   <div id="bc_msg" class="submeta" style="margin:8px 0;min-height:16px">iniciando cámara…</div>
    <div class="field"><label>O ESCRIBE EL CÓDIGO</label><input id="bc_code" inputmode="numeric" placeholder="7501..." autocomplete="off"/></div>
-   <div class="sheetbtns"><button class="ok" id="bc_go">look up</button><button class="cancel" id="bc_photo2">📷 foto</button><button class="cancel" data-act="closemodal">cancel</button></div>`);
-  const doLookup=async()=>{ const code=val('bc_code'); if(!code)return; const m=document.getElementById('bc_msg'); m.innerHTML='<span class="spin"></span>buscando…';
+   <div class="sheetbtns"><button class="ok" id="bc_go">look up</button><button class="cancel" id="bc_cap">📷 capturar</button><button class="cancel" data-act="closemodal">cancel</button></div>`);
+  const doLookup=async()=>{ const code=val('bc_code'); if(!code)return; const m=document.getElementById('bc_msg'); if(m)m.innerHTML='<span class="spin"></span>buscando…';
     const local=(db.foods||[]).find(f=>f.barcode===code);
     if(local){ openVerify(local,{fromId:local.id,qty:1,tag:window._faTag}); return; }
     const food=await lookupBarcode(code);
     if(food&&food.name){ openVerify(food,{isNew:true,tag:window._faTag}); return; }
     openRegisterMenu(code); };
   document.getElementById('bc_go').onclick=doLookup;
-  const addReticle=cam=>{ try{ if(cam.querySelector('.scan-reticle'))return; const rt=document.createElement('div'); rt.className='scan-reticle'; rt.innerHTML='<div class="frame2"></div><div class="scl"></div>'; cam.appendChild(rt); }catch(_){} };
-  const stopScan=()=>{ const s=window._scanner; if(s){ if(s._q){ try{Quagga.offDetected(s._fn);}catch(_){} try{Quagga.stop();}catch(_){} } if(s.stream){ try{s.stream.getTracks().forEach(t=>t.stop());}catch(_){} } } window._scanner=null; };
-  let scanDone=false;
-  const hit=code=>{ if(scanDone||!code)return; scanDone=true; stopScan(); const c=document.getElementById('bc_code'); if(c)c.value=code; doLookup(); };
+  const addReticle=cam=>{ try{ if(cam.querySelector('.scan-reticle'))return; const rt=document.createElement('div'); rt.className='scan-reticle'; rt.innerHTML='<div class="frame2"></div><div class="scl"></div><div class="chk">✓</div>'; cam.appendChild(rt); }catch(_){} };
+  const stopScan=()=>{ const s=window._scanner; if(s){ if(s.timer){try{clearTimeout(s.timer);}catch(_){}} if(s.stream){ try{s.stream.getTracks().forEach(t=>t.stop());}catch(_){} } } window._scanner=null; };
+  let scanDone=false, decoding=false;
+  // detection → green lock-on + haptic, brief pause so the user can lower the phone, then look up
+  const hit=code=>{ if(scanDone||!code)return; scanDone=true;
+    try{ if(navigator.vibrate)navigator.vibrate(55); }catch(_){}
+    const rt=document.querySelector('#bc_cam .scan-reticle'); if(rt)rt.classList.add('hit');
+    const m=document.getElementById('bc_msg'); if(m)m.innerHTML='<span class="bc-check">✓</span>código detectado · '+code;
+    const c=document.getElementById('bc_code'); if(c)c.value=code;
+    stopScan(); setTimeout(doLookup, 430); };
+  // live preview + background still-frame decode: feels like scanning, but each frame is
+  // grabbed to a canvas and decoded as a still (reliable on iOS, where LiveStream/BarcodeDetector fail)
   const startScan=async()=>{ const m=document.getElementById('bc_msg'); const cam=document.getElementById('bc_cam'); if(!cam)return; m.textContent='iniciando cámara…';
-    // fast path: native BarcodeDetector (smooth, hardware-accelerated)
-    try{ if('BarcodeDetector' in window){ const sup=await BarcodeDetector.getSupportedFormats(); const want=['ean_13','ean_8','upc_a','upc_e','code_128'].filter(f=>sup.includes(f));
-      if(want.length){ const stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'},width:{ideal:1280},height:{ideal:720}}});
-        cam.innerHTML=''; const v=document.createElement('video'); v.setAttribute('playsinline',''); v.muted=true; v.autoplay=true; v.style.cssText='width:100%;height:auto;display:block'; cam.appendChild(v); addReticle(cam); v.srcObject=stream; await v.play(); window._scanner={stream};
-        const det=new BarcodeDetector({formats:want}); m.textContent='centra el código en el recuadro · detecta solo';
-        const loop=async()=>{ if(scanDone||!window._scanner)return; try{ const r=await det.detect(v); if(r&&r[0]&&r[0].rawValue){ hit(r[0].rawValue); return; } }catch(_){} setTimeout(loop,140); }; loop(); return; } } }catch(_){ try{stopScan();}catch(__){} }
-    // fallback: Quagga2 tuned for smoothness (720p · halfSample · center area · low freq)
-    try{ await loadScript('https://cdn.jsdelivr.net/npm/@ericblade/quagga2@1.8.4/dist/quagga.min.js'); stopScan(); cam.innerHTML='';
-      const votes={}; const onDet=data=>{ const code=data&&data.codeResult&&data.codeResult.code; if(!code||scanDone)return; votes[code]=(votes[code]||0)+1; if(votes[code]>=2)hit(code); };
-      Quagga.init({ inputStream:{ type:'LiveStream', target:cam, constraints:{ facingMode:{ideal:'environment'}, width:{ideal:1280}, height:{ideal:720} }, area:{top:'28%',right:'12%',left:'12%',bottom:'28%'} },
-        locator:{ patchSize:'medium', halfSample:true }, numOfWorkers:0, frequency:5,
-        decoder:{ readers:['ean_reader','ean_8_reader','upc_reader','upc_e_reader'] } },
-        err=>{ if(err){ m.textContent='cámara no disponible · escribe el código o usa 📷 foto'; return; }
-          window._scanner={_q:true,_fn:onDet}; Quagga.offDetected(onDet); Quagga.onDetected(onDet); Quagga.start(); addReticle(cam);
-          m.textContent='centra el código en el recuadro · detecta solo';
-          try{ const tr=Quagga.CameraAccess&&Quagga.CameraAccess.getActiveTrack&&Quagga.CameraAccess.getActiveTrack(); if(tr&&tr.applyConstraints){ const caps=tr.getCapabilities?tr.getCapabilities():{}; if(caps.focusMode&&[].concat(caps.focusMode).includes('continuous'))tr.applyConstraints({advanced:[{focusMode:'continuous'}]}).catch(()=>{}); } }catch(_){}
-        });
-    }catch(e){ m.textContent='cámara no disponible · escribe el código o usa 📷 foto'; } };
+    let stream;
+    try{ stream=await navigator.mediaDevices.getUserMedia({ video:{ facingMode:{ideal:'environment'}, width:{ideal:1280}, height:{ideal:720} } }); }
+    catch(e){ m.textContent='cámara no disponible · escribe el código o usa 📷 capturar'; return; }
+    if(scanDone){ try{stream.getTracks().forEach(t=>t.stop());}catch(_){} return; }
+    cam.innerHTML=''; const v=document.createElement('video'); v.setAttribute('playsinline',''); v.muted=true; v.autoplay=true; v.style.cssText='width:100%;height:100%;object-fit:cover;display:block'; cam.appendChild(v); addReticle(cam);
+    v.srcObject=stream; try{ await v.play(); }catch(_){}
+    window._scanner={stream, video:v};
+    try{ const tr=stream.getVideoTracks()[0]; const caps=tr.getCapabilities?tr.getCapabilities():{}; if(caps.focusMode&&[].concat(caps.focusMode).includes('continuous'))tr.applyConstraints({advanced:[{focusMode:'continuous'}]}).catch(()=>{}); }catch(_){}
+    let det=null; try{ if('BarcodeDetector' in window){ const sup=await BarcodeDetector.getSupportedFormats(); const want=['ean_13','ean_8','upc_a','upc_e','code_128'].filter(f=>sup.includes(f)); if(want.length)det=new BarcodeDetector({formats:want}); } }catch(_){ det=null; }
+    if(!det){ try{ await loadScript('https://cdn.jsdelivr.net/npm/@ericblade/quagga2@1.8.4/dist/quagga.min.js'); }catch(_){} }
+    if(!window._scanner||scanDone)return;
+    m.innerHTML='centra el código en el recuadro · <b style="color:var(--fg)">se detecta solo</b>';
+    const grab=()=>{ const vw=v.videoWidth, vh=v.videoHeight; if(!vw||!vh)return null; const ch=Math.round(vh*0.62), sy=Math.round((vh-ch)/2); const sc=Math.min(1, 1000/vw); const dw=Math.round(vw*sc), dh=Math.round(ch*sc); const cv=window._bcCv||(window._bcCv=document.createElement('canvas')); cv.width=dw; cv.height=dh; try{ cv.getContext('2d').drawImage(v,0,sy,vw,ch,0,0,dw,dh); }catch(_){ return null; } return cv; };
+    const decodeQ=cv=> new Promise(res=>{ if(typeof Quagga==='undefined'){res(null);return;} try{ Quagga.decodeSingle({ src:cv.toDataURL('image/jpeg',0.7), numOfWorkers:0, locate:true, inputStream:{ size:cv.width }, locator:{ patchSize:'medium', halfSample:false }, decoder:{ readers:['ean_reader','ean_8_reader','upc_reader','upc_e_reader','code_128_reader'] } }, r=>res(r&&r.codeResult?r.codeResult.code:null)); }catch(_){ res(null); } });
+    const loop=async()=>{ if(scanDone||!window._scanner)return;
+      if(!decoding){ decoding=true; try{ const cv=grab(); if(cv){ let code=null; if(det){ try{ const r=await det.detect(cv); code=(r&&r[0]&&r[0].rawValue)||null; }catch(_){} } else { code=await decodeQ(cv); } if(code){ decoding=false; hit(code); return; } } }catch(_){} decoding=false; }
+      if(window._scanner&&!scanDone)window._scanner.timer=setTimeout(loop, det?170:360); };
+    loop(); };
   startScan();
-  const bp=document.getElementById('bc_photo2'); if(bp){ bp.onclick=()=>{ const inp=document.createElement('input'); inp.type='file'; inp.accept='image/*'; inp.setAttribute('capture','environment'); inp.onchange=async()=>{ const f=inp.files&&inp.files[0]; if(!f)return; const mm=document.getElementById('bc_msg'); if(mm)mm.innerHTML='<span class="spin"></span>leyendo código…'; const code=await decodeBarcodeImage(f); if(code){ const c=document.getElementById('bc_code'); if(c)c.value=code; doLookup(); } else if(mm){ mm.textContent='no se leyó · acércalo de frente y enfocado, o escríbelo'; } }; inp.click(); }; }
+  // manual "capturar" → thorough full-res decode of the current preview (or a photo if no live camera)
+  const cap=document.getElementById('bc_cap'); if(cap){ cap.onclick=async()=>{ if(scanDone)return; const mm=document.getElementById('bc_msg'); const s=window._scanner;
+    if(s&&s.video&&s.video.videoWidth){ for(let i=0;i<20&&decoding;i++){ await new Promise(r=>setTimeout(r,50)); } if(scanDone)return; decoding=true;
+      if(mm)mm.innerHTML='<span class="spin"></span>leyendo…'; const v=s.video; const cv=document.createElement('canvas'); cv.width=v.videoWidth; cv.height=v.videoHeight; try{ cv.getContext('2d').drawImage(v,0,0); }catch(_){}
+      let code=null; try{ code=await decodeImgSrc(cv.toDataURL('image/jpeg',0.88)); }catch(_){} decoding=false;
+      if(code){ hit(code); return; } if(mm)mm.textContent='no se leyó · acércalo, enfócalo y captura otra vez (o escríbelo)'; return; }
+    const inp=document.createElement('input'); inp.type='file'; inp.accept='image/*'; inp.setAttribute('capture','environment'); inp.onchange=async()=>{ const f=inp.files&&inp.files[0]; if(!f)return; if(mm)mm.innerHTML='<span class="spin"></span>leyendo código…'; const code=await decodeBarcodeImage(f); if(code){ hit(code); } else if(mm){ mm.textContent='no se leyó · acércalo de frente y enfocado, o escríbelo'; } }; inp.click(); }; }
 }
 function servingToLiters(sz){
   if(!sz)return 0;
