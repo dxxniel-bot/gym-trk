@@ -644,11 +644,14 @@ function renderMacros(){
 }
 // ---------- render: shareable summary (gym//TRK aesthetic, horizontal banner) ----------
 // display quantity: always grams/ml for weight-based units (clearer for screenshots); keep pieces for piece unit
-function itemQtyLabel(m){ const f=m._food, u=m._unit, q=m.qty||1;
-  if(u==='piece') return numTxt(q)+' pza';
-  if(u==='serving') return numTxt(q)+(q===1?' porción':' porciones');
-  if(f&&f.sizes&&u){ const g=unitGrams(f,u); if(g>0) return numTxt(Math.round(q*g))+' '+((f.base==='ml')?'ml':'g'); }
-  const us={container:'env','100':'100',g:'g',ml:'ml'}[u]||''; return numTxt(q)+(us?(' '+us):'×'); }
+// "{qty} ({total grams})" — e.g. "2 (80 g)"; pieces keep "pza"; raw g/ml as-is
+function itemQtyLabel(m){ const f=m._food, u=m._unit, q=m.qty||1; const base=(f&&f.base==='ml')?'ml':'g';
+  if(u==='g'||u==='ml') return numTxt(q)+' '+u;
+  if(!u||!f||!f.sizes) return numTxt(q)+'×';
+  const g=unitGrams(f,u); const grams=g>0?numTxt(Math.round(q*g)):'';
+  if(u==='100') return numTxt(q*100)+' '+base;
+  if(u==='piece') return numTxt(q)+' pza'+(grams?` (${grams} ${base})`:'');
+  return grams ? numTxt(q)+' ('+grams+' '+base+')' : numTxt(q)+'×'; }
 function mealFoodRows(items){
   return items.map(m=>{ const nm=(m.name||'').replace(/ ×[\d.]+$/,''); const br=(m._food&&m._food.brand)||'';
     return `<div class="sitem"><span class="sn"><b class="q">${itemQtyLabel(m)}</b> ${escTxt(nm)}${br?` <span class="sb">${escTxt(br)}</span>`:''}</span><span class="sk">${Math.round(m.kcal)||0}</span></div>`; }).join(''); }
