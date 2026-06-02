@@ -13,7 +13,7 @@ A mobile-first web app (works on iPhone via "Add to Home Screen") to log gym wor
 ## How to run / deploy
 - **Run locally:** static files; serve the folder and open the port. On **mopo** the repo is cloned at `G:\My Drive\AI_SYSTEM\projects\gym-trk\repo\` and there's a `.claude/launch.json` (one dir up) that serves it via `python -m http.server 4599 -d repo` for the Claude Code preview. On XboxL it was `X:\freelance\gym-trk\`.
 - **Deploy:** `git push` to `main` → GitHub Pages auto-rebuilds (~1-2 min). No backend. **The iPhone is the test field** — camera/PWA need HTTPS, so always commit+push to deploy; localhost isn't enough for on-device testing.
-- **Bump `sw.js` cache** (`gymtrk-vN`) on every shippable change so devices pick up the new build. Currently at **v47**.
+- **Bump `sw.js` cache** (`gymtrk-vN`) on every shippable change so devices pick up the new build. Currently at **v48**.
 - **Git identity** (set locally in the clone): `dxxniel-bot <dxxniel-bot@users.noreply.github.com>`. Commit directly to `main` (that IS the deploy flow — don't branch).
 - **Continue from another machine:** `git clone https://github.com/dxxniel-bot/gym-trk` (or `git pull` in the existing clone), edit, push.
 
@@ -39,6 +39,9 @@ A mobile-first web app (works on iPhone via "Add to Home Screen") to log gym wor
 `landing` → `onboard` → `home` (gym: rotation w/ ‹›day picker, //NEXT, start/rest/skip, log-later, **//VOLUME** weekly-sets-per-muscle vs MEV/MAV/MRV, //STATS) · `workout` (live logging + bg duration; log-later mode = backdated + date/dur + advance-rotation toggle) · `macros` (kcal ring + macro rings w/ g⇄% & logged⇄remaining toggles + intake bars + bloat + food log w/ per-item P/C/F + per-meal totals + tap-to-detail) · `splitedit` (rename/add/remove days & exercises, edit exercise) · `history` (past sessions → view/edit/delete) · `settings` (//PROFILE editable, //TRAINING, //DATA export/import) · `progress` (stub).
 Gym stats helpers: `weeklySets(days)`, `VOL_LANDMARKS` (RP MEV/MAV/MRV), `volStatus()`, `isHardSet()` (RIR≤4), `e1rmTrend()` (Epley, not yet surfaced). Top-lift & raw-volume removed on purpose.
 Native-feel: viewport `maximum-scale=1,user-scalable=no`, body `position:fixed`, inputs `font-size:16px`, frame fills screen `@media(max-width:440px)`.
+
+### Built-in base foods (`BASE_FOODS`)
+A curated, code-embedded table (~131 entries) of generic **whole/basic foods** OpenFoodFacts lacks (huevo, res, cebolla, tortilla, frijol, aguacate, pechuga, arroz, café…). Mexican-staple + protein-leaning. Each is already in canonical shape (`per100` for all MACROKEYS, `base:'g'|'ml'`, `sizes` with natural piece/serving). Built via a terse `add(name,kcal,p,c,f,opt)` helper (`opt`: `s`ugar `fi`ber `na`+`k` mg `caf` `sv`/`pc`/`ct` grams `sl` label `base`). Values are ~per-100 g edible-portion USDA approximations. **Surfaced in search, not copied to LS:** `bfNorm()` (accent-insensitive) matches them in `openFoodAdd`'s inline `#fa_q` list (under a BÁSICOS group) and in `openNameSearch` (BÁSICOS above OFF PRODUCTOS). Pick → `data-act="pickbase"` → `openLog(food,{isNew:true})`; choosing "guardar + loguear" copies it into `db.foods` (keeps its `bf_*` id, then shows under RECIENTES and is filtered out of BÁSICOS to avoid dupes). To extend: add more `add(...)` rows.
 
 ### External (client-side, no keys/backend)
 - **OpenFoodFacts** — barcode lookup (`/api/v2/product/{code}.json`) + name search (`/cgi/search.pl`). Barcode-not-found → offers **photo-of-label OCR** (primary) and name search (both link the food to the scanned code in `foods[]`).

@@ -959,6 +959,7 @@ document.getElementById('app').addEventListener('click',e=>{
   else if(a==='drinkcal'){ openVerify({name:'',base:'ml',per100:{},sizes:{}},{isNew:true,tag:'drink'}); }
   else if(a==='fregister'){ openRegisterMenu(null); }
   else if(a==='pickfood'){ const f=(db.foods||[]).find(x=>x.id===el.dataset.id); if(f) openLog(f,{fromId:f.id,tag:curTag()}); }
+  else if(a==='pickbase'){ const f=BASE_FOODS.find(x=>x.id===el.dataset.id); if(f){ const tg=document.getElementById('fa_tagtxt')?curTag():(window._faTag||'meal'); openLog(f,{tag:tg,isNew:true}); } }
   else if(a==='fbarcode'){ openBarcode(); }
   else if(a==='fsearch'){ window._faTag=curTag(); openNameSearch(''); }
   else if(a==='fphoto'){ window._faTag=window._faTag||curTag(); const inp=document.createElement('input'); inp.type='file'; inp.accept='image/*'; inp.setAttribute('capture','environment'); inp.onchange=()=>{ if(inp.files&&inp.files[0]) labelPhoto(inp.files[0], window._linkBarcode||''); }; inp.click(); }
@@ -1155,20 +1156,180 @@ function openDrink(){
    <div class="sheetbtns" style="margin-top:10px"><button class="ok" id="dr_go">💧 agregar agua</button><button class="cancel" data-act="drinkcal">bebida con kcal →</button></div>`);
   document.getElementById('dr_go').onclick=()=>{ logWater(parseFloat(val('dr_ml'))||0); closeModal(); render(); };
 }
+// ===== BUILT-IN BASE FOODS =====
+// OpenFoodFacts only has barcoded packaged products; these cover the generic whole foods it lacks
+// (huevo, res, cebolla…). Values are ~per-100 g edible portion (USDA-derived approximations);
+// base:'ml' entries are per-100 ml. sodium/potassium in mg. sv=serving g · pc=piece g · ct=container g.
+const bfNorm=s=>(s||'').toString().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
+const BASE_FOODS=(function(){ const L=[];
+  const slug=n=>'bf_'+bfNorm(n).replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
+  const add=(name,kcal,p,c,f,o)=>{ o=o||{}; L.push({ id:slug(name), name:name, brand:'', base:o.base||'g',
+    per100:{kcal:kcal,protein:p,carbs:c,fat:f,sugar:o.s||0,fiber:o.fi||0,sodium:o.na||0,potassium:o.k||0,caffeine:o.caf||0},
+    sizes:Object.assign({}, o.sv?{serving:o.sv}:{}, o.pc?{piece:o.pc}:{}, o.ct?{container:o.ct}:{}),
+    servingLabel:o.sl||'', group:o.g||'', _base:true }); };
+  // HUEVO & LÁCTEOS
+  add('Huevo entero',143,12.6,0.7,9.5,{s:0.4,na:142,k:138,pc:50});
+  add('Clara de huevo',52,10.9,0.7,0.2,{na:166,k:163,pc:33});
+  add('Yema de huevo',322,15.9,3.6,26.5,{s:0.6,na:48,k:109,pc:17});
+  add('Leche entera',61,3.2,4.8,3.3,{s:5.1,na:43,k:132,base:'ml',sv:240});
+  add('Leche light',37,3.4,5,0.2,{s:5,na:44,k:156,base:'ml',sv:240});
+  add('Yogur natural',61,3.5,4.7,3.3,{s:4.7,na:46,k:155,sv:170});
+  add('Yogur griego natural',59,10,3.6,0.4,{s:3.2,na:36,k:141,sv:170});
+  add('Queso panela',215,18.6,3.5,14.5,{na:430,k:120});
+  add('Queso Oaxaca',290,21,2.5,22,{na:600,k:90});
+  add('Queso fresco',145,11.5,3,9.7,{na:350,k:90});
+  add('Queso manchego',403,23,3.4,33,{na:653,k:76});
+  add('Requesón',98,11,3.4,4.3,{na:364,k:104});
+  add('Crema',195,2.8,3.4,19,{na:50,k:90,sv:15,sl:'cda'});
+  add('Mantequilla',717,0.9,0.1,81,{na:11,sv:14,sl:'cda'});
+  // CARNES, AVES & PESCADO
+  add('Pechuga de pollo',120,22.5,0,2.6,{na:45,k:334});
+  add('Pechuga de pollo cocida',165,31,0,3.6,{na:74,k:256});
+  add('Muslo de pollo',121,19.7,0,4.1,{na:86,k:230});
+  add('Res molida',254,17,0,20,{na:66,k:270});
+  add('Res molida magra',176,20,0,10,{na:66,k:300});
+  add('Bistec de res',143,21.6,0,5.7,{na:53,k:350});
+  add('Cerdo (lomo)',143,21,0,5.9,{na:47,k:360});
+  add('Cerdo molido',263,16.9,0,21,{na:56,k:287});
+  add('Tocino',417,13,1.3,40,{na:750,k:200});
+  add('Jamón de pierna',145,18,1.5,7,{na:1200,k:300});
+  add('Salchicha',300,12,2,27,{na:800,k:140});
+  add('Chorizo',455,24,1.9,38,{na:1230,k:240});
+  add('Pavo molido',148,20,0,7,{na:70,k:280});
+  add('Atún en agua (lata)',116,26,0,0.8,{na:247,k:237});
+  add('Atún fresco',144,23,0,5,{na:39,k:252});
+  add('Salmón',208,20,0,13,{na:59,k:363});
+  add('Tilapia',96,20,0,1.7,{na:52,k:302});
+  add('Camarón',99,24,0.2,0.3,{na:111,k:259});
+  add('Hígado de res',135,20,3.9,3.6,{na:69,k:313});
+  // LEGUMINOSAS
+  add('Frijol negro (cocido)',132,8.9,23.7,0.5,{s:0.3,fi:8.7,na:1,k:355});
+  add('Frijol bayo (cocido)',143,9,26,0.7,{fi:9,na:1,k:436});
+  add('Lenteja (cocida)',116,9,20,0.4,{s:1.8,fi:7.9,na:2,k:369});
+  add('Garbanzo (cocido)',164,8.9,27,2.6,{s:4.8,fi:7.6,na:7,k:291});
+  add('Haba (cocida)',110,7.6,19,0.4,{fi:5.4,na:5,k:268});
+  add('Edamame / soya',121,12,9,5,{s:2.2,fi:5,na:6,k:436});
+  // CEREALES & GRANOS
+  add('Arroz blanco (cocido)',130,2.7,28,0.3,{fi:0.4,na:1,k:35,sv:158});
+  add('Arroz integral (cocido)',123,2.7,26,1,{fi:1.6,na:4,k:86,sv:195});
+  add('Avena (seca)',389,16.9,66,6.9,{fi:10.6,na:2,k:429,sv:40});
+  add('Tortilla de maíz',218,5.7,44.6,2.85,{fi:6.3,na:45,k:186,pc:26});
+  add('Tortilla de harina',304,8.2,51,7.5,{fi:3,na:663,k:130,pc:40});
+  add('Bolillo / pan blanco',275,9,51,3.6,{s:5,fi:2.4,na:540,k:115,pc:60});
+  add('Pan integral',247,13,41,3.4,{s:6,fi:7,na:450,k:250,pc:28});
+  add('Pan de caja (rebanada)',265,9,49,3.2,{s:5,fi:2.5,na:490,k:115,pc:28});
+  add('Pasta (cocida)',158,5.8,31,0.9,{fi:1.8,na:1,k:44,sv:140});
+  add('Quinoa (cocida)',120,4.4,21,1.9,{fi:2.8,na:7,k:172,sv:185});
+  add('Elote / maíz',86,3.2,19,1.2,{s:3.2,fi:2.7,na:15,k:270});
+  add('Harina de trigo',364,10,76,1,{fi:2.7,na:2,k:107});
+  add('Harina de maíz (masa)',365,9,76,3.9,{fi:7,na:5,k:315});
+  add('Hojuelas de maíz (cereal)',357,7,84,0.4,{s:8,fi:3,na:729,k:120,sv:30});
+  add('Granola',489,13,64,20,{s:24,fi:7,na:30,k:330,sv:45});
+  // VERDURAS
+  add('Cebolla',40,1.1,9.3,0.1,{s:4.2,fi:1.7,na:4,k:146});
+  add('Jitomate',18,0.9,3.9,0.2,{s:2.6,fi:1.2,na:5,k:237});
+  add('Chile jalapeño',29,0.9,6.5,0.4,{s:4.1,fi:2.8,na:3,k:248});
+  add('Chile serrano',32,1.7,7,0.4,{fi:3.7,na:10,k:305});
+  add('Lechuga',15,1.4,2.9,0.2,{s:0.8,fi:1.3,na:28,k:194});
+  add('Zanahoria',41,0.9,9.6,0.2,{s:4.7,fi:2.8,na:69,k:320});
+  add('Brócoli',34,2.8,6.6,0.4,{s:1.7,fi:2.6,na:33,k:316});
+  add('Espinaca',23,2.9,3.6,0.4,{s:0.4,fi:2.2,na:79,k:558});
+  add('Papa',77,2,17,0.1,{s:0.8,fi:2.2,na:6,k:425});
+  add('Camote',86,1.6,20,0.1,{s:4.2,fi:3,na:55,k:337});
+  add('Calabacita',17,1.2,3.1,0.3,{s:2.5,fi:1,na:8,k:261});
+  add('Pepino',15,0.65,3.6,0.1,{s:1.7,fi:0.5,na:2,k:147});
+  add('Pimiento morrón',31,1,6,0.3,{s:4.2,fi:2.1,na:4,k:211});
+  add('Ajo',149,6.4,33,0.5,{s:1,fi:2.1,na:17,k:401,pc:3});
+  add('Champiñón',22,3.1,3.3,0.3,{s:2,fi:1,na:5,k:318});
+  add('Nopal',16,1.3,3.3,0.1,{fi:2.2,na:21,k:250});
+  add('Chayote',19,0.8,4.5,0.1,{fi:1.7,na:2,k:125});
+  add('Aguacate',160,2,8.5,14.7,{s:0.7,fi:6.7,na:7,k:485,pc:150});
+  add('Ejotes',31,1.8,7,0.2,{s:3.3,fi:2.7,na:6,k:211});
+  add('Coliflor',25,1.9,5,0.3,{s:1.9,fi:2,na:30,k:299});
+  add('Apio',16,0.7,3,0.2,{s:1.3,fi:1.6,na:80,k:260});
+  add('Betabel',43,1.6,10,0.2,{s:7,fi:2.8,na:78,k:325});
+  add('Col',25,1.3,5.8,0.1,{s:3.2,fi:2.5,na:18,k:170});
+  add('Calabaza',26,1,6.5,0.1,{s:2.8,fi:0.5,na:1,k:340});
+  // FRUTAS
+  add('Plátano',89,1.1,23,0.3,{s:12,fi:2.6,na:1,k:358,pc:118});
+  add('Manzana',52,0.3,14,0.2,{s:10,fi:2.4,na:1,k:107,pc:180});
+  add('Naranja',47,0.9,12,0.1,{s:9,fi:2.4,na:0,k:181,pc:130});
+  add('Fresa',32,0.7,7.7,0.3,{s:4.9,fi:2,na:1,k:153});
+  add('Papaya',43,0.5,11,0.3,{s:7.8,fi:1.7,na:8,k:182});
+  add('Mango',60,0.8,15,0.4,{s:14,fi:1.6,na:1,k:168,pc:200});
+  add('Piña',50,0.5,13,0.1,{s:10,fi:1.4,na:1,k:109});
+  add('Sandía',30,0.6,7.6,0.15,{s:6.2,fi:0.4,na:1,k:112});
+  add('Melón',34,0.8,8.2,0.2,{s:7.9,fi:0.9,na:16,k:267});
+  add('Uva',69,0.7,18,0.2,{s:15,fi:0.9,na:2,k:191});
+  add('Limón',29,1.1,9.3,0.3,{s:2.5,fi:2.8,na:2,k:138,pc:60});
+  add('Toronja',42,0.8,11,0.1,{s:7,fi:1.6,na:0,k:135});
+  add('Durazno',39,0.9,10,0.25,{s:8.4,fi:1.5,na:0,k:190});
+  add('Pera',57,0.4,15,0.1,{s:10,fi:3.1,na:1,k:116,pc:178});
+  add('Kiwi',61,1.1,15,0.5,{s:9,fi:3,na:3,k:312});
+  add('Arándano',57,0.7,14,0.3,{s:10,fi:2.4,na:1,k:77});
+  add('Guayaba',68,2.6,14,1,{s:9,fi:5.4,na:2,k:417});
+  add('Mandarina',53,0.8,13,0.3,{s:11,fi:1.8,na:2,k:166});
+  add('Pasas',299,3.1,79,0.5,{s:59,fi:3.7,na:11,k:749});
+  // NUECES & SEMILLAS
+  add('Almendra',579,21,22,50,{s:4.4,fi:12.5,na:1,k:733,sv:28});
+  add('Cacahuate',567,26,16,49,{s:4,fi:8.5,na:18,k:705,sv:28});
+  add('Crema de cacahuate',588,25,20,50,{s:9,fi:6,na:459,k:649,sv:32,sl:'cda'});
+  add('Nuez',654,15,14,65,{s:2.6,fi:6.7,na:2,k:441,sv:28});
+  add('Nuez de la india',553,18,30,44,{s:5.9,fi:3.3,na:12,k:660,sv:28});
+  add('Pistache',560,20,28,45,{s:7.7,fi:10,na:1,k:1025,sv:28});
+  add('Semilla de chía',486,17,42,31,{fi:34,na:16,k:407,sv:15,sl:'cda'});
+  add('Linaza',534,18,29,42,{s:1.5,fi:27,na:30,k:813,sv:15,sl:'cda'});
+  add('Pepita de calabaza',559,30,11,49,{s:1.4,fi:6,na:7,k:809,sv:28});
+  add('Amaranto',371,14,65,7,{fi:6.7,na:4,k:508});
+  // GRASAS, ACEITES & UNTABLES
+  add('Aceite de oliva',884,0,0,100,{na:2,sv:14,sl:'cda'});
+  add('Aceite vegetal',884,0,0,100,{sv:14,sl:'cda'});
+  add('Mayonesa',680,1,0.6,75,{na:635,k:20,sv:15,sl:'cda'});
+  // AZÚCARES & CONDIMENTOS
+  add('Azúcar',387,0,100,0,{s:100,sv:4,sl:'cdta'});
+  add('Miel',304,0.3,82,0,{s:82,na:4,k:52,sv:21,sl:'cda'});
+  add('Mermelada',278,0.4,69,0.1,{s:49,na:32,sv:20,sl:'cda'});
+  add('Chocolate amargo',546,4.9,61,31,{s:48,fi:7,na:24,k:559,sv:30});
+  add('Chocolate con leche',535,7.6,59,30,{s:52,fi:3.4,na:79,k:372,sv:30});
+  add('Catsup',101,1.1,27,0.1,{s:22,fi:0.3,na:907,k:281,sv:17,sl:'cda'});
+  add('Salsa de soya',53,8,4.9,0.6,{s:0.4,na:5493,k:212,sv:16,sl:'cda'});
+  add('Totopos / tortilla chips',489,7,64,24,{s:1.5,fi:5,na:400,k:160,sv:28});
+  add('Salsa (roja/verde)',36,1.5,7,0.3,{s:3.5,fi:1.9,na:430,k:250,sv:30});
+  // SUPLEMENTOS
+  add('Proteína whey (polvo)',400,80,8,6,{s:5,na:300,k:400,sv:30,sl:'scoop'});
+  add('Proteína vegetal (polvo)',375,70,12,6,{fi:5,na:400,k:350,sv:30,sl:'scoop'});
+  // BEBIDAS
+  add('Café negro',1,0.1,0,0,{caf:40,k:49,base:'ml',sv:240});
+  add('Té negro',1,0,0.3,0,{caf:20,k:37,base:'ml',sv:240});
+  add('Jugo de naranja',45,0.7,10,0.2,{s:8.4,na:1,k:200,base:'ml',sv:240});
+  add('Refresco de cola',42,0,10.6,0,{s:10.6,na:4,caf:9.7,base:'ml',sv:355});
+  add('Cerveza',43,0.5,3.6,0,{na:4,k:27,base:'ml',sv:355});
+  add('Agua de coco',19,0.7,3.7,0.2,{s:2.6,na:105,k:250,base:'ml',sv:240});
+  add('Leche de almendra (s/azúcar)',15,0.6,0.6,1.2,{na:72,k:67,base:'ml',sv:240});
+  // PREPARADOS BÁSICOS
+  add('Frijoles refritos',145,5,20,5,{fi:5,na:500,k:400});
+  add('Guacamole',150,2,8,13,{fi:6,na:300,k:330});
+  add('Arroz rojo (mexicano)',150,3,28,3,{na:350,k:90,sv:150});
+  return L;
+})();
 function openFoodAdd(preset){
   const sugg=mealSuggestions(); const tag=preset||nextMealTag();
   openModal(`<div class="fa-wrap">
      <div class="field" style="margin-bottom:6px"><label>COMIDA <span style="color:var(--o30);font-weight:400">· mantén pulsado un chip para borrarlo</span></label><input id="fa_tagtxt" value="${(tag+'').replace(/"/g,'&quot;')}" placeholder="ej. pre-workout" autocomplete="off"/>
      <div class="chips" id="fa_sugg">${sugg.map(s=>`<span class="chip" data-act="pickmealtag" data-v="${s.replace(/"/g,'&quot;')}">${s}</span>`).join('')}</div></div>
      <div class="fa-listwrap"><div class="grp-label" id="fa_lbl" style="margin:8px 0 8px">RECIENTES</div><div id="fa_list"></div></div>
-     <div class="fa-ctrls"><input id="fa_q" placeholder="buscar en tus guardados…" autocomplete="off"/>
+     <div class="fa-ctrls"><input id="fa_q" placeholder="buscar alimento — huevo, pollo, arroz…" autocomplete="off"/>
        <div class="fa-btns"><button class="b" data-act="fbarcode">scan</button><button class="b" data-act="fsearch">search</button><button class="b" data-act="fregister">register</button></div></div>
    </div>`,'tall');
   const q=document.getElementById('fa_q');
-  const renderList=()=>{ const s=(q.value||'').toLowerCase();
-    const items=(db.foods||[]).slice().sort((a,b)=>(b.lastUsed||0)-(a.lastUsed||0)).filter(f=>!s||(f.name||'').toLowerCase().includes(s)).slice(0,40);
+  const foodRow=(f,act)=>`<div class="pickitem" data-act="${act}" data-id="${f.id}">${f.name}${f.brand?' <span style="color:var(--o35);font-size:10px">'+f.brand+'</span>':''} <span style="float:right;color:var(--o50)">${Math.round(foodKcal100(f))} /100${f.base==='ml'?'ml':'g'}</span></div>`;
+  const renderList=()=>{ const s=(q.value||'').toLowerCase().trim(); const sn=bfNorm(s);
+    const mine=(db.foods||[]).slice().sort((a,b)=>(b.lastUsed||0)-(a.lastUsed||0)).filter(f=>!s||bfNorm(f.name).includes(sn)).slice(0,40);
+    const base=s?BASE_FOODS.filter(f=>bfNorm(f.name).includes(sn)&&!mine.some(x=>x.id===f.id||bfNorm(x.name)===bfNorm(f.name))).slice(0,40):[];
     const lbl=document.getElementById('fa_lbl'); if(lbl)lbl.textContent=s?'RESULTADOS':'RECIENTES';
-    document.getElementById('fa_list').innerHTML = items.length ? items.map(f=>`<div class="pickitem" data-act="pickfood" data-id="${f.id}">${f.name}${f.brand?' <span style="color:var(--o35);font-size:10px">'+f.brand+'</span>':''} <span style="float:right;color:var(--o50)">${Math.round(foodKcal100(f))} /100${f.base==='ml'?'ml':'g'}</span></div>`).join('') : `<div class="submeta" style="padding:6px 0">${s?'sin resultados · prueba search':'aún no tienes alimentos guardados'}</div>`; };
+    let html=mine.map(f=>foodRow(f,'pickfood')).join('');
+    if(base.length)html+=(mine.length?'<div class="grp-label" style="margin:12px 0 6px;color:var(--o35)">BÁSICOS</div>':'')+base.map(f=>foodRow(f,'pickbase')).join('');
+    document.getElementById('fa_list').innerHTML = html || `<div class="submeta" style="padding:6px 0">${s?'sin resultados · prueba [search] para productos de marca':'busca un alimento (huevo, pollo, arroz…) o usa scan / search / register'}</div>`; };
   q.oninput=renderList; renderList();
   // long-press a meal chip to delete it
   document.querySelectorAll('#fa_sugg .chip').forEach(ch=>wireLongPress(ch,()=>{ const v=ch.dataset.v; if(!confirm('¿Borrar la comida "'+v+'" de la lista?'))return; db.mealTags=(db.mealTags||[]).filter(x=>x!==v); save(); ch.remove(); }));
@@ -1287,8 +1448,11 @@ function openNameSearch(barcode){
    <div class="sheetbtns" style="margin-bottom:6px"><button class="ok" id="ns_go">search →</button><button class="cancel" data-act="closemodal">cancel</button></div>
    <div id="ns_msg" class="submeta"></div><div id="ns_list" style="max-height:210px;overflow-y:auto"></div>`);
   const run=async()=>{ const q=val('ns_q'); if(!q)return; const msg=document.getElementById('ns_msg'); msg.innerHTML='<span class="spin"></span>buscando…';
-    const res=await searchFoods(q); window._nsRes=res; msg.textContent=res.length?(res.length+' resultados'):'sin resultados';
-    document.getElementById('ns_list').innerHTML=res.slice(0,20).map((f,i)=>`<div class="pickitem" data-act="nspick" data-i="${i}">${f.name}${f.brand?' <span style="color:var(--o40)">'+f.brand+'</span>':''}<span style="float:right;color:var(--o50)">${Math.round(foodKcal100(f))}/100</span></div>`).join(''); };
+    const sn=bfNorm(q); const bm=BASE_FOODS.filter(f=>bfNorm(f.name).includes(sn)).slice(0,12);
+    const res=await searchFoods(q); window._nsRes=res; const tot=bm.length+res.length; msg.textContent=tot?(tot+' resultados'):'sin resultados';
+    const baseHtml=bm.map(f=>`<div class="pickitem" data-act="pickbase" data-id="${f.id}">${f.name}<span style="float:right;color:var(--o50)">${Math.round(foodKcal100(f))}/100${f.base==='ml'?'ml':'g'}</span></div>`).join('');
+    const offHtml=res.slice(0,20).map((f,i)=>`<div class="pickitem" data-act="nspick" data-i="${i}">${f.name}${f.brand?' <span style="color:var(--o40)">'+f.brand+'</span>':''}<span style="float:right;color:var(--o50)">${Math.round(foodKcal100(f))}/100</span></div>`).join('');
+    document.getElementById('ns_list').innerHTML=(bm.length?'<div class="grp-label" style="margin:2px 0 6px;color:var(--o35)">BÁSICOS</div>'+baseHtml:'')+(res.length?'<div class="grp-label" style="margin:10px 0 6px;color:var(--o35)">PRODUCTOS</div>'+offHtml:''); };
   document.getElementById('ns_go').onclick=run;
   const qi=document.getElementById('ns_q'); qi.onkeydown=e=>{ if(e.key==='Enter')run(); };
 }
