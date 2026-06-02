@@ -11,7 +11,7 @@
 <meta name="theme-color" content="#0c0c0c"/>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700;800&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Manrope:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@300;400;500;700;800&display=swap" rel="stylesheet" />
 <style>
   :root{
     --bg:#000; --frame:#000; --fg:#f3f3f4;
@@ -21,6 +21,7 @@
     --faint:#3a3a3e; --line:rgba(243,243,244,.08); --track:#191920; --fill:#f3f3f4; --abort:rgba(190,110,110,.55);
     --card:#0d0d10; --card2:#16161c; --border:rgba(243,243,244,.09); --radius:16px;
     --good:#43c98b; --bad:#e5675c; --warn:#e3b34f; --info:#6aa6ff;
+    --sans:"Manrope",system-ui,-apple-system,sans-serif; --serif:"Instrument Serif",Georgia,serif;
   }
   *{margin:0;padding:0;box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
   :focus{outline:none;}
@@ -217,20 +218,21 @@
   @keyframes blink{50%{opacity:0}}
   @media (prefers-reduced-motion:reduce){ .cur::after{animation:none;} }
   .rule{border-top-color:var(--line); margin:18px 0;}
-  /* ===== shareable summary (monochrome / horizontal banner) ===== */
-  .shtitle{text-align:center; font-size:10px; color:var(--o40); letter-spacing:2.5px; text-transform:uppercase; margin:14px 0 6px;}
-  .shbanner{display:flex; align-items:center; gap:14px; padding:16px 4px 18px; border-bottom:1px solid var(--border);}
-  .shr-ring .ring.lg{width:104px; height:104px;} .shr-ring .ring.lg .num{font-size:23px; font-weight:800; letter-spacing:-.5px;} .shr-ring .ring.lg .of{font-size:9px; color:var(--o40); margin-top:3px; letter-spacing:1px;}
+  /* ===== shareable summary (Rimu aesthetic: Manrope + Instrument Serif) ===== */
+  .sharecard{font-family:var(--sans);}
+  .shtitle{font-family:var(--serif); font-style:italic; font-size:25px; color:var(--o60); text-align:center; margin:18px 0 16px; letter-spacing:0; text-transform:none;}
+  .shbanner{display:flex; align-items:center; gap:18px; padding:8px 6px 24px; border-bottom:1px solid var(--border);}
+  .shr-ring .ring.lg{width:108px; height:108px;} .shr-ring .ring.lg .num{font-family:var(--sans); font-size:26px; font-weight:700; letter-spacing:-.5px;} .shr-ring .ring.lg .of{font-size:9px; color:var(--o40); margin-top:3px; letter-spacing:1.5px; text-transform:uppercase;}
   .shr-macros{flex:1; display:flex; justify-content:space-around;}
-  .shm{text-align:center; flex:1;} .shm-g{font-size:20px; font-weight:800;} .shm-g span{font-size:10px; color:var(--o40); font-weight:400; margin-left:1px;} .shm-l{font-size:10px; color:var(--o50); margin-top:4px; letter-spacing:.3px;} .shm-p{font-size:9px; color:var(--o35); margin-top:2px;}
-  .shlog{margin-top:14px;}
-  .sgrp{margin-bottom:14px;} .sgh{display:flex; justify-content:space-between; align-items:baseline; font-size:10px; color:var(--o50); letter-spacing:1px; margin-bottom:8px; cursor:pointer;} .sgh .sgn{font-weight:700;} .sgh .sgk{color:var(--o40); letter-spacing:0;} .sgh:active .sgn{color:var(--fg);}
-  .sitem{display:flex; justify-content:space-between; align-items:baseline; font-size:13px; padding:5px 0;}
-  .sitem .sn{color:var(--o60); overflow:hidden; text-overflow:ellipsis;} .sitem .sn .q{color:var(--fg); font-weight:700; margin-right:2px;} .sitem .sb{font-size:10px; color:var(--o40);} .sitem .sk{color:var(--fg); font-weight:500;}
-  .shfoot{text-align:center; font-size:14px; font-weight:800; color:var(--o35); margin-top:24px; letter-spacing:.5px;}
+  .shm{text-align:center; flex:1;} .shm-g{font-size:23px; font-weight:700; letter-spacing:-.4px;} .shm-g span{font-size:11px; color:var(--o40); font-weight:400; margin-left:1px;} .shm-l{font-size:11px; color:var(--o50); margin-top:5px; font-weight:500;} .shm-p{font-size:10px; color:var(--o35); margin-top:2px;}
+  .shlog{margin-top:18px;}
+  .sgrp{margin-bottom:18px;} .sgh{display:flex; justify-content:space-between; align-items:baseline; margin-bottom:9px; cursor:pointer;} .sgh .sgn{font-family:var(--serif); font-style:italic; font-size:18px; color:var(--fg); text-transform:capitalize;} .sgh .sgk{font-size:11px; color:var(--o40);} .sgh:active .sgn{color:var(--o60);}
+  .sitem{display:flex; justify-content:space-between; align-items:baseline; font-size:14px; padding:6px 0;}
+  .sitem .sn{color:var(--o60);} .sitem .sn .q{color:var(--fg); font-weight:700; margin-right:3px;} .sitem .sb{font-size:11px; color:var(--o40);} .sitem .sk{color:var(--fg); font-weight:600;}
+  .shfoot{font-family:"JetBrains Mono",monospace; text-align:center; font-size:13px; font-weight:800; color:var(--o35); margin-top:28px; letter-spacing:.5px;}
   /* meal-summary popup banner */
-  .mbanner{display:flex; align-items:baseline; justify-content:space-between; border:1px solid var(--border); border-radius:12px; padding:13px 15px; margin-top:4px;}
-  .mb-k{font-size:25px; font-weight:800; letter-spacing:-.5px;} .mb-k span{font-size:11px; color:var(--o40); font-weight:400;} .mb-m{font-size:13px; color:var(--o60);}
+  .mbanner{display:flex; align-items:baseline; justify-content:space-between; border:1px solid var(--border); border-radius:14px; padding:15px 16px; margin-top:4px; font-family:var(--sans);}
+  .mb-k{font-size:27px; font-weight:700; letter-spacing:-.5px;} .mb-k span{font-size:12px; color:var(--o40); font-weight:400;} .mb-m{font-size:14px; color:var(--o60);}
   /* day navigator (macros) */
   .dnavh{display:flex; align-items:center; gap:2px;}
   .dnav{font-size:22px; color:var(--o50); cursor:pointer; padding:0 9px; line-height:1; user-select:none;} .dnav:active{color:var(--fg);}
@@ -637,12 +639,12 @@ function renderShare(){
   let log='';
   Object.keys(byTag).sort((a,b)=>order.indexOf(a)-order.indexOf(b)).forEach(tag=>{
     let mk=0,mp=0,mc=0,mf=0; byTag[tag].forEach(m=>{mk+=+m.kcal||0;mp+=+m.protein||0;mc+=+m.carbs||0;mf+=+m.fat||0;});
-    log+=`<div class="sgrp"><div class="sgh" data-act="mealsummary" data-tag="${escTxt(tag)}"><span class="sgn">// ${escTxt(tag)}</span><span class="sgk">${Math.round(mp)}P ${Math.round(mc)}C ${Math.round(mf)}F · ${Math.round(mk)}</span></div>`
+    log+=`<div class="sgrp"><div class="sgh" data-act="mealsummary" data-tag="${escTxt(tag)}"><span class="sgn">${escTxt(tag)}</span><span class="sgk">${Math.round(mp)}P ${Math.round(mc)}C ${Math.round(mf)}F · ${Math.round(mk)}</span></div>`
       +mealFoodRows(byTag[tag])+`</div>`;
   });
   return statusBar(true)
    +`<div class="sharecard">`
-   +`<div class="shtitle">// resumen · ${dayLabel(curDate())}</div>`
+   +`<div class="shtitle">resumen · ${dayLabel(curDate())}</div>`
    +banner
    +(items.length?`<div class="shlog">${log}</div>`:`<div class="empty">sin alimentos hoy</div>`)
    +`<div class="shfoot">gym<span style="color:var(--o40)">//</span>TRK</div>`
