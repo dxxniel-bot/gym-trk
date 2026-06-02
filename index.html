@@ -237,6 +237,22 @@
   .hero-meta .left.under{color:var(--o60);} .hero-meta .left.over{color:var(--bad); font-weight:700;}
   .cell.good .ring-fill{stroke:var(--good);} .cell.over .ring-fill{stroke:var(--bad);} .cell.over .num{color:var(--bad);} .cell.good .num{color:var(--good);}
   .mrow .bar>i.over{background:var(--bad);} .mrow .mv.ovr{color:var(--bad);}
+  /* add-food: recents fill, controls pinned at bottom, equal buttons */
+  .sheet.tall{height:90vh; display:flex; flex-direction:column; padding-bottom:calc(14px + env(safe-area-inset-bottom));}
+  .fa-wrap{display:flex; flex-direction:column; height:100%; min-height:0;}
+  .fa-listwrap{flex:1; overflow-y:auto; min-height:0; -webkit-overflow-scrolling:touch;}
+  .fa-ctrls{border-top:1px solid var(--border); padding-top:10px; margin-top:6px;}
+  .fa-ctrls #fa_q{width:100%; height:42px; border:1px solid var(--border); border-radius:11px; background:var(--card); color:var(--fg); font-size:16px; padding:0 12px; margin-bottom:8px;}
+  .fa-btns{display:flex; gap:8px;} .fa-btns .b{flex:1 1 0; text-align:center; font-size:12px; color:var(--fg); border:1px solid var(--faint); border-radius:13px; padding:13px 0; background:transparent; cursor:pointer;} .fa-btns .b:active{background:var(--card2);}
+  /* scanner reticle overlay */
+  .scan-reticle{position:absolute; inset:0; pointer-events:none; display:flex; align-items:center; justify-content:center;}
+  .scan-reticle .frame2{width:78%; height:46%; border:1.5px solid rgba(243,243,244,.85); border-radius:10px; box-shadow:0 0 0 2000px rgba(0,0,0,.35);}
+  .scan-reticle .scl{position:absolute; left:11%; right:11%; height:2px; background:var(--bad); box-shadow:0 0 8px var(--bad); animation:scanmove 2s ease-in-out infinite;}
+  @keyframes scanmove{0%,100%{top:30%}50%{top:70%}}
+  @media (prefers-reduced-motion:reduce){ .scan-reticle .scl{animation:none; top:50%;} }
+  /* loading spinner / dots */
+  .spin{display:inline-block; width:11px; height:11px; border:1.5px solid var(--o20); border-top-color:var(--fg); border-radius:50%; animation:spin .7s linear infinite; vertical-align:middle; margin-right:6px;}
+  @keyframes spin{to{transform:rotate(360deg)}}
   /* day navigator (macros) */
   .dnavh{display:flex; align-items:center; gap:2px;}
   .dnav{font-size:22px; color:var(--o50); cursor:pointer; padding:0 9px; line-height:1; user-select:none;} .dnav:active{color:var(--fg);}
@@ -337,7 +353,7 @@ function seedPrev(){
 // ---------- persistence ----------
 let db;
 function load(){ try{const r=localStorage.getItem(LS_KEY); if(!r)return seed(); const d=JSON.parse(r); return migrate(d);}catch(e){console.warn('load failed',e);return seed();} }
-function migrate(d){ if(!d.version){d.version=1;} if(!d.meals)d.meals={}; if(!d.foods)d.foods=[]; d.foods=d.foods.map(f=>(f&&f.per100)?f:asCanonical(f)); if(!d.steps)d.steps={}; if(!d.machines)d.machines={}; if(!d.bodyweight)d.bodyweight={}; if(!d.settings)d.settings={goals:seed().settings.goals}; return d; }
+function migrate(d){ if(!d.version){d.version=1;} if(!d.meals)d.meals={}; if(!d.foods)d.foods=[]; d.foods=d.foods.map(f=>(f&&f.per100)?f:asCanonical(f)); if(!d.steps)d.steps={}; if(!d.machines)d.machines={}; if(!d.bodyweight)d.bodyweight={}; if(!d.mealTags)d.mealTags=['breakfast','lunch','snack','dinner']; if(!d.settings)d.settings={goals:seed().settings.goals}; return d; }
 function save(){ try{localStorage.setItem(LS_KEY,JSON.stringify(db));}catch(e){console.warn('save failed',e);} }
 
 // ---------- helpers ----------
@@ -667,8 +683,8 @@ function openMealSummary(tag){
   const ringC=`<div class="num">${Math.round(t.kcal)}</div><div class="of">kcal</div>`;
   openModal(`<h3>${escTxt(tag)}</h3>
    <div class="mbanner"><div class="mb-ring">${ringHTML(100,ringC,'lg')}</div><div class="mb-cols">${col(t.protein,'prot',pc(pk))}${col(t.carbs,'carbs',pc(ck))}${col(t.fat,'fat',pc(fk))}</div></div>
-   <div class="submeta" style="margin:14px 0 4px">${items.length} alimento${items.length>1?'s':''}</div>
-   <div class="shlog">${mealFoodRows(items)}</div>`);
+   <div class="shlog" style="margin-top:14px">${mealFoodRows(items)}</div>
+   <div class="sheetbtns" style="margin-top:14px"><button class="ok" data-act="addtomeal" data-tag="${escTxt(tag)}">＋ agregar a ${escTxt(tag)}</button></div>`);
 }
 
 // ---------- render: landing (log in / create account) ----------
@@ -922,8 +938,9 @@ document.getElementById('app').addEventListener('click',e=>{
   else if(a==='dayprev'){ state.macroDate=shiftDate(curDate(),-1); render(); }
   else if(a==='daynext'){ state.macroDate=shiftDate(curDate(),1); render(); }
   else if(a==='daytoday'){ state.macroDate=todayISO(); render(); }
-  else if(a==='addfood'||a==='addnext'){ openFoodAdd(nextMealTag()); }
+  else if(a==='addfood'||a==='addnext'||a==='addmeal'){ openFoodAdd(nextMealTag()); }
   else if(a==='addmealnext'){ openFoodAdd(nextAfterCurrent()); }
+  else if(a==='addtomeal'){ openFoodAdd(el.dataset.tag); }
   else if(a==='addsnack'){ openFoodAdd('snack'); }
   else if(a==='adddrink'){ openDrink(); }
   else if(a==='drml'){ const e=document.getElementById('dr_ml'); if(e)e.value=el.dataset.v; }
@@ -1027,7 +1044,7 @@ function saveSession(){
 }
 
 // ---------- modals ----------
-function openModal(html){ closeModal(); const m=document.createElement('div'); m.className='modal'; m.id='modal'; m.innerHTML=`<div class="sheet">${html}</div>`; m.addEventListener('click',ev=>{if(ev.target===m)closeModal();}); document.getElementById('app').appendChild(m); }
+function openModal(html,cls){ closeModal(); const m=document.createElement('div'); m.className='modal'; m.id='modal'; m.innerHTML=`<div class="sheet ${cls||''}">${html}</div>`; m.addEventListener('click',ev=>{if(ev.target===m)closeModal();}); document.getElementById('app').appendChild(m); }
 function closeModal(){ const s=window._scanner; if(s){ try{ if(s._q&&typeof Quagga!=='undefined'){ if(s._fn)Quagga.offDetected(s._fn); Quagga.stop(); } }catch(_){} window._scanner=null; } const m=document.getElementById('modal'); if(m)m.remove(); }
 function val(id){ const e=document.getElementById(id); return e?e.value.trim():''; }
 function openGymPicker(){
@@ -1106,16 +1123,15 @@ function normalizeExtract(d){ d=d||{}; const svStr=d.serving||d.serving_label||'
   if(d.piece_g)sizes.piece=d.piece_g; else if(d.container_g&&d.pieces_per_container)sizes.piece=Math.round(d.container_g/d.pieces_per_container*100)/100;
   if(d.container_g)sizes.container=d.container_g; else if(sg&&d.servings_per_container)sizes.container=Math.round(sg*d.servings_per_container*100)/100;
   return {name:d.name||'',brand:d.brand||'',barcode:d.barcode||'',base,per100,sizes,servingLabel:(gramsUnknown?svStr:(d.serving_label||'')),gramsUnknown}; }
-function mealSuggestions(){ const def=['breakfast','lunch','snack','dinner']; const used=new Set(); Object.values(db.meals||{}).forEach(arr=>arr.forEach(m=>{ if(m.tag)used.add(m.tag); })); return [...new Set([...def,...used])]; }
+function mealSuggestions(){ const def=db.mealTags||['breakfast','lunch','snack','dinner']; const used=new Set(); Object.values(db.meals||{}).forEach(arr=>arr.forEach(m=>{ if(m.tag&&m.tag!=='drink')used.add(m.tag); })); return [...new Set([...def,...used])]; }
 function curTag(){ const e=document.getElementById('fa_tagtxt'); const v=e?e.value.trim():''; return v||'meal'; }
 function nextMealTag(){ const h=(new Date()).getHours(); if(h<11)return 'breakfast'; if(h<16)return 'lunch'; if(h<21)return 'dinner'; return 'snack'; }
 function nextAfterCurrent(){ const seq=['breakfast','lunch','dinner']; const i=seq.indexOf(nextMealTag()); return (i>=0&&i<2)?seq[i+1]:'snack'; }
 // thumb-reachable add menu (opened by the FAB)
 function openAddMenu(){
   openModal(`<h3>agregar a hoy</h3>
-   <button class="start" data-act="addfood" style="margin-bottom:8px">🍽️ add food <span style="opacity:.55;font-weight:400">· ${nextMealTag()}</span></button>
-   <div class="secondary" style="margin-bottom:8px"><button class="b" data-act="addmealnext">＋ add meal</button><button class="b" data-act="addsnack">＋ add snack</button></div>
-   <button class="b" data-act="adddrink" style="width:100%">💧 add drink</button>`);
+   <button class="start" data-act="addmeal" style="margin-bottom:8px">＋ add meal</button>
+   <div class="secondary"><button class="b" data-act="addsnack">＋ add snack</button><button class="b" data-act="adddrink">💧 add drink</button></div>`);
 }
 function logWater(ml){ if(!(ml>0))return; const t=curDate(); db.meals[t]=db.meals[t]||[];
   db.meals[t].push({id:uid(),time:nowHM(),tag:'drink',name:'agua',qty:1,serving:numTxt(ml)+' ml',kcal:0,protein:0,carbs:0,fat:0,sugar:0,fiber:0,sodium:0,potassium:0,caffeine:0,water:Math.round(ml/1000*1000)/1000}); save(); }
@@ -1129,18 +1145,25 @@ function openDrink(){
 }
 function openFoodAdd(preset){
   const sugg=mealSuggestions(); const tag=preset||nextMealTag();
-  openModal(`<h3>add food</h3>
-   <div class="field"><label>MEAL</label><input id="fa_tagtxt" value="${(tag+'').replace(/"/g,'&quot;')}" placeholder="ej. pre-workout, cena tardía" autocomplete="off"/>
-   <div class="chips" id="fa_sugg">${sugg.map(s=>`<span class="chip" data-act="pickmealtag" data-v="${s.replace(/"/g,'&quot;')}">${s}</span>`).join('')}</div></div>
-   <div class="field" style="margin-bottom:4px"><input id="fa_q" placeholder="buscar en tus alimentos guardados" autocomplete="off"/></div>
-   <div id="fa_list" style="max-height:120px;overflow-y:auto;margin-bottom:12px"></div>
-   <button class="start" data-act="fbarcode" style="margin-bottom:8px">scan</button>
-   <div class="secondary"><button class="b" data-act="fsearch">search</button><button class="b" data-act="fregister">register</button></div>`);
+  openModal(`<div class="fa-wrap">
+     <div class="field" style="margin-bottom:6px"><label>COMIDA <span style="color:var(--o30);font-weight:400">· mantén pulsado un chip para borrarlo</span></label><input id="fa_tagtxt" value="${(tag+'').replace(/"/g,'&quot;')}" placeholder="ej. pre-workout" autocomplete="off"/>
+     <div class="chips" id="fa_sugg">${sugg.map(s=>`<span class="chip" data-act="pickmealtag" data-v="${s.replace(/"/g,'&quot;')}">${s}</span>`).join('')}</div></div>
+     <div class="fa-listwrap"><div class="grp-label" id="fa_lbl" style="margin:8px 0 8px">RECIENTES</div><div id="fa_list"></div></div>
+     <div class="fa-ctrls"><input id="fa_q" placeholder="buscar en tus guardados…" autocomplete="off"/>
+       <div class="fa-btns"><button class="b" data-act="fbarcode">scan</button><button class="b" data-act="fsearch">search</button><button class="b" data-act="fregister">register</button></div></div>
+   </div>`,'tall');
   const q=document.getElementById('fa_q');
-  const renderList=()=>{ const s=(q.value||'').toLowerCase(); const items=(db.foods||[]).filter(f=>!s||(f.name||'').toLowerCase().includes(s)).slice(0,12);
-    document.getElementById('fa_list').innerHTML = items.length ? items.map(f=>`<div class="pickitem" data-act="pickfood" data-id="${f.id}">${f.name}${f.brand?' <span style="color:var(--o35);font-size:10px">'+f.brand+'</span>':''} <span style="float:right;color:var(--o50)">${Math.round(foodKcal100(f))} /100${f.base==='ml'?'ml':'g'}</span></div>`).join('') : (s?'<div class="submeta" style="padding:6px 0">sin resultados</div>':''); };
+  const renderList=()=>{ const s=(q.value||'').toLowerCase();
+    const items=(db.foods||[]).slice().sort((a,b)=>(b.lastUsed||0)-(a.lastUsed||0)).filter(f=>!s||(f.name||'').toLowerCase().includes(s)).slice(0,40);
+    const lbl=document.getElementById('fa_lbl'); if(lbl)lbl.textContent=s?'RESULTADOS':'RECIENTES';
+    document.getElementById('fa_list').innerHTML = items.length ? items.map(f=>`<div class="pickitem" data-act="pickfood" data-id="${f.id}">${f.name}${f.brand?' <span style="color:var(--o35);font-size:10px">'+f.brand+'</span>':''} <span style="float:right;color:var(--o50)">${Math.round(foodKcal100(f))} /100${f.base==='ml'?'ml':'g'}</span></div>`).join('') : `<div class="submeta" style="padding:6px 0">${s?'sin resultados · prueba search':'aún no tienes alimentos guardados'}</div>`; };
   q.oninput=renderList; renderList();
+  // long-press a meal chip to delete it
+  document.querySelectorAll('#fa_sugg .chip').forEach(ch=>wireLongPress(ch,()=>{ const v=ch.dataset.v; if(!confirm('¿Borrar la comida "'+v+'" de la lista?'))return; db.mealTags=(db.mealTags||[]).filter(x=>x!==v); save(); ch.remove(); }));
 }
+function wireLongPress(el,fn){ let t=null; const start=()=>{ t=setTimeout(()=>{ t=null; fn(); },550); }; const cancel=()=>{ if(t){clearTimeout(t); t=null;} };
+  el.addEventListener('touchstart',start,{passive:true}); el.addEventListener('touchend',cancel); el.addEventListener('touchmove',cancel);
+  el.addEventListener('mousedown',start); el.addEventListener('mouseup',cancel); el.addEventListener('mouseleave',cancel); }
 function openRegisterMenu(barcode){
   window._linkBarcode=barcode||''; window._faTag=window._faTag||'meal';
   openModal(`<h3>registrar alimento${barcode?' · vincular a '+barcode:''}</h3>
@@ -1162,8 +1185,8 @@ function openBarcode(){
    <div id="bc_cam" style="position:relative;width:100%;max-height:260px;overflow:hidden;border-radius:2px;background:#000"></div>
    <div id="bc_msg" class="submeta" style="margin:8px 0">iniciando cámara…</div>
    <div class="field"><label>O ESCRIBE EL CÓDIGO</label><input id="bc_code" inputmode="numeric" placeholder="7501..." autocomplete="off"/></div>
-   <div class="sheetbtns"><button class="ok" id="bc_go">look up</button><button class="cancel" id="bc_rescan">↻ reescanear</button><button class="cancel" data-act="closemodal">cancel</button></div>`);
-  const doLookup=async()=>{ const code=val('bc_code'); if(!code)return; const m=document.getElementById('bc_msg'); m.textContent='buscando...';
+   <div class="sheetbtns"><button class="ok" id="bc_go">look up</button><button class="cancel" id="bc_photo2">📷 foto</button><button class="cancel" data-act="closemodal">cancel</button></div>`);
+  const doLookup=async()=>{ const code=val('bc_code'); if(!code)return; const m=document.getElementById('bc_msg'); m.innerHTML='<span class="spin"></span>buscando…';
     const local=(db.foods||[]).find(f=>f.barcode===code);
     if(local){ openVerify(local,{fromId:local.id,qty:1,tag:window._faTag}); return; }
     const food=await lookupBarcode(code);
@@ -1191,15 +1214,14 @@ function openBarcode(){
       }, err=>{
         if(err){ m.textContent='cámara no disponible · escribe el código'; return; }
         window._scanner={_q:true,_fn:onDet}; Quagga.offDetected(onDet); Quagga.onDetected(onDet);
-        Quagga.onProcessed(()=>{ if(!done&&++frames===3) m.textContent='apunta al código de barras (detecta solo)…'; });
+        Quagga.onProcessed(()=>{ if(!done&&++frames===3) m.textContent='centra el código en el recuadro…'; });
         Quagga.start();
+        try{ const rt=document.createElement('div'); rt.className='scan-reticle'; rt.innerHTML='<div class="frame2"></div><div class="scl"></div>'; cam.appendChild(rt); }catch(_){}
         try{ const tr=Quagga.CameraAccess&&Quagga.CameraAccess.getActiveTrack&&Quagga.CameraAccess.getActiveTrack(); if(tr&&tr.applyConstraints){ const caps=tr.getCapabilities?tr.getCapabilities():{}; const adv=[]; if(caps.zoom)adv.push({zoom:Math.min((caps.zoom.max||1),1)}); if(caps.focusMode&&[].concat(caps.focusMode).includes('continuous'))adv.push({focusMode:'continuous'}); if(adv.length)tr.applyConstraints({advanced:adv}).catch(()=>{}); } }catch(_){}
       });
     }catch(e){ m.textContent='cámara no disponible · escribe el código'; } };
-  const cv=document.getElementById('bc_cam'); if(cv)cv.style.display='none';
-  const bm=document.getElementById('bc_msg'); if(bm)bm.textContent='toma una foto nítida del código de barras (de frente, que llene el cuadro)';
-  const br=document.getElementById('bc_rescan'); if(br){ br.textContent='📷 foto del código';
-    br.onclick=()=>{ const inp=document.createElement('input'); inp.type='file'; inp.accept='image/*'; inp.setAttribute('capture','environment'); inp.onchange=async()=>{ const f=inp.files&&inp.files[0]; if(!f)return; const mm=document.getElementById('bc_msg'); if(mm)mm.textContent='leyendo código…'; const code=await decodeBarcodeImage(f); if(code){ const c=document.getElementById('bc_code'); if(c)c.value=code; doLookup(); } else if(mm){ mm.textContent='no se leyó · acerca el código de frente y enfocado (que llene el cuadro), o escríbelo'; } }; inp.click(); }; }
+  startScan();
+  const bp=document.getElementById('bc_photo2'); if(bp){ bp.onclick=()=>{ const inp=document.createElement('input'); inp.type='file'; inp.accept='image/*'; inp.setAttribute('capture','environment'); inp.onchange=async()=>{ const f=inp.files&&inp.files[0]; if(!f)return; const mm=document.getElementById('bc_msg'); if(mm)mm.innerHTML='<span class="spin"></span>leyendo código…'; const code=await decodeBarcodeImage(f); if(code){ const c=document.getElementById('bc_code'); if(c)c.value=code; doLookup(); } else if(mm){ mm.textContent='no se leyó · acércalo de frente y enfocado, o escríbelo'; } }; inp.click(); }; }
 }
 function servingToLiters(sz){
   if(!sz)return 0;
@@ -1242,7 +1264,7 @@ function openNameSearch(barcode){
    <div class="field"><label>NAME</label><input id="ns_q" placeholder="ej. nutella, protein bar, arroz" autocomplete="off"/></div>
    <div class="sheetbtns" style="margin-bottom:6px"><button class="ok" id="ns_go">search →</button><button class="cancel" data-act="closemodal">cancel</button></div>
    <div id="ns_msg" class="submeta"></div><div id="ns_list" style="max-height:210px;overflow-y:auto"></div>`);
-  const run=async()=>{ const q=val('ns_q'); if(!q)return; const msg=document.getElementById('ns_msg'); msg.textContent='buscando...';
+  const run=async()=>{ const q=val('ns_q'); if(!q)return; const msg=document.getElementById('ns_msg'); msg.innerHTML='<span class="spin"></span>buscando…';
     const res=await searchFoods(q); window._nsRes=res; msg.textContent=res.length?(res.length+' resultados'):'sin resultados';
     document.getElementById('ns_list').innerHTML=res.slice(0,20).map((f,i)=>`<div class="pickitem" data-act="nspick" data-i="${i}">${f.name}${f.brand?' <span style="color:var(--o40)">'+f.brand+'</span>':''}<span style="float:right;color:var(--o50)">${Math.round(foodKcal100(f))}/100</span></div>`).join(''); };
   document.getElementById('ns_go').onclick=run;
@@ -1382,9 +1404,9 @@ function commitLog(saveToDb){
   let foodId=L.fromId||null;
   if(saveToDb){ db.foods=db.foods||[];
     const ex=L.fromId?db.foods.find(x=>x.id===L.fromId):(bc?db.foods.find(x=>x.barcode===bc):null);
-    const stored={id:(ex&&ex.id)||f.id||uid(),barcode:bc||(ex&&ex.barcode)||'',name:f.name,brand:f.brand||'',base:f.base,per100:f.per100,sizes:f.sizes,servingLabel:f.servingLabel};
+    const stored={id:(ex&&ex.id)||f.id||uid(),barcode:bc||(ex&&ex.barcode)||'',name:f.name,brand:f.brand||'',base:f.base,per100:f.per100,sizes:f.sizes,servingLabel:f.servingLabel,lastUsed:Date.now()};
     if(ex)Object.assign(ex,stored); else db.foods.push(stored); foodId=stored.id;
-  }
+  } else if(L.fromId){ const ex=(db.foods||[]).find(x=>x.id===L.fromId); if(ex)ex.lastUsed=Date.now(); }
   const t=curDate(); db.meals[t]=db.meals[t]||[];
   const apply=m=>{ m.tag=L.tag; m.name=f.name+(qty!==1?' ×'+numTxt(qty):''); m.qty=qty; m.serving=unitLabel; MACROKEYS.forEach(k=>m[k]=nut[k]); m.water=nut.water; m._food={id:foodId,base:f.base,per100:f.per100,sizes:f.sizes,servingLabel:f.servingLabel,name:f.name,brand:f.brand||'',barcode:bc}; m._unit=unit; };
   if(L.editId){ const m=(db.meals[t]||[]).find(x=>x.id===L.editId); if(m){ apply(m); save(); closeModal(); render(); return; } }
