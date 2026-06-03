@@ -2157,26 +2157,34 @@ function openGoals(){
    <div class="field row2">${micro('g_alcohol','ALCOHOL g · límite',g.alcohol||0)}<div></div></div>
    <div class="sheetbtns"><button class="ok" data-act="okgoals">save</button><button class="cancel" data-act="closemodal">cancel</button></div>`);
   const keys=['protein','carbs','fat'], DIV={protein:4,carbs:4,fat:9}, locks={protein:false,carbs:false,fat:false};
+  const gr={protein:+g.protein||0, carbs:+g.carbs||0, fat:+g.fat||0};   // GRAMS = source of truth; locks pin grams
+  const Kget=()=>parseFloat(val('gp_kcal'))||0;
   const setVal=(id,v)=>{ const e=document.getElementById(id); if(e)e.value=v; };
-  const setSl=(k,v)=>{ setVal('sl_'+k,v); const p=document.getElementById('sp_'+k); if(p)p.textContent=v; };
-  const gbal=()=>{ const K=window._goalMode==='pct'?(parseFloat(val('gp_kcal'))||0):((parseFloat(val('gg_protein'))||0)*4+(parseFloat(val('gg_carbs'))||0)*4+(parseFloat(val('gg_fat'))||0)*9); const b=balanceOf(K); const e=document.getElementById('g_bal'); if(!e)return; if(!b){ e.innerHTML='<span style="color:var(--o40)">completa tu perfil para ver déficit / volumen</span>'; return; } e.innerHTML='mantenimiento ≈ <b style="color:var(--fg)">'+b.maint+'</b> kcal · <b style="color:'+b.col+'">'+b.label+'</b>'+(b.label!=='mantenimiento'?' '+Math.abs(b.delta)+' kcal':''); };
-  const updateG=()=>{ const K=parseFloat(val('gp_kcal'))||0; keys.forEach(k=>{ const pct=parseFloat(val('sl_'+k))||0; const e=document.getElementById('sg_'+k); if(e)e.textContent=Math.round(K*pct/100/DIV[k]); }); const sum=keys.reduce((s,k)=>s+(parseFloat(val('sl_'+k))||0),0); const ps=document.getElementById('gp_sum'); if(ps)ps.innerHTML='total <b style="color:var(--fg)">'+Math.round(sum)+'</b>% · '+Math.round(K)+' kcal'; gbal(); };
   const lockedKeys=()=>keys.filter(k=>locks[k]);
-  const applyLocks=()=>{ const ln=lockedKeys().length; keys.forEach(k=>{ const r=document.getElementById('sl_'+k), b=document.getElementById('lk_'+k); const frozen=locks[k]||(ln>=2&&!locks[k]); if(r)r.disabled=frozen; if(b)b.classList.toggle('on',locks[k]); }); };
-  const reflow=()=>{ const ls=lockedKeys().reduce((s,x)=>s+(parseFloat(val('sl_'+x))||0),0); const free=keys.filter(x=>!locks[x]); const remain=Math.max(0,100-ls); if(free.length){ const fsum=free.reduce((s,x)=>s+(parseFloat(val('sl_'+x))||0),0); let acc=0; free.forEach((x,i)=>{ let v=i===free.length-1?remain-acc:Math.round(fsum>0?remain*(parseFloat(val('sl_'+x))||0)/fsum:remain/free.length); v=Math.max(0,v); acc+=v; setSl(x,v); }); } };
-  const toggleLock=k=>{ if(!locks[k]&&lockedKeys().length>=2)return; locks[k]=!locks[k]; reflow(); applyLocks(); updateG(); };
-  const norm=changed=>{ if(locks[changed])return; const cur=Math.round(parseFloat(val('sl_'+changed))||0); const ls=lockedKeys().reduce((s,k)=>s+(parseFloat(val('sl_'+k))||0),0); const free=keys.filter(k=>k!==changed&&!locks[k]); const remain=Math.max(0,100-ls-cur); if(!free.length){ setSl(changed,Math.max(0,100-ls)); } else if(free.length===1){ setSl(changed,cur); setSl(free[0],remain); } else { const o1=parseFloat(val('sl_'+free[0]))||0,o2=parseFloat(val('sl_'+free[1]))||0,osum=o1+o2; let n1=osum>0?Math.round(remain*o1/osum):Math.round(remain/2),n2=remain-n1; setSl(changed,cur); setSl(free[0],n1); setSl(free[1],n2); } updateG(); };
-  keys.forEach(k=>{ const e=document.getElementById('sl_'+k); if(e)e.addEventListener('input',()=>norm(k)); const b=document.getElementById('lk_'+k); if(b)b.onclick=()=>toggleLock(k); });
-  const gpk=document.getElementById('gp_kcal'); if(gpk)gpk.addEventListener('input',updateG);
+  const gbal=()=>{ const K=window._goalMode==='pct'?Kget():((parseFloat(val('gg_protein'))||0)*4+(parseFloat(val('gg_carbs'))||0)*4+(parseFloat(val('gg_fat'))||0)*9); const b=balanceOf(K); const e=document.getElementById('g_bal'); if(!e)return; if(!b){ e.innerHTML='<span style="color:var(--o40)">completa tu perfil para ver déficit / volumen</span>'; return; } e.innerHTML='mantenimiento ≈ <b style="color:var(--fg)">'+b.maint+'</b> kcal · <b style="color:'+b.col+'">'+b.label+'</b>'+(b.label!=='mantenimiento'?' '+Math.abs(b.delta)+' kcal':''); };
+  // paint %/grams from gr. skip = the slider being dragged, so its thumb is NOT re-set mid-drag -> smooth, no jumps
+  const paint=skip=>{ const K=Kget()||1; let sum=0; keys.forEach(k=>{ const pct=Math.round(gr[k]*DIV[k]/K*100); sum+=pct; const sp=document.getElementById('sp_'+k); if(sp)sp.textContent=pct; const sg=document.getElementById('sg_'+k); if(sg)sg.textContent=Math.round(gr[k]); if(k!==skip){ const r=document.getElementById('sl_'+k); if(r&&+r.value!==pct)r.value=pct; } }); const ps=document.getElementById('gp_sum'); if(ps)ps.innerHTML='total <b style="color:var(--fg)">'+sum+'</b>% · '+Math.round(Kget())+' kcal'; gbal(); };
+  const applyLocks=()=>{ const ln=lockedKeys().length; keys.forEach(k=>{ const r=document.getElementById('sl_'+k), b=document.getElementById('lk_'+k); if(r)r.disabled=locks[k]||(ln>=2&&!locks[k]); if(b)b.classList.toggle('on',locks[k]); }); };
+  // drag an unlocked slider: set its grams from its %, spread the rest over the other UNLOCKED macros (locked grams stay put)
+  const onDrag=k=>{ if(locks[k])return; const K=Kget(); if(K<=0)return; const pct=parseFloat(val('sl_'+k))||0; gr[k]=K*pct/100/DIV[k];
+    const lockedKcal=lockedKeys().reduce((s,x)=>s+gr[x]*DIV[x],0); const others=keys.filter(x=>x!==k&&!locks[x]); const remain=Math.max(0,K-lockedKcal-gr[k]*DIV[k]);
+    if(others.length===1){ gr[others[0]]=remain/DIV[others[0]]; }
+    else if(others.length===2){ const a0=gr[others[0]]*DIV[others[0]], a1=gr[others[1]]*DIV[others[1]], as=a0+a1, p0=as>0?remain*a0/as:remain/2; gr[others[0]]=p0/DIV[others[0]]; gr[others[1]]=(remain-p0)/DIV[others[1]]; }
+    paint(k); };
+  // kcal total changed: keep locked grams, scale the unlocked grams to hit the new total
+  const onKcal=()=>{ const K=Kget(); const lockedKcal=lockedKeys().reduce((s,x)=>s+gr[x]*DIV[x],0); const unl=keys.filter(x=>!locks[x]); const cur=unl.reduce((s,x)=>s+gr[x]*DIV[x],0); const target=Math.max(0,K-lockedKcal); if(cur>0){ const sc=target/cur; unl.forEach(x=>gr[x]*=sc); } else if(unl.length){ unl.forEach(x=>gr[x]=(target/unl.length)/DIV[x]); } paint(); };
+  const toggleLock=k=>{ if(!locks[k]&&lockedKeys().length>=2)return; locks[k]=!locks[k]; applyLocks(); paint(); };
+  keys.forEach(k=>{ const e=document.getElementById('sl_'+k); if(e)e.addEventListener('input',()=>onDrag(k)); const b=document.getElementById('lk_'+k); if(b)b.onclick=()=>toggleLock(k); });
+  const gpk=document.getElementById('gp_kcal'); if(gpk)gpk.addEventListener('input',onKcal);
   const gkc=()=>{ const P=parseFloat(val('gg_protein'))||0,C=parseFloat(val('gg_carbs'))||0,F=parseFloat(val('gg_fat'))||0; const e=document.getElementById('gg_kcal'); if(e)e.innerHTML='= <b style="color:var(--fg)">'+Math.round(P*4+C*4+F*9)+'</b> kcal'; gbal(); };
   ['gg_protein','gg_carbs','gg_fat'].forEach(id=>{ const e=document.getElementById(id); if(e)e.addEventListener('input',gkc); });
-  applyLocks(); updateG(); gkc();
+  applyLocks(); onKcal(); gkc();   // normalize grams to the kcal total on open so the split sums to 100%
   document.querySelectorAll('#gm_tog [data-gm]').forEach(b=>b.onclick=()=>{ const mode=b.dataset.gm; if(mode===window._goalMode)return;
-    if(mode==='grams'){ const K=parseFloat(val('gp_kcal'))||0; setVal('gg_protein',Math.round(K*(parseFloat(val('sl_protein'))||0)/100/4)); setVal('gg_carbs',Math.round(K*(parseFloat(val('sl_carbs'))||0)/100/4)); setVal('gg_fat',Math.round(K*(parseFloat(val('sl_fat'))||0)/100/9)); gkc(); }
-    else { const P=parseFloat(val('gg_protein'))||0,C=parseFloat(val('gg_carbs'))||0,F=parseFloat(val('gg_fat'))||0; const pp=P*4,cc=C*4,ff=F*9,tt=pp+cc+ff||1; setVal('gp_kcal',Math.round(pp+cc+ff)); const np=Math.round(pp/tt*100),nf=Math.round(ff/tt*100); setSl('protein',np); setSl('fat',nf); setSl('carbs',Math.max(0,100-np-nf)); updateG(); }
+    if(mode==='grams'){ setVal('gg_protein',Math.round(gr.protein)); setVal('gg_carbs',Math.round(gr.carbs)); setVal('gg_fat',Math.round(gr.fat)); gkc(); }
+    else { gr.protein=parseFloat(val('gg_protein'))||0; gr.carbs=parseFloat(val('gg_carbs'))||0; gr.fat=parseFloat(val('gg_fat'))||0; setVal('gp_kcal',Math.round(gr.protein*4+gr.carbs*4+gr.fat*9)); paint(); }
     window._goalMode=mode; document.querySelectorAll('#gm_tog [data-gm]').forEach(x=>x.classList.toggle('on',x.dataset.gm===mode)); document.getElementById('gm_pct').style.display=mode==='pct'?'block':'none'; document.getElementById('gm_grams').style.display=mode==='grams'?'block':'none'; });
   document.querySelector('[data-act="okgoals"]').onclick=()=>{ let kcal,P,C,F;
-    if(window._goalMode==='pct'){ kcal=parseFloat(val('gp_kcal'))||0; P=kcal*(parseFloat(val('sl_protein'))||0)/100/4; C=kcal*(parseFloat(val('sl_carbs'))||0)/100/4; F=kcal*(parseFloat(val('sl_fat'))||0)/100/9; }
+    if(window._goalMode==='pct'){ P=gr.protein; C=gr.carbs; F=gr.fat; kcal=Kget()||(P*4+C*4+F*9); }
     else { P=parseFloat(val('gg_protein'))||0; C=parseFloat(val('gg_carbs'))||0; F=parseFloat(val('gg_fat'))||0; kcal=P*4+C*4+F*9; }
     g.kcal=Math.round(kcal); g.protein=Math.round(P); g.carbs=Math.round(C); g.fat=Math.round(F);
     ['sodium','potassium','sugar','fiber','water','caffeine','alcohol'].forEach(k=>{ const v=parseFloat(val('g_'+k)); if(!isNaN(v))g[k]=v; });
