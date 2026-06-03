@@ -1379,6 +1379,8 @@ function numTxt(n){ n=Math.round((+n||0)*100)/100; return ''+n; }
 function servingToGrams(str){ if(!str)return 0; const m=(''+str).toLowerCase().match(/(\d+(?:[.,]\d+)?)\s*(kg|g|gr|grs|gramos?|ml|cl|dl|l)\b/); if(!m)return 0; let v=parseFloat(m[1].replace(',','.'))||0; const u=m[2]; if(u==='kg'||u==='l')v*=1000; else if(u==='dl')v*=100; else if(u==='cl')v*=10; return v; }
 function foodKcal100(f){ if(f&&f.per100)return f.per100.kcal||0; if(f&&f.per)return f.per.kcal||0; return 0; }
 // upgrade any food (canonical or legacy {per,serving,isLiquid}) to canonical shape
+// origen de los datos de un alimento (para transparencia/verificación): bf_=curado, barcode=OFF, resto=manual
+function foodSource(f){ f=f||{}; const id=((f.id||'')+''), bc=f.barcode||''; if(id.indexOf('bf_')===0){ return f.brand?{ok:true,label:'etiqueta · '+f.brand}:{ok:true,label:'USDA · aprox.'}; } if(bc){ return {ok:true,label:'OpenFoodFacts'}; } return {ok:false,label:'lo registraste tú'}; }
 function asCanonical(food){ food=food||{};
   if(food.per100){ const per100=Object.assign({},foodPer(),food.per100); delete per100.water;
     return {id:food.id,barcode:food.barcode||'',name:food.name||'',brand:food.brand||'',base:food.base||'g',per100,sizes:food.sizes||{},servingLabel:food.servingLabel||'',gramsUnknown:!!food.gramsUnknown}; }
@@ -1904,7 +1906,7 @@ function openFoodAdd(preset, lockTag){
      <div class="fa-listwrap"><div class="grp-label" id="fa_lbl" style="margin:0 0 8px">RECIENTES</div><div id="fa_list"></div></div>
    </div>`,'tall');
   const q=document.getElementById('fa_q');
-  const foodRow=(f,act)=>`<div class="pickitem" data-act="${act}" data-id="${f.id}">${escTxt(f.name)}${f.brand?' <span style="color:var(--o35);font-size:10px">'+escTxt(f.brand)+'</span>':''} <span style="float:right;color:var(--o50)">${Math.round(foodKcal100(f))} /100${f.base==='ml'?'ml':'g'}</span></div>`;
+  const foodRow=(f,act)=>`<div class="pickitem" data-act="${act}" data-id="${f.id}">${escTxt(f.name)}${foodSource(f).ok?' <span style="color:var(--good);font-size:9px" title="fuente conocida">✓</span>':''}${f.brand?' <span style="color:var(--o35);font-size:10px">'+escTxt(f.brand)+'</span>':''} <span style="float:right;color:var(--o50)">${Math.round(foodKcal100(f))} /100${f.base==='ml'?'ml':'g'}</span></div>`;
   const renderList=()=>{ const s=(q.value||'').toLowerCase().trim(); const sn=bfNorm(s);
     const mine=(db.foods||[]).slice().sort((a,b)=>(b.lastUsed||0)-(a.lastUsed||0)).filter(f=>!s||bfNorm(f.name).includes(sn)).slice(0,40);
     const base=s?BASE_FOODS.filter(f=>(bfNorm(f.name).includes(sn)||(f.alt&&bfNorm(f.alt).includes(sn))||(f.brand&&bfNorm(f.brand).includes(sn)))&&!mine.some(x=>x.id===f.id||bfNorm(x.name)===bfNorm(f.name)))
@@ -2083,7 +2085,7 @@ function openNameSearch(barcode){
     const sn=bfNorm(q); const bm=BASE_FOODS.filter(f=>bfNorm(f.name).includes(sn)).slice(0,12);
     const res=await searchFoods(q); window._nsRes=res; const tot=bm.length+res.length; msg.textContent=tot?(tot+' resultados'):'sin resultados';
     const baseHtml=bm.map(f=>`<div class="pickitem" data-act="pickbase" data-id="${f.id}">${f.name}<span style="float:right;color:var(--o50)">${Math.round(foodKcal100(f))}/100${f.base==='ml'?'ml':'g'}</span></div>`).join('');
-    const offHtml=res.slice(0,20).map((f,i)=>`<div class="pickitem" data-act="nspick" data-i="${i}">${escTxt(f.name)}${f.brand?' <span style="color:var(--o40)">'+escTxt(f.brand)+'</span>':''}<span style="float:right;color:var(--o50)">${Math.round(foodKcal100(f))}/100</span></div>`).join('');
+    const offHtml=res.slice(0,20).map((f,i)=>`<div class="pickitem" data-act="nspick" data-i="${i}">${escTxt(f.name)}${foodSource(f).ok?' <span style="color:var(--good);font-size:9px" title="OpenFoodFacts">✓</span>':''}${f.brand?' <span style="color:var(--o40)">'+escTxt(f.brand)+'</span>':''}<span style="float:right;color:var(--o50)">${Math.round(foodKcal100(f))}/100</span></div>`).join('');
     document.getElementById('ns_list').innerHTML=(bm.length?'<div class="grp-label" style="margin:2px 0 6px;color:var(--o35)">BÁSICOS</div>'+baseHtml:'')+(res.length?'<div class="grp-label" style="margin:10px 0 6px;color:var(--o35)">PRODUCTOS</div>'+offHtml:''); };
   document.getElementById('ns_go').onclick=run;
   const qi=document.getElementById('ns_q'); qi.onkeydown=e=>{ if(e.key==='Enter')run(); };
@@ -2169,6 +2171,7 @@ function openLog(food, opts){ opts=opts||{}; const fd=asCanonical(food);
   const units=foodUnits(fd); const defUnit=opts.unit||(fd.sizes.serving?'serving':units[0].key);
   const editing=!!opts.editId; const primary=editing?'guardar cambios':(window._log.isNew?'guardar + loguear':'loguear');
   openModal(`<h3>${editing?'editar registro':'loguear'} · ${escTxt(fd.name||'alimento')}</h3>
+   <div class="submeta" style="margin:-2px 0 9px;font-size:10px">${(()=>{const s=foodSource(fd);return (s.ok?'<span style="color:var(--good)">✓</span> ':'')+'fuente: '+escTxt(s.label);})()}</div>
    <div class="field row2"><div><label>UNIDAD</label><select id="l_unit" class="pick">${units.map(u=>`<option value="${u.key}"${u.key===defUnit?' selected':''}>${u.label}</option>`).join('')}</select></div><div><label>CANTIDAD</label><input id="l_qty" type="number" inputmode="decimal" step="0.25" value="${opts.qty||1}"/></div></div>
    <div class="lkc" id="l_kcal"></div>
    <div class="lnut" id="l_full"></div>
@@ -2212,6 +2215,7 @@ function openMealDetail(id){
   openModal(`<h3>${m.name}</h3>
    <div class="submeta" style="margin-bottom:8px">#${m.tag}${(m._food&&m._food.brand)?' · '+m._food.brand:''}${m.time?' · '+m.time:''}${m.serving?' · '+m.serving:''}${m.qty&&m.qty!==1?' · ×'+numTxt(m.qty):''}</div>
    ${row('kcal',m.kcal,'')}${row('protein',m.protein,'g')}${row('carbs',m.carbs,'g')}${row('fat',m.fat,'g')}${row('sugar',m.sugar,'g')}${row('fiber',m.fiber,'g')}${row('sodium',m.sodium,'mg')}${row('potassium',m.potassium,'mg')}${row('caffeine',m.caffeine,'mg')}${row('liquid',m.water,'L')}
+   <div class="line"><span class="k">fuente</span><span class="dots"></span><span class="v">${(()=>{const s=foodSource(m._food);return (s.ok?'<span style="color:var(--good)">✓</span> ':'')+escTxt(s.label);})()}</span></div>
    <div class="line"><span class="k">código</span><span class="dots"></span><span class="v">${bc?bc:'<a data-act="mealcode" style="text-decoration:underline;cursor:pointer">+ añadir</a>'}</span></div>
    <div class="sheetbtns" style="margin-top:12px"><button class="ok" data-act="editmeal">edit</button>${bc?'<button class="cancel" data-act="mealcode">código</button>':''}<button class="cancel" data-act="delmealnow">delete</button><button class="cancel" data-act="closemodal">close</button></div>`);
 }
