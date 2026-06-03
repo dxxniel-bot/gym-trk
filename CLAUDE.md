@@ -38,7 +38,8 @@ A mobile-first web app (works on iPhone via "Add to Home Screen") to log gym wor
 
 ### Screens (state.screen)
 `landing` → `onboard` → `home` (gym: rotation w/ ‹›day picker, //NEXT, start/rest/skip, log-later, **//VOLUME** weekly-sets-per-muscle vs MEV/MAV/MRV, //STATS) · `workout` (live logging + bg duration; log-later mode = backdated + date/dur + advance-rotation toggle) · `macros` (kcal ring + macro rings w/ g⇄% & logged⇄remaining toggles + intake bars + bloat + food log w/ per-item P/C/F + per-meal totals + tap-to-detail) · `splitedit` (rename/add/remove days & exercises, edit exercise) · `history` (past sessions → view/edit/delete) · `settings` (//PROFILE editable, //TRAINING, //DATA export/import) · `progress` (stub).
-Gym stats helpers: `weeklySets(days)`, `VOL_LANDMARKS` (RP MEV/MAV/MRV), `volStatus()`, `isHardSet()` (RIR≤4), `e1rmTrend()` (Epley, not yet surfaced). Top-lift & raw-volume removed on purpose.
+Gym stats helpers: `weeklySets(days)`, `VOL_LANDMARKS` (RP MEV/MAV/MRV), `volStatus()`, `isHardSet()` (RIR≤4), `e1rmTrend()` (Epley; surfaced in `progress`). `topLift()` is dead code (removed from UI, fn remains). Top-lift & raw-volume removed on purpose.
+**Workout prefill (v68):** new sessions pre-fill each set's weight/reps/unit from the last logged session of that exercise (`lastLoggedSets`), flagged **`_pf`** (a suggestion; RIR not copied). `_pf` clears on edit (`setField`) or mark-done; `saveSession`'s filter (`(s.w||s.r)&&!s._pf`) and its `has` check drop still-`_pf` sets, so suggestions never save or count in stats until you confirm them (edit or ✓). `[+ set]` duplicates the previous set (also `_pf`). `emptySet(ex,side,isDrop,src)` — pass `src` to prefill.
 Native-feel: viewport `maximum-scale=1,user-scalable=no`, body `position:fixed`, inputs `font-size:16px`, frame fills screen `@media(max-width:440px)`.
 
 ### Built-in base foods (`BASE_FOODS`)
