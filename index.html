@@ -352,6 +352,48 @@ function demoSplit(){
     ]}
   ]};
 }
+// dxxniel's split (reconstructed from the Figma design — 6-day push/pull/legs A+B)
+function myStarterSplit(){
+  const mk=(name,muscle,o={})=>Object.assign({name,muscle,type:'free',machine:'',unilateral:false,sets:2},o);
+  return {name:'push/pull A/B', days:[
+    {id:'d1',name:'chest/push A',tag:'@ RIR · F',metric:'rir',allowFailure:true,exercises:[
+      mk('cable pushdown','tricep',{type:'machine',machine:'cable',sets:2}),
+      mk('bb incline','chest',{machine:'barbell',sets:2}),
+      mk('flat press','chest',{sets:1}),
+      mk('pec fly','chest',{type:'machine',machine:'pulley',sets:1}),
+      mk('shoulder press','delts',{machine:'dumbbell',sets:2}),
+      mk('calf extension','calfs',{type:'machine',sets:2}),
+      mk('leg ext + pad','quads',{type:'machine',sets:2}),
+      mk('laying neck curl','neck',{sets:2})
+    ]},
+    {id:'d2',name:'back/pull A',tag:'@ RIR · F',metric:'rir',allowFailure:true,exercises:[
+      mk('lat pulldown','back',{type:'machine',machine:'pulley',sets:2}),
+      mk('bb row','back',{machine:'barbell',sets:2}),
+      mk('rear delt fly','delts',{type:'machine',sets:1}),
+      mk('bb curl','biceps',{machine:'barbell',sets:2})
+    ]},
+    {id:'d3',name:'legs A',tag:'@ RIR · F',metric:'rir',allowFailure:true,exercises:[
+      mk('squat','quads',{machine:'barbell',sets:3}),
+      mk('rdl','hams',{machine:'barbell',sets:2}),
+      mk('leg press','quads',{type:'machine',sets:2})
+    ]},
+    {id:'d4',name:'chest/push B',tag:'@ RIR · F',metric:'rir',allowFailure:true,exercises:[
+      mk('ohp','delts',{machine:'barbell',sets:2}),
+      mk('incline db press','chest',{machine:'dumbbell',sets:2}),
+      mk('lateral raise','delts',{unilateral:true,sets:2})
+    ]},
+    {id:'d5',name:'back/pull B',tag:'@ RIR · F',metric:'rir',allowFailure:true,exercises:[
+      mk('pullups','back',{sets:3}),
+      mk('chest supported row','back',{type:'machine',sets:2}),
+      mk('hammer curl','biceps',{unilateral:true,sets:2})
+    ]},
+    {id:'d6',name:'legs B',tag:'@ RIR · F',metric:'rir',allowFailure:true,exercises:[
+      mk('hack squat','quads',{type:'machine',sets:3}),
+      mk('leg curl','hams',{type:'machine',sets:2}),
+      mk('calf raise','calfs',{type:'machine',sets:3})
+    ]}
+  ]};
+}
 function seedPrev(){
   const d=new Date(); d.setDate(d.getDate()-3);
   const S=(w,r,rir,unit,side)=>({w:String(w),r:String(r),rir:String(rir),unit:unit||'lbs',side:side||null,fsOn:false,extraW:'',isDrop:false,done:true});
@@ -461,11 +503,11 @@ function renderHome(){
       +`<hr class="rule"/>`
       +`<div class="whdr"><div class="l1"><span class="s">//</span>GYM</div><div class="wname">sin split</div><div class="l2">SETUP</div><div class="wmeta">arma tu rutina para empezar</div></div>`
       +`<div class="empty-cta">`
-      +`<button class="start" data-act="newsplit">+ crear split</button>`
-      +`<div class="secondary" style="margin-top:10px"><button class="b" data-act="importsplit">importar</button><button class="b" data-act="workshop">workshop</button></div>`
-      +`<button class="b" data-act="loaddemo" style="width:100%;margin-top:10px">probar con split de ejemplo</button>`
+      +`<button class="start" data-act="loadmine">cargar mi split (push/pull A/B)</button>`
+      +`<button class="b" data-act="newsplit" style="width:100%;margin-top:10px">+ crear desde cero</button>`
+      +`<div class="secondary" style="margin-top:10px"><button class="b" data-act="importsplit">importar</button><button class="b" data-act="workshop">plantillas</button></div>`
       +`</div>`
-      +`<div class="submeta" style="margin-top:16px;text-align:center">crea uno desde cero, importa el tuyo (ironLOG/JSON), o explora plantillas en el workshop</div>`;
+      +`<div class="submeta" style="margin-top:16px;text-align:center">tu split de 6 días (chest/push A·B, back/pull A·B, legs A·B), o crea uno nuevo</div>`;
   }
   const di=selIdx(); const day=db.split.days[di]; const prev=lastSession(day.id); const s7=stat7(); const inprog=db.activeWork;
   const segs=db.split.days.map((_,i)=>`<i class="seg ${i===di?'on':''}" data-act="selday" data-i="${i}"></i>`).join('');
@@ -972,6 +1014,7 @@ document.getElementById('app').addEventListener('click',e=>{
   else if(a==='changesplit'||a==='schedule'){ go('splitedit'); }
   else if(a==='newsplit'){ if(!db.split||!db.split.days.length){ db.split={name:'mi split', days:[{id:'d'+uid(),name:'día 1',tag:'@ RIR · F',metric:'rir',allowFailure:true,exercises:[]}]}; db.rotIdx=0; save(); } go('splitedit'); }
   else if(a==='loaddemo'){ db.split=demoSplit(); db.rotIdx=0; state.selDay=null; save(); render(); }
+  else if(a==='loadmine'){ db.split=myStarterSplit(); db.rotIdx=0; state.selDay=null; if(!db.activeGym){db.activeGym='PRO GYM — arandas'; db.gyms=['PRO GYM — arandas'];} save(); render(); }
   else if(a==='workshop'){ openWorkshop(); }
   else if(a==='usetpl'){ const t=(window._tpls||[])[+el.dataset.i]; if(t){ db.split=t.build(); db.rotIdx=0; state.selDay=null; save(); closeModal(); go('splitedit'); } }
   else if(a==='logweight'){ openWeightLog(); }
