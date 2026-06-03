@@ -308,6 +308,9 @@
   .dz input[type=range]::-webkit-slider-thumb{-webkit-appearance:none; appearance:none; width:16px; height:16px; border-radius:50%; background:var(--fg);}
   .dz input[type=range]::-moz-range-thumb{width:16px; height:16px; border-radius:50%; background:var(--fg); border:none;}
   .dz-f{display:flex; gap:8px; margin-top:8px;} .dz-f button{flex:1; font-family:inherit; font-size:11px; padding:9px 0; border:1px solid var(--border); border-radius:10px; background:transparent; color:var(--fg); cursor:pointer;}
+  .toast{position:fixed; left:50%; bottom:84px; transform:translateX(-50%); background:#13131a; border:1px solid var(--good); color:var(--fg); padding:9px 15px; border-radius:999px; font-size:12px; font-weight:600; z-index:10000; box-shadow:0 6px 22px rgba(0,0,0,.5); white-space:nowrap; animation:toastin .28s ease, toastout .4s ease 2.3s forwards;}
+  @keyframes toastin{from{opacity:0; transform:translate(-50%,10px)} to{opacity:1; transform:translate(-50%,0)}}
+  @keyframes toastout{to{opacity:0; transform:translate(-50%,8px)}}
 </style>
 </head>
 <body>
@@ -2201,6 +2204,8 @@ function openGoals(){
     ['sodium','potassium','sugar','fiber','water','caffeine','alcohol'].forEach(k=>{ const v=parseFloat(val('g_'+k)); if(!isNaN(v))g[k]=v; });
     save(); closeModal(); render(); };
 }
+// brief non-blocking confirmation (used by step-import from the iOS Shortcut, etc.)
+function toast(msg){ try{ const t=document.createElement('div'); t.className='toast'; t.textContent=msg; document.body.appendChild(t); setTimeout(()=>{ try{t.remove();}catch(_){} },2900); }catch(_){} }
 // ── DESIGN MODE: live spacing/radius editor (open with ?design=1). Pure overlay — overrides nothing until you move a slider. ──
 const DESIGN_KNOBS=[
   {k:'pageY',l:'página · arriba',d:22,min:6,max:56,css:s=>`.scroll{padding-top:${s}px!important}`},
@@ -2307,7 +2312,7 @@ async function aiPhoto(file,barcode){ if(!file)return; window._faTag=window._faT
 // Pick AI when the proxy is configured, else on-device OCR.
 function labelPhoto(file,barcode){ if(AI_PROXY_URL) return aiPhoto(file,barcode); return ocrPhoto(file,barcode); }
 requestPersist();
-db=load(); try{ const _sp=new URLSearchParams(location.search); if(_sp.has('steps')){ const _n=parseInt(_sp.get('steps'),10); if(!isNaN(_n)&&_n>=0&&_n<100000){ db.steps=db.steps||{}; db.steps[todayISO()]=_n; } if(history.replaceState)history.replaceState(null,'',location.pathname); } }catch(_){} save(); render(); if(window._recoveredFromBackup)setTimeout(()=>{try{alert('Se recuperó un respaldo local: revisa tus datos, podrían faltar cambios muy recientes.');}catch(_){}},600);
+db=load(); try{ const _sp=new URLSearchParams(location.search); if(_sp.has('steps')){ const _n=parseInt(_sp.get('steps'),10); if(!isNaN(_n)&&_n>=0&&_n<100000){ db.steps=db.steps||{}; db.steps[todayISO()]=_n; window._stepsImported=_n; } if(history.replaceState)history.replaceState(null,'',location.pathname); } }catch(_){} save(); render(); if(window._stepsImported!=null)setTimeout(()=>toast('✓ '+window._stepsImported.toLocaleString()+' pasos · hoy'),250); if(window._recoveredFromBackup)setTimeout(()=>{try{alert('Se recuperó un respaldo local: revisa tus datos, podrían faltar cambios muy recientes.');}catch(_){}},600);
 applyDesign(); try{ if(/[?&]design\b/.test(location.search))localStorage.setItem('gymtrk_designmode','1'); if(localStorage.getItem('gymtrk_designmode')==='1')openDesignPanel(); }catch(_){}
 // Service worker with AUTO-UPDATE: when a new version is found, activate it and reload once.
 // Fixes iOS PWA serving stale cached builds from the home-screen icon.
