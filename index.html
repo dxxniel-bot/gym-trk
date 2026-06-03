@@ -768,7 +768,7 @@ function renderMacros(){
   items.forEach(m=>{(byTag[m.tag]=byTag[m.tag]||[]).push(m);});
   let log='';
   const tags=Object.keys(byTag).sort((a,b)=>order.indexOf(a)-order.indexOf(b));
-  if(!items.length){ log=`<div class="empty">no meals logged today<br/>tap [+ add] to start</div>`; }
+  if(!items.length){ log=`<div class="empty">aún no registras comida hoy<br/>toca ＋ abajo para agregar</div>`; }
   tags.forEach(tag=>{ const list=byTag[tag];
     const mt={kcal:0,protein:0,carbs:0,fat:0,caffeine:0,alcohol:0}; list.forEach(m=>{mt.kcal+=+m.kcal||0;mt.protein+=+m.protein||0;mt.carbs+=+m.carbs||0;mt.fat+=+m.fat||0;mt.caffeine+=+m.caffeine||0;mt.alcohol+=+m.alcohol||0;});
     const gcaf=(mt.caffeine>0?` · ${Math.round(mt.caffeine)}mg caf`:'')+(mt.alcohol>0?` · ${Math.round(mt.alcohol)}g alc`:'');
@@ -892,7 +892,8 @@ function openMealSummary(tag){
 function renderLanding(){
   return `<div style="padding-top:96px;text-align:center">
     <div style="font-size:34px;font-weight:800;letter-spacing:-1px">gym<span style="color:var(--o40)">//</span>TRK<span class="cur"></span></div>
-    <div style="font-size:11px;color:var(--o50);margin:9px 0 56px;letter-spacing:.4px">workout · macros · tracker</div>
+    <div style="font-size:11px;color:var(--o50);margin:9px 0 8px;letter-spacing:.4px">gym · comida · hábitos</div>
+    <div class="submeta" style="margin:0 0 50px;max-width:280px;margin-left:auto;margin-right:auto">tu tracker simple, todo en uno. registra tu entreno y tu comida en segundos.</div>
     <button class="start" data-act="lcreate">empezar →</button>
     <div class="submeta" style="margin-top:32px">¿ya usabas la app en otro dispositivo?<br/><a data-act="llogin" style="color:var(--o60);cursor:pointer;text-decoration:underline">restaurar respaldo</a></div>
   </div>`;
@@ -915,17 +916,18 @@ function renderLogin(){
 function renderOnboard(){
   return `<div style="padding-top:26px">
     <div style="font-size:24px;font-weight:800;letter-spacing:-.5px">gym<span style="color:var(--o50)">//</span>TRK</div>
-    <div style="font-size:11px;color:var(--o50);margin:6px 0 20px">// create account</div>
-    <div class="field"><label>HANDLE</label><input id="ob_user" placeholder="your handle" autocomplete="off" autocapitalize="off"/></div>
-    <div class="field"><label>SEX</label><div class="toggles" id="ob_sex"><button class="t on" data-act="optpick" data-v="M">male</button><button class="t" data-act="optpick" data-v="F">female</button></div></div>
-    <div class="field row2"><div><label>AGE</label><input id="ob_age" type="number" inputmode="numeric" placeholder="24"/></div><div><label>BODYWEIGHT (kg)</label><input id="ob_w" type="number" inputmode="decimal" placeholder="70"/></div></div>
-    <div class="field"><label>HEIGHT (cm)</label><input id="ob_h" type="number" inputmode="numeric" placeholder="175"/></div>
-    <div class="field"><label>ACTIVITY</label><div class="toggles wrap" id="ob_act"><button class="t" data-act="optpick" data-v="1.2">sedentary</button><button class="t on" data-act="optpick" data-v="1.375">light</button><button class="t" data-act="optpick" data-v="1.55">moderate</button><button class="t" data-act="optpick" data-v="1.725">high</button></div></div>
-    <div class="field"><label>GOAL</label><div class="toggles" id="ob_goal"><button class="t" data-act="optpick" data-v="cut">cut</button><button class="t on" data-act="optpick" data-v="maintain">maintain</button><button class="t" data-act="optpick" data-v="bulk">bulk</button></div></div>
-    <div class="field"><label>GYM</label><input id="ob_gym" placeholder="my gym" autocomplete="off"/></div>
-    <div class="field"><label>LIFTING UNITS</label><div class="toggles" id="ob_unit"><button class="t on" data-act="optpick" data-v="lbs">lbs</button><button class="t" data-act="optpick" data-v="kg">kg</button></div></div>
-    <button class="start" data-act="onboardgo" style="margin-top:14px">▶ create account</button>
-    <div class="submeta" style="margin:14px 0 10px">calculamos tus metas (kcal/macros) desde tus datos; las puedes editar luego. todo se guarda en este dispositivo.</div>
+    <div style="font-size:11px;color:var(--o50);margin:6px 0 4px">// crear cuenta</div>
+    <div class="submeta" style="margin-bottom:18px">cuéntanos de ti para calcular tus metas — toma 1 min y todo se queda en tu teléfono.</div>
+    <div class="field"><label>TU NOMBRE</label><input id="ob_user" placeholder="ej. dani" autocomplete="off" autocapitalize="off"/></div>
+    <div class="field"><label>SEXO</label><div class="toggles" id="ob_sex"><button class="t on" data-act="optpick" data-v="M">hombre</button><button class="t" data-act="optpick" data-v="F">mujer</button></div></div>
+    <div class="field row2"><div><label>EDAD</label><input id="ob_age" type="number" inputmode="numeric" placeholder="24"/></div><div><label>PESO (kg)</label><input id="ob_w" type="number" inputmode="decimal" placeholder="70"/></div></div>
+    <div class="field"><label>ESTATURA (cm)</label><input id="ob_h" type="number" inputmode="numeric" placeholder="175"/></div>
+    <div class="field"><label>ACTIVIDAD <span style="color:var(--o30);font-weight:400">· qué tanto te mueves al día</span></label><div class="toggles wrap" id="ob_act"><button class="t" data-act="optpick" data-v="1.2">sedentario</button><button class="t on" data-act="optpick" data-v="1.375">ligero</button><button class="t" data-act="optpick" data-v="1.55">moderado</button><button class="t" data-act="optpick" data-v="1.725">alto</button></div></div>
+    <div class="field"><label>OBJETIVO</label><div class="toggles" id="ob_goal"><button class="t" data-act="optpick" data-v="cut">déficit</button><button class="t on" data-act="optpick" data-v="maintain">mantener</button><button class="t" data-act="optpick" data-v="bulk">volumen</button></div></div>
+    <div class="field"><label>GIMNASIO</label><input id="ob_gym" placeholder="mi gym" autocomplete="off"/></div>
+    <div class="field"><label>UNIDADES (pesas)</label><div class="toggles" id="ob_unit"><button class="t on" data-act="optpick" data-v="lbs">lbs</button><button class="t" data-act="optpick" data-v="kg">kg</button></div></div>
+    <button class="start" data-act="onboardgo" style="margin-top:14px">▶ crear cuenta</button>
+    <div class="submeta" style="margin:14px 0 10px">con esto calculamos tus metas de kcal y macros; las puedes ajustar cuando quieras.</div>
   </div>`;
 }
 
