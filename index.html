@@ -23,6 +23,10 @@
     --card:#0d0d10; --card2:#16161c; --border:rgba(243,243,244,.09); --radius:16px;
     --good:#46c98b; --bad:#e5675c; --warn:#e3b34f; --info:#6aa6ff;
     --good-glow:rgba(70,201,139,.5); --bad-glow:rgba(229,103,92,.5); --warn-glow:rgba(227,179,79,.45);
+    /* spacing scale (current values; ajustable en vivo con ?design) */
+    --sp-py:22px; --sp-px:18px; --sp-card:15px; --sp-gap:12px; --sp-section:14px; --sp-field:12px; --sp-row:12px; --sp-sheet:18px; --r-sheet:22px;
+    /* type scale (una sola escala; se va aplicando) */
+    --t-display:22px; --t-section:16px; --t-body:13px; --t-meta:11px; --t-caption:9px;
   }
   *{margin:0;padding:0;box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
   :focus{outline:none;}
@@ -41,7 +45,7 @@
   /* on a real phone: frame fills the screen, no floating card */
   @media (max-width:440px){ body{display:block;} .frame{width:100%; height:100%; max-height:none; border-radius:0; box-shadow:none;} }
   input,select,textarea{font-size:16px; -webkit-user-select:text; user-select:text;}
-  .scroll{flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; overscroll-behavior-y:contain; padding:22px 18px calc(34px + env(safe-area-inset-bottom));}
+  .scroll{flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; overscroll-behavior-y:contain; padding:var(--sp-py) var(--sp-px) calc(34px + env(safe-area-inset-bottom));}
   .scroll::-webkit-scrollbar{width:6px} .scroll::-webkit-scrollbar-thumb{background:var(--o10)}
   input,select,button{font-family:inherit;}
 
@@ -70,8 +74,8 @@
   .whdr .wmeta{grid-column:2; grid-row:2; font-size:8px; color:var(--o50); line-height:1; letter-spacing:.2px;}
   .wgym{text-align:center; font-size:10px; color:var(--o40); margin-top:8px;}
 
-  .section{display:flex; align-items:baseline; justify-content:space-between; margin-bottom:14px;}
-  .section .h{font-size:16px; font-weight:800;} .section .h .s{color:var(--o50);}
+  .section{display:flex; align-items:baseline; justify-content:space-between; margin-bottom:var(--sp-section);}
+  .section .h{font-size:var(--t-section); font-weight:800;} .section .h .s{color:var(--o50);}
   .section .meta{font-size:11px; color:var(--o50); cursor:pointer; padding:6px 4px;}
 
   /* CTA buttons */
@@ -180,10 +184,10 @@
 
   /* modal / forms */
   .modal{position:absolute; inset:0; background:rgba(0,0,0,.6); display:flex; align-items:flex-start; z-index:5;}
-  .sheet{width:100%; background:#0c0c0c; border-top:1px solid var(--o20); padding:16px 18px 22px; max-height:80%; overflow-y:auto;}
+  .sheet{width:100%; background:#0c0c0c; border-top:1px solid var(--o20); padding:16px var(--sp-sheet) 22px; max-height:80%; overflow-y:auto;}
   #bc_cam video{width:100%; height:auto; display:block;} #bc_cam canvas.drawingBuffer{display:none;}
   .sheet h3{font-size:11px; color:var(--o50); letter-spacing:1px; margin-bottom:14px; font-weight:800;}
-  .field{margin-bottom:12px;} .field label{display:block; font-size:9.5px; color:var(--o40); letter-spacing:.5px; margin-bottom:5px;}
+  .field{margin-bottom:var(--sp-field);} .field label{display:block; font-size:9.5px; color:var(--o40); letter-spacing:.5px; margin-bottom:5px;}
   .field input,.field select{width:100%; height:42px; border:.5px solid var(--o20); background:transparent; color:var(--fg); font-size:16px; padding:0 10px; appearance:none;}
   .field.row2{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
   .field.row3{display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px;}
@@ -212,11 +216,11 @@
   .caption{font-size:10px; color:var(--o40);} .caption b{color:var(--o60);}
 
   /* ===== rimu-inspired card system (JetBrains Mono kept) ===== */
-  .card{background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:15px; margin-bottom:12px;}
+  .card{background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:var(--sp-card); margin-bottom:var(--sp-gap);}
   /* food-log meal groups become rounded cards */
-  .grp{background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:4px 14px; margin-bottom:12px;}
+  .grp{background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:4px 14px; margin-bottom:var(--sp-gap);}
   .ghead{padding:12px 0 10px; margin-bottom:0; border-bottom:1px solid var(--border);}
-  .grp .item{padding:12px 2px;} .grp .item:not(:last-child){border-bottom:1px solid var(--border);}
+  .grp .item{padding:var(--sp-row) 2px;} .grp .item:not(:last-child){border-bottom:1px solid var(--border);}
   .item:active{background:var(--card2);}
   /* rounded controls */
   .start{border-radius:13px; font-weight:600;}
@@ -224,7 +228,7 @@
   .field input,.field select{border-radius:11px; background:var(--card); border:1px solid var(--border);}
   .field input::placeholder{color:var(--o30);}
   /* bottom sheet + buttons */
-  .sheet{border-radius:0 0 22px 22px; background:#0a0a0c; border-top:0; border-bottom:1px solid var(--border); padding-top:calc(14px + env(safe-area-inset-top));}
+  .sheet{border-radius:0 0 var(--r-sheet) var(--r-sheet); background:#0a0a0c; border-top:0; border-bottom:1px solid var(--border); padding-top:calc(14px + env(safe-area-inset-top));}
   .sheetbtns .ok{border-radius:13px;} .sheetbtns .cancel{border-radius:13px; border-color:var(--border);}
   .pickitem{border-bottom-color:var(--border);}
   /* pill chips & toggles */
@@ -475,12 +479,15 @@ const curDay=()=>db.split.days[curDayIdx()];
 function selIdx(){ return state.selDay==null?curDayIdx():((state.selDay%dayCount())+dayCount())%dayCount(); }
 function lastSession(dayId){ const s=db.sessions.filter(x=>x.dayId===dayId&&x.type!=='rest').sort((a,b)=>b.date<a.date?-1:1); return s[0]||null; }
 function setsList(ex){ return ex.sets||[]; }
-function emptySet(ex,side,isDrop){ return {w:'',r:'',rir:'',unit:(ex&&ex.unit)||db.settings.unit||'lbs',side:side||null,fsOn:!!(ex&&ex.useFS),extraW:'',isDrop:!!isDrop,done:false}; }
+function emptySet(ex,side,isDrop,src){ const s={w:'',r:'',rir:'',unit:(ex&&ex.unit)||db.settings.unit||'lbs',side:side||null,fsOn:!!(ex&&ex.useFS),extraW:'',isDrop:!!isDrop,done:false};
+  if(src){ s.w=src.w||''; s.r=src.r||''; if(src.unit)s.unit=src.unit; s._pf=true; } return s; }
+// sets from the most recent prior session with this exercise — used to prefill a new workout (suggestions, flagged _pf until confirmed)
+function lastLoggedSets(name){ const key=(name||'').toLowerCase().trim(); let best=null,bd=''; (db.sessions||[]).forEach(s=>{ if(s.type==='rest')return; const e=(s.exercises||[]).find(x=>(x.name||'').toLowerCase().trim()===key&&x.sets&&x.sets.length); if(e&&s.date>=bd){ bd=s.date; best=e.sets; } }); return best; }
 function newWorkSession(){
   const day=db.split.days[selIdx()];
   const exs=day.exercises.map(e=>{
-    const sets=[]; const n=e.sets||1;
-    for(let i=0;i<n;i++){ if(e.unilateral){sets.push(emptySet(e,'R'));sets.push(emptySet(e,'L'));} else sets.push(emptySet(e)); }
+    const sets=[]; const n=e.sets||1; const last=lastLoggedSets(e.name);
+    for(let i=0;i<n;i++){ if(e.unilateral){ sets.push(emptySet(e,'R',false,last?last[i*2]:null)); sets.push(emptySet(e,'L',false,last?last[i*2+1]:null)); } else { sets.push(emptySet(e,null,false,last?(last[i]||last[last.length-1]):null)); } }
     return {name:e.name,muscle:e.muscle,type:e.type,machine:e.machine,unilateral:e.unilateral,note:e.note||'',sets};
   });
   return {id:uid(),date:todayISO(),dayId:day.id,dayName:day.name,gym:db.activeGym,startTs:nowHM(),startMs:Date.now(),loggedAfter:false,exercises:exs};
@@ -1065,7 +1072,7 @@ function render(){
 function go(screen){ state.screen=screen; render(); }
 
 // ---------- events ----------
-function setField(exi,si,f,val){ const w=db.activeWork; if(!w)return; w.exercises[exi].sets[si][f]=val; save(); }
+function setField(exi,si,f,val){ const w=db.activeWork; if(!w)return; const s=w.exercises[exi].sets[si]; if(!s)return; s[f]=val; s._pf=false; save(); }
 document.getElementById('app').addEventListener('click',e=>{
   const el=e.target.closest('[data-act]'); if(!el)return; const a=el.dataset.act;
   const exi=el.dataset.exi!=null?+el.dataset.exi:null, si=el.dataset.si!=null?+el.dataset.si:null;
@@ -1126,9 +1133,9 @@ document.getElementById('app').addEventListener('click',e=>{
   else if(a==='okexedit'){ saveExEdit(); }
   else if(a==='ss_save'){ const s=db.sessions.find(x=>x.id===window._sessId); if(s){ const dt=document.getElementById('ss_date'); if(dt)s.date=dt.value; save(); closeModal(); render(); } }
   else if(a==='ss_del'){ if(confirm('¿Borrar esta sesión?')){ db.sessions=db.sessions.filter(x=>x.id!==window._sessId); save(); closeModal(); render(); } }
-  else if(a==='done'){ const w=db.activeWork; const ex=w.exercises[exi]; if(ex.unilateral){ const v=!(ex.sets[si]&&ex.sets[si].done); if(ex.sets[si])ex.sets[si].done=v; if(ex.sets[si+1])ex.sets[si+1].done=v; } else { ex.sets[si].done=!ex.sets[si].done; } save(); render(); }
+  else if(a==='done'){ const w=db.activeWork; const ex=w.exercises[exi]; if(ex.unilateral){ const v=!(ex.sets[si]&&ex.sets[si].done); if(ex.sets[si]){ex.sets[si].done=v;ex.sets[si]._pf=false;} if(ex.sets[si+1]){ex.sets[si+1].done=v;ex.sets[si+1]._pf=false;} } else { ex.sets[si].done=!ex.sets[si].done; ex.sets[si]._pf=false; } save(); render(); }
   else if(a==='fs'){ const s=db.activeWork.exercises[exi].sets[si]; s.fsOn=!s.fsOn; save(); render(); }
-  else if(a==='addset'){ const ex=db.activeWork.exercises[exi]; if(ex.unilateral){ex.sets.push(emptySet(ex,'R'));ex.sets.push(emptySet(ex,'L'));} else ex.sets.push(emptySet(ex)); save(); state._scroll=document.getElementById('view').scrollTop; render(); }
+  else if(a==='addset'){ const ex=db.activeWork.exercises[exi]; if(ex.unilateral){ const lr=ex.sets[ex.sets.length-2]||null, ll=ex.sets[ex.sets.length-1]||null; ex.sets.push(emptySet(ex,'R',false,lr)); ex.sets.push(emptySet(ex,'L',false,ll)); } else { const lt=ex.sets[ex.sets.length-1]||null; ex.sets.push(emptySet(ex,null,false,lt)); } save(); state._scroll=document.getElementById('view').scrollTop; render(); }
   else if(a==='dropset'){ const ex=db.activeWork.exercises[exi]; ex.sets.push(Object.assign(emptySet(ex),{isDrop:true,fsOn:true})); save(); state._scroll=document.getElementById('view').scrollTop; render(); }
   else if(a==='delset'){ const ex=db.activeWork.exercises[exi]; if(ex.unilateral){const p=Math.floor(si/2)*2; ex.sets.splice(p,2);} else ex.sets.splice(si,1); save(); state._scroll=document.getElementById('view').scrollTop; render(); }
   else if(a==='addex'){ openAddExercise(); }
@@ -1283,10 +1290,10 @@ function openExName(exi){ const w=db.activeWork; if(!w)return; const ex=w.exerci
 }
 function saveSession(){
   const w=db.activeWork; if(!w){go('home');return;}
-  const has=w.exercises.some(e=>e.sets.some(s=>s.w||s.r));
+  const has=w.exercises.some(e=>e.sets.some(s=>(s.w||s.r)&&!s._pf));
   if(!has && !confirm('No registraste sets. ¿Guardar de todos modos?')){return;}
   const sess={id:w.id,date:w.date,dayId:w.dayId,dayName:w.dayName,gym:w.gym,type:'training',loggedAfter:!!w.loggedAfter,durSec:w.loggedAfter?((parseInt(w.manualDur,10)||0)*60):(w.startMs?Math.round((Date.now()-w.startMs)/1000):0),
-    exercises:w.exercises.map(e=>{const r=machineRec(w.gym,e); return {name:e.name,muscle:e.muscle,machine:r.na?'':r.brand,setup:r.na?'':r.setup,sets:e.sets.filter(s=>s.w||s.r)};})};
+    exercises:w.exercises.map(e=>{const r=machineRec(w.gym,e); return {name:e.name,muscle:e.muscle,machine:r.na?'':r.brand,setup:r.na?'':r.setup,sets:e.sets.filter(s=>(s.w||s.r)&&!s._pf)};})};
   if(!(w.loggedAfter&&w.noAdvance)){ const idx=db.split.days.findIndex(d=>d.id===w.dayId); db.rotIdx=(idx>=0?idx:db.rotIdx)+1; } db.activeWork=null; state.selDay=null; db.sessions.push(sess); save(); go('home');
 }
 
@@ -2257,16 +2264,16 @@ function openGoals(){
 function toast(msg){ try{ const t=document.createElement('div'); t.className='toast'; t.textContent=msg; document.body.appendChild(t); setTimeout(()=>{ try{t.remove();}catch(_){} },2900); }catch(_){} }
 // ── DESIGN MODE: live spacing/radius editor (open with ?design=1). Pure overlay — overrides nothing until you move a slider. ──
 const DESIGN_KNOBS=[
-  {k:'pageY',l:'página · arriba',d:22,min:6,max:56,css:s=>`.scroll{padding-top:${s}px!important}`},
-  {k:'pageX',l:'página · lados',d:18,min:6,max:40,css:s=>`.scroll{padding-left:${s}px!important;padding-right:${s}px!important}`},
-  {k:'cardPad',l:'tarjeta · interior',d:15,min:6,max:30,css:s=>`.card{padding:${s}px!important}`},
-  {k:'cardGap',l:'separación tarjetas',d:12,min:2,max:34,css:s=>`.card,.grp{margin-bottom:${s}px!important}`},
-  {k:'section',l:'separación secciones',d:14,min:2,max:40,css:s=>`.section{margin-bottom:${s}px!important}`},
-  {k:'field',l:'campos de formulario',d:12,min:2,max:30,css:s=>`.field{margin-bottom:${s}px!important}`},
-  {k:'row',l:'filas de lista',d:12,min:4,max:26,css:s=>`.grp .item{padding-top:${s}px!important;padding-bottom:${s}px!important}`},
+  {k:'pageY',l:'página · arriba',d:22,min:6,max:56,css:s=>`:root{--sp-py:${s}px}`},
+  {k:'pageX',l:'página · lados',d:18,min:6,max:40,css:s=>`:root{--sp-px:${s}px}`},
+  {k:'cardPad',l:'tarjeta · interior',d:15,min:6,max:30,css:s=>`:root{--sp-card:${s}px}`},
+  {k:'cardGap',l:'separación tarjetas',d:12,min:2,max:34,css:s=>`:root{--sp-gap:${s}px}`},
+  {k:'section',l:'separación secciones',d:14,min:2,max:40,css:s=>`:root{--sp-section:${s}px}`},
+  {k:'field',l:'campos de formulario',d:12,min:2,max:30,css:s=>`:root{--sp-field:${s}px}`},
+  {k:'row',l:'filas de lista',d:12,min:4,max:26,css:s=>`:root{--sp-row:${s}px}`},
   {k:'radius',l:'radio · tarjetas',d:16,min:0,max:30,css:s=>`:root{--radius:${s}px}`},
-  {k:'sheetPad',l:'modales · interior',d:18,min:6,max:30,css:s=>`.sheet{padding-left:${s}px!important;padding-right:${s}px!important}`},
-  {k:'sheetR',l:'modales · radio',d:22,min:0,max:34,css:s=>`.sheet{border-radius:0 0 ${s}px ${s}px!important}`}
+  {k:'sheetPad',l:'modales · interior',d:18,min:6,max:30,css:s=>`:root{--sp-sheet:${s}px}`},
+  {k:'sheetR',l:'modales · radio',d:22,min:0,max:34,css:s=>`:root{--r-sheet:${s}px}`}
 ];
 function designVals(){ try{ return JSON.parse(localStorage.getItem('gymtrk_design')||'{}')||{}; }catch(_){ return {}; } }
 function applyDesign(){ const o=designVals(); const css=DESIGN_KNOBS.filter(kn=>o[kn.k]!=null).map(kn=>kn.css(o[kn.k])).join('\n'); let st=document.getElementById('dz_style'); if(!st){ st=document.createElement('style'); st.id='dz_style'; document.head.appendChild(st); } st.textContent=css; }
