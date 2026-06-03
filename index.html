@@ -762,22 +762,23 @@ function openMealSummary(tag){
 
 // ---------- render: landing (log in / create account) ----------
 function renderLanding(){
-  return `<div style="padding-top:84px;text-align:center">
+  return `<div style="padding-top:96px;text-align:center">
     <div style="font-size:34px;font-weight:800;letter-spacing:-1px">gym<span style="color:var(--o40)">//</span>TRK<span class="cur"></span></div>
-    <div style="font-size:11px;color:var(--o50);margin:9px 0 48px;letter-spacing:.4px">workout · macros · tracker</div>
-    <button class="start" data-act="lcreate" style="margin-bottom:12px">▶ create account</button>
-    <button data-act="llogin" style="width:100%;text-align:center;font-size:12px;color:var(--fg);border:1px solid var(--faint);padding:12px 0;background:transparent;cursor:pointer;letter-spacing:.3px">log in</button>
-    <div class="submeta" style="margin-top:26px">¿ya tienes cuenta en otro equipo? entra con <b style="color:var(--o60)">log in</b> y pega tu backup (sync).</div>
+    <div style="font-size:11px;color:var(--o50);margin:9px 0 56px;letter-spacing:.4px">workout · macros · tracker</div>
+    <button class="start" data-act="lcreate">empezar →</button>
+    <div class="submeta" style="margin-top:32px">¿ya usabas la app en otro dispositivo?<br/><a data-act="llogin" style="color:var(--o60);cursor:pointer;text-decoration:underline">restaurar respaldo</a></div>
   </div>`;
 }
 function renderLogin(){
   return `<div style="padding-top:36px">
     <div style="font-size:24px;font-weight:800;letter-spacing:-.5px">gym<span style="color:var(--o50)">//</span>TRK</div>
-    <div style="font-size:11px;color:var(--o50);margin:6px 0 20px">// log in · restaurar cuenta</div>
-    <div class="submeta" style="margin-bottom:8px">pega tu backup (el texto que copiaste en sync de tu otro equipo) para restaurar tu cuenta aquí.</div>
-    <textarea id="li_txt" style="width:100%;height:150px;border:.5px solid var(--o20);background:transparent;color:var(--fg);font-family:'JetBrains Mono',monospace;font-size:10px;padding:8px" placeholder="pega tu backup json aquí"></textarea>
-    <button class="start" data-act="dologin" style="margin-top:12px">▶ restore &amp; log in</button>
-    <div class="secondary" style="margin-top:10px"><button class="b" data-act="loginfile">import file</button><button class="b" data-act="backlanding">← back</button></div>
+    <div style="font-size:11px;color:var(--o50);margin:6px 0 18px">restaurar respaldo</div>
+    <div class="submeta" style="margin-bottom:10px">esto es solo si guardaste un respaldo de tu cuenta en otro dispositivo. si no, regresa y dale <b style="color:var(--o60)">empezar</b>.</div>
+    <button class="b" data-act="loginfile" style="width:100%;margin-bottom:10px">elegir archivo de respaldo</button>
+    <div class="submeta" style="margin-bottom:6px">o pega el texto del respaldo:</div>
+    <textarea id="li_txt" style="width:100%;height:110px;border:.5px solid var(--o20);background:transparent;color:var(--fg);font-family:'JetBrains Mono',monospace;font-size:10px;padding:8px" placeholder="{ ... }"></textarea>
+    <button class="start" data-act="dologin" style="margin-top:10px">restaurar</button>
+    <div style="text-align:center;margin-top:14px"><a data-act="backlanding" style="font-size:11px;color:var(--o50);cursor:pointer">← regresar</a></div>
     <div id="li_msg" class="submeta" style="margin-top:10px"></div>
   </div>`;
 }
@@ -1841,8 +1842,10 @@ function mapProduct(p){
   // For solids: use _serving if declared (natural unit like "1 galleta 28g"); fall back to 100g.
   const base=isLiquid?'ml':'g';
   const g=b=> (+n[b+'_100g']||0);   // OpenFoodFacts always gives per-100 g/ml → our canonical base
+  // OFF 'alcohol_100g' is % vol (ml ethanol /100ml). Convert to grams: ×0.789 (ethanol density).
+  const alcVol=+n['alcohol_100g']||0; const alcG=Math.round(alcVol*0.789*100)/100;
   const per100={ kcal:+n['energy-kcal_100g']||0, protein:g('proteins'), carbs:g('carbohydrates'), fat:g('fat'),
-    sugar:g('sugars'), fiber:g('fiber'), sodium:Math.round(g('sodium')*1000), potassium:Math.round(g('potassium')*1000), caffeine:g('caffeine') };
+    sugar:g('sugars'), fiber:g('fiber'), sodium:Math.round(g('sodium')*1000), potassium:Math.round(g('potassium')*1000), caffeine:g('caffeine'), alcohol:alcG };
   const sizes={}; const sg=servingToGrams(svStr); if(sg>0&&sg!==100)sizes.serving=sg;
   return { barcode:p.code||'', name:p.product_name||'', brand:p.brands||'', base, per100, sizes, servingLabel:'' };
 }
