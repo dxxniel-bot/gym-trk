@@ -13,7 +13,8 @@ A mobile-first web app (works on iPhone via "Add to Home Screen") to log gym wor
 ## How to run / deploy
 - **Run locally:** static files; serve the folder and open the port. On **mopo** the repo is cloned at `G:\My Drive\AI_SYSTEM\projects\gym-trk\repo\` and there's a `.claude/launch.json` (one dir up) that serves it via `python -m http.server 4599 -d repo` for the Claude Code preview. On XboxL it was `X:\freelance\gym-trk\`.
 - **Deploy:** `git push` to `main` → GitHub Pages auto-rebuilds (~1-2 min). No backend. **The iPhone is the test field** — camera/PWA need HTTPS, so always commit+push to deploy; localhost isn't enough for on-device testing.
-- **Bump `sw.js` cache** (`gymtrk-vN`) on every shippable change so devices pick up the new build. Currently at **v49**.
+- **Bump `sw.js` cache** (`gymtrk-vN`) on every shippable change so devices pick up the new build. Currently at **v66**.
+- **Design mode (live spacing editor):** open the app with `?design=1` to get a floating panel of sliders for the key spacing/radius tokens (`DESIGN_KNOBS`). It's a pure overlay — `applyDesign()` injects a `<style id="dz_style">` of `!important` overrides (and a `:root{--radius}` override) built ONLY from sliders you've touched, persisted in `localStorage.gymtrk_design`; it changes no source CSS. Tweaks apply on every load (even without the panel) until **reset**; `localStorage.gymtrk_designmode='1'` keeps the panel open across reloads (✕ clears it). "copiar CSS" exports the override block to bake the chosen values into the real rules.
 - **Git identity** (set locally in the clone): `dxxniel-bot <dxxniel-bot@users.noreply.github.com>`. Commit directly to `main` (that IS the deploy flow — don't branch).
 - **Continue from another machine:** `git clone https://github.com/dxxniel-bot/gym-trk` (or `git pull` in the existing clone), edit, push.
 

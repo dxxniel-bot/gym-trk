@@ -297,6 +297,17 @@
   .dnavh{display:flex; align-items:center; gap:2px;}
   .dnav{font-size:22px; color:var(--o50); cursor:pointer; padding:6px 10px; line-height:1; user-select:none; display:inline-flex; align-items:center; min-height:40px;} .dnav:active{color:var(--fg);}
   .dnlbl{font-size:14px; font-weight:800; letter-spacing:.5px; cursor:pointer; min-width:96px; text-align:center;}
+  /* ── design mode: live spacing editor (?design=1) ── */
+  .dz{position:fixed; left:8px; right:8px; bottom:8px; z-index:9999; background:#0c0c0e; border:1px solid var(--border); border-radius:14px; padding:10px 12px; max-height:48vh; overflow-y:auto; -webkit-overflow-scrolling:touch; box-shadow:0 8px 30px rgba(0,0,0,.6); font-family:'JetBrains Mono',monospace;}
+  .dz.mini{max-height:none;} .dz.mini .dz-body,.dz.mini .dz-f{display:none;}
+  .dz-h{display:flex; justify-content:space-between; align-items:center; font-size:11px; color:var(--fg); font-weight:700; letter-spacing:.3px; margin-bottom:9px;}
+  .dz-h button{background:transparent; border:none; color:var(--o50); font-size:14px; cursor:pointer; padding:0 5px; font-family:inherit;}
+  .dz-row{margin-bottom:9px;}
+  .dz-l{display:flex; justify-content:space-between; font-size:10px; color:var(--o60); margin-bottom:3px;} .dz-l b{color:var(--fg); font-weight:700;}
+  .dz input[type=range]{width:100%; -webkit-appearance:none; appearance:none; height:3px; border-radius:2px; background:var(--track); outline:none; margin:0;}
+  .dz input[type=range]::-webkit-slider-thumb{-webkit-appearance:none; appearance:none; width:16px; height:16px; border-radius:50%; background:var(--fg);}
+  .dz input[type=range]::-moz-range-thumb{width:16px; height:16px; border-radius:50%; background:var(--fg); border:none;}
+  .dz-f{display:flex; gap:8px; margin-top:8px;} .dz-f button{flex:1; font-family:inherit; font-size:11px; padding:9px 0; border:1px solid var(--border); border-radius:10px; background:transparent; color:var(--fg); cursor:pointer;}
 </style>
 </head>
 <body>
@@ -2190,6 +2201,34 @@ function openGoals(){
     ['sodium','potassium','sugar','fiber','water','caffeine','alcohol'].forEach(k=>{ const v=parseFloat(val('g_'+k)); if(!isNaN(v))g[k]=v; });
     save(); closeModal(); render(); };
 }
+// ── DESIGN MODE: live spacing/radius editor (open with ?design=1). Pure overlay — overrides nothing until you move a slider. ──
+const DESIGN_KNOBS=[
+  {k:'pageY',l:'página · arriba',d:22,min:6,max:56,css:s=>`.scroll{padding-top:${s}px!important}`},
+  {k:'pageX',l:'página · lados',d:18,min:6,max:40,css:s=>`.scroll{padding-left:${s}px!important;padding-right:${s}px!important}`},
+  {k:'cardPad',l:'tarjeta · interior',d:15,min:6,max:30,css:s=>`.card{padding:${s}px!important}`},
+  {k:'cardGap',l:'separación tarjetas',d:12,min:2,max:34,css:s=>`.card,.grp{margin-bottom:${s}px!important}`},
+  {k:'section',l:'separación secciones',d:14,min:2,max:40,css:s=>`.section{margin-bottom:${s}px!important}`},
+  {k:'field',l:'campos de formulario',d:12,min:2,max:30,css:s=>`.field{margin-bottom:${s}px!important}`},
+  {k:'row',l:'filas de lista',d:12,min:4,max:26,css:s=>`.grp .item{padding-top:${s}px!important;padding-bottom:${s}px!important}`},
+  {k:'radius',l:'radio · tarjetas',d:16,min:0,max:30,css:s=>`:root{--radius:${s}px}`},
+  {k:'sheetPad',l:'modales · interior',d:18,min:6,max:30,css:s=>`.sheet{padding-left:${s}px!important;padding-right:${s}px!important}`},
+  {k:'sheetR',l:'modales · radio',d:22,min:0,max:34,css:s=>`.sheet{border-radius:0 0 ${s}px ${s}px!important}`}
+];
+function designVals(){ try{ return JSON.parse(localStorage.getItem('gymtrk_design')||'{}')||{}; }catch(_){ return {}; } }
+function applyDesign(){ const o=designVals(); const css=DESIGN_KNOBS.filter(kn=>o[kn.k]!=null).map(kn=>kn.css(o[kn.k])).join('\n'); let st=document.getElementById('dz_style'); if(!st){ st=document.createElement('style'); st.id='dz_style'; document.head.appendChild(st); } st.textContent=css; }
+function openDesignPanel(){ if(document.getElementById('dz_panel'))return; const o=designVals();
+  const wrap=document.createElement('div'); wrap.id='dz_panel'; wrap.className='dz';
+  wrap.innerHTML='<div class="dz-h"><span>modo diseño · espaciado</span><span><button id="dz_min" title="minimizar">▁</button><button id="dz_x" title="cerrar">✕</button></span></div>'
+    +'<div class="dz-body">'+DESIGN_KNOBS.map(kn=>{ const v=(o[kn.k]!=null)?o[kn.k]:kn.d; const def=(o[kn.k]==null)?' data-def="1"':''; return '<div class="dz-row"><div class="dz-l"><span>'+kn.l+'</span><b id="dzv_'+kn.k+'">'+v+'</b></div><input type="range" id="dz_'+kn.k+'" min="'+kn.min+'" max="'+kn.max+'" value="'+v+'"'+def+'/></div>'; }).join('')+'</div>'
+    +'<div class="dz-f"><button id="dz_reset">reset</button><button id="dz_copy">copiar CSS</button></div>';
+  document.body.appendChild(wrap);
+  const persist=()=>{ const cur={}; DESIGN_KNOBS.forEach(kn=>{ const r=document.getElementById('dz_'+kn.k); if(r&&!r.dataset.def)cur[kn.k]=+r.value; }); localStorage.setItem('gymtrk_design',JSON.stringify(cur)); applyDesign(); };
+  DESIGN_KNOBS.forEach(kn=>{ const r=document.getElementById('dz_'+kn.k); if(r)r.addEventListener('input',()=>{ r.removeAttribute('data-def'); const b=document.getElementById('dzv_'+kn.k); if(b)b.textContent=r.value; persist(); }); });
+  document.getElementById('dz_reset').onclick=()=>{ if(!confirm('¿Quitar todos los ajustes de espaciado?'))return; localStorage.removeItem('gymtrk_design'); applyDesign(); wrap.remove(); openDesignPanel(); };
+  document.getElementById('dz_copy').onclick=()=>{ const st=document.getElementById('dz_style'); const css=(st&&st.textContent)||''; if(!css){ alert('Mueve algún slider primero.'); return; } if(navigator.clipboard)navigator.clipboard.writeText(css).then(()=>{},()=>{}); alert('CSS copiado (pásamelo para hornearlo):\n\n'+css); };
+  document.getElementById('dz_x').onclick=()=>{ localStorage.removeItem('gymtrk_designmode'); wrap.remove(); };
+  document.getElementById('dz_min').onclick=()=>wrap.classList.toggle('mini');
+}
 function openSync(){
   openModal(`<h3>sync data</h3>
    <div class="submeta" style="margin-bottom:10px">Copia este texto para respaldar o pasar a otro equipo (iPhone ↔ aquí). O pega un backup y dale import.</div>
@@ -2269,6 +2308,7 @@ async function aiPhoto(file,barcode){ if(!file)return; window._faTag=window._faT
 function labelPhoto(file,barcode){ if(AI_PROXY_URL) return aiPhoto(file,barcode); return ocrPhoto(file,barcode); }
 requestPersist();
 db=load(); try{ const _sp=new URLSearchParams(location.search); if(_sp.has('steps')){ const _n=parseInt(_sp.get('steps'),10); if(!isNaN(_n)&&_n>=0&&_n<100000){ db.steps=db.steps||{}; db.steps[todayISO()]=_n; } if(history.replaceState)history.replaceState(null,'',location.pathname); } }catch(_){} save(); render(); if(window._recoveredFromBackup)setTimeout(()=>{try{alert('Se recuperó un respaldo local: revisa tus datos, podrían faltar cambios muy recientes.');}catch(_){}},600);
+applyDesign(); try{ if(/[?&]design\b/.test(location.search))localStorage.setItem('gymtrk_designmode','1'); if(localStorage.getItem('gymtrk_designmode')==='1')openDesignPanel(); }catch(_){}
 // Service worker with AUTO-UPDATE: when a new version is found, activate it and reload once.
 // Fixes iOS PWA serving stale cached builds from the home-screen icon.
 if('serviceWorker' in navigator){
