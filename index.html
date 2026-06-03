@@ -258,6 +258,10 @@
   .sitem{display:flex; justify-content:space-between; align-items:baseline; font-size:12px; padding:5px 0;}
   .sitem .sn{color:var(--o55,rgba(243,243,244,.55));} .sitem .sn .q{color:var(--o60); font-weight:700; margin-right:3px;} .sitem .sb{font-size:10px; color:var(--o40);} .sitem .sk{color:var(--o60); font-weight:500;}
   .shfoot{text-align:center; font-size:13px; font-weight:800; color:var(--o35); margin-top:26px; letter-spacing:.5px;}
+  .shbanner.shses, .shbanner.shwt{justify-content:space-around; gap:8px;}
+  .shstat{text-align:center; flex:1;} .shstat-n{font-size:24px; font-weight:800; letter-spacing:-.5px;} .shstat-l{font-size:9px; color:var(--o50); margin-top:5px; letter-spacing:1px; text-transform:uppercase;}
+  .shsets{display:flex; flex-wrap:wrap; gap:5px; margin-top:5px;} .shset{font-size:10px; color:var(--o60); border:1px solid var(--border); border-radius:6px; padding:2px 6px;} .shset i{color:var(--o40); font-style:normal;}
+  .shr-ring.good .ring-fill{stroke:var(--good);} .shr-ring.over .ring-fill{stroke:var(--bad);}
   /* meal-summary popup (MFP-style, mono, luxury) */
   .mbanner{display:flex; align-items:center; gap:14px; border:1px solid var(--border); border-radius:16px; padding:16px; margin-top:4px;}
   .mb-ring .ring.lg{width:92px; height:92px;} .mb-ring .ring.lg .num{font-size:21px; font-weight:800; letter-spacing:-.5px;} .mb-ring .ring.lg .of{font-size:8px; color:var(--o40); margin-top:2px;}
@@ -809,12 +813,14 @@ function mealFoodRows(items){
   return items.map(m=>{ const nm=(m.name||'').replace(/ ×[\d.]+$/,''); const br=(m._food&&m._food.brand)||'';
     return `<div class="sitem"><span class="sn"><b class="q">${itemQtyLabel(m)}</b> ${escTxt(nm)}${br?` <span class="sb">${escTxt(br)}</span>`:''}</span><span class="sk">${Math.round(m.kcal)||0}</span></div>`; }).join(''); }
 function renderShare(){
+  if(state.shareType==='session')return renderShareSession(state.shareId);
+  if(state.shareType==='weight')return renderShareWeight();
   const {items,t}=macroTotals(); const g=db.settings.goals;
-  const kpct=g.kcal?Math.min(100,Math.round(t.kcal/g.kcal*100)):0;
+  const kpct=g.kcal?Math.min(100,Math.round(t.kcal/g.kcal*100)):0; const kStat=macroStatus(t.kcal,g.kcal);
   const ck=t.carbs*4, fk=t.fat*9, pk=t.protein*4; const tot=ck+fk+pk||1; const pc=k=>Math.round(k/tot*100);
   const mm=(lbl,grams,p)=>`<div class="shm"><div class="shm-g">${Math.round(grams)}<span>g</span></div><div class="shm-l">${lbl}</div><div class="shm-p">${p}%</div></div>`;
   const banner=`<div class="shbanner">`
-    +`<div class="shr-ring">${ringHTML(kpct,'<div class="num">'+Math.round(t.kcal).toLocaleString()+'</div><div class="of">kcal</div>','lg')}</div>`
+    +`<div class="shr-ring ${kStat}">${ringHTML(kpct,'<div class="num">'+Math.round(t.kcal).toLocaleString()+'</div><div class="of">kcal</div>','lg')}</div>`
     +`<div class="shr-macros">${mm('protein',t.protein,pc(pk))}${mm('carbs',t.carbs,pc(ck))}${mm('fat',t.fat,pc(fk))}</div></div>`;
   const order=['breakfast','lunch','snack','dinner','drink']; const byTag={};
   items.forEach(m=>{(byTag[m.tag]=byTag[m.tag]||[]).push(m);});
@@ -824,13 +830,40 @@ function renderShare(){
     log+=`<div class="sgrp"><div class="sgh" data-act="mealsummary" data-tag="${escTxt(tag)}"><span class="sgn">${escTxt(tag)}</span><span class="sgk">${Math.round(mp)}P ${Math.round(mc)}C ${Math.round(mf)}F · ${Math.round(mk)}</span></div>`
       +mealFoodRows(byTag[tag])+`</div>`;
   });
+  return summaryShell('resumen · '+dayLabel(curDate()), banner, items.length?`<div class="shlog">${log}</div>`:`<div class="empty">sin alimentos hoy</div>`);
+}
+// unified share wrapper: caption + banner + body + gym//TRK footer (used by all shareable summaries)
+function summaryShell(caption, banner, body){
   return statusBar(true)
-   +`<div class="sharecard">`
-   +`<div class="shtitle">resumen · ${dayLabel(curDate())}</div>`
-   +banner
-   +(items.length?`<div class="shlog">${log}</div>`:`<div class="empty">sin alimentos hoy</div>`)
-   +`<div class="shfoot">gym<span style="color:var(--o40)">//</span>TRK</div>`
-   +`</div>`;
+   +`<div class="sharecard"><div class="shtitle">${caption}</div>`+banner+(body||'')
+   +`<div class="shfoot">gym<span style="color:var(--o40)">//</span>TRK</div></div>`;
+}
+function renderShareSession(id){
+  const s=(db.sessions||[]).find(x=>x.id===id)||(db.sessions||[]).filter(x=>x.type!=='rest').slice(-1)[0];
+  if(!s)return summaryShell('sesión',`<div class="empty">sin sesión para compartir</div>`,'');
+  let sets=0; (s.exercises||[]).forEach(e=>sets+=(e.sets||[]).length);
+  const h=Math.floor((s.durSec||0)/3600), m=Math.floor(((s.durSec||0)%3600)/60); const dur=s.durSec?(h?h+'h '+pad(m)+'m':m+'m'):'—';
+  const banner=`<div class="shbanner shses">`
+    +`<div class="shstat"><div class="shstat-n">${sets}</div><div class="shstat-l">sets</div></div>`
+    +`<div class="shstat"><div class="shstat-n">${(s.exercises||[]).length}</div><div class="shstat-l">ejercicios</div></div>`
+    +`<div class="shstat"><div class="shstat-n">${dur}</div><div class="shstat-l">duración</div></div></div>`;
+  let log='<div class="shlog">';
+  (s.exercises||[]).forEach(e=>{ const st=e.sets||[];
+    log+=`<div class="sgrp"><div class="sgh"><span class="sgn">${escTxt(e.name)}</span><span class="sgk">${escTxt(e.muscle||'')} · ${st.length} sets</span></div>`
+      +`<div class="shsets">`+st.map(x=>`<span class="shset">${numTxt(+x.w||0)}<i>×${(x.r!=null&&x.r!=='')?x.r:'-'}</i></span>`).join('')+`</div></div>`;
+  });
+  log+='</div>';
+  return summaryShell(escTxt(s.dayName||'sesión')+' · '+(s.date||''), banner, log);
+}
+function renderShareWeight(){
+  const ks=Object.keys(db.bodyweight||{}).sort(); const vals=ks.map(k=>db.bodyweight[k]);
+  if(vals.length<2)return summaryShell('peso',`<div class="empty">registra tu peso varios días<br/>para compartir tu progreso</div>`,'');
+  const cur=vals[vals.length-1], ch=Math.round((cur-vals[0])*10)/10; const goal=(db.profile&&db.profile.goal)||'maintain';
+  let col='var(--o50)'; if(goal==='cut')col=ch<0?'var(--good)':ch>0?'var(--bad)':'var(--o50)'; else if(goal==='bulk')col=ch>0?'var(--good)':ch<0?'var(--bad)':'var(--o50)'; else col=Math.abs(ch)<=1?'var(--good)':'var(--warn)';
+  const banner=`<div class="shbanner shwt">`
+    +`<div class="shstat"><div class="shstat-n">${cur}<span style="font-size:13px;color:var(--o40);font-weight:400"> kg</span></div><div class="shstat-l">actual</div></div>`
+    +`<div class="shstat"><div class="shstat-n" style="color:${col}">${ch>=0?'+':''}${ch}</div><div class="shstat-l">kg · ${vals.length} reg.</div></div></div>`;
+  return summaryShell('peso corporal', banner, `<div class="shlog">${lineChart(vals.slice(-16))}</div>`);
 }
 function openMealSummary(tag){
   const items=(db.meals[curDate()]||[]).filter(m=>m.tag===tag); if(!items.length)return;
@@ -916,12 +949,17 @@ function openWeightLog(){ const ks=Object.keys(db.bodyweight||{}).sort(); const 
    <div class="sheetbtns"><button class="ok" id="bw_save">guardar</button><button class="cancel" data-act="closemodal">cancel</button></div>`);
   document.getElementById('bw_save').onclick=()=>{ const v=parseFloat(val('bw_kg')); if(!v||v<=0){ alert('Pon un peso válido.'); return; } db.bodyweight=db.bodyweight||{}; db.bodyweight[todayISO()]=v; db.profile.weightKg=v; save(); closeModal(); render(); };
 }
+// habit series helpers (last-N days, daily water summed from meals, avg of logged days)
+function lastDays(n){ const now=new Date(); const out=[]; for(let i=n-1;i>=0;i--){ const d=new Date(now); d.setDate(now.getDate()-i); out.push(todayISO(d)); } return out; }
+function dayWater(iso){ const arr=db.meals[iso]; let w=0; if(arr)arr.forEach(m=>{ w+=+m.water||0; }); return w; }
+function avgPos(arr){ const v=arr.filter(x=>x>0); return v.length?v.reduce((a,b)=>a+b,0)/v.length:0; }
 function renderProgress(){
   const totalSessions=(db.sessions||[]).filter(s=>s.type!=='rest').length;
   const bwKeys=Object.keys(db.bodyweight||{}).sort(); const bwVals=bwKeys.map(k=>db.bodyweight[k]);
   const curBw=bwVals.length?bwVals[bwVals.length-1]:(db.profile.weightKg||0);
+  const _hd=lastDays(14); const _stepsArr=_hd.map(d=>(db.steps&&db.steps[d])||0); const _waterArr=_hd.map(d=>Math.round(dayWater(d)*10)/10); const _stepsLog=_stepsArr.filter(x=>x>0), _waterLog=_waterArr.filter(x=>x>0);
   let out=statusBar(false)+`<hr class="rule"/><div class="section"><div class="h"><span class="s">//</span>PROGRESS</div><div class="meta">${totalSessions} sesiones</div></div>`;
-  if(!totalSessions && !bwVals.length){
+  if(!totalSessions && !bwVals.length && !_stepsLog.length && !_waterLog.length){
     return out+`<div class="empty">aún no hay datos<br/>entrena o registra tu peso para ver progreso</div>`
       +`<button class="start" data-act="logweight" style="margin-top:14px">+ registrar peso corporal</button>`;
   }
@@ -945,8 +983,17 @@ function renderProgress(){
   if(bwVals.length>=2){ const ch=Math.round((bwVals[bwVals.length-1]-bwVals[0])*10)/10;
     out+=lineChart(bwVals.slice(-12))
       +`<div class="line"><span class="k">actual</span><span class="dots"></span><span class="v">${curBw} kg</span></div>`
-      +`<div class="submeta">${ch>=0?'+':''}${ch} kg desde el 1er registro · ${bwVals.length} registros</div>`;
+      +`<div class="submeta">${ch>=0?'+':''}${ch} kg desde el 1er registro · ${bwVals.length} registros · <a data-act="shareweight" style="color:var(--o60);text-decoration:underline;cursor:pointer">compartir</a></div>`;
   } else { out+=`<div class="line"><span class="k">actual</span><span class="dots"></span><span class="v">${curBw?curBw+' kg':'—'}</span></div><div class="submeta">registra tu peso varios días para ver la tendencia</div>`; }
+  // habits — pasos + agua (junto al peso; sueño viene en su propio paso)
+  if(_stepsLog.length){ const _t=_stepsArr[_stepsArr.length-1], _a=Math.round(avgPos(_stepsArr));
+    out+=`<hr class="rule"/><div class="grp-label">PASOS · 14 días</div>`+lineChart(_stepsArr,{zero:true})
+      +`<div class="line"><span class="k">hoy</span><span class="dots"></span><span class="v">${_t?_t.toLocaleString():'—'}</span></div>`
+      +`<div class="submeta">promedio ${_a.toLocaleString()}/día · ${_stepsLog.length} días con registro</div>`; }
+  if(_waterLog.length){ const _g=db.settings.goals.water||0, _a=Math.round(avgPos(_waterArr)*10)/10;
+    out+=`<hr class="rule"/><div class="grp-label">AGUA · 14 días</div>`+lineChart(_waterArr,{zero:true})
+      +`<div class="line"><span class="k">promedio</span><span class="dots"></span><span class="v">${_a} L${_g?` <span style="color:var(--o40);font-size:9px">/ ${_g}</span>`:''}</span></div>`
+      +`<div class="submeta">${_waterLog.length} días con registro</div>`; }
   // nutrition
   out+=`<hr class="rule"/><div class="grp-label">NUTRICIÓN · promedio 7 días</div>`
     +`<div class="line"><span class="k">kcal / día</span><span class="dots"></span><span class="v">${avgKcal7()||'—'} <span style="color:var(--o40);font-size:9px">/ ${db.settings.goals.kcal}</span></span></div>`;
@@ -988,7 +1035,7 @@ function openSessionEdit(id){
    <div class="field"><label>FECHA</label><input id="ss_date" type="date" value="${s.date||''}"/></div>
    <div class="submeta" style="margin:2px 0 10px">${(s.exercises||[]).length} ejercicios · edita sets directo</div>
    ${exHtml||'<div class="submeta">sin ejercicios</div>'}
-   <div class="sheetbtns" style="margin-top:12px"><button class="ok" data-act="ss_save">guardar</button><button class="cancel" data-act="ss_del">borrar</button><button class="cancel" data-act="closemodal">close</button></div>`);
+   <div class="sheetbtns" style="margin-top:12px"><button class="ok" data-act="ss_save">guardar</button><button class="cancel" data-act="sharesession" data-id="${s.id}">compartir</button><button class="cancel" data-act="ss_del">borrar</button><button class="cancel" data-act="closemodal">close</button></div>`);
 }
 
 // ---------- render: settings ----------
@@ -1103,7 +1150,9 @@ document.getElementById('app').addEventListener('click',e=>{
   else if(a==='vfixkcal'){ const P=parseFloat(val('v_protein'))||0,C=parseFloat(val('v_carbs'))||0,F=parseFloat(val('v_fat'))||0; const e=document.getElementById('v_kcal'); if(e){ e.value=Math.round(P*4+C*4+F*9); e.dispatchEvent(new Event('input',{bubbles:true})); } }
   else if(a==='addmeal'||a==='foodadd'){ openFoodAdd(); }
   else if(a==='addmenu'){ openAddMenu(); }
-  else if(a==='share'){ go('share'); }
+  else if(a==='share'){ state.shareType='food'; go('share'); }
+  else if(a==='sharesession'){ state.shareType='session'; state.shareId=el.dataset.id; closeModal(); go('share'); }
+  else if(a==='shareweight'){ state.shareType='weight'; go('share'); }
   else if(a==='mealsummary'){ openMealSummary(el.dataset.tag); }
   else if(a==='dayprev'){ state.macroDate=shiftDate(curDate(),-1); render(); }
   else if(a==='daynext'){ state.macroDate=shiftDate(curDate(),1); render(); }
