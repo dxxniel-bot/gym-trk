@@ -303,6 +303,7 @@
   @keyframes spin{to{transform:rotate(360deg)}}
   /* day navigator (macros) */
   .dnavh{display:flex; align-items:center; gap:2px;}
+  .dnlbl-wrap{position:relative; display:inline-flex;} .dnlbl-wrap .dcal{position:absolute; inset:0; width:100%; height:100%; opacity:0; border:0; padding:0; margin:0; background:none; color:transparent; cursor:pointer; -webkit-appearance:none; appearance:none;}
   .dnav{font-size:22px; color:var(--o50); cursor:pointer; padding:6px 10px; line-height:1; user-select:none; display:inline-flex; align-items:center; min-height:40px;} .dnav:active{color:var(--fg);}
   .dnlbl{font-size:14px; font-weight:800; letter-spacing:.5px; cursor:pointer; min-width:96px; text-align:center;}
   /* ── design mode: live spacing editor (?design=1) ── */
@@ -336,6 +337,7 @@ const LS_KEY='gymtrk_db_v1';
 const AI_PROXY_URL='';
 const pad=n=>String(n).padStart(2,'0');
 const MON=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+const MONFULL=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
 function todayISO(d){d=d||new Date();return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());}
 function fmtDate(iso){const[y,m,dd]=iso.split('-');return dd+' '+MON[(+m)-1]+' '+y;}
 function fmtShort(iso){const[y,m,dd]=iso.split('-');return dd+' '+MON[(+m)-1];}
@@ -624,6 +626,7 @@ function volumeSection(){
 function repsOpts(sel){ let o='<option value="">—</option>'; for(let i=1;i<=25;i++)o+=`<option ${sel==String(i)?'selected':''}>${i}</option>`; return o; }
 function rirOpts(sel,allowF){ let o='<option value="">—</option>'; if(allowF)o+=`<option ${sel==='F'?'selected':''}>F</option>`; for(let i=0;i<=5;i++)o+=`<option ${sel==String(i)?'selected':''}>${i}</option>`; return o; }
 function unitOpts(sel){ return ['kg','lbs','pla'].map(u=>`<option ${sel===u?'selected':''}>${u}</option>`).join(''); }
+function rirOpts(sel){ sel=(sel==null?'':String(sel)); const base=['F','0','1','2','3','4','5']; if(sel&&base.indexOf(sel)<0)base.unshift(sel); return '<option value="">—</option>'+base.map(o=>`<option value="${o}"${o===sel?' selected':''}>${o}</option>`).join(''); }
 
 function renderSetRow(exi,si,set,ex,allowF){
   const w=`<input class="inp weight" data-act="setf" data-exi="${exi}" data-si="${si}" data-f="w" value="${set.w}" placeholder="—" inputmode="decimal"/>`;
@@ -701,7 +704,7 @@ function ringHTML(pct,center,size,inv){ pct=Math.max(0,Math.min(100,pct||0));
   return `<div class="ring ${size||'md'}${inv?' inv':''}"><svg viewBox="0 0 36 36"><circle class="ring-track" cx="18" cy="18" r="15.7"/><circle class="ring-fill" cx="18" cy="18" r="15.7" pathLength="100" transform="rotate(-90 18 18)" style="stroke-dasharray:${pct} 100;${off}"/></svg><div class="ring-center">${center}</div></div>`; }
 function curDate(){ return state.macroDate||todayISO(); }
 function shiftDate(iso,delta){ const d=new Date(iso+'T12:00:00'); d.setDate(d.getDate()+delta); return todayISO(d); }
-function dayLabel(iso){ if(iso===todayISO())return 'HOY'; const d=new Date(iso+'T12:00:00'); const wd=['dom','lun','mar','mié','jue','vie','sáb'][d.getDay()]; return wd+' '+fmtShort(iso); }
+function dayLabel(iso){ const t=todayISO(); if(iso===t)return 'HOY'; if(iso===shiftDate(t,-1))return 'AYER'; if(iso===shiftDate(t,1))return 'MAÑANA'; const p=iso.split('-'); const yr=(p[0]!==t.slice(0,4))?(" '"+p[0].slice(2)):''; return (+p[2])+' de '+MONFULL[(+p[1])-1]+yr; }
 function macroTotals(){
   const today=curDate(); const items=db.meals[today]||[]; const t={kcal:0,protein:0,carbs:0,fat:0,sodium:0,potassium:0,sugar:0,fiber:0,water:0,caffeine:0,alcohol:0};
   items.forEach(m=>{ for(const k in t){ t[k]+=parseFloat(m[k])||0; } }); return {items,t};
@@ -782,7 +785,7 @@ function renderMacros(){
 
   return statusBar(false)
     +`<hr class="rule"/>`
-    +`<div class="section"><div class="h dnavh"><a data-act="dayprev" class="dnav">‹</a><span data-act="daytoday" class="dnlbl">${dayLabel(curDate())}</span><a data-act="daynext" class="dnav">›</a></div><div class="meta"><a data-act="share" style="cursor:pointer">[share]</a> <a data-act="editgoals" style="cursor:pointer;margin-left:8px">[goals]</a></div></div>`
+    +`<div class="section"><div class="h dnavh"><a data-act="dayprev" class="dnav">‹</a><span class="dnlbl-wrap"><span class="dnlbl">${dayLabel(curDate())}</span><input type="date" class="dcal" data-act="daycal" value="${curDate()}"/></span><a data-act="daynext" class="dnav">›</a></div><div class="meta"><a data-act="share" style="cursor:pointer">[share]</a> <a data-act="editgoals" style="cursor:pointer;margin-left:8px">[goals]</a></div></div>`
     +`<div class="card" style="padding:18px 16px 16px"><button class="hero ${open?'open':''} ${kStat}" data-act="togglemacros">${ringHTML(pct,`<div class="num">${Math.round(t.kcal).toLocaleString()}</div><div class="of">/ ${g.kcal.toLocaleString()} kcal</div>`,'lg')}<div class="hero-meta"><span class="left ${left<0?'over':'under'}">${left>=0?left+' left':Math.abs(left)+' over'}</span> · ${Math.round(pct)}% <span class="chev">▾</span></div></button>${(function(){var b=balanceOf(g.kcal);return b?'<div class="hbal">'+(b.label==='mantenimiento'?'en mantenimiento':'<span style="color:'+b.col+';font-weight:700">'+b.label+'</span> '+Math.abs(b.delta)+' kcal')+' · mant. ≈ '+b.maint+'</div>':'';})()}${details}</div>`
     +`<div class="section" style="margin-bottom:10px"><div class="h"><span class="s">//</span>LOG&nbsp; today</div></div>`
     +log
@@ -1200,6 +1203,7 @@ document.getElementById('app').addEventListener('click',e=>{
 document.getElementById('app').addEventListener('change',e=>{
   const sd=e.target.closest('[data-act="setdate"]'); if(sd){ if(db.activeWork){db.activeWork.date=sd.value;save();} return; }
   const du=e.target.closest('[data-act="setdur"]'); if(du){ if(db.activeWork){db.activeWork.manualDur=du.value;save();} return; }
+  const dc=e.target.closest('[data-act="daycal"]'); if(dc){ if(dc.value){ state.macroDate=dc.value; render(); } return; }
   const el=e.target.closest('[data-act="setf"]'); if(!el)return;
   setField(+el.dataset.exi,+el.dataset.si,el.dataset.f,el.value);
 });
