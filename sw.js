@@ -1,4 +1,4 @@
-﻿const C = 'gymtrk-v62';
+﻿const C = 'gymtrk-v63';
 self.addEventListener('install', e => {
   e.waitUntil(
     caches.open(C).then(c => c.addAll(['./', './index.html', './manifest.json']))

@@ -186,6 +186,13 @@
   .field{margin-bottom:12px;} .field label{display:block; font-size:9.5px; color:var(--o40); letter-spacing:.5px; margin-bottom:5px;}
   .field input,.field select{width:100%; height:42px; border:.5px solid var(--o20); background:transparent; color:var(--fg); font-size:16px; padding:0 10px; appearance:none;}
   .field.row2{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
+  .field.row3{display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px;}
+  .gsl{margin-bottom:13px;} .gsl-h{display:flex; justify-content:space-between; align-items:baseline; font-size:11px; color:var(--o60); margin-bottom:6px;} .gsl-h b{color:var(--fg); font-weight:700;} .gsl-h .gg{color:var(--fg);}
+  input[type=range].gslider{width:100%; -webkit-appearance:none; appearance:none; height:4px; border-radius:2px; background:var(--track); outline:none; margin:6px 0;}
+  input[type=range].gslider::-webkit-slider-thumb{-webkit-appearance:none; appearance:none; width:18px; height:18px; border-radius:50%; background:var(--fg); cursor:pointer;}
+  input[type=range].gslider::-moz-range-thumb{width:18px; height:18px; border-radius:50%; background:var(--fg); border:none; cursor:pointer;}
+  .lkc{text-align:center; margin:10px 0 6px;} .lkc b{font-size:22px; font-weight:800; color:var(--fg);} .lkc .u{font-size:11px; color:var(--o50);}
+  .lnut{max-height:38vh; overflow-y:auto; -webkit-overflow-scrolling:touch; margin:2px 0 10px;} .lnut .line{padding:3px 0;}
   .toggles{display:flex; gap:8px;} .toggles button{flex:1; height:40px; border:.5px solid var(--o20); background:transparent; color:var(--o50); font-size:12px; cursor:pointer;} .toggles button.on{background:var(--fill); color:#000;}
   .toggles.wrap{flex-wrap:wrap;} .toggles.wrap button{flex:1 1 44%;}
   .chips{display:flex;flex-wrap:wrap;gap:7px;margin-top:8px;} .chip{font-size:11px;color:var(--o50);border:.5px solid var(--o20);padding:8px 11px;cursor:pointer;} .chip:active{background:var(--o12);}
@@ -738,7 +745,7 @@ function renderMacros(){
     const mt={kcal:0,protein:0,carbs:0,fat:0,caffeine:0,alcohol:0}; list.forEach(m=>{mt.kcal+=+m.kcal||0;mt.protein+=+m.protein||0;mt.carbs+=+m.carbs||0;mt.fat+=+m.fat||0;mt.caffeine+=+m.caffeine||0;mt.alcohol+=+m.alcohol||0;});
     const gcaf=(mt.caffeine>0?` · ${Math.round(mt.caffeine)}mg caf`:'')+(mt.alcohol>0?` · ${Math.round(mt.alcohol)}g alc`:'');
     log+=`<div class="grp"><div class="ghead" data-act="mealsummary" data-tag="${escTxt(tag)}" style="cursor:pointer"><span><span class="hash">#</span>${escTxt(tag)}</span><span class="gmac">${Math.round(mt.protein)}P ${Math.round(mt.carbs)}C ${Math.round(mt.fat)}F</span><span class="gkc">${Math.round(mt.kcal)}${gcaf}</span></div>`;
-    list.forEach(m=>{ const nm=(m.name||'').replace(/ ×[\d.]+$/,''); const br=(m._food&&m._food.brand)||''; const exp=state.expandedMeal===m.id; const mp=Math.round(m.protein)||0,mc=Math.round(m.carbs)||0,mf=Math.round(m.fat)||0; const mq=(mp+mc+mf)>0?`${mp}P ${mc}C ${mf}F`:'';
+    list.forEach(m=>{ const nm=(m.name||'').replace(/ ×[\d.]+$/,''); const br=(m._food&&m._food.brand)||''; const exp=state.expandedMeal===m.id; const mp=Math.round(m.protein)||0,mc=Math.round(m.carbs)||0,mf=Math.round(m.fat)||0; const _ep=mp*4,_ec=mc*4,_ef=mf*9; const _dom=(mp+mc+mf)>0?(_ef>=_ep&&_ef>=_ec?'f':(_ec>=_ep?'c':'p')):''; const _bq=(v,l,k)=>_dom===k?`<b style="color:var(--fg)">${v}${l}</b>`:`${v}${l}`; const mq=(mp+mc+mf)>0?`${_bq(mp,'P','p')} ${_bq(mc,'C','c')} ${_bq(mf,'F','f')}`:'';
       log+=`<div class="item${exp?' exp':''}" data-act="viewmeal" data-id="${m.id}"><span class="nm"><b class="q">${itemQtyLabel(m)}</b>${escTxt(nm)}${br?' <span class="br">'+escTxt(br)+'</span>':''}</span><span class="macq">${mq}</span><span class="kc">${Math.round(m.kcal)||0}</span></div>`;
       if(exp) log+=mealDetailInline(m);
     });
@@ -2054,14 +2061,15 @@ function openLog(food, opts){ opts=opts||{}; const fd=asCanonical(food);
   window._log={food:fd,tag:opts.tag||curTag(),fromId:opts.fromId||fd.id||null,editId:opts.editId||null,barcode:fd.barcode||'',isNew:!!opts.isNew};
   const units=foodUnits(fd); const defUnit=opts.unit||(fd.sizes.serving?'serving':units[0].key);
   const editing=!!opts.editId; const primary=editing?'guardar cambios':(window._log.isNew?'guardar + loguear':'loguear');
-  openModal(`<h3>${editing?'editar registro':'loguear'} · ${(fd.name||'alimento').replace(/[<&]/g,c=>c==='<'?'&lt;':'&amp;')}</h3>
+  openModal(`<h3>${editing?'editar registro':'loguear'} · ${escTxt(fd.name||'alimento')}</h3>
    <div class="field row2"><div><label>UNIDAD</label><select id="l_unit" class="pick">${units.map(u=>`<option value="${u.key}"${u.key===defUnit?' selected':''}>${u.label}</option>`).join('')}</select></div><div><label>CANTIDAD</label><input id="l_qty" type="number" inputmode="decimal" step="0.25" value="${opts.qty||1}"/></div></div>
-   <div id="l_sum" class="submeta" style="margin:4px 0 2px"></div>
-   <div id="l_liquid" class="submeta" style="margin:0 0 8px;color:var(--o50)"></div>
+   <div class="lkc" id="l_kcal"></div>
+   <div class="lnut" id="l_full"></div>
    <div class="sheetbtns"><button class="ok" data-act="logsave">${primary}</button>${editing?'<button class="cancel" data-act="closemodal">cancel</button>':('<button class="cancel" data-act="logonly">'+(window._log.isNew?'loguear sin guardar':'cancel')+'</button>')}</div>`);
+  const nutRow=(lbl,v,u,b)=>`<div class="line"><span class="k"${b?' style="color:var(--fg)"':''}>${lbl}</span><span class="dots"></span><span class="v"${b?' style="color:var(--fg)"':''}>${u==='L'?(+v||0).toFixed(2):Math.round(+v||0)}${u?' '+u:''}</span></div>`;
   const lrecalc=()=>{ const u=(document.getElementById('l_unit')||{}).value; const q=parseFloat(val('l_qty'))||1; const nut=computeNutrients(fd,u,q);
-    const s=document.getElementById('l_sum'); if(s)s.innerHTML='→ <b style="color:var(--fg)">'+Math.round(nut.kcal)+'</b> kcal · '+Math.round(nut.protein)+'P '+Math.round(nut.carbs)+'C '+Math.round(nut.fat)+'F'+(nut.caffeine?(' · '+Math.round(nut.caffeine)+'mg caf'):'')+' · '+numTxt(nut._grams)+' '+fd.base;
-    const lh=document.getElementById('l_liquid'); if(lh)lh.textContent=(fd.base==='ml'&&nut.water>0)?(' '+numTxt(nut.water)+' L a líquidos'):''; };
+    const k=document.getElementById('l_kcal'); if(k)k.innerHTML='<b>'+Math.round(nut.kcal)+'</b> <span class="u">kcal · '+numTxt(nut._grams)+' '+fd.base+'</span>';
+    const ff=document.getElementById('l_full'); if(ff)ff.innerHTML=nutRow('proteína',nut.protein,'g',1)+nutRow('carbohidratos',nut.carbs,'g',1)+nutRow('grasa',nut.fat,'g',1)+nutRow('azúcar',nut.sugar,'g')+nutRow('fibra',nut.fiber,'g')+nutRow('sodio',nut.sodium,'mg')+nutRow('potasio',nut.potassium,'mg')+nutRow('cafeína',nut.caffeine,'mg')+(nut.alcohol?nutRow('alcohol',nut.alcohol,'g'):'')+(fd.base==='ml'?nutRow('líquidos',nut.water,'L'):''); };
   const us=document.getElementById('l_unit'); if(us)us.addEventListener('change',lrecalc);
   const lq=document.getElementById('l_qty'); if(lq)lq.addEventListener('input',lrecalc);
   lrecalc();
@@ -2119,27 +2127,48 @@ function commitLog(saveToDb){
 }
 function openGoals(){
   const g=db.settings.goals;
-  const f=(id,lbl,v)=>`<div><label>${lbl}</label><input id="${id}" type="number" value="${v}"/></div>`;
+  if(window._goalMode!=='grams')window._goalMode='pct';
+  const pk0=(g.protein||0)*4, fk0=(g.fat||0)*9, ck0=(g.carbs||0)*4, tk=pk0+fk0+ck0||1;
+  let pP=Math.round(pk0/tk*100), pF=Math.round(fk0/tk*100), pC=Math.max(0,100-pP-pF);
+  const micro=(id,lbl,v)=>`<div><label>${lbl}</label><input id="${id}" type="number" inputmode="decimal" value="${v}"/></div>`;
+  const sl=(k,lbl,pct)=>`<div class="gsl"><div class="gsl-h"><span>${lbl}</span><span><b id="sp_${k}">${pct}</b>% · <span class="gg" id="sg_${k}">0</span> g</span></div><input type="range" id="sl_${k}" min="0" max="100" value="${pct}" class="gslider"/></div>`;
   openModal(`<h3>edit goals</h3>
-   <div class="field row2">${f('g_kcal','KCAL',g.kcal)}${f('g_protein','PROTEIN g',g.protein)}</div>
-   <div class="field row2">${f('g_carbs','CARBS g',g.carbs)}${f('g_fat','FAT g',g.fat)}</div>
-   <div id="g_sum" class="submeta" style="margin:2px 0 8px"></div>
-   <div class="field row2">${f('g_sodium','SODIUM mg',g.sodium)}${f('g_potassium','POTASSIUM mg',g.potassium)}</div>
-   <div class="field row2">${f('g_sugar','SUGAR g',g.sugar)}${f('g_fiber','FIBER g',g.fiber)}</div>
-   <div class="field row2">${f('g_water','WATER L',g.water)}${f('g_caffeine','CAFFEINE mg',g.caffeine)}</div>
-   <div class="field row2">${f('g_alcohol','ALCOHOL g · límite',g.alcohol||0)}<div></div></div>
+   <div class="toggles" id="gm_tog" style="margin-bottom:14px"><button class="t ${window._goalMode==='pct'?'on':''}" data-gm="pct">% de kcal</button><button class="t ${window._goalMode==='grams'?'on':''}" data-gm="grams">gramos</button></div>
+   <div id="gm_pct" style="display:${window._goalMode==='pct'?'block':'none'}">
+     <div class="field"><label>KCAL · total fijo</label><input id="gp_kcal" type="number" inputmode="numeric" value="${Math.round(g.kcal||0)}"/></div>
+     ${sl('protein','proteína',pP)}${sl('carbs','carbohidratos',pC)}${sl('fat','grasa',pF)}
+     <div id="gp_sum" class="submeta" style="margin:2px 0 10px"></div>
+   </div>
+   <div id="gm_grams" style="display:${window._goalMode==='grams'?'block':'none'}">
+     <div class="field row3"><div><label>PROT g</label><input id="gg_protein" type="number" inputmode="numeric" value="${Math.round(g.protein||0)}"/></div><div><label>CARB g</label><input id="gg_carbs" type="number" inputmode="numeric" value="${Math.round(g.carbs||0)}"/></div><div><label>GRASA g</label><input id="gg_fat" type="number" inputmode="numeric" value="${Math.round(g.fat||0)}"/></div></div>
+     <div id="gg_kcal" class="submeta" style="margin:2px 0 10px;font-size:13px"></div>
+   </div>
+   <hr class="rule" style="margin:4px 0 14px"/>
+   <div class="field row2">${micro('g_sodium','SODIO mg',g.sodium)}${micro('g_potassium','POTASIO mg',g.potassium)}</div>
+   <div class="field row2">${micro('g_sugar','AZÚCAR g',g.sugar)}${micro('g_fiber','FIBRA g',g.fiber)}</div>
+   <div class="field row2">${micro('g_water','AGUA L',g.water)}${micro('g_caffeine','CAFEÍNA mg',g.caffeine)}</div>
+   <div class="field row2">${micro('g_alcohol','ALCOHOL g · límite',g.alcohol||0)}<div></div></div>
    <div class="sheetbtns"><button class="ok" data-act="okgoals">save</button><button class="cancel" data-act="closemodal">cancel</button></div>`);
-  const gn=id=>parseFloat(val(id))||0;
-  const setv=(id,v)=>{ const e=document.getElementById(id); if(e)e.value=Math.round(v); };
-  const gsum=()=>{ const P=gn('g_protein'),C=gn('g_carbs'),F=gn('g_fat'),K=gn('g_kcal'); const mk=P*4+C*4+F*9; const s=document.getElementById('g_sum'); if(!s)return; const ok=!K||Math.abs(mk-K)/Math.max(mk,K)<=0.05; s.innerHTML='macros = <b style="color:var(--fg)">'+Math.round(mk)+'</b> kcal · meta '+Math.round(K)+(ok?' ✓':' <span style="color:var(--warn)">⚠</span>')+' · '+(K?Math.round(P*4/K*100):0)+'/'+(K?Math.round(C*4/K*100):0)+'/'+(K?Math.round(F*9/K*100):0)+'% P/C/F'; };
-  let gbusy=false;
-  const kc=document.getElementById('g_kcal'); if(kc)kc.addEventListener('input',()=>{ if(gbusy)return; gbusy=true; const K=gn('g_kcal'); let P=gn('g_protein'),C=gn('g_carbs'),F=gn('g_fat'); let mk=P*4+C*4+F*9; if(mk<=0){P=K*0.3/4;C=K*0.4/4;F=K*0.3/9;mk=P*4+C*4+F*9;} const sc=mk?K/mk:0; setv('g_protein',P*sc); setv('g_carbs',C*sc); setv('g_fat',F*sc); gbusy=false; gsum(); });
-  ['g_protein','g_carbs','g_fat'].forEach(id=>{ const e=document.getElementById(id); if(e)e.addEventListener('input',()=>{ if(gbusy)return; gbusy=true; setv('g_kcal',gn('g_protein')*4+gn('g_carbs')*4+gn('g_fat')*9); gbusy=false; gsum(); }); });
-  gsum();
-  document.querySelector('[data-act="okgoals"]').onclick=()=>{
-    ['kcal','protein','carbs','fat','sodium','potassium','sugar','fiber','water','caffeine','alcohol'].forEach(k=>{const v=parseFloat(val('g_'+k)); if(!isNaN(v))g[k]=v;});
-    save(); closeModal(); render();
-  };
+  const keys=['protein','carbs','fat'], DIV={protein:4,carbs:4,fat:9};
+  const setVal=(id,v)=>{ const e=document.getElementById(id); if(e)e.value=v; };
+  const setSl=(k,v)=>{ setVal('sl_'+k,v); const p=document.getElementById('sp_'+k); if(p)p.textContent=v; };
+  const updateG=()=>{ const K=parseFloat(val('gp_kcal'))||0; keys.forEach(k=>{ const pct=parseFloat(val('sl_'+k))||0; const e=document.getElementById('sg_'+k); if(e)e.textContent=Math.round(K*pct/100/DIV[k]); }); const sum=keys.reduce((s,k)=>s+(parseFloat(val('sl_'+k))||0),0); const ps=document.getElementById('gp_sum'); if(ps)ps.innerHTML='total <b style="color:var(--fg)">'+Math.round(sum)+'</b>% · '+Math.round(K)+' kcal'; };
+  const norm=changed=>{ const cur=Math.round(parseFloat(val('sl_'+changed))||0); const others=keys.filter(k=>k!==changed); const o1=parseFloat(val('sl_'+others[0]))||0,o2=parseFloat(val('sl_'+others[1]))||0; const osum=o1+o2,remain=Math.max(0,100-cur); let n1=osum>0?Math.round(remain*o1/osum):Math.round(remain/2),n2=remain-n1; setSl(changed,cur); setSl(others[0],n1); setSl(others[1],n2); updateG(); };
+  keys.forEach(k=>{ const e=document.getElementById('sl_'+k); if(e)e.addEventListener('input',()=>norm(k)); });
+  const gpk=document.getElementById('gp_kcal'); if(gpk)gpk.addEventListener('input',updateG);
+  const gkc=()=>{ const P=parseFloat(val('gg_protein'))||0,C=parseFloat(val('gg_carbs'))||0,F=parseFloat(val('gg_fat'))||0; const e=document.getElementById('gg_kcal'); if(e)e.innerHTML='= <b style="color:var(--fg)">'+Math.round(P*4+C*4+F*9)+'</b> kcal'; };
+  ['gg_protein','gg_carbs','gg_fat'].forEach(id=>{ const e=document.getElementById(id); if(e)e.addEventListener('input',gkc); });
+  updateG(); gkc();
+  document.querySelectorAll('#gm_tog [data-gm]').forEach(b=>b.onclick=()=>{ const mode=b.dataset.gm; if(mode===window._goalMode)return;
+    if(mode==='grams'){ const K=parseFloat(val('gp_kcal'))||0; setVal('gg_protein',Math.round(K*(parseFloat(val('sl_protein'))||0)/100/4)); setVal('gg_carbs',Math.round(K*(parseFloat(val('sl_carbs'))||0)/100/4)); setVal('gg_fat',Math.round(K*(parseFloat(val('sl_fat'))||0)/100/9)); gkc(); }
+    else { const P=parseFloat(val('gg_protein'))||0,C=parseFloat(val('gg_carbs'))||0,F=parseFloat(val('gg_fat'))||0; const pp=P*4,cc=C*4,ff=F*9,tt=pp+cc+ff||1; setVal('gp_kcal',Math.round(pp+cc+ff)); const np=Math.round(pp/tt*100),nf=Math.round(ff/tt*100); setSl('protein',np); setSl('fat',nf); setSl('carbs',Math.max(0,100-np-nf)); updateG(); }
+    window._goalMode=mode; document.querySelectorAll('#gm_tog [data-gm]').forEach(x=>x.classList.toggle('on',x.dataset.gm===mode)); document.getElementById('gm_pct').style.display=mode==='pct'?'block':'none'; document.getElementById('gm_grams').style.display=mode==='grams'?'block':'none'; });
+  document.querySelector('[data-act="okgoals"]').onclick=()=>{ let kcal,P,C,F;
+    if(window._goalMode==='pct'){ kcal=parseFloat(val('gp_kcal'))||0; P=kcal*(parseFloat(val('sl_protein'))||0)/100/4; C=kcal*(parseFloat(val('sl_carbs'))||0)/100/4; F=kcal*(parseFloat(val('sl_fat'))||0)/100/9; }
+    else { P=parseFloat(val('gg_protein'))||0; C=parseFloat(val('gg_carbs'))||0; F=parseFloat(val('gg_fat'))||0; kcal=P*4+C*4+F*9; }
+    g.kcal=Math.round(kcal); g.protein=Math.round(P); g.carbs=Math.round(C); g.fat=Math.round(F);
+    ['sodium','potassium','sugar','fiber','water','caffeine','alcohol'].forEach(k=>{ const v=parseFloat(val('g_'+k)); if(!isNaN(v))g[k]=v; });
+    save(); closeModal(); render(); };
 }
 function openSync(){
   openModal(`<h3>sync data</h3>
