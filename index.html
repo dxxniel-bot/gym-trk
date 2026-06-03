@@ -133,7 +133,6 @@
   .mdk{color:var(--o50);} .mdv{color:var(--fg);}
   .mdacts{display:flex; gap:16px; margin-top:9px;} .mdacts a{font-size:10px; color:var(--o50); cursor:pointer; text-decoration:underline;}
   .mgd{margin-bottom:6px; padding-top:2px;} .ghead.exp .gkc{color:var(--fg);}
-  .ghead .addplus{display:inline-block; color:var(--o40); font-size:12px; margin-left:2px;} .ghead span[data-act="addtomeal"]:active .addplus{color:var(--fg);}
   .fab{position:fixed; right:18px; bottom:calc(76px + env(safe-area-inset-bottom)); width:56px; height:56px; border-radius:50%; background:var(--fg); color:#0c0c0c; border:none; font-size:30px; font-weight:300; line-height:0; display:flex; align-items:center; justify-content:center; box-shadow:0 3px 16px rgba(0,0,0,.55); z-index:4; cursor:pointer;}
   .fab:active{transform:scale(.93);}
   /* add menu popover — emerges from FAB (bottom-right), stacks up */
@@ -2152,7 +2151,30 @@ async function aiPhoto(file,barcode){ if(!file)return; window._faTag=window._faT
 // Pick AI when the proxy is configured, else on-device OCR.
 function labelPhoto(file,barcode){ if(AI_PROXY_URL) return aiPhoto(file,barcode); return ocrPhoto(file,barcode); }
 db=load(); try{ const _sp=new URLSearchParams(location.search); if(_sp.has('steps')){ const _n=parseInt(_sp.get('steps'),10); if(!isNaN(_n)){ db.steps=db.steps||{}; db.steps[todayISO()]=_n; } if(history.replaceState)history.replaceState(null,'',location.pathname); } }catch(_){} save(); render();
-if('serviceWorker' in navigator){ window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{})); }
+// Service worker with AUTO-UPDATE: when a new version is found, activate it and reload once.
+// Fixes iOS PWA serving stale cached builds from the home-screen icon.
+if('serviceWorker' in navigator){
+  window.addEventListener('load',()=>{
+    navigator.serviceWorker.register('sw.js').then(reg=>{
+      // check for updates on load and whenever the app regains focus
+      reg.update().catch(()=>{});
+      document.addEventListener('visibilitychange',()=>{ if(!document.hidden) reg.update().catch(()=>{}); });
+      reg.addEventListener('updatefound',()=>{
+        const nw=reg.installing; if(!nw)return;
+        nw.addEventListener('statechange',()=>{
+          if(nw.state==='installed' && navigator.serviceWorker.controller){
+            // a newer build is ready → take over and reload once
+            nw.postMessage&&nw.postMessage('skipWaiting');
+          }
+        });
+      });
+    }).catch(()=>{});
+    let reloaded=false;
+    navigator.serviceWorker.addEventListener('controllerchange',()=>{
+      if(reloaded)return; reloaded=true; location.reload();
+    });
+  });
+}
 </script>
 </body>
 </html>

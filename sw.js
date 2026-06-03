@@ -1,4 +1,4 @@
-﻿const C = 'gymtrk-v56';
+﻿const C = 'gymtrk-v57';
 self.addEventListener('install', e => {
   e.waitUntil(
     caches.open(C).then(c => c.addAll(['./', './index.html', './manifest.json']))
@@ -11,6 +11,8 @@ self.addEventListener('activate', e => {
       .then(() => self.clients.claim())
   );
 });
+// allow the page to tell a waiting worker to activate immediately
+self.addEventListener('message', e => { if (e.data === 'skipWaiting') self.skipWaiting(); });
 // network-first for same-origin (always fresh when online; cache fallback offline)
 self.addEventListener('fetch', e => {
   const u = new URL(e.request.url);
