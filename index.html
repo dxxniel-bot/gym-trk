@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://*.openfoodfacts.org https://cdn.jsdelivr.net https://tessdata.projectnaptha.com; worker-src 'self' blob:; object-src 'none'; base-uri 'self'" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
 <title>gym//TRK</title>
 <link rel="manifest" href="manifest.json"/>
@@ -20,8 +21,8 @@
     --o12:rgba(243,243,244,.1); --o10:rgba(243,243,244,.06);
     --faint:#3a3a3e; --line:rgba(243,243,244,.08); --track:#191920; --fill:#f3f3f4; --abort:rgba(190,110,110,.55);
     --card:#0d0d10; --card2:#16161c; --border:rgba(243,243,244,.09); --radius:16px;
-    --good:#00e676; --bad:#ff3b30; --warn:#ffb300; --info:#2f9bff;
-    --good-glow:rgba(0,230,118,.55); --bad-glow:rgba(255,59,48,.55); --warn-glow:rgba(255,179,0,.5);
+    --good:#46c98b; --bad:#e5675c; --warn:#e3b34f; --info:#6aa6ff;
+    --good-glow:rgba(70,201,139,.5); --bad-glow:rgba(229,103,92,.5); --warn-glow:rgba(227,179,79,.45);
   }
   *{margin:0;padding:0;box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
   :focus{outline:none;}
@@ -85,7 +86,7 @@
   .line .k{color:var(--o60);} .line .dots{flex:1; border-bottom:1px dotted var(--line); transform:translateY(-3px);} .line .v{color:var(--fg);}
   .line.stat .k{color:var(--o50);} .line.stat .v{font-weight:700;}
   .vrow{margin-bottom:11px;} .vtop{display:flex;justify-content:space-between;align-items:baseline;font-size:11px;margin-bottom:5px;} .vm{color:var(--fg);} .vn{color:var(--o50);font-size:9px;} .vd{color:var(--o40);}
-  .vst{font-size:8px;padding:0 4px;border:.5px solid var(--o20);margin-left:2px;} .vst.under{color:var(--o40);} .vst.optimal{color:var(--fill);border-color:var(--o40);} .vst.high{color:#c8a24d;border-color:#c8a24d;} .vst.over{color:#c8553d;border-color:#c8553d;}
+  .vst{font-size:8px;padding:0 4px;border:.5px solid var(--o20);margin-left:2px;} .vst.under{color:var(--o40);} .vst.optimal{color:var(--fill);border-color:var(--o40);} .vst.high{color:var(--warn);border-color:var(--warn);} .vst.over{color:var(--bad);border-color:var(--bad);}
   .vbar{position:relative;height:3px;background:var(--track);} .vbar>i{display:block;height:100%;background:var(--fill);} .vbar .mev,.vbar .mav{position:absolute;top:-1px;width:1px;height:5px;background:var(--o40);}
   .submeta{font-size:10px; color:var(--o40); padding-top:4px;}
   .rowend{display:flex; justify-content:space-between; align-items:baseline; margin-top:12px; font-size:10px; color:var(--o50);} .rowend .view{color:var(--o60); cursor:pointer;}
@@ -109,6 +110,7 @@
   .mrow:first-of-type{margin-top:0;} .mrow .ml{color:var(--o50);} .mrow .mv{color:var(--o60); font-size:10px; white-space:nowrap;} .mrow .mv .g{color:var(--o40);}
   .bar{height:3px; background:var(--track);} .bar>i{display:block; height:100%; background:var(--fill);}
   .pill{font-size:9px; color:var(--o50); border:1px solid var(--faint); padding:1px 5px; margin-left:6px;}
+  .pill.good{color:var(--good); border-color:var(--good);} .pill.over{color:var(--bad); border-color:var(--bad);}
 
   /* food log — grid 3-col: name | macros(76px) | kcal(40px) */
   .grp{margin-bottom:14px;}
@@ -261,8 +263,7 @@
   .fa-top{flex:0 0 auto;}
   #fa_q{width:100%; height:44px; border:1px solid var(--border); border-radius:12px; background:var(--card); color:var(--fg); font-size:16px; padding:0 14px; margin-bottom:10px;}
   .fa-btns{display:flex; gap:8px;}
-  .fa-btns .b{flex:1 1 0; display:flex; flex-direction:column; align-items:center; gap:4px; font-family:inherit; font-size:11px; font-weight:600; letter-spacing:.4px; color:var(--fg); border:1px solid var(--border); border-radius:12px; padding:10px 0 9px; background:var(--card); cursor:pointer;}
-  .fa-btns .b .ic{font-size:17px; line-height:1; font-weight:400;}
+  .fa-btns .b{flex:1 1 0; text-align:center; font-family:inherit; font-size:12px; font-weight:600; letter-spacing:.4px; color:var(--fg); border:1px solid var(--border); border-radius:12px; padding:13px 0; background:var(--card); cursor:pointer;}
   .fa-btns .b:active{background:var(--card2);}
   .fa-listwrap{flex:1; overflow-y:auto; min-height:0; -webkit-overflow-scrolling:touch; margin-top:14px;}
   /* scanner reticle overlay */
@@ -284,7 +285,7 @@
   @keyframes spin{to{transform:rotate(360deg)}}
   /* day navigator (macros) */
   .dnavh{display:flex; align-items:center; gap:2px;}
-  .dnav{font-size:22px; color:var(--o50); cursor:pointer; padding:0 9px; line-height:1; user-select:none;} .dnav:active{color:var(--fg);}
+  .dnav{font-size:22px; color:var(--o50); cursor:pointer; padding:6px 10px; line-height:1; user-select:none; display:inline-flex; align-items:center; min-height:40px;} .dnav:active{color:var(--fg);}
   .dnlbl{font-size:14px; font-weight:800; letter-spacing:.5px; cursor:pointer; min-width:96px; text-align:center;}
 </style>
 </head>
@@ -421,7 +422,7 @@ function load(){
   try{ const r=localStorage.getItem(LS_BACKUP); if(r)bak=JSON.parse(r); }catch(e){}
   let d=null;
   if(main&&main.profile)d=main;
-  else if(bak&&bak.profile){ d=bak; console.warn('recovered from backup'); }
+  else if(bak&&bak.profile){ d=bak; window._recoveredFromBackup=true; console.warn('recovered from backup'); }
   else d=main||bak;
   if(!d)return seed();
   return migrate(d);
@@ -435,6 +436,9 @@ function save(){ try{ const s=JSON.stringify(db); localStorage.setItem(LS_KEY,s)
   // redundant backup, throttled to once every ~4s (cheap safety net if primary key gets corrupted)
   const now=performance.now(); if(now-_saveBakT>4000){ _saveBakT=now; try{localStorage.setItem(LS_BACKUP,s);}catch(e){} }
   }catch(e){console.warn('save failed',e);} }
+// data-safety: count meals+sessions so a restore can warn before shrinking your data
+function dbMass(o){ try{ const m=Object.values((o&&o.meals)||{}).reduce((n,a)=>n+(a?a.length:0),0); return m+(((o&&o.sessions)||[]).length); }catch(_){ return 0; } }
+function confirmReplace(incoming){ const cur=dbMass(db), inc=dbMass(incoming); if(cur>0 && inc<cur) return confirm('El respaldo a cargar tiene MENOS datos ('+inc+') que los actuales ('+cur+' comidas+sesiones). Reemplazará todo y no se puede deshacer. ¿Continuar?'); return true; }
 
 // ---------- helpers ----------
 const dayCount=()=>db.split.days.length;
@@ -733,9 +737,9 @@ function renderMacros(){
   tags.forEach(tag=>{ const list=byTag[tag];
     const mt={kcal:0,protein:0,carbs:0,fat:0,caffeine:0,alcohol:0}; list.forEach(m=>{mt.kcal+=+m.kcal||0;mt.protein+=+m.protein||0;mt.carbs+=+m.carbs||0;mt.fat+=+m.fat||0;mt.caffeine+=+m.caffeine||0;mt.alcohol+=+m.alcohol||0;});
     const gcaf=(mt.caffeine>0?` · ${Math.round(mt.caffeine)}mg caf`:'')+(mt.alcohol>0?` · ${Math.round(mt.alcohol)}g alc`:'');
-    log+=`<div class="grp"><div class="ghead" data-act="mealsummary" data-tag="${tag}" style="cursor:pointer"><span><span class="hash">#</span>${tag}</span><span class="gmac">${Math.round(mt.protein)}P ${Math.round(mt.carbs)}C ${Math.round(mt.fat)}F</span><span class="gkc">${Math.round(mt.kcal)}${gcaf}</span></div>`;
-    list.forEach(m=>{ const nm=(m.name||'').replace(/ ×[\d.]+$/,''); const br=(m._food&&m._food.brand)||''; const exp=state.expandedMeal===m.id;
-      log+=`<div class="item${exp?' exp':''}" data-act="viewmeal" data-id="${m.id}"><span class="nm"><b class="q">${itemQtyLabel(m)}</b>${nm}${br?' <span class="br">'+br+'</span>':''}</span><span class="macq">${Math.round(m.protein)||0}P ${Math.round(m.carbs)||0}C ${Math.round(m.fat)||0}F</span><span class="kc">${Math.round(m.kcal)||0}</span></div>`;
+    log+=`<div class="grp"><div class="ghead" data-act="mealsummary" data-tag="${escTxt(tag)}" style="cursor:pointer"><span><span class="hash">#</span>${escTxt(tag)}</span><span class="gmac">${Math.round(mt.protein)}P ${Math.round(mt.carbs)}C ${Math.round(mt.fat)}F</span><span class="gkc">${Math.round(mt.kcal)}${gcaf}</span></div>`;
+    list.forEach(m=>{ const nm=(m.name||'').replace(/ ×[\d.]+$/,''); const br=(m._food&&m._food.brand)||''; const exp=state.expandedMeal===m.id; const mp=Math.round(m.protein)||0,mc=Math.round(m.carbs)||0,mf=Math.round(m.fat)||0; const mq=(mp+mc+mf)>0?`${mp}P ${mc}C ${mf}F`:'';
+      log+=`<div class="item${exp?' exp':''}" data-act="viewmeal" data-id="${m.id}"><span class="nm"><b class="q">${itemQtyLabel(m)}</b>${escTxt(nm)}${br?' <span class="br">'+escTxt(br)+'</span>':''}</span><span class="macq">${mq}</span><span class="kc">${Math.round(m.kcal)||0}</span></div>`;
       if(exp) log+=mealDetailInline(m);
     });
     log+=`</div>`;
@@ -810,11 +814,11 @@ function openMealSummary(tag){
   items.forEach(m=>{ for(const k in t) t[k]+=+m[k]||0; });
   const ck=t.carbs*4,fk=t.fat*9,pk=t.protein*4,tot=ck+fk+pk||1; const pc=k=>Math.round(k/tot*100);
   const col=(v,l,p)=>`<div class="mbc"><div class="v">${Math.round(v)}<span style="font-size:9px;color:var(--o40)">g</span></div><div class="l">${l}</div><div class="p">${p}%</div></div>`;
-  const ringC=`<div class="num">${Math.round(t.kcal)}</div><div class="of">kcal</div>`;
+  const ringC=`<div class="num">${Math.round(t.kcal)}</div><div class="of">kcal</div>`; const _mg=db.settings.goals; const ringPct=_mg.kcal?Math.min(100,Math.round(t.kcal/_mg.kcal*100)):0;
   const mr=(lbl,v,u)=>(+v!==0)?`<span class="mdr"><span class="mdk">${lbl}</span><span class="mdv">${u==='L'?(+v).toFixed(2):Math.round(v)} ${u}</span></span>`:'';
   const micros=mr('azúcar',t.sugar,'g')+mr('fibra',t.fiber,'g')+mr('sodio',t.sodium,'mg')+mr('potasio',t.potassium,'mg')+mr('cafeína',t.caffeine,'mg')+mr('alcohol',t.alcohol,'g')+mr('líquidos',t.water,'L');
-  openModal(`<h3>${escTxt(tag)}</h3>
-   <div class="mbanner"><div class="mb-ring">${ringHTML(100,ringC,'lg')}</div><div class="mb-cols">${col(t.protein,'prot',pc(pk))}${col(t.carbs,'carbs',pc(ck))}${col(t.fat,'fat',pc(fk))}</div></div>
+  openModal(`<h3>#${escTxt(tag)}</h3>
+   <div class="mbanner"><div class="mb-ring">${ringHTML(ringPct,ringC,'lg')}</div><div class="mb-cols">${col(t.protein,'protein',pc(pk))}${col(t.carbs,'carbs',pc(ck))}${col(t.fat,'fat',pc(fk))}</div></div>
    ${micros?`<div class="mdgrid" style="margin-top:12px">${micros}</div>`:''}
    <div class="shlog" style="margin-top:14px">${mealFoodRows(items)}</div>
    <div class="sheetbtns" style="margin-top:14px"><button class="ok" data-act="addtomeal" data-tag="${escTxt(tag)}">+ add food</button></div>`);
@@ -910,7 +914,7 @@ function renderProgress(){
     +`<div class="submeta">esta semana: ${Math.round(w.vols[w.vols.length-1]).toLocaleString()}</div>`;
   // strength e1RM
   if(e1.length){ out+=`<hr class="rule"/><div class="grp-label">FUERZA · e1RM Epley (vs semana previa)</div>`;
-    e1.forEach(x=>{ const d=x.prev!=null?Math.round(x.cur-x.prev):null; const arr=d==null?'·':(d>0?'▲':d<0?'▼':'='); const col=d>0?'var(--fill)':d<0?'#c8553d':'var(--o40)';
+    e1.forEach(x=>{ const d=x.prev!=null?Math.round(x.cur-x.prev):null; const arr=d==null?'·':(d>0?'▲':d<0?'▼':'='); const col=d>0?'var(--good)':d<0?'var(--bad)':'var(--o40)';
       out+=`<div class="line"><span class="k">${escTxt(x.name)}</span><span class="dots"></span><span class="v">${Math.round(x.cur)} <span style="color:${col};font-size:9px">${arr}${d?Math.abs(d):''}</span></span></div>`; }); }
   // bodyweight
   out+=`<hr class="rule"/><div class="section" style="margin-bottom:6px"><div class="grp-label" style="margin-bottom:0">PESO CORPORAL</div><a class="meta" data-act="logweight">[+ log]</a></div>`;
@@ -1012,7 +1016,7 @@ document.getElementById('app').addEventListener('click',e=>{
   else if(a==='llogin'){ state.screen='login'; render(); }
   else if(a==='backlanding'){ state.screen='landing'; render(); }
   else if(a==='loginfile'){ doImport(); }
-  else if(a==='dologin'){ try{ const d=JSON.parse(val('li_txt')); if(!d.split||!d.profile||!d.profile.username) throw 0; db=migrate(d); save(); state.screen='home'; render(); }catch(e){ const m=document.getElementById('li_msg'); if(m)m.textContent='texto inválido · revisa que sea el backup completo'; } }
+  else if(a==='dologin'){ try{ const d=JSON.parse(val('li_txt')); if(!d.split||!d.profile||!d.profile.username) throw 0; if(!confirmReplace(d))return; db=migrate(d); save(); state.screen='home'; render(); }catch(e){ const m=document.getElementById('li_msg'); if(m)m.textContent='texto inválido · revisa que sea el backup completo'; } }
   else if(a==='optpick'){ el.parentElement.querySelectorAll('.t').forEach(x=>x.classList.remove('on')); el.classList.add('on'); }
   else if(a==='onboardgo'){
     const u=val('ob_user'); if(!u){ alert('Pon tu handle.'); return; }
@@ -1822,7 +1826,7 @@ function openRegisterMenu(barcode){
    <div class="secondary"><button class="b" data-act="ftext">pegar texto</button><button class="b" data-act="fmanual">manual</button></div>`);
 }
 async function decodeImgSrc(url){
-  try{ await loadScript('https://cdn.jsdelivr.net/npm/@ericblade/quagga2@1.8.4/dist/quagga.min.js'); }catch(_){ return null; }
+  try{ await loadScript('https://cdn.jsdelivr.net/npm/@ericblade/quagga2@1.8.4/dist/quagga.min.js','sha384-IkRTkdAeAAAqE2ct5zNAfMiX8+H35pGJp8j7+ZFwh7PKaJh5eunsOFAb9l6Z9R7r'); }catch(_){ return null; }
   const one=(patch,size)=> new Promise(res=>{ try{ Quagga.decodeSingle({ src:url, numOfWorkers:0, locate:true, inputStream:{ size:size }, locator:{ patchSize:patch, halfSample:false }, decoder:{ readers:['ean_reader','ean_8_reader','upc_reader','upc_e_reader','code_128_reader','code_39_reader'] } }, r=>res(r&&r.codeResult?r.codeResult.code:null)); }catch(_){ res(null); } });
   let code=null;
   for(const cb of [['medium',1600],['large',1600],['x-large',1920],['medium',1024],['large',800]]){ code=await one(cb[0],cb[1]); if(code)break; }
@@ -1832,7 +1836,7 @@ async function decodeBarcodeImage(file){ const url=URL.createObjectURL(file); co
 function openBarcode(){
   window._faTag=curTag();
   openModal(`<h3>escanear código</h3>
-   <div id="bc_cam" style="position:relative;width:100%;height:260px;overflow:hidden;border-radius:8px;background:#000;display:flex;align-items:center;justify-content:center"></div>
+   <div id="bc_cam" style="position:relative;width:100%;height:260px;overflow:hidden;border-radius:12px;background:#000;display:flex;align-items:center;justify-content:center"></div>
    <div id="bc_msg" class="submeta" style="margin:8px 0;min-height:16px">iniciando cámara…</div>
    <div class="field"><label>O ESCRIBE EL CÓDIGO</label><input id="bc_code" inputmode="numeric" placeholder="7501..." autocomplete="off"/></div>
    <div class="sheetbtns"><button class="ok" id="bc_go">look up</button><button class="cancel" id="bc_cap">capturar</button><button class="cancel" data-act="closemodal">cancel</button></div>`);
@@ -1865,7 +1869,7 @@ function openBarcode(){
     window._scanner={stream, video:v};
     try{ const tr=stream.getVideoTracks()[0]; const caps=tr.getCapabilities?tr.getCapabilities():{}; if(caps.focusMode&&[].concat(caps.focusMode).includes('continuous'))tr.applyConstraints({advanced:[{focusMode:'continuous'}]}).catch(()=>{}); }catch(_){}
     let det=null; try{ if('BarcodeDetector' in window){ const sup=await BarcodeDetector.getSupportedFormats(); const want=['ean_13','ean_8','upc_a','upc_e','code_128'].filter(f=>sup.includes(f)); if(want.length)det=new BarcodeDetector({formats:want}); } }catch(_){ det=null; }
-    if(!det){ try{ await loadScript('https://cdn.jsdelivr.net/npm/@ericblade/quagga2@1.8.4/dist/quagga.min.js'); }catch(_){} }
+    if(!det){ try{ await loadScript('https://cdn.jsdelivr.net/npm/@ericblade/quagga2@1.8.4/dist/quagga.min.js','sha384-IkRTkdAeAAAqE2ct5zNAfMiX8+H35pGJp8j7+ZFwh7PKaJh5eunsOFAb9l6Z9R7r'); }catch(_){} }
     if(!window._scanner||scanDone)return;
     m.innerHTML='centra el código en el recuadro · <b style="color:var(--fg)">se detecta solo</b>';
     const grab=()=>{ const vw=v.videoWidth, vh=v.videoHeight; if(!vw||!vh)return null; const ch=Math.round(vh*0.62), sy=Math.round((vh-ch)/2); const sc=Math.min(1, 1000/vw); const dw=Math.round(vw*sc), dh=Math.round(ch*sc); const cv=window._bcCv||(window._bcCv=document.createElement('canvas')); cv.width=dw; cv.height=dh; try{ cv.getContext('2d').drawImage(v,0,sy,vw,ch,0,0,dw,dh); }catch(_){ return null; } return cv; };
@@ -2127,7 +2131,7 @@ function openGoals(){
    <div class="sheetbtns"><button class="ok" data-act="okgoals">save</button><button class="cancel" data-act="closemodal">cancel</button></div>`);
   const gn=id=>parseFloat(val(id))||0;
   const setv=(id,v)=>{ const e=document.getElementById(id); if(e)e.value=Math.round(v); };
-  const gsum=()=>{ const P=gn('g_protein'),C=gn('g_carbs'),F=gn('g_fat'),K=gn('g_kcal'); const mk=P*4+C*4+F*9; const s=document.getElementById('g_sum'); if(!s)return; const ok=!K||Math.abs(mk-K)/Math.max(mk,K)<=0.05; s.innerHTML='macros = <b style="color:var(--fg)">'+Math.round(mk)+'</b> kcal · meta '+Math.round(K)+(ok?' ✓':' <span style="color:#c8a24d">⚠</span>')+' · '+(K?Math.round(P*4/K*100):0)+'/'+(K?Math.round(C*4/K*100):0)+'/'+(K?Math.round(F*9/K*100):0)+'% P/C/F'; };
+  const gsum=()=>{ const P=gn('g_protein'),C=gn('g_carbs'),F=gn('g_fat'),K=gn('g_kcal'); const mk=P*4+C*4+F*9; const s=document.getElementById('g_sum'); if(!s)return; const ok=!K||Math.abs(mk-K)/Math.max(mk,K)<=0.05; s.innerHTML='macros = <b style="color:var(--fg)">'+Math.round(mk)+'</b> kcal · meta '+Math.round(K)+(ok?' ✓':' <span style="color:var(--warn)">⚠</span>')+' · '+(K?Math.round(P*4/K*100):0)+'/'+(K?Math.round(C*4/K*100):0)+'/'+(K?Math.round(F*9/K*100):0)+'% P/C/F'; };
   let gbusy=false;
   const kc=document.getElementById('g_kcal'); if(kc)kc.addEventListener('input',()=>{ if(gbusy)return; gbusy=true; const K=gn('g_kcal'); let P=gn('g_protein'),C=gn('g_carbs'),F=gn('g_fat'); let mk=P*4+C*4+F*9; if(mk<=0){P=K*0.3/4;C=K*0.4/4;F=K*0.3/9;mk=P*4+C*4+F*9;} const sc=mk?K/mk:0; setv('g_protein',P*sc); setv('g_carbs',C*sc); setv('g_fat',F*sc); gbusy=false; gsum(); });
   ['g_protein','g_carbs','g_fat'].forEach(id=>{ const e=document.getElementById(id); if(e)e.addEventListener('input',()=>{ if(gbusy)return; gbusy=true; setv('g_kcal',gn('g_protein')*4+gn('g_carbs')*4+gn('g_fat')*9); gbusy=false; gsum(); }); });
@@ -2144,7 +2148,7 @@ function openSync(){
    <div class="sheetbtns"><button class="ok" data-act="sycopy">copy</button><button class="cancel" data-act="syimport">import from text</button><button class="cancel" data-act="closemodal">close</button></div>`);
   const ta=document.getElementById('sy_txt'); ta.value=JSON.stringify(db);
   document.querySelector('[data-act="sycopy"]').onclick=()=>{ ta.select(); ta.setSelectionRange(0,ta.value.length); let ok=false; try{ok=document.execCommand('copy');}catch(e){} if(navigator.clipboard){navigator.clipboard.writeText(ta.value).then(()=>{},()=>{});} alert('Copiado al portapapeles.'); };
-  document.querySelector('[data-act="syimport"]').onclick=()=>{ try{const d=JSON.parse(ta.value); if(!d.split)throw 0; db=migrate(d); save(); closeModal(); go('home'); alert('Datos importados.'); }catch(e){ alert('Texto inválido.'); } };
+  document.querySelector('[data-act="syimport"]').onclick=()=>{ try{const d=JSON.parse(ta.value); if(!d.split)throw 0; if(!confirmReplace(d))return; db=migrate(d); save(); closeModal(); go('home'); alert('Datos importados.'); }catch(e){ alert('Texto inválido.'); } };
 }
 function doExport(){
   const blob=new Blob([JSON.stringify(db,null,2)],{type:'application/json'});
@@ -2152,12 +2156,12 @@ function doExport(){
 }
 function doImport(){
   const inp=document.createElement('input'); inp.type='file'; inp.accept='.json,application/json';
-  inp.onchange=()=>{ const file=inp.files[0]; if(!file)return; const rd=new FileReader(); rd.onload=()=>{ try{ const d=JSON.parse(rd.result); if(!d.split)throw 0; db=migrate(d); save(); go('home'); alert('Backup importado.'); }catch(e){ alert('Archivo inválido.'); } }; rd.readAsText(file); };
+  inp.onchange=()=>{ const file=inp.files[0]; if(!file)return; const rd=new FileReader(); rd.onload=()=>{ try{ const d=JSON.parse(rd.result); if(!d.split)throw 0; if(!confirmReplace(d))return; db=migrate(d); save(); go('home'); alert('Backup importado.'); }catch(e){ alert('Archivo inválido.'); } }; rd.readAsText(file); };
   inp.click();
 }
 
 // ---------- init ----------
-function loadScript(src){ return new Promise((res,rej)=>{ const ex=document.querySelector('script[data-x="'+src+'"]'); if(ex&&ex.dataset.ok){res();return;} if(ex)ex.remove(); const s=document.createElement('script'); s.src=src; s.setAttribute('data-x',src); const to=setTimeout(()=>{ try{s.remove();}catch(_){} rej(new Error('timeout')); },15000); s.onload=()=>{ clearTimeout(to); s.dataset.ok='1'; res(); }; s.onerror=()=>{ clearTimeout(to); try{s.remove();}catch(_){} rej(new Error('load fail')); }; document.head.appendChild(s); }); }
+function loadScript(src,integrity){ return new Promise((res,rej)=>{ const ex=document.querySelector('script[data-x="'+src+'"]'); if(ex&&ex.dataset.ok){res();return;} if(ex)ex.remove(); const s=document.createElement('script'); s.src=src; if(integrity){ s.integrity=integrity; s.crossOrigin='anonymous'; } s.setAttribute('data-x',src); const to=setTimeout(()=>{ try{s.remove();}catch(_){} rej(new Error('timeout')); },15000); s.onload=()=>{ clearTimeout(to); s.dataset.ok='1'; res(); }; s.onerror=()=>{ clearTimeout(to); try{s.remove();}catch(_){} rej(new Error('load fail')); }; document.head.appendChild(s); }); }
 // downscale + grayscale + contrast → much better/faster OCR on phone photos
 function prepImage(file){ return new Promise(res=>{
   const img=new Image(); const url=URL.createObjectURL(file);
@@ -2169,7 +2173,7 @@ function prepImage(file){ return new Promise(res=>{
   img.src=url; }); }
 async function ocrPhoto(file,barcode){ if(!file)return; window._faTag=window._faTag||curTag();
   openModal('<h3>reading label…</h3><div id="ocr_msg" class="submeta">cargando OCR (unos segundos la 1ª vez)…</div>');
-  try{ await loadScript('https://cdn.jsdelivr.net/npm/tesseract.js@5.0.4/dist/tesseract.min.js');
+  try{ await loadScript('https://cdn.jsdelivr.net/npm/tesseract.js@5.0.4/dist/tesseract.min.js','sha384-Ptw8HCYAWF6vIop6WuGxfSCiDCIzUWqjrHYfx8Vd0S4CMBaicAdBh2y+Ufle664A');
     const mm=document.getElementById('ocr_msg');
     const src=await prepImage(file);
     const {data}=await Tesseract.recognize(src,'eng+spa',{logger:p=>{ if(mm&&p.status==='recognizing text') mm.textContent='leyendo… '+Math.round(p.progress*100)+'%'; }});
@@ -2215,7 +2219,7 @@ async function aiPhoto(file,barcode){ if(!file)return; window._faTag=window._faT
 // Pick AI when the proxy is configured, else on-device OCR.
 function labelPhoto(file,barcode){ if(AI_PROXY_URL) return aiPhoto(file,barcode); return ocrPhoto(file,barcode); }
 requestPersist();
-db=load(); try{ const _sp=new URLSearchParams(location.search); if(_sp.has('steps')){ const _n=parseInt(_sp.get('steps'),10); if(!isNaN(_n)&&_n>=0&&_n<100000){ db.steps=db.steps||{}; db.steps[todayISO()]=_n; } if(history.replaceState)history.replaceState(null,'',location.pathname); } }catch(_){} save(); render();
+db=load(); try{ const _sp=new URLSearchParams(location.search); if(_sp.has('steps')){ const _n=parseInt(_sp.get('steps'),10); if(!isNaN(_n)&&_n>=0&&_n<100000){ db.steps=db.steps||{}; db.steps[todayISO()]=_n; } if(history.replaceState)history.replaceState(null,'',location.pathname); } }catch(_){} save(); render(); if(window._recoveredFromBackup)setTimeout(()=>{try{alert('Se recuperó un respaldo local: revisa tus datos, podrían faltar cambios muy recientes.');}catch(_){}},600);
 // Service worker with AUTO-UPDATE: when a new version is found, activate it and reload once.
 // Fixes iOS PWA serving stale cached builds from the home-screen icon.
 if('serviceWorker' in navigator){
