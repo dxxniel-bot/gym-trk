@@ -411,12 +411,30 @@ function seedPrev(){
 
 // ---------- persistence ----------
 let db;
-function load(){ try{const r=localStorage.getItem(LS_KEY); if(!r)return seed(); const d=JSON.parse(r); return migrate(d);}catch(e){console.warn('load failed',e);return seed();} }
+const LS_BACKUP='gymtrk_db_v1_bak';
+// Ask the browser to NOT evict our data on inactivity (key for iOS Safari).
+function requestPersist(){ try{ if(navigator.storage&&navigator.storage.persist){ navigator.storage.persisted().then(p=>{ if(!p)navigator.storage.persist().catch(()=>{}); }).catch(()=>{}); } }catch(e){} }
+function load(){
+  // try primary, then redundant backup — recover the larger/valid one
+  let main=null, bak=null;
+  try{ const r=localStorage.getItem(LS_KEY); if(r)main=JSON.parse(r); }catch(e){}
+  try{ const r=localStorage.getItem(LS_BACKUP); if(r)bak=JSON.parse(r); }catch(e){}
+  let d=null;
+  if(main&&main.profile)d=main;
+  else if(bak&&bak.profile){ d=bak; console.warn('recovered from backup'); }
+  else d=main||bak;
+  if(!d)return seed();
+  return migrate(d);
+}
 function migrate(d){ if(!d.version){d.version=1;} if(!d.meals)d.meals={}; if(!d.foods)d.foods=[]; d.foods=d.foods.map(f=>(f&&f.per100)?f:asCanonical(f)); if(!d.steps)d.steps={}; if(!d.machines)d.machines={}; if(!d.bodyweight)d.bodyweight={}; if(!d.mealTags)d.mealTags=['breakfast','lunch','snack','dinner']; if(!d.settings)d.settings={goals:seed().settings.goals}; if(d.settings&&d.settings.goals&&d.settings.goals.alcohol==null)d.settings.goals.alcohol=(d.profile&&d.profile.sex==='F')?14:28;
   // recompute alcohol for old meal items logged before alcohol was in MACROKEYS
   try{ Object.values(d.meals||{}).forEach(arr=>arr.forEach(m=>{ if(m.alcohol==null){ if(m._food&&m._food.per100&&m._food.per100.alcohol&&m._unit){ m.alcohol=computeNutrients(m._food,m._unit,m.qty||1).alcohol; } else m.alcohol=0; } })); }catch(e){}
   return d; }
-function save(){ try{localStorage.setItem(LS_KEY,JSON.stringify(db));}catch(e){console.warn('save failed',e);} }
+let _saveBakT=0;
+function save(){ try{ const s=JSON.stringify(db); localStorage.setItem(LS_KEY,s);
+  // redundant backup, throttled to once every ~4s (cheap safety net if primary key gets corrupted)
+  const now=performance.now(); if(now-_saveBakT>4000){ _saveBakT=now; try{localStorage.setItem(LS_BACKUP,s);}catch(e){} }
+  }catch(e){console.warn('save failed',e);} }
 
 // ---------- helpers ----------
 const dayCount=()=>db.split.days.length;
@@ -954,7 +972,7 @@ function renderSettings(){
     +`<div class="cta"><button class="start" data-act="sync">sync data (copy / paste)</button>`
     +`<div class="secondary"><button class="b" data-act="export">export file</button><button class="b" data-act="import">import file</button></div>`
     +`<div class="secondary" style="margin-top:10px"><button class="b" data-act="reset">reset data</button></div></div>`
-    +`<div class="submeta" style="margin-top:14px">tus datos viven en este navegador (localStorage). exporta de vez en cuando para respaldar. al editar el diseño no se borran.</div>`;
+    +`<div class="submeta" style="margin-top:14px">tus datos se guardan solos en este dispositivo (con respaldo automático). para no perderlos: <b style="color:var(--o60)">agrega la app a inicio</b> y ábrela seguido. si vas a cambiar de teléfono, usa export.</div>`;
 }
 
 // ---------- main render ----------
@@ -2196,6 +2214,7 @@ async function aiPhoto(file,barcode){ if(!file)return; window._faTag=window._faT
 }
 // Pick AI when the proxy is configured, else on-device OCR.
 function labelPhoto(file,barcode){ if(AI_PROXY_URL) return aiPhoto(file,barcode); return ocrPhoto(file,barcode); }
+requestPersist();
 db=load(); try{ const _sp=new URLSearchParams(location.search); if(_sp.has('steps')){ const _n=parseInt(_sp.get('steps'),10); if(!isNaN(_n)){ db.steps=db.steps||{}; db.steps[todayISO()]=_n; } if(history.replaceState)history.replaceState(null,'',location.pathname); } }catch(_){} save(); render();
 // Service worker with AUTO-UPDATE: when a new version is found, activate it and reload once.
 // Fixes iOS PWA serving stale cached builds from the home-screen icon.
