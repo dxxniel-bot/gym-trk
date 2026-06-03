@@ -674,9 +674,7 @@ function renderMacros(){
   tags.forEach(tag=>{ const list=byTag[tag];
     const mt={kcal:0,protein:0,carbs:0,fat:0,caffeine:0,alcohol:0}; list.forEach(m=>{mt.kcal+=+m.kcal||0;mt.protein+=+m.protein||0;mt.carbs+=+m.carbs||0;mt.fat+=+m.fat||0;mt.caffeine+=+m.caffeine||0;mt.alcohol+=+m.alcohol||0;});
     const gcaf=(mt.caffeine>0?` · ${Math.round(mt.caffeine)}mg caf`:'')+(mt.alcohol>0?` · ${Math.round(mt.alcohol)}g alc`:'');
-    const tagExp=state.expandedTag===tag;
-    log+=`<div class="grp"><div class="ghead${tagExp?' exp':''}"><span data-act="addtomeal" data-tag="${tag}" style="cursor:pointer"><span class="hash">#</span>${tag} <span class="addplus">+</span></span><span class="gmac" data-act="viewtag" data-tag="${tag}" style="cursor:pointer">${Math.round(mt.protein)}P ${Math.round(mt.carbs)}C ${Math.round(mt.fat)}F</span><span class="gkc" data-act="viewtag" data-tag="${tag}" style="cursor:pointer">${Math.round(mt.kcal)}${gcaf}</span></div>`;
-    if(tagExp) log+=mealGroupDetail(list);
+    log+=`<div class="grp"><div class="ghead" data-act="mealsummary" data-tag="${tag}" style="cursor:pointer"><span><span class="hash">#</span>${tag}</span><span class="gmac">${Math.round(mt.protein)}P ${Math.round(mt.carbs)}C ${Math.round(mt.fat)}F</span><span class="gkc">${Math.round(mt.kcal)}${gcaf}</span></div>`;
     list.forEach(m=>{ const nm=(m.name||'').replace(/ ×[\d.]+$/,''); const br=(m._food&&m._food.brand)||''; const exp=state.expandedMeal===m.id;
       log+=`<div class="item${exp?' exp':''}" data-act="viewmeal" data-id="${m.id}"><span class="nm"><b class="q">${itemQtyLabel(m)}</b>${nm}${br?' <span class="br">'+br+'</span>':''}</span><span class="macq">${Math.round(m.protein)||0}P ${Math.round(m.carbs)||0}C ${Math.round(m.fat)||0}F</span><span class="kc">${Math.round(m.kcal)||0}</span></div>`;
       if(exp) log+=mealDetailInline(m);
@@ -749,12 +747,16 @@ function renderShare(){
 }
 function openMealSummary(tag){
   const items=(db.meals[curDate()]||[]).filter(m=>m.tag===tag); if(!items.length)return;
-  const t={kcal:0,protein:0,carbs:0,fat:0}; items.forEach(m=>{t.kcal+=+m.kcal||0;t.protein+=+m.protein||0;t.carbs+=+m.carbs||0;t.fat+=+m.fat||0;});
+  const t={kcal:0,protein:0,carbs:0,fat:0,sugar:0,fiber:0,sodium:0,potassium:0,caffeine:0,alcohol:0,water:0};
+  items.forEach(m=>{ for(const k in t) t[k]+=+m[k]||0; });
   const ck=t.carbs*4,fk=t.fat*9,pk=t.protein*4,tot=ck+fk+pk||1; const pc=k=>Math.round(k/tot*100);
   const col=(v,l,p)=>`<div class="mbc"><div class="v">${Math.round(v)}<span style="font-size:9px;color:var(--o40)">g</span></div><div class="l">${l}</div><div class="p">${p}%</div></div>`;
   const ringC=`<div class="num">${Math.round(t.kcal)}</div><div class="of">kcal</div>`;
+  const mr=(lbl,v,u)=>(+v!==0)?`<span class="mdr"><span class="mdk">${lbl}</span><span class="mdv">${u==='L'?(+v).toFixed(2):Math.round(v)} ${u}</span></span>`:'';
+  const micros=mr('azúcar',t.sugar,'g')+mr('fibra',t.fiber,'g')+mr('sodio',t.sodium,'mg')+mr('potasio',t.potassium,'mg')+mr('cafeína',t.caffeine,'mg')+mr('alcohol',t.alcohol,'g')+mr('líquidos',t.water,'L');
   openModal(`<h3>${escTxt(tag)}</h3>
    <div class="mbanner"><div class="mb-ring">${ringHTML(100,ringC,'lg')}</div><div class="mb-cols">${col(t.protein,'prot',pc(pk))}${col(t.carbs,'carbs',pc(ck))}${col(t.fat,'fat',pc(fk))}</div></div>
+   ${micros?`<div class="mdgrid" style="margin-top:12px">${micros}</div>`:''}
    <div class="shlog" style="margin-top:14px">${mealFoodRows(items)}</div>
    <div class="sheetbtns" style="margin-top:14px"><button class="ok" data-act="addtomeal" data-tag="${escTxt(tag)}">+ add food</button></div>`);
 }
