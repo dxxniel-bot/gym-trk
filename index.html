@@ -133,6 +133,7 @@
   .mdk{color:var(--o50);} .mdv{color:var(--fg);}
   .mdacts{display:flex; gap:16px; margin-top:9px;} .mdacts a{font-size:10px; color:var(--o50); cursor:pointer; text-decoration:underline;}
   .mgd{margin-bottom:6px; padding-top:2px;} .ghead.exp .gkc{color:var(--fg);}
+  .ghead .addplus{display:inline-block; color:var(--o40); font-size:12px; margin-left:2px;} .ghead span[data-act="addtomeal"]:active .addplus{color:var(--fg);}
   .fab{position:fixed; right:18px; bottom:calc(76px + env(safe-area-inset-bottom)); width:56px; height:56px; border-radius:50%; background:var(--fg); color:#0c0c0c; border:none; font-size:30px; font-weight:300; line-height:0; display:flex; align-items:center; justify-content:center; box-shadow:0 3px 16px rgba(0,0,0,.55); z-index:4; cursor:pointer;}
   .fab:active{transform:scale(.93);}
   /* add menu popover — emerges from FAB (bottom-right), stacks up */
@@ -370,7 +371,10 @@ function seedPrev(){
 // ---------- persistence ----------
 let db;
 function load(){ try{const r=localStorage.getItem(LS_KEY); if(!r)return seed(); const d=JSON.parse(r); return migrate(d);}catch(e){console.warn('load failed',e);return seed();} }
-function migrate(d){ if(!d.version){d.version=1;} if(!d.meals)d.meals={}; if(!d.foods)d.foods=[]; d.foods=d.foods.map(f=>(f&&f.per100)?f:asCanonical(f)); if(!d.steps)d.steps={}; if(!d.machines)d.machines={}; if(!d.bodyweight)d.bodyweight={}; if(!d.mealTags)d.mealTags=['breakfast','lunch','snack','dinner']; if(!d.settings)d.settings={goals:seed().settings.goals}; if(d.settings&&d.settings.goals&&d.settings.goals.alcohol==null)d.settings.goals.alcohol=(d.profile&&d.profile.sex==='F')?14:28; return d; }
+function migrate(d){ if(!d.version){d.version=1;} if(!d.meals)d.meals={}; if(!d.foods)d.foods=[]; d.foods=d.foods.map(f=>(f&&f.per100)?f:asCanonical(f)); if(!d.steps)d.steps={}; if(!d.machines)d.machines={}; if(!d.bodyweight)d.bodyweight={}; if(!d.mealTags)d.mealTags=['breakfast','lunch','snack','dinner']; if(!d.settings)d.settings={goals:seed().settings.goals}; if(d.settings&&d.settings.goals&&d.settings.goals.alcohol==null)d.settings.goals.alcohol=(d.profile&&d.profile.sex==='F')?14:28;
+  // recompute alcohol for old meal items logged before alcohol was in MACROKEYS
+  try{ Object.values(d.meals||{}).forEach(arr=>arr.forEach(m=>{ if(m.alcohol==null){ if(m._food&&m._food.per100&&m._food.per100.alcohol&&m._unit){ m.alcohol=computeNutrients(m._food,m._unit,m.qty||1).alcohol; } else m.alcohol=0; } })); }catch(e){}
+  return d; }
 function save(){ try{localStorage.setItem(LS_KEY,JSON.stringify(db));}catch(e){console.warn('save failed',e);} }
 
 // ---------- helpers ----------
@@ -671,7 +675,7 @@ function renderMacros(){
     const mt={kcal:0,protein:0,carbs:0,fat:0,caffeine:0,alcohol:0}; list.forEach(m=>{mt.kcal+=+m.kcal||0;mt.protein+=+m.protein||0;mt.carbs+=+m.carbs||0;mt.fat+=+m.fat||0;mt.caffeine+=+m.caffeine||0;mt.alcohol+=+m.alcohol||0;});
     const gcaf=(mt.caffeine>0?` · ${Math.round(mt.caffeine)}mg caf`:'')+(mt.alcohol>0?` · ${Math.round(mt.alcohol)}g alc`:'');
     const tagExp=state.expandedTag===tag;
-    log+=`<div class="grp"><div class="ghead${tagExp?' exp':''}" data-act="viewtag" data-tag="${tag}" style="cursor:pointer"><span><span class="hash">#</span>${tag}</span><span class="gmac">${Math.round(mt.protein)}P ${Math.round(mt.carbs)}C ${Math.round(mt.fat)}F</span><span class="gkc">${Math.round(mt.kcal)}${gcaf}</span></div>`;
+    log+=`<div class="grp"><div class="ghead${tagExp?' exp':''}"><span data-act="addtomeal" data-tag="${tag}" style="cursor:pointer"><span class="hash">#</span>${tag} <span class="addplus">+</span></span><span class="gmac" data-act="viewtag" data-tag="${tag}" style="cursor:pointer">${Math.round(mt.protein)}P ${Math.round(mt.carbs)}C ${Math.round(mt.fat)}F</span><span class="gkc" data-act="viewtag" data-tag="${tag}" style="cursor:pointer">${Math.round(mt.kcal)}${gcaf}</span></div>`;
     if(tagExp) log+=mealGroupDetail(list);
     list.forEach(m=>{ const nm=(m.name||'').replace(/ ×[\d.]+$/,''); const br=(m._food&&m._food.brand)||''; const exp=state.expandedMeal===m.id;
       log+=`<div class="item${exp?' exp':''}" data-act="viewmeal" data-id="${m.id}"><span class="nm"><b class="q">${itemQtyLabel(m)}</b>${nm}${br?' <span class="br">'+br+'</span>':''}</span><span class="macq">${Math.round(m.protein)||0}P ${Math.round(m.carbs)||0}C ${Math.round(m.fat)||0}F</span><span class="kc">${Math.round(m.kcal)||0}</span></div>`;
@@ -996,8 +1000,8 @@ document.getElementById('app').addEventListener('click',e=>{
   else if(a==='togglemacros'){ state.macroOpen=!state.macroOpen; render(); }
   else if(a==='toggleMacroUnit'){ state.macroPct=!state.macroPct; render(); }
   else if(a==='ringtog'){ const k=el.dataset.k; state.ringRem=state.ringRem||{}; state.ringRem[k]=!state.ringRem[k]; render(); }
-  else if(a==='viewmeal'){ state.expandedMeal = state.expandedMeal===el.dataset.id ? null : el.dataset.id; render(); }
-  else if(a==='viewtag'){ state.expandedTag = state.expandedTag===el.dataset.tag ? null : el.dataset.tag; render(); }
+  else if(a==='viewmeal'){ state._scroll=document.getElementById('view').scrollTop; state.expandedMeal = state.expandedMeal===el.dataset.id ? null : el.dataset.id; render(); }
+  else if(a==='viewtag'){ state._scroll=document.getElementById('view').scrollTop; state.expandedTag = state.expandedTag===el.dataset.tag ? null : el.dataset.tag; render(); }
   else if(a==='pickmealtag'){ const e=document.getElementById('fa_tagtxt'); if(e)e.value=el.dataset.v; }
   else if(a==='editmeal'){ const t=curDate(); const m=(db.meals[t]||[]).find(x=>x.id===window._mealId); if(m){ closeModal();
       if(m._food){ openLog(m._food,{editId:m.id,qty:m.qty||1,unit:m._unit,tag:m.tag}); }
