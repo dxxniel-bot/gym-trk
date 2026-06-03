@@ -132,6 +132,7 @@
   .mdr{display:flex; justify-content:space-between; font-size:10px;}
   .mdk{color:var(--o50);} .mdv{color:var(--fg);}
   .mdacts{display:flex; gap:16px; margin-top:9px;} .mdacts a{font-size:10px; color:var(--o50); cursor:pointer; text-decoration:underline;}
+  .mgd{margin-bottom:6px; padding-top:2px;} .ghead.exp .gkc{color:var(--fg);}
   .fab{position:fixed; right:18px; bottom:calc(76px + env(safe-area-inset-bottom)); width:56px; height:56px; border-radius:50%; background:var(--fg); color:#0c0c0c; border:none; font-size:30px; font-weight:300; line-height:0; display:flex; align-items:center; justify-content:center; box-shadow:0 3px 16px rgba(0,0,0,.55); z-index:4; cursor:pointer;}
   .fab:active{transform:scale(.93);}
   /* add menu popover — emerges from FAB (bottom-right), stacks up */
@@ -669,7 +670,9 @@ function renderMacros(){
   tags.forEach(tag=>{ const list=byTag[tag];
     const mt={kcal:0,protein:0,carbs:0,fat:0,caffeine:0,alcohol:0}; list.forEach(m=>{mt.kcal+=+m.kcal||0;mt.protein+=+m.protein||0;mt.carbs+=+m.carbs||0;mt.fat+=+m.fat||0;mt.caffeine+=+m.caffeine||0;mt.alcohol+=+m.alcohol||0;});
     const gcaf=(mt.caffeine>0?` · ${Math.round(mt.caffeine)}mg caf`:'')+(mt.alcohol>0?` · ${Math.round(mt.alcohol)}g alc`:'');
-    log+=`<div class="grp"><div class="ghead" data-act="mealsummary" data-tag="${tag}" style="cursor:pointer"><span><span class="hash">#</span>${tag}</span><span class="gmac">${Math.round(mt.protein)}P ${Math.round(mt.carbs)}C ${Math.round(mt.fat)}F</span><span class="gkc">${Math.round(mt.kcal)}${gcaf}</span></div>`;
+    const tagExp=state.expandedTag===tag;
+    log+=`<div class="grp"><div class="ghead${tagExp?' exp':''}" data-act="viewtag" data-tag="${tag}" style="cursor:pointer"><span><span class="hash">#</span>${tag}</span><span class="gmac">${Math.round(mt.protein)}P ${Math.round(mt.carbs)}C ${Math.round(mt.fat)}F</span><span class="gkc">${Math.round(mt.kcal)}${gcaf}</span></div>`;
+    if(tagExp) log+=mealGroupDetail(list);
     list.forEach(m=>{ const nm=(m.name||'').replace(/ ×[\d.]+$/,''); const br=(m._food&&m._food.brand)||''; const exp=state.expandedMeal===m.id;
       log+=`<div class="item${exp?' exp':''}" data-act="viewmeal" data-id="${m.id}"><span class="nm"><b class="q">${itemQtyLabel(m)}</b>${nm}${br?' <span class="br">'+br+'</span>':''}</span><span class="macq">${Math.round(m.protein)||0}P ${Math.round(m.carbs)||0}C ${Math.round(m.fat)||0}F</span><span class="kc">${Math.round(m.kcal)||0}</span></div>`;
       if(exp) log+=mealDetailInline(m);
@@ -701,15 +704,17 @@ function itemQtyLabel(m){ const f=m._food, u=m._unit, q=m.qty||1; const base=(f&
   if(u==='100') return numTxt(q*100)+' '+base;
   if(u==='piece') return numTxt(q)+' pza'+(grams?` (${grams} ${base})`:'');
   return grams ? numTxt(q)+' ('+grams+' '+base+')' : numTxt(q)+'×'; }
-// inline nutrition detail shown under a tapped log item
+// tap a food item -> just edit / delete (no per-item nutrition; that's at meal level)
 function mealDetailInline(m){
-  const r=(lbl,v,u)=>(v!=null&&v!==''&&+v!==0)?`<span class="mdr"><span class="mdk">${lbl}</span><span class="mdv">${u==='L'?(+v).toFixed(2):Math.round(v)} ${u}</span></span>`:'';
-  const rows=r('protein',m.protein,'g')+r('carbs',m.carbs,'g')+r('fat',m.fat,'g')+r('sugar',m.sugar,'g')+r('fiber',m.fiber,'g')+r('sodium',m.sodium,'mg')+r('potassium',m.potassium,'mg')+r('caffeine',m.caffeine,'mg')+r('alcohol',m.alcohol,'g')+r('liquid',m.water,'L');
-  return `<div class="mdetail">`
-    +`<div class="mdtop">${Math.round(m.kcal)||0} kcal${m.serving?' · '+escTxt(m.serving):''}${(m._food&&m._food.brand)?' · '+escTxt(m._food.brand):''}</div>`
-    +`<div class="mdgrid">${rows||'<span class="submeta">sin macros</span>'}</div>`
-    +`<div class="mdacts"><a data-act="editmealx" data-id="${m.id}">editar</a><a data-act="delmealx" data-id="${m.id}">borrar</a></div>`
-    +`</div>`;
+  return `<div class="mdetail"><div class="mdacts"><a data-act="editmealx" data-id="${m.id}">editar</a><a data-act="delmealx" data-id="${m.id}">borrar</a></div></div>`;
+}
+// tap a meal header -> full nutrition breakdown of the whole meal (the set)
+function mealGroupDetail(list){
+  const t={kcal:0,protein:0,carbs:0,fat:0,sugar:0,fiber:0,sodium:0,potassium:0,caffeine:0,alcohol:0,water:0};
+  list.forEach(m=>{ for(const k in t) t[k]+=+m[k]||0; });
+  const r=(lbl,v,u)=>(v!=null&&+v!==0)?`<span class="mdr"><span class="mdk">${lbl}</span><span class="mdv">${u==='L'?(+v).toFixed(2):Math.round(v)} ${u}</span></span>`:'';
+  const rows=r('protein',t.protein,'g')+r('carbs',t.carbs,'g')+r('fat',t.fat,'g')+r('sugar',t.sugar,'g')+r('fiber',t.fiber,'g')+r('sodium',t.sodium,'mg')+r('potassium',t.potassium,'mg')+r('caffeine',t.caffeine,'mg')+r('alcohol',t.alcohol,'g')+r('liquid',t.water,'L');
+  return `<div class="mdetail mgd"><div class="mdtop">${Math.round(t.kcal)} kcal · ${list.length} alimento${list.length!==1?'s':''}</div><div class="mdgrid">${rows||'<span class="submeta">sin macros</span>'}</div></div>`;
 }
 function mealFoodRows(items){
   return items.map(m=>{ const nm=(m.name||'').replace(/ ×[\d.]+$/,''); const br=(m._food&&m._food.brand)||'';
@@ -992,6 +997,7 @@ document.getElementById('app').addEventListener('click',e=>{
   else if(a==='toggleMacroUnit'){ state.macroPct=!state.macroPct; render(); }
   else if(a==='ringtog'){ const k=el.dataset.k; state.ringRem=state.ringRem||{}; state.ringRem[k]=!state.ringRem[k]; render(); }
   else if(a==='viewmeal'){ state.expandedMeal = state.expandedMeal===el.dataset.id ? null : el.dataset.id; render(); }
+  else if(a==='viewtag'){ state.expandedTag = state.expandedTag===el.dataset.tag ? null : el.dataset.tag; render(); }
   else if(a==='pickmealtag'){ const e=document.getElementById('fa_tagtxt'); if(e)e.value=el.dataset.v; }
   else if(a==='editmeal'){ const t=curDate(); const m=(db.meals[t]||[]).find(x=>x.id===window._mealId); if(m){ closeModal();
       if(m._food){ openLog(m._food,{editId:m.id,qty:m.qty||1,unit:m._unit,tag:m.tag}); }
