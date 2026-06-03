@@ -771,7 +771,7 @@ function renderMacros(){
   if(!items.length){ log=`<div class="empty">aún no registras comida hoy<br/>toca ＋ abajo para agregar</div>`; }
   tags.forEach(tag=>{ const list=byTag[tag];
     const mt={kcal:0,protein:0,carbs:0,fat:0,caffeine:0,alcohol:0}; list.forEach(m=>{mt.kcal+=+m.kcal||0;mt.protein+=+m.protein||0;mt.carbs+=+m.carbs||0;mt.fat+=+m.fat||0;mt.caffeine+=+m.caffeine||0;mt.alcohol+=+m.alcohol||0;});
-    const gcaf=(mt.caffeine>0?` · ${Math.round(mt.caffeine)}mg caf`:'')+(mt.alcohol>0?` · ${Math.round(mt.alcohol)}g alc`:'');
+    const gcaf=(mt.alcohol>0?` · ${Math.round(mt.alcohol)}g alc`:'');
     log+=`<div class="grp"><div class="ghead" data-act="mealsummary" data-tag="${escTxt(tag)}" style="cursor:pointer"><span><span class="hash">#</span>${escTxt(tag)}</span><span class="gmac">${Math.round(mt.protein)}P ${Math.round(mt.carbs)}C ${Math.round(mt.fat)}F</span><span class="gkc">${Math.round(mt.kcal)}${gcaf}</span></div>`;
     list.forEach(m=>{ const nm=(m.name||'').replace(/ ×[\d.]+$/,''); const br=(m._food&&m._food.brand)||''; const exp=state.expandedMeal===m.id; const mp=Math.round(m.protein)||0,mc=Math.round(m.carbs)||0,mf=Math.round(m.fat)||0; const _ep=mp*4,_ec=mc*4,_ef=mf*9; const _dom=(mp+mc+mf)>0?(_ef>=_ep&&_ef>=_ec?'f':(_ec>=_ep?'c':'p')):''; const _bq=(v,l,k)=>_dom===k?`<b style="color:var(--fg)">${v}${l}</b>`:`${v}${l}`; const mq=(mp+mc+mf)>0?`${_bq(mp,'P','p')} ${_bq(mc,'C','c')} ${_bq(mf,'F','f')}`:'';
       log+=`<div class="item${exp?' exp':''}" data-act="viewmeal" data-id="${m.id}"><span class="nm"><b class="q">${itemQtyLabel(m)}</b>${escTxt(nm)}${br?' <span class="br">'+escTxt(br)+'</span>':''}</span><span class="macq">${mq}</span><span class="kc">${Math.round(m.kcal)||0}</span></div>`;
