@@ -632,7 +632,7 @@ function renderSetRow(exi,si,set,ex,allowF){
   const w=`<input class="inp weight" data-act="setf" data-exi="${exi}" data-si="${si}" data-f="w" value="${set.w}" placeholder="—" inputmode="decimal"/>`;
   const u=`<select class="pick" data-act="setf" data-exi="${exi}" data-si="${si}" data-f="unit">${unitOpts(set.unit)}</select>`;
   const r=`<input class="inp" data-act="setf" data-exi="${exi}" data-si="${si}" data-f="r" value="${set.r}" placeholder="—" inputmode="numeric"/>`;
-  const rr=`<input class="inp" data-act="setf" data-exi="${exi}" data-si="${si}" data-f="rir" value="${set.rir}" placeholder="—" inputmode="text" maxlength="2"/>`;
+  const rr=`<select class="pick" data-act="setf" data-exi="${exi}" data-si="${si}" data-f="rir">${rirOpts(set.rir)}</select>`;
   const del=`<button class="del" data-act="delset" data-exi="${exi}" data-si="${si}">×</button>`;
   return {w,u,r,rr,del};
 }
@@ -677,16 +677,17 @@ function renderExercise(exi,ex,allowF){
 }
 function renderWorkout(){
   const w=state.work; if(!w)return renderHome();
-  const groups=[]; const gmap={};
-  w.exercises.forEach((ex,exi)=>{ const m=ex.muscle||'other'; if(!gmap[m]){gmap[m]={muscle:m,items:[]};groups.push(gmap[m]);} gmap[m].items.push(exi); });
   const day=db.split.days.find(d=>d.id===w.dayId)||curDay();
   let total=0,done=0; w.exercises.forEach(e=>e.sets.forEach(s=>{total++; if(s.done)done++;}));
-  let body='';
-  groups.forEach(g=>{ let cnt=0; g.items.forEach(exi=>cnt+=w.exercises[exi].sets.length);
-    body+=`<div class="mgroup"><div class="mhead">${g.muscle} <span style="color:var(--o50)">|</span> ${cnt} sets</div><div class="mbody">`;
-    g.items.forEach(exi=>{ body+=renderExercise(exi,w.exercises[exi],day.allowFailure); });
-    body+=`</div></div>`;
+  // render in array order; a muscle header starts each contiguous run -> respects the order exercises were added/reordered
+  let body=''; let curM=null;
+  w.exercises.forEach((ex,exi)=>{ const m=ex.muscle||'other';
+    if(m!==curM){ if(curM!==null)body+='</div></div>';
+      let cnt=0; for(let j=exi;j<w.exercises.length&&(w.exercises[j].muscle||'other')===m;j++)cnt+=w.exercises[j].sets.length;
+      body+=`<div class="mgroup"><div class="mhead">${escTxt(m)} <span style="color:var(--o50)">|</span> ${cnt} sets</div><div class="mbody">`; curM=m; }
+    body+=renderExercise(exi,ex,day.allowFailure);
   });
+  if(curM!==null)body+='</div></div>';
   return statusBar(true)
     +(w.loggedAfter
       ? `<div class="rot" style="margin-top:14px"><span class="lbl">LOGGED AFTER</span><span class="n"><input type="date" value="${w.date}" max="${todayISO()}" data-act="setdate" style="background:transparent;border:.5px solid var(--o20);color:var(--fg);font:inherit;font-size:10px;padding:3px 5px"/></span></div><div class="rot" style="margin-top:6px"><span class="lbl">duración (min) · opcional</span><span class="n"><input type="number" value="${w.manualDur||''}" data-act="setdur" inputmode="numeric" placeholder="—" style="width:70px;background:transparent;border:.5px solid var(--o20);color:var(--fg);font:inherit;font-size:10px;padding:3px 5px;text-align:right"/></span></div><div class="rot" style="margin-top:6px"><span class="lbl">avanzar rotación</span><span class="n"><a data-act="togglenoadv" style="cursor:pointer;border:.5px solid var(--o20);padding:2px 10px;font-size:10px">${w.noAdvance?'no':'sí'}</a></span></div>`
@@ -1315,21 +1316,29 @@ function openGymPicker(){
   document.getElementById('ng_add').onclick=()=>{ const n=val('ng_name'); if(!n)return; if(!db.gyms.includes(n))db.gyms.push(n); db.activeGym=n; if(db.activeWork)db.activeWork.gym=n; save(); closeModal(); render(); };
 }
 
+// known exercises (name+muscle) and used muscles, for suggestions when adding an exercise
+function knownExercises(){ const map={}; const add=e=>{ if(e&&e.name){ const k=e.name.toLowerCase().trim(); if(!map[k])map[k]={name:e.name,muscle:e.muscle||''}; } };
+  (db.split.days||[]).forEach(d=>(d.exercises||[]).forEach(add)); (db.sessions||[]).forEach(s=>(s.exercises||[]).forEach(add)); return Object.values(map); }
+function muscleSuggest(){ const def=['chest','back','quads','hams','delts','biceps','tricep','calfs','abs','traps','glutes','neck']; const used=[]; (db.split.days||[]).forEach(d=>(d.exercises||[]).forEach(e=>{ if(e.muscle&&used.indexOf(e.muscle)<0)used.push(e.muscle); })); return used.concat(def.filter(m=>used.indexOf(m)<0)); }
 function openAddExercise(){
+  const exs=knownExercises(); const muscles=muscleSuggest();
   openModal(`<h3>+ exercise</h3>
-   <div class="field"><label>NAME</label><input id="fx_name" placeholder="cable pushdown"/></div>
-   <div class="field row2"><div><label>MUSCLE</label><input id="fx_muscle" placeholder="chest"/></div><div><label>SETS</label><input id="fx_sets" type="number" value="2"/></div></div>
+   <div class="field"><label>NOMBRE · escribe o elige uno previo</label><input id="fx_name" list="fx_namelist" placeholder="cable pushdown" autocomplete="off"/><datalist id="fx_namelist">${exs.map(x=>`<option value="${escTxt(x.name)}"></option>`).join('')}</datalist></div>
+   <div class="field row2"><div><label>MÚSCULO</label><input id="fx_muscle" placeholder="chest"/></div><div><label>SETS</label><input id="fx_sets" type="number" value="2"/></div></div>
+   <div class="chips" id="fx_msugg" style="margin:-4px 0 12px">${muscles.map(mm=>`<span class="chip" data-v="${escTxt(mm)}">${escTxt(mm)}</span>`).join('')}</div>
    <div class="field"><label>TYPE</label><div class="toggles"><button id="fx_free" class="on" data-t="free">freeweight</button><button id="fx_mach" data-t="machine">machine</button></div></div>
    <div class="field"><label>MACHINE / NOTE (optional)</label><input id="fx_machine" placeholder="barbell / pulley"/></div>
    <label style="font-size:8px;color:var(--o40)"><input type="checkbox" id="fx_uni" style="width:auto;height:auto"/> unilateral (R/L)</label>
    <div class="sheetbtns"><button class="ok" data-act="okaddex">add</button><button class="cancel" data-act="closemodal">cancel</button></div>`);
   const f=document.getElementById('fx_free'),m=document.getElementById('fx_mach');
   f.onclick=()=>{f.classList.add('on');m.classList.remove('on');}; m.onclick=()=>{m.classList.add('on');f.classList.remove('on');};
+  document.querySelectorAll('#fx_msugg .chip').forEach(c=>c.onclick=()=>{ document.getElementById('fx_muscle').value=c.dataset.v; });
+  const nm=document.getElementById('fx_name'); if(nm)nm.addEventListener('input',()=>{ const k=(nm.value||'').toLowerCase().trim(); const hit=exs.find(x=>x.name.toLowerCase()===k); if(hit&&hit.muscle&&!val('fx_muscle'))document.getElementById('fx_muscle').value=hit.muscle; });
   document.querySelector('[data-act="okaddex"]').onclick=()=>{
     const name=val('fx_name'); if(!name)return; const w=db.activeWork;
     w.exercises.push({name,muscle:val('fx_muscle')||'other',type:m.classList.contains('on')?'machine':'free',machine:val('fx_machine'),unilateral:document.getElementById('fx_uni').checked,note:'',sets:[]});
-    const ex=w.exercises[w.exercises.length-1]; const n=Math.max(1,+val('fx_sets')||1);
-    for(let i=0;i<n;i++){ if(ex.unilateral){ex.sets.push(emptySet(ex,'R'));ex.sets.push(emptySet(ex,'L'));} else ex.sets.push(emptySet(ex)); }
+    const ex=w.exercises[w.exercises.length-1]; const n=Math.max(1,+val('fx_sets')||1); const last=lastLoggedSets(name);
+    for(let i=0;i<n;i++){ if(ex.unilateral){ex.sets.push(emptySet(ex,'R',false,last?last[i*2]:null));ex.sets.push(emptySet(ex,'L',false,last?last[i*2+1]:null));} else ex.sets.push(emptySet(ex,null,false,last?(last[i]||last[last.length-1]):null)); }
     save(); closeModal(); render();
   };
 }
