@@ -1135,6 +1135,8 @@ document.getElementById('app').addEventListener('click',e=>{
   else if(a==='workshop'){ openWorkshop(); }
   else if(a==='usetpl'){ const t=(window._tpls||[])[+el.dataset.i]; if(t){ db.split=t.build(); db.rotIdx=0; state.selDay=null; save(); closeModal(); go('splitedit'); } }
   else if(a==='logweight'){ openWeightLog(); }
+  else if(a==='editbw'){ const d=el.dataset.d; const dt=document.getElementById('bw_date'), kg=document.getElementById('bw_kg'); if(dt)dt.value=d; if(kg){ kg.value=(db.bodyweight&&db.bodyweight[d])||''; kg.focus(); } }
+  else if(a==='delbw'){ const d=el.dataset.d; if(confirm('¿Borrar el peso de '+d+'?')){ if(db.bodyweight)delete db.bodyweight[d]; const allk=Object.keys(db.bodyweight||{}).sort(); if(db.profile)db.profile.weightKg=allk.length?db.bodyweight[allk[allk.length-1]]:db.profile.weightKg; save(); openWeightLog(); } }
   else if(a==='settings'){ go('settings'); }
   else if(a==='profile'){ go('settings'); }
   else if(a==='editprofile'){ openProfileEdit(); }
