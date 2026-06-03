@@ -191,6 +191,9 @@
   input[type=range].gslider{width:100%; -webkit-appearance:none; appearance:none; height:4px; border-radius:2px; background:var(--track); outline:none; margin:6px 0;}
   input[type=range].gslider::-webkit-slider-thumb{-webkit-appearance:none; appearance:none; width:18px; height:18px; border-radius:50%; background:var(--fg); cursor:pointer;}
   input[type=range].gslider::-moz-range-thumb{width:18px; height:18px; border-radius:50%; background:var(--fg); border:none; cursor:pointer;}
+  input[type=range].gslider:disabled{opacity:.4;}
+  .lk{font-size:12px; line-height:1; background:transparent; border:none; cursor:pointer; opacity:.32; filter:grayscale(1); padding:0 2px; vertical-align:middle;} .lk.on{opacity:1; filter:none;}
+  .hbal{text-align:center; font-size:10px; color:var(--o50); margin-top:8px;}
   .lkc{text-align:center; margin:10px 0 6px;} .lkc b{font-size:22px; font-weight:800; color:var(--fg);} .lkc .u{font-size:11px; color:var(--o50);}
   .lnut{max-height:38vh; overflow-y:auto; -webkit-overflow-scrolling:touch; margin:2px 0 10px;} .lnut .line{padding:3px 0;}
   .toggles{display:flex; gap:8px;} .toggles button{flex:1; height:40px; border:.5px solid var(--o20); background:transparent; color:var(--o50); font-size:12px; cursor:pointer;} .toggles button.on{background:var(--fill); color:#000;}
@@ -755,7 +758,7 @@ function renderMacros(){
   return statusBar(false)
     +`<hr class="rule"/>`
     +`<div class="section"><div class="h dnavh"><a data-act="dayprev" class="dnav">‹</a><span data-act="daytoday" class="dnlbl">${dayLabel(curDate())}</span><a data-act="daynext" class="dnav">›</a></div><div class="meta"><a data-act="share" style="cursor:pointer">[share]</a> <a data-act="editgoals" style="cursor:pointer;margin-left:8px">[goals]</a></div></div>`
-    +`<div class="card" style="padding:18px 16px 16px"><button class="hero ${open?'open':''} ${kStat}" data-act="togglemacros">${ringHTML(pct,`<div class="num">${Math.round(t.kcal).toLocaleString()}</div><div class="of">/ ${g.kcal.toLocaleString()} kcal</div>`,'lg')}<div class="hero-meta"><span class="left ${left<0?'over':'under'}">${left>=0?left+' left':Math.abs(left)+' over'}</span> · ${Math.round(pct)}% <span class="chev">▾</span></div></button>${details}</div>`
+    +`<div class="card" style="padding:18px 16px 16px"><button class="hero ${open?'open':''} ${kStat}" data-act="togglemacros">${ringHTML(pct,`<div class="num">${Math.round(t.kcal).toLocaleString()}</div><div class="of">/ ${g.kcal.toLocaleString()} kcal</div>`,'lg')}<div class="hero-meta"><span class="left ${left<0?'over':'under'}">${left>=0?left+' left':Math.abs(left)+' over'}</span> · ${Math.round(pct)}% <span class="chev">▾</span></div></button>${(function(){var b=balanceOf(g.kcal);return b?'<div class="hbal">'+(b.label==='mantenimiento'?'en mantenimiento':'<span style="color:'+b.col+';font-weight:700">'+b.label+'</span> '+Math.abs(b.delta)+' kcal')+' · mant. ≈ '+b.maint+'</div>':'';})()}${details}</div>`
     +`<div class="section" style="margin-bottom:10px"><div class="h"><span class="s">//</span>LOG&nbsp; today</div></div>`
     +log
     +`<div style="height:84px" aria-hidden="true"></div>`
@@ -2125,15 +2128,19 @@ function commitLog(saveToDb){
   const item={id:uid(),time:nowHM()}; apply(item); db.meals[t].push(item);
   save(); closeModal(); render();
 }
+// maintenance (TDEE) from profile via Mifflin-St Jeor × activity — same basis as onboarding
+function maintenanceKcal(){ const p=db.profile||{}; if(!p.weightKg||!p.heightCm||!p.age)return 0; const bmr=10*(+p.weightKg)+6.25*(+p.heightCm)-5*(+p.age)+((p.sex==='M')?5:-161); return Math.round(bmr*(+p.activity||1.2)); }
+function balanceOf(kcal){ const m=maintenanceKcal(); if(!m)return null; const delta=Math.round((+kcal||0)-m); const band=Math.max(60,m*0.03); const label=delta<-band?'déficit':(delta>band?'volumen':'mantenimiento'); const col=label==='déficit'?'var(--info)':(label==='volumen'?'var(--warn)':'var(--good)'); return {maint:m,delta:delta,label:label,col:col}; }
 function openGoals(){
   const g=db.settings.goals;
   if(window._goalMode!=='grams')window._goalMode='pct';
   const pk0=(g.protein||0)*4, fk0=(g.fat||0)*9, ck0=(g.carbs||0)*4, tk=pk0+fk0+ck0||1;
   let pP=Math.round(pk0/tk*100), pF=Math.round(fk0/tk*100), pC=Math.max(0,100-pP-pF);
   const micro=(id,lbl,v)=>`<div><label>${lbl}</label><input id="${id}" type="number" inputmode="decimal" value="${v}"/></div>`;
-  const sl=(k,lbl,pct)=>`<div class="gsl"><div class="gsl-h"><span>${lbl}</span><span><b id="sp_${k}">${pct}</b>% · <span class="gg" id="sg_${k}">0</span> g</span></div><input type="range" id="sl_${k}" min="0" max="100" value="${pct}" class="gslider"/></div>`;
+  const sl=(k,lbl,pct)=>`<div class="gsl"><div class="gsl-h"><span>${lbl} <button type="button" class="lk" id="lk_${k}" title="fijar">🔒</button></span><span><b id="sp_${k}">${pct}</b>% · <span class="gg" id="sg_${k}">0</span> g</span></div><input type="range" id="sl_${k}" min="0" max="100" value="${pct}" class="gslider"/></div>`;
   openModal(`<h3>edit goals</h3>
    <div class="toggles" id="gm_tog" style="margin-bottom:14px"><button class="t ${window._goalMode==='pct'?'on':''}" data-gm="pct">% de kcal</button><button class="t ${window._goalMode==='grams'?'on':''}" data-gm="grams">gramos</button></div>
+   <div id="g_bal" class="submeta" style="margin:-6px 0 13px;font-size:11px"></div>
    <div id="gm_pct" style="display:${window._goalMode==='pct'?'block':'none'}">
      <div class="field"><label>KCAL · total fijo</label><input id="gp_kcal" type="number" inputmode="numeric" value="${Math.round(g.kcal||0)}"/></div>
      ${sl('protein','proteína',pP)}${sl('carbs','carbohidratos',pC)}${sl('fat','grasa',pF)}
@@ -2149,16 +2156,21 @@ function openGoals(){
    <div class="field row2">${micro('g_water','AGUA L',g.water)}${micro('g_caffeine','CAFEÍNA mg',g.caffeine)}</div>
    <div class="field row2">${micro('g_alcohol','ALCOHOL g · límite',g.alcohol||0)}<div></div></div>
    <div class="sheetbtns"><button class="ok" data-act="okgoals">save</button><button class="cancel" data-act="closemodal">cancel</button></div>`);
-  const keys=['protein','carbs','fat'], DIV={protein:4,carbs:4,fat:9};
+  const keys=['protein','carbs','fat'], DIV={protein:4,carbs:4,fat:9}, locks={protein:false,carbs:false,fat:false};
   const setVal=(id,v)=>{ const e=document.getElementById(id); if(e)e.value=v; };
   const setSl=(k,v)=>{ setVal('sl_'+k,v); const p=document.getElementById('sp_'+k); if(p)p.textContent=v; };
-  const updateG=()=>{ const K=parseFloat(val('gp_kcal'))||0; keys.forEach(k=>{ const pct=parseFloat(val('sl_'+k))||0; const e=document.getElementById('sg_'+k); if(e)e.textContent=Math.round(K*pct/100/DIV[k]); }); const sum=keys.reduce((s,k)=>s+(parseFloat(val('sl_'+k))||0),0); const ps=document.getElementById('gp_sum'); if(ps)ps.innerHTML='total <b style="color:var(--fg)">'+Math.round(sum)+'</b>% · '+Math.round(K)+' kcal'; };
-  const norm=changed=>{ const cur=Math.round(parseFloat(val('sl_'+changed))||0); const others=keys.filter(k=>k!==changed); const o1=parseFloat(val('sl_'+others[0]))||0,o2=parseFloat(val('sl_'+others[1]))||0; const osum=o1+o2,remain=Math.max(0,100-cur); let n1=osum>0?Math.round(remain*o1/osum):Math.round(remain/2),n2=remain-n1; setSl(changed,cur); setSl(others[0],n1); setSl(others[1],n2); updateG(); };
-  keys.forEach(k=>{ const e=document.getElementById('sl_'+k); if(e)e.addEventListener('input',()=>norm(k)); });
+  const gbal=()=>{ const K=window._goalMode==='pct'?(parseFloat(val('gp_kcal'))||0):((parseFloat(val('gg_protein'))||0)*4+(parseFloat(val('gg_carbs'))||0)*4+(parseFloat(val('gg_fat'))||0)*9); const b=balanceOf(K); const e=document.getElementById('g_bal'); if(!e)return; if(!b){ e.innerHTML='<span style="color:var(--o40)">completa tu perfil para ver déficit / volumen</span>'; return; } e.innerHTML='mantenimiento ≈ <b style="color:var(--fg)">'+b.maint+'</b> kcal · <b style="color:'+b.col+'">'+b.label+'</b>'+(b.label!=='mantenimiento'?' '+Math.abs(b.delta)+' kcal':''); };
+  const updateG=()=>{ const K=parseFloat(val('gp_kcal'))||0; keys.forEach(k=>{ const pct=parseFloat(val('sl_'+k))||0; const e=document.getElementById('sg_'+k); if(e)e.textContent=Math.round(K*pct/100/DIV[k]); }); const sum=keys.reduce((s,k)=>s+(parseFloat(val('sl_'+k))||0),0); const ps=document.getElementById('gp_sum'); if(ps)ps.innerHTML='total <b style="color:var(--fg)">'+Math.round(sum)+'</b>% · '+Math.round(K)+' kcal'; gbal(); };
+  const lockedKeys=()=>keys.filter(k=>locks[k]);
+  const applyLocks=()=>{ const ln=lockedKeys().length; keys.forEach(k=>{ const r=document.getElementById('sl_'+k), b=document.getElementById('lk_'+k); const frozen=locks[k]||(ln>=2&&!locks[k]); if(r)r.disabled=frozen; if(b)b.classList.toggle('on',locks[k]); }); };
+  const reflow=()=>{ const ls=lockedKeys().reduce((s,x)=>s+(parseFloat(val('sl_'+x))||0),0); const free=keys.filter(x=>!locks[x]); const remain=Math.max(0,100-ls); if(free.length){ const fsum=free.reduce((s,x)=>s+(parseFloat(val('sl_'+x))||0),0); let acc=0; free.forEach((x,i)=>{ let v=i===free.length-1?remain-acc:Math.round(fsum>0?remain*(parseFloat(val('sl_'+x))||0)/fsum:remain/free.length); v=Math.max(0,v); acc+=v; setSl(x,v); }); } };
+  const toggleLock=k=>{ if(!locks[k]&&lockedKeys().length>=2)return; locks[k]=!locks[k]; reflow(); applyLocks(); updateG(); };
+  const norm=changed=>{ if(locks[changed])return; const cur=Math.round(parseFloat(val('sl_'+changed))||0); const ls=lockedKeys().reduce((s,k)=>s+(parseFloat(val('sl_'+k))||0),0); const free=keys.filter(k=>k!==changed&&!locks[k]); const remain=Math.max(0,100-ls-cur); if(!free.length){ setSl(changed,Math.max(0,100-ls)); } else if(free.length===1){ setSl(changed,cur); setSl(free[0],remain); } else { const o1=parseFloat(val('sl_'+free[0]))||0,o2=parseFloat(val('sl_'+free[1]))||0,osum=o1+o2; let n1=osum>0?Math.round(remain*o1/osum):Math.round(remain/2),n2=remain-n1; setSl(changed,cur); setSl(free[0],n1); setSl(free[1],n2); } updateG(); };
+  keys.forEach(k=>{ const e=document.getElementById('sl_'+k); if(e)e.addEventListener('input',()=>norm(k)); const b=document.getElementById('lk_'+k); if(b)b.onclick=()=>toggleLock(k); });
   const gpk=document.getElementById('gp_kcal'); if(gpk)gpk.addEventListener('input',updateG);
-  const gkc=()=>{ const P=parseFloat(val('gg_protein'))||0,C=parseFloat(val('gg_carbs'))||0,F=parseFloat(val('gg_fat'))||0; const e=document.getElementById('gg_kcal'); if(e)e.innerHTML='= <b style="color:var(--fg)">'+Math.round(P*4+C*4+F*9)+'</b> kcal'; };
+  const gkc=()=>{ const P=parseFloat(val('gg_protein'))||0,C=parseFloat(val('gg_carbs'))||0,F=parseFloat(val('gg_fat'))||0; const e=document.getElementById('gg_kcal'); if(e)e.innerHTML='= <b style="color:var(--fg)">'+Math.round(P*4+C*4+F*9)+'</b> kcal'; gbal(); };
   ['gg_protein','gg_carbs','gg_fat'].forEach(id=>{ const e=document.getElementById(id); if(e)e.addEventListener('input',gkc); });
-  updateG(); gkc();
+  applyLocks(); updateG(); gkc();
   document.querySelectorAll('#gm_tog [data-gm]').forEach(b=>b.onclick=()=>{ const mode=b.dataset.gm; if(mode===window._goalMode)return;
     if(mode==='grams'){ const K=parseFloat(val('gp_kcal'))||0; setVal('gg_protein',Math.round(K*(parseFloat(val('sl_protein'))||0)/100/4)); setVal('gg_carbs',Math.round(K*(parseFloat(val('sl_carbs'))||0)/100/4)); setVal('gg_fat',Math.round(K*(parseFloat(val('sl_fat'))||0)/100/9)); gkc(); }
     else { const P=parseFloat(val('gg_protein'))||0,C=parseFloat(val('gg_carbs'))||0,F=parseFloat(val('gg_fat'))||0; const pp=P*4,cc=C*4,ff=F*9,tt=pp+cc+ff||1; setVal('gp_kcal',Math.round(pp+cc+ff)); const np=Math.round(pp/tt*100),nf=Math.round(ff/tt*100); setSl('protein',np); setSl('fat',nf); setSl('carbs',Math.max(0,100-np-nf)); updateG(); }
