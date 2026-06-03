@@ -1255,7 +1255,7 @@ function openDrink(){
 const bfNorm=s=>(s||'').toString().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
 const BASE_FOODS=(function(){ const L=[];
   const slug=n=>'bf_'+bfNorm(n).replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
-  const add=(name,kcal,p,c,f,o)=>{ o=o||{}; L.push({ id:slug(name), name:name, alt:o.en||'', brand:'', base:o.base||'g',
+  const add=(name,kcal,p,c,f,o)=>{ o=o||{}; const bid=o.br?bfNorm(o.br).replace(/[^a-z0-9]+/g,'-'):''; L.push({ id:slug(name)+(bid?'-'+bid:''), name:name, alt:o.en||'', brand:o.br||'', base:o.base||'g',
     per100:{kcal:kcal,protein:p,carbs:c,fat:f,sugar:o.s||0,fiber:o.fi||0,sodium:o.na||0,potassium:o.k||0,caffeine:o.caf||0},
     sizes:Object.assign({}, o.sv?{serving:o.sv}:{}, o.pc?{piece:o.pc}:{}, o.ct?{container:o.ct}:{}),
     servingLabel:o.sl||'', group:o.g||'', _base:true }); };
@@ -1533,6 +1533,94 @@ const BASE_FOODS=(function(){ const L=[];
   add('Sushi (roll)',145,4,30,0.8,{na:240,sv:100,en:'sushi roll'});
   add('Sándwich jamón y queso',250,13,28,9,{na:700,pc:150,en:'ham cheese sandwich'});
   add('Ensalada César',190,6,8,15,{na:430,sv:200,en:'caesar salad'});
+
+  // ===== MARCAS (MX + US) =====
+  // REFRESCOS & BEBIDAS
+  add('Coca-Cola',42,0,10.6,0,{br:'Coca-Cola',s:10.6,na:4,caf:9.7,base:'ml',sv:355,en:'coke cola'});
+  add('Coca-Cola Sin Azúcar',0.4,0,0,0,{br:'Coca-Cola',na:6,caf:9.7,base:'ml',sv:355,en:'coke zero sugar diet'});
+  add('Pepsi',44,0,11,0,{br:'Pepsi',s:11,na:4,caf:7,base:'ml',sv:355,en:'pepsi'});
+  add('Sprite',39,0,9.7,0,{br:'Sprite',s:9.7,na:9,base:'ml',sv:355,en:'sprite lemon lime'});
+  add('Fanta Naranja',48,0,12,0,{br:'Fanta',s:12,na:6,base:'ml',sv:355,en:'fanta orange'});
+  add('Manzanita Sol',46,0,11.5,0,{br:'Manzanita Sol',s:11.5,na:5,base:'ml',sv:355,en:'apple soda'});
+  add('Jarritos Tamarindo',45,0,11.3,0,{br:'Jarritos',s:11,na:8,base:'ml',sv:370,en:'jarritos'});
+  add('Boing Mango',52,0,13,0,{br:'Boing',s:11,na:10,base:'ml',sv:250,en:'mango juice drink'});
+  add('Jumex Mango',58,0.3,14,0,{br:'Jumex',s:13,na:8,base:'ml',sv:355,en:'jumex nectar'});
+  add('Red Bull',45,0.4,11,0,{br:'Red Bull',s:11,na:40,caf:32,base:'ml',sv:250,en:'energy drink'});
+  add('Monster Energy',47,0,12,0,{br:'Monster',s:11,na:75,caf:36,base:'ml',sv:473,en:'monster energy drink'});
+  add('Gatorade',25,0,6,0,{br:'Gatorade',s:5.8,na:41,k:18,base:'ml',sv:600,en:'gatorade sports drink'});
+  add('Powerade',26,0,6.5,0,{br:'Powerade',s:6,na:23,k:13,base:'ml',sv:600,en:'powerade'});
+  add('Electrolit',9,0,2.2,0,{br:'Electrolit',s:2,na:100,k:78,base:'ml',sv:625,en:'electrolyte drink'});
+  add('Café Starbucks Latte',56,3,5,2.5,{br:'Starbucks',s:5,caf:38,base:'ml',sv:355,en:'latte coffee'});
+  add('Frappuccino',95,2.4,18,1.5,{br:'Starbucks',s:17,caf:25,base:'ml',sv:355,en:'frappuccino'});
+  add('Cerveza Corona',41,0.3,3.6,0,{br:'Corona',base:'ml',sv:355,en:'beer corona'});
+  add('Cerveza Modelo',43,0.4,3.8,0,{br:'Modelo',base:'ml',sv:355,en:'beer modelo'});
+  add('Cerveza Tecate',39,0.3,3.4,0,{br:'Tecate',base:'ml',sv:355,en:'beer tecate'});
+
+  // LÁCTEOS DE MARCA
+  add('Leche Lala Entera',62,3.1,4.7,3.3,{br:'Lala',s:4.7,na:50,k:150,base:'ml',sv:240,en:'whole milk'});
+  add('Leche Lala Deslactosada',47,3.2,4.8,1.5,{br:'Lala',s:4.8,na:55,base:'ml',sv:240,en:'lactose free milk'});
+  add('Leche Alpura Entera',63,3.1,4.6,3.4,{br:'Alpura',s:4.6,na:48,base:'ml',sv:240,en:'whole milk'});
+  add('Leche Santa Clara',64,3.2,4.7,3.4,{br:'Santa Clara',s:4.7,base:'ml',sv:240,en:'milk'});
+  add('Yogurt Griego Oikos',60,8.6,4,0.3,{br:'Oikos',s:3.5,na:36,sv:150,en:'greek yogurt'});
+  add('Yoghurt Yoplait',88,3.2,15,1.8,{br:'Yoplait',s:14,sv:125,en:'yogurt'});
+  add('Yakult',71,1.2,16,0,{br:'Yakult',s:15,base:'ml',sv:80,en:'yakult probiotic'});
+  add('Queso Oaxaca',290,21,2,22,{br:'',na:700,sv:30,en:'oaxaca cheese string'});
+  add('Queso Philadelphia',253,5.5,4.5,23,{br:'Philadelphia',na:330,sv:30,en:'cream cheese'});
+  add('Crema Lala',195,2.5,4,18,{br:'Lala',na:60,base:'ml',sv:30,en:'sour cream'});
+
+  // SNACKS & FRITURAS
+  add('Sabritas Original',536,6.6,53,33,{br:'Sabritas',na:535,k:1100,sv:30,en:'potato chips lays'});
+  add('Doritos Nacho',498,7,57,26,{br:'Doritos',na:600,sv:30,en:'doritos nacho cheese'});
+  add('Cheetos',571,7,50,38,{br:'Cheetos',na:850,sv:30,en:'cheetos'});
+  add('Ruffles Queso',520,6,55,30,{br:'Ruffles',na:600,sv:30,en:'ruffles chips'});
+  add('Takis Fuego',512,6,60,27,{br:'Takis',na:700,sv:30,en:'takis fuego'});
+  add('Pringles Original',536,4,52,34,{br:'Pringles',na:540,sv:28,en:'pringles'});
+  add('Cacahuates Japoneses',480,17,52,22,{br:'Nishikawa',na:500,sv:30,en:'japanese peanuts'});
+  add('Galletas Oreo',480,4.7,69,20,{br:'Oreo',s:38,na:330,pc:11,en:'oreo cookies'});
+  add('Galletas Marías',440,7,76,12,{br:'Gamesa',s:22,na:300,pc:7,en:'maria cookies'});
+  add('Emperador Chocolate',500,5,65,24,{br:'Gamesa',s:32,pc:14,en:'chocolate cookies'});
+  add('Chokis',490,5,66,23,{br:'Gamesa',s:35,pc:12,en:'choco chip cookies'});
+  add('Barra Nature Valley',450,8,64,16,{br:'Nature Valley',s:24,fi:5,pc:21,en:'granola bar'});
+  add('Mamut',430,5,66,16,{br:'Gamesa',s:40,pc:28,en:'marshmallow cookie'});
+  add('Pan Bimbo Blanco',266,9,49,3.3,{br:'Bimbo',s:5,na:490,fi:2.7,pc:25,en:'white bread'});
+  add('Pan Integral Bimbo',247,12,41,3.5,{br:'Bimbo',s:5,na:450,fi:7,pc:28,en:'whole wheat bread'});
+  add('Gansito',410,4,60,17,{br:'Marinela',s:40,pc:50,en:'gansito snack cake'});
+  add('Pingüinos',390,4,58,16,{br:'Marinela',s:38,pc:55,en:'chocolate cake'});
+  add('Donitas Bimbo',470,4,58,24,{br:'Bimbo',s:28,pc:18,en:'mini donuts'});
+
+  // CHOCOLATES & DULCES
+  add('Snickers',491,8,60,24,{br:'Snickers',s:48,pc:52,en:'snickers bar'});
+  add('Kit Kat',518,6,59,28,{br:'Kit Kat',s:48,pc:42,en:'kit kat'});
+  add('M&Ms',492,4.6,71,20,{br:'M&Ms',s:64,pc:48,en:'m&ms chocolate'});
+  add('Carlos V',535,6,58,30,{br:'Nestlé',s:50,pc:18,en:'milk chocolate'});
+  add('Bubulubu',400,2,70,12,{br:'Ricolino',s:50,pc:35,en:'candy'});
+  add('Pulparindo',360,1,82,2,{br:'De la Rosa',s:60,pc:14,en:'tamarind candy'});
+  add('Mazapán',520,12,52,28,{br:'De la Rosa',s:45,pc:28,en:'mazapan peanut candy'});
+
+  // CEREALES
+  add('Zucaritas',375,5,87,1,{br:'Kelloggs',s:35,na:480,fi:2,sv:30,en:'frosted flakes cereal'});
+  add('Corn Flakes',357,7,84,0.9,{br:'Kelloggs',s:8,na:660,fi:3,sv:30,en:'corn flakes'});
+  add('Choco Krispis',383,5,86,2,{br:'Kelloggs',s:38,na:430,sv:30,en:'cocoa krispies'});
+  add('Special K',379,15,73,2.5,{br:'Kelloggs',s:14,na:580,fi:4,sv:30,en:'special k'});
+  add('Avena Quaker',389,13,66,7,{br:'Quaker',s:1,fi:10,sv:40,en:'oats oatmeal'});
+  add('Granola',471,10,64,18,{br:'',s:24,fi:7,sv:50,en:'granola'});
+
+  // PROTEÍNA & SUPLEMENTOS
+  add('Whey Gold Standard',373,80,7,7,{br:'Optimum Nutrition',s:3,na:130,sv:30,en:'whey protein powder'});
+  add('Whey Iso',360,85,3,1.5,{br:'',sv:30,en:'iso whey protein'});
+  add('Barra Quest',357,32,43,14,{br:'Quest',s:3,fi:14,pc:60,en:'protein bar'});
+  add('Creatina Monohidrato',0,0,0,0,{br:'',sv:5,en:'creatine monohydrate'});
+
+  // COMIDA RÁPIDA
+  add('Big Mac',257,11,20,15,{br:'McDonalds',na:430,pc:215,en:'big mac burger'});
+  add('McNuggets',290,15,18,18,{br:'McDonalds',na:520,pc:16,en:'chicken nuggets'});
+  add('Papas McDonalds',322,3.4,42,15,{br:'McDonalds',na:230,sv:117,en:'mcdonalds fries'});
+  add('Whopper',230,10,18,13,{br:'Burger King',na:410,pc:270,en:'whopper'});
+  add('KFC Pollo',280,21,9,18,{br:'KFC',na:760,pc:120,en:'kfc fried chicken'});
+  add('Pizza Domino\'s Peperoni',266,11,30,11,{br:'Dominos',na:600,pc:107,en:'pepperoni pizza'});
+  add('Taco Bell Burrito',230,9,28,9,{br:'Taco Bell',na:540,pc:200,en:'burrito'});
+  add('Subway Pollo',130,9,18,2.5,{br:'Subway',na:400,sv:230,en:'sub sandwich'});
+
   return L;
 })();
 function openFoodAdd(preset, lockTag){
@@ -1554,7 +1642,8 @@ function openFoodAdd(preset, lockTag){
   const foodRow=(f,act)=>`<div class="pickitem" data-act="${act}" data-id="${f.id}">${f.name}${f.brand?' <span style="color:var(--o35);font-size:10px">'+f.brand+'</span>':''} <span style="float:right;color:var(--o50)">${Math.round(foodKcal100(f))} /100${f.base==='ml'?'ml':'g'}</span></div>`;
   const renderList=()=>{ const s=(q.value||'').toLowerCase().trim(); const sn=bfNorm(s);
     const mine=(db.foods||[]).slice().sort((a,b)=>(b.lastUsed||0)-(a.lastUsed||0)).filter(f=>!s||bfNorm(f.name).includes(sn)).slice(0,40);
-    const base=s?BASE_FOODS.filter(f=>(bfNorm(f.name).includes(sn)||(f.alt&&bfNorm(f.alt).includes(sn)))&&!mine.some(x=>x.id===f.id||bfNorm(x.name)===bfNorm(f.name))).slice(0,80):[];
+    const base=s?BASE_FOODS.filter(f=>(bfNorm(f.name).includes(sn)||(f.alt&&bfNorm(f.alt).includes(sn))||(f.brand&&bfNorm(f.brand).includes(sn)))&&!mine.some(x=>x.id===f.id||bfNorm(x.name)===bfNorm(f.name)))
+      .sort((a,b)=>searchScore(b.name,b.brand,sn)-searchScore(a.name,a.brand,sn)).slice(0,80):[];
     const lbl=document.getElementById('fa_lbl'); if(lbl)lbl.textContent=s?'RESULTADOS':'RECIENTES';
     let html=mine.map(f=>foodRow(f,'pickfood')).join('');
     if(base.length)html+=(mine.length?'<div class="grp-label" style="margin:12px 0 6px;color:var(--o35)">BÁSICOS</div>':'')+base.map(f=>foodRow(f,'pickbase')).join('');
@@ -1677,10 +1766,45 @@ async function lookupBarcode(code){
     const j=await r.json(); if(j.status!==1||!j.product) return null; const f=mapProduct(j.product); f.barcode=code; return f;
   }catch(e){ return null; }
 }
+// score a result by how well its name matches the query (relevance ranking)
+function searchScore(name,brand,qn){
+  const nn=bfNorm(name||''), bn=bfNorm(brand||''); if(!nn)return -1;
+  const words=qn.split(/\s+/).filter(Boolean); let sc=0;
+  if(nn===qn) sc+=100;                                   // exact name
+  if(nn.startsWith(qn)) sc+=50;                           // name starts with query
+  words.forEach(w=>{ if(nn.split(/\s+/).includes(w)) sc+=20;      // whole-word match in name
+    else if(nn.includes(w)) sc+=8;                       // substring in name
+    if(bn.includes(w)) sc+=4; });                        // match in brand
+  // penalize very long names (usually "X con leche y almendras" noise when searching "leche")
+  sc-=Math.min(10,Math.max(0,(nn.length-qn.length)/12));
+  return sc;
+}
 async function searchFoods(q){
-  try{ const r=await fetch('https://world.openfoodfacts.org/cgi/search.pl?search_terms='+encodeURIComponent(q)+'&search_simple=1&action=process&json=1&page_size=20&fields=code,product_name,brands,serving_size,nutriments');
-    const j=await r.json(); return (j.products||[]).map(mapProduct).filter(f=>f.name);
-  }catch(e){ return []; }
+  const qn=bfNorm(q); if(!qn) return [];
+  const fields='code,product_name,product_name_es,brands,countries_tags,serving_size,nutriments';
+  // try MX, then US, then world (country-scoped endpoints rank local products higher)
+  const endpoints=[
+    'https://mx.openfoodfacts.org/cgi/search.pl?search_terms='+encodeURIComponent(q)+'&search_simple=1&action=process&json=1&page_size=40&fields='+fields,
+    'https://us.openfoodfacts.org/cgi/search.pl?search_terms='+encodeURIComponent(q)+'&search_simple=1&action=process&json=1&page_size=40&fields='+fields,
+    'https://world.openfoodfacts.org/cgi/search.pl?search_terms='+encodeURIComponent(q)+'&search_simple=1&action=process&json=1&page_size=40&fields='+fields
+  ];
+  let products=[];
+  for(const url of endpoints){
+    for(let attempt=0;attempt<2;attempt++){
+      try{ const r=await fetch(url); if(!r.ok)throw 0; const j=await r.json(); products=j.products||[]; break; }
+      catch(e){ products=[]; }
+    }
+    if(products.length>=8) break;   // enough local results, stop
+  }
+  // map, keep only ones with real nutrition (kcal>0), rank by relevance, dedupe
+  const seen=new Set(); const out=[];
+  products.map(p=>({p,m:mapProduct(p)}))
+    .filter(x=>x.m.name && x.m.per100 && x.m.per100.kcal>0)
+    .map(x=>{ x.score=searchScore(x.m.name,x.m.brand,qn); return x; })
+    .filter(x=>x.score>0)                                  // must actually match the query
+    .sort((a,b)=>b.score-a.score)
+    .forEach(x=>{ const k=bfNorm(x.m.name)+'|'+bfNorm(x.m.brand); if(seen.has(k))return; seen.add(k); out.push(x.m); });
+  return out.slice(0,30);
 }
 function openNameSearch(barcode){
   window._linkBarcode=barcode||'';
