@@ -454,7 +454,7 @@ function newWorkSession(){
   return {id:uid(),date:todayISO(),dayId:day.id,dayName:day.name,gym:db.activeGym,startTs:nowHM(),startMs:Date.now(),loggedAfter:false,exercises:exs};
 }
 // ---- per-gym machine/brand/setup linking ----
-function escTxt(s){ return (s||'').replace(/[<&]/g,c=>c==='<'?'&lt;':'&amp;'); }
+function escTxt(s){ return (s||'').replace(/[<>&"']/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;',"'":'&#39;'}[c])); }
 function exKey(ex){ return ((ex&&ex.name)||'').toLowerCase().trim(); }
 // resolved record {brand,setup,na} for an exercise at a given gym (falls back to split default)
 function machineRec(gym,ex){
@@ -1068,9 +1068,9 @@ document.getElementById('app').addEventListener('click',e=>{
   else if(a==='pickmealtag'){ const e=document.getElementById('fa_tagtxt'); if(e)e.value=el.dataset.v; }
   else if(a==='editmeal'){ const t=curDate(); const m=(db.meals[t]||[]).find(x=>x.id===window._mealId); if(m){ closeModal();
       if(m._food){ openLog(m._food,{editId:m.id,qty:m.qty||1,unit:m._unit,tag:m.tag}); }
-      else { const q=m.qty||1; const per={}; ['kcal','protein','carbs','fat','sugar','sodium','potassium','fiber','caffeine','water'].forEach(k=>per[k]=(+m[k]||0)/q); openLog({name:(m.name||'').replace(/ ×[\d.]+$/,''),serving:m.serving||'1 serving',per},{editId:m.id,qty:q,tag:m.tag}); } } }
+      else { const q=m.qty||1; const per={}; ['kcal','protein','carbs','fat','sugar','sodium','potassium','fiber','caffeine','alcohol','water'].forEach(k=>per[k]=(+m[k]||0)/q); openLog({name:(m.name||'').replace(/ ×[\d.]+$/,''),serving:m.serving||'1 serving',per},{editId:m.id,qty:q,tag:m.tag}); } } }
   else if(a==='delmealnow'){ const t=curDate(); db.meals[t]=(db.meals[t]||[]).filter(m=>m.id!==window._mealId); save(); closeModal(); render(); }
-  else if(a==='editmealx'){ const id=el.dataset.id; const t=curDate(); const m=(db.meals[t]||[]).find(x=>x.id===id); if(m){ if(m._food){ openLog(m._food,{editId:m.id,qty:m.qty||1,unit:m._unit,tag:m.tag}); } else { const q=m.qty||1; const per={}; ['kcal','protein','carbs','fat','sugar','sodium','potassium','fiber','caffeine','water'].forEach(k=>per[k]=(+m[k]||0)/q); openLog({name:(m.name||'').replace(/ ×[\d.]+$/,''),serving:m.serving||'1 serving',per},{editId:m.id,qty:q,tag:m.tag}); } } }
+  else if(a==='editmealx'){ const id=el.dataset.id; const t=curDate(); const m=(db.meals[t]||[]).find(x=>x.id===id); if(m){ if(m._food){ openLog(m._food,{editId:m.id,qty:m.qty||1,unit:m._unit,tag:m.tag}); } else { const q=m.qty||1; const per={}; ['kcal','protein','carbs','fat','sugar','sodium','potassium','fiber','caffeine','alcohol','water'].forEach(k=>per[k]=(+m[k]||0)/q); openLog({name:(m.name||'').replace(/ ×[\d.]+$/,''),serving:m.serving||'1 serving',per},{editId:m.id,qty:q,tag:m.tag}); } } }
   else if(a==='delmealx'){ const id=el.dataset.id; const t=curDate(); db.meals[t]=(db.meals[t]||[]).filter(m=>m.id!==id); if(state.expandedMeal===id)state.expandedMeal=null; save(); render(); }
   else if(a==='vfixkcal'){ const P=parseFloat(val('v_protein'))||0,C=parseFloat(val('v_carbs'))||0,F=parseFloat(val('v_fat'))||0; const e=document.getElementById('v_kcal'); if(e){ e.value=Math.round(P*4+C*4+F*9); e.dispatchEvent(new Event('input',{bubbles:true})); } }
   else if(a==='addmeal'||a==='foodadd'){ openFoodAdd(); }
@@ -1269,7 +1269,7 @@ function asCanonical(food){ food=food||{};
   if(g>0){ const f=100/g; MACROKEYS.forEach(k=>per100[k]=Math.round((per[k]||0)*f*100)/100); if(g!==100)sizes.serving=g; }
   else { MACROKEYS.forEach(k=>per100[k]=per[k]||0); sizes.serving=100; gramsUnknown=true; servingLabel=sv||'porción'; }
   return {id:food.id,barcode:food.barcode||'',name:food.name||'',brand:food.brand||'',base,per100,sizes,servingLabel,gramsUnknown}; }
-function unitGrams(food,key){ const s=(food&&food.sizes)||{}; if(key==='g'||key==='ml')return 1; if(key==='100')return 100; if(key==='serving')return s.serving||0; if(key==='piece')return s.piece||0; if(key==='container')return s.container||0; return 0; }
+function unitGrams(food,key){ const s=(food&&food.sizes)||{}; if(key==='g'||key==='ml')return 1; if(key==='100')return 100; if(key==='serving')return s.serving||(food&&food.gramsUnknown?100:0); if(key==='piece')return s.piece||0; if(key==='container')return s.container||0; return 0; }
 function foodUnits(food){ const base=(food&&food.base)||'g'; const s=(food&&food.sizes)||{};
   if(food&&food.gramsUnknown){ return [{key:'serving',label:food.servingLabel||'porción',grams:s.serving||100}]; }
   const u=[]; if(s.serving)u.push({key:'serving',label:(food.servingLabel||'porción')+' ('+numTxt(s.serving)+' '+base+')',grams:s.serving});
@@ -1786,7 +1786,7 @@ function openFoodAdd(preset, lockTag){
      <div class="fa-listwrap"><div class="grp-label" id="fa_lbl" style="margin:0 0 8px">RECIENTES</div><div id="fa_list"></div></div>
    </div>`,'tall');
   const q=document.getElementById('fa_q');
-  const foodRow=(f,act)=>`<div class="pickitem" data-act="${act}" data-id="${f.id}">${f.name}${f.brand?' <span style="color:var(--o35);font-size:10px">'+f.brand+'</span>':''} <span style="float:right;color:var(--o50)">${Math.round(foodKcal100(f))} /100${f.base==='ml'?'ml':'g'}</span></div>`;
+  const foodRow=(f,act)=>`<div class="pickitem" data-act="${act}" data-id="${f.id}">${escTxt(f.name)}${f.brand?' <span style="color:var(--o35);font-size:10px">'+escTxt(f.brand)+'</span>':''} <span style="float:right;color:var(--o50)">${Math.round(foodKcal100(f))} /100${f.base==='ml'?'ml':'g'}</span></div>`;
   const renderList=()=>{ const s=(q.value||'').toLowerCase().trim(); const sn=bfNorm(s);
     const mine=(db.foods||[]).slice().sort((a,b)=>(b.lastUsed||0)-(a.lastUsed||0)).filter(f=>!s||bfNorm(f.name).includes(sn)).slice(0,40);
     const base=s?BASE_FOODS.filter(f=>(bfNorm(f.name).includes(sn)||(f.alt&&bfNorm(f.alt).includes(sn))||(f.brand&&bfNorm(f.brand).includes(sn)))&&!mine.some(x=>x.id===f.id||bfNorm(x.name)===bfNorm(f.name)))
@@ -1809,7 +1809,7 @@ async function inlineSearchOFF(){
   if(lbl)lbl.textContent='PRODUCTOS · '+term;
   if(!res.length){ list.innerHTML='<div class="submeta" style="padding:8px 0">sin productos · prueba register para agregarlo manual</div>'; return; }
   window._ofRes=res;
-  list.innerHTML=res.map((f,i)=>`<div class="pickitem" data-act="ofpick" data-i="${i}">${f.name}${f.brand?' <span style="color:var(--o35);font-size:10px">'+f.brand+'</span>':''} <span style="float:right;color:var(--o50)">${Math.round((f.per100&&f.per100.kcal)||foodKcal100(f)||0)} /100${f.base==='ml'?'ml':'g'}</span></div>`).join('');
+  list.innerHTML=res.map((f,i)=>`<div class="pickitem" data-act="ofpick" data-i="${i}">${escTxt(f.name)}${f.brand?' <span style="color:var(--o35);font-size:10px">'+escTxt(f.brand)+'</span>':''} <span style="float:right;color:var(--o50)">${Math.round((f.per100&&f.per100.kcal)||foodKcal100(f)||0)} /100${f.base==='ml'?'ml':'g'}</span></div>`).join('');
 }
 function wireLongPress(el,fn){ let t=null; const start=()=>{ t=setTimeout(()=>{ t=null; fn(); },550); }; const cancel=()=>{ if(t){clearTimeout(t); t=null;} };
   el.addEventListener('touchstart',start,{passive:true}); el.addEventListener('touchend',cancel); el.addEventListener('touchmove',cancel);
@@ -1906,7 +1906,7 @@ function mapProduct(p){
   // OFF 'alcohol_100g' is % vol (ml ethanol /100ml). Convert to grams: ×0.789 (ethanol density).
   const alcVol=+n['alcohol_100g']||0; const alcG=Math.round(alcVol*0.789*100)/100;
   const per100={ kcal:+n['energy-kcal_100g']||0, protein:g('proteins'), carbs:g('carbohydrates'), fat:g('fat'),
-    sugar:g('sugars'), fiber:g('fiber'), sodium:Math.round(g('sodium')*1000), potassium:Math.round(g('potassium')*1000), caffeine:g('caffeine'), alcohol:alcG };
+    sugar:g('sugars'), fiber:g('fiber'), sodium:Math.round((n['sodium_100g']!=null?+n['sodium_100g']:(+n['salt_100g']||0)/2.5)*1000), potassium:Math.round(g('potassium')*1000), caffeine:g('caffeine'), alcohol:alcG };
   const sizes={}; const sg=servingToGrams(svStr); if(sg>0&&sg!==100)sizes.serving=sg;
   return { barcode:p.code||'', name:p.product_name||'', brand:p.brands||'', base, per100, sizes, servingLabel:'' };
 }
@@ -1965,7 +1965,7 @@ function openNameSearch(barcode){
     const sn=bfNorm(q); const bm=BASE_FOODS.filter(f=>bfNorm(f.name).includes(sn)).slice(0,12);
     const res=await searchFoods(q); window._nsRes=res; const tot=bm.length+res.length; msg.textContent=tot?(tot+' resultados'):'sin resultados';
     const baseHtml=bm.map(f=>`<div class="pickitem" data-act="pickbase" data-id="${f.id}">${f.name}<span style="float:right;color:var(--o50)">${Math.round(foodKcal100(f))}/100${f.base==='ml'?'ml':'g'}</span></div>`).join('');
-    const offHtml=res.slice(0,20).map((f,i)=>`<div class="pickitem" data-act="nspick" data-i="${i}">${f.name}${f.brand?' <span style="color:var(--o40)">'+f.brand+'</span>':''}<span style="float:right;color:var(--o50)">${Math.round(foodKcal100(f))}/100</span></div>`).join('');
+    const offHtml=res.slice(0,20).map((f,i)=>`<div class="pickitem" data-act="nspick" data-i="${i}">${escTxt(f.name)}${f.brand?' <span style="color:var(--o40)">'+escTxt(f.brand)+'</span>':''}<span style="float:right;color:var(--o50)">${Math.round(foodKcal100(f))}/100</span></div>`).join('');
     document.getElementById('ns_list').innerHTML=(bm.length?'<div class="grp-label" style="margin:2px 0 6px;color:var(--o35)">BÁSICOS</div>'+baseHtml:'')+(res.length?'<div class="grp-label" style="margin:10px 0 6px;color:var(--o35)">PRODUCTOS</div>'+offHtml:''); };
   document.getElementById('ns_go').onclick=run;
   const qi=document.getElementById('ns_q'); qi.onkeydown=e=>{ if(e.key==='Enter')run(); };
@@ -2215,7 +2215,7 @@ async function aiPhoto(file,barcode){ if(!file)return; window._faTag=window._faT
 // Pick AI when the proxy is configured, else on-device OCR.
 function labelPhoto(file,barcode){ if(AI_PROXY_URL) return aiPhoto(file,barcode); return ocrPhoto(file,barcode); }
 requestPersist();
-db=load(); try{ const _sp=new URLSearchParams(location.search); if(_sp.has('steps')){ const _n=parseInt(_sp.get('steps'),10); if(!isNaN(_n)){ db.steps=db.steps||{}; db.steps[todayISO()]=_n; } if(history.replaceState)history.replaceState(null,'',location.pathname); } }catch(_){} save(); render();
+db=load(); try{ const _sp=new URLSearchParams(location.search); if(_sp.has('steps')){ const _n=parseInt(_sp.get('steps'),10); if(!isNaN(_n)&&_n>=0&&_n<100000){ db.steps=db.steps||{}; db.steps[todayISO()]=_n; } if(history.replaceState)history.replaceState(null,'',location.pathname); } }catch(_){} save(); render();
 // Service worker with AUTO-UPDATE: when a new version is found, activate it and reload once.
 // Fixes iOS PWA serving stale cached builds from the home-screen icon.
 if('serviceWorker' in navigator){
