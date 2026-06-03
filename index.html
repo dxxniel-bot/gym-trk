@@ -315,7 +315,7 @@ function seed(){
   return {
     version:1,
     profile:{username:''},
-    settings:{unit:'lbs',goals:{kcal:2200,protein:165,carbs:240,fat:65,sodium:2300,potassium:3500,sugar:50,fiber:30,water:3.0,caffeine:400}},
+    settings:{unit:'lbs',goals:{kcal:2200,protein:165,carbs:240,fat:65,sodium:2300,potassium:3500,sugar:50,fiber:30,water:3.0,caffeine:400,alcohol:14}},
     activeGym:'',
     gyms:[],
     machines:{},
@@ -369,7 +369,7 @@ function seedPrev(){
 // ---------- persistence ----------
 let db;
 function load(){ try{const r=localStorage.getItem(LS_KEY); if(!r)return seed(); const d=JSON.parse(r); return migrate(d);}catch(e){console.warn('load failed',e);return seed();} }
-function migrate(d){ if(!d.version){d.version=1;} if(!d.meals)d.meals={}; if(!d.foods)d.foods=[]; d.foods=d.foods.map(f=>(f&&f.per100)?f:asCanonical(f)); if(!d.steps)d.steps={}; if(!d.machines)d.machines={}; if(!d.bodyweight)d.bodyweight={}; if(!d.mealTags)d.mealTags=['breakfast','lunch','snack','dinner']; if(!d.settings)d.settings={goals:seed().settings.goals}; return d; }
+function migrate(d){ if(!d.version){d.version=1;} if(!d.meals)d.meals={}; if(!d.foods)d.foods=[]; d.foods=d.foods.map(f=>(f&&f.per100)?f:asCanonical(f)); if(!d.steps)d.steps={}; if(!d.machines)d.machines={}; if(!d.bodyweight)d.bodyweight={}; if(!d.mealTags)d.mealTags=['breakfast','lunch','snack','dinner']; if(!d.settings)d.settings={goals:seed().settings.goals}; if(d.settings&&d.settings.goals&&d.settings.goals.alcohol==null)d.settings.goals.alcohol=(d.profile&&d.profile.sex==='F')?14:28; return d; }
 function save(){ try{localStorage.setItem(LS_KEY,JSON.stringify(db));}catch(e){console.warn('save failed',e);} }
 
 // ---------- helpers ----------
@@ -667,8 +667,8 @@ function renderMacros(){
   const tags=Object.keys(byTag).sort((a,b)=>order.indexOf(a)-order.indexOf(b));
   if(!items.length){ log=`<div class="empty">no meals logged today<br/>tap [+ add] to start</div>`; }
   tags.forEach(tag=>{ const list=byTag[tag];
-    const mt={kcal:0,protein:0,carbs:0,fat:0,caffeine:0}; list.forEach(m=>{mt.kcal+=+m.kcal||0;mt.protein+=+m.protein||0;mt.carbs+=+m.carbs||0;mt.fat+=+m.fat||0;mt.caffeine+=+m.caffeine||0;});
-    const gcaf=mt.caffeine>0?` · ${Math.round(mt.caffeine)}mg caf`:'';
+    const mt={kcal:0,protein:0,carbs:0,fat:0,caffeine:0,alcohol:0}; list.forEach(m=>{mt.kcal+=+m.kcal||0;mt.protein+=+m.protein||0;mt.carbs+=+m.carbs||0;mt.fat+=+m.fat||0;mt.caffeine+=+m.caffeine||0;mt.alcohol+=+m.alcohol||0;});
+    const gcaf=(mt.caffeine>0?` · ${Math.round(mt.caffeine)}mg caf`:'')+(mt.alcohol>0?` · ${Math.round(mt.alcohol)}g alc`:'');
     log+=`<div class="grp"><div class="ghead" data-act="mealsummary" data-tag="${tag}" style="cursor:pointer"><span><span class="hash">#</span>${tag}</span><span class="gmac">${Math.round(mt.protein)}P ${Math.round(mt.carbs)}C ${Math.round(mt.fat)}F</span><span class="gkc">${Math.round(mt.kcal)}${gcaf}</span></div>`;
     list.forEach(m=>{ const nm=(m.name||'').replace(/ ×[\d.]+$/,''); const br=(m._food&&m._food.brand)||''; const exp=state.expandedMeal===m.id;
       log+=`<div class="item${exp?' exp':''}" data-act="viewmeal" data-id="${m.id}"><span class="nm"><b class="q">${itemQtyLabel(m)}</b>${nm}${br?' <span class="br">'+br+'</span>':''}</span><span class="macq">${Math.round(m.protein)||0}P ${Math.round(m.carbs)||0}C ${Math.round(m.fat)||0}F</span><span class="kc">${Math.round(m.kcal)||0}</span></div>`;
@@ -955,7 +955,7 @@ document.getElementById('app').addEventListener('click',e=>{
     const carbs=Math.max(0,Math.round((kcal-protein*4-fat*9)/4));
     db.profile={username:u,sex,age,weightKg:w,heightCm:hh,activity:act,goal};
     const g=val('ob_gym')||'home'; db.gyms=[g]; db.activeGym=g; db.settings.unit=unit;
-    db.settings.goals={kcal,protein,carbs,fat,sodium:2300,potassium:3500,sugar:Math.round(kcal*0.10/4),fiber:Math.max(25,Math.round(kcal/100)),water:Math.max(2,Math.round(0.035*w*10)/10),caffeine:400};
+    db.settings.goals={kcal,protein,carbs,fat,sodium:2300,potassium:3500,sugar:Math.round(kcal*0.10/4),fiber:Math.max(25,Math.round(kcal/100)),water:Math.max(2,Math.round(0.035*w*10)/10),caffeine:400,alcohol:sex==='M'?28:14};
     state.screen='home'; save(); render();
   }
   else if(a==='changesplit'||a==='schedule'){ go('splitedit'); }
@@ -1181,9 +1181,9 @@ function openMachineEdit(exi){
   document.getElementById('mc_save').onclick=()=>{ setMachine(w.gym,ex,{brand:val('mc_brand'),setup:val('mc_setup'),na:false}); closeModal(); render(); };
   document.getElementById('mc_na').onclick=()=>{ setMachine(w.gym,ex,{brand:'',setup:'',na:true}); closeModal(); render(); };
 }
-function foodPer(){ return {kcal:0,protein:0,carbs:0,fat:0,sugar:0,sodium:0,potassium:0,fiber:0,caffeine:0,water:0}; }
+function foodPer(){ return {kcal:0,protein:0,carbs:0,fat:0,sugar:0,sodium:0,potassium:0,fiber:0,caffeine:0,alcohol:0,water:0}; }
 // ---- canonical food model: store per-100 g/ml; log via unit dropdown × qty ----
-const MACROKEYS=['kcal','protein','carbs','fat','sugar','fiber','sodium','potassium','caffeine'];
+const MACROKEYS=['kcal','protein','carbs','fat','sugar','fiber','sodium','potassium','caffeine','alcohol'];
 function numTxt(n){ n=Math.round((+n||0)*100)/100; return ''+n; }
 function servingToGrams(str){ if(!str)return 0; const m=(''+str).toLowerCase().match(/(\d+(?:[.,]\d+)?)\s*(kg|g|gr|grs|gramos?|ml|cl|dl|l)\b/); if(!m)return 0; let v=parseFloat(m[1].replace(',','.'))||0; const u=m[2]; if(u==='kg'||u==='l')v*=1000; else if(u==='dl')v*=100; else if(u==='cl')v*=10; return v; }
 function foodKcal100(f){ if(f&&f.per100)return f.per100.kcal||0; if(f&&f.per)return f.per.kcal||0; return 0; }
@@ -1256,7 +1256,7 @@ const bfNorm=s=>(s||'').toString().toLowerCase().normalize('NFD').replace(/[̀-�
 const BASE_FOODS=(function(){ const L=[];
   const slug=n=>'bf_'+bfNorm(n).replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
   const add=(name,kcal,p,c,f,o)=>{ o=o||{}; const bid=o.br?bfNorm(o.br).replace(/[^a-z0-9]+/g,'-'):''; L.push({ id:slug(name)+(bid?'-'+bid:''), name:name, alt:o.en||'', brand:o.br||'', base:o.base||'g',
-    per100:{kcal:kcal,protein:p,carbs:c,fat:f,sugar:o.s||0,fiber:o.fi||0,sodium:o.na||0,potassium:o.k||0,caffeine:o.caf||0},
+    per100:{kcal:kcal,protein:p,carbs:c,fat:f,sugar:o.s||0,fiber:o.fi||0,sodium:o.na||0,potassium:o.k||0,caffeine:o.caf||0,alcohol:o.alc||0},
     sizes:Object.assign({}, o.sv?{serving:o.sv}:{}, o.pc?{piece:o.pc}:{}, o.ct?{container:o.ct}:{}),
     servingLabel:o.sl||'', group:o.g||'', _base:true }); };
   // HUEVO & LÁCTEOS
@@ -1536,36 +1536,36 @@ const BASE_FOODS=(function(){ const L=[];
 
   // ===== MARCAS (MX + US) — extenso =====
   // CERVEZAS
-  add('Modelo Especial',43,0.4,3.8,0,{br:'Modelo',en:'beer cerveza lager',sv:355,base:'ml'});
-  add('Negra Modelo',51,0.5,4.6,0,{br:'Modelo',en:'beer cerveza lager',sv:355,base:'ml'});
-  add('Corona Extra',41,0.3,3.6,0,{br:'Corona',en:'beer cerveza lager',sv:355,base:'ml'});
-  add('Corona Light',29,0.3,2.2,0,{br:'Corona',en:'beer cerveza lager',sv:355,base:'ml'});
-  add('Victoria',43,0.4,3.9,0,{br:'Victoria',en:'beer cerveza lager',sv:355,base:'ml'});
-  add('Pacifico',44,0.4,3.9,0,{br:'Pacifico',en:'beer cerveza lager',sv:355,base:'ml'});
-  add('Tecate',39,0.3,3.4,0,{br:'Tecate',en:'beer cerveza lager',sv:355,base:'ml'});
-  add('Tecate Light',29,0.3,2,0,{br:'Tecate',en:'beer cerveza lager',sv:355,base:'ml'});
-  add('Indio',43,0.4,3.8,0,{br:'Indio',en:'beer cerveza lager',sv:355,base:'ml'});
-  add('Dos Equis Lager',43,0.4,3.8,0,{br:'Dos Equis',en:'beer cerveza lager',sv:355,base:'ml'});
-  add('Dos Equis Ambar',45,0.5,4,0,{br:'Dos Equis',en:'beer cerveza lager',sv:355,base:'ml'});
-  add('Bohemia',46,0.5,4.1,0,{br:'Bohemia',en:'beer cerveza lager',sv:355,base:'ml'});
-  add('Sol',42,0.4,3.7,0,{br:'Sol',en:'beer cerveza lager',sv:355,base:'ml'});
-  add('Carta Blanca',42,0.4,3.7,0,{br:'Carta Blanca',en:'beer cerveza lager',sv:355,base:'ml'});
-  add('Superior',43,0.4,3.8,0,{br:'Superior',en:'beer cerveza lager',sv:355,base:'ml'});
-  add('Heineken',42,0.3,3.2,0,{br:'Heineken',en:'beer cerveza lager',sv:355,base:'ml'});
-  add('Heineken Light',28,0.3,2,0,{br:'Heineken',en:'beer cerveza lager',sv:355,base:'ml'});
-  add('Budweiser',41,0.3,3.2,0,{br:'Budweiser',en:'beer cerveza lager',sv:355,base:'ml'});
-  add('Bud Light',29,0.2,1.9,0,{br:'Bud Light',en:'beer cerveza lager',sv:355,base:'ml'});
-  add('Stella Artois',45,0.4,3.6,0,{br:'Stella Artois',en:'beer cerveza lager',sv:355,base:'ml'});
-  add('Michelob Ultra',26,0.2,1.3,0,{br:'Michelob',en:'beer cerveza lager',sv:355,base:'ml'});
-  add('Miller Lite',26,0.2,0.9,0,{br:'Miller',en:'beer cerveza lager',sv:355,base:'ml'});
-  add('Coors Light',29,0.2,1.5,0,{br:'Coors',en:'beer cerveza lager',sv:355,base:'ml'});
-  add('Guinness',35,0.3,3,0,{br:'Guinness',en:'beer cerveza lager',sv:355,base:'ml'});
-  add('Amstel Ultra',26,0.2,1.3,0,{br:'Amstel',en:'beer cerveza lager',sv:355,base:'ml'});
-  add('Corona Cero',20,0.4,4.5,0,{br:'Corona',en:'beer cerveza lager',sv:355,base:'ml'});
-  add('XX Ultra',27,0.3,1.5,0,{br:'Dos Equis',en:'beer cerveza lager',sv:355,base:'ml'});
-  add('Leon',45,0.5,4,0,{br:'Leon',en:'beer cerveza lager',sv:355,base:'ml'});
-  add('Estrella Jalisco',43,0.4,3.8,0,{br:'Estrella',en:'beer cerveza lager',sv:355,base:'ml'});
-  add('Minerva IPA',55,0.6,5,0,{br:'Minerva',en:'beer cerveza lager',sv:355,base:'ml'});
+  add('Modelo Especial',43,0.4,3.8,0,{br:'Modelo',en:'beer cerveza lager',sv:355,base:'ml',alc:3.5});
+  add('Negra Modelo',51,0.5,4.6,0,{br:'Modelo',en:'beer cerveza lager',sv:355,base:'ml',alc:4.3});
+  add('Corona Extra',41,0.3,3.6,0,{br:'Corona',en:'beer cerveza lager',sv:355,base:'ml',alc:3.6});
+  add('Corona Light',29,0.3,2.2,0,{br:'Corona',en:'beer cerveza lager',sv:355,base:'ml',alc:3.2});
+  add('Victoria',43,0.4,3.9,0,{br:'Victoria',en:'beer cerveza lager',sv:355,base:'ml',alc:3.2});
+  add('Pacifico',44,0.4,3.9,0,{br:'Pacifico',en:'beer cerveza lager',sv:355,base:'ml',alc:3.6});
+  add('Tecate',39,0.3,3.4,0,{br:'Tecate',en:'beer cerveza lager',sv:355,base:'ml',alc:3.6});
+  add('Tecate Light',29,0.3,2,0,{br:'Tecate',en:'beer cerveza lager',sv:355,base:'ml',alc:3.1});
+  add('Indio',43,0.4,3.8,0,{br:'Indio',en:'beer cerveza lager',sv:355,base:'ml',alc:3.6});
+  add('Dos Equis Lager',43,0.4,3.8,0,{br:'Dos Equis',en:'beer cerveza lager',sv:355,base:'ml',alc:3.3});
+  add('Dos Equis Ambar',45,0.5,4,0,{br:'Dos Equis',en:'beer cerveza lager',sv:355,base:'ml',alc:3.7});
+  add('Bohemia',46,0.5,4.1,0,{br:'Bohemia',en:'beer cerveza lager',sv:355,base:'ml',alc:3.7});
+  add('Sol',42,0.4,3.7,0,{br:'Sol',en:'beer cerveza lager',sv:355,base:'ml',alc:3.6});
+  add('Carta Blanca',42,0.4,3.7,0,{br:'Carta Blanca',en:'beer cerveza lager',sv:355,base:'ml',alc:3.6});
+  add('Superior',43,0.4,3.8,0,{br:'Superior',en:'beer cerveza lager',sv:355,base:'ml',alc:3.6});
+  add('Heineken',42,0.3,3.2,0,{br:'Heineken',en:'beer cerveza lager',sv:355,base:'ml',alc:3.9});
+  add('Heineken Light',28,0.3,2,0,{br:'Heineken',en:'beer cerveza lager',sv:355,base:'ml',alc:2.6});
+  add('Budweiser',41,0.3,3.2,0,{br:'Budweiser',en:'beer cerveza lager',sv:355,base:'ml',alc:3.9});
+  add('Bud Light',29,0.2,1.9,0,{br:'Bud Light',en:'beer cerveza lager',sv:355,base:'ml',alc:3.3});
+  add('Stella Artois',45,0.4,3.6,0,{br:'Stella Artois',en:'beer cerveza lager',sv:355,base:'ml',alc:3.9});
+  add('Michelob Ultra',26,0.2,1.3,0,{br:'Michelob',en:'beer cerveza lager',sv:355,base:'ml',alc:3.3});
+  add('Miller Lite',26,0.2,0.9,0,{br:'Miller',en:'beer cerveza lager',sv:355,base:'ml',alc:3.3});
+  add('Coors Light',29,0.2,1.5,0,{br:'Coors',en:'beer cerveza lager',sv:355,base:'ml',alc:3.3});
+  add('Guinness',35,0.3,3,0,{br:'Guinness',en:'beer cerveza lager',sv:355,base:'ml',alc:3.3});
+  add('Amstel Ultra',26,0.2,1.3,0,{br:'Amstel',en:'beer cerveza lager',sv:355,base:'ml',alc:3.2});
+  add('Corona Cero',20,0.4,4.5,0,{br:'Corona',en:'beer cerveza lager',sv:355,base:'ml',alc:0.0});
+  add('XX Ultra',27,0.3,1.5,0,{br:'Dos Equis',en:'beer cerveza lager',sv:355,base:'ml',alc:2.8});
+  add('Leon',45,0.5,4,0,{br:'Leon',en:'beer cerveza lager',sv:355,base:'ml',alc:3.6});
+  add('Estrella Jalisco',43,0.4,3.8,0,{br:'Estrella',en:'beer cerveza lager',sv:355,base:'ml',alc:3.6});
+  add('Minerva IPA',55,0.6,5,0,{br:'Minerva',en:'beer cerveza lager',sv:355,base:'ml',alc:5.1});
   // LECHE MARCAS
   add('Leche Lala 100 Entera',62,3.1,4.7,3.3,{br:'Lala',en:'whole milk',sv:240,base:'ml'});
   add('Leche Lala 100 Light',47,3.4,5,1.4,{br:'Lala',en:'light milk',sv:240,base:'ml'});
@@ -1955,7 +1955,7 @@ function openVerify(food, opts){
    <div class="field row2">${nf('v_carbs','CARBS g',disp.carbs)}${nf('v_fat','GRASA g',disp.fat)}</div>
    <div class="field row2">${nf('v_sugar','AZÚCAR g',disp.sugar)}${nf('v_fiber','FIBRA g',disp.fiber)}</div>
    <div class="field row2">${nf('v_sodium','SODIO mg',disp.sodium)}${nf('v_potassium','POTASIO mg',disp.potassium)}</div>
-   <div class="field row2">${nf('v_caffeine','CAFEÍNA mg',disp.caffeine)}<div></div></div>
+   <div class="field row2">${nf('v_caffeine','CAFEÍNA mg',disp.caffeine)}${nf('v_alcohol','ALCOHOL g',disp.alcohol)}</div>
    <div class="submeta" style="margin:6px 0 2px;color:var(--o50)">ENVASE (opcional · para loguear "1 envase"):</div>
    <div class="field row2">${sz('v_pack_g','ENVASE NETO ('+base+')',fd.sizes.container)}${sz('v_pack_servings','PORCIONES/ENVASE',packServings)}</div>
    <div class="field">${sz('v_piece_g','PESO POR PIEZA ('+base+', opc)',fd.sizes.piece)}</div>
@@ -1965,7 +1965,7 @@ function openVerify(food, opts){
   const rsum=()=>{ const f=readRegister(); const sgn=f.sizes.serving||0; const lbl=document.getElementById('v_perlbl');
     if(lbl)lbl.textContent=sgn?('VALORES POR PORCIÓN ('+numTxt(sgn)+' '+f.base+'):'):('VALORES POR 100 '+f.base.toUpperCase()+' (no pusiste porción):');
     const s=document.getElementById('v_reg_sum'); if(s){ const c=f.sizes.container||0; const env=c?(' · envase '+numTxt(c)+f.base+' = <b style="color:var(--fg)">'+Math.round(f.per100.kcal*c/100)+'</b> kcal'):''; s.innerHTML='por 100 '+f.base+': <b style="color:var(--fg)">'+Math.round(f.per100.kcal)+'</b> kcal'+env; } };
-  ['v_serv_g','v_kcal','v_protein','v_carbs','v_fat','v_sugar','v_fiber','v_sodium','v_potassium','v_caffeine','v_pack_g','v_pack_servings','v_piece_g'].forEach(id=>{ const e=document.getElementById(id); if(e)e.addEventListener('input',rsum); });
+  ['v_serv_g','v_kcal','v_protein','v_carbs','v_fat','v_sugar','v_fiber','v_sodium','v_potassium','v_caffeine','v_alcohol','v_pack_g','v_pack_servings','v_piece_g'].forEach(id=>{ const e=document.getElementById(id); if(e)e.addEventListener('input',rsum); });
   const vb=document.getElementById('v_base'); if(vb)vb.addEventListener('change',rsum);
   const bcs=document.getElementById('v_bc_scan'); if(bcs)bcs.onclick=()=>scanCodeToInput('v_barcode');
   rsum();
@@ -2048,6 +2048,7 @@ function openGoals(){
    <div class="field row2">${f('g_sodium','SODIUM mg',g.sodium)}${f('g_potassium','POTASSIUM mg',g.potassium)}</div>
    <div class="field row2">${f('g_sugar','SUGAR g',g.sugar)}${f('g_fiber','FIBER g',g.fiber)}</div>
    <div class="field row2">${f('g_water','WATER L',g.water)}${f('g_caffeine','CAFFEINE mg',g.caffeine)}</div>
+   <div class="field row2">${f('g_alcohol','ALCOHOL g · límite',g.alcohol||0)}<div></div></div>
    <div class="sheetbtns"><button class="ok" data-act="okgoals">save</button><button class="cancel" data-act="closemodal">cancel</button></div>`);
   const gn=id=>parseFloat(val(id))||0;
   const setv=(id,v)=>{ const e=document.getElementById(id); if(e)e.value=Math.round(v); };
@@ -2057,7 +2058,7 @@ function openGoals(){
   ['g_protein','g_carbs','g_fat'].forEach(id=>{ const e=document.getElementById(id); if(e)e.addEventListener('input',()=>{ if(gbusy)return; gbusy=true; setv('g_kcal',gn('g_protein')*4+gn('g_carbs')*4+gn('g_fat')*9); gbusy=false; gsum(); }); });
   gsum();
   document.querySelector('[data-act="okgoals"]').onclick=()=>{
-    ['kcal','protein','carbs','fat','sodium','potassium','sugar','fiber','water','caffeine'].forEach(k=>{const v=parseFloat(val('g_'+k)); if(!isNaN(v))g[k]=v;});
+    ['kcal','protein','carbs','fat','sodium','potassium','sugar','fiber','water','caffeine','alcohol'].forEach(k=>{const v=parseFloat(val('g_'+k)); if(!isNaN(v))g[k]=v;});
     save(); closeModal(); render();
   };
 }
