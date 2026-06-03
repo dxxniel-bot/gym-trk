@@ -1534,93 +1534,167 @@ const BASE_FOODS=(function(){ const L=[];
   add('Sándwich jamón y queso',250,13,28,9,{na:700,pc:150,en:'ham cheese sandwich'});
   add('Ensalada César',190,6,8,15,{na:430,sv:200,en:'caesar salad'});
 
-  // ===== MARCAS (MX + US) =====
-  // REFRESCOS & BEBIDAS
-  add('Coca-Cola',42,0,10.6,0,{br:'Coca-Cola',s:10.6,na:4,caf:9.7,base:'ml',sv:355,en:'coke cola'});
-  add('Coca-Cola Sin Azúcar',0.4,0,0,0,{br:'Coca-Cola',na:6,caf:9.7,base:'ml',sv:355,en:'coke zero sugar diet'});
-  add('Pepsi',44,0,11,0,{br:'Pepsi',s:11,na:4,caf:7,base:'ml',sv:355,en:'pepsi'});
-  add('Sprite',39,0,9.7,0,{br:'Sprite',s:9.7,na:9,base:'ml',sv:355,en:'sprite lemon lime'});
-  add('Fanta Naranja',48,0,12,0,{br:'Fanta',s:12,na:6,base:'ml',sv:355,en:'fanta orange'});
-  add('Manzanita Sol',46,0,11.5,0,{br:'Manzanita Sol',s:11.5,na:5,base:'ml',sv:355,en:'apple soda'});
-  add('Jarritos Tamarindo',45,0,11.3,0,{br:'Jarritos',s:11,na:8,base:'ml',sv:370,en:'jarritos'});
-  add('Boing Mango',52,0,13,0,{br:'Boing',s:11,na:10,base:'ml',sv:250,en:'mango juice drink'});
-  add('Jumex Mango',58,0.3,14,0,{br:'Jumex',s:13,na:8,base:'ml',sv:355,en:'jumex nectar'});
-  add('Red Bull',45,0.4,11,0,{br:'Red Bull',s:11,na:40,caf:32,base:'ml',sv:250,en:'energy drink'});
-  add('Monster Energy',47,0,12,0,{br:'Monster',s:11,na:75,caf:36,base:'ml',sv:473,en:'monster energy drink'});
-  add('Gatorade',25,0,6,0,{br:'Gatorade',s:5.8,na:41,k:18,base:'ml',sv:600,en:'gatorade sports drink'});
-  add('Powerade',26,0,6.5,0,{br:'Powerade',s:6,na:23,k:13,base:'ml',sv:600,en:'powerade'});
-  add('Electrolit',9,0,2.2,0,{br:'Electrolit',s:2,na:100,k:78,base:'ml',sv:625,en:'electrolyte drink'});
-  add('Café Starbucks Latte',56,3,5,2.5,{br:'Starbucks',s:5,caf:38,base:'ml',sv:355,en:'latte coffee'});
-  add('Frappuccino',95,2.4,18,1.5,{br:'Starbucks',s:17,caf:25,base:'ml',sv:355,en:'frappuccino'});
-  add('Cerveza Corona',41,0.3,3.6,0,{br:'Corona',base:'ml',sv:355,en:'beer corona'});
-  add('Cerveza Modelo',43,0.4,3.8,0,{br:'Modelo',base:'ml',sv:355,en:'beer modelo'});
-  add('Cerveza Tecate',39,0.3,3.4,0,{br:'Tecate',base:'ml',sv:355,en:'beer tecate'});
-
-  // LÁCTEOS DE MARCA
-  add('Leche Lala Entera',62,3.1,4.7,3.3,{br:'Lala',s:4.7,na:50,k:150,base:'ml',sv:240,en:'whole milk'});
-  add('Leche Lala Deslactosada',47,3.2,4.8,1.5,{br:'Lala',s:4.8,na:55,base:'ml',sv:240,en:'lactose free milk'});
-  add('Leche Alpura Entera',63,3.1,4.6,3.4,{br:'Alpura',s:4.6,na:48,base:'ml',sv:240,en:'whole milk'});
-  add('Leche Santa Clara',64,3.2,4.7,3.4,{br:'Santa Clara',s:4.7,base:'ml',sv:240,en:'milk'});
-  add('Yogurt Griego Oikos',60,8.6,4,0.3,{br:'Oikos',s:3.5,na:36,sv:150,en:'greek yogurt'});
-  add('Yoghurt Yoplait',88,3.2,15,1.8,{br:'Yoplait',s:14,sv:125,en:'yogurt'});
-  add('Yakult',71,1.2,16,0,{br:'Yakult',s:15,base:'ml',sv:80,en:'yakult probiotic'});
-  add('Queso Oaxaca',290,21,2,22,{br:'',na:700,sv:30,en:'oaxaca cheese string'});
-  add('Queso Philadelphia',253,5.5,4.5,23,{br:'Philadelphia',na:330,sv:30,en:'cream cheese'});
-  add('Crema Lala',195,2.5,4,18,{br:'Lala',na:60,base:'ml',sv:30,en:'sour cream'});
-
-  // SNACKS & FRITURAS
-  add('Sabritas Original',536,6.6,53,33,{br:'Sabritas',na:535,k:1100,sv:30,en:'potato chips lays'});
-  add('Doritos Nacho',498,7,57,26,{br:'Doritos',na:600,sv:30,en:'doritos nacho cheese'});
-  add('Cheetos',571,7,50,38,{br:'Cheetos',na:850,sv:30,en:'cheetos'});
-  add('Ruffles Queso',520,6,55,30,{br:'Ruffles',na:600,sv:30,en:'ruffles chips'});
-  add('Takis Fuego',512,6,60,27,{br:'Takis',na:700,sv:30,en:'takis fuego'});
-  add('Pringles Original',536,4,52,34,{br:'Pringles',na:540,sv:28,en:'pringles'});
-  add('Cacahuates Japoneses',480,17,52,22,{br:'Nishikawa',na:500,sv:30,en:'japanese peanuts'});
-  add('Galletas Oreo',480,4.7,69,20,{br:'Oreo',s:38,na:330,pc:11,en:'oreo cookies'});
-  add('Galletas Marías',440,7,76,12,{br:'Gamesa',s:22,na:300,pc:7,en:'maria cookies'});
-  add('Emperador Chocolate',500,5,65,24,{br:'Gamesa',s:32,pc:14,en:'chocolate cookies'});
-  add('Chokis',490,5,66,23,{br:'Gamesa',s:35,pc:12,en:'choco chip cookies'});
-  add('Barra Nature Valley',450,8,64,16,{br:'Nature Valley',s:24,fi:5,pc:21,en:'granola bar'});
-  add('Mamut',430,5,66,16,{br:'Gamesa',s:40,pc:28,en:'marshmallow cookie'});
-  add('Pan Bimbo Blanco',266,9,49,3.3,{br:'Bimbo',s:5,na:490,fi:2.7,pc:25,en:'white bread'});
-  add('Pan Integral Bimbo',247,12,41,3.5,{br:'Bimbo',s:5,na:450,fi:7,pc:28,en:'whole wheat bread'});
-  add('Gansito',410,4,60,17,{br:'Marinela',s:40,pc:50,en:'gansito snack cake'});
-  add('Pingüinos',390,4,58,16,{br:'Marinela',s:38,pc:55,en:'chocolate cake'});
-  add('Donitas Bimbo',470,4,58,24,{br:'Bimbo',s:28,pc:18,en:'mini donuts'});
-
-  // CHOCOLATES & DULCES
-  add('Snickers',491,8,60,24,{br:'Snickers',s:48,pc:52,en:'snickers bar'});
-  add('Kit Kat',518,6,59,28,{br:'Kit Kat',s:48,pc:42,en:'kit kat'});
-  add('M&Ms',492,4.6,71,20,{br:'M&Ms',s:64,pc:48,en:'m&ms chocolate'});
-  add('Carlos V',535,6,58,30,{br:'Nestlé',s:50,pc:18,en:'milk chocolate'});
-  add('Bubulubu',400,2,70,12,{br:'Ricolino',s:50,pc:35,en:'candy'});
-  add('Pulparindo',360,1,82,2,{br:'De la Rosa',s:60,pc:14,en:'tamarind candy'});
-  add('Mazapán',520,12,52,28,{br:'De la Rosa',s:45,pc:28,en:'mazapan peanut candy'});
-
+  // ===== MARCAS (MX + US) — extenso =====
+  // CERVEZAS
+  add('Modelo Especial',43,0.4,3.8,0,{br:'Modelo',en:'beer cerveza lager',sv:355,base:'ml'});
+  add('Negra Modelo',51,0.5,4.6,0,{br:'Modelo',en:'beer cerveza lager',sv:355,base:'ml'});
+  add('Corona Extra',41,0.3,3.6,0,{br:'Corona',en:'beer cerveza lager',sv:355,base:'ml'});
+  add('Corona Light',29,0.3,2.2,0,{br:'Corona',en:'beer cerveza lager',sv:355,base:'ml'});
+  add('Victoria',43,0.4,3.9,0,{br:'Victoria',en:'beer cerveza lager',sv:355,base:'ml'});
+  add('Pacifico',44,0.4,3.9,0,{br:'Pacifico',en:'beer cerveza lager',sv:355,base:'ml'});
+  add('Tecate',39,0.3,3.4,0,{br:'Tecate',en:'beer cerveza lager',sv:355,base:'ml'});
+  add('Tecate Light',29,0.3,2,0,{br:'Tecate',en:'beer cerveza lager',sv:355,base:'ml'});
+  add('Indio',43,0.4,3.8,0,{br:'Indio',en:'beer cerveza lager',sv:355,base:'ml'});
+  add('Dos Equis Lager',43,0.4,3.8,0,{br:'Dos Equis',en:'beer cerveza lager',sv:355,base:'ml'});
+  add('Dos Equis Ambar',45,0.5,4,0,{br:'Dos Equis',en:'beer cerveza lager',sv:355,base:'ml'});
+  add('Bohemia',46,0.5,4.1,0,{br:'Bohemia',en:'beer cerveza lager',sv:355,base:'ml'});
+  add('Sol',42,0.4,3.7,0,{br:'Sol',en:'beer cerveza lager',sv:355,base:'ml'});
+  add('Carta Blanca',42,0.4,3.7,0,{br:'Carta Blanca',en:'beer cerveza lager',sv:355,base:'ml'});
+  add('Superior',43,0.4,3.8,0,{br:'Superior',en:'beer cerveza lager',sv:355,base:'ml'});
+  add('Heineken',42,0.3,3.2,0,{br:'Heineken',en:'beer cerveza lager',sv:355,base:'ml'});
+  add('Heineken Light',28,0.3,2,0,{br:'Heineken',en:'beer cerveza lager',sv:355,base:'ml'});
+  add('Budweiser',41,0.3,3.2,0,{br:'Budweiser',en:'beer cerveza lager',sv:355,base:'ml'});
+  add('Bud Light',29,0.2,1.9,0,{br:'Bud Light',en:'beer cerveza lager',sv:355,base:'ml'});
+  add('Stella Artois',45,0.4,3.6,0,{br:'Stella Artois',en:'beer cerveza lager',sv:355,base:'ml'});
+  add('Michelob Ultra',26,0.2,1.3,0,{br:'Michelob',en:'beer cerveza lager',sv:355,base:'ml'});
+  add('Miller Lite',26,0.2,0.9,0,{br:'Miller',en:'beer cerveza lager',sv:355,base:'ml'});
+  add('Coors Light',29,0.2,1.5,0,{br:'Coors',en:'beer cerveza lager',sv:355,base:'ml'});
+  add('Guinness',35,0.3,3,0,{br:'Guinness',en:'beer cerveza lager',sv:355,base:'ml'});
+  add('Amstel Ultra',26,0.2,1.3,0,{br:'Amstel',en:'beer cerveza lager',sv:355,base:'ml'});
+  add('Corona Cero',20,0.4,4.5,0,{br:'Corona',en:'beer cerveza lager',sv:355,base:'ml'});
+  add('XX Ultra',27,0.3,1.5,0,{br:'Dos Equis',en:'beer cerveza lager',sv:355,base:'ml'});
+  add('Leon',45,0.5,4,0,{br:'Leon',en:'beer cerveza lager',sv:355,base:'ml'});
+  add('Estrella Jalisco',43,0.4,3.8,0,{br:'Estrella',en:'beer cerveza lager',sv:355,base:'ml'});
+  add('Minerva IPA',55,0.6,5,0,{br:'Minerva',en:'beer cerveza lager',sv:355,base:'ml'});
+  // LECHE MARCAS
+  add('Leche Lala 100 Entera',62,3.1,4.7,3.3,{br:'Lala',en:'whole milk',sv:240,base:'ml'});
+  add('Leche Lala 100 Light',47,3.4,5,1.4,{br:'Lala',en:'light milk',sv:240,base:'ml'});
+  add('Leche Lala 100 Deslactosada',47,3.2,4.8,1.5,{br:'Lala',en:'lactose free milk',sv:240,base:'ml'});
+  add('Leche Lala 100 Semidescremada',50,3.2,4.8,2,{br:'Lala',en:'reduced fat milk',sv:240,base:'ml'});
+  add('Leche Lala 100 Descremada',35,3.4,5,0.2,{br:'Lala',en:'skim milk',sv:240,base:'ml'});
+  add('Leche Lala Chocolate',83,3,12,2.3,{br:'Lala',en:'chocolate milk',sv:240,base:'ml'});
+  add('Leche Alpura 100 Entera',63,3.1,4.6,3.4,{br:'Alpura',en:'whole milk',sv:240,base:'ml'});
+  add('Leche Alpura Deslactosada',48,3.2,4.7,1.5,{br:'Alpura',en:'lactose free milk',sv:240,base:'ml'});
+  add('Leche Alpura Light',45,3.3,5,1.2,{br:'Alpura',en:'light milk',sv:240,base:'ml'});
+  add('Leche Santa Clara Entera',64,3.2,4.7,3.4,{br:'Santa Clara',en:'whole milk',sv:240,base:'ml'});
+  add('Leche Nutri',60,3,4.6,3.2,{br:'Nutri Leche',en:'milk',sv:240,base:'ml'});
+  add('Leche Sello Rojo',62,3.1,4.6,3.3,{br:'Sello Rojo',en:'milk',sv:240,base:'ml'});
+  add('Leche Almendra Silk',15,0.6,1.5,1.1,{br:'Silk',en:'almond milk',sv:240,base:'ml'});
+  add('Leche Almendra Almond Breeze',13,0.4,0.6,1.1,{br:'Blue Diamond',en:'almond milk',sv:240,base:'ml'});
+  add('Leche Soya Ades',43,3,4.5,1.5,{br:'Ades',en:'soy milk',sv:240,base:'ml'});
+  add('Leche Avena Oatly',46,1,7,1.5,{br:'Oatly',en:'oat milk',sv:240,base:'ml'});
+  add('Leche Evaporada Carnation',135,6.8,10,7.6,{br:'Carnation',en:'evaporated milk',sv:240,base:'ml'});
+  add('Leche Condensada La Lechera',321,7.9,54,8.7,{br:'La Lechera',en:'condensed milk',sv:240,base:'ml'});
+  // YOGURTS
+  add('Yoghurt Yoplait Fresa',88,3.2,15,1.8,{br:'Yoplait',en:'yogurt',sv:150});
+  add('Yoghurt Danone',90,3.5,14,2,{br:'Danone',en:'yogurt',sv:150});
+  add('Yoghurt Griego Oikos',60,8.6,4,0.3,{br:'Oikos',en:'yogurt',sv:150});
+  add('Yoghurt Activia',75,3.8,12,1.5,{br:'Activia',en:'yogurt',sv:150});
+  add('Yoghurt Chobani',59,10,3.6,0,{br:'Chobani',en:'yogurt',sv:150});
+  add('Yoghurt Lala',82,3.3,13,1.8,{br:'Lala',en:'yogurt',sv:150});
+  add('Yoghurt Griego Fage',58,9,3.5,0,{br:'Fage',en:'yogurt',sv:150});
+  add('Soful',95,2.6,18,1.5,{br:'Soful',en:'yogurt',sv:150});
+  // REFRESCOS
+  add('Coca-Cola Light',0.3,0,0,0,{caf:9.7,br:'Coca-Cola',en:'diet coke',sv:355,base:'ml'});
+  add('Coca-Cola Vainilla',44,0,11,0,{s:11,caf:9,br:'Coca-Cola',en:'vanilla coke',sv:355,base:'ml'});
+  add('Fanta Uva',51,0,13,0,{s:13,br:'Fanta',en:'grape soda',sv:355,base:'ml'});
+  add('Sprite Sin Azucar',1,0,0,0,{br:'Sprite',en:'sprite zero',sv:355,base:'ml'});
+  add('Jarritos Mandarina',46,0,11.5,0,{s:11,br:'Jarritos',en:'tangerine soda',sv:355,base:'ml'});
+  add('Jarritos Limon',43,0,10.8,0,{s:10,br:'Jarritos',en:'lime soda',sv:355,base:'ml'});
+  add('Squirt',40,0,10,0,{s:10,br:'Squirt',en:'grapefruit soda',sv:355,base:'ml'});
+  add('Fresca',2,0,0,0,{br:'Fresca',en:'grapefruit soda',sv:355,base:'ml'});
+  add('Sidral Mundet',45,0,11,0,{s:11,br:'Mundet',en:'apple soda',sv:355,base:'ml'});
+  add('Penafiel Mineral',0,0,0,0,{br:'Penafiel',en:'sparkling water',sv:355,base:'ml'});
+  add('Dr Pepper',41,0,10.3,0,{s:10,caf:9,br:'Dr Pepper',en:'dr pepper',sv:355,base:'ml'});
+  add('7Up',44,0,11,0,{s:11,br:'7Up',en:'seven up lemon',sv:355,base:'ml'});
+  add('Mirinda',50,0,12.5,0,{s:12,br:'Mirinda',en:'orange soda',sv:355,base:'ml'});
+  add('Mountain Dew',49,0,12.3,0,{s:12,caf:15,br:'Mountain Dew',en:'mountain dew',sv:355,base:'ml'});
+  add('Te Lipton Limon',30,0,7.5,0,{s:7,caf:5,br:'Lipton',en:'iced tea',sv:355,base:'ml'});
+  add('Fuze Tea Durazno',28,0,7,0,{s:7,caf:3,br:'Fuze Tea',en:'peach tea',sv:355,base:'ml'});
+  add('Vive 100',20,0,5,0,{s:5,caf:26,br:'Vive 100',en:'energy drink',sv:355,base:'ml'});
+  add('Monster Ultra',5,0,1,0,{caf:36,br:'Monster',en:'zero sugar energy',sv:355,base:'ml'});
+  add('Gatorade Naranja',25,0,6,0,{s:6,br:'Gatorade',en:'sports drink',sv:355,base:'ml'});
+  add('Powerade Mora',26,0,6.5,0,{s:6,br:'Powerade',en:'sports drink',sv:355,base:'ml'});
+  // SNACKS
+  add('Sabritas Limon',540,7,52,34,{na:500,br:'Sabritas',en:'lime chips',sv:30});
+  add('Doritos Dinamita',500,7,58,27,{na:500,br:'Doritos',en:'spicy chips',sv:30});
+  add('Tostitos',490,6,60,25,{na:500,br:'Tostitos',en:'tortilla chips',sv:30});
+  add('Fritos',540,6,52,34,{na:500,br:'Fritos',en:'corn chips',sv:30});
+  add('Rancheritos',500,6,58,27,{na:500,br:'Rancheritos',en:'chips',sv:30});
+  add('Churrumais',490,6,60,25,{na:500,br:'Churrumais',en:'chips',sv:30});
+  add('Chips Jalapeno',520,6,56,30,{na:500,br:'Barcel',en:'jalapeno chips',sv:30});
+  add('Hot Nuts',560,18,38,38,{na:500,br:'Hot Nuts',en:'spicy peanuts',sv:30});
+  add('Cheetos Flamin Hot',560,6,52,36,{na:500,br:'Cheetos',en:'flamin hot',sv:30});
+  add('Paketaxo',520,7,55,30,{na:500,br:'Sabritas',en:'mix chips',sv:30});
+  add('Popcorn Act II',500,7,57,28,{na:500,br:'Act II',en:'popcorn',sv:30});
+  add('Pretzels Snyders',380,10,80,3,{na:500,br:'Snyders',en:'pretzels',sv:30});
+  add('Tajin',10,0,2,0,{na:500,br:'Tajin',en:'chili seasoning',sv:30});
+  add('Chicharron de Cerdo',540,60,0,33,{na:500,en:'pork rinds',sv:30});
+  // PAN Y GALLETAS
+  add('Pan Blanco Bimbo',266,9,49,3.3,{fi:2.7,na:490,br:'Bimbo',en:'white bread',pc:25});
+  add('Pan Integral Bimbo',247,12,41,3.5,{fi:7,na:450,br:'Bimbo',en:'whole wheat bread',pc:28});
+  add('Bimbollos',280,9,50,5,{fi:2,na:420,br:'Bimbo',en:'burger bun',pc:60});
+  add('Medias Noches Bimbo',290,9,52,5,{fi:2,na:400,br:'Bimbo',en:'hot dog bun',pc:40});
+  add('Pan Tostado Bimbo',400,12,72,7,{fi:4,na:600,br:'Bimbo',en:'toast',pc:10});
+  add('Tortilla de Maiz',218,5.7,45,2.5,{fi:4.8,na:12,en:'corn tortilla',pc:30});
+  add('Tortilla de Harina',310,8,50,8,{fi:2,na:500,en:'flour tortilla',pc:45});
+  add('Tortilla Mission',300,8,49,7,{fi:2,na:480,br:'Mission',en:'flour tortilla',pc:45});
+  add('Galletas Marias Gamesa',440,7,76,12,{fi:1,na:300,br:'Gamesa',en:'maria cookies',pc:7});
+  add('Saladitas',430,8,72,12,{fi:2,na:700,br:'Gamesa',en:'saltine crackers',pc:6});
+  add('Habaneras',440,9,70,13,{fi:2,na:650,br:'Cuetara',en:'crackers',pc:8});
+  add('Principe',480,6,68,20,{fi:1,na:300,br:'Marinela',en:'sandwich cookies',pc:12});
+  add('Triki Trakes',470,6,68,19,{fi:1,na:250,br:'Marinela',en:'cookies',pc:12});
+  // DULCES Y CHOCOLATES
+  add('Twix',495,5,64,24,{s:44,br:'Twix',en:'candy chocolate dulce',pc:50});
+  add('Milky Way',456,4,72,17,{s:50,br:'Milky Way',en:'candy chocolate dulce',pc:52});
+  add('Hersheys Chocolate',535,7,57,31,{s:39,br:'Hersheys',en:'candy chocolate dulce',pc:43});
+  add('Ferrero Rocher',580,8,44,42,{s:30,br:'Ferrero',en:'candy chocolate dulce',pc:12});
+  add('Skittles',405,0,91,4,{s:63,br:'Skittles',en:'candy chocolate dulce',pc:61});
+  add('Gomitas Panditas',340,5,80,0,{s:56,br:'Ricolino',en:'candy chocolate dulce',pc:40});
+  add('Paleta Payaso',420,4,72,12,{s:50,br:'Ricolino',en:'candy chocolate dulce',pc:40});
+  add('Duvalin',480,5,60,24,{s:42,br:'Ricolino',en:'candy chocolate dulce',pc:20});
+  add('Carlos V',535,6,58,30,{s:40,br:'Nestle',en:'candy chocolate dulce',pc:18});
+  add('Crunch',520,6,60,28,{s:42,br:'Nestle',en:'candy chocolate dulce',pc:30});
+  add('Kinder Bueno',566,8,49,37,{s:34,br:'Kinder',en:'candy chocolate dulce',pc:43});
+  add('Tic Tac',390,0,97,0,{s:67,br:'Tic Tac',en:'candy chocolate dulce',pc:2});
+  add('Glorias',410,6,68,12,{s:47,br:'Coronado',en:'candy chocolate dulce',pc:30});
+  add('Pelon Pelo Rico',330,0,80,0,{s:56,br:'De la Rosa',en:'candy chocolate dulce',pc:25});
+  add('Lucas Muecas',350,1,82,1,{s:57,br:'Lucas',en:'candy chocolate dulce',pc:25});
+  add('Vero Mango',360,0,88,0,{s:61,br:'Vero',en:'candy chocolate dulce',pc:20});
+  add('Paleta Tutsi Pop',390,0,97,0,{s:67,br:'Tutsi',en:'candy chocolate dulce',pc:17});
+  add('Mazapan De la Rosa',520,12,52,28,{s:36,br:'De la Rosa',en:'candy chocolate dulce',pc:28});
   // CEREALES
-  add('Zucaritas',375,5,87,1,{br:'Kelloggs',s:35,na:480,fi:2,sv:30,en:'frosted flakes cereal'});
-  add('Corn Flakes',357,7,84,0.9,{br:'Kelloggs',s:8,na:660,fi:3,sv:30,en:'corn flakes'});
-  add('Choco Krispis',383,5,86,2,{br:'Kelloggs',s:38,na:430,sv:30,en:'cocoa krispies'});
-  add('Special K',379,15,73,2.5,{br:'Kelloggs',s:14,na:580,fi:4,sv:30,en:'special k'});
-  add('Avena Quaker',389,13,66,7,{br:'Quaker',s:1,fi:10,sv:40,en:'oats oatmeal'});
-  add('Granola',471,10,64,18,{br:'',s:24,fi:7,sv:50,en:'granola'});
-
-  // PROTEÍNA & SUPLEMENTOS
-  add('Whey Gold Standard',373,80,7,7,{br:'Optimum Nutrition',s:3,na:130,sv:30,en:'whey protein powder'});
-  add('Whey Iso',360,85,3,1.5,{br:'',sv:30,en:'iso whey protein'});
-  add('Barra Quest',357,32,43,14,{br:'Quest',s:3,fi:14,pc:60,en:'protein bar'});
-  add('Creatina Monohidrato',0,0,0,0,{br:'',sv:5,en:'creatine monohydrate'});
-
-  // COMIDA RÁPIDA
-  add('Big Mac',257,11,20,15,{br:'McDonalds',na:430,pc:215,en:'big mac burger'});
-  add('McNuggets',290,15,18,18,{br:'McDonalds',na:520,pc:16,en:'chicken nuggets'});
-  add('Papas McDonalds',322,3.4,42,15,{br:'McDonalds',na:230,sv:117,en:'mcdonalds fries'});
-  add('Whopper',230,10,18,13,{br:'Burger King',na:410,pc:270,en:'whopper'});
-  add('KFC Pollo',280,21,9,18,{br:'KFC',na:760,pc:120,en:'kfc fried chicken'});
-  add('Pizza Domino\'s Peperoni',266,11,30,11,{br:'Dominos',na:600,pc:107,en:'pepperoni pizza'});
-  add('Taco Bell Burrito',230,9,28,9,{br:'Taco Bell',na:540,pc:200,en:'burrito'});
-  add('Subway Pollo',130,9,18,2.5,{br:'Subway',na:400,sv:230,en:'sub sandwich'});
-
+  add('Froot Loops',379,5,87,3.5,{br:'Kelloggs',en:'cereal',sv:30});
+  add('Cheerios',378,12,73,7,{br:'Cheerios',en:'cereal',sv:30});
+  add('Fitness Nestle',370,8,80,2,{br:'Nestle',en:'cereal',sv:30});
+  add('Nesquik Cereal',383,6,84,3,{br:'Nesquik',en:'cereal',sv:30});
+  add('Trix',390,4,87,3,{br:'Trix',en:'cereal',sv:30});
+  add('Lucky Charms',380,7,79,3.5,{br:'Lucky Charms',en:'cereal',sv:30});
+  add('Cinnamon Toast Crunch',420,5,75,11,{br:'CTC',en:'cereal',sv:30});
+  add('All-Bran',259,13,80,3,{br:'Kelloggs',en:'cereal',sv:30});
+  // SUPLEMENTOS
+  add('Whey Gold Standard Vainilla',373,80,7,7,{br:'Optimum Nutrition',en:'whey protein vanilla',sv:30});
+  add('Whey ISO 100',360,90,1,0.5,{br:'Dymatize',en:'iso whey protein',sv:30});
+  add('Whey Birdman Falcon',330,75,10,5,{br:'Birdman',en:'vegan protein',sv:30});
+  add('Barra Quest Chocolate',357,32,43,14,{br:'Quest',en:'protein bar',sv:30});
+  add('Barra Built Bar',230,17,34,4,{br:'Built',en:'protein bar',sv:30});
+  add('Premier Protein Shake',67,13,4,1,{br:'Premier',en:'protein shake',sv:30});
+  add('Mass Gainer',380,15,60,6,{en:'mass gainer',sv:30});
+  add('Pre-Workout C4',5,0,1,0,{br:'C4',en:'pre workout',sv:30});
+  // COMIDA RAPIDA
+  add('Cuarto de Libra',244,12,16,14,{na:500,br:'McDonalds',en:'quarter pounder',sv:200});
+  add('McFlurry',170,4,27,5,{na:500,br:'McDonalds',en:'mcflurry',sv:180});
+  add('Cajita Feliz Nuggets',280,14,25,14,{na:500,br:'McDonalds',en:'happy meal',sv:150});
+  add('Whopper Jr',240,11,20,12,{na:500,br:'Burger King',en:'whopper jr',sv:150});
+  add('Papas Burger King',290,3,38,14,{na:500,br:'Burger King',en:'fries',sv:110});
+  add('KFC Popcorn Chicken',300,16,18,18,{na:500,br:'KFC',en:'popcorn chicken',sv:100});
+  add('Boneless KFC',250,18,12,14,{na:500,br:'KFC',en:'boneless wings',sv:120});
+  add('Pizza Hut Peperoni',280,12,30,12,{na:500,br:'Pizza Hut',en:'pepperoni pizza',sv:110});
+  add('Crunchwrap Taco Bell',230,8,28,10,{na:500,br:'Taco Bell',en:'crunchwrap',sv:150});
+  add('Quesadilla Taco Bell',280,12,26,14,{na:500,br:'Taco Bell',en:'quesadilla',sv:180});
+  add('Dominos Hawaiana',250,11,31,9,{na:500,br:'Dominos',en:'hawaiian pizza',sv:110});
+  add('Little Caesars Peperoni',280,12,31,12,{na:500,br:'Little Caesars',en:'pepperoni pizza',sv:110});
+  add('Sandwich Subway Pavo',120,8,18,2,{na:500,br:'Subway',en:'turkey sub',sv:230});
   return L;
 })();
 function openFoodAdd(preset, lockTag){
