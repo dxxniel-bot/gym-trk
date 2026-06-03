@@ -153,9 +153,10 @@
   .mgroup{margin-top:26px;} .mhead{font-size:11px; color:var(--o50); margin-bottom:15px;}
   .mbody{border-left:1px solid var(--o12); padding-left:14px; margin-left:4px;}
   .ex{margin-bottom:15px;} .ex:last-child{margin-bottom:0;}
-  .exhead{display:flex; align-items:baseline; flex-wrap:wrap; gap:7px; margin-bottom:9px;} .exhead .n{font-size:16px; font-weight:800;} .exhead .mch{font-size:11px; color:var(--o50); cursor:pointer; border-bottom:.5px dashed var(--o20);} .exhead .mch.empty{color:var(--o35); border-bottom:none;} .exhead .mch:active{color:var(--fg);} .exhead .mset{font-size:10px; color:var(--o40); cursor:pointer;} .exhead .note{font-size:10px; color:var(--o35);}
+  .exhead{display:flex; align-items:baseline; flex-wrap:wrap; gap:7px; margin-bottom:9px;} .exhead .n{font-size:16px; font-weight:800;} .exhead .mch{font-size:11px; color:var(--o50); cursor:pointer; border-bottom:.5px dashed var(--o20);} .exhead .mch.none{color:var(--o35); border-bottom:none;} .exhead .mch:active{color:var(--fg);} .exhead .mset{font-size:10px; color:var(--o40); cursor:pointer;} .exhead .note{font-size:10px; color:var(--o35);}
   .thead,.srow{display:grid; gap:4px; align-items:center;} .thead{margin-bottom:6px;} .thead .cl{font-size:9px; color:var(--o40); text-align:center; letter-spacing:.5px;} .thead .cl.w{text-align:left; padding-left:2px;}
   .gc-free{grid-template-columns:22px 1fr 38px 44px 40px 18px;} .gc-mach{grid-template-columns:22px 26px 1fr 38px 44px 40px 18px;} .gc-uni{grid-template-columns:20px 1fr 38px 44px 40px 18px;}
+  .gc-mach-fs{grid-template-columns:22px 26px 1fr 1fr 38px 44px 40px 18px;}
   .srow{margin-bottom:5px;} .setn{font-size:11px; color:var(--o50); text-align:center; cursor:pointer;} .setn.done{color:var(--fill); font-weight:700;}
   .side{font-size:10px; font-weight:700; color:var(--o50); text-align:center;}
   .inp{height:30px; border:.5px solid var(--o20); background:transparent; color:var(--fg); text-align:center; font-size:12px; width:100%;} .inp.weight{text-align:left; padding-left:8px;}
@@ -635,17 +636,18 @@ function renderSetRow(exi,si,set,ex,allowF){
   const r=`<input class="inp" data-act="setf" data-exi="${exi}" data-si="${si}" data-f="r" value="${set.r}" placeholder="—" inputmode="numeric"/>`;
   const rr=`<select class="pick" data-act="setf" data-exi="${exi}" data-si="${si}" data-f="rir">${rirOpts(set.rir)}</select>`;
   const del=`<button class="del" data-act="delset" data-exi="${exi}" data-si="${si}">×</button>`;
-  return {w,u,r,rr,del};
+  const we=`<input class="inp weight" data-act="setf" data-exi="${exi}" data-si="${si}" data-f="extraW" value="${set.extraW||''}" placeholder="+extra" inputmode="decimal"/>`;
+  return {w,u,r,rr,del,we};
 }
 function renderExercise(exi,ex,allowF){
   const sets=ex.sets||[]; const isM=ex.type==='machine'; const isU=ex.unilateral;
   const rec=machineRec((db.activeWork||{}).gym,ex); const ed=`data-act="editmach" data-exi="${exi}"`;
   let mhtml;
-  if(rec.na){ mhtml=`<span class="mch empty" ${ed}>n/a</span>`; }
+  if(rec.na){ mhtml=`<span class="mch none" ${ed}>n/a</span>`; }
   else { let p='';
     if(rec.brand) p+=`<span class="mch" ${ed}>${escTxt(rec.brand)}</span>`;
     if(rec.setup) p+=`<span class="mset" ${ed}>${escTxt(rec.setup)}</span>`;
-    if(!rec.brand&&!rec.setup) p=`<span class="mch empty" ${ed}>+ machine</span>`;
+    if(!rec.brand&&!rec.setup) p=`<span class="mch none" ${ed}>+ machine</span>`;
     mhtml=p; }
   let head=`<div class="exhead"><span class="n" data-act="editexname" data-exi="${exi}" style="cursor:pointer">${ex.name}</span>${mhtml}${ex.note?`<span class="note">${escTxt(ex.note)}</span>`:''}${isU?'<span class="note">[uni]</span>':''}</div>`;
   let rows='';
@@ -666,9 +668,9 @@ function renderExercise(exi,ex,allowF){
     const gc=isM?'gc-mach':'gc-free';
     let thead=`<div class="thead ${gc}"><div class="cl"></div>${isM?'<div class="cl"></div>':''}<div class="cl w">weight</div><div class="cl">unit</div><div class="cl">reps</div><div class="cl">rir</div><div class="cl"></div></div>`;
     let body='';
-    sets.forEach((s,si)=>{ const c=renderSetRow(exi,si,s,ex,allowF);
+    sets.forEach((s,si)=>{ const c=renderSetRow(exi,si,s,ex,allowF); const fsOn=isM&&s.fsOn;
       const fs=isM?`<button class="fs ${s.fsOn?'on':''}" data-act="fs" data-exi="${exi}" data-si="${si}">${s.isDrop?'DS':'FS'}</button>`:'';
-      body+=`<div class="srow ${gc}"><div class="setn ${s.done?'done':''}" data-act="done" data-exi="${exi}" data-si="${si}">${s.isDrop?'↓':'#'+(si+1)}</div>${fs}${c.w}${c.u}${c.r}${c.rr}${c.del}</div>`;
+      body+=`<div class="srow ${fsOn?'gc-mach-fs':gc}"><div class="setn ${s.done?'done':''}" data-act="done" data-exi="${exi}" data-si="${si}">${s.isDrop?'↓':'#'+(si+1)}</div>${fs}${c.w}${fsOn?c.we:''}${c.u}${c.r}${c.rr}${c.del}</div>`;
     });
     const drop=isM?`<button class="addbtn" data-act="dropset" data-exi="${exi}">[↓ drop set]</button>`:'';
     const add=`<div class="addrow ${isM?'amach':'afree'}"><span class="aleft"><button class="addbtn" data-act="addset" data-exi="${exi}">[+ set]</button>${drop}</span><button class="addbtn aex" data-act="addex">[+ exercise]</button></div>`;
