@@ -110,6 +110,23 @@
   .ring-fill{transition:stroke-dasharray .32s ease, stroke-dashoffset .32s ease, stroke .28s ease;}
   .cell .sub{transition:color .25s;} .cell .cap{transition:color .25s;}
   .grp-label{font-size:9px; color:var(--o50); letter-spacing:1.5px; margin-bottom:14px;}
+  /* progress dashboard tiles (área Progreso · layout Diseño) */
+  .pfeat{background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:15px; margin-top:14px;}
+  .pfl{font-size:9px; color:var(--o40); letter-spacing:1.5px; text-transform:uppercase; margin-bottom:8px;}
+  .pfv{font-size:14px; font-weight:700; line-height:1.35;} .pfv .up{color:var(--good);} .pfv .dn{color:var(--bad);}
+  .pwk{display:flex; gap:6px; margin-top:12px;} .pwd{flex:1; height:5px; border-radius:3px; background:var(--track);} .pwd.on{background:var(--good);}
+  .pgrid{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:11px;}
+  .ptile{background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:13px 13px 10px; min-width:0; overflow:hidden;}
+  .ptile .ptlh{display:flex; align-items:center; justify-content:space-between; gap:6px;}
+  .plbl{font-size:9px; color:var(--o40); letter-spacing:1px; text-transform:uppercase; margin-bottom:7px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .ptlh .plbl{margin-bottom:0;}
+  .ptla{font-size:9px; color:var(--o40); letter-spacing:.5px; cursor:pointer; white-space:nowrap;} .ptla:active{color:var(--fg);}
+  .pval{font-size:23px; font-weight:800; letter-spacing:-.5px; line-height:1; margin-top:1px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .pval span{font-size:11px; color:var(--o40); font-weight:400; margin-left:3px; letter-spacing:0;}
+  .pst{font-size:11px; font-weight:700; margin-top:5px;} .pst.good{color:var(--good);} .pst.bad{color:var(--bad);} .pst.flat{color:var(--o40); font-weight:400;}
+  .pst .lk{color:var(--o40); font-weight:400; text-decoration:underline; cursor:pointer;}
+  .prng{font-size:10px; letter-spacing:.5px; white-space:nowrap;} .prng span{cursor:pointer; padding:0 3px;}
+  .ptile svg{margin:7px 0 0 !important;}
   .mrow{display:grid; grid-template-columns:78px 1fr auto; align-items:center; column-gap:14px; margin-top:16px; font-size:11px;}
   .mrow:first-of-type{margin-top:0;} .mrow .ml{color:var(--o50);} .mrow .mv{color:var(--o60); font-size:10px; white-space:nowrap;} .mrow .mv .g{color:var(--o40);}
   .bar{height:3px; background:var(--track);} .bar>i{display:block; height:100%; background:var(--fill);}
@@ -650,6 +667,9 @@ function renderSetRow(exi,si,set,ex,allowF){
 function setScore(s){ const w=parseFloat(s&&s.w)||0, r=parseFloat(s&&s.r)||0; if(!(w>0&&r>0))return 0; const t=String((s&&s.rir)==null?'':s.rir).trim().toUpperCase(); let rv=(t===''||t==='F')?0:parseFloat(t); if(isNaN(rv))rv=0; rv=Math.max(0,Math.min(6,rv)); return w*(1+(r+rv)/30); }
 function bestScore(sets,confirmedOnly){ let b=0; (sets||[]).forEach(s=>{ if(confirmedOnly&&s._pf)return; const v=setScore(s); if(v>b)b=v; }); return b; }
 function exerciseProgress(ex){ const cur=bestScore(ex.sets,true); if(!cur)return null; const last=bestScore(lastLoggedSets(ex.name,ex.unilateral)); if(!last)return null; const ratio=cur/last; return {dir:ratio>1.02?'up':(ratio<0.98?'down':'flat'), pct:Math.round((ratio-1)*100)}; }
+function progBadgeHTML(ex){ const pr=exerciseProgress(ex); if(!pr)return ''; const col=pr.dir==='up'?'var(--good)':pr.dir==='down'?'var(--bad)':'var(--o40)'; const ar=pr.dir==='up'?'▲':pr.dir==='down'?'▼':'='; const pc=pr.pct?((pr.pct>0?'+':'')+pr.pct+'%'):''; return `<span class="exprog" style="font-size:12px;font-weight:800;margin-left:7px;color:${col}" title="progreso vs última sesión (e1RM ajustado por RIR)">${ar}${pc}</span>`; }
+// live-update the badge while logging (setField avoids a full re-render to keep input focus)
+function updateProgBadge(exi){ const w=db.activeWork; if(!w||!w.exercises[exi])return; const nm=document.querySelector('.exhead .n[data-exi="'+exi+'"]'); if(!nm)return; const html=progBadgeHTML(w.exercises[exi]); const exist=nm.parentElement.querySelector('.exprog'); if(html){ if(exist)exist.outerHTML=html; else nm.insertAdjacentHTML('afterend',html); } else if(exist){ exist.remove(); } }
 function renderExercise(exi,ex,allowF){
   const sets=ex.sets||[]; const isM=ex.type==='machine'; const isU=ex.unilateral;
   const rec=machineRec((db.activeWork||{}).gym,ex); const ed=`data-act="editmach" data-exi="${exi}"`;
@@ -660,7 +680,7 @@ function renderExercise(exi,ex,allowF){
     if(rec.setup) p+=`<span class="mset" ${ed}>${escTxt(rec.setup)}</span>`;
     if(!rec.brand&&!rec.setup) p=`<span class="mch none" ${ed}>+ machine</span>`;
     mhtml=p; }
-  const pr=exerciseProgress(ex); const prBadge=pr?`<span style="font-size:9px;font-weight:700;margin-left:6px;color:${pr.dir==='up'?'var(--good)':pr.dir==='down'?'var(--bad)':'var(--o40)'}" title="vs última sesión · e1RM ajustado por RIR">${pr.dir==='up'?'▲':pr.dir==='down'?'▼':'='}${pr.pct?((pr.pct>0?'+':'')+pr.pct+'%'):''}</span>`:'';
+  const prBadge=progBadgeHTML(ex);
   let head=`<div class="exhead"><span class="n" data-act="editexname" data-exi="${exi}" style="cursor:pointer">${ex.name}</span>${prBadge}${mhtml}${ex.note?`<span class="note">${escTxt(ex.note)}</span>`:''}${isU?'<span class="note">[uni]</span>':''}</div>`;
   let rows='';
   if(isU){
@@ -1134,6 +1154,7 @@ function go(screen){ state.screen=screen; render(); }
 // ---------- events ----------
 function setField(exi,si,f,val){ const w=db.activeWork; if(!w)return; const ex=w.exercises[exi]; const s=ex.sets[si]; if(!s)return; s[f]=val; s._pf=false;
   if(f==='w'&&ex.unilateral){ const pj=si^1; const ps=ex.sets[pj]; if(ps&&(ps.w===''||ps.w==null||ps._pf)){ ps.w=val; ps._pf=false; const pe=document.querySelector('[data-act="setf"][data-exi="'+exi+'"][data-si="'+pj+'"][data-f="w"]'); if(pe&&pe.value!==val)pe.value=val; } }
+  try{updateProgBadge(exi);}catch(_){}
   save(); }
 document.getElementById('app').addEventListener('click',e=>{
   const el=e.target.closest('[data-act]'); if(!el)return; const a=el.dataset.act;
