@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="es"><head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"/>
+<title>gym//TRK · mockup progress</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700;800&display=swap" rel="stylesheet"/>
+<style>
+  :root{
+    --bg:#000; --fg:#f3f3f4; --card:#0d0d10; --card2:#16161c; --border:rgba(243,243,244,.09); --radius:16px;
+    --o60:rgba(243,243,244,.66); --o50:rgba(243,243,244,.56); --o40:rgba(243,243,244,.5); --o35:rgba(243,243,244,.46); --o30:rgba(243,243,244,.4); --o20:rgba(243,243,244,.26);
+    --good:#46c98b; --bad:#e5675c; --warn:#e3b34f; --track:#191920; --fill:#f3f3f4;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  body{background:#0a0a0a;font-family:'JetBrains Mono',ui-monospace,Menlo,monospace;color:var(--fg);display:flex;justify-content:center;min-height:100vh;}
+  .frame{width:393px;max-width:100%;min-height:100vh;background:var(--bg);padding:18px 18px calc(34px + env(safe-area-inset-bottom));}
+  /* header */
+  .status{display:flex;justify-content:space-between;align-items:flex-start;font-size:10px;color:var(--o50);margin-bottom:18px;}
+  .uname{font-weight:800;font-size:12px;color:var(--fg);} .uname .car{color:var(--o30);font-size:9px;}
+  .center{text-align:center;line-height:1.4;} .streak{font-size:12px;font-weight:800;color:var(--o50);} .streak b{color:var(--good);font-weight:800;}
+  /* section + segmented */
+  .section{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+  .section .h{font-size:16px;font-weight:800;} .section .h .s{color:var(--o50);}
+  .seg{display:flex;border:1px solid var(--border);border-radius:999px;overflow:hidden;}
+  .seg button{font-family:inherit;font-size:10px;color:var(--o50);background:transparent;border:0;padding:6px 11px;cursor:pointer;letter-spacing:.3px;}
+  .seg button.on{background:var(--fill);color:#000;font-weight:700;}
+  /* featured card */
+  .card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:15px;margin-bottom:12px;}
+  .feat .fl{font-size:9px;color:var(--o40);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px;}
+  .feat .fv{font-size:15px;font-weight:700;} .feat .fv .up{color:var(--good);}
+  .dots{display:flex;gap:6px;margin-top:11px;}
+  .dot{flex:1;height:5px;border-radius:3px;background:var(--track);} .dot.on{background:var(--good);}
+  /* tiles */
+  .tiles{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .tile{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:13px 13px 9px;}
+  .tile .lbl{font-size:9px;color:var(--o40);letter-spacing:1px;text-transform:uppercase;margin-bottom:7px;}
+  .tile .val{font-size:23px;font-weight:800;letter-spacing:-.5px;line-height:1;} .tile .val span{font-size:11px;color:var(--o40);font-weight:400;margin-left:2px;}
+  .tile .st{font-size:11px;font-weight:700;margin-top:5px;} .st.good{color:var(--good);} .st.bad{color:var(--bad);} .st.flat{color:var(--o40);font-weight:400;}
+  .tile svg{width:100%;height:34px;display:block;margin-top:7px;}
+  .foot{text-align:center;font-size:9px;color:var(--o30);margin-top:22px;letter-spacing:.5px;}
+  .foot b{color:var(--o40);}
+</style></head>
+<body>
+<div class="frame">
+  <div class="status">
+    <div class="uname">u/dani <span class="car">▾</span></div>
+    <div class="center">mié 04 jun<br/>12:41</div>
+    <div class="streak">streak: <b>5</b></div>
+  </div>
+
+  <div class="section"><div class="h"><span class="s">//</span>PROGRESS</div>
+    <div class="seg"><button class="on">semana</button><button>mes</button><button>todo</button></div>
+  </div>
+
+  <div class="card feat">
+    <div class="fl">resumen · esta semana</div>
+    <div class="fv">4 sesiones · 84 sets duros · constancia <span class="up">▲</span></div>
+    <div class="dots"><i class="dot on"></i><i class="dot on"></i><i class="dot"></i><i class="dot on"></i><i class="dot"></i><i class="dot on"></i><i class="dot"></i></div>
+  </div>
+
+  <div class="tiles">
+    <div class="tile"><div class="lbl">peso</div><div class="val">79.8<span>kg</span></div><div class="st good">↓ −2.2 · cut</div><svg data-v="82,81.5,81,80.4,80.1,79.8"></svg></div>
+    <div class="tile"><div class="lbl">volumen · sem</div><div class="val">12.4<span>k kg</span></div><div class="st good">▲ +8%</div><svg data-v="9,9.4,10.2,11,11.6,12.4"></svg></div>
+    <div class="tile"><div class="lbl">fuerza · e1rm</div><div class="val">102<span>kg press</span></div><div class="st good">▲ +3%</div><svg data-v="96,98,99,100,101,102"></svg></div>
+    <div class="tile"><div class="lbl">pasos</div><div class="val">8,423<span>hoy</span></div><div class="st flat">= prom 8.1k</div><svg data-v="7.2,9.1,6.8,8.4,7.9,8.4"></svg></div>
+    <div class="tile"><div class="lbl">sueño</div><div class="val">7h18<span>anoche</span></div><div class="st good">▲ +20m</div><svg data-v="6.5,7,7.2,6.8,7.5,7.3"></svg></div>
+    <div class="tile"><div class="lbl">kcal · prom</div><div class="val">1,980<span>/ 2000</span></div><div class="st flat">= en meta</div><svg data-v="2100,1980,2050,1900,1850,1980"></svg></div>
+  </div>
+
+  <div class="foot">gym<b>//</b>TRK · mockup de dirección (no conectado a datos)</div>
+</div>
+<script>
+  // mini line chart (mismo estilo que la app: línea fina + puntos + gradiente sutil)
+  document.querySelectorAll('svg[data-v]').forEach((svg,gi)=>{
+    const nums=svg.dataset.v.split(',').map(Number); const W=180,H=34,pad=5;
+    let lo=Math.min(...nums),hi=Math.max(...nums); if(hi<=lo)hi=lo+1;
+    const n=nums.length, X=i=>n>1?pad+i*(W-2*pad)/(n-1):W/2, Y=v=>+(H-pad-((v-lo)/(hi-lo))*(H-2*pad)).toFixed(1);
+    const pts=nums.map((v,i)=>X(i).toFixed(1)+','+Y(v));
+    const dots=nums.map((v,i)=>`<circle cx="${X(i).toFixed(1)}" cy="${Y(v)}" r="${i===n-1?2.6:1.5}" fill="${i===n-1?'var(--fill)':'var(--o40)'}"/>`).join('');
+    svg.setAttribute('viewBox','0 0 '+W+' '+H); svg.setAttribute('preserveAspectRatio','none');
+    svg.innerHTML='<defs><linearGradient id="g'+gi+'" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--fill)" stop-opacity=".15"/><stop offset="1" stop-color="var(--fill)" stop-opacity="0"/></linearGradient></defs>'
+      +'<polygon points="'+pad+','+(H-pad)+' '+pts.join(' ')+' '+(W-pad)+','+(H-pad)+'" fill="url(#g'+gi+')"/>'
+      +'<polyline points="'+pts.join(' ')+'" fill="none" stroke="var(--o60)" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round"/>'+dots;
+  });
+</script>
+</body></html>
