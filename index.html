@@ -287,7 +287,7 @@
   .shr-ring.good .ring-fill{stroke:var(--good);} .shr-ring.over .ring-fill{stroke:var(--bad);}
   /* meal-summary popup (MFP-style, mono, luxury) */
   .mbanner{display:flex; align-items:center; gap:14px; border:1px solid var(--border); border-radius:16px; padding:16px; margin-top:4px;}
-  .msum-top{display:flex; gap:15px; align-items:stretch; justify-content:center; margin-top:10px;} .msum-rad{flex:0 0 48%; min-width:0; align-self:stretch;} .msum-rad svg{height:100%; width:100%; display:block;} .msum-rad svg text{font-family:'JetBrains Mono',ui-monospace,monospace; letter-spacing:0;} .msum-right{flex:0 0 130px; display:flex; flex-direction:column; justify-content:center;} .msum-list{min-width:0;} .nl-row{display:flex; justify-content:space-between; align-items:baseline; gap:6px; padding:2px 0; border-bottom:1px solid var(--line); font-size:10px;} .nl-row:last-child{border-bottom:none;} .nl-k{color:var(--o50);} .nl-v{color:var(--fill); font-weight:700; white-space:nowrap;} .nl-u{color:var(--o40); font-weight:400; font-size:8.5px; margin-left:1px;} .msum-kcal{text-align:center; margin-top:8px; font-size:20px; font-weight:400; letter-spacing:2px; color:var(--fill);} .msum-kcal span{font-size:10px; letter-spacing:1.5px; color:var(--o40); margin-left:3px;}
+  .msum-top{display:flex; gap:15px; align-items:stretch; justify-content:center; margin-top:10px;} .msum-rad{flex:0 0 48%; min-width:0; align-self:stretch;} .msum-rad svg{height:100%; width:100%; display:block;} .msum-rad svg text{font-family:'JetBrains Mono',ui-monospace,monospace; letter-spacing:0;} .msum-right{flex:0 0 142px; display:flex; flex-direction:column; justify-content:center;} .msum-list{min-width:0;} .nl-row{display:flex; justify-content:space-between; align-items:baseline; gap:6px; padding:2px 0; border-bottom:1px solid var(--line); font-size:10px;} .nl-row:last-child{border-bottom:none;} .nl-k{color:var(--o50);} .nl-r{display:flex; gap:7px; align-items:baseline; white-space:nowrap;} .nl-g{color:var(--o40); font-size:9px;} .nl-pct{color:var(--fill); min-width:28px; text-align:right;} .msum-kcal{text-align:center; margin-top:8px; font-size:20px; font-weight:400; letter-spacing:2px; color:var(--fill);} .msum-kcal span{font-size:10px; letter-spacing:1.5px; color:var(--o40); margin-left:3px;}
   @keyframes radbreathe{0%,100%{fill-opacity:.09}50%{fill-opacity:.17}} .rad-fill{fill-opacity:.12; animation:radbreathe 5.5s ease-in-out infinite}
   .mb-ring .ring.lg{width:92px; height:92px;} .mb-ring .ring.lg .num{font-size:21px; font-weight:800; letter-spacing:-.5px;} .mb-ring .ring.lg .of{font-size:8px; color:var(--o40); margin-top:2px;}
   .mb-cols{flex:1; display:flex; justify-content:space-around;} .mbc{text-align:center;} .mbc .v{font-size:17px; font-weight:800;} .mbc .l{font-size:9px; color:var(--o50); margin-top:4px;} .mbc .p{font-size:9px; color:var(--o35); margin-top:1px;}
@@ -588,11 +588,10 @@ function renderHome(){
       +`<hr class="rule"/>`
       +`<div class="whdr"><div class="l1"><span class="s">//</span>GYM</div><div class="wname">sin split</div><div class="l2">SETUP</div><div class="wmeta">arma tu rutina para empezar</div></div>`
       +`<div class="empty-cta">`
-      +`<button class="start" data-act="loadmine">cargar mi split (push/pull A/B)</button>`
-      +`<button class="b" data-act="newsplit" style="width:100%;margin-top:10px">+ crear desde cero</button>`
-      +`<div class="secondary" style="margin-top:10px"><button class="b" data-act="importsplit">importar</button><button class="b" data-act="workshop">plantillas</button></div>`
+      +`<button class="start" data-act="newsplit">+ crear split</button>`
+      +`<div class="secondary" style="margin-top:10px"><button class="b" data-act="workshop">explorar splits</button><button class="b" data-act="importsplit">importar</button></div>`
       +`</div>`
-      +`<div class="submeta" style="margin-top:16px;text-align:center">tu split de 6 días (chest/push A·B, back/pull A·B, legs A·B), o crea uno nuevo</div>`;
+      +`<div class="submeta" style="margin-top:16px;text-align:center">crea tu rutina desde cero, explora plantillas, o impórtala</div>`;
   }
   const di=selIdx(); const day=db.split.days[di]; const prev=lastSession(day.id); const s7=stat7(); const inprog=db.activeWork;
   const segs=db.split.days.map((_,i)=>`<i class="seg ${i===di?'on':''}" data-act="selday" data-i="${i}"></i>`).join('');
@@ -954,16 +953,28 @@ function openMealSummary(tag){
   const items=(db.meals[curDate()]||[]).filter(m=>m.tag===tag); if(!items.length)return;
   const t={kcal:0,protein:0,carbs:0,fat:0,sugar:0,fiber:0,sodium:0,potassium:0,caffeine:0,alcohol:0,water:0};
   items.forEach(m=>{ for(const k in t) t[k]+=+m[k]||0; });
-  const ck=t.carbs*4,fk=t.fat*9,pk=t.protein*4,tot=ck+fk+pk||1; const pc=k=>Math.round(k/tot*100);
-  const _mg=db.settings.goals;
-  const li=(lbl,v,u,force)=>(+v>0)?`<div class="nl-row"><span class="nl-k">${lbl}</span><span class="nl-v">${u==='L'?(+v).toFixed(2):Math.round(v)}<span class="nl-u">${u}</span></span></div>`:'';
-  const nutList=li('proteína',t.protein,'g',1)+li('carbs',t.carbs,'g',1)+li('grasa',t.fat,'g',1)+li('alcohol',t.alcohol,'g')+li('fibra',t.fiber,'g')+li('azúcar',t.sugar,'g')+li('sodio',t.sodium,'mg')+li('potasio',t.potassium,'mg')+li('cafeína',t.caffeine,'mg')+li('líquidos',t.water,'L');
+  const _mg=db.settings.goals||{};
+  const pk=t.protein*4, ck=t.carbs*4, fk=t.fat*9, ak=t.alcohol*7; const tot=pk+ck+fk+ak||1;
+  const cal=x=>Math.round(x/tot*100);                                   // macro: % de su aporte calórico en la meal
+  const day=(v,gk)=>{ const goal=+_mg[gk]||0; return goal>0?Math.round(v/goal*100):0; }; // micro: % consumido vs meta diaria
+  const row=(lbl,v,u,pct)=> Math.round(v)>0 ? `<div class="nl-row"><span class="nl-k">${lbl}</span><span class="nl-r"><span class="nl-g">${Math.round(v)} ${u}</span><span class="nl-pct">${pct}%</span></span></div>` : '';
+  const nutList=
+     row('proteína',t.protein,'g',cal(pk))
+    +row('carbs',t.carbs,'g',cal(ck))
+    +row('grasa',t.fat,'g',cal(fk))
+    +row('alcohol',t.alcohol,'g',cal(ak))
+    +row('fibra',t.fiber,'g',day(t.fiber,'fiber'))
+    +row('azúcar',t.sugar,'g',day(t.sugar,'sugar'))
+    +row('sodio',t.sodium,'mg',day(t.sodium,'sodium'))
+    +row('potasio',t.potassium,'mg',day(t.potassium,'potassium'))
+    +row('cafeína',t.caffeine,'mg',day(t.caffeine,'caffeine'));
   openModal(`<h3>#${escTxt(tag)}</h3>
-   <div class="msum-top"><div class="msum-rad">${mealRadar(t,_mg)}</div><div class="msum-right"><div class="msum-list">${nutList}</div><div class="msum-kcal">${Math.round(t.kcal)}<span>KCAL</span></div><div class="submeta" style="text-align:center;margin-top:4px;font-size:9px;letter-spacing:0">P ${pc(pk)}% · C ${pc(ck)}% · F ${pc(fk)}%</div></div></div>
+   <div class="msum-top"><div class="msum-rad">${mealRadar(t,_mg)}</div><div class="msum-right"><div class="msum-list">${nutList}</div><div class="msum-kcal">${Math.round(t.kcal)}<span>KCAL</span></div></div></div>
    <div class="shlog" style="margin-top:14px">${mealFoodRows(items)}</div>
    <div class="sheetbtns" style="margin-top:14px"><button class="ok" data-act="addtomeal" data-tag="${escTxt(tag)}">+ add food</button></div>`);
+  // la gráfica SIEMPRE igual de alto que la columna derecha (tabla + kcal), manteniendo proporción del viewBox
+  (function(){ try{ const tp=document.querySelector('.msum-top'); if(!tp)return; const rt=tp.querySelector('.msum-right'), rd=tp.querySelector('.msum-rad'); if(!rt||!rd)return; const fit=function(){ const h=rt.getBoundingClientRect().height; if(h>4) rd.style.flex='0 0 '+(h*168/156).toFixed(1)+'px'; }; if(window.ResizeObserver){ new ResizeObserver(fit).observe(rt); } else { requestAnimationFrame(function(){requestAnimationFrame(fit);}); } if(document.fonts&&document.fonts.ready){ document.fonts.ready.then(fit); } }catch(_){} })();
 }
-
 // ---------- render: landing (log in / create account) ----------
 function renderLanding(){
   return `<div style="padding-top:96px;text-align:center">
@@ -1043,7 +1054,7 @@ function mealRadar(t,g){ g=g||{};
   let ddots=''; ax.forEach((a,i)=>{ const c=at(i,R*Math.max(0.05,norms[i])), dom=norms[i]>=thr; ddots+=`<circle cx="${c[0]}" cy="${c[1]}" r="1.6" fill="${dom?'var(--fill)':'var(--o40)'}"/>`; });
   let labels=''; ax.forEach((a,i)=>{ const lp=at(i,R+9), dom=norms[i]>=thr; labels+=`<text x="${lp[0]}" y="${lp[1]}" text-anchor="middle" dominant-baseline="middle" font-size="9" fill="${dom?'var(--fill)':'var(--o35)'}">${a.l}</text>`; });
   const cross=`<line x1="${cx-3}" y1="${cy}" x2="${cx+3}" y2="${cy}" stroke="var(--o30)" stroke-width=".7"/><line x1="${cx}" y1="${cy-3}" x2="${cx}" y2="${cy+3}" stroke="var(--o30)" stroke-width=".7"/>`;
-  return `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet" style="display:block">`
+  return `<svg viewBox="6 2 168 156" preserveAspectRatio="xMidYMid meet" style="display:block">`
     +grid+cross
     +`<path d="${path}" fill="var(--fill)" class="rad-fill"/>`
     +`<path d="${path}" fill="none" stroke="var(--fill)" stroke-width="1.2" stroke-linejoin="miter" stroke-miterlimit="2" stroke-opacity=".95"/>`
@@ -1167,8 +1178,7 @@ function renderSplitEdit(){
   const sp=db.split||{name:'',days:[]};
   let body=statusBar(true)
    +`<hr class="rule"/><div class="section"><div class="h"><span class="s">//</span>SPLIT</div><div class="meta">${(sp.days||[]).length} días</div></div>`
-   +`<div class="field" style="margin-bottom:10px"><label>NOMBRE DEL SPLIT</label><input data-act="sd_splitname" value="${(sp.name||'').replace(/"/g,'&quot;')}" placeholder="ej. Push/Pull/Legs"/></div>`
-   +`<div class="secondary" style="margin-bottom:16px"><button class="b" data-act="importsplit">↑ importar split (ironLOG)</button></div>`;
+   +`<div class="field" style="margin-bottom:16px"><label>NOMBRE DEL SPLIT</label><input data-act="sd_splitname" value="${(sp.name||'').replace(/"/g,'&quot;')}" placeholder="ej. Push/Pull/Legs"/></div>`;
   (sp.days||[]).forEach((d,di)=>{
     body+=`<div class="seday"><div class="sehead"><input class="senm" data-act="sd_name" data-di="${di}" value="${(d.name||'').replace(/"/g,'&quot;')}"/><span class="semv"><span data-act="sd_dayup" data-di="${di}">▲</span><span data-act="sd_daydn" data-di="${di}">▼</span></span>${sp.days.length>1?`<span class="sedel" data-act="sd_deld" data-di="${di}">✕</span>`:''}</div>`;
     (d.exercises||[]).forEach((e,ei)=>{
