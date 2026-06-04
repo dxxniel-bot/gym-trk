@@ -644,6 +644,12 @@ function renderSetRow(exi,si,set,ex,allowF){
   const we=`<input class="inp weight" data-act="setf" data-exi="${exi}" data-si="${si}" data-f="extraW" value="${set.extraW||''}" placeholder="+extra" inputmode="decimal"/>`;
   return {w,u,r,rr,del,we};
 }
+// "real progress" score for a set = RIR-adjusted estimated 1RM: weight × (1 + (reps + RIR)/30).
+// Folds weight + reps + closeness-to-failure into ONE capacity number, so progress isn't
+// "more weight" / "more reps" / "lower RIR" in isolation — it's higher estimated strength.
+function setScore(s){ const w=parseFloat(s&&s.w)||0, r=parseFloat(s&&s.r)||0; if(!(w>0&&r>0))return 0; const t=String((s&&s.rir)==null?'':s.rir).trim().toUpperCase(); let rv=(t===''||t==='F')?0:parseFloat(t); if(isNaN(rv))rv=0; rv=Math.max(0,Math.min(6,rv)); return w*(1+(r+rv)/30); }
+function bestScore(sets,confirmedOnly){ let b=0; (sets||[]).forEach(s=>{ if(confirmedOnly&&s._pf)return; const v=setScore(s); if(v>b)b=v; }); return b; }
+function exerciseProgress(ex){ const cur=bestScore(ex.sets,true); if(!cur)return null; const last=bestScore(lastLoggedSets(ex.name,ex.unilateral)); if(!last)return null; const ratio=cur/last; return {dir:ratio>1.02?'up':(ratio<0.98?'down':'flat'), pct:Math.round((ratio-1)*100)}; }
 function renderExercise(exi,ex,allowF){
   const sets=ex.sets||[]; const isM=ex.type==='machine'; const isU=ex.unilateral;
   const rec=machineRec((db.activeWork||{}).gym,ex); const ed=`data-act="editmach" data-exi="${exi}"`;
@@ -654,7 +660,8 @@ function renderExercise(exi,ex,allowF){
     if(rec.setup) p+=`<span class="mset" ${ed}>${escTxt(rec.setup)}</span>`;
     if(!rec.brand&&!rec.setup) p=`<span class="mch none" ${ed}>+ machine</span>`;
     mhtml=p; }
-  let head=`<div class="exhead"><span class="n" data-act="editexname" data-exi="${exi}" style="cursor:pointer">${ex.name}</span>${mhtml}${ex.note?`<span class="note">${escTxt(ex.note)}</span>`:''}${isU?'<span class="note">[uni]</span>':''}</div>`;
+  const pr=exerciseProgress(ex); const prBadge=pr?`<span style="font-size:9px;font-weight:700;margin-left:6px;color:${pr.dir==='up'?'var(--good)':pr.dir==='down'?'var(--bad)':'var(--o40)'}" title="vs última sesión · e1RM ajustado por RIR">${pr.dir==='up'?'▲':pr.dir==='down'?'▼':'='}${pr.pct?((pr.pct>0?'+':'')+pr.pct+'%'):''}</span>`:'';
+  let head=`<div class="exhead"><span class="n" data-act="editexname" data-exi="${exi}" style="cursor:pointer">${ex.name}</span>${prBadge}${mhtml}${ex.note?`<span class="note">${escTxt(ex.note)}</span>`:''}${isU?'<span class="note">[uni]</span>':''}</div>`;
   let rows='';
   if(isU){
     let thead=`<div class="thead" style="grid-template-columns:22px 20px 1fr 38px 44px 40px 18px;"><div class="cl"></div><div class="cl">L/R</div><div class="cl w">weight</div><div class="cl">unit</div><div class="cl">reps</div><div class="cl">rir</div><div class="cl"></div></div>`;
