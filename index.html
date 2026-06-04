@@ -714,28 +714,41 @@ function macroTotals(){
   items.forEach(m=>{ for(const k in t){ t[k]+=parseFloat(m[k])||0; } }); return {items,t};
 }
 function bloating(t,g){
-  // Subcutaneous (extracellular) water-retention tendency — acute, day-level heuristic.
-  // Evidence-weighted: Na:K balance dominates (validated retention marker; K drives natriuresis),
-  // plus acute Na load, hydration status (low intake -> RAAS/ADH retention) and sugar/insulin-driven
-  // renal Na reabsorption. Carbs/glycogen water excluded on purpose (that's muscle fullness, not skin puffiness).
+  // Subcutaneous (extracellular) water-retention tendency — acute, same-day heuristic.
+  // FOOD drives retention: Na:K balance dominates (validated marker; K drives natriuresis), acute Na load,
+  // hydration (low intake -> RAAS/ADH retention), sugar/insulin-driven Na reabsorption, alcohol (ADH/rebound).
+  // ACTIVITY relieves it same-day: a gym session + steps mobilize extracellular fluid (sweat, sympathetic
+  // diuresis, venous/lymphatic return). Carbs/glycogen water excluded (muscle fullness, not skin puffiness).
   const c=x=>Math.max(0,Math.min(1,x));
   const naK=t.sodium/Math.max(t.potassium,1);                  // Na:K mass ratio
   const naKterm=c((naK-0.5)/1.5);                              // ~0.5 balanced (WHO 2000/3500), >=2.0 high
   const naAbs=c(((t.sodium/(g.sodium||2300))-0.8)/0.7);        // big acute sodium load
   const hyd=c(1-t.water/(g.water||3));                         // under-drinking -> retention
   const sugar=c((t.sugar/(g.sugar||50))-1);                    // sugar/insulin -> acute Na reabsorption
-  // Alcohol: suppresses ADH -> acute diuresis + dehydration -> RAAS rebound retention next day. ~14g = 1 drink.
-  const alc=c((t.alcohol||0)/28);                              // ~2 drinks -> notable
-  let sc=42*naKterm + 14*naAbs + 22*hyd + 12*sugar + 18*alc;
+  const alc=c((t.alcohol||0)/28);                              // alcohol ~2 drinks -> notable
+  const nutr=42*naKterm + 14*naAbs + 22*hyd + 12*sugar + 18*alc;  // food-driven retention, 0..~108
+  // ── same-day activity relief (reads Gym sessions + Habits steps for the displayed day) ──
+  const day=curDate();
+  const sess=(db.sessions||[]).filter(s=>s&&s.date===day&&s.type!=='rest');
+  const trained=sess.some(s=>(s.exercises||[]).some(e=>(e.sets||[]).some(st=>st&&(st.done||(+st.w>0)||(+st.r>0)))));
+  const trainSec=sess.reduce((mx,s)=>Math.max(mx,(+s.durSec||0)),0);
+  const trainRelief=trained?Math.max(0.6,c(trainSec/3600)):0;  // a logged workout >=0.6, full at ~60min
+  const steps=(db.steps&&+db.steps[day])||0;
+  const stepRelief=c(steps/10000);                             // 10k steps -> full step relief
+  const activity=c(0.6*stepRelief + 0.7*trainRelief);          // combined 0..1
+  const sedentary=(!trained && steps>0 && steps<3000)?8*c((3000-steps)/3000):0;  // pooling when truly sedentary
+  let sc=nutr*(1 - 0.32*activity) + sedentary;                 // activity shaves up to ~32% off the food load
   sc=Math.max(0,Math.min(100,Math.round(sc)));
-  // Actionable suggestions — what to prioritize to de-bloat (looksmax debloat protocol)
+  // Actionable suggestions — what to prioritize to de-bloat
   const tips=[];
   if(naK>1.2) tips.push('prioriza potasio (plátano, papa, espinaca, agua de coco)');
   if((t.sodium/(g.sodium||2300))>1) tips.push('baja sodio el resto del día');
   if(hyd>0.3) tips.push('toma más agua (paradójicamente reduce retención)');
   if(alc>0.2) tips.push('alcohol alto → hidrata + electrolitos antes de dormir');
   if(sugar>0.2) tips.push('reduce azúcar/refinados');
-  if(!tips.length) tips.push('balance ok · mantén Na:K y agua estables');
+  if(!trained && steps<6000) tips.push('muévete: caminar/entrenar drena líquido (sudor + circulación)');
+  else if(activity>0.4 && nutr>28) tips.push('tu actividad de hoy ya está bajando la retención ✓');
+  if(!tips.length) tips.push('balance ok · Na:K, agua y actividad estables');
   return {sc,label:sc<34?'low':sc<67?'mod':'high',tips};
 }
 function macroStatus(val,goal){ if(!goal)return ''; const r=val/goal; if(r>1.05)return 'over'; if(r>=0.9)return 'good'; return ''; }
