@@ -319,6 +319,9 @@
   .dz input[type=range]::-webkit-slider-thumb{-webkit-appearance:none; appearance:none; width:16px; height:16px; border-radius:50%; background:var(--fg);}
   .dz input[type=range]::-moz-range-thumb{width:16px; height:16px; border-radius:50%; background:var(--fg); border:none;}
   .dz-f{display:flex; gap:8px; margin-top:8px;} .dz-f button{flex:1; font-family:inherit; font-size:11px; padding:9px 0; border:1px solid var(--border); border-radius:10px; background:transparent; color:var(--fg); cursor:pointer;}
+  .umcaret{color:var(--o30); font-size:9px; margin-left:1px;}
+  .nvm-list{margin-top:6px;}
+  .nvm{display:flex; justify-content:space-between; align-items:center; padding:14px 2px; font-size:13px; cursor:pointer; border-bottom:1px solid var(--border);} .nvm:last-child{border-bottom:none;} .nvm:active{color:var(--o60);} .nvm-x{color:var(--o30); font-size:14px;}
   .toast{position:fixed; left:50%; bottom:84px; transform:translateX(-50%); background:#13131a; border:1px solid var(--good); color:var(--fg); padding:9px 15px; border-radius:999px; font-size:12px; font-weight:600; z-index:10000; box-shadow:0 6px 22px rgba(0,0,0,.5); white-space:nowrap; animation:toastin .28s ease, toastout .4s ease 2.3s forwards;}
   @keyframes toastin{from{opacity:0; transform:translate(-50%,10px)} to{opacity:1; transform:translate(-50%,0)}}
   @keyframes toastout{to{opacity:0; transform:translate(-50%,8px)}}
@@ -553,7 +556,7 @@ function renderNav(){
 // ---------- render: home ----------
 function statusBar(back){
   const d=new Date();
-  return `<div class="status"><div class="left"><div class="uname" data-act="profile" style="cursor:pointer">u/${db.profile.username}</div>${back?'<span class="back" data-act="leave">← back</span>':''}</div>`
+  return `<div class="status"><div class="left"><div class="uname" data-act="navmenu" style="cursor:pointer">u/${db.profile.username} <span class="umcaret">▾</span></div>${back?'<span class="back" data-act="leave">← back</span>':''}</div>`
     +`<div class="center">${fmtDate(todayISO())}<br/>${nowHM()}</div>`
     +`<div class="streak">streak: <b>${streak()}</b></div></div>`;
 }
@@ -1161,6 +1164,7 @@ document.getElementById('app').addEventListener('click',e=>{
   else if(a==='delbw'){ const d=el.dataset.d; if(confirm('¿Borrar el peso de '+d+'?')){ if(db.bodyweight)delete db.bodyweight[d]; const allk=Object.keys(db.bodyweight||{}).sort(); if(db.profile)db.profile.weightKg=allk.length?db.bodyweight[allk[allk.length-1]]:db.profile.weightKg; save(); openWeightLog(); } }
   else if(a==='settings'){ go('settings'); }
   else if(a==='profile'){ go('settings'); }
+  else if(a==='navmenu'){ openNavMenu(); }
   else if(a==='editprofile'){ openProfileEdit(); }
   else if(a==='editsplit'){ go('splitedit'); }
   else if(a==='importsplit'){ openImportSplit(); }
@@ -2347,6 +2351,22 @@ function openDesignPanel(){ if(document.getElementById('dz_panel'))return; const
   document.getElementById('dz_copy').onclick=()=>{ const st=document.getElementById('dz_style'); const css=(st&&st.textContent)||''; if(!css){ alert('Mueve algún slider primero.'); return; } if(navigator.clipboard)navigator.clipboard.writeText(css).then(()=>{},()=>{}); alert('CSS copiado (pásamelo para hornearlo):\n\n'+css); };
   document.getElementById('dz_x').onclick=()=>{ localStorage.removeItem('gymtrk_designmode'); wrap.remove(); };
   document.getElementById('dz_min').onclick=()=>wrap.classList.toggle('mini');
+}
+// consolidated navigation menu (from the u/name in the header) — one place for the secondary screens
+function openNavMenu(){
+  const item=(lbl,act)=>`<div class="nvm" data-nav="${act}"><span>${lbl}</span><span class="nvm-x">›</span></div>`;
+  openModal(`<h3>menú</h3>
+   <div class="nvm-list">
+     ${item('perfil / ajustes','settings')}
+     ${item('historial de sesiones','history')}
+     ${item('editar split','splitedit')}
+     ${item('compartir el día','sharefood')}
+     ${item('respaldo / exportar','sync')}
+   </div>`);
+  document.querySelectorAll('#modal .nvm').forEach(el=>el.onclick=()=>{ const a=el.dataset.nav;
+    if(a==='sync'){ openSync(); return; } closeModal();
+    if(a==='settings')go('settings'); else if(a==='history')go('history'); else if(a==='splitedit')go('splitedit');
+    else if(a==='sharefood'){ state.shareType='food'; go('share'); } });
 }
 function openSync(){
   openModal(`<h3>sync data</h3>
