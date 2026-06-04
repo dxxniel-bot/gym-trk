@@ -979,6 +979,11 @@ function importHealth(sp){ const msg=[];
   if(sp.has('weight')){ const w=parseFloat(sp.get('weight')); if(w>=20&&w<=400){ db.bodyweight=db.bodyweight||{}; db.bodyweight[todayISO()]=Math.round(w*10)/10; if(db.profile)db.profile.weightKg=Math.round(w*10)/10; msg.push((Math.round(w*10)/10)+' kg · hoy'); } }
   if(sp.has('weighth')){ db.bodyweight=db.bodyweight||{}; const c=importPairs(sp.get('weighth'),(k,v)=>{ const w=parseFloat(v); if(!(w>=20&&w<=400))return false; db.bodyweight[k]=Math.round(w*10)/10; return true; }); if(c){ const ks=Object.keys(db.bodyweight).sort(); if(ks.length&&db.profile)db.profile.weightKg=db.bodyweight[ks[ks.length-1]]; msg.push(c+' registros de peso'); } }
   return msg; }
+function openHealthImport(){
+  openModal('<h3>importar de Salud</h3><div class="submeta" style="margin-bottom:10px">corre tu Atajo (copia los datos), regresa y pega abajo. acepta pasos y/o peso.</div><textarea id="hi_txt" style="width:100%;height:88px;border:.5px solid var(--o20);background:transparent;color:var(--fg);font-size:10px;padding:8px" placeholder="stepsh=2026-05-30:8200,...   weighth=2026-05-15:81.2,..."></textarea><button class="b" id="hi_paste" style="width:100%;margin:8px 0">pegar del portapapeles</button><div class="sheetbtns"><button class="ok" id="hi_go">importar</button><button class="cancel" data-act="closemodal">cancel</button></div>');
+  var p=document.getElementById("hi_paste"); if(p)p.onclick=function(){ try{ navigator.clipboard.readText().then(function(t){ var e=document.getElementById("hi_txt"); if(e)e.value=t; },function(){ alert("Pega a mano: manten presionado el cuadro y elige Pegar."); }); }catch(_){ alert("Pega a mano: manten presionado el cuadro y elige Pegar."); } };
+  var g=document.getElementById("hi_go"); if(g)g.onclick=function(){ var txt=(val("hi_txt")||"").trim(); if(txt.charAt(0)==="?")txt=txt.slice(1); var msg=[]; try{ msg=importHealth(new URLSearchParams(txt)); }catch(_){} if(msg.length){ save(); closeModal(); render(); setTimeout(function(){ toast("\u2713 "+msg.join(" \u00b7 ")); },120); } else { alert("No reconoci datos. Debe verse como  stepsh=fecha:valor,...  o  weighth=fecha:kg,..."); } };
+}
 function openWeightLog(){ const ks=Object.keys(db.bodyweight||{}).sort(); const last=ks.length?db.bodyweight[ks[ks.length-1]]:((db.profile&&db.profile.weightKg)||'');
   const recent=ks.slice(-8).reverse();
   const rows=recent.map(d=>`<div class="line" style="padding:5px 0"><span class="k" data-act="editbw" data-d="${d}" style="cursor:pointer;text-decoration:underline">${d}</span><span class="dots"></span><span class="v">${db.bodyweight[d]} kg <span data-act="delbw" data-d="${d}" style="color:var(--o40);cursor:pointer;margin-left:8px">✕</span></span></div>`).join('');
@@ -1034,6 +1039,7 @@ function renderProgress(){
       +`<div class="line"><span class="k">promedio</span><span class="dots"></span><span class="v">${_a} L${_g?` <span style="color:var(--o40);font-size:9px">/ ${_g}</span>`:''}</span></div>`
       +`<div class="submeta">${_waterLog.length} días con registro</div>`; }
   // nutrition
+  out+='<div style="text-align:center;margin:14px 0 2px"><a data-act="healthimport" style="font-size:11px;color:var(--o60);cursor:pointer">importar pasos/peso de Salud (Atajo)</a></div>';
   out+=`<hr class="rule"/><div class="grp-label">NUTRICIÓN · promedio 7 días</div>`
     +`<div class="line"><span class="k">kcal / día</span><span class="dots"></span><span class="v">${avgKcal7()||'—'} <span style="color:var(--o40);font-size:9px">/ ${db.settings.goals.kcal}</span></span></div>`;
   return out;
@@ -1150,6 +1156,7 @@ document.getElementById('app').addEventListener('click',e=>{
   else if(a==='workshop'){ openWorkshop(); }
   else if(a==='usetpl'){ const t=(window._tpls||[])[+el.dataset.i]; if(t){ db.split=t.build(); db.rotIdx=0; state.selDay=null; save(); closeModal(); go('splitedit'); } }
   else if(a==='logweight'){ openWeightLog(); }
+  else if(a==='healthimport'){ openHealthImport(); }
   else if(a==='editbw'){ const d=el.dataset.d; const dt=document.getElementById('bw_date'), kg=document.getElementById('bw_kg'); if(dt)dt.value=d; if(kg){ kg.value=(db.bodyweight&&db.bodyweight[d])||''; kg.focus(); } }
   else if(a==='delbw'){ const d=el.dataset.d; if(confirm('¿Borrar el peso de '+d+'?')){ if(db.bodyweight)delete db.bodyweight[d]; const allk=Object.keys(db.bodyweight||{}).sort(); if(db.profile)db.profile.weightKg=allk.length?db.bodyweight[allk[allk.length-1]]:db.profile.weightKg; save(); openWeightLog(); } }
   else if(a==='settings'){ go('settings'); }
