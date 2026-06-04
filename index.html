@@ -983,9 +983,10 @@ function importHealth(sp){ const msg=[];
   if(sp.has('stepsh')){ db.steps=db.steps||{}; const c=importPairs(sp.get('stepsh'),(k,v)=>{ const n=parseInt(v,10); if(isNaN(n)||n<0||n>=200000)return false; db.steps[k]=n; return true; }); if(c)msg.push(c+' días de pasos'); }
   if(sp.has('weight')){ const w=parseFloat(sp.get('weight')); if(w>=20&&w<=400){ db.bodyweight=db.bodyweight||{}; db.bodyweight[todayISO()]=Math.round(w*10)/10; if(db.profile)db.profile.weightKg=Math.round(w*10)/10; msg.push((Math.round(w*10)/10)+' kg · hoy'); } }
   if(sp.has('weighth')){ db.bodyweight=db.bodyweight||{}; const c=importPairs(sp.get('weighth'),(k,v)=>{ const w=parseFloat(v); if(!(w>=20&&w<=400))return false; db.bodyweight[k]=Math.round(w*10)/10; return true; }); if(c){ const ks=Object.keys(db.bodyweight).sort(); if(ks.length&&db.profile)db.profile.weightKg=db.bodyweight[ks[ks.length-1]]; msg.push(c+' registros de peso'); } }
+  if(sp.has('stepsq')){ const arr=(sp.get('stepsq')||'').split(','); const N=arr.length; let end=sp.get('qend'); if(!/^\d{4}-\d{2}-\d{2}$/.test(end||''))end=todayISO(); db.steps=db.steps||{}; let c=0; for(let i=0;i<N;i++){ const n=parseInt(arr[i],10); if(isNaN(n)||n<0||n>=200000)continue; const d=shiftDate(end,-(N-1-i)); db.steps[d]=n; c++; } if(c)msg.push(c+' días de pasos'); }
   return msg; }
 function healthSync(){
-  function go(t){ t=(t||"").trim(); if(t.charAt(0)==="?")t=t.slice(1); var msg=[]; try{ if(/stepsh=|weighth=|(^|&)steps=|(^|&)weight=/.test(t)) msg=importHealth(new URLSearchParams(t)); }catch(_){} if(msg.length){ save(); render(); setTimeout(function(){ toast("\u2713 "+msg.join(" \u00b7 ")); },120); } else { openHealthImport(); } }
+  function go(t){ t=(t||"").trim(); if(t.charAt(0)==="?")t=t.slice(1); var msg=[]; try{ if(/stepsh=|weighth=|stepsq=|(^|&)steps=|(^|&)weight=/.test(t)) msg=importHealth(new URLSearchParams(t)); }catch(_){} if(msg.length){ save(); render(); setTimeout(function(){ toast("\u2713 "+msg.join(" \u00b7 ")); },120); } else { openHealthImport(); } }
   try{ if(navigator.clipboard&&navigator.clipboard.readText){ navigator.clipboard.readText().then(go,function(){ openHealthImport(); }); } else { openHealthImport(); } }catch(_){ openHealthImport(); }
 }
 function openHealthImport(){
