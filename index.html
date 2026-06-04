@@ -287,6 +287,7 @@
   .shr-ring.good .ring-fill{stroke:var(--good);} .shr-ring.over .ring-fill{stroke:var(--bad);}
   /* meal-summary popup (MFP-style, mono, luxury) */
   .mbanner{display:flex; align-items:center; gap:14px; border:1px solid var(--border); border-radius:16px; padding:16px; margin-top:4px;}
+  .mradar{margin:8px 0 2px;} .mradar svg text{font-family:'JetBrains Mono',ui-monospace,monospace; letter-spacing:0;}
   .mb-ring .ring.lg{width:92px; height:92px;} .mb-ring .ring.lg .num{font-size:21px; font-weight:800; letter-spacing:-.5px;} .mb-ring .ring.lg .of{font-size:8px; color:var(--o40); margin-top:2px;}
   .mb-cols{flex:1; display:flex; justify-content:space-around;} .mbc{text-align:center;} .mbc .v{font-size:17px; font-weight:800;} .mbc .l{font-size:9px; color:var(--o50); margin-top:4px;} .mbc .p{font-size:9px; color:var(--o35); margin-top:1px;}
   /* ===== green / white / red status (margins & over) ===== */
@@ -958,7 +959,8 @@ function openMealSummary(tag){
   const mr=(lbl,v,u)=>(+v!==0)?`<span class="mdr"><span class="mdk">${lbl}</span><span class="mdv">${u==='L'?(+v).toFixed(2):Math.round(v)} ${u}</span></span>`:'';
   const micros=mr('azúcar',t.sugar,'g')+mr('fibra',t.fiber,'g')+mr('sodio',t.sodium,'mg')+mr('potasio',t.potassium,'mg')+mr('cafeína',t.caffeine,'mg')+mr('alcohol',t.alcohol,'g')+mr('líquidos',t.water,'L');
   openModal(`<h3>#${escTxt(tag)}</h3>
-   <div class="mbanner"><div class="mb-ring">${ringHTML(ringPct,ringC,'lg')}</div><div class="mb-cols">${col(t.protein,'protein',pc(pk))}${col(t.carbs,'carbs',pc(ck))}${col(t.fat,'fat',pc(fk))}</div></div>
+   <div class="mradar">${mealRadar(t,_mg)}</div>
+   <div class="submeta" style="text-align:center;margin-top:2px">P ${pc(pk)}% · C ${pc(ck)}% · F ${pc(fk)}% <span style="color:var(--o30)">de kcal</span></div>
    ${micros?`<div class="mdgrid" style="margin-top:12px">${micros}</div>`:''}
    <div class="shlog" style="margin-top:14px">${mealFoodRows(items)}</div>
    <div class="sheetbtns" style="margin-top:14px"><button class="ok" data-act="addtomeal" data-tag="${escTxt(tag)}">+ add food</button></div>`);
@@ -1018,10 +1020,34 @@ function miniBars(vals,labels,opt){ opt=opt||{}; const nums=(vals||[]).map(v=>+v
 // single-dot line chart (Rimu-style: thin line + dots + soft gradient fill); opt.zero baselines at 0
 function lineChart(vals,opt){ opt=opt||{}; const nums=(vals||[]).map(v=>+v||0); if(!nums.length)return '';
   const W=300,H=opt.h||56,pad=7; let lo=Math.min(...nums),hi=Math.max(...nums); if(opt.zero)lo=Math.min(0,lo); if(hi<=lo)hi=lo+1;
-  const n=nums.length, X=i=>n>1?pad+i*(W-2*pad)/(n-1):W/2, Y=v=>+(H-pad-((v-lo)/(hi-lo))*(H-2*pad)).toFixed(1);
-  const pts=nums.map((v,i)=>X(i).toFixed(1)+','+Y(v));
-  const dots=nums.map((v,i)=>(i===n-1||n<=45||i%Math.round(n/24)===0)?`<circle cx="${X(i).toFixed(1)}" cy="${Y(v)}" r="${i===n-1?2.8:1.7}" fill="${i===n-1?'var(--fill)':'var(--o40)'}"/>`:'').join('');
-  return `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" style="width:100%;height:${H}px;display:block;margin:10px 0 2px"><defs><linearGradient id="lcg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--fill)" stop-opacity=".16"/><stop offset="1" stop-color="var(--fill)" stop-opacity="0"/></linearGradient></defs><polygon points="${pad},${H-pad} ${pts.join(' ')} ${W-pad},${H-pad}" fill="url(#lcg)"/><polyline points="${pts.join(' ')}" fill="none" stroke="var(--o60)" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round"/>${dots}</svg>`; }
+  const n=nums.length; let xs;
+  if(opt.dates&&opt.dates.length===n&&n>1){ const ts=opt.dates.map(d=>Date.parse(d)||0); const tlo=Math.min(...ts),thi=Math.max(...ts),tsp=(thi-tlo)||1; xs=ts.map(t=>pad+(t-tlo)/tsp*(W-2*pad)); }
+  else { xs=nums.map((_,i)=>n>1?pad+i*(W-2*pad)/(n-1):W/2); }
+  const Y=v=>+(H-pad-((v-lo)/(hi-lo))*(H-2*pad)).toFixed(1);
+  const pts=nums.map((v,i)=>xs[i].toFixed(1)+','+Y(v));
+  const dots=nums.map((v,i)=>(i===n-1||n<=45||i%Math.round(n/24)===0)?`<circle cx="${xs[i].toFixed(1)}" cy="${Y(v)}" r="${i===n-1?2.8:1.7}" fill="${i===n-1?'var(--fill)':'var(--o40)'}"/>`:'').join('');
+  let extra='',hit='';
+  if(opt.interactive){ const lbls=opt.labels||nums.map(v=>String(v)); const pd=nums.map((v,i)=>({f:+(xs[i]/W).toFixed(4),l:lbls[i]})); extra=` data-act="chartpt" data-pts='${JSON.stringify(pd).replace(/'/g,'&#39;')}'`; hit=`<rect x="0" y="0" width="${W}" height="${H}" fill="transparent" pointer-events="all"/>`; }
+  return `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none"${extra} style="width:100%;height:${H}px;display:block;margin:10px 0 2px${opt.interactive?';cursor:pointer':''}"><defs><linearGradient id="lcg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--fill)" stop-opacity=".16"/><stop offset="1" stop-color="var(--fill)" stop-opacity="0"/></linearGradient></defs><polygon points="${pad},${H-pad} ${pts.join(' ')} ${W-pad},${H-pad}" fill="url(#lcg)"/><polyline points="${pts.join(' ')}" fill="none" stroke="var(--o60)" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round"/>${dots}${hit}</svg>`; }
+// FIFA-style hexagonal radar for a meal: 6 axes vs daily goal
+function mealRadar(t,g){ g=g||{};
+  const ax=[{k:'protein',l:'P'},{k:'carbs',l:'C'},{k:'fat',l:'F'},{k:'sodium',l:'Na'},{k:'sugar',l:'azúcar'},{k:'fiber',l:'fibra'}];
+  const W=240,H=196,cx=120,cy=96,R=60,N=ax.length;
+  const ang=i=>(-90+360/N*i)*Math.PI/180;
+  const at=(i,r)=>[+(cx+Math.cos(ang(i))*r).toFixed(1),+(cy+Math.sin(ang(i))*r).toFixed(1)];
+  let grid=''; [0.25,0.5,0.75,1].forEach(rr=>{ grid+=`<polygon points="${ax.map((_,i)=>at(i,R*rr).join(',')).join(' ')}" fill="none" stroke="var(--o20)" stroke-width=".8"/>`; });
+  let spokes=''; ax.forEach((_,i)=>{ const e=at(i,R); spokes+=`<line x1="${cx}" y1="${cy}" x2="${e[0]}" y2="${e[1]}" stroke="var(--o20)" stroke-width=".8"/>`; });
+  const valOf=a=>{ const goal=+g[a.k]||0, v=+t[a.k]||0; return goal>0?Math.max(0,Math.min(1,v/goal)):0; };
+  const dpts=ax.map((a,i)=>at(i,R*valOf(a)).join(',')).join(' ');
+  const ddots=ax.map((a,i)=>{ const c=at(i,R*valOf(a)); return `<circle cx="${c[0]}" cy="${c[1]}" r="2.2" fill="var(--info)"/>`; }).join('');
+  let labels=''; ax.forEach((a,i)=>{ const lp=at(i,R+15),co=Math.cos(ang(i)),anc=Math.abs(co)<0.3?'middle':(co>0?'start':'end'); labels+=`<text x="${lp[0]}" y="${lp[1]}" text-anchor="${anc}" dominant-baseline="middle" font-size="9" fill="var(--o50)">${a.l} <tspan fill="var(--fill)" font-weight="700">${Math.round(+t[a.k]||0)}</tspan></text>`; });
+  return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;max-width:300px;height:auto;display:block;margin:0 auto">`
+    +grid+spokes
+    +`<polygon points="${dpts}" fill="var(--info)" fill-opacity=".16" stroke="var(--info)" stroke-width="1.6" stroke-linejoin="round"/>`+ddots
+    +`<text x="${cx}" y="${cy-2}" text-anchor="middle" font-size="17" font-weight="800" fill="var(--fill)">${Math.round(+t.kcal||0)}</text>`
+    +`<text x="${cx}" y="${cy+10}" text-anchor="middle" font-size="8" fill="var(--o40)">kcal</text>`
+    +labels+`</svg>`;
+}
 function progWeekly(n){ const now=new Date(); const buckets=[]; for(let i=n-1;i>=0;i--){ const a=new Date(now); a.setDate(now.getDate()-7*i-6); const b=new Date(now); b.setDate(now.getDate()-7*i); buckets.push({a:todayISO(a),b:todayISO(b)}); }
   const counts=buckets.map(()=>0), vols=buckets.map(()=>0);
   (db.sessions||[]).forEach(s=>{ if(s.type==='rest')return; for(let i=0;i<buckets.length;i++){ if(s.date>=buckets[i].a&&s.date<=buckets[i].b){ counts[i]++; (s.exercises||[]).forEach(e=>(e.sets||[]).forEach(st=>{vols[i]+=(parseFloat(st.w)||0)*(parseFloat(st.r)||0);})); break; } } });
@@ -1088,7 +1114,7 @@ function renderProgress(){
       st=`<div class="pst ${cls}">${ch>0?'↑':ch<0?'↓':'='} ${Math.abs(ch)} kg · <span class="lk" data-act="shareweight">compartir</span></div>`;
     } else { st=`<div class="pst flat">registra varios días</div>`; }
     tiles.push(`<div class="ptile"><div class="ptlh"><div class="plbl">peso</div><a class="ptla" data-act="logweight">+ log</a></div>`
-      +`<div class="pval">${curBw||'—'}<span>kg</span></div>${st}${bwVals.length>=2?lineChart(bwVals.slice(-12),{h:32}):''}</div>`);
+      +`<div class="pval">${curBw||'—'}<span>kg</span></div>${st}${bwVals.length>=2?lineChart(bwVals.slice(-12),{h:40,dates:bwKeys.slice(-12),interactive:true,labels:bwVals.slice(-12).map((vv,ii)=>vv+' kg · '+fmtShort(bwKeys.slice(-12)[ii]))}):''}</div>`);
   }
   // volumen
   if(totalSessions){ const cur=w.vols[w.vols.length-1]||0, prev=w.vols[w.vols.length-2]||0; const pct=prev>0?Math.round((cur-prev)/prev*100):null;
@@ -1109,7 +1135,7 @@ function renderProgress(){
     const seg=[14,30,90].map(r=>`<span data-act="steprange" data-r="${r}" style="${r===_sr?'color:var(--fill)':'color:var(--o40)'}">${r}</span>`).join('<span style="color:var(--o20)">·</span>');
     tiles.push(`<div class="ptile"><div class="ptlh"><div class="plbl">pasos · ${_sr}d</div><div class="prng">${seg}</div></div>`
       +`<div class="pval">${_t?_t.toLocaleString():'—'}<span>hoy</span></div>`
-      +`<div class="pst flat">prom ${kFmt(_a)}/d</div>${lineChart(_stepsArr,{h:32,zero:true})}</div>`);
+      +`<div class="pst flat">prom ${kFmt(_a)}/d</div>${lineChart(_stepsArr,{h:40,zero:true,dates:_shd,interactive:true,labels:_stepsArr.map((vv,ii)=>(vv?vv.toLocaleString()+' pasos':'sin registro')+' · '+fmtShort(_shd[ii]))})}</div>`);
   }
   // agua
   if(_waterLog.length){ const _g=db.settings.goals.water||0, _a=Math.round(avgPos(_waterArr)*10)/10;
@@ -1256,6 +1282,7 @@ document.getElementById('app').addEventListener('click',e=>{
   else if(a==='healthimport'){ openHealthImport(); }
   else if(a==='healthsync'){ healthSync(); }
   else if(a==='steprange'){ window._stepRange=+el.dataset.r||30; render(); }
+  else if(a==='chartpt'){ try{ const pts=JSON.parse(el.dataset.pts||'[]'); if(pts.length){ const r=el.getBoundingClientRect(); const x=(e.clientX-r.left)/(r.width||1); let best=pts[0],bd=9; pts.forEach(p=>{ const d=Math.abs(p.f-x); if(d<bd){bd=d;best=p;} }); if(best&&best.l)toast(best.l); } }catch(_){} }
   else if(a==='editbw'){ const d=el.dataset.d; const dt=document.getElementById('bw_date'), kg=document.getElementById('bw_kg'); if(dt)dt.value=d; if(kg){ kg.value=(db.bodyweight&&db.bodyweight[d])||''; kg.focus(); } }
   else if(a==='delbw'){ const d=el.dataset.d; if(confirm('¿Borrar el peso de '+d+'?')){ if(db.bodyweight)delete db.bodyweight[d]; const allk=Object.keys(db.bodyweight||{}).sort(); if(db.profile)db.profile.weightKg=allk.length?db.bodyweight[allk[allk.length-1]]:db.profile.weightKg; save(); openWeightLog(); } }
   else if(a==='settings'){ go('settings'); }
