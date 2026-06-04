@@ -969,7 +969,7 @@ function lineChart(vals,opt){ opt=opt||{}; const nums=(vals||[]).map(v=>+v||0); 
   const W=300,H=opt.h||56,pad=7; let lo=Math.min(...nums),hi=Math.max(...nums); if(opt.zero)lo=Math.min(0,lo); if(hi<=lo)hi=lo+1;
   const n=nums.length, X=i=>n>1?pad+i*(W-2*pad)/(n-1):W/2, Y=v=>+(H-pad-((v-lo)/(hi-lo))*(H-2*pad)).toFixed(1);
   const pts=nums.map((v,i)=>X(i).toFixed(1)+','+Y(v));
-  const dots=nums.map((v,i)=>`<circle cx="${X(i).toFixed(1)}" cy="${Y(v)}" r="${i===n-1?2.8:1.7}" fill="${i===n-1?'var(--fill)':'var(--o40)'}"/>`).join('');
+  const dots=nums.map((v,i)=>(i===n-1||n<=45||i%Math.round(n/24)===0)?`<circle cx="${X(i).toFixed(1)}" cy="${Y(v)}" r="${i===n-1?2.8:1.7}" fill="${i===n-1?'var(--fill)':'var(--o40)'}"/>`:'').join('');
   return `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" style="width:100%;height:${H}px;display:block;margin:10px 0 2px"><defs><linearGradient id="lcg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--fill)" stop-opacity=".16"/><stop offset="1" stop-color="var(--fill)" stop-opacity="0"/></linearGradient></defs><polygon points="${pad},${H-pad} ${pts.join(' ')} ${W-pad},${H-pad}" fill="url(#lcg)"/><polyline points="${pts.join(' ')}" fill="none" stroke="var(--o60)" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round"/>${dots}</svg>`; }
 function progWeekly(n){ const now=new Date(); const buckets=[]; for(let i=n-1;i>=0;i--){ const a=new Date(now); a.setDate(now.getDate()-7*i-6); const b=new Date(now); b.setDate(now.getDate()-7*i); buckets.push({a:todayISO(a),b:todayISO(b)}); }
   const counts=buckets.map(()=>0), vols=buckets.map(()=>0);
@@ -1011,7 +1011,8 @@ function renderProgress(){
   const totalSessions=(db.sessions||[]).filter(s=>s.type!=='rest').length;
   const bwKeys=Object.keys(db.bodyweight||{}).sort(); const bwVals=bwKeys.map(k=>db.bodyweight[k]);
   const curBw=bwVals.length?bwVals[bwVals.length-1]:(db.profile.weightKg||0);
-  const _hd=lastDays(14); const _stepsArr=_hd.map(d=>(db.steps&&db.steps[d])||0); const _waterArr=_hd.map(d=>Math.round(dayWater(d)*10)/10); const _stepsLog=_stepsArr.filter(x=>x>0), _waterLog=_waterArr.filter(x=>x>0);
+  const _hd=lastDays(14); const _waterArr=_hd.map(d=>Math.round(dayWater(d)*10)/10); const _waterLog=_waterArr.filter(x=>x>0);
+  const _sr=window._stepRange||30; const _shd=lastDays(_sr); const _stepsArr=_shd.map(d=>(db.steps&&db.steps[d])||0); const _stepsLog=_stepsArr.filter(x=>x>0);
   let out=statusBar(false)+`<hr class="rule"/><div class="section"><div class="h"><span class="s">//</span>PROGRESS</div><div class="meta">${totalSessions} sesiones</div></div>`;
   if(!totalSessions && !bwVals.length && !_stepsLog.length && !_waterLog.length){
     return out+`<div class="empty">aún no hay datos<br/>entrena o registra tu peso para ver progreso</div>`
@@ -1041,9 +1042,13 @@ function renderProgress(){
   } else { out+=`<div class="line"><span class="k">actual</span><span class="dots"></span><span class="v">${curBw?curBw+' kg':'—'}</span></div><div class="submeta">registra tu peso varios días para ver la tendencia</div>`; }
   // habits — pasos + agua (junto al peso; sueño viene en su propio paso)
   if(_stepsLog.length){ const _t=_stepsArr[_stepsArr.length-1], _a=Math.round(avgPos(_stepsArr));
-    out+=`<hr class="rule"/><div class="grp-label">PASOS · 14 días</div>`+lineChart(_stepsArr,{zero:true})
+    let _mx=0,_mxi=-1; _stepsArr.forEach((v,i)=>{ if(v>_mx){_mx=v;_mxi=i;} });
+    const _seg=[14,30,90].map(r=>`<span data-act="steprange" data-r="${r}" style="cursor:pointer;padding:0 5px;${r===_sr?'color:var(--fill)':'color:var(--o40)'}">${r}</span>`).join('<span style="color:var(--o20)">·</span>');
+    out+=`<hr class="rule"/><div class="section" style="margin-bottom:0"><div class="grp-label" style="margin-bottom:0">PASOS · ${_sr} días</div><div class="meta" style="font-size:11px">${_seg}</div></div>`+lineChart(_stepsArr,{zero:true})
       +`<div class="line"><span class="k">hoy</span><span class="dots"></span><span class="v">${_t?_t.toLocaleString():'—'}</span></div>`
-      +`<div class="submeta">promedio ${_a.toLocaleString()}/día · ${_stepsLog.length} días con registro</div>`; }
+      +`<div class="line"><span class="k">promedio</span><span class="dots"></span><span class="v">${_a.toLocaleString()}/día</span></div>`
+      +(_mx>0?`<div class="line"><span class="k">mejor día</span><span class="dots"></span><span class="v">${_mx.toLocaleString()} <span style="color:var(--o40);font-size:9px">${fmtShort(_shd[_mxi])}</span></span></div>`:'')
+      +`<div class="submeta">${_stepsLog.length} de ${_sr} días con registro</div>`; }
   if(_waterLog.length){ const _g=db.settings.goals.water||0, _a=Math.round(avgPos(_waterArr)*10)/10;
     out+=`<hr class="rule"/><div class="grp-label">AGUA · 14 días</div>`+lineChart(_waterArr,{zero:true})
       +`<div class="line"><span class="k">promedio</span><span class="dots"></span><span class="v">${_a} L${_g?` <span style="color:var(--o40);font-size:9px">/ ${_g}</span>`:''}</span></div>`
@@ -1170,6 +1175,7 @@ document.getElementById('app').addEventListener('click',e=>{
   else if(a==='logweight'){ openWeightLog(); }
   else if(a==='healthimport'){ openHealthImport(); }
   else if(a==='healthsync'){ healthSync(); }
+  else if(a==='steprange'){ window._stepRange=+el.dataset.r||30; render(); }
   else if(a==='editbw'){ const d=el.dataset.d; const dt=document.getElementById('bw_date'), kg=document.getElementById('bw_kg'); if(dt)dt.value=d; if(kg){ kg.value=(db.bodyweight&&db.bodyweight[d])||''; kg.focus(); } }
   else if(a==='delbw'){ const d=el.dataset.d; if(confirm('¿Borrar el peso de '+d+'?')){ if(db.bodyweight)delete db.bodyweight[d]; const allk=Object.keys(db.bodyweight||{}).sort(); if(db.profile)db.profile.weightKg=allk.length?db.bodyweight[allk[allk.length-1]]:db.profile.weightKg; save(); openWeightLog(); } }
   else if(a==='settings'){ go('settings'); }
