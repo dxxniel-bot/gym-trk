@@ -287,7 +287,7 @@
   .shr-ring.good .ring-fill{stroke:var(--good);} .shr-ring.over .ring-fill{stroke:var(--bad);}
   /* meal-summary popup (MFP-style, mono, luxury) */
   .mbanner{display:flex; align-items:center; gap:14px; border:1px solid var(--border); border-radius:16px; padding:16px; margin-top:4px;}
-  .msum-top{display:flex; gap:12px; align-items:stretch; margin-top:10px;} .msum-rad{flex:0 0 60%; min-width:0; display:flex; align-items:center; justify-content:center;} .msum-rad svg{width:100%; height:auto; max-height:100%; display:block;} .msum-rad svg text{font-family:'JetBrains Mono',ui-monospace,monospace; letter-spacing:0;} .msum-right{flex:1 1 0; min-width:0; display:flex; flex-direction:column; justify-content:center;} .msum-list{min-width:0;} .nl-row{display:flex; justify-content:space-between; align-items:baseline; gap:6px; padding:2.5px 0; border-bottom:1px solid var(--line); font-size:10.5px;} .nl-row:last-child{border-bottom:none;} .nl-k{color:var(--o50);} .nl-v{color:var(--fill); font-weight:700; white-space:nowrap;} .nl-u{color:var(--o40); font-weight:400; font-size:8.5px; margin-left:1px;} .msum-kcal{text-align:center; margin-top:9px; font-size:22px; font-weight:400; letter-spacing:2.5px; color:var(--fill);} .msum-kcal span{font-size:10px; letter-spacing:1.5px; color:var(--o40); margin-left:3px;}
+  .msum-top{display:flex; gap:12px; align-items:stretch; margin-top:10px;} .msum-rad{flex:0 0 62%; min-width:0; align-self:stretch;} .msum-rad svg{height:100%; width:100%; display:block;} .msum-rad svg text{font-family:'JetBrains Mono',ui-monospace,monospace; letter-spacing:0;} .msum-right{flex:1 1 0; min-width:0; display:flex; flex-direction:column; justify-content:center;} .msum-list{min-width:0;} .nl-row{display:flex; justify-content:space-between; align-items:baseline; gap:6px; padding:2.5px 0; border-bottom:1px solid var(--line); font-size:10.5px;} .nl-row:last-child{border-bottom:none;} .nl-k{color:var(--o50);} .nl-v{color:var(--fill); font-weight:700; white-space:nowrap;} .nl-u{color:var(--o40); font-weight:400; font-size:8.5px; margin-left:1px;} .msum-kcal{text-align:center; margin-top:9px; font-size:22px; font-weight:400; letter-spacing:2.5px; color:var(--fill);} .msum-kcal span{font-size:10px; letter-spacing:1.5px; color:var(--o40); margin-left:3px;}
   @keyframes radbreathe{0%,100%{fill-opacity:.09}50%{fill-opacity:.17}} .rad-fill{fill-opacity:.12; animation:radbreathe 5.5s ease-in-out infinite}
   .mb-ring .ring.lg{width:92px; height:92px;} .mb-ring .ring.lg .num{font-size:21px; font-weight:800; letter-spacing:-.5px;} .mb-ring .ring.lg .of{font-size:8px; color:var(--o40); margin-top:2px;}
   .mb-cols{flex:1; display:flex; justify-content:space-around;} .mbc{text-align:center;} .mbc .v{font-size:17px; font-weight:800;} .mbc .l{font-size:9px; color:var(--o50); margin-top:4px;} .mbc .p{font-size:9px; color:var(--o35); margin-top:1px;}
@@ -959,7 +959,7 @@ function openMealSummary(tag){
   const li=(lbl,v,u,force)=>(force||+v>0)?`<div class="nl-row"><span class="nl-k">${lbl}</span><span class="nl-v">${u==='L'?(+v).toFixed(2):Math.round(v)}<span class="nl-u">${u}</span></span></div>`:'';
   const nutList=li('proteína',t.protein,'g',1)+li('carbs',t.carbs,'g',1)+li('grasa',t.fat,'g',1)+li('alcohol',t.alcohol,'g')+li('fibra',t.fiber,'g')+li('azúcar',t.sugar,'g')+li('sodio',t.sodium,'mg')+li('potasio',t.potassium,'mg')+li('cafeína',t.caffeine,'mg')+li('líquidos',t.water,'L');
   openModal(`<h3>#${escTxt(tag)}</h3>
-   <div class="msum-top"><div class="msum-rad">${mealRadar(t,_mg)}</div><div class="msum-right"><div class="msum-list">${nutList}</div><div class="msum-kcal">${Math.round(t.kcal)}<span>KCAL</span></div><div class="submeta" style="text-align:center;margin-top:4px">P ${pc(pk)}% · C ${pc(ck)}% · F ${pc(fk)}%</div></div></div>
+   <div class="msum-top"><div class="msum-rad">${mealRadar(t,_mg)}</div><div class="msum-right"><div class="msum-list">${nutList}</div><div class="msum-kcal">${Math.round(t.kcal)}<span>KCAL</span></div><div class="submeta" style="text-align:center;margin-top:4px;font-size:9px;letter-spacing:0">P ${pc(pk)}% · C ${pc(ck)}% · F ${pc(fk)}%</div></div></div>
    <div class="shlog" style="margin-top:14px">${mealFoodRows(items)}</div>
    <div class="sheetbtns" style="margin-top:14px"><button class="ok" data-act="addtomeal" data-tag="${escTxt(tag)}">+ add food</button></div>`);
 }
@@ -1027,7 +1027,7 @@ function lineChart(vals,opt){ opt=opt||{}; const nums=(vals||[]).map(v=>+v||0); 
   let extra='',hit='';
   if(opt.interactive){ const lbls=opt.labels||nums.map(v=>String(v)); const pd=nums.map((v,i)=>({f:+(xs[i]/W).toFixed(4),l:lbls[i]})); extra=` data-act="chartpt" data-pts='${JSON.stringify(pd).replace(/'/g,'&#39;')}'`; hit=`<rect x="0" y="0" width="${W}" height="${H}" fill="transparent" pointer-events="all"/>`; }
   return `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none"${extra} style="width:100%;height:${H}px;display:block;margin:10px 0 2px${opt.interactive?';cursor:pointer':''}"><defs><linearGradient id="lcg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--fill)" stop-opacity=".16"/><stop offset="1" stop-color="var(--fill)" stop-opacity="0"/></linearGradient></defs><polygon points="${pad},${H-pad} ${pts.join(' ')} ${W-pad},${H-pad}" fill="url(#lcg)"/><polyline points="${pts.join(' ')}" fill="none" stroke="var(--o60)" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round"/>${dots}${hit}</svg>`; }
-// meal nutrient radar — heptagon, pairs opposite (P<->C, F<->fib, Na<->K), dominant labels lit, organic mono
+// meal nutrient radar — heptagon, pairs opposite, rounded-corner polygon, dominant labels lit by opacity only
 function mealRadar(t,g){ g=g||{};
   const ax=[{k:'protein',l:'P'},{k:'fat',l:'F'},{k:'sodium',l:'Na'},{k:'alcohol',l:'alc'},{k:'carbs',l:'C'},{k:'fiber',l:'fib'},{k:'potassium',l:'K'}];
   const W=180,H=166,cx=90,cy=83,R=64,N=ax.length;
@@ -1039,20 +1039,21 @@ function mealRadar(t,g){ g=g||{};
   const valOf=a=>{ const goal=(+g[a.k]||0)*0.4, v=+t[a.k]||0; return goal>0?Math.max(0,Math.min(1,v/goal)):0; };
   const norms=ax.map(valOf); const maxN=Math.max.apply(null,norms.concat(0.0001)); const thr=maxN*0.85;
   const dpts=ax.map((a,i)=>at(i,R*Math.max(0.05,norms[i])));
-  const path=smoothClosed(dpts);
-  let ddots=''; ax.forEach((a,i)=>{ const c=at(i,R*Math.max(0.05,norms[i])), dom=norms[i]>=thr; ddots+=`<circle cx="${c[0]}" cy="${c[1]}" r="${dom?2:1.4}" fill="${dom?'var(--fill)':'var(--o40)'}"/>`; });
-  let labels=''; ax.forEach((a,i)=>{ const lp=at(i,R+9), dom=norms[i]>=thr; labels+=`<text x="${lp[0]}" y="${lp[1]}" text-anchor="middle" dominant-baseline="middle" font-size="9" fill="${dom?'var(--fill)':'var(--o35)'}" font-weight="${dom?'700':'400'}">${a.l}</text>`; });
+  const path=roundPoly(dpts,6.5);
+  let ddots=''; ax.forEach((a,i)=>{ const c=at(i,R*Math.max(0.05,norms[i])), dom=norms[i]>=thr; ddots+=`<circle cx="${c[0]}" cy="${c[1]}" r="1.6" fill="${dom?'var(--fill)':'var(--o40)'}"/>`; });
+  let labels=''; ax.forEach((a,i)=>{ const lp=at(i,R+9), dom=norms[i]>=thr; labels+=`<text x="${lp[0]}" y="${lp[1]}" text-anchor="middle" dominant-baseline="middle" font-size="9" fill="${dom?'var(--fill)':'var(--o35)'}">${a.l}</text>`; });
   const cross=`<line x1="${cx-3}" y1="${cy}" x2="${cx+3}" y2="${cy}" stroke="var(--o30)" stroke-width=".7"/><line x1="${cx}" y1="${cy-3}" x2="${cx}" y2="${cy+3}" stroke="var(--o30)" stroke-width=".7"/>`;
-  return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;display:block">`
+  return `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet" style="display:block">`
     +grid+cross
     +`<path d="${path}" fill="var(--fill)" class="rad-fill"/>`
-    +`<path d="${path}" fill="none" stroke="var(--fill)" stroke-width="1.2" stroke-linejoin="round" stroke-opacity=".95"/>`
+    +`<path d="${path}" fill="none" stroke="var(--fill)" stroke-width="1.2" stroke-linejoin="round" stroke-linecap="round" stroke-opacity=".95"/>`
     +ddots+labels+`</svg>`;
 }
-function smoothClosed(pts){ const n=pts.length; if(n<3)return ''; let d='M'+pts[0][0]+','+pts[0][1];
-  for(let i=0;i<n;i++){ const p0=pts[(i-1+n)%n],p1=pts[i],p2=pts[(i+1)%n],p3=pts[(i+2)%n];
-    const c1x=(p1[0]+(p2[0]-p0[0])/6).toFixed(1),c1y=(p1[1]+(p2[1]-p0[1])/6).toFixed(1),c2x=(p2[0]-(p3[0]-p1[0])/6).toFixed(1),c2y=(p2[1]-(p3[1]-p1[1])/6).toFixed(1);
-    d+='C'+c1x+','+c1y+' '+c2x+','+c2y+' '+p2[0]+','+p2[1]; }
+function roundPoly(pts,r){ const n=pts.length; if(n<3)return ''; const g=i=>pts[(i%n+n)%n]; const ein=[],eout=[],V=[];
+  for(let i=0;i<n;i++){ const P=g(i),A=g(i-1),B=g(i+1); const aL=Math.hypot(A[0]-P[0],A[1]-P[1])||1, bL=Math.hypot(B[0]-P[0],B[1]-P[1])||1; const rA=Math.min(r,aL/2), rB=Math.min(r,bL/2);
+    ein[i]=[+(P[0]+(A[0]-P[0])/aL*rA).toFixed(1),+(P[1]+(A[1]-P[1])/aL*rA).toFixed(1)]; eout[i]=[+(P[0]+(B[0]-P[0])/bL*rB).toFixed(1),+(P[1]+(B[1]-P[1])/bL*rB).toFixed(1)]; V[i]=P; }
+  let d='M'+ein[0][0]+','+ein[0][1];
+  for(let i=0;i<n;i++){ d+='Q'+V[i][0]+','+V[i][1]+' '+eout[i][0]+','+eout[i][1]+'L'+ein[(i+1)%n][0]+','+ein[(i+1)%n][1]; }
   return d+'Z'; }
 function progWeekly(n){ const now=new Date(); const buckets=[]; for(let i=n-1;i>=0;i--){ const a=new Date(now); a.setDate(now.getDate()-7*i-6); const b=new Date(now); b.setDate(now.getDate()-7*i); buckets.push({a:todayISO(a),b:todayISO(b)}); }
   const counts=buckets.map(()=>0), vols=buckets.map(()=>0);
