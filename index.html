@@ -1029,9 +1029,9 @@ function lineChart(vals,opt){ opt=opt||{}; const nums=(vals||[]).map(v=>+v||0); 
   let extra='',hit='';
   if(opt.interactive){ const lbls=opt.labels||nums.map(v=>String(v)); const pd=nums.map((v,i)=>({f:+(xs[i]/W).toFixed(4),l:lbls[i]})); extra=` data-act="chartpt" data-pts='${JSON.stringify(pd).replace(/'/g,'&#39;')}'`; hit=`<rect x="0" y="0" width="${W}" height="${H}" fill="transparent" pointer-events="all"/>`; }
   return `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none"${extra} style="width:100%;height:${H}px;display:block;margin:10px 0 2px${opt.interactive?';cursor:pointer':''}"><defs><linearGradient id="lcg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--fill)" stop-opacity=".16"/><stop offset="1" stop-color="var(--fill)" stop-opacity="0"/></linearGradient></defs><polygon points="${pad},${H-pad} ${pts.join(' ')} ${W-pad},${H-pad}" fill="url(#lcg)"/><polyline points="${pts.join(' ')}" fill="none" stroke="var(--o60)" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round"/>${dots}${hit}</svg>`; }
-// meal nutrient radar — heptagon (4 macros: P/C/F/alcohol + Na/K/fibra), organic, mono/cmd aesthetic
+// meal nutrient radar — heptagon, pairs opposite (P<->C, F<->fib, Na<->K), dominant labels lit, organic mono
 function mealRadar(t,g){ g=g||{};
-  const ax=[{k:'protein',l:'P'},{k:'carbs',l:'C'},{k:'fat',l:'F'},{k:'alcohol',l:'ALC'},{k:'fiber',l:'fib'},{k:'potassium',l:'K'},{k:'sodium',l:'Na'}];
+  const ax=[{k:'protein',l:'P'},{k:'fat',l:'F'},{k:'sodium',l:'Na'},{k:'alcohol',l:'alc'},{k:'carbs',l:'C'},{k:'fiber',l:'fib'},{k:'potassium',l:'K'}];
   const W=180,H=166,cx=90,cy=83,R=64,N=ax.length;
   const ang=i=>(-90+360/N*i)*Math.PI/180;
   const at=(i,r)=>[+(cx+Math.cos(ang(i))*r).toFixed(1),+(cy+Math.sin(ang(i))*r).toFixed(1)];
@@ -1039,10 +1039,11 @@ function mealRadar(t,g){ g=g||{};
   [0.25,0.5,0.75,1].forEach(rr=>{ grid+=`<polygon points="${ax.map((_,i)=>at(i,R*rr).join(',')).join(' ')}" fill="none" stroke="var(--o20)" stroke-width=".7"/>`; });
   ax.forEach((_,i)=>{ const e=at(i,R); grid+=`<line x1="${cx}" y1="${cy}" x2="${e[0]}" y2="${e[1]}" stroke="var(--o20)" stroke-width=".7"/>`; });
   const valOf=a=>{ const goal=(+g[a.k]||0)*0.4, v=+t[a.k]||0; return goal>0?Math.max(0,Math.min(1,v/goal)):0; };
-  const dpts=ax.map((a,i)=>at(i,R*Math.max(0.05,valOf(a))));
+  const norms=ax.map(valOf); const maxN=Math.max.apply(null,norms.concat(0.0001)); const thr=maxN*0.85;
+  const dpts=ax.map((a,i)=>at(i,R*Math.max(0.05,norms[i])));
   const path=smoothClosed(dpts);
-  let ddots=''; ax.forEach((a,i)=>{ const c=at(i,R*Math.max(0.05,valOf(a))); ddots+=`<circle cx="${c[0]}" cy="${c[1]}" r="1.5" fill="var(--fill)"/>`; });
-  let labels=''; ax.forEach((a,i)=>{ const lp=at(i,R+9); labels+=`<text x="${lp[0]}" y="${lp[1]}" text-anchor="middle" dominant-baseline="middle" font-size="9" fill="var(--o50)">${a.l}</text>`; });
+  let ddots=''; ax.forEach((a,i)=>{ const c=at(i,R*Math.max(0.05,norms[i])), dom=norms[i]>=thr; ddots+=`<circle cx="${c[0]}" cy="${c[1]}" r="${dom?2:1.4}" fill="${dom?'var(--fill)':'var(--o40)'}"/>`; });
+  let labels=''; ax.forEach((a,i)=>{ const lp=at(i,R+9), dom=norms[i]>=thr; labels+=`<text x="${lp[0]}" y="${lp[1]}" text-anchor="middle" dominant-baseline="middle" font-size="9" fill="${dom?'var(--fill)':'var(--o35)'}" font-weight="${dom?'700':'400'}">${a.l}</text>`; });
   const cross=`<line x1="${cx-3}" y1="${cy}" x2="${cx+3}" y2="${cy}" stroke="var(--o30)" stroke-width=".7"/><line x1="${cx}" y1="${cy-3}" x2="${cx}" y2="${cy+3}" stroke="var(--o30)" stroke-width=".7"/>`;
   return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;display:block">`
     +grid+cross
