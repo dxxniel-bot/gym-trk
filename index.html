@@ -2507,9 +2507,20 @@ function openGoals(){
   const gbal=()=>{ const K=window._goalMode==='pct'?Kget():((parseFloat(val('gg_protein'))||0)*4+(parseFloat(val('gg_carbs'))||0)*4+(parseFloat(val('gg_fat'))||0)*9); const b=balanceOf(K); const e=document.getElementById('g_bal'); if(!e)return; if(!b){ e.innerHTML='<span style="color:var(--o40)">completa tu perfil para ver déficit / volumen</span>'; return; } e.innerHTML='mantenimiento ≈ <b style="color:var(--fg)">'+b.maint+'</b> kcal · <b style="color:'+b.col+'">'+b.label+'</b>'+(b.label!=='mantenimiento'?' '+Math.abs(b.delta)+' kcal':''); };
   // paint %/grams from gr. skip = the slider being dragged, so its thumb is NOT re-set mid-drag -> smooth, no jumps
   const paint=skip=>{ const K=Kget()||1; let sum=0; keys.forEach(k=>{ const pct=Math.round(gr[k]*DIV[k]/K*100); sum+=pct; const sp=document.getElementById('sp_'+k); if(sp)sp.textContent=pct; const sg=document.getElementById('sg_'+k); if(sg)sg.textContent=Math.round(gr[k]); if(k!==skip){ const r=document.getElementById('sl_'+k); if(r&&+r.value!==pct)r.value=pct; } }); const ps=document.getElementById('gp_sum'); if(ps)ps.innerHTML='total <b style="color:var(--fg)">'+sum+'</b>% · '+Math.round(Kget())+' kcal'; gbal(); };
-  const applyLocks=()=>{ const ln=lockedKeys().length; keys.forEach(k=>{ const r=document.getElementById('sl_'+k), b=document.getElementById('lk_'+k); if(r)r.disabled=locks[k]||(ln>=2&&!locks[k]); if(b)b.classList.toggle('on',locks[k]); }); };
-  // drag an unlocked slider: set its grams from its %, spread the rest over the other UNLOCKED macros (locked grams stay put)
-  const onDrag=k=>{ if(locks[k])return; const K=Kget(); if(K<=0)return; const pct=parseFloat(val('sl_'+k))||0; gr[k]=K*pct/100/DIV[k];
+  const applyLocks=()=>{ keys.forEach(k=>{ const r=document.getElementById('sl_'+k), b=document.getElementById('lk_'+k); if(r)r.disabled=locks[k]; if(b)b.classList.toggle('on',locks[k]); }); };
+  // drag an unlocked slider:
+  //  • 2 locks (this is the 3rd, free): its % moves AT FIXED grams from locked macros -> KCAL adjusts up/down
+  //  • 0-1 locks: keep grams of locked + spread remainder over OTHER unlocked to keep total kcal fixed
+  const onDrag=k=>{ if(locks[k])return; const K=Kget(); if(K<=0)return; const pct=parseFloat(val('sl_'+k))||0;
+    if(lockedKeys().length===2){ // 2 LOCKED + this draggable -> moving it scales kcal
+      const lockedKcal=lockedKeys().reduce((s,x)=>s+gr[x]*DIV[x],0);
+      if(pct>=99){ gr[k]=(lockedKcal*99)/DIV[k]/1; }  // safety cap (avoid div-by-zero)
+      else { gr[k]=(lockedKcal*pct/100)/(DIV[k]*(1-pct/100)); } // gr*DIV / (gr*DIV+lockedKcal) = pct/100  ->  gr = lockedKcal*pct / (DIV*(100-pct))
+      const newK=Math.round(lockedKcal+gr[k]*DIV[k]); setVal('gp_kcal',newK);
+      paint(k); return;
+    }
+    // 0-1 locks: kcal stays, redistribute among the other unlocked
+    gr[k]=K*pct/100/DIV[k];
     const lockedKcal=lockedKeys().reduce((s,x)=>s+gr[x]*DIV[x],0); const others=keys.filter(x=>x!==k&&!locks[x]); const remain=Math.max(0,K-lockedKcal-gr[k]*DIV[k]);
     if(others.length===1){ gr[others[0]]=remain/DIV[others[0]]; }
     else if(others.length===2){ const a0=gr[others[0]]*DIV[others[0]], a1=gr[others[1]]*DIV[others[1]], as=a0+a1, p0=as>0?remain*a0/as:remain/2; gr[others[0]]=p0/DIV[others[0]]; gr[others[1]]=(remain-p0)/DIV[others[1]]; }
