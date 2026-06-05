@@ -1656,6 +1656,28 @@ function openDrink(){
 // (huevo, res, cebolla…). Values are ~per-100 g edible portion (USDA-derived approximations);
 // base:'ml' entries are per-100 ml. sodium/potassium in mg. sv=serving g · pc=piece g · ct=container g.
 const bfNorm=s=>(s||'').toString().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
+// tolerant search: returns 0 (no match) or positive score (higher=better). Handles typos, partial words,
+// out-of-order tokens, doubled letters, plurals. q is the raw query, f is a food.
+function searchScore(q,f){ if(!q)return 0; const sn=bfNorm(q); const name=bfNorm(f.name||''), alt=bfNorm(f.alt||''), brand=bfNorm(f.brand||''); const hay=name+' '+alt+' '+brand;
+  if(!sn||!hay.trim())return 0;
+  // 1) Quick wins: exact substring anywhere
+  if(name.indexOf(sn)===0)return 1000;            // starts with query → top
+  if(name.indexOf(sn)>0) return 700;              // word in name
+  if(brand.indexOf(sn)>=0)return 600;             // brand match
+  if(alt.indexOf(sn)>=0) return 500;              // English alias
+  // 2) Token search: every word of query must appear (substring) in hay  → handles "creama cacahuate" / "cacahuate crema"
+  const tokens=sn.split(/\s+/).filter(Boolean); if(tokens.length>1){ let ok=true,sc=0; for(const t of tokens){ const p=hay.indexOf(t); if(p<0){ok=false;break;} sc+=Math.max(0,80-p); } if(ok) return 300+sc; }
+  // 3) Subsequence (letters in order, gaps allowed) → "pllo"→"pollo", "ptina"→"proteina"
+  let i=0,j=0,gaps=0; while(i<sn.length&&j<hay.length){ if(sn[i]===hay[j]){i++;j++;}else{j++;gaps++;} }
+  if(i===sn.length){ const ratio=sn.length/(sn.length+gaps); if(ratio>=0.5) return Math.round(150+ratio*100); }
+  // 4) 1-edit fuzzy on the first word (single typo, swap, missing/extra letter): "creama"<->"crema"
+  const w0=name.split(/\s+/)[0]||name; if(Math.abs(w0.length-sn.length)<=2 && sn.length>=3){
+    let a=w0,b=sn; if(a.length<b.length){const t=a;a=b;b=t;}
+    let edits=0,k=0; for(let l=0;l<a.length;l++){ if(a[l]===b[k]) k++; else { edits++; if(edits>1) break; if(a.length>b.length) continue; k++; } }
+    if(edits<=1 && k>=b.length-1) return 120;
+  }
+  return 0;
+}
 const BASE_FOODS=(function(){ const L=[];
   const slug=n=>'bf_'+bfNorm(n).replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
   const add=(name,kcal,p,c,f,o)=>{ o=o||{}; const bid=o.br?bfNorm(o.br).replace(/[^a-z0-9]+/g,'-'):''; L.push({ id:slug(name)+(bid?'-'+bid:''), name:name, alt:o.en||'', brand:o.br||'', base:o.base||'g',
@@ -2098,6 +2120,80 @@ const BASE_FOODS=(function(){ const L=[];
   add('Dominos Hawaiana',250,11,31,9,{na:500,br:'Dominos',en:'hawaiian pizza',sv:110});
   add('Little Caesars Peperoni',280,12,31,12,{na:500,br:'Little Caesars',en:'pepperoni pizza',sv:110});
   add('Sandwich Subway Pavo',120,8,18,2,{na:500,br:'Subway',en:'turkey sub',sv:230});
+  // ── proteínas & suplementos (ampliación) ──
+  add('Proteína de suero (whey concentrate)',412,75,9,8,{na:280,k:450,sv:30,sl:'scoop',en:'whey concentrate'});
+  add('Proteína whey hidrolizada',380,85,4,3,{na:320,k:400,sv:30,sl:'scoop',en:'hydrolyzed whey'});
+  add('Proteína caseína micelar',360,80,5,3,{na:300,k:380,sv:30,sl:'scoop',en:'casein micellar'});
+  add('Proteína de chícharo (pea)',376,80,7,5,{fi:6,na:1100,k:200,sv:30,sl:'scoop',en:'pea protein vegan'});
+  add('Proteína de arroz',380,80,7,4,{na:160,k:90,sv:30,sl:'scoop',en:'rice protein vegan'});
+  add('Proteína de hemp',375,50,12,12,{fi:10,na:13,k:1200,sv:30,sl:'scoop',en:'hemp protein vegan'});
+  add('Colágeno hidrolizado',360,90,0,0,{na:90,sv:10,sl:'cda',en:'hydrolyzed collagen peptides'});
+  add('Pre-workout',32,1,7,0,{caf:200,sv:8,sl:'scoop',en:'pre workout supplement'});
+  add('BCAA polvo',40,9,1,0,{na:120,sv:10,sl:'scoop',en:'bcaa branched chain amino'});
+  add('Glutamina',350,80,0,0,{sv:5,sl:'cda',en:'glutamine'});
+  add('Beta-alanina',350,0,87,0,{sv:3,en:'beta alanine'});
+  add('Multivitamínico',0,0,0,0,{sv:1,sl:'pza',en:'multivitamin'});
+  add('Omega-3 (cápsula)',9,0,0,1,{sv:1,sl:'pza',en:'omega 3 fish oil capsule'});
+  // ── arroces & granos (variedad) ──
+  add('Arroz jazmín (cocido)',129,2.9,28,0.4,{fi:0.5,na:1,k:35,sv:160,en:'jasmine rice cooked'});
+  add('Arroz basmati (cocido)',121,3,25,0.4,{fi:0.6,na:1,k:35,sv:160,en:'basmati rice cooked'});
+  add('Arroz arborio (cocido)',130,2.4,28,0.2,{fi:0.3,na:1,k:30,sv:160,en:'arborio risotto rice cooked'});
+  add('Arroz salvaje (cocido)',101,4,21,0.3,{fi:1.8,na:3,k:101,sv:165,en:'wild rice cooked'});
+  add('Arroz glutinoso / sushi',130,2.4,28.7,0.2,{fi:0.2,na:1,k:13,sv:150,en:'sticky sushi rice'});
+  add('Mijo (cocido)',119,3.5,23.7,1,{fi:1.3,na:2,k:62,sv:170,en:'millet cooked'});
+  add('Bulgur (cocido)',83,3,19,0.2,{fi:4.5,na:5,k:68,sv:180,en:'bulgur wheat cooked'});
+  add('Farro (cocido)',170,6,34,1.5,{fi:5,na:2,k:130,sv:170,en:'farro cooked'});
+  // ── pastas (variedad) ──
+  add('Espagueti integral (cocido)',124,5.3,26.5,0.5,{fi:3.9,na:4,k:62,sv:140,en:'whole wheat spaghetti cooked'});
+  add('Penne (cocido)',157,5.8,30.7,0.9,{fi:1.8,na:1,k:44,sv:140,en:'penne pasta cooked'});
+  add('Macarrón (cocido)',158,5.8,31,0.9,{fi:1.8,na:1,k:44,sv:140,en:'macaroni elbow pasta cooked'});
+  add('Fettuccine (cocido)',164,6.5,30.7,1.9,{fi:1.4,na:1,k:39,sv:140,en:'fettuccine pasta cooked'});
+  add('Lasaña (placa cocida)',135,5,27,0.8,{fi:1.5,na:1,k:35,sv:30,en:'lasagna sheet cooked'});
+  add('Ravioli relleno (cocido)',233,9,33,7,{fi:2,na:431,k:131,sv:130,en:'cheese ravioli'});
+  add('Gnocchi de papa',133,3,28,0.7,{fi:1.8,na:300,k:144,sv:140,en:'potato gnocchi'});
+  add('Soba (alforfón cocido)',99,5.1,21,0.1,{fi:1.7,na:60,k:40,sv:140,en:'soba buckwheat noodles'});
+  add('Udon (cocido)',127,3.4,26.3,0.2,{fi:2,na:200,k:30,sv:140,en:'udon noodles'});
+  add('Pasta sin gluten (arroz/maíz)',357,7.5,77,1.5,{fi:1.7,na:6,k:50,en:'gluten free pasta'});
+  // ── cremas & untables ──
+  add('Crema de cacahuate cremosa (s/azúcar)',598,26,17,52,{s:3,fi:6,na:5,k:680,sv:32,sl:'cda',en:'natural peanut butter unsweetened'});
+  add('Crema de cacahuate crunchy',592,25,21,49,{s:8,fi:7,na:421,k:660,sv:32,sl:'cda',en:'crunchy peanut butter'});
+  add('Crema de avellana (Nutella estilo)',541,6.3,57,31,{s:56,fi:3.4,na:42,k:200,sv:20,sl:'cda',en:'hazelnut spread chocolate'});
+  add('Crema de pistache',590,17,22,52,{s:6,fi:8,na:5,k:900,sv:30,sl:'cda',en:'pistachio butter'});
+  add('Crema de coco (untable)',648,7,24,60,{s:6,fi:14,na:30,k:540,sv:30,sl:'cda',en:'coconut butter spread'});
+  add('Crema de chocolate y avellana keto',440,12,40,28,{s:2,fi:18,na:60,k:300,sv:25,sl:'cda',en:'keto chocolate hazelnut spread'});
+  add('Crema de macadamia',718,8,14,76,{s:5,fi:9,na:5,k:368,sv:30,sl:'cda',en:'macadamia butter'});
+  add('Tahini (crema de ajonjolí)',595,17,21,53.8,{fi:9.3,na:115,k:414,sv:15,sl:'cda',en:'tahini sesame paste'});
+  add('Mermelada sin azúcar',125,0.5,30,0,{s:8,fi:0.3,na:30,sv:20,sl:'cda',en:'sugar free jam'});
+  // ── lácteos extra ──
+  add('Yogur griego sabor (con azúcar)',95,9,11,1.5,{s:9,na:38,k:140,sv:170,en:'flavored greek yogurt'});
+  add('Yogur de coco',130,1.5,11,9,{s:7,na:15,sv:170,en:'coconut yogurt vegan'});
+  add('Kefir',55,3.3,4.5,2.5,{s:4,na:40,base:'ml',sv:240,en:'kefir'});
+  add('Skyr islandés',63,11,4,0.2,{s:4,na:50,k:150,sv:170,en:'skyr icelandic yogurt'});
+  // ── verduras / frutas extra ──
+  add('Camote morado',86,1.6,20,0.1,{s:4.2,fi:3,na:55,k:337,en:'purple sweet potato'});
+  add('Berries mixtos congelados',43,0.7,10,0.3,{s:5,fi:3,na:1,k:130,sv:100,en:'mixed frozen berries'});
+  add('Arándano azul congelado',57,0.7,14,0.3,{s:10,fi:2.4,na:1,k:77,en:'frozen blueberry'});
+  // ── snacks / barritas ──
+  add('Barrita Quest Bar',180,21,21,7,{s:1,fi:13,na:230,br:'Quest',sv:60,sl:'pza',en:'quest protein bar'});
+  add('Barrita One Bar',220,20,24,8,{s:1,fi:9,na:230,br:'One',sv:60,sl:'pza',en:'one protein bar'});
+  add('Barrita RXBar',210,12,24,9,{s:13,fi:5,na:140,br:'RXBar',sv:52,sl:'pza',en:'rxbar protein bar'});
+  add('Mazapán de cacahuate',490,12,55,28,{s:50,na:30,sv:28,sl:'pza',en:'peanut mazapan candy'});
+  // ── repostería / dulces típicos MX ──
+  add('Concha (pan dulce)',360,7,57,12,{s:20,na:300,pc:80,en:'mexican sweet bread concha'});
+  add('Cuernito',406,8,46,21,{s:11,fi:2.6,na:424,pc:57,en:'mexican croissant'});
+  add('Polvorón',520,6,60,29,{s:30,na:150,pc:25,en:'mexican shortbread cookie'});
+  add('Churro',356,4,46,17,{s:9,na:265,pc:50,en:'churro fried dough'});
+  // ── bebidas ──
+  add('Leche de avena Oatly',60,3,7,3,{s:3,na:100,br:'Oatly',base:'ml',sv:240,en:'oat milk'});
+  add('Bebida de almendra Almond Breeze',13,0.5,1,1.1,{na:72,br:'Almond Breeze',base:'ml',sv:240,en:'almond milk'});
+  add('Bebida deportiva Powerade',26,0,6.7,0,{s:6,na:55,k:25,br:'Powerade',base:'ml',sv:355,en:'sports drink electrolyte'});
+  add('Café americano',2,0.1,0.3,0,{caf:50,k:80,base:'ml',sv:240,en:'americano coffee black'});
+  add('Café cold brew',3,0.2,0,0,{caf:75,k:90,base:'ml',sv:240,en:'cold brew coffee'});
+  // ── básicos extra ──
+  add('Huevo revuelto (con aceite)',220,13,2,18,{na:330,k:140,pc:60,en:'scrambled eggs cooked oil'});
+  add('Omelet (2 huevos)',154,10.6,0.6,12,{na:155,k:138,pc:120,en:'omelet two eggs'});
+  add('Arroz con leche',103,2.5,18,2.5,{s:11,na:45,k:90,sv:130,en:'rice pudding'});
+  add('Atún en aceite (escurrido)',186,29,0,8,{na:354,k:207,sv:85,sl:'lata',en:'tuna in oil drained'});
   return L;
 })();
 function openFoodAdd(preset, lockTag){
@@ -2118,9 +2214,10 @@ function openFoodAdd(preset, lockTag){
   const q=document.getElementById('fa_q');
   const foodRow=(f,act)=>`<div class="pickitem" data-act="${act}" data-id="${f.id}">${escTxt(f.name)}${foodSource(f).ok?' <span style="color:var(--good);font-size:9px" title="fuente conocida">✓</span>':''}${f.brand?' <span style="color:var(--o35);font-size:10px">'+escTxt(f.brand)+'</span>':''} <span style="float:right;color:var(--o50)">${Math.round(foodKcal100(f))} /100${f.base==='ml'?'ml':'g'}</span></div>`;
   const renderList=()=>{ const s=(q.value||'').toLowerCase().trim(); const sn=bfNorm(s);
-    const mine=(db.foods||[]).slice().sort((a,b)=>(b.lastUsed||0)-(a.lastUsed||0)).filter(f=>!s||bfNorm(f.name).includes(sn)).slice(0,40);
-    const base=s?BASE_FOODS.filter(f=>(bfNorm(f.name).includes(sn)||(f.alt&&bfNorm(f.alt).includes(sn))||(f.brand&&bfNorm(f.brand).includes(sn)))&&!mine.some(x=>x.id===f.id||bfNorm(x.name)===bfNorm(f.name)))
-      .sort((a,b)=>searchScore(b.name,b.brand,sn)-searchScore(a.name,a.brand,sn)).slice(0,80):[];
+    const mine=(db.foods||[]).slice().filter(f=>!s||searchScore(s,f)>0).map(f=>({f,sc:s?searchScore(s,f):0,lu:f.lastUsed||0}))
+      .sort((a,b)=>s?(b.sc-a.sc)||(b.lu-a.lu):(b.lu-a.lu)).slice(0,40).map(x=>x.f);
+    const base=s?BASE_FOODS.map(f=>({f,sc:searchScore(s,f)})).filter(x=>x.sc>0 && !mine.some(m=>m.id===x.f.id||bfNorm(m.name)===bfNorm(x.f.name)))
+      .sort((a,b)=>b.sc-a.sc).slice(0,80).map(x=>x.f):[];
     const lbl=document.getElementById('fa_lbl'); if(lbl)lbl.textContent=s?'RESULTADOS':'RECIENTES';
     let html=mine.map(f=>foodRow(f,'pickfood')).join('');
     if(base.length)html+=(mine.length?'<div class="grp-label" style="margin:12px 0 6px;color:var(--o35)">BÁSICOS</div>':'')+base.map(f=>foodRow(f,'pickbase')).join('');
@@ -2247,7 +2344,7 @@ async function lookupBarcode(code){
   }catch(e){ return null; }
 }
 // score a result by how well its name matches the query (relevance ranking)
-function searchScore(name,brand,qn){
+function offScore(name,brand,qn){
   const nn=bfNorm(name||''), bn=bfNorm(brand||''); if(!nn)return -1;
   const words=qn.split(/\s+/).filter(Boolean); let sc=0;
   if(nn===qn) sc+=100;                                   // exact name
@@ -2280,7 +2377,7 @@ async function searchFoods(q){
   const seen=new Set(); const out=[];
   products.map(p=>({p,m:mapProduct(p)}))
     .filter(x=>x.m.name && x.m.per100 && x.m.per100.kcal>0)
-    .map(x=>{ x.score=searchScore(x.m.name,x.m.brand,qn); return x; })
+    .map(x=>{ x.score=offScore(x.m.name,x.m.brand,qn); return x; })
     .filter(x=>x.score>0)                                  // must actually match the query
     .sort((a,b)=>b.score-a.score)
     .forEach(x=>{ const k=bfNorm(x.m.name)+'|'+bfNorm(x.m.brand); if(seen.has(k))return; seen.add(k); out.push(x.m); });
@@ -2293,7 +2390,7 @@ function openNameSearch(barcode){
    <div class="sheetbtns" style="margin-bottom:6px"><button class="ok" id="ns_go">search →</button><button class="cancel" data-act="closemodal">cancel</button></div>
    <div id="ns_msg" class="submeta"></div><div id="ns_list" style="max-height:210px;overflow-y:auto"></div>`);
   const run=async()=>{ const q=val('ns_q'); if(!q)return; const msg=document.getElementById('ns_msg'); msg.innerHTML='<span class="spin"></span>buscando…';
-    const sn=bfNorm(q); const bm=BASE_FOODS.filter(f=>bfNorm(f.name).includes(sn)).slice(0,12);
+    const bm=BASE_FOODS.map(f=>({f,sc:searchScore(q,f)})).filter(x=>x.sc>0).sort((a,b)=>b.sc-a.sc).slice(0,15).map(x=>x.f);
     const res=await searchFoods(q); window._nsRes=res; const tot=bm.length+res.length; msg.textContent=tot?(tot+' resultados'):'sin resultados';
     const baseHtml=bm.map(f=>`<div class="pickitem" data-act="pickbase" data-id="${f.id}">${f.name}<span style="float:right;color:var(--o50)">${Math.round(foodKcal100(f))}/100${f.base==='ml'?'ml':'g'}</span></div>`).join('');
     const offHtml=res.slice(0,20).map((f,i)=>`<div class="pickitem" data-act="nspick" data-i="${i}">${escTxt(f.name)}${foodSource(f).ok?' <span style="color:var(--good);font-size:9px" title="OpenFoodFacts">✓</span>':''}${f.brand?' <span style="color:var(--o40)">'+escTxt(f.brand)+'</span>':''}<span style="float:right;color:var(--o50)">${Math.round(foodKcal100(f))}/100</span></div>`).join('');
