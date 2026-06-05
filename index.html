@@ -1056,7 +1056,7 @@ function mealRadar(t,g){ g=g||{};
   const ang=i=>(-90+360/N*i)*Math.PI/180;
   const at=(i,r)=>[+(cx+Math.cos(ang(i))*r).toFixed(1),+(cy+Math.sin(ang(i))*r).toFixed(1)];
   const KK=2.6, EZ=1-Math.exp(-KK);
-  const warp=x=>{ x=x<0?0:x>1?1:x; return (1-Math.exp(-KK*x))/EZ; };       // exponencial invertida
+  const warp=x=>{ x=x<0?0:x>1?1:x; return -Math.log(1-x*EZ)/KK; };       // exponencial invertida
   const kcalTot=(t.protein*4+t.carbs*4+t.fat*9+t.alcohol*7)||1;
   const frac=a=> a.c ? (+t[a.k]||0)*a.c/kcalTot : ((+g[a.k]>0)?(+t[a.k]||0)/g[a.k]:0); // 0..1 = % de la tabla
   let grid='';
@@ -1081,7 +1081,7 @@ function dayRadar(t,g){ g=g||{};
   const ang=i=>(-90+360/N*i)*Math.PI/180;
   const at=(i,r)=>[+(cx+Math.cos(ang(i))*r).toFixed(1),+(cy+Math.sin(ang(i))*r).toFixed(1)];
   const KK=2.6, EZ=1-Math.exp(-KK);
-  const warp=x=>{ x=x<0?0:x>1?1:x; return (1-Math.exp(-KK*x))/EZ; };
+  const warp=x=>{ x=x<0?0:x>1?1:x; return -Math.log(1-x*EZ)/KK; };
   const frac=a=> (+g[a.k]>0) ? (+t[a.k]||0)/(+g[a.k]) : 0;
   let grid='';
   [0.125,0.25,0.375,0.5,0.625,0.75,0.875,1].forEach(rr=>{ const wr=warp(rr); grid+=`<polygon points="${ax.map((_,i)=>at(i,R*wr).join(',')).join(' ')}" fill="none" stroke="var(--o12)" stroke-width=".5"/>`; });
