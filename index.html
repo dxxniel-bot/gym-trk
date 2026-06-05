@@ -2653,14 +2653,21 @@ function recalcGoals(p){ p=p||db.profile||{}; const w=+p.weightKg||70, hh=+p.hei
 function maintenanceKcal(){ const p=db.profile||{}; if(!p.weightKg||!p.heightCm||!p.age)return 0; const bmr=10*(+p.weightKg)+6.25*(+p.heightCm)-5*(+p.age)+((p.sex==='M')?5:-161); return Math.round(bmr*(+p.activity||1.2)); }
 function balanceOf(kcal){ const m=maintenanceKcal(); if(!m)return null; const delta=Math.round((+kcal||0)-m); const band=Math.max(60,m*0.03); const label=delta<-band?'déficit':(delta>band?'volumen':'mantenimiento'); const col=label==='déficit'?'var(--info)':(label==='volumen'?'var(--warn)':'var(--good)'); return {maint:m,delta:delta,label:label,col:col}; }
 function openGoals(){
-  const g=db.settings.goals;
+  // Editing day-scope: PAST → edit only that day's goalHist snapshot; TODAY → update both
+  // settings.goals (future default) AND goalHist[today] (so today reflects immediately);
+  // FUTURE → settings.goals only (becomes default once reached).
+  const today=todayISO(); const day=curDate(); const isPast=day<today; const isFuture=day>today;
+  // Source of values shown in the editor: the goal for the currently-displayed day
+  const baseG=(isPast||isFuture)?Object.assign({},(db.goalHist&&db.goalHist[day])||db.settings.goals||{}):db.settings.goals;
+  const g=Object.assign({},baseG);                     // local working copy
   if(window._goalMode!=='grams')window._goalMode='pct';
   const pk0=(g.protein||0)*4, fk0=(g.fat||0)*9, ck0=(g.carbs||0)*4, tk=pk0+fk0+ck0||1;
   let pP=Math.round(pk0/tk*100), pF=Math.round(fk0/tk*100), pC=Math.max(0,100-pP-pF);
   const eg=effectiveGoals();
+  const scopeLabel=isPast?('· '+dayLabel(day)+' (pasado · solo este día)'):isFuture?('· '+dayLabel(day)+' (futuro · default)'):'';
   const micro=(id,lbl,v,ro)=>`<div><label>${lbl}${ro?' <span style="color:var(--good);font-size:8px;font-weight:700">AUTO</span>':''}</label><input id="${id}" type="number" inputmode="decimal" value="${ro?Math.round(v*100)/100:v}"${ro?' disabled style="opacity:.55"':''}/></div>`;
   const sl=(k,lbl,pct)=>`<div class="gsl"><div class="gsl-h"><span>${lbl} <button type="button" class="lk" id="lk_${k}" title="fijar">🔒</button></span><span><b id="sp_${k}">${pct}</b>% · <span class="gg" id="sg_${k}">0</span> g</span></div><input type="range" id="sl_${k}" min="0" max="100" value="${pct}" class="gslider"/></div>`;
-  openModal(`<h3>edit goals</h3>
+  openModal(`<h3>edit goals${scopeLabel?' <span style="color:var(--o50);font-weight:400;font-size:11px;letter-spacing:0">'+escTxt(scopeLabel)+'</span>':''}</h3>
    <div class="toggles" id="gm_tog" style="margin-bottom:14px"><button class="t ${window._goalMode==='pct'?'on':''}" data-gm="pct">% de kcal</button><button class="t ${window._goalMode==='grams'?'on':''}" data-gm="grams">gramos</button></div>
    <div id="g_bal" class="submeta" style="margin:-6px 0 13px;font-size:11px"></div>
    <div id="gm_pct" style="display:${window._goalMode==='pct'?'block':'none'}">
@@ -2722,8 +2729,14 @@ function openGoals(){
     else { P=parseFloat(val('gg_protein'))||0; C=parseFloat(val('gg_carbs'))||0; F=parseFloat(val('gg_fat'))||0; kcal=P*4+C*4+F*9; }
     g.kcal=Math.round(kcal); g.protein=Math.round(P); g.carbs=Math.round(C); g.fat=Math.round(F);
     ['sugar','fiber','caffeine','alcohol'].forEach(k=>{ const v=parseFloat(val('g_'+k)); if(!isNaN(v))g[k]=v; });   // Na/K/water are AUTO from derivedActivity()
+    if(isPast){ db.goalHist=db.goalHist||{}; db.goalHist[day]=g; }            // past: only this day
+    else { Object.assign(db.settings.goals, g); db.goalHist=db.goalHist||{}; db.goalHist[day]=Object.assign({},db.settings.goals); } // present/future: update current goal AND today/that-day's snapshot
     save(); closeModal(); render(); };
-  const grc=document.getElementById('g_recalc'); if(grc)grc.onclick=()=>{ if(!db.profile||!db.profile.weightKg){ alert('Completa tu perfil primero (settings → perfil).'); return; } if(!confirm('¿Recalcular TODAS las metas desde tu perfil y nivel de actividad? Sobrescribe tus ajustes manuales.'))return; db.settings.goals=recalcGoals(db.profile); save(); closeModal(); openGoals(); };
+  const grc=document.getElementById('g_recalc'); if(grc)grc.onclick=()=>{ if(!db.profile||!db.profile.weightKg){ alert('Completa tu perfil primero (settings → perfil).'); return; } if(!confirm('¿Recalcular TODAS las metas desde tu perfil y nivel de actividad? Sobrescribe tus ajustes manuales.'+(isPast?' Solo aplica a este día.':'')))return;
+    const fresh=recalcGoals(db.profile);
+    if(isPast){ db.goalHist=db.goalHist||{}; db.goalHist[day]=fresh; }
+    else { db.settings.goals=fresh; db.goalHist=db.goalHist||{}; db.goalHist[day]=Object.assign({},fresh); }
+    save(); closeModal(); openGoals(); };
 }
 // brief non-blocking confirmation (used by step-import from the iOS Shortcut, etc.)
 function toast(msg){ try{ const t=document.createElement('div'); t.className='toast'; t.textContent=msg; document.body.appendChild(t); setTimeout(()=>{ try{t.remove();}catch(_){} },2900); }catch(_){} }
