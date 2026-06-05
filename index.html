@@ -304,6 +304,20 @@
   .fa-btns{display:flex; gap:8px;}
   .fa-btns .b{flex:1 1 0; text-align:center; font-family:inherit; font-size:12px; font-weight:600; letter-spacing:.4px; color:var(--fg); border:1px solid var(--border); border-radius:12px; padding:13px 0; background:var(--card); cursor:pointer;}
   .fa-btns .b:active{background:var(--card2);}
+  /* empty-state hint: sequenced animation of scan → photo → register */
+  .fa-empty{padding:18px 6px; color:var(--o50); font-size:11px; line-height:1.55;}
+  .fa-empty .fa-em-h{color:var(--fg); font-weight:700; font-size:12px; margin-bottom:11px; display:block; text-align:center;}
+  .fa-empty .fa-em-steps{display:flex; gap:6px; align-items:stretch; justify-content:center;}
+  .fa-empty .fa-em-step{flex:1 1 0; max-width:90px; text-align:center; padding:11px 6px; border:1px solid var(--border); border-radius:11px; background:var(--card); cursor:pointer; opacity:0; transform:translateY(6px); animation:faPop .35s ease forwards;}
+  .fa-empty .fa-em-step .ic{font-size:20px; display:block; margin-bottom:4px;}
+  .fa-empty .fa-em-step .lb{font-size:9.5px; color:var(--o60); letter-spacing:.3px;}
+  .fa-empty .fa-em-step:nth-child(1){animation-delay:0s} .fa-empty .fa-em-step:nth-child(3){animation-delay:.25s} .fa-empty .fa-em-step:nth-child(5){animation-delay:.5s}
+  .fa-empty .fa-em-arr{align-self:center; color:var(--o30); font-size:14px; opacity:0; animation:faFade .35s ease forwards;}
+  .fa-empty .fa-em-arr:nth-of-type(1){animation-delay:.15s} .fa-empty .fa-em-arr:nth-of-type(2){animation-delay:.4s}
+  .fa-empty .fa-em-foot{margin-top:13px; text-align:center; color:var(--o35); font-size:9.5px;}
+  @keyframes faPop{to{opacity:1; transform:translateY(0)}}
+  @keyframes faFade{to{opacity:.5}}
+  .fa-spin{display:inline-block; width:10px; height:10px; border:1.5px solid var(--o20); border-top-color:var(--fg); border-radius:50%; animation:spin .7s linear infinite; vertical-align:middle; margin-right:5px;}
   .fa-listwrap{flex:1; overflow-y:auto; min-height:0; -webkit-overflow-scrolling:touch; margin-top:14px;}
   /* scanner reticle overlay */
   .scan-reticle{position:absolute; inset:0; pointer-events:none; display:flex; align-items:center; justify-content:center;}
@@ -2207,13 +2221,25 @@ function openFoodAdd(preset, lockTag){
      ${head}
      <div class="fa-top">
        <input id="fa_q" placeholder="buscar — huevo / egg, pollo / chicken…" autocomplete="off"/>
-       <div class="fa-btns"><button class="b" data-act="fbarcode">scan</button><button class="b" data-act="fsearch">search</button><button class="b" data-act="fregister">register</button></div>
+       <div class="fa-btns"><button class="b" data-act="fbarcode">scan</button><button class="b" data-act="fregister">register</button></div>
      </div>
      <div class="fa-listwrap"><div class="grp-label" id="fa_lbl" style="margin:0 0 8px">RECIENTES</div><div id="fa_list"></div></div>
    </div>`,'tall');
   const q=document.getElementById('fa_q');
   const foodRow=(f,act)=>`<div class="pickitem" data-act="${act}" data-id="${f.id}">${escTxt(f.name)}${foodSource(f).ok?' <span style="color:var(--good);font-size:9px" title="fuente conocida">✓</span>':''}${f.brand?' <span style="color:var(--o35);font-size:10px">'+escTxt(f.brand)+'</span>':''} <span style="float:right;color:var(--o50)">${Math.round(foodKcal100(f))} /100${f.base==='ml'?'ml':'g'}</span></div>`;
-  const renderList=()=>{ const s=(q.value||'').toLowerCase().trim(); const sn=bfNorm(s);
+  const emptyHTML=`<div class="fa-empty">
+     <span class="fa-em-h">no se encontró · prueba con</span>
+     <div class="fa-em-steps">
+       <button class="fa-em-step" type="button" data-act="fbarcode"><span class="ic">▦</span><span class="lb">escanea código</span></button>
+       <span class="fa-em-arr">→</span>
+       <button class="fa-em-step" type="button" data-act="fphoto"><span class="ic">▢</span><span class="lb">foto tabla nutrimental</span></button>
+       <span class="fa-em-arr">→</span>
+       <button class="fa-em-step" type="button" data-act="fmanual"><span class="ic">＋</span><span class="lb">registra manual</span></button>
+     </div>
+     <div class="fa-em-foot">sigue escribiendo · también buscamos en línea automáticamente</div>
+   </div>`;
+  let _offT=0, _offSeq=0;
+  const renderList=()=>{ const s=(q.value||'').toLowerCase().trim();
     const mine=(db.foods||[]).slice().filter(f=>!s||searchScore(s,f)>0).map(f=>({f,sc:s?searchScore(s,f):0,lu:f.lastUsed||0}))
       .sort((a,b)=>s?(b.sc-a.sc)||(b.lu-a.lu):(b.lu-a.lu)).slice(0,40).map(x=>x.f);
     const base=s?BASE_FOODS.map(f=>({f,sc:searchScore(s,f)})).filter(x=>x.sc>0 && !mine.some(m=>m.id===x.f.id||bfNorm(m.name)===bfNorm(x.f.name)))
@@ -2221,7 +2247,22 @@ function openFoodAdd(preset, lockTag){
     const lbl=document.getElementById('fa_lbl'); if(lbl)lbl.textContent=s?'RESULTADOS':'RECIENTES';
     let html=mine.map(f=>foodRow(f,'pickfood')).join('');
     if(base.length)html+=(mine.length?'<div class="grp-label" style="margin:12px 0 6px;color:var(--o35)">BÁSICOS</div>':'')+base.map(f=>foodRow(f,'pickbase')).join('');
-    document.getElementById('fa_list').innerHTML = html || `<div class="submeta" style="padding:6px 0">${s?'sin resultados · prueba [search] para productos de marca':'busca un alimento (huevo / egg, pollo / chicken…) o usa scan / search / register'}</div>`; };
+    const list=document.getElementById('fa_list');
+    if(html){ list.innerHTML=html; if(s && s.length>=2){ scheduleOFF(s); } }
+    else if(!s){ list.innerHTML=`<div class="submeta" style="padding:6px 0">busca un alimento (huevo / egg, pollo / chicken…) o usa scan / register</div>`; }
+    else { list.innerHTML=emptyHTML; if(s.length>=2)scheduleOFF(s); } };
+  function scheduleOFF(term){ clearTimeout(_offT); const seq=++_offSeq; _offT=setTimeout(async()=>{
+    const list=document.getElementById('fa_list'); if(!list)return;
+    if(q.value.trim()!==term||seq!==_offSeq)return;     // stale query, user kept typing
+    if(window._faLast===term)return; const hint=document.createElement('div'); hint.className='submeta'; hint.id='fa_offhint'; hint.style.cssText='padding:8px 0;text-align:center'; hint.innerHTML='<span class="fa-spin"></span>buscando en línea…';
+    const old=document.getElementById('fa_offhint'); if(old)old.remove(); list.appendChild(hint);
+    try{ const res=await searchFoods(term); window._faLast=term; if(seq!==_offSeq||q.value.trim()!==term)return;
+      const oldh=document.getElementById('fa_offhint'); if(oldh)oldh.remove();
+      if(res && res.length){ window._ofRes=res; const html=res.slice(0,15).map((f,i)=>`<div class="pickitem" data-act="ofpick" data-i="${i}">${escTxt(f.name)}${foodSource(f).ok?' <span style="color:var(--good);font-size:9px" title="OpenFoodFacts">✓</span>':''}${f.brand?' <span style="color:var(--o35);font-size:10px">'+escTxt(f.brand)+'</span>':''} <span style="float:right;color:var(--o50)">${Math.round((f.per100&&f.per100.kcal)||foodKcal100(f)||0)} /100${f.base==='ml'?'ml':'g'}</span></div>`).join('');
+        const head='<div class="grp-label" style="margin:12px 0 6px;color:var(--o35)">EN LÍNEA · '+escTxt(term)+'</div>';
+        list.insertAdjacentHTML('beforeend',head+html);
+      }
+    }catch(_){ const oldh=document.getElementById('fa_offhint'); if(oldh)oldh.remove(); } }, 450); }
   q.oninput=renderList; renderList();
   // long-press a meal chip to delete it
   const sg=document.getElementById('fa_sugg'); if(sg)sg.querySelectorAll('.chip').forEach(ch=>wireLongPress(ch,()=>{ const v=ch.dataset.v; if(!confirm('¿Borrar la comida "'+v+'" de la lista?'))return; db.mealTags=(db.mealTags||[]).filter(x=>x!==v); save(); ch.remove(); }));
