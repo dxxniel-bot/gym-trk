@@ -500,7 +500,7 @@ function load(){
   if(!d)return seed();
   return migrate(d);
 }
-function migrate(d){ if(!d.version){d.version=1;} if(!d.meals)d.meals={}; if(!d.foods)d.foods=[]; d.foods=d.foods.map(f=>(f&&f.per100)?f:asCanonical(f)); if(!d.steps)d.steps={}; if(!d.machines)d.machines={}; if(!d.bodyweight)d.bodyweight={}; if(!d.mealTags)d.mealTags=['breakfast','lunch','snack','dinner']; if(!d.settings)d.settings={goals:seed().settings.goals}; if(d.settings&&d.settings.goals&&d.settings.goals.alcohol==null)d.settings.goals.alcohol=(d.profile&&d.profile.sex==='F')?14:28;
+function migrate(d){ if(!d.version){d.version=1;} if(!d.meals)d.meals={}; if(!d.foods)d.foods=[]; d.foods=d.foods.map(f=>(f&&f.per100)?f:asCanonical(f)); if(!d.steps)d.steps={}; if(!d.machines)d.machines={}; if(!d.bodyweight)d.bodyweight={}; if(!d.mealTags)d.mealTags=['breakfast','lunch','snack','dinner']; if(!d.stack)d.stack=[]; if(!d.settings)d.settings={goals:seed().settings.goals}; if(d.settings&&d.settings.goals&&d.settings.goals.alcohol==null)d.settings.goals.alcohol=(d.profile&&d.profile.sex==='F')?14:28;
   // recompute alcohol for old meal items logged before alcohol was in MACROKEYS
   try{ Object.values(d.meals||{}).forEach(arr=>arr.forEach(m=>{ if(m.alcohol==null){ if(m._food&&m._food.per100&&m._food.per100.alcohol&&m._unit){ m.alcohol=computeNutrients(m._food,m._unit,m.qty||1).alcohol; } else m.alcohol=0; } })); }catch(e){}
   // goalHist: snapshot of intake goals at the moment of first logging that day (history is FROZEN — past days never re-read the current goal)
@@ -593,7 +593,7 @@ function renderNav(){
   const n=document.getElementById('nav'); const sc=state.screen;
   if(sc==='workout'||sc==='settings'||sc==='splitedit'||sc==='history'||sc==='share'||!db.profile.username){ n.style.display='none'; return; } n.style.display='flex';
   const tab=(id,lbl)=>`<a data-act="nav" data-screen="${id}" class="${sc===id?'active':''}">${lbl}</a>`;
-  n.innerHTML=tab('progress','progress')+tab('home','gym')+tab('macros','macros');
+  n.innerHTML=tab('progress','progress')+tab('home','gym')+tab('macros','macros')+tab('stack','stack');
 }
 
 // ---------- render: home ----------
@@ -1234,6 +1234,171 @@ function renderProgress(){
   out+='<div style="text-align:center;margin:16px 0 2px"><a data-act="healthsync" style="font-size:11px;color:var(--o60);cursor:pointer">↻ sync de Salud (pasos/peso)</a></div>';
   return out;
 }
+// ---------- stack: supplements / skincare / meds ----------
+// item shape: { id, name, category:'supp'|'skin'|'meds', dose, when:[], periodization:{type,value}, notes,
+//               startDate, endDate?, med?:{doctor,duration}, ticks:{'YYYY-MM-DD':true}, archived? }
+function isDueToday(item, iso){
+  if(!item || item.archived) return false;
+  if(item.startDate && iso < item.startDate) return false;
+  if(item.endDate && iso > item.endDate) return false;
+  const p=item.periodization||{type:'daily'};
+  if(p.type==='daily' || p.type==='range') return true;
+  if(p.type==='weekly'){ const d=new Date(iso+'T12:00:00').getDay(); return (p.value||[]).indexOf(d)>=0; }
+  const base=new Date((item.startDate||iso)+'T12:00:00').getTime();
+  const days=Math.round((new Date(iso+'T12:00:00').getTime()-base)/86400000);
+  if(p.type==='everyN'){ const n=Math.max(1,+p.value||1); return days>=0 && days%n===0; }
+  if(p.type==='cycle'){ const on=Math.max(0,+(p.value&&p.value.on)||0), off=Math.max(0,+(p.value&&p.value.off)||0); if(on+off===0) return true; return days>=0 && (days%(on+off))<on; }
+  return true;
+}
+function stackPeriodLabel(item){
+  const p=item.periodization||{type:'daily'};
+  if(p.type==='daily') return 'diario';
+  if(p.type==='weekly'){ const D=['D','L','M','M','J','V','S']; return (p.value||[]).slice().sort((a,b)=>a-b).map(d=>D[d]).join(' ')||'—'; }
+  if(p.type==='everyN') return 'cada '+(p.value||2)+' días';
+  if(p.type==='cycle') return 'ciclo '+(p.value?p.value.on:21)+'on/'+(p.value?p.value.off:7)+'off';
+  if(p.type==='range') return 'rango'+(item.endDate?(' → '+item.endDate.slice(5)):'');
+  return '';
+}
+function stackPct(iso){
+  const due=(db.stack||[]).filter(x=>isDueToday(x,iso));
+  if(!due.length) return null;
+  const done=due.filter(x=>x.ticks&&x.ticks[iso]).length;
+  return {done, total:due.length, pct:Math.round(done/due.length*100)};
+}
+function stackToggleTick(id, iso){
+  const it=(db.stack||[]).find(x=>x.id===id); if(!it) return;
+  it.ticks=it.ticks||{};
+  if(it.ticks[iso]) delete it.ticks[iso]; else it.ticks[iso]=true;
+  save(); render();
+}
+function renderStack(){
+  const iso=todayISO();
+  const all=db.stack||[];
+  const view=window._stackView||'today';
+  const pct=stackPct(iso);
+  let out=statusBar(false)
+    +`<hr class="rule"/><div class="section"><div class="h"><span class="s">//</span>STACK</div><div class="meta">${pct?(pct.done+'/'+pct.total+' · '+pct.pct+'%'):'sin items'}</div></div>`;
+  const tab=(k,l)=>`<span data-act="stackview" data-v="${k}" style="cursor:pointer;padding:0 8px;${view===k?'color:var(--fill)':'color:var(--o40)'}">${l}</span>`;
+  out+=`<div style="text-align:center;margin-bottom:14px;font-size:11px">${tab('today','HOY')}<span style="color:var(--o20)">·</span>${tab('all','TODOS')}</div>`;
+  if(!all.length){
+    out+=`<div class="empty" style="margin:24px 0 18px">aún no tienes nada<br/>agrega tu primer suplemento, skincare o medicamento abajo</div>`;
+  } else {
+    const cats=[{k:'supp',lbl:'SUPLEMENTOS'},{k:'skin',lbl:'SKINCARE'},{k:'meds',lbl:'MEDICAMENTOS'}];
+    let anyShown=false;
+    cats.forEach(c=>{
+      let items=all.filter(x=>x.category===c.k && !x.archived);
+      if(view==='today') items=items.filter(x=>isDueToday(x,iso));
+      if(!items.length) return;
+      anyShown=true;
+      out+=`<div class="grp-label" style="margin-top:10px">${c.lbl}</div>`;
+      items.forEach(it=>{
+        const checked=it.ticks && it.ticks[iso];
+        const isDue=isDueToday(it,iso);
+        const dose=it.dose?(' · '+escTxt(it.dose)):'';
+        const when=it.when&&it.when.length?(' · '+escTxt(it.when.join('/'))):'';
+        const period=escTxt(stackPeriodLabel(it));
+        const tickDisp=isDue
+          ?`<span data-act="stacktick" data-id="${it.id}" style="cursor:pointer;font-family:'JetBrains Mono',monospace;color:${checked?'var(--fill)':'var(--o40)'};padding-right:4px">[${checked?'✓':' '}]</span>`
+          :`<span style="color:var(--o20);padding-right:4px">[—]</span>`;
+        out+=`<div class="line" style="padding:6px 0;align-items:flex-start">`
+          +`<span class="k" style="display:flex;align-items:center;flex-wrap:wrap">${tickDisp}<span data-act="stackedit" data-id="${it.id}" style="cursor:pointer">${escTxt(it.name)}</span><span style="color:var(--o40);font-size:10px;margin-left:4px">${dose}${when}</span></span>`
+          +`<span class="dots"></span>`
+          +`<span class="v" style="font-size:10px;color:var(--o40);text-align:right">${period}</span>`
+          +`</div>`;
+      });
+    });
+    if(!anyShown){
+      out+=`<div class="empty" style="margin:24px 0 18px">${view==='today'?'no toca nada hoy ✓<br/>cambia a TODOS para ver tu lista completa':'sin items activos'}</div>`;
+    }
+  }
+  out+=`<hr class="rule"/><div style="display:flex;gap:8px;margin-top:14px">`
+    +`<button class="b" data-act="stackadd" data-c="supp" style="flex:1">+ supp</button>`
+    +`<button class="b" data-act="stackadd" data-c="skin" style="flex:1">+ skin</button>`
+    +`<button class="b" data-act="stackadd" data-c="meds" style="flex:1">+ meds</button>`
+    +`</div>`;
+  return out;
+}
+function openStackEdit(id, presetCat){
+  const existing=(db.stack||[]).find(x=>x.id===id);
+  const isNew=!existing;
+  const it=existing || {
+    id:'st_'+Date.now()+Math.random().toString(36).slice(2,5),
+    name:'', category:presetCat||'supp', dose:'', when:[],
+    periodization:{type:'daily'}, notes:'',
+    startDate:todayISO(), ticks:{}
+  };
+  const p=it.periodization||{type:'daily'};
+  const catBtn=(k,l)=>`<button class="t ${it.category===k?'on':''}" data-cat="${k}" type="button">${l}</button>`;
+  const whenOpts=['AM','PM','entreno','comidas'];
+  const whenBtn=l=>`<button class="t ${(it.when||[]).indexOf(l)>=0?'on':''}" data-when="${l}" type="button">${l}</button>`;
+  const dayLbl=['D','L','M','M','J','V','S'];
+  const dayBtn=i=>`<button class="t ${(p.type==='weekly'&&(p.value||[]).indexOf(i)>=0)?'on':''}" data-day="${i}" type="button">${dayLbl[i]}</button>`;
+  const ptBtn=(k,l)=>`<button class="t ${p.type===k?'on':''}" data-pt="${k}" type="button">${l}</button>`;
+  const dosePh=it.category==='skin'?'1 capa':it.category==='meds'?'25 mg':'5 g';
+  openModal(`<h3>${isNew?'agregar a tu stack':'editar item'}</h3>
+    <div class="field"><label>NOMBRE</label><input id="se_name" value="${escTxt(it.name||'')}" placeholder="ej. creatina monohidratada" autocomplete="off"/></div>
+    <div class="field"><label>CATEGORÍA</label><div class="toggles" id="se_cat">${catBtn('supp','supp')}${catBtn('skin','skin')}${catBtn('meds','meds')}</div></div>
+    <div class="field row2"><div><label>DOSIS</label><input id="se_dose" value="${escTxt(it.dose||'')}" placeholder="${dosePh}" autocomplete="off"/></div><div><label>INICIO</label><input id="se_start" type="date" value="${it.startDate||todayISO()}"/></div></div>
+    <div class="field"><label>CUÁNDO</label><div class="toggles wrap" id="se_when">${whenOpts.map(whenBtn).join('')}</div></div>
+    <div class="field"><label>PERIODIZACIÓN</label>
+      <div class="toggles wrap" id="se_pt">${ptBtn('daily','diario')}${ptBtn('weekly','días sem')}${ptBtn('everyN','cada N')}${ptBtn('cycle','ciclo')}${ptBtn('range','rango')}</div>
+      <div id="se_pwk" style="display:${p.type==='weekly'?'block':'none'};margin-top:6px"><div class="toggles" id="se_dayrow">${[1,2,3,4,5,6,0].map(dayBtn).join('')}</div></div>
+      <div id="se_pn" style="display:${p.type==='everyN'?'flex':'none'};margin-top:6px;gap:6px;align-items:center"><span style="color:var(--o50);font-size:10px">cada</span><input id="se_pnv" type="number" inputmode="numeric" style="width:60px" value="${p.type==='everyN'?(p.value||2):2}"/><span style="color:var(--o50);font-size:10px">días</span></div>
+      <div id="se_pcy" style="display:${p.type==='cycle'?'flex':'none'};margin-top:6px;gap:6px;align-items:center;flex-wrap:wrap"><span style="color:var(--o50);font-size:10px">on</span><input id="se_pcon" type="number" inputmode="numeric" style="width:60px" value="${p.type==='cycle'&&p.value?(p.value.on||21):21}"/><span style="color:var(--o50);font-size:10px">/ off</span><input id="se_pcoff" type="number" inputmode="numeric" style="width:60px" value="${p.type==='cycle'&&p.value?(p.value.off||7):7}"/><span style="color:var(--o50);font-size:10px">días</span></div>
+      <div id="se_prg" style="display:${p.type==='range'?'block':'none'};margin-top:6px"><label style="font-size:10px;color:var(--o50)">FECHA FIN (opcional)</label><input id="se_pend" type="date" value="${it.endDate||''}"/></div>
+    </div>
+    <div class="field"><label>NOTAS</label><input id="se_notes" value="${escTxt(it.notes||'')}" placeholder="opcional · ej. con grasa, no mezclar con C" autocomplete="off"/></div>
+    <div id="se_meds" style="display:${it.category==='meds'?'block':'none'}"><div class="field row2"><div><label>RECETADO POR</label><input id="se_doc" value="${escTxt((it.med&&it.med.doctor)||'')}" autocomplete="off"/></div><div><label>DURACIÓN</label><input id="se_dur" value="${escTxt((it.med&&it.med.duration)||'')}" placeholder="ej. 8 sem · indef" autocomplete="off"/></div></div></div>
+    <div class="sheetbtns"><button class="ok" id="se_save">guardar</button>${isNew?'':'<button class="cancel" id="se_del" style="color:var(--bad)">borrar</button>'}<button class="cancel" data-act="closemodal">cancel</button></div>`);
+  const root=document.getElementById('modal'); if(!root) return;
+  root.querySelectorAll('#se_cat button').forEach(b=>b.onclick=()=>{
+    root.querySelectorAll('#se_cat button').forEach(x=>x.classList.remove('on'));
+    b.classList.add('on');
+    const c=b.dataset.cat;
+    root.querySelector('#se_meds').style.display=(c==='meds')?'block':'none';
+    const doseInp=root.querySelector('#se_dose'); if(doseInp&&!doseInp.value) doseInp.placeholder=c==='skin'?'1 capa':c==='meds'?'25 mg':'5 g';
+  });
+  root.querySelectorAll('#se_when button').forEach(b=>b.onclick=()=>b.classList.toggle('on'));
+  root.querySelectorAll('#se_pt button').forEach(b=>b.onclick=()=>{
+    root.querySelectorAll('#se_pt button').forEach(x=>x.classList.remove('on'));
+    b.classList.add('on');
+    const t=b.dataset.pt;
+    root.querySelector('#se_pwk').style.display=t==='weekly'?'block':'none';
+    root.querySelector('#se_pn').style.display=t==='everyN'?'flex':'none';
+    root.querySelector('#se_pcy').style.display=t==='cycle'?'flex':'none';
+    root.querySelector('#se_prg').style.display=t==='range'?'block':'none';
+  });
+  root.querySelectorAll('#se_dayrow button').forEach(b=>b.onclick=()=>b.classList.toggle('on'));
+  root.querySelector('#se_save').onclick=()=>{
+    const name=val('se_name'); if(!name){ alert('pon un nombre.'); return; }
+    it.name=name;
+    it.category=root.querySelector('#se_cat .on').dataset.cat;
+    it.dose=val('se_dose');
+    it.when=Array.from(root.querySelectorAll('#se_when button.on')).map(b=>b.dataset.when);
+    it.notes=val('se_notes');
+    it.startDate=val('se_start')||todayISO();
+    const pt=root.querySelector('#se_pt .on').dataset.pt;
+    if(pt==='daily') { it.periodization={type:'daily'}; delete it.endDate; }
+    else if(pt==='weekly') { it.periodization={type:'weekly', value:Array.from(root.querySelectorAll('#se_dayrow button.on')).map(b=>+b.dataset.day)}; delete it.endDate; }
+    else if(pt==='everyN') { it.periodization={type:'everyN', value:Math.max(1,parseInt(val('se_pnv'),10)||2)}; delete it.endDate; }
+    else if(pt==='cycle') { it.periodization={type:'cycle', value:{on:Math.max(0,parseInt(val('se_pcon'),10)||21), off:Math.max(0,parseInt(val('se_pcoff'),10)||7)}}; delete it.endDate; }
+    else if(pt==='range') { it.periodization={type:'range'}; const end=val('se_pend'); if(end) it.endDate=end; else delete it.endDate; }
+    if(it.category==='meds'){
+      const doc=val('se_doc'), dur=val('se_dur');
+      if(doc||dur) it.med={doctor:doc, duration:dur}; else delete it.med;
+    } else { delete it.med; }
+    if(isNew){ db.stack=db.stack||[]; db.stack.push(it); }
+    save(); closeModal(); render();
+  };
+  if(!isNew){
+    root.querySelector('#se_del').onclick=()=>{
+      if(!confirm('¿Borrar '+it.name+'? Esto borra también su historial de ticks.')) return;
+      db.stack=(db.stack||[]).filter(x=>x.id!==it.id);
+      save(); closeModal(); render();
+    };
+  }
+}
+
 // ---------- render: split editor ----------
 function renderSplitEdit(){
   const sp=db.split||{name:'',days:[]};
@@ -1294,7 +1459,7 @@ function render(){
   let sc=state.screen;
   if(!db.profile.username){ sc = (state.screen==='onboard'||state.screen==='login') ? state.screen : 'landing'; }
   if(sc==='workout'){ state.work=db.activeWork; if(!state.work){ state.screen=sc='home'; } }
-  v.innerHTML = sc==='landing'?renderLanding() : sc==='login'?renderLogin() : sc==='onboard'?renderOnboard() : sc==='home'?renderHome() : sc==='workout'?renderWorkout() : sc==='macros'?renderMacros() : sc==='share'?renderShare() : sc==='progress'?renderProgress() : sc==='settings'?renderSettings() : sc==='splitedit'?renderSplitEdit() : sc==='history'?renderHistory() : renderHome();
+  v.innerHTML = sc==='landing'?renderLanding() : sc==='login'?renderLogin() : sc==='onboard'?renderOnboard() : sc==='home'?renderHome() : sc==='workout'?renderWorkout() : sc==='macros'?renderMacros() : sc==='share'?renderShare() : sc==='progress'?renderProgress() : sc==='stack'?renderStack() : sc==='settings'?renderSettings() : sc==='splitedit'?renderSplitEdit() : sc==='history'?renderHistory() : renderHome();
   document.getElementById('wfooter').style.display = sc==='workout'?'flex':'none';
   renderNav();
   v.scrollTop = state._scroll||0; state._scroll=0;
@@ -1355,6 +1520,10 @@ document.getElementById('app').addEventListener('click',e=>{
   else if(a==='healthimport'){ openHealthImport(); }
   else if(a==='healthsync'){ healthSync(); }
   else if(a==='steprange'){ window._stepRange=+el.dataset.r||30; render(); }
+  else if(a==='stacktick'){ stackToggleTick(el.dataset.id, todayISO()); }
+  else if(a==='stackedit'){ openStackEdit(el.dataset.id); }
+  else if(a==='stackadd'){ openStackEdit(null, el.dataset.c||'supp'); }
+  else if(a==='stackview'){ window._stackView=el.dataset.v||'today'; render(); }
   else if(a==='chartpt'){ try{ const pts=JSON.parse(el.dataset.pts||'[]'); if(pts.length){ const r=el.getBoundingClientRect(); const x=(e.clientX-r.left)/(r.width||1); let best=pts[0],bd=9; pts.forEach(p=>{ const d=Math.abs(p.f-x); if(d<bd){bd=d;best=p;} }); if(best&&best.l)toast(best.l); } }catch(_){} }
   else if(a==='editbw'){ const d=el.dataset.d; const dt=document.getElementById('bw_date'), kg=document.getElementById('bw_kg'); if(dt)dt.value=d; if(kg){ kg.value=(db.bodyweight&&db.bodyweight[d])||''; kg.focus(); } }
   else if(a==='delbw'){ const d=el.dataset.d; if(confirm('¿Borrar el peso de '+d+'?')){ if(db.bodyweight)delete db.bodyweight[d]; const allk=Object.keys(db.bodyweight||{}).sort(); if(db.profile)db.profile.weightKg=allk.length?db.bodyweight[allk[allk.length-1]]:db.profile.weightKg; save(); openWeightLog(); } }
