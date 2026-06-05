@@ -1400,7 +1400,7 @@ document.getElementById('app').addEventListener('click',e=>{
   else if(a==='editmealx'){ const id=el.dataset.id; const t=curDate(); const m=(db.meals[t]||[]).find(x=>x.id===id); if(m){ if(m._food){ openLog(m._food,{editId:m.id,qty:m.qty||1,unit:m._unit,tag:m.tag}); } else { const q=m.qty||1; const per={}; ['kcal','protein','carbs','fat','sugar','sodium','potassium','fiber','caffeine','alcohol','water'].forEach(k=>per[k]=(+m[k]||0)/q); openLog({name:(m.name||'').replace(/ ×[\d.]+$/,''),serving:m.serving||'1 serving',per},{editId:m.id,qty:q,tag:m.tag}); } } }
   else if(a==='delmealx'){ const id=el.dataset.id; const t=curDate(); db.meals[t]=(db.meals[t]||[]).filter(m=>m.id!==id); if(state.expandedMeal===id)state.expandedMeal=null; save(); render(); }
   else if(a==='vfixkcal'){ const P=parseFloat(val('v_protein'))||0,C=parseFloat(val('v_carbs'))||0,F=parseFloat(val('v_fat'))||0; const e=document.getElementById('v_kcal'); if(e){ e.value=Math.round(P*4+C*4+F*9); e.dispatchEvent(new Event('input',{bubbles:true})); } }
-  else if(a==='addmeal'||a==='foodadd'){ openFoodAdd(); }
+  else if(a==='foodadd'){ closeAddPop(); openFoodAdd(); }
   else if(a==='addmenu'){ openAddMenu(); }
   else if(a==='share'){ state.shareType='food'; go('share'); }
   else if(a==='sharesession'){ state.shareType='session'; state.shareId=el.dataset.id; closeModal(); go('share'); }
@@ -2236,9 +2236,9 @@ function openFoodAdd(preset, lockTag){
      <div class="fa-em-steps">
        <button class="fa-em-step" type="button" data-act="fbarcode"><span class="ic">${_icBarcode}</span><span class="lb">escanea código de barras</span></button>
        <span class="fa-em-arr">→</span>
-       <button class="fa-em-step" type="button" data-act="fphoto"><span class="ic">${_icTable}</span><span class="lb">foto tabla nutricional</span></button>
+       <button class="fa-em-step" type="button" data-act="fregister"><span class="ic">${_icTable}</span><span class="lb">foto tabla o rellenar manualmente</span></button>
        <span class="fa-em-arr">→</span>
-       <button class="fa-em-step" type="button" data-act="fmanual"><span class="ic">${_icCheck}</span><span class="lb">rellenar manualmente</span></button>
+       <button class="fa-em-step" type="button" data-act="fdone" disabled style="opacity:.5;cursor:default"><span class="ic">${_icCheck}</span><span class="lb">registrar</span></button>
      </div>
      <div class="fa-em-foot">sigue escribiendo · también buscamos en línea automáticamente</div>
    </div>`;
