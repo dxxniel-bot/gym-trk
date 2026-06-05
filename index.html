@@ -842,7 +842,7 @@ function renderMacros(){
   const bl=bloating(t,g);
   let details = !open?'' : `<hr class="rule"/>`
     +`<div style="display:flex;justify-content:flex-end;align-items:baseline;margin-bottom:8px"><a data-act="toggleMacroUnit" style="font-size:9px;color:var(--o50);cursor:pointer">[${state.macroPct?'ver gramos':'ver %'}]</a></div>`
-    +`<div class="macro-rad">${mealRadar(t,g)}</div><div class="rings">${macroRing('protein','protein',t.protein,g.protein,'g',4)}${macroRing('carbs','carbs',t.carbs,g.carbs,'g',4)}${macroRing('fat','fat',t.fat,g.fat,'g',9)}</div>`
+    +`<div class="macro-rad">${dayRadar(t,g)}</div><div class="rings">${macroRing('protein','protein',t.protein,g.protein,'g',4)}${macroRing('carbs','carbs',t.carbs,g.carbs,'g',4)}${macroRing('fat','fat',t.fat,g.fat,'g',9)}</div>`
     +`<hr class="rule"/><div class="grp-label">INTAKE</div>`
     +intakeRow('sodium',t.sodium,g.sodium,'mg')
     +intakeRow('potassium',t.potassium,g.potassium,'mg')
@@ -1074,6 +1074,31 @@ function mealRadar(t,g){ g=g||{};
     +`<path d="${path}" fill="none" stroke="var(--fill)" stroke-width="1.2" stroke-linejoin="miter" stroke-miterlimit="2" stroke-opacity=".95"/>`
     +ddots+labels+`</svg>`;
 }
+// day-totals radar — 7 axes vs daily goal (P/C/F as grams-vs-goal, not %kcal). No alcohol/sugar/caffeine.
+function dayRadar(t,g){ g=g||{};
+  const ax=[{k:'protein',l:'P'},{k:'fat',l:'F'},{k:'sodium',l:'Na'},{k:'water',l:'Liq'},{k:'carbs',l:'C'},{k:'fiber',l:'Fbr'},{k:'potassium',l:'K'}];
+  const W=180,H=166,cx=90,cy=83,R=64,N=ax.length;
+  const ang=i=>(-90+360/N*i)*Math.PI/180;
+  const at=(i,r)=>[+(cx+Math.cos(ang(i))*r).toFixed(1),+(cy+Math.sin(ang(i))*r).toFixed(1)];
+  const KK=2.6, EZ=1-Math.exp(-KK);
+  const warp=x=>{ x=x<0?0:x>1?1:x; return (1-Math.exp(-KK*x))/EZ; };
+  const frac=a=> (+g[a.k]>0) ? (+t[a.k]||0)/(+g[a.k]) : 0;
+  let grid='';
+  [0.125,0.25,0.375,0.5,0.625,0.75,0.875,1].forEach(rr=>{ const wr=warp(rr); grid+=`<polygon points="${ax.map((_,i)=>at(i,R*wr).join(',')).join(' ')}" fill="none" stroke="var(--o12)" stroke-width=".5"/>`; });
+  ax.forEach((_,i)=>{ const e=at(i,R); grid+=`<line x1="${cx}" y1="${cy}" x2="${e[0]}" y2="${e[1]}" stroke="var(--o12)" stroke-width=".5"/>`; });
+  const rad=ax.map(a=>warp(frac(a))); const maxR=Math.max.apply(null,rad.concat(0.0001)); const thr=maxR*0.85;
+  const dpts=ax.map((a,i)=>at(i,R*Math.max(0.04,rad[i])));
+  const path='M'+dpts.map(q=>q[0]+','+q[1]).join('L')+'Z';
+  let ddots=''; ax.forEach((a,i)=>{ const c=at(i,R*Math.max(0.04,rad[i])), dom=rad[i]>=thr; ddots+=`<circle cx="${c[0]}" cy="${c[1]}" r="1.6" fill="${dom?'var(--fill)':'var(--o40)'}"/>`; });
+  let labels=''; ax.forEach((a,i)=>{ const lp=at(i,R+9), dom=rad[i]>=thr; labels+=`<text x="${lp[0]}" y="${lp[1]}" text-anchor="middle" dominant-baseline="middle" font-size="7.5" fill="${dom?'var(--fill)':'var(--o35)'}">${a.l}</text>`; });
+  const cross=`<line x1="${cx-3}" y1="${cy}" x2="${cx+3}" y2="${cy}" stroke="var(--o30)" stroke-width=".7"/><line x1="${cx}" y1="${cy-3}" x2="${cx}" y2="${cy+3}" stroke="var(--o30)" stroke-width=".7"/>`;
+  return `<svg viewBox="6 2 168 156" preserveAspectRatio="xMidYMid meet" style="display:block">`
+    +grid+cross
+    +`<path d="${path}" fill="var(--fill)" class="rad-fill"/>`
+    +`<path d="${path}" fill="none" stroke="var(--fill)" stroke-width="1.2" stroke-linejoin="miter" stroke-miterlimit="2" stroke-opacity=".95"/>`
+    +ddots+labels+`</svg>`;
+}
+
 function progWeekly(n){ const now=new Date(); const buckets=[]; for(let i=n-1;i>=0;i--){ const a=new Date(now); a.setDate(now.getDate()-7*i-6); const b=new Date(now); b.setDate(now.getDate()-7*i); buckets.push({a:todayISO(a),b:todayISO(b)}); }
   const counts=buckets.map(()=>0), vols=buckets.map(()=>0);
   (db.sessions||[]).forEach(s=>{ if(s.type==='rest')return; for(let i=0;i<buckets.length;i++){ if(s.date>=buckets[i].a&&s.date<=buckets[i].b){ counts[i]++; (s.exercises||[]).forEach(e=>(e.sets||[]).forEach(st=>{vols[i]+=(parseFloat(st.w)||0)*(parseFloat(st.r)||0);})); break; } } });
