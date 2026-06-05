@@ -961,7 +961,7 @@ function openMealSummary(tag){
   const hd=(x,ind)=>`<div class="nl-hd"><span>${x}</span><span class="nl-hi">${ind}</span></div>`;
   const macros=row('protein',t.protein,'g',cal(pk))+row('carbs',t.carbs,'g',cal(ck))+row('fat',t.fat,'g',cal(fk))+row('alcohol',t.alcohol,'g',cal(ak));
   const micros=row('fiber',t.fiber,'g',day(t.fiber,'fiber'))+row('sugar',t.sugar,'g',day(t.sugar,'sugar'))+row('sodium',t.sodium,'mg',day(t.sodium,'sodium'))+row('potassium',t.potassium,'mg',day(t.potassium,'potassium'))+row('caffeine',t.caffeine,'mg',day(t.caffeine,'caffeine'));
-  const nutList=(macros?hd('macros','% kcal')+macros:'')+(micros?hd('micros','% daily')+micros:'');
+  const nutList=macros+micros;
   openModal(`<h3>#${escTxt(tag)}</h3>
    <div class="msum-top"><div class="msum-rad">${mealRadar(t,_mg)}</div><div class="msum-right"><div class="msum-list">${nutList}</div><div class="msum-kcal">${Math.round(t.kcal)}<span>KCAL</span></div></div></div>
    <div class="shlog" style="margin-top:14px">${mealFoodRows(items)}</div>
@@ -1051,7 +1051,7 @@ function mealRadar(t,g){ g=g||{};
   const dpts=ax.map((a,i)=>at(i,R*Math.max(0.04,rad[i])));
   const path='M'+dpts.map(q=>q[0]+','+q[1]).join('L')+'Z';
   let ddots=''; ax.forEach((a,i)=>{ const c=at(i,R*Math.max(0.04,rad[i])), dom=rad[i]>=thr; ddots+=`<circle cx="${c[0]}" cy="${c[1]}" r="1.6" fill="${dom?'var(--fill)':'var(--o40)'}"/>`; });
-  let labels=''; ax.forEach((a,i)=>{ const lp=at(i,R+9), dom=rad[i]>=thr; labels+=`<text x="${lp[0]}" y="${lp[1]}" text-anchor="middle" dominant-baseline="middle" font-size="9" fill="${dom?'var(--fill)':'var(--o35)'}">${a.l}</text>`; });
+  let labels=''; ax.forEach((a,i)=>{ const lp=at(i,R+9), dom=rad[i]>=thr; labels+=`<text x="${lp[0]}" y="${lp[1]}" text-anchor="middle" dominant-baseline="middle" font-size="7.5" fill="${dom?'var(--fill)':'var(--o35)'}">${a.l}</text>`; });
   const cross=`<line x1="${cx-3}" y1="${cy}" x2="${cx+3}" y2="${cy}" stroke="var(--o30)" stroke-width=".7"/><line x1="${cx}" y1="${cy-3}" x2="${cx}" y2="${cy+3}" stroke="var(--o30)" stroke-width=".7"/>`;
   return `<svg viewBox="6 2 168 156" preserveAspectRatio="xMidYMid meet" style="display:block">`
     +grid+cross
