@@ -488,7 +488,14 @@ function load(){
 function migrate(d){ if(!d.version){d.version=1;} if(!d.meals)d.meals={}; if(!d.foods)d.foods=[]; d.foods=d.foods.map(f=>(f&&f.per100)?f:asCanonical(f)); if(!d.steps)d.steps={}; if(!d.machines)d.machines={}; if(!d.bodyweight)d.bodyweight={}; if(!d.mealTags)d.mealTags=['breakfast','lunch','snack','dinner']; if(!d.settings)d.settings={goals:seed().settings.goals}; if(d.settings&&d.settings.goals&&d.settings.goals.alcohol==null)d.settings.goals.alcohol=(d.profile&&d.profile.sex==='F')?14:28;
   // recompute alcohol for old meal items logged before alcohol was in MACROKEYS
   try{ Object.values(d.meals||{}).forEach(arr=>arr.forEach(m=>{ if(m.alcohol==null){ if(m._food&&m._food.per100&&m._food.per100.alcohol&&m._unit){ m.alcohol=computeNutrients(m._food,m._unit,m.qty||1).alcohol; } else m.alcohol=0; } })); }catch(e){}
+  // goalHist: snapshot of intake goals at the moment of first logging that day (history is FROZEN — past days never re-read the current goal)
+  if(!d.goalHist)d.goalHist={};
+  try{ const cur=d.settings&&d.settings.goals; if(cur){ Object.keys(d.meals||{}).forEach(date=>{ if(!d.goalHist[date] && (d.meals[date]||[]).length){ d.goalHist[date]=Object.assign({},cur); } }); } }catch(e){}
   return d; }
+// goal for a specific date: snapshot if logged that day, else the current effective goal (default for empty/future days)
+function goalsFor(date){ const h=db.goalHist&&db.goalHist[date]; if(h)return h; return (typeof effectiveGoals==='function')?effectiveGoals():(db.settings&&db.settings.goals)||{}; }
+// take a snapshot of today's goal the FIRST time something is logged that day (so editing the goal later never rewrites the past)
+function snapshotGoal(date){ db.goalHist=db.goalHist||{}; if(!db.goalHist[date]){ db.goalHist[date]=Object.assign({}, (typeof effectiveGoals==='function')?effectiveGoals():(db.settings&&db.settings.goals)||{}); } }
 let _saveBakT=0;
 function save(){ try{ const s=JSON.stringify(db); localStorage.setItem(LS_KEY,s);
   // redundant backup, throttled to once every ~4s (cheap safety net if primary key gets corrupted)
@@ -825,7 +832,7 @@ function bloating(t,g){
 }
 function macroStatus(val,goal){ if(!goal)return ''; const r=val/goal; if(r>1.05)return 'over'; if(r>=0.9)return 'good'; return ''; }
 function renderMacros(){
-  const g=effectiveGoals(); const {items,t}=macroTotals();
+  const g=goalsFor(curDate()); const {items,t}=macroTotals();
   const left=Math.round(g.kcal-t.kcal); const pct=g.kcal?t.kcal/g.kcal*100:0; const kStat=macroStatus(t.kcal,g.kcal);
   const open=state.macroOpen;
   const mkcal=(t.protein*4+t.carbs*4+t.fat*9)||1;
@@ -914,7 +921,7 @@ function mealFoodRows(items){
 function renderShare(){
   if(state.shareType==='session')return renderShareSession(state.shareId);
   if(state.shareType==='weight')return renderShareWeight();
-  const {items,t}=macroTotals(); const g=db.settings.goals;
+  const {items,t}=macroTotals(); const g=goalsFor(curDate());
   const kpct=g.kcal?Math.min(100,Math.round(t.kcal/g.kcal*100)):0; const kStat=macroStatus(t.kcal,g.kcal);
   const ck=t.carbs*4, fk=t.fat*9, pk=t.protein*4; const tot=ck+fk+pk||1; const pc=k=>Math.round(k/tot*100);
   const mm=(lbl,grams,p)=>`<div class="shm"><div class="shm-g">${Math.round(grams)}<span>g</span></div><div class="shm-l">${lbl}</div><div class="shm-p">${p}%</div></div>`;
@@ -968,7 +975,7 @@ function openMealSummary(tag){
   const items=(db.meals[curDate()]||[]).filter(m=>m.tag===tag); if(!items.length)return;
   const t={kcal:0,protein:0,carbs:0,fat:0,sugar:0,fiber:0,sodium:0,potassium:0,caffeine:0,alcohol:0,water:0};
   items.forEach(m=>{ for(const k in t) t[k]+=+m[k]||0; });
-  const _mg=db.settings.goals||{};
+  const _mg=goalsFor(curDate())||{};
   const pk=t.protein*4, ck=t.carbs*4, fk=t.fat*9, ak=t.alcohol*7; const tot=pk+ck+fk+ak||1;
   const cal=x=>Math.round(x/tot*100);                                   // macro: % de aporte calórico de la meal
   const day=(v,gk)=>{ const goal=+_mg[gk]||0; return goal>0?Math.round(v/goal*100):0; }; // micro: % vs meta diaria
@@ -1634,7 +1641,7 @@ function openAddMenu(){
   scrim.addEventListener('click',closeAddPop); document.getElementById('app').appendChild(scrim);
 }
 function closeAddPop(){ ['addpop','addscrim'].forEach(id=>{const e=document.getElementById(id); if(e)e.remove();}); }
-function logWater(ml){ if(!(ml>0))return; const t=curDate(); db.meals[t]=db.meals[t]||[];
+function logWater(ml){ if(!(ml>0))return; const t=curDate(); db.meals[t]=db.meals[t]||[]; snapshotGoal(t);
   db.meals[t].push({id:uid(),time:nowHM(),tag:'drink',name:'agua',qty:1,serving:numTxt(ml)+' ml',kcal:0,protein:0,carbs:0,fat:0,sugar:0,fiber:0,sodium:0,potassium:0,caffeine:0,water:Math.round(ml/1000*1000)/1000}); save(); }
 function openDrink(){
   openModal(`<h3>add drink</h3>
@@ -2434,7 +2441,7 @@ function commitLog(saveToDb){
     const stored={id:(ex&&ex.id)||f.id||uid(),barcode:bc||(ex&&ex.barcode)||'',name:f.name,brand:f.brand||'',base:f.base,per100:f.per100,sizes:f.sizes,servingLabel:f.servingLabel,lastUsed:Date.now()};
     if(ex)Object.assign(ex,stored); else db.foods.push(stored); foodId=stored.id;
   } else if(L.fromId){ const ex=(db.foods||[]).find(x=>x.id===L.fromId); if(ex)ex.lastUsed=Date.now(); }
-  const t=curDate(); db.meals[t]=db.meals[t]||[];
+  const t=curDate(); db.meals[t]=db.meals[t]||[]; snapshotGoal(t);
   const apply=m=>{ m.tag=L.tag; m.name=f.name+(qty!==1?' ×'+numTxt(qty):''); m.qty=qty; m.serving=unitLabel; MACROKEYS.forEach(k=>m[k]=nut[k]); m.water=nut.water; m._food={id:foodId,base:f.base,per100:f.per100,sizes:f.sizes,servingLabel:f.servingLabel,name:f.name,brand:f.brand||'',barcode:bc}; m._unit=unit; };
   if(L.editId){ const m=(db.meals[t]||[]).find(x=>x.id===L.editId); if(m){ apply(m); save(); closeModal(); render(); return; } }
   const item={id:uid(),time:nowHM()}; apply(item); db.meals[t].push(item);
@@ -2605,7 +2612,7 @@ function openDupMeal(tag){
   document.querySelectorAll('#dm_sugg .chip').forEach(c=>c.onclick=()=>{ const inp=document.getElementById('dm_tag'); inp.value=c.dataset.v; });
   document.getElementById('dm_go').onclick=()=>{
     const nt=(val('dm_tag')||tag).trim()||tag; const nd=val('dm_date')||src;
-    db.meals[nd]=db.meals[nd]||[];
+    db.meals[nd]=db.meals[nd]||[]; snapshotGoal(nd);
     items.forEach((m,i)=>{ const cp=JSON.parse(JSON.stringify(m)); cp.id=uid()+'_'+i; cp.tag=nt; cp.time=nowHM(); db.meals[nd].push(cp); });
     save(); closeModal(); state.macroDate=nd; render();
   };
