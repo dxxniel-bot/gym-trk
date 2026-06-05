@@ -1720,7 +1720,7 @@ const BASE_FOODS=(function(){ const L=[];
   add('Kefir',55,3.3,4.5,2.5,{s:4,na:40,base:'ml',sv:240,en:'kefir'});
   add('Skyr islandés',63,11,4,0.2,{s:4,na:50,k:150,sv:170,en:'skyr icelandic yogurt'});
   add('Queso panela',215,18.6,3.5,14.5,{na:430,k:120,en:'panela cheese'});
-  add('Queso Oaxaca',290,21,2.5,22,{na:600,k:90,en:'oaxaca string cheese'});
+  add('Queso Oaxaca',321,24,2,22,{na:600,k:90,en:'oaxaca string cheese'}); // CHANGED kcal 290->321, P 21->24 (Tio Francisco/Fitia)
   add('Queso fresco',145,11.5,3,9.7,{na:350,k:90,en:'fresh cheese'});
   add('Queso manchego',403,23,3.4,33,{na:653,k:76,en:'manchego cheese'});
   add('Queso cheddar',403,24.9,1.3,33,{na:621,k:98,en:'cheddar cheese'});
@@ -1729,7 +1729,7 @@ const BASE_FOODS=(function(){ const L=[];
   add('Queso crema',342,6,4.1,34,{s:3.2,na:321,k:138,sv:30,en:'cream cheese'});
   add('Queso cotija',380,22,2,31,{na:1200,en:'cotija cheese'});
   add('Requesón',98,11,3.4,4.3,{na:364,k:104,en:'cottage cheese ricotta'});
-  add('Crema',195,2.8,3.4,19,{na:50,k:90,sv:15,sl:'cda',en:'sour cream'});
+  add('Crema',200,2.5,3.5,19,{na:50,k:90,sv:15,sl:'cda',en:'sour cream mexican crema'}); // CHANGED kcal 195->200, P 2.8->2.5 (Tio Francisco)
   add('Mantequilla',717,0.9,0.1,81,{na:11,sv:14,sl:'cda',en:'butter'});
   add('Margarina',717,0.2,0.7,81,{na:751,sv:14,sl:'cda',en:'margarine'});
   add('Helado de vainilla',207,3.5,24,11,{s:21,na:80,k:199,sv:65,en:'vanilla ice cream'});
@@ -1790,7 +1790,7 @@ const BASE_FOODS=(function(){ const L=[];
   add('Tofu',76,8,1.9,4.8,{na:7,k:121,en:'tofu'});
   add('Tempeh',192,20,8,11,{na:9,k:412,en:'tempeh'});
   add('Hummus',166,8,14,10,{fi:6,na:379,k:228,sv:30,en:'hummus'});
-  add('Frijoles refritos',145,5,20,5,{fi:5,na:500,k:400,en:'refried beans'});
+  add('Frijoles refritos',90,5,13.6,2,{fi:4,na:370,k:319,en:'refried beans'}); // CHANGED — old 145/5/20/5 was too high; consensus 90 kcal canned. Fat 2 (without lard), 5 if home-fried with manteca.
   // CEREALES & GRANOS
   add('Arroz blanco (cocido)',130,2.7,28,0.3,{fi:0.4,na:1,k:35,sv:158,en:'white rice cooked'});
   add('Arroz integral (cocido)',123,2.7,26,1,{fi:1.6,na:4,k:86,sv:195,en:'brown rice cooked'});
@@ -1799,7 +1799,7 @@ const BASE_FOODS=(function(){ const L=[];
   add('Arroz arborio (cocido)',130,2.4,28,0.2,{fi:0.3,na:1,k:30,sv:160,en:'arborio risotto rice cooked'});
   add('Arroz salvaje (cocido)',101,4,21,0.3,{fi:1.8,na:3,k:101,sv:165,en:'wild rice cooked'});
   add('Arroz glutinoso / sushi',130,2.4,28.7,0.2,{fi:0.2,na:1,k:13,sv:150,en:'sticky sushi rice'});
-  add('Arroz rojo (mexicano)',150,3,28,3,{na:350,k:90,sv:150,en:'mexican red rice'});
+  add('Arroz rojo (mexicano)',155,3,28,3.5,{na:350,k:90,sv:150,en:'mexican red rice'}); // CHANGED kcal 150->155, fat 3->3.5
   add('Arroz con leche',103,2.5,18,2.5,{s:11,na:45,k:90,sv:130,en:'rice pudding'});
   add('Avena (seca)',389,16.9,66,6.9,{fi:10.6,na:2,k:429,sv:40,en:'oats dry rolled oatmeal'});
   add('Quinoa (cocida)',120,4.4,21,1.9,{fi:2.8,na:7,k:172,sv:185,en:'quinoa cooked'});
@@ -1811,7 +1811,7 @@ const BASE_FOODS=(function(){ const L=[];
   add('Elote / maíz',86,3.2,19,1.2,{s:3.2,fi:2.7,na:15,k:270,en:'corn sweet'});
   add('Tortilla de maíz',218,5.7,44.6,2.85,{fi:6.3,na:45,k:186,pc:26,en:'corn tortilla'});
   add('Tortilla de harina',304,8.2,51,7.5,{fi:3,na:663,k:130,pc:40,en:'flour tortilla'});
-  add('Bolillo / pan blanco',275,9,51,3.6,{s:5,fi:2.4,na:540,k:115,pc:60,en:'white bread bolillo roll'});
+  add('Bolillo / pan blanco',263,8.8,49,1.8,{s:3,fi:1.8,na:403,k:115,pc:60,en:'white bread bolillo roll'}); // CHANGED — old 275/9/51/3.6 was off; FatSecret/NutritionValue: 261-263 kcal, 1.75-1.8 g fat, 8.8 protein, 403 mg sodium
   add('Pan integral',247,13,41,3.4,{s:6,fi:7,na:450,k:250,pc:28,en:'whole wheat bread'});
   add('Pan de caja (rebanada)',265,9,49,3.2,{s:5,fi:2.5,na:490,k:115,pc:28,en:'sliced sandwich bread'});
   add('Baguette',270,9,52,2,{na:600,k:120,en:'baguette french bread'});
@@ -1832,9 +1832,9 @@ const BASE_FOODS=(function(){ const L=[];
   add('Harina de trigo',364,10,76,1,{fi:2.7,na:2,k:107,en:'wheat flour'});
   add('Harina de maíz (masa)',365,9,76,3.9,{fi:7,na:5,k:315,en:'corn masa flour'});
   add('Hojuelas de maíz (cereal)',357,7,84,0.4,{s:8,fi:3,na:729,k:120,sv:30,en:'corn flakes cereal'});
-  add('Cheerios',376,12,73,6.7,{s:5,fi:9,na:497,k:330,sv:30,br:'Cheerios',en:'cheerios cereal'});
-  add('Froot Loops',374,5.7,87.5,3.8,{s:31.3,fi:5.7,na:466,sv:30,br:'Kelloggs',en:'froot loops cereal'});
-  add('All-Bran',259,13,74,4.9,{s:18,fi:29,na:390,k:1200,sv:30,br:'Kelloggs',en:'all bran cereal'});
+  add('Cheerios',367,13.6,72,6,{s:5,fi:9.1,na:497,k:330,sv:30,br:'Cheerios',en:'cheerios cereal'}); // CHANGED — Kellogg's SmartLabel
+  add('Froot Loops',383,4,86,3.5,{s:33,fi:7,na:466,sv:30,br:'Kelloggs',en:'froot loops cereal'}); // CHANGED — Kelloggs SmartLabel
+  add('All-Bran',258,13,74,5,{s:18,fi:29,na:390,k:1200,sv:30,br:'Kelloggs',en:'all bran cereal'}); // minor — kcal 259->258, fat 4.9->5
   add('Granola',489,13,64,20,{s:24,fi:7,na:30,k:330,sv:45,en:'granola'});
   add('Hot cakes / panqué',227,6,28,10,{s:6,na:439,pc:38,en:'pancake'});
   add('Waffle',291,8,33,14,{s:6,na:511,pc:75,en:'waffle'});
@@ -1937,7 +1937,7 @@ const BASE_FOODS=(function(){ const L=[];
   add('Jarabe de maple',260,0,67,0.2,{s:60,na:12,k:212,sv:20,en:'maple syrup'});
   add('Mermelada',278,0.4,69,0.1,{s:49,na:32,sv:20,sl:'cda',en:'jam jelly'});
   add('Mermelada sin azúcar',125,0.5,30,0,{s:8,fi:0.3,na:30,sv:20,sl:'cda',en:'sugar free jam'});
-  add('Crema de avellana (Nutella estilo)',541,6.3,57,31,{s:56,fi:3.4,na:42,k:200,sv:20,sl:'cda',en:'nutella hazelnut spread chocolate'});
+  add('Crema de avellana (Nutella estilo)',539,6.3,57.5,30.9,{s:56.8,fi:3.4,na:42,k:200,sv:20,sl:'cda',en:'nutella hazelnut spread chocolate'}); // CHANGED to official Nutella values
   add('Crema de pistache',590,17,22,52,{s:6,fi:8,na:5,k:900,sv:30,sl:'cda',en:'pistachio butter'});
   add('Crema de coco (untable)',648,7,24,60,{s:6,fi:14,na:30,k:540,sv:30,sl:'cda',en:'coconut butter spread'});
   add('Crema de chocolate y avellana keto',440,12,40,28,{s:2,fi:18,na:60,k:300,sv:25,sl:'cda',en:'keto chocolate hazelnut spread'});
@@ -1960,18 +1960,18 @@ const BASE_FOODS=(function(){ const L=[];
   add('Pretzel',380,10,80,3,{s:2,fi:3,na:1240,sv:30,en:'pretzel'});
   add('Barra de granola',471,8,64,20,{s:29,fi:5,na:79,pc:40,en:'granola bar'});
   add('Barra de proteína',350,30,40,9,{s:5,fi:8,na:200,pc:60,en:'protein bar'});
-  add('Barrita Quest Bar',300,35,35,12,{s:1.7,fi:22,na:380,br:'Quest',pc:60,sl:'pza',en:'quest protein bar chocolate'});
+  add('Barrita Quest Bar',317,35,37,15,{s:1.7,fi:22,na:380,br:'Quest',pc:60,sl:'pza',en:'quest protein bar chocolate'}); // CHANGED — official Quest 190 kcal / 60 g bar
   add('Barrita One Bar',367,33,40,13,{s:1.7,fi:15,na:380,br:'One',pc:60,sl:'pza',en:'one protein bar'});
-  add('Barrita RXBar',404,23,46,17,{s:25,fi:9.6,na:270,br:'RXBar',pc:52,sl:'pza',en:'rxbar protein bar'});
+  add('Barrita RXBar',365,23,46,13,{s:25,fi:9,na:260,br:'RXBar',pc:52,sl:'pza',en:'rxbar protein bar'}); // CHANGED — was 404/23/46/17; actual 190/12/24/7/52g bar → /100g: 365/23/46/13
   add('Dona',452,4.9,51,25,{s:23,na:326,pc:60,en:'donut doughnut'});
   add('Muffin',377,5,53,16,{s:28,na:340,pc:113,en:'muffin'});
   add('Pastel / cake',350,4,52,14,{s:35,na:280,sv:80,en:'cake'});
   add('Brownie',466,6,64,21,{s:42,na:270,pc:50,en:'brownie'});
   add('Gomitas',343,7,77,0,{s:46,na:22,sv:30,en:'gummy candy'});
   add('Galleta con chispas',484,5,64,23,{s:36,na:330,pc:16,en:'chocolate chip cookie'});
-  add('Hersheys Chocolate',512,7.4,58.6,29.8,{s:53.5,na:79,k:372,br:'Hersheys',pc:43,en:'hersheys milk chocolate candy bar'});
-  add('Ferrero Rocher',600,8,48,44,{s:40,na:50,br:'Ferrero',pc:12,en:'ferrero rocher hazelnut chocolate'});
-  add('Kinder Bueno',567,8.4,49.3,37.2,{s:28.4,na:80,br:'Kinder',pc:43,en:'kinder bueno chocolate bar'});
+  add('Hersheys Chocolate',512,7,60.5,30.2,{s:53.5,na:79,k:372,br:'Hersheys',pc:43,en:'hersheys milk chocolate candy bar'}); // refined to official SmartLabel
+  add('Ferrero Rocher',600,8,48,44,{s:39.5,na:50,br:'Ferrero',pc:12,en:'ferrero rocher hazelnut chocolate'});
+  add('Kinder Bueno',571,8.4,49.3,37.2,{s:28.4,na:80,br:'Kinder',pc:43,en:'kinder bueno chocolate bar'}); // kcal 567->571 per Recipal
   add('Skittles',405,0,91,4,{s:76,na:25,br:'Skittles',pc:61,en:'skittles candy'});
   // SUPLEMENTOS
   add('Proteína whey (polvo)',400,80,8,6,{s:5,na:300,k:400,sv:30,sl:'scoop',en:'whey protein powder concentrate'});
@@ -1982,10 +1982,10 @@ const BASE_FOODS=(function(){ const L=[];
   add('Proteína de arroz',380,80,7,4,{na:160,k:90,sv:30,sl:'scoop',en:'rice protein vegan'});
   add('Proteína de hemp',375,50,12,12,{fi:10,na:13,k:1200,sv:30,sl:'scoop',en:'hemp protein vegan'});
   add('Colágeno hidrolizado',360,90,0,0,{na:90,sv:10,sl:'cda',en:'hydrolyzed collagen peptides'});
-  add('Whey Gold Standard Vainilla',388,80,13,5,{s:13,na:170,br:'Optimum Nutrition',sv:30,sl:'scoop',en:'whey protein vanilla gold standard'});
-  add('Whey ISO 100',367,83,3,0.8,{na:160,br:'Dymatize',sv:32,sl:'scoop',en:'iso 100 hydrolyzed whey protein isolate'});
-  add('Birdman Falcon (vegan)',406,69,15,8,{fi:9,na:600,br:'Birdman',sv:32,sl:'scoop',en:'birdman falcon vegan plant protein'});
-  add('Premier Protein Shake',49,9.2,1.2,0.9,{s:0.3,na:70,br:'Premier',base:'ml',sv:325,en:'premier protein shake'});
+  add('Whey Gold Standard Vainilla',400,80,13,5,{s:13,na:170,br:'Optimum Nutrition',sv:30,sl:'scoop',en:'whey protein vanilla gold standard'}); // CHANGED kcal 388->400 per official ON label (120 kcal / 30 g scoop)
+  add('Whey ISO 100',367,83,3,0,{na:160,br:'Dymatize',sv:32,sl:'scoop',en:'iso 100 hydrolyzed whey protein isolate'}); // fat 0.8->0 per Dymatize
+  add('Birdman Falcon (vegan)',406,69,6,9,{fi:9,na:600,br:'Birdman',sv:32,sl:'scoop',en:'birdman falcon vegan plant protein'}); // CHANGED carbs 15->6, fat 8->9 per official 22P/2C/3F per 32g scoop
+  add('Premier Protein Shake',49,9.2,1.5,0.9,{s:0.3,na:70,br:'Premier',base:'ml',sv:325,en:'premier protein shake'}); // carbs 1.2->1.5 per official 5 g/325 ml
   add('Mass gainer (polvo)',380,15,60,5,{s:20,na:200,sv:150,sl:'scoop',en:'mass weight gainer'});
   add('Pre-workout',32,1,7,0,{caf:200,sv:8,sl:'scoop',en:'pre workout supplement c4'});
   add('BCAA polvo',40,9,1,0,{na:120,sv:10,sl:'scoop',en:'bcaa branched chain amino'});
@@ -2004,60 +2004,55 @@ const BASE_FOODS=(function(){ const L=[];
   add('Té verde',1,0,0,0,{caf:12,k:20,base:'ml',sv:240,en:'green tea'});
   add('Jugo de naranja',45,0.7,10,0.2,{s:8.4,na:1,k:200,base:'ml',sv:240,en:'orange juice'});
   add('Jugo de manzana',46,0.1,11,0.1,{s:9.6,na:4,k:101,base:'ml',sv:240,en:'apple juice'});
-  add('Refresco de cola',42,0,10.6,0,{s:10.6,na:4,caf:9.7,base:'ml',sv:355,en:'cola soda soft drink coca cola'});
+  add('Refresco de cola',42,0,10.6,0,{s:10.6,na:4,caf:9.9,base:'ml',sv:355,en:'cola soda soft drink coca cola'}); // caf 9.7->9.9 per Coca-Cola SmartLabel (34 mg / 12 oz)
   add('Refresco light',0,0,0,0,{na:10,caf:13,base:'ml',sv:355,en:'diet soda zero coca cola light'});
   add('Bebida energética',45,0,11,0,{s:11,na:105,caf:32,base:'ml',sv:250,en:'energy drink red bull monster'});
   add('Mountain Dew',48,0,13,0,{s:13,caf:15.5,base:'ml',sv:355,br:'Mountain Dew',en:'mountain dew soda'});
-  add('Bebida deportiva',24,0,6,0,{s:5.4,na:45,k:13,base:'ml',sv:355,en:'sports drink gatorade powerade'});
+  add('Bebida deportiva',24,0,6,0,{s:5.4,na:46,k:13,base:'ml',sv:355,en:'sports drink gatorade powerade'}); // na 45->46 (Powerade)
   add('Agua de coco',19,0.7,3.7,0.2,{s:2.6,na:105,k:250,base:'ml',sv:240,en:'coconut water'});
   add('Leche de almendra (s/azúcar)',15,0.6,0.6,1.2,{na:72,k:67,base:'ml',sv:240,en:'almond milk unsweetened silk almond breeze'});
   add('Leche de soya',54,3.3,6,1.8,{s:4,na:51,k:118,base:'ml',sv:240,en:'soy milk ades'});
   add('Leche de avena',47,1,7,1.5,{s:4,na:42,base:'ml',sv:240,en:'oat milk oatly'});
   add('Chocolate caliente',77,3.5,10,2.3,{s:9,na:52,caf:2,base:'ml',sv:240,en:'hot chocolate'});
-  // CERVEZAS
-  add('Modelo Especial',40,0.3,3.9,0,{br:'Modelo',en:'beer cerveza lager',sv:355,base:'ml',alc:3.5});
-  add('Negra Modelo',51,0.5,4.6,0,{br:'Modelo',en:'beer cerveza lager dark',sv:355,base:'ml',alc:4.3});
-  add('Corona Extra',42,0.3,3.9,0,{br:'Corona',en:'beer cerveza lager',sv:355,base:'ml',alc:3.6});
-  add('Corona Light',29,0.3,2.2,0,{br:'Corona',en:'beer cerveza lager light',sv:355,base:'ml',alc:3.2});
-  add('Corona Cero',21,0.4,4.4,0,{br:'Corona',en:'beer cerveza lager non alcoholic',sv:355,base:'ml',alc:0.0});
-  add('Victoria',43,0.4,3.9,0,{br:'Victoria',en:'beer cerveza lager',sv:355,base:'ml',alc:3.2});
-  add('Pacifico',44,0.4,3.9,0,{br:'Pacifico',en:'beer cerveza lager',sv:355,base:'ml',alc:3.6});
-  add('Tecate',39,0.3,3.4,0,{br:'Tecate',en:'beer cerveza lager',sv:355,base:'ml',alc:3.6});
-  add('Tecate Light',29,0.3,2,0,{br:'Tecate',en:'beer cerveza lager light',sv:355,base:'ml',alc:3.1});
-  add('Indio',43,0.4,3.8,0,{br:'Indio',en:'beer cerveza lager',sv:355,base:'ml',alc:3.6});
-  add('Dos Equis Lager',43,0.4,3.8,0,{br:'Dos Equis',en:'beer cerveza lager',sv:355,base:'ml',alc:3.3});
-  add('Dos Equis Ambar',45,0.5,4,0,{br:'Dos Equis',en:'beer cerveza lager amber',sv:355,base:'ml',alc:3.7});
-  add('Bohemia',46,0.5,4.1,0,{br:'Bohemia',en:'beer cerveza lager',sv:355,base:'ml',alc:3.7});
-  add('Sol',42,0.4,3.7,0,{br:'Sol',en:'beer cerveza lager',sv:355,base:'ml',alc:3.6});
-  add('Heineken',42,0.3,3.2,0,{br:'Heineken',en:'beer cerveza lager',sv:355,base:'ml',alc:3.9});
-  add('Heineken Light',28,0.3,2,0,{br:'Heineken',en:'beer cerveza lager light',sv:355,base:'ml',alc:2.6});
-  add('Budweiser',41,0.3,3.2,0,{br:'Budweiser',en:'beer cerveza lager',sv:355,base:'ml',alc:3.9});
-  add('Bud Light',29,0.2,1.9,0,{br:'Bud Light',en:'beer cerveza lager light',sv:355,base:'ml',alc:3.3});
-  add('Stella Artois',45,0.4,3.6,0,{br:'Stella Artois',en:'beer cerveza lager',sv:355,base:'ml',alc:3.9});
-  add('Michelob Ultra',26,0.2,1.3,0,{br:'Michelob',en:'beer cerveza lager light low carb',sv:355,base:'ml',alc:3.3});
-  add('Guinness',35,0.3,3,0,{br:'Guinness',en:'beer cerveza stout dark',sv:355,base:'ml',alc:3.3});
+  // CERVEZAS — all values per 100 ml. ABV % shown as alcohol-g/100ml = ABV × 0.789.
+  add('Modelo Especial',40,1.1,3.8,0,{br:'Modelo',en:'beer cerveza lager',sv:355,base:'ml',alc:3.6}); // CHANGED P 0.3->1.1, alc 3.5->3.6 (4.5% ABV)
+  add('Negra Modelo',48,0.4,4.4,0,{br:'Modelo',en:'beer cerveza lager dark',sv:355,base:'ml',alc:4.6}); // CHANGED kcal 51->48, P 0.5->0.4, c 4.6->4.4, alc 4.3->4.6 (5.4% ABV)
+  add('Corona Extra',42,0.3,3.9,0,{br:'Corona',en:'beer cerveza lager',sv:355,base:'ml',alc:3.6}); // unchanged
+  add('Corona Light',28,0.3,1.4,0,{br:'Corona',en:'beer cerveza lager light',sv:355,base:'ml',alc:3.2}); // c 2.2->1.4 (5g/355ml = 1.4g/100ml)
+  add('Corona Cero',22,0.4,4.7,0,{br:'Corona',en:'beer cerveza lager non alcoholic',sv:355,base:'ml',alc:0.0});
+  add('Victoria',41,0.3,3.6,0,{br:'Victoria',en:'beer cerveza lager',sv:355,base:'ml',alc:3.2}); // slight refine
+  add('Pacifico',40,0.3,3.7,0,{br:'Pacifico',en:'beer cerveza lager',sv:355,base:'ml',alc:3.5}); // 143 cal/355ml = 40.3/100ml
+  add('Tecate',40,0.3,3.4,0,{br:'Tecate',en:'beer cerveza lager',sv:355,base:'ml',alc:3.6}); // 142 cal/355ml = 40
+  add('Tecate Light',31,0.3,2.2,0,{br:'Tecate',en:'beer cerveza lager light',sv:355,base:'ml',alc:3.1}); // 110/355=31
+  add('Indio',36,0.3,3.0,0,{br:'Indio',en:'beer cerveza lager',sv:355,base:'ml',alc:3.6}); // Fitia MX: 36/100ml
+  add('Dos Equis Lager',37,0.4,3.1,0,{br:'Dos Equis',en:'beer cerveza lager',sv:355,base:'ml',alc:3.3}); // 131/355=37
+  add('Dos Equis Ambar',41,0.4,3.8,0,{br:'Dos Equis',en:'beer cerveza lager amber',sv:355,base:'ml',alc:3.7});
+  add('Bohemia',42,0.4,4.0,0,{br:'Bohemia',en:'beer cerveza lager pilsner',sv:355,base:'ml',alc:3.8}); // MyNetDiary 152 cal/12oz, 13g carbs
+  add('Sol',39,0.3,3.3,0,{br:'Sol',en:'beer cerveza lager',sv:355,base:'ml',alc:3.4}); // 138/355=38.9
+  add('Heineken',42,0.6,3.3,0,{br:'Heineken',en:'beer cerveza lager',sv:355,base:'ml',alc:4.0}); // P 0.3->0.6 per Heineken official; alc 3.9->4.0 (5% ABV)
+  add('Heineken Light',28,0.3,1.9,0,{br:'Heineken',en:'beer cerveza lager light',sv:355,base:'ml',alc:2.6});
+  add('Budweiser',41,0.3,3.0,0,{br:'Budweiser',en:'beer cerveza lager',sv:355,base:'ml',alc:3.9}); // c 3.2->3.0 (10.6g/355=2.99)
+  add('Bud Light',31,0.2,1.9,0,{br:'Bud Light',en:'beer cerveza lager light',sv:355,base:'ml',alc:3.3}); // 110/355=31
+  add('Stella Artois',43,0.4,3.4,0,{br:'Stella Artois',en:'beer cerveza lager',sv:355,base:'ml',alc:3.9}); // 154 cal/355=43.4
+  add('Michelob Ultra',27,0.2,0.7,0,{br:'Michelob',en:'beer cerveza lager light low carb',sv:355,base:'ml',alc:3.4}); // 95/355=26.8, carbs 2.6g/355=0.7
+  add('Guinness',35,0.1,2.8,0,{br:'Guinness',en:'beer cerveza stout dark',sv:355,base:'ml',alc:3.3}); // P 0.3->0.1 per myfooddiary (0.3 g/12 oz = 0.08/100ml)
   add('Cerveza',43,0.5,3.6,0,{na:4,k:27,base:'ml',sv:355,en:'beer generic'});
   add('Vino tinto',85,0.1,2.6,0,{s:0.6,na:4,k:127,base:'ml',sv:150,en:'red wine',alc:10.6});
-  // PREPARADOS & PLATILLOS
-  add('Guacamole',150,2,8,13,{fi:6,na:300,k:330,sv:30,en:'guacamole'});
+  // PREPARADOS & PLATILLOS — composite dishes vary widely; values are reasonable consensus averages.
+  add('Guacamole',153,2,8.5,13.5,{fi:6,na:300,k:330,sv:30,en:'guacamole'}); // tiny adjust
   add('Quesadilla',280,12,28,14,{na:540,pc:120,en:'quesadilla'});
-  add('Taco al pastor',220,12,18,11,{na:400,pc:80,en:'taco al pastor'});
+  add('Taco al pastor',218,12,18,11,{na:400,pc:80,en:'taco al pastor'});
   add('Tamal',230,5,30,10,{na:380,pc:120,en:'tamale'});
   add('Enchiladas',170,8,18,8,{na:500,sv:150,en:'enchiladas'});
-  add('Chilaquiles',180,6,22,8,{na:430,sv:200,en:'chilaquiles'});
-  add('Pozole',110,9,10,4,{na:350,sv:250,en:'pozole soup'});
+  add('Chilaquiles',165,9,14,10,{na:430,sv:200,en:'chilaquiles'}); // SnapCalorie consensus
+  add('Pozole',90,7.5,5,4,{na:350,sv:250,en:'pozole soup'}); // MyFoodDiary
   add('Sopa de fideo',60,2,10,1.5,{na:300,sv:200,en:'noodle soup'});
   add('Hamburguesa',254,13,30,9,{na:497,pc:110,en:'hamburger'});
   add('Hamburguesa con queso',303,15,30,14,{na:680,pc:130,en:'cheeseburger'});
   add('Papas a la francesa',312,3.4,41,15,{na:210,k:579,sv:117,en:'french fries'});
   add('Pizza (rebanada)',266,11,33,10,{s:3.6,na:598,pc:107,en:'pizza slice'});
   add('Pollo frito',246,19,8,15,{na:700,pc:80,en:'fried chicken'});
-  add('Sushi (roll)',145,4,30,0.8,{na:240,sv:100,en:'sushi roll'});
-  add('Sándwich jamón y queso',250,13,28,9,{na:700,pc:150,en:'ham cheese sandwich subway'});
-  add('Ensalada César',190,6,8,15,{na:430,sv:200,en:'caesar salad'});
-  add('Concha (pan dulce)',360,7,57,12,{s:20,na:300,pc:80,en:'mexican sweet bread concha'});
-  add('Polvorón',520,6,60,29,{s:30,na:150,pc:25,en:'mexican shortbread cookie'});
-  add('Churro',356,4,46,17,{s:9,na:265,pc:50,en:'churro fried dough'});
+  add('Sushi (roll)',160,4.5,30,1.5,{na:240,sv:100,en:'sushi roll'}); // bumped from 145; salmon roll averages higher
   return L;
 })();
 function openFoodAdd(preset, lockTag){
