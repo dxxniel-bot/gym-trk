@@ -500,7 +500,7 @@ function load(){
   if(!d)return seed();
   return migrate(d);
 }
-function migrate(d){ if(!d.version){d.version=1;} if(!d.meals)d.meals={}; if(!d.foods)d.foods=[]; d.foods=d.foods.map(f=>(f&&f.per100)?f:asCanonical(f)); if(!d.steps)d.steps={}; if(!d.machines)d.machines={}; if(!d.bodyweight)d.bodyweight={}; if(!d.mealTags)d.mealTags=['breakfast','lunch','snack','dinner']; if(!d.stack)d.stack=[]; if(!d.settings)d.settings={goals:seed().settings.goals}; if(d.settings&&d.settings.goals&&d.settings.goals.alcohol==null)d.settings.goals.alcohol=(d.profile&&d.profile.sex==='F')?14:28;
+function migrate(d){ if(!d.version){d.version=1;} if(!d.meals)d.meals={}; if(!d.foods)d.foods=[]; d.foods=d.foods.map(f=>(f&&f.per100)?f:asCanonical(f)); if(!d.steps)d.steps={}; if(!d.machines)d.machines={}; if(!d.bodyweight)d.bodyweight={}; if(!d.mealTags)d.mealTags=['breakfast','lunch','snack','dinner']; if(!d.stack)d.stack=[]; if(!d.lastUsed)d.lastUsed={}; if(!d.settings)d.settings={goals:seed().settings.goals}; if(d.settings&&d.settings.goals&&d.settings.goals.alcohol==null)d.settings.goals.alcohol=(d.profile&&d.profile.sex==='F')?14:28;
   // recompute alcohol for old meal items logged before alcohol was in MACROKEYS
   try{ Object.values(d.meals||{}).forEach(arr=>arr.forEach(m=>{ if(m.alcohol==null){ if(m._food&&m._food.per100&&m._food.per100.alcohol&&m._unit){ m.alcohol=computeNutrients(m._food,m._unit,m.qty||1).alcohol; } else m.alcohol=0; } })); }catch(e){}
   // goalHist: snapshot of intake goals at the moment of first logging that day (history is FROZEN — past days never re-read the current goal)
@@ -2227,6 +2227,11 @@ const BASE_FOODS=(function(){ const L=[];
 })();
 // snapshot the current food-search context (query + tag + lockTag) so openLog can offer a back button
 function snapshotFaCtx(){ try{ const q=document.getElementById('fa_q'); const tg=document.getElementById('fa_tagtxt'); window._faCtx={ q:q?q.value:'', tag:tg?tg.value:(window._faTag||curTag()), lock:!!(tg&&tg.type==='hidden') }; }catch(_){ window._faCtx=null; } }
+// last-used cache: per-food (unit, qty) snapshot so re-logging the same food prefills the previous portion.
+// Key strategy: barcode > id > normalized name+brand. Covers db.foods (saved), BASE_FOODS, and OFF results.
+function lastUsedKey(f){ if(!f)return ''; if(f.barcode)return 'b:'+f.barcode; if(f.id)return 'i:'+f.id; return 'n:'+bfNorm((f.name||'')+'|'+(f.brand||'')); }
+function getLastUsed(f){ try{ return (db.lastUsed||{})[lastUsedKey(f)]||null; }catch(_){ return null; } }
+function saveLastUsed(f,unit,qty){ try{ db.lastUsed=db.lastUsed||{}; const k=lastUsedKey(f); if(!k)return; db.lastUsed[k]={unit:unit,qty:qty,when:Date.now()}; }catch(_){} }
 function openFoodAdd(preset, lockTag){
   const sugg=mealSuggestions(); const tag=preset||nextMealTag();
   const head = lockTag
@@ -2541,12 +2546,14 @@ function openVerify(food, opts){
 // LOG screen: pick unit (dropdown of defaults) + qty → add to meal.
 function openLog(food, opts){ opts=opts||{}; const fd=asCanonical(food);
   window._log={food:fd,tag:opts.tag||curTag(),fromId:opts.fromId||fd.id||null,editId:opts.editId||null,barcode:fd.barcode||'',isNew:!!opts.isNew};
-  const units=foodUnits(fd); const defUnit=opts.unit||(fd.sizes.serving?'serving':units[0].key);
+  const units=foodUnits(fd); const lu=(!opts.editId && opts.unit==null && opts.qty==null)?getLastUsed(fd):null;
+  const defUnit=opts.unit||(lu && units.some(u=>u.key===lu.unit)?lu.unit:(fd.sizes.serving?'serving':units[0].key));
+  const defQty=(opts.qty!=null)?opts.qty:(lu && lu.qty>0 ? lu.qty : 1);
   const editing=!!opts.editId; const primary=editing?'guardar cambios':(window._log.isNew?'guardar + loguear':'loguear');
   const hasBack=!editing && window._faCtx;
   openModal(`<h3>${hasBack?'<a data-act="faback" style="color:var(--o50);font-size:11px;font-weight:600;cursor:pointer;margin-right:8px;letter-spacing:.3px" title="volver a la búsqueda">← back</a>':''}${editing?'editar registro':'loguear'} · ${escTxt(fd.name||'alimento')}</h3>
    <div class="submeta" style="margin:-2px 0 9px;font-size:10px">${(()=>{const s=foodSource(fd);return (s.ok?'<span style="color:var(--good)">✓</span> ':'')+'fuente: '+escTxt(s.label);})()}</div>
-   <div class="field row2"><div><label>UNIDAD</label><select id="l_unit" class="pick">${units.map(u=>`<option value="${u.key}"${u.key===defUnit?' selected':''}>${u.label}</option>`).join('')}</select></div><div><label>CANTIDAD</label><input id="l_qty" type="number" inputmode="decimal" step="0.25" value="${opts.qty||1}"/></div></div>
+   <div class="field row2"><div><label>UNIDAD${lu?' <span style="color:var(--good);font-size:8px;font-weight:700" title="última vez">↺</span>':''}</label><select id="l_unit" class="pick">${units.map(u=>`<option value="${u.key}"${u.key===defUnit?' selected':''}>${u.label}</option>`).join('')}</select></div><div><label>CANTIDAD</label><input id="l_qty" type="number" inputmode="decimal" step="0.25" value="${defQty}"/></div></div>
    <div class="lkc" id="l_kcal"></div>
    <div class="lnut" id="l_full"></div>
    <div class="sheetbtns"><button class="ok" data-act="logsave">${primary}</button>${editing?'<button class="cancel" data-act="closemodal">cancel</button>':('<button class="cancel" data-act="logonly">'+(window._log.isNew?'loguear sin guardar':'cancel')+'</button>')}</div>`);
@@ -2598,6 +2605,7 @@ function commitLog(saveToDb){
   const L=window._log||{}; const f=L.food; if(!f){ closeModal(); return; } if(!f.name){ alert('Pon nombre.'); return; }
   const unit=(document.getElementById('l_unit')||{}).value; const qty=parseFloat(val('l_qty'))||1;
   const nut=computeNutrients(f,unit,qty); const unitLabel=(foodUnits(f).find(u=>u.key===unit)||{}).label||unit;
+  saveLastUsed(f,unit,qty);                                          // remember portion for next time
   const bc=L.barcode||f.barcode||'';
   let foodId=L.fromId||null;
   if(saveToDb){ db.foods=db.foods||[];
