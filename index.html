@@ -649,6 +649,21 @@ function dayPreviewHTML(day){
   });
   return `<div style="margin:2px 0 4px">${body}</div>`;
 }
+// planned volume per muscle across the whole split (sets/rotation) vs RP landmarks — live feedback while building
+function plannedVolumeSection(){
+  const byM={}; (db.split&&db.split.days||[]).forEach(d=>(d.exercises||[]).forEach(e=>{ const m=e.muscle||'other'; byM[m]=(byM[m]||0)+Math.max(0,parseInt(e.sets,10)||0); }));
+  const muscles=Object.keys(byM).sort((a,b)=>byM[b]-byM[a]);
+  if(!muscles.length)return '';
+  let rows='';
+  muscles.forEach(m=>{ const sets=byM[m]; const L=VOL_LANDMARKS[m]; const st=volStatus(m,sets);
+    const pct=L?Math.min(100,Math.round(sets/L[2]*100)):0;
+    const mevPct=L?Math.round(L[0]/L[2]*100):0, mavPct=L?Math.round(L[1]/L[2]*100):0;
+    rows+=`<div class="vrow"><div class="vtop"><span class="vm">${escTxt(m)}</span><span class="vn">${sets} sets${st?` <span class="vst ${st}">${st}</span>`:''}</span></div>`
+      +`<div class="vbar"><i style="width:${pct}%"></i>${L?`<span class="mev" style="left:${mevPct}%"></span><span class="mav" style="left:${mavPct}%"></span>`:''}</div></div>`;
+  });
+  return `<hr class="rule"/><div class="section" style="margin-bottom:10px"><div class="h"><span class="s">//</span>VOLUMEN PLANEADO</div><div class="meta">sets/músculo · por vuelta</div></div>`+rows
+    +`<div class="submeta" style="margin-top:8px">suma de sets de todo el split · marcas MEV·MAV·MRV (semanales, RP)</div>`;
+}
 function volumeSection(){
   const {byM,freq}=weeklySets(7); const {byM:prevM}=weeklySets(14);
   const muscles=Object.keys(byM).sort((a,b)=>byM[b]-byM[a]);
@@ -810,7 +825,7 @@ function bloating(t,g){
 }
 function macroStatus(val,goal){ if(!goal)return ''; const r=val/goal; if(r>1.05)return 'over'; if(r>=0.9)return 'good'; return ''; }
 function renderMacros(){
-  const g=db.settings.goals; const {items,t}=macroTotals();
+  const g=effectiveGoals(); const {items,t}=macroTotals();
   const left=Math.round(g.kcal-t.kcal); const pct=g.kcal?t.kcal/g.kcal*100:0; const kStat=macroStatus(t.kcal,g.kcal);
   const open=state.macroOpen;
   const mkcal=(t.protein*4+t.carbs*4+t.fat*9)||1;
@@ -1177,7 +1192,8 @@ function renderSplitEdit(){
   const sp=db.split||{name:'',days:[]};
   let body=statusBar(true)
    +`<hr class="rule"/><div class="section"><div class="h"><span class="s">//</span>SPLIT</div><div class="meta">${(sp.days||[]).length} días</div></div>`
-   +`<div class="field" style="margin-bottom:16px"><label>NOMBRE DEL SPLIT</label><input data-act="sd_splitname" value="${(sp.name||'').replace(/"/g,'&quot;')}" placeholder="ej. Push/Pull/Legs"/></div>`;
+   +`<div class="field" style="margin-bottom:16px"><label>NOMBRE DEL SPLIT</label><input data-act="sd_splitname" value="${(sp.name||'').replace(/"/g,'&quot;')}" placeholder="ej. Push/Pull/Legs"/></div>`
+   +plannedVolumeSection();
   (sp.days||[]).forEach((d,di)=>{
     body+=`<div class="seday"><div class="sehead"><input class="senm" data-act="sd_name" data-di="${di}" value="${(d.name||'').replace(/"/g,'&quot;')}"/><span class="semv"><span data-act="sd_dayup" data-di="${di}">▲</span><span data-act="sd_daydn" data-di="${di}">▼</span></span>${sp.days.length>1?`<span class="sedel" data-act="sd_deld" data-di="${di}">✕</span>`:''}</div>`;
     (d.exercises||[]).forEach((e,ei)=>{
@@ -2397,6 +2413,21 @@ function commitLog(saveToDb){
   save(); closeModal(); render();
 }
 // maintenance (TDEE) from profile via Mifflin-St Jeor × activity — same basis as onboarding
+// effective activity multiplier from REAL behavior (last 14d training freq + 7d avg steps); falls back to the profile choice
+function derivedActivity(){ const p=db.profile||{}; const fb=+p.activity||1.375; const today=todayISO();
+  const d14=shiftDate(today,-13);
+  const sess=(db.sessions||[]).filter(s=>s&&s.type!=='rest'&&s.date>=d14&&(s.exercises||[]).some(e=>(e.sets||[]).some(st=>st&&(st.done||(+st.w>0)||(+st.r>0)))));
+  const perWk=sess.length/2;
+  let sSum=0,sN=0; for(let i=0;i<7;i++){ const v=db.steps&&+db.steps[shiftDate(today,-i)]; if(v>0){sSum+=v;sN++;} }
+  const avg=sN?sSum/sN:0;
+  if(perWk===0 && sN<3) return fb;                                   // not enough signal -> trust the profile choice
+  let m = perWk>=5?1.725 : perWk>=3?1.55 : perWk>=1?1.375 : 1.2;
+  if(avg>=12000) m=Math.max(m,1.6); else if(avg>=9000) m=Math.max(m,1.45); else if(avg<4000&&perWk<3) m=Math.min(m,1.3);
+  return Math.max(1.2,Math.min(1.725,m));
+}
+// goals for display/scoring: manual kcal/macros + water/Na/K AUTO-derived from real activity (hybrid)
+function effectiveGoals(){ const g=db.settings.goals||{}; const w=+(db.profile&&db.profile.weightKg)||70; const al=Math.max(0,Math.min(1,(derivedActivity()-1.2)/0.525));
+  return Object.assign({},g,{ sodium:Math.round(2300+1200*al), potassium:Math.round(3500+1200*al), water:Math.max(2,Math.round(0.035*w*(1+0.25*al)*10)/10) }); }
 // recompute ALL goals from the profile; hydration + electrolytes scale with activity level (sports-nutrition)
 function recalcGoals(p){ p=p||db.profile||{}; const w=+p.weightKg||70, hh=+p.heightCm||175, age=+p.age||25, sex=p.sex||'M', act=+p.activity||1.375, goal=p.goal||'maintain';
   const bmr=10*w+6.25*hh-5*age+(sex==='M'?5:-161);
@@ -2418,7 +2449,8 @@ function openGoals(){
   if(window._goalMode!=='grams')window._goalMode='pct';
   const pk0=(g.protein||0)*4, fk0=(g.fat||0)*9, ck0=(g.carbs||0)*4, tk=pk0+fk0+ck0||1;
   let pP=Math.round(pk0/tk*100), pF=Math.round(fk0/tk*100), pC=Math.max(0,100-pP-pF);
-  const micro=(id,lbl,v)=>`<div><label>${lbl}</label><input id="${id}" type="number" inputmode="decimal" value="${v}"/></div>`;
+  const eg=effectiveGoals();
+  const micro=(id,lbl,v,ro)=>`<div><label>${lbl}${ro?' <span style="color:var(--good);font-size:8px;font-weight:700">AUTO</span>':''}</label><input id="${id}" type="number" inputmode="decimal" value="${ro?Math.round(v*100)/100:v}"${ro?' disabled style="opacity:.55"':''}/></div>`;
   const sl=(k,lbl,pct)=>`<div class="gsl"><div class="gsl-h"><span>${lbl} <button type="button" class="lk" id="lk_${k}" title="fijar">🔒</button></span><span><b id="sp_${k}">${pct}</b>% · <span class="gg" id="sg_${k}">0</span> g</span></div><input type="range" id="sl_${k}" min="0" max="100" value="${pct}" class="gslider"/></div>`;
   openModal(`<h3>edit goals</h3>
    <div class="toggles" id="gm_tog" style="margin-bottom:14px"><button class="t ${window._goalMode==='pct'?'on':''}" data-gm="pct">% de kcal</button><button class="t ${window._goalMode==='grams'?'on':''}" data-gm="grams">gramos</button></div>
@@ -2433,9 +2465,10 @@ function openGoals(){
      <div id="gg_kcal" class="submeta" style="margin:2px 0 10px;font-size:13px"></div>
    </div>
    <hr class="rule" style="margin:4px 0 14px"/>
-   <div class="field row2">${micro('g_sodium','SODIO mg',g.sodium)}${micro('g_potassium','POTASIO mg',g.potassium)}</div>
+   <div class="field row2">${micro('g_sodium','SODIO mg',eg.sodium,1)}${micro('g_potassium','POTASIO mg',eg.potassium,1)}</div>
    <div class="field row2">${micro('g_sugar','AZÚCAR g',g.sugar)}${micro('g_fiber','FIBRA g',g.fiber)}</div>
-   <div class="field row2">${micro('g_water','AGUA L',g.water)}${micro('g_caffeine','CAFEÍNA mg',g.caffeine)}</div>
+   <div class="field row2">${micro('g_water','AGUA L',eg.water,1)}${micro('g_caffeine','CAFEÍNA mg',g.caffeine)}</div>
+   <div class="submeta" style="font-size:9px;color:var(--o40);margin:-4px 0 8px"><span style="color:var(--good);font-weight:700">AUTO</span> = recalculado de tu actividad real (entrenos últimos 14d + pasos últimos 7d)</div>
    <div class="field row2">${micro('g_alcohol','ALCOHOL g · límite',g.alcohol||0)}<div></div></div>
    <div class="sheetbtns"><button class="ok" data-act="okgoals">save</button><button class="cancel" id="g_recalc" title="recalcular desde tu perfil + actividad">↻ perfil</button><button class="cancel" data-act="closemodal">cancel</button></div>`);
   const keys=['protein','carbs','fat'], DIV={protein:4,carbs:4,fat:9}, locks={protein:false,carbs:false,fat:false};
@@ -2469,7 +2502,7 @@ function openGoals(){
     if(window._goalMode==='pct'){ P=gr.protein; C=gr.carbs; F=gr.fat; kcal=Kget()||(P*4+C*4+F*9); }
     else { P=parseFloat(val('gg_protein'))||0; C=parseFloat(val('gg_carbs'))||0; F=parseFloat(val('gg_fat'))||0; kcal=P*4+C*4+F*9; }
     g.kcal=Math.round(kcal); g.protein=Math.round(P); g.carbs=Math.round(C); g.fat=Math.round(F);
-    ['sodium','potassium','sugar','fiber','water','caffeine','alcohol'].forEach(k=>{ const v=parseFloat(val('g_'+k)); if(!isNaN(v))g[k]=v; });
+    ['sugar','fiber','caffeine','alcohol'].forEach(k=>{ const v=parseFloat(val('g_'+k)); if(!isNaN(v))g[k]=v; });   // Na/K/water are AUTO from derivedActivity()
     save(); closeModal(); render(); };
   const grc=document.getElementById('g_recalc'); if(grc)grc.onclick=()=>{ if(!db.profile||!db.profile.weightKg){ alert('Completa tu perfil primero (settings → perfil).'); return; } if(!confirm('¿Recalcular TODAS las metas desde tu perfil y nivel de actividad? Sobrescribe tus ajustes manuales.'))return; db.settings.goals=recalcGoals(db.profile); save(); closeModal(); openGoals(); };
 }
