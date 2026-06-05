@@ -898,7 +898,7 @@ function itemQtyLabel(m){ const f=m._food, u=m._unit, q=m.qty||1; const base=(f&
   return grams ? numTxt(q)+' ('+grams+' '+base+')' : numTxt(q)+'×'; }
 // tap a food item -> just edit / delete (no per-item nutrition; that's at meal level)
 function mealDetailInline(m){
-  return `<div class="mdetail"><div class="mdacts"><a data-act="editmealx" data-id="${m.id}">editar</a><a data-act="delmealx" data-id="${m.id}">borrar</a></div></div>`;
+  return `<div class="mdetail"><div class="mdacts"><a data-act="editmealx" data-id="${m.id}">editar</a><a data-act="movemeal" data-id="${m.id}">mover</a><a data-act="delmealx" data-id="${m.id}">borrar</a></div></div>`;
 }
 // tap a meal header -> full nutrition breakdown of the whole meal (the set)
 function mealGroupDetail(list){
@@ -980,7 +980,7 @@ function openMealSummary(tag){
   openModal(`<h3>#${escTxt(tag)}</h3>
    <div class="msum-top"><div class="msum-rad">${mealRadar(t,_mg)}</div><div class="msum-right"><div class="msum-list">${nutList}</div><div class="msum-kcal">${Math.round(t.kcal)}<span>KCAL</span></div></div></div>
    <div class="shlog" style="margin-top:14px">${mealFoodRows(items)}</div>
-   <div class="sheetbtns" style="margin-top:14px"><button class="ok" data-act="addtomeal" data-tag="${escTxt(tag)}">+ add food</button></div>`);
+   <div class="sheetbtns" style="margin-top:14px"><button class="ok" data-act="addtomeal" data-tag="${escTxt(tag)}">+ add food</button><button class="cancel" data-act="dupmeal" data-tag="${escTxt(tag)}" title="duplicar esta meal">⎘ duplicar</button></div>`);
   // la gráfica SIEMPRE igual de alto que la columna derecha (tabla + kcal), manteniendo proporción del viewBox
   (function(){ try{ const tp=document.querySelector('.msum-top'); if(!tp)return; const rt=tp.querySelector('.msum-right'), rd=tp.querySelector('.msum-rad'); if(!rt||!rd)return; const fit=function(){ const h=rt.getBoundingClientRect().height; if(h>4) rd.style.flex='0 0 '+(h*168/156).toFixed(1)+'px'; }; if(window.ResizeObserver){ new ResizeObserver(fit).observe(rt); } else { requestAnimationFrame(function(){requestAnimationFrame(fit);}); } if(document.fonts&&document.fonts.ready){ document.fonts.ready.then(fit); } }catch(_){} })();
 }
@@ -1390,6 +1390,8 @@ document.getElementById('app').addEventListener('click',e=>{
   else if(a==='addfood'||a==='addnext'||a==='addmeal'){ closeAddPop(); openFoodAdd(nextMealTag()); }
   else if(a==='addmealnext'){ openFoodAdd(nextAfterCurrent()); }
   else if(a==='addtomeal'){ openFoodAdd(el.dataset.tag, true); }
+  else if(a==='dupmeal'){ openDupMeal(el.dataset.tag); }
+  else if(a==='movemeal'){ const id=el.dataset.id; const t=curDate(); const m=(db.meals[t]||[]).find(x=>x.id===id); if(m)openMoveItem(m); }
   else if(a==='addsnack'){ closeAddPop(); openFoodAdd('snack'); }
   else if(a==='adddrink'){ closeAddPop(); openDrink(); }
   else if(a==='addwaterquick'){ closeAddPop(); openDrink(); }
@@ -2138,8 +2140,9 @@ function wireLongPress(el,fn){ let t=null; const start=()=>{ t=setTimeout(()=>{ 
 function openRegisterMenu(barcode){
   window._linkBarcode=barcode||''; window._faTag=window._faTag||'meal';
   openModal(`<h3>registrar alimento${barcode?' · vincular a '+barcode:''}</h3>
-   <div class="submeta" style="margin-bottom:10px">no encontrado · elige cómo registrar:</div>
-   <button class="start" data-act="fphoto" style="margin-bottom:8px">foto de tabla nutricional</button>
+   <div class="submeta" style="margin-bottom:10px">${barcode?'código no encontrado en la base':'no se leyó el código'} · elige cómo seguir:</div>
+   <button class="start" data-act="fbarcode" style="margin-bottom:8px">↻ intentar de nuevo</button>
+   <button class="start" data-act="fphoto" style="margin-bottom:8px;background:transparent;border:1px solid var(--border);color:var(--fg)">foto de tabla nutricional</button>
    <div class="secondary"><button class="b" data-act="ftext">pegar texto</button><button class="b" data-act="fmanual">manual</button></div>`);
 }
 async function decodeImgSrc(url){
@@ -2577,6 +2580,42 @@ function openNavMenu(){
     if(a==='settings')go('settings'); else if(a==='history')go('history'); else if(a==='splitedit')go('splitedit');
     else if(a==='sharefood'){ state.shareType='food'; go('share'); } });
 }
+// duplicate a whole meal: clones every item with new ids, optional new tag/name, target date (default today)
+function openDupMeal(tag){
+  const src=curDate(); const items=(db.meals[src]||[]).filter(m=>m.tag===tag); if(!items.length)return;
+  const sugg=mealSuggestions().filter(s=>s!==tag);
+  openModal(`<h3>duplicar #${escTxt(tag)}</h3>
+   <div class="submeta" style="margin-bottom:10px">${items.length} alimento${items.length>1?'s':''} · clona la meal completa</div>
+   <div class="field"><label>NUEVA MEAL · nombre</label><input id="dm_tag" value="${escTxt(tag)}" placeholder="ej. desayuno"/>
+   <div class="chips" id="dm_sugg">${sugg.slice(0,8).map(s=>`<span class="chip" data-act="dmtag" data-v="${escTxt(s)}">${escTxt(s)}</span>`).join('')}</div></div>
+   <div class="field"><label>FECHA</label><input id="dm_date" type="date" value="${src}"/></div>
+   <div class="sheetbtns"><button class="ok" id="dm_go">⎘ duplicar</button><button class="cancel" data-act="closemodal">cancel</button></div>`);
+  document.querySelectorAll('#dm_sugg .chip').forEach(c=>c.onclick=()=>{ const inp=document.getElementById('dm_tag'); inp.value=c.dataset.v; });
+  document.getElementById('dm_go').onclick=()=>{
+    const nt=(val('dm_tag')||tag).trim()||tag; const nd=val('dm_date')||src;
+    db.meals[nd]=db.meals[nd]||[];
+    items.forEach((m,i)=>{ const cp=JSON.parse(JSON.stringify(m)); cp.id=uid()+'_'+i; cp.tag=nt; cp.time=nowHM(); db.meals[nd].push(cp); });
+    save(); closeModal(); state.macroDate=nd; render();
+  };
+}
+// move a single item to another meal (existing tag) or a new one
+function openMoveItem(m){
+  const t=curDate(); const tagsHere=[...new Set((db.meals[t]||[]).map(x=>x.tag).filter(x=>x&&x!==m.tag))];
+  const sugg=mealSuggestions().filter(s=>s!==m.tag && tagsHere.indexOf(s)===-1).slice(0,8);
+  const cur=escTxt(m.tag||'meal'); const name=escTxt(m.name||'alimento');
+  openModal(`<h3>mover · ${name}</h3>
+   <div class="submeta" style="margin-bottom:10px">desde #${cur} → elige destino</div>
+   ${tagsHere.length?'<div class="grp-label" style="margin:8px 0 6px;color:var(--o35);font-size:9px">EN ESTE DÍA</div>'+tagsHere.map(tg=>`<div class="pickitem" data-act="movepick" data-v="${escTxt(tg)}">#${escTxt(tg)}</div>`).join(''):''}
+   <div class="grp-label" style="margin:12px 0 6px;color:var(--o35);font-size:9px">A OTRA MEAL</div>
+   <div class="field"><input id="mv_new" placeholder="nombre de nueva meal"/>
+   <div class="chips" id="mv_sugg">${sugg.map(s=>`<span class="chip" data-act="mvtag" data-v="${escTxt(s)}">${escTxt(s)}</span>`).join('')}</div></div>
+   <div class="sheetbtns"><button class="ok" id="mv_go">mover →</button><button class="cancel" data-act="closemodal">cancel</button></div>`);
+  window._moveId=m.id;
+  document.querySelectorAll('#mv_sugg .chip').forEach(c=>c.onclick=()=>{ document.getElementById('mv_new').value=c.dataset.v; });
+  document.querySelectorAll('[data-act="movepick"]').forEach(el=>el.onclick=()=>{ moveItemTo(el.dataset.v); });
+  document.getElementById('mv_go').onclick=()=>{ const nt=(val('mv_new')||'').trim(); if(!nt){ alert('Pon un nombre de meal o elige una existente.'); return; } moveItemTo(nt); };
+}
+function moveItemTo(newTag){ const t=curDate(); const arr=db.meals[t]||[]; const mm=arr.find(x=>x.id===window._moveId); if(mm){ mm.tag=newTag; save(); closeModal(); state.expandedMeal=null; render(); } }
 function openSync(){
   openModal(`<h3>sync data</h3>
    <div class="submeta" style="margin-bottom:10px">Copia este texto para respaldar o pasar a otro equipo (iPhone ↔ aquí). O pega un backup y dale import.</div>
