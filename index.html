@@ -1051,8 +1051,8 @@ function mealRadar(t,g){ g=g||{};
   const kcalTot=(t.protein*4+t.carbs*4+t.fat*9+t.alcohol*7)||1;
   const frac=a=> a.c ? (+t[a.k]||0)*a.c/kcalTot : ((+g[a.k]>0)?(+t[a.k]||0)/g[a.k]:0); // 0..1 = % de la tabla
   let grid='';
-  [0.25,0.5,0.75,1].forEach(rr=>{ const wr=warp(rr); grid+=`<polygon points="${ax.map((_,i)=>at(i,R*wr).join(',')).join(' ')}" fill="none" stroke="var(--o20)" stroke-width=".7"/>`; });
-  ax.forEach((_,i)=>{ const e=at(i,R); grid+=`<line x1="${cx}" y1="${cy}" x2="${e[0]}" y2="${e[1]}" stroke="var(--o20)" stroke-width=".7"/>`; });
+  [0.125,0.25,0.375,0.5,0.625,0.75,0.875,1].forEach(rr=>{ const wr=warp(rr); grid+=`<polygon points="${ax.map((_,i)=>at(i,R*wr).join(',')).join(' ')}" fill="none" stroke="var(--o12)" stroke-width=".5"/>`; });
+  ax.forEach((_,i)=>{ const e=at(i,R); grid+=`<line x1="${cx}" y1="${cy}" x2="${e[0]}" y2="${e[1]}" stroke="var(--o12)" stroke-width=".5"/>`; });
   const rad=ax.map(a=>warp(frac(a))); const maxR=Math.max.apply(null,rad.concat(0.0001)); const thr=maxR*0.85;
   const dpts=ax.map((a,i)=>at(i,R*Math.max(0.04,rad[i])));
   const path='M'+dpts.map(q=>q[0]+','+q[1]).join('L')+'Z';
