@@ -2455,7 +2455,7 @@ function derivedActivity(){ const p=db.profile||{}; const fb=+p.activity||1.375;
 }
 // goals for display/scoring: manual kcal/macros + water/Na/K AUTO-derived from real activity (hybrid)
 function effectiveGoals(){ const g=db.settings.goals||{}; const w=+(db.profile&&db.profile.weightKg)||70; const al=Math.max(0,Math.min(1,(derivedActivity()-1.2)/0.525));
-  return Object.assign({},g,{ sodium:Math.round(2300+1200*al), potassium:Math.round(3500+1200*al), water:Math.max(2,Math.round(0.035*w*(1+0.25*al)*10)/10) }); }
+  return Object.assign({},g,{ sodium:Math.round(2000+1500*al), potassium:Math.round(3510+1200*al), water:Math.max(2,Math.round(0.035*w*(1+0.25*al)*10)/10) }); }
 // recompute ALL goals from the profile; hydration + electrolytes scale with activity level (sports-nutrition)
 function recalcGoals(p){ p=p||db.profile||{}; const w=+p.weightKg||70, hh=+p.heightCm||175, age=+p.age||25, sex=p.sex||'M', act=+p.activity||1.375, goal=p.goal||'maintain';
   const bmr=10*w+6.25*hh-5*age+(sex==='M'?5:-161);
@@ -2463,12 +2463,13 @@ function recalcGoals(p){ p=p||db.profile||{}; const w=+p.weightKg||70, hh=+p.hei
   const protein=Math.round(2.0*w), fat=Math.round(0.9*w), carbs=Math.max(0,Math.round((kcal-protein*4-fat*9)/4));
   const al=Math.max(0,Math.min(1,(act-1.2)/0.525));                 // 0 sedentario (1.2) .. 1 alto (1.725)
   return {kcal,protein,carbs,fat,
-    sodium:Math.round(2300+1200*al),                                 // 2300 -> 3500: repone Na del sudor
-    potassium:Math.round(3500+1200*al),                              // 3500 -> 4700
-    sugar:Math.round(kcal*0.10/4),
-    fiber:Math.max(25,Math.round(kcal/100)),
-    water:Math.max(2,Math.round(0.035*w*(1+0.25*al)*10)/10),         // 35 ml/kg, +25% si muy activo
-    caffeine:400, alcohol:sex==='M'?28:14 };
+    sodium:Math.round(2000+1500*al),                                 // WHO base <2000mg; activo +1.5g por sudor (Na 0.5-1.5g/L)
+    potassium:Math.round(3510+1200*al),                              // WHO ≥3510mg base, activo +1.2g
+    sugar:Math.round(kcal*0.10/4),                                   // WHO 2015: ≤10% kcal (free sugars)
+    fiber:Math.max(sex==='M'?38:25,Math.round(kcal/1000*14)),        // DRI/IOM: 14 g por 1000 kcal · piso H 38 / M 25
+    water:Math.max(2,Math.round(0.035*w*(1+0.25*al)*10)/10),         // EFSA: 35 ml/kg, +25% si muy activo
+    caffeine:Math.max(200,Math.min(400,Math.round(3*w))),            // EFSA: 3 mg/kg dosis aguda · piso 200 / techo 400
+    alcohol:sex==='M'?28:14 };                                       // OMS: ≤2 drinks H / ≤1 M (14g cada uno)
 }
 function maintenanceKcal(){ const p=db.profile||{}; if(!p.weightKg||!p.heightCm||!p.age)return 0; const bmr=10*(+p.weightKg)+6.25*(+p.heightCm)-5*(+p.age)+((p.sex==='M')?5:-161); return Math.round(bmr*(+p.activity||1.2)); }
 function balanceOf(kcal){ const m=maintenanceKcal(); if(!m)return null; const delta=Math.round((+kcal||0)-m); const band=Math.max(60,m*0.03); const label=delta<-band?'déficit':(delta>band?'volumen':'mantenimiento'); const col=label==='déficit'?'var(--info)':(label==='volumen'?'var(--warn)':'var(--good)'); return {maint:m,delta:delta,label:label,col:col}; }
