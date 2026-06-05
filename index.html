@@ -1055,7 +1055,7 @@ function mealRadar(t,g){ g=g||{};
   const W=180,H=166,cx=90,cy=83,R=64,N=ax.length;
   const ang=i=>(-90+360/N*i)*Math.PI/180;
   const at=(i,r)=>[+(cx+Math.cos(ang(i))*r).toFixed(1),+(cy+Math.sin(ang(i))*r).toFixed(1)];
-  const KK=2.6, EZ=1-Math.exp(-KK);
+  const KK=1.8, EZ=1-Math.exp(-KK);
   const warp=x=>{ x=x<0?0:x>1?1:x; return -Math.log(1-x*EZ)/KK; };       // exponencial invertida
   const kcalTot=(t.protein*4+t.carbs*4+t.fat*9+t.alcohol*7)||1;
   const frac=a=> a.c ? (+t[a.k]||0)*a.c/kcalTot : ((+g[a.k]>0)?(+t[a.k]||0)/g[a.k]:0); // 0..1 = % de la tabla
@@ -1080,7 +1080,7 @@ function dayRadar(t,g){ g=g||{};
   const W=180,H=166,cx=90,cy=83,R=64,N=ax.length;
   const ang=i=>(-90+360/N*i)*Math.PI/180;
   const at=(i,r)=>[+(cx+Math.cos(ang(i))*r).toFixed(1),+(cy+Math.sin(ang(i))*r).toFixed(1)];
-  const KK=2.6, EZ=1-Math.exp(-KK);
+  const KK=1.8, EZ=1-Math.exp(-KK);
   const warp=x=>{ x=x<0?0:x>1?1:x; return -Math.log(1-x*EZ)/KK; };
   const frac=a=> (+g[a.k]>0) ? (+t[a.k]||0)/(+g[a.k]) : 0;
   let grid='';
