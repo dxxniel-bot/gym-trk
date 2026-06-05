@@ -227,7 +227,7 @@
   .seadd{font-size:9px;color:var(--o50);cursor:pointer;padding:5px 0;}
   .srowm{display:grid;grid-template-columns:30px 1fr 1fr 1fr;gap:6px;align-items:center;margin-bottom:5px;} .srowm .sn{font-size:10px;color:var(--o50);text-align:center;} .srowm .sm{height:28px;background:transparent;border:.5px solid var(--o20);color:var(--fg);font:inherit;font-size:13px;text-align:center;}
   .sheetbtns{display:flex; gap:10px; margin-top:10px;} .sheetbtns .ok{flex:1; height:46px; background:var(--fill); color:#000; font-weight:700; border:0; font-size:13px; cursor:pointer;} .sheetbtns .cancel{height:46px; padding:0 18px; border:1px solid var(--o20); background:none; color:var(--o60); font-size:12px; cursor:pointer;}
-  .pickitem{padding:14px 6px; font-size:14px; border-bottom:1px solid var(--line); cursor:pointer;} .pickitem:hover{color:#fff;} .pickitem:active{background:var(--o10);}
+  .pickitem{padding:12px 6px; font-size:13px; border-bottom:1px solid var(--line); cursor:pointer;} .pickitem:hover{color:#fff;} .pickitem:active{background:var(--o10);}
 
   .empty{font-size:11px; color:var(--o40); text-align:center; padding:30px 0;}
   .empty-cta{margin-top:18px;}
@@ -1420,13 +1420,14 @@ document.getElementById('app').addEventListener('click',e=>{
   else if(a==='drml'){ const e=document.getElementById('dr_ml'); if(e)e.value=el.dataset.v; }
   else if(a==='drinkcal'){ openVerify({name:'',base:'ml',per100:{},sizes:{}},{isNew:true,tag:'drink'}); }
   else if(a==='fregister'){ openRegisterMenu(null); }
-  else if(a==='pickfood'){ const f=(db.foods||[]).find(x=>x.id===el.dataset.id); if(f) openLog(f,{fromId:f.id,tag:curTag()}); }
-  else if(a==='pickbase'){ const f=BASE_FOODS.find(x=>x.id===el.dataset.id); if(f){ const tg=document.getElementById('fa_tagtxt')?curTag():(window._faTag||'meal'); openLog(f,{tag:tg,isNew:true}); } }
+  else if(a==='pickfood'){ snapshotFaCtx(); const f=(db.foods||[]).find(x=>x.id===el.dataset.id); if(f) openLog(f,{fromId:f.id,tag:curTag()}); }
+  else if(a==='pickbase'){ snapshotFaCtx(); const f=BASE_FOODS.find(x=>x.id===el.dataset.id); if(f){ const tg=document.getElementById('fa_tagtxt')?curTag():(window._faTag||'meal'); openLog(f,{tag:tg,isNew:true}); } }
   else if(a==='fbarcode'){ openBarcode(); }
   else if(a==='fsearch'){ inlineSearchOFF(); }
   else if(a==='fphoto'){ window._faTag=window._faTag||curTag(); const inp=document.createElement('input'); inp.type='file'; inp.accept='image/*'; inp.setAttribute('capture','environment'); inp.onchange=()=>{ if(inp.files&&inp.files[0]) labelPhoto(inp.files[0], window._linkBarcode||''); }; inp.click(); }
-  else if(a==='nspick'){ const f=(window._nsRes||[])[+el.dataset.i]; if(!f)return; if(window._linkBarcode)f.barcode=window._linkBarcode; openVerify(f,{isNew:true,tag:window._faTag||curTag()}); }
-  else if(a==='ofpick'){ const f=(window._ofRes||[])[+el.dataset.i]; if(!f)return; openLog(f,{tag:window._faTag||curTag(),isNew:true}); }
+  else if(a==='nspick'){ snapshotFaCtx(); const f=(window._nsRes||[])[+el.dataset.i]; if(!f)return; if(window._linkBarcode)f.barcode=window._linkBarcode; openVerify(f,{isNew:true,tag:window._faTag||curTag()}); }
+  else if(a==='ofpick'){ snapshotFaCtx(); const f=(window._ofRes||[])[+el.dataset.i]; if(!f)return; openLog(f,{tag:window._faTag||curTag(),isNew:true}); }
+  else if(a==='faback'){ const c=window._faCtx; window._faCtx=null; closeModal(); openFoodAdd(c&&c.tag, c&&c.lock); if(c&&c.q){ const q=document.getElementById('fa_q'); if(q){ q.value=c.q; q.dispatchEvent(new Event('input',{bubbles:true})); } } }
   else if(a==='ftext'){ openTextParse(); }
   else if(a==='fmanual'){ openVerify({name:'',base:'g',per100:{},sizes:{}},{isNew:true,tag:curTag()}); }
   else if(a==='vcontinue'){ const f=readRegister(); if(!f.name){ alert('Pon nombre.'); return; } if(!f.barcode && !confirm('No pusiste código de barras. ¿Registrar sin código?')) return; const vv=window._verify||{}; openLog(f,{tag:vv.tag,barcode:f.barcode,fromId:vv.fromId,isNew:true}); }
@@ -2055,6 +2056,8 @@ const BASE_FOODS=(function(){ const L=[];
   add('Sushi (roll)',160,4.5,30,1.5,{na:240,sv:100,en:'sushi roll'}); // bumped from 145; salmon roll averages higher
   return L;
 })();
+// snapshot the current food-search context (query + tag + lockTag) so openLog can offer a back button
+function snapshotFaCtx(){ try{ const q=document.getElementById('fa_q'); const tg=document.getElementById('fa_tagtxt'); window._faCtx={ q:q?q.value:'', tag:tg?tg.value:(window._faTag||curTag()), lock:!!(tg&&tg.type==='hidden') }; }catch(_){ window._faCtx=null; } }
 function openFoodAdd(preset, lockTag){
   const sugg=mealSuggestions(); const tag=preset||nextMealTag();
   const head = lockTag
@@ -2371,7 +2374,8 @@ function openLog(food, opts){ opts=opts||{}; const fd=asCanonical(food);
   window._log={food:fd,tag:opts.tag||curTag(),fromId:opts.fromId||fd.id||null,editId:opts.editId||null,barcode:fd.barcode||'',isNew:!!opts.isNew};
   const units=foodUnits(fd); const defUnit=opts.unit||(fd.sizes.serving?'serving':units[0].key);
   const editing=!!opts.editId; const primary=editing?'guardar cambios':(window._log.isNew?'guardar + loguear':'loguear');
-  openModal(`<h3>${editing?'editar registro':'loguear'} · ${escTxt(fd.name||'alimento')}</h3>
+  const hasBack=!editing && window._faCtx;
+  openModal(`<h3>${hasBack?'<a data-act="faback" style="color:var(--o50);font-size:11px;font-weight:600;cursor:pointer;margin-right:8px;letter-spacing:.3px" title="volver a la búsqueda">← back</a>':''}${editing?'editar registro':'loguear'} · ${escTxt(fd.name||'alimento')}</h3>
    <div class="submeta" style="margin:-2px 0 9px;font-size:10px">${(()=>{const s=foodSource(fd);return (s.ok?'<span style="color:var(--good)">✓</span> ':'')+'fuente: '+escTxt(s.label);})()}</div>
    <div class="field row2"><div><label>UNIDAD</label><select id="l_unit" class="pick">${units.map(u=>`<option value="${u.key}"${u.key===defUnit?' selected':''}>${u.label}</option>`).join('')}</select></div><div><label>CANTIDAD</label><input id="l_qty" type="number" inputmode="decimal" step="0.25" value="${opts.qty||1}"/></div></div>
    <div class="lkc" id="l_kcal"></div>
@@ -2421,6 +2425,7 @@ function openMealDetail(id){
    <div class="sheetbtns" style="margin-top:12px"><button class="ok" data-act="editmeal">edit</button>${bc?'<button class="cancel" data-act="mealcode">código</button>':''}<button class="cancel" data-act="delmealnow">delete</button><button class="cancel" data-act="closemodal">close</button></div>`);
 }
 function commitLog(saveToDb){
+  window._faCtx=null;   // committed: drop the back-to-search context
   const L=window._log||{}; const f=L.food; if(!f){ closeModal(); return; } if(!f.name){ alert('Pon nombre.'); return; }
   const unit=(document.getElementById('l_unit')||{}).value; const qty=parseFloat(val('l_qty'))||1;
   const nut=computeNutrients(f,unit,qty); const unitLabel=(foodUnits(f).find(u=>u.key===unit)||{}).label||unit;
