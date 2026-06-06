@@ -2536,8 +2536,14 @@ function readRegister(){ const n=id=>{ const v=parseFloat(val(id)); return (isNa
   const per100={}; if(sg>0){ const f=100/sg; MACROKEYS.forEach(k=>per100[k]=Math.round((per[k]||0)*f*100)/100); } else { MACROKEYS.forEach(k=>per100[k]=per[k]||0); }
   const sizes={}; if(sg>0)sizes.serving=sg; const pcg=n('v_piece_g'); if(pcg>0)sizes.piece=pcg;
   const packG=n('v_pack_g'), packN=n('v_pack_servings'); if(packG>0)sizes.container=packG; else if(sg>0&&packN>0)sizes.container=Math.round(sg*packN*100)/100;
-  // derive piece weight from container÷servings when user didn't enter it explicitly
-  if(!sizes.piece && sizes.container>0 && packN>0) sizes.piece=Math.round(sizes.container/packN*100)/100;
+  // derive pieza/porción from container÷servings when user didn't enter them explicitly
+  // (envase 200g + 4 porciones → cada pieza/porción = 50g — basta para tener la unidad "pieza")
+  if(sizes.container>0 && packN>0){ const w=Math.round(sizes.container/packN*100)/100;
+    if(!sizes.piece) sizes.piece=w;
+    if(!sizes.serving) sizes.serving=w;            // ← si no puso porción, usar derivada como porción/pieza
+  }
+  // collapse the duplicate when piece == serving (avoid "porción 50g" + "pieza 50g" together)
+  if(sizes.serving>0 && sizes.piece>0 && Math.abs(sizes.serving-sizes.piece)<0.5) delete sizes.piece;
   const vv=window._verify||{};
   return {id:vv.fromId||undefined,barcode:val('v_barcode')||vv.barcode||'',name:val('v_name'),brand:val('v_brand')||'',base,per100,sizes,servingLabel:val('v_serv_label')||'',gramsUnknown:false}; }
 // REGISTER screen: name + serving size + macros (per serving) + package. NO unit/qty (that's the LOG step).
