@@ -1173,7 +1173,8 @@ function renderProgress(){
   const bwKeys=Object.keys(db.bodyweight||{}).sort(); const bwVals=bwKeys.map(k=>db.bodyweight[k]);
   const curBw=bwVals.length?bwVals[bwVals.length-1]:(db.profile.weightKg||0);
   const _hd=lastDays(14); const _waterArr=_hd.map(d=>Math.round(dayWater(d)*10)/10); const _waterLog=_waterArr.filter(x=>x>0);
-  const _sr=window._stepRange||30; const _shd=lastDays(_sr); const _stepsArr=_shd.map(d=>(db.steps&&db.steps[d])||0); const _stepsLog=_stepsArr.filter(x=>x>0);
+  const _sr=window._stepRange||14; const _shd=lastDays(_sr); const _stepsArr=_shd.map(d=>(db.steps&&db.steps[d])||0); const _stepsLog=_stepsArr.filter(x=>x>0);
+  const _br=window._bwRange||14; const _bcut=lastDays(_br)[0]; const _bk=bwKeys.filter(k=>k>=_bcut); const _bv=_bk.map(k=>db.bodyweight[k]);
   let out=statusBar(false)+`<hr class="rule"/><div class="section"><div class="h"><span class="s">//</span>PROGRESS</div><div class="meta">${totalSessions} sesiones</div></div>`;
   if(!totalSessions && !bwVals.length && !_stepsLog.length && !_waterLog.length){
     return out+`<div class="empty">aún no hay datos<br/>entrena o registra tu peso para ver progreso</div>`
@@ -1192,13 +1193,17 @@ function renderProgress(){
   }
   const tiles=[];
   // peso
-  if(bwVals.length){ let st='';
-    if(bwVals.length>=2){ const ch=Math.round((curBw-bwVals[0])*10)/10;
-      let cls='flat'; if(ch<0)cls=goal==='cut'?'good':goal==='bulk'?'bad':'flat'; else if(ch>0)cls=goal==='bulk'?'good':goal==='cut'?'bad':'flat';
-      st=`<div class="pst ${cls}">${ch>0?'↑':ch<0?'↓':'='} ${Math.abs(ch)} kg · <span class="lk" data-act="shareweight">compartir</span></div>`;
-    } else { st=`<div class="pst flat">registra varios días</div>`; }
-    tiles.push(`<div class="ptile"><div class="ptlh"><div class="plbl">peso</div><a class="ptla" data-act="logweight">+ log</a></div>`
-      +`<div class="pval">${curBw||'—'}<span>kg</span></div>${st}${bwVals.length>=2?lineChart(bwVals.slice(-12),{h:40,dates:bwKeys.slice(-12),interactive:true,labels:bwVals.slice(-12).map((vv,ii)=>vv+' kg · '+fmtShort(bwKeys.slice(-12)[ii]))}):''}</div>`);
+  if(bwVals.length){ let st=''; let chartHtml='';
+    const _bseg=[7,14,30].map(r=>`<span data-act="bwrange" data-r="${r}" style="${r===_br?'color:var(--fill)':'color:var(--o40)'}">${r}</span>`).join('<span style="color:var(--o20)">·</span>');
+    if(_bv.length>=2){ const _ch=Math.round((_bv[_bv.length-1]-_bv[0])*10)/10;
+      let cls='flat'; if(_ch<0)cls=goal==='cut'?'good':goal==='bulk'?'bad':'flat'; else if(_ch>0)cls=goal==='bulk'?'good':goal==='cut'?'bad':'flat';
+      st=`<div class="pst ${cls}">${_ch>0?'↑':_ch<0?'↓':'='} ${Math.abs(_ch)} kg · <span class="lk" data-act="shareweight">compartir</span></div>`;
+      chartHtml=lineChart(_bv,{h:40,dates:_bk,interactive:true,labels:_bv.map((vv,ii)=>vv+' kg · '+fmtShort(_bk[ii]))});
+    } else if(_bv.length===1){ st=`<div class="pst flat">1 registro en ${_br}d</div>`;
+      chartHtml=lineChart(_bv,{h:40,dates:_bk,interactive:true,labels:_bv.map((vv,ii)=>vv+' kg · '+fmtShort(_bk[ii]))});
+    } else { st=`<div class="pst flat">sin registros en ${_br}d</div>`; }
+    tiles.push(`<div class="ptile"><div class="ptlh"><div class="plbl">peso · ${_br}d</div><span style="display:flex;gap:10px;align-items:center"><div class="prng">${_bseg}</div><a class="ptla" data-act="logweight">+ log</a></span></div>`
+      +`<div class="pval">${curBw||'—'}<span>kg</span></div>${st}${chartHtml}</div>`);
   }
   // volumen
   if(totalSessions){ const cur=w.vols[w.vols.length-1]||0, prev=w.vols[w.vols.length-2]||0; const pct=prev>0?Math.round((cur-prev)/prev*100):null;
@@ -1216,7 +1221,7 @@ function renderProgress(){
   }
   // pasos
   if(_stepsLog.length){ const _t=_stepsArr[_stepsArr.length-1], _a=Math.round(avgPos(_stepsArr));
-    const seg=[14,30,90].map(r=>`<span data-act="steprange" data-r="${r}" style="${r===_sr?'color:var(--fill)':'color:var(--o40)'}">${r}</span>`).join('<span style="color:var(--o20)">·</span>');
+    const seg=[7,14,30].map(r=>`<span data-act="steprange" data-r="${r}" style="${r===_sr?'color:var(--fill)':'color:var(--o40)'}">${r}</span>`).join('<span style="color:var(--o20)">·</span>');
     tiles.push(`<div class="ptile"><div class="ptlh"><div class="plbl">pasos · ${_sr}d</div><div class="prng">${seg}</div></div>`
       +`<div class="pval">${_t?_t.toLocaleString():'—'}<span>hoy</span></div>`
       +`<div class="pst flat">prom ${kFmt(_a)}/d</div>${lineChart(_stepsArr,{h:40,zero:true,dates:_shd,interactive:true,labels:_stepsArr.map((vv,ii)=>(vv?vv.toLocaleString()+' pasos':'sin registro')+' · '+fmtShort(_shd[ii]))})}</div>`);
@@ -1541,7 +1546,8 @@ document.getElementById('app').addEventListener('click',e=>{
   else if(a==='logweight'){ openWeightLog(); }
   else if(a==='healthimport'){ openHealthImport(); }
   else if(a==='healthsync'){ healthSync(); }
-  else if(a==='steprange'){ window._stepRange=+el.dataset.r||30; render(); }
+  else if(a==='steprange'){ window._stepRange=+el.dataset.r||14; render(); }
+  else if(a==='bwrange'){ window._bwRange=+el.dataset.r||14; render(); }
   else if(a==='stacktick'){ stackToggleTick(el.dataset.id, todayISO()); }
   else if(a==='stackedit'){ openStackEdit(el.dataset.id); }
   else if(a==='stackadd'){ openStackEdit(null, el.dataset.c||'supp'); }
