@@ -1002,7 +1002,7 @@ function openMealSummary(tag){
   openModal(`<h3>#${escTxt(tag)}</h3>
    <div class="msum-top"><div class="msum-rad">${mealRadar(t,_mg)}</div><div class="msum-right"><div class="msum-list">${nutList}</div><div class="msum-kcal">${Math.round(t.kcal)}<span>KCAL</span></div></div></div>
    <div class="shlog" style="margin-top:14px">${mealFoodRows(items)}</div>
-   <div class="sheetbtns" style="margin-top:14px"><button class="ok" data-act="addtomeal" data-tag="${escTxt(tag)}">+ add food</button><button class="cancel" data-act="dupmeal" data-tag="${escTxt(tag)}" title="duplicar esta meal">⎘ duplicar</button></div>`);
+   <div class="sheetbtns" style="margin-top:14px"><button class="ok" data-act="addtomeal" data-tag="${escTxt(tag)}">+ add food</button><button class="cancel" data-act="dupmeal" data-tag="${escTxt(tag)}" title="duplicar esta meal">⎘ duplicar</button><button class="cancel" data-act="delmealgroup" data-tag="${escTxt(tag)}" title="borrar toda la meal" style="color:var(--bad)">🗑 borrar</button></div>`);
   // la gráfica SIEMPRE igual de alto que la columna derecha (tabla + kcal), manteniendo proporción del viewBox
   (function(){ try{ const tp=document.querySelector('.msum-top'); if(!tp)return; const rt=tp.querySelector('.msum-right'), rd=tp.querySelector('.msum-rad'); if(!rt||!rd)return; const fit=function(){ const h=rt.getBoundingClientRect().height; if(h>4) rd.style.flex='0 0 '+(h*168/156).toFixed(1)+'px'; }; if(window.ResizeObserver){ new ResizeObserver(fit).observe(rt); } else { requestAnimationFrame(function(){requestAnimationFrame(fit);}); } if(document.fonts&&document.fonts.ready){ document.fonts.ready.then(fit); } }catch(_){} })();
 }
@@ -1556,18 +1556,19 @@ document.getElementById('app').addEventListener('click',e=>{
   else if(a==='editmach'){ openMachineEdit(exi); }
   else if(a==='editexname'){ openExName(exi); }
   else if(a==='save'){ saveSession(); }
-  else if(a==='togglemacros'){ state.macroOpen=!state.macroOpen; render(); }
+  else if(a==='togglemacros'){ state._scroll=document.getElementById('view').scrollTop; state.macroOpen=!state.macroOpen; render(); }
   else if(a==='toggleMacroUnit'){ state.macroPct=!state.macroPct; render(); }
-  else if(a==='ringtog'){ const k=el.dataset.k; state.ringRem=state.ringRem||{}; state.ringRem[k]=!state.ringRem[k]; render(); }
+  else if(a==='ringtog'){ state._scroll=document.getElementById('view').scrollTop; const k=el.dataset.k; state.ringRem=state.ringRem||{}; state.ringRem[k]=!state.ringRem[k]; render(); }
   else if(a==='viewmeal'){ state._scroll=document.getElementById('view').scrollTop; state.expandedMeal = state.expandedMeal===el.dataset.id ? null : el.dataset.id; render(); }
   else if(a==='viewtag'){ state._scroll=document.getElementById('view').scrollTop; state.expandedTag = state.expandedTag===el.dataset.tag ? null : el.dataset.tag; render(); }
   else if(a==='pickmealtag'){ const e=document.getElementById('fa_tagtxt'); if(e)e.value=el.dataset.v; }
   else if(a==='editmeal'){ const t=curDate(); const m=(db.meals[t]||[]).find(x=>x.id===window._mealId); if(m){ closeModal();
       if(m._food){ openLog(m._food,{editId:m.id,qty:m.qty||1,unit:m._unit,tag:m.tag}); }
       else { const q=m.qty||1; const per={}; ['kcal','protein','carbs','fat','sugar','sodium','potassium','fiber','caffeine','alcohol','water'].forEach(k=>per[k]=(+m[k]||0)/q); openLog({name:(m.name||'').replace(/ ×[\d.]+$/,''),serving:m.serving||'1 serving',per},{editId:m.id,qty:q,tag:m.tag}); } } }
-  else if(a==='delmealnow'){ const t=curDate(); db.meals[t]=(db.meals[t]||[]).filter(m=>m.id!==window._mealId); save(); closeModal(); render(); }
+  else if(a==='delmealnow'){ state._scroll=document.getElementById('view').scrollTop; const t=curDate(); db.meals[t]=(db.meals[t]||[]).filter(m=>m.id!==window._mealId); save(); closeModal(); render(); }
+  else if(a==='delmealgroup'){ const tag=el.dataset.tag; if(!tag||!confirm('¿Borrar TODA la meal "'+tag+'" (todos sus alimentos)?'))return; state._scroll=document.getElementById('view').scrollTop; const t=curDate(); db.meals[t]=(db.meals[t]||[]).filter(m=>m.tag!==tag); save(); closeModal(); render(); }
   else if(a==='editmealx'){ const id=el.dataset.id; const t=curDate(); const m=(db.meals[t]||[]).find(x=>x.id===id); if(m){ if(m._food){ openLog(m._food,{editId:m.id,qty:m.qty||1,unit:m._unit,tag:m.tag}); } else { const q=m.qty||1; const per={}; ['kcal','protein','carbs','fat','sugar','sodium','potassium','fiber','caffeine','alcohol','water'].forEach(k=>per[k]=(+m[k]||0)/q); openLog({name:(m.name||'').replace(/ ×[\d.]+$/,''),serving:m.serving||'1 serving',per},{editId:m.id,qty:q,tag:m.tag}); } } }
-  else if(a==='delmealx'){ const id=el.dataset.id; const t=curDate(); db.meals[t]=(db.meals[t]||[]).filter(m=>m.id!==id); if(state.expandedMeal===id)state.expandedMeal=null; save(); render(); }
+  else if(a==='delmealx'){ state._scroll=document.getElementById('view').scrollTop; const id=el.dataset.id; const t=curDate(); db.meals[t]=(db.meals[t]||[]).filter(m=>m.id!==id); if(state.expandedMeal===id)state.expandedMeal=null; save(); render(); }
   else if(a==='vfixkcal'){ const P=parseFloat(val('v_protein'))||0,C=parseFloat(val('v_carbs'))||0,F=parseFloat(val('v_fat'))||0; const e=document.getElementById('v_kcal'); if(e){ e.value=Math.round(P*4+C*4+F*9); e.dispatchEvent(new Event('input',{bubbles:true})); } }
   else if(a==='foodadd'){ closeAddPop(); openFoodAdd(); }
   else if(a==='addmenu'){ openAddMenu(); }
