@@ -650,11 +650,13 @@ function renderHome(){
         const side=s.side?('<span class="pk">'+s.side+'</span> '):'';
         return `${mk}${side}${w}×${reps}${rir}`;
       }).join('<span class="pdot"> · </span>');
-      return `<div class="psd"><div class="pex">${escTxt(e.name)}${e.machine?` <span class="pm">${escTxt(e.machine)}</span>`:''}</div><div class="psets">${sets}</div></div>`;
+      const badge=progBadgeFromProg(histProgress(e,prev.id),'vs sesión previa de este ejercicio');
+      return `<div class="psd"><div class="pex">${escTxt(e.name)}${e.machine?` <span class="pm">${escTxt(e.machine)}</span>`:''}${badge}</div><div class="psets">${sets}</div></div>`;
     }).join('');
     let vol=0; prev.exercises.forEach(e=>(e.sets||[]).forEach(s=>vol+=(parseFloat(s.w)||0)*(parseFloat(s.r)||0)));
     const dur=prev.durSec?Math.floor(prev.durSec/3600)+'h '+pad(Math.floor(prev.durSec%3600/60))+'m':'';
-    prevHTML=`<hr class="rule"/><div class="whdr"><div class="l1"><span class="s">//</span>PREV</div><div class="wname">${prev.dayName}</div><div class="l2">SESSION</div><div class="wmeta">${fmtShort(prev.date)} · ${exItems.length} exercises</div></div>`
+    const ag=sessionProgAgg(prev); let agp=''; if(ag.up)agp+=` <span style="color:var(--good)">▲${ag.up}</span>`; if(ag.down)agp+=` <span style="color:var(--bad)">▼${ag.down}</span>`;
+    prevHTML=`<hr class="rule"/><div class="whdr"><div class="l1"><span class="s">//</span>PREV</div><div class="wname">${prev.dayName}</div><div class="l2">SESSION</div><div class="wmeta">${fmtShort(prev.date)} · ${exItems.length} exercises${agp}</div></div>`
       +`<div class="prevsess">${exHtml}</div>`
       +`<div class="rowend"><span>${kfmt(vol)} lb${dur?' · '+dur:''}</span></div>`;
   }
@@ -738,36 +740,37 @@ function renderSetRow(exi,si,set,ex,allowF){
   const we=`<input class="inp weight" data-act="setf" data-exi="${exi}" data-si="${si}" data-f="extraW" value="${set.extraW||''}" placeholder="+extra" inputmode="decimal"/>`;
   return {w,u,r,rr,del,we};
 }
-// Per-set HYPERTROPHY stimulus score = stimulating-reps × load = max(0, reps − RIR) × weight.
-// Why not Epley/e1RM: that's a STRENGTH proxy and grows when RIR grows holding weight×reps, which is
-// the OPPOSITE direction the literature wants for hypertrophy. Robinson/Refalo 2024 (Sports Med
-// meta-regression) shows RIR has a continuous negative slope with hypertrophy (lower RIR = more growth),
-// but a near-zero slope with strength. Schoenfeld 2025 (67 studies, 100% posterior) shows volume of
-// hard sets has a positive dose-response with hypertrophy — that's why callers SUM scores across sets.
-// F (failure) treated as RIR=0; Refalo 2024 RCT shows fail ≈ 1-2 RIR for hypertrophy, so no bonus.
-// Light-load floor (reps > 30 → 0) intentionally OMITTED for v1 — would unfairly penalize calf raises,
-// lateral raises and other isolation where high-rep near-failure work still drives growth (Schoenfeld 2017).
-// Empty RIR treated as 0 (assume close to failure) — matches old behavior, keeps backward compat for saved data.
-function setScore(s){ const w=parseFloat(s&&s.w)||0, r=parseFloat(s&&s.r)||0; if(!(w>0&&r>0))return 0; const t=String((s&&s.rir)==null?'':s.rir).trim().toUpperCase(); let rv=(t===''||t==='F')?0:parseFloat(t); if(isNaN(rv))rv=0; rv=Math.max(0,Math.min(6,rv)); return Math.max(0, r-rv) * w; }
-function bestScore(sets,confirmedOnly){ let b=0; (sets||[]).forEach(s=>{ if(confirmedOnly&&s._pf)return; const v=setScore(s); if(v>b)b=v; }); return b; }
-// totalScore = SUM of setScore over (confirmed) sets — so the progress signal reflects RIR AND every set,
-// not just the best one. Returned {sum,n} so callers can project an in-progress total to the previous session's set count.
-function totalScore(sets,confirmedOnly){ let sum=0,n=0; (sets||[]).forEach(s=>{ if(confirmedOnly&&s._pf)return; const v=setScore(s); if(v>0){sum+=v;n++;} }); return {sum,n}; }
+// Per-set HYPERTROPHY stimulus score = stim_reps × load × loadFactor(intensity)
+//   stim_reps = max(0, reps − RIR)  — last reps-RIR are the ones recruiting max motor units (Beardsley);
+//                                      Robinson/Refalo 2024 shows continuous negative RIR→hypertrophy slope.
+//   load (peso) — mechanical tension. Schoenfeld 2017: 30-80% 1RM equivalent IF close to failure.
+//   loadFactor(weight/e1RM) — opinionated: 0 if <30% 1RM (Lasevicius 2018 hard floor),
+//                              ramp 30→65% linear, 1.0 from 65% onward (user's productive zone 75-85%+).
+//                              When no e1RM history yet → factor = 1 (give benefit of the doubt to new exercises).
+// F (failure) treated as RIR=0; Refalo 2024 RCT: fail ≈ 1-2 RIR for hypertrophy, no bonus.
+// Replaces strength-proxy Epley e1RM which grew when RIR grew — opposite direction for hypertrophy.
+// Empty RIR = 0 (assume close to failure) — keeps backward compat with old data.
+function loadFactor(weight,e1rm){ if(!e1rm||!weight)return 1; const i=weight/e1rm; if(i>=0.65)return 1; if(i>=0.30)return (i-0.30)/0.35; return 0; }
+function setScore(s,e1rm){ const w=parseFloat(s&&s.w)||0, r=parseFloat(s&&s.r)||0; if(!(w>0&&r>0))return 0; const t=String((s&&s.rir)==null?'':s.rir).trim().toUpperCase(); let rv=(t===''||t==='F')?0:parseFloat(t); if(isNaN(rv))rv=0; rv=Math.max(0,Math.min(6,rv)); return Math.max(0, r-rv) * w * loadFactor(w,e1rm); }
+function bestScore(sets,confirmedOnly,e1rm){ let b=0; (sets||[]).forEach(s=>{ if(confirmedOnly&&s._pf)return; const v=setScore(s,e1rm); if(v>b)b=v; }); return b; }
+function totalScore(sets,confirmedOnly,e1rm){ let sum=0,n=0; (sets||[]).forEach(s=>{ if(confirmedOnly&&s._pf)return; const v=setScore(s,e1rm); if(v>0){sum+=v;n++;} }); return {sum,n}; }
+// Best observed Epley+RIR e1RM across SAVED sessions of this exercise (matched by name + uni-ness).
+// Used ONLY as a reference for loadFactor — NOT as the progress signal. Bootstraps from user's actual lifting:
+// new exercises return 0 (loadFactor=1, no penalty); once you've done a heavy set, light work gets discounted.
+function bestE1RM(name,uni){ const key=(name||'').toLowerCase().trim(); let best=0; (db.sessions||[]).forEach(s=>{ if(s.type==='rest')return; (s.exercises||[]).forEach(e=>{ if((e.name||'').toLowerCase().trim()!==key||!e.sets||!e.sets.length)return; const eUni=e.sets.some(x=>x.side); if(!!uni!==eUni)return; (e.sets||[]).forEach(st=>{ const w=parseFloat(st.w)||0, r=parseFloat(st.r)||0; if(!(w>0&&r>0))return; const t=String(st.rir==null?'':st.rir).trim().toUpperCase(); let rv=(t===''||t==='F')?0:parseFloat(t); if(isNaN(rv))rv=0; rv=Math.max(0,Math.min(6,rv)); const e1=w*(1+(r+rv)/30); if(e1>best)best=e1; }); }); }); return best; }
 function progFromScores(cur,last){ if(!(cur>0)||!(last>0))return null; const ratio=cur/last; return {dir:ratio>1.02?'up':(ratio<0.98?'down':'flat'), pct:Math.round((ratio-1)*100)}; }
-// Honest in-session signal: project current avg-per-set to the prev session's set count.
-// If current already has >= prev sets, use raw total (rewards doing more sets). If current has fewer,
-// project: cur_avg × prev_n — i.e. "if you keep this pace through prev_n sets, you'd hit X" vs prev total.
 function exerciseProgress(ex){
-  const cur=totalScore(ex.sets,true); const prev=totalScore(lastLoggedSets(ex.name,ex.unilateral),false);
+  const e1=bestE1RM(ex.name,ex.unilateral);
+  const cur=totalScore(ex.sets,true,e1); const prev=totalScore(lastLoggedSets(ex.name,ex.unilateral),false,e1);
   if(!cur.n||!prev.n)return null;
   const projected = cur.n>=prev.n ? cur.sum : (cur.sum/cur.n)*prev.n;
   return progFromScores(projected, prev.sum);
 }
 // previous occurrence of an exercise (by date, then insertion order) BEFORE a given saved session — for history
 function prevSetsForHist(name,uni,curId){ const key=(name||'').toLowerCase().trim(); const occ=[]; (db.sessions||[]).forEach((s,idx)=>{ if(s.type==='rest')return; (s.exercises||[]).forEach(e=>{ if((e.name||'').toLowerCase().trim()!==key||!e.sets||!e.sets.length)return; const eUni=e.sets.some(x=>x.side); if(!!uni!==eUni)return; occ.push({id:s.id,date:String(s.date||''),idx,sets:e.sets}); }); }); occ.sort((a,b)=> a.date.localeCompare(b.date) || a.idx-b.idx); const pos=occ.findIndex(o=>o.id===curId); if(pos<=0)return null; return occ[pos-1].sets; }
-function histProgress(e,sessId){ const uni=(e.sets||[]).some(x=>x.side); const cur=totalScore(e.sets,false), prev=totalScore(prevSetsForHist(e.name,uni,sessId),false); return progFromScores(cur.sum, prev.sum); }
+function histProgress(e,sessId){ const uni=(e.sets||[]).some(x=>x.side); const e1=bestE1RM(e.name,uni); const cur=totalScore(e.sets,false,e1), prev=totalScore(prevSetsForHist(e.name,uni,sessId),false,e1); return progFromScores(cur.sum, prev.sum); }
 function sessionProgAgg(s){ let up=0,down=0; (s.exercises||[]).forEach(e=>{ const pr=histProgress(e,s.id); if(pr){ if(pr.dir==='up')up++; else if(pr.dir==='down')down++; } }); return {up,down}; }
-function progBadgeFromProg(pr,title){ if(!pr)return ''; const col=pr.dir==='up'?'var(--good)':pr.dir==='down'?'var(--bad)':'var(--o40)'; const ar=pr.dir==='up'?'▲':pr.dir==='down'?'▼':'='; const pc=pr.pct?((pr.pct>0?'+':'')+pr.pct+'%'):''; return `<span class="exprog" style="font-size:12px;font-weight:800;margin-left:7px;color:${col}" title="${title||'estímulo hipertrófico vs última sesión · Σ (reps − RIR) × peso'}">${ar}${pc}</span>`; }
+function progBadgeFromProg(pr,title){ if(!pr)return ''; const col=pr.dir==='up'?'var(--good)':pr.dir==='down'?'var(--bad)':'var(--o40)'; const ar=pr.dir==='up'?'▲':pr.dir==='down'?'▼':'='; const pc=pr.pct?((pr.pct>0?'+':'')+pr.pct+'%'):''; return `<span class="exprog" style="font-size:12px;font-weight:800;margin-left:7px;color:${col}" title="${title||'estímulo hipertrófico vs última sesión · Σ (reps − RIR) × peso × factor de carga (≥65% e1RM = full, <30% = 0)'}">${ar}${pc}</span>`; }
 function progBadgeHTML(ex){ return progBadgeFromProg(exerciseProgress(ex)); }
 // live-update the badge while logging (setField avoids a full re-render to keep input focus)
 function updateProgBadge(exi){ const w=db.activeWork; if(!w||!w.exercises[exi])return; const nm=document.querySelector('.exhead .n[data-exi="'+exi+'"]'); if(!nm)return; const html=progBadgeHTML(w.exercises[exi]); const exist=nm.parentElement.querySelector('.exprog'); if(html){ if(exist)exist.outerHTML=html; else nm.insertAdjacentHTML('afterend',html); } else if(exist){ exist.remove(); } }
@@ -1546,14 +1549,18 @@ function renderHistory(){
 }
 function openSessionEdit(id){
   const s=(db.sessions||[]).find(x=>x.id===id); if(!s)return; window._sessId=id;
+  const nEx=(s.exercises||[]).length;
   const exHtml=(s.exercises||[]).map((e,ei)=>{
     const rows=(e.sets||[]).map((st,si)=>`<div class="srowm"><span class="sn">#${si+1}</span><input class="sm" data-act="ss_f" data-ei="${ei}" data-si="${si}" data-f="w" type="number" inputmode="decimal" value="${st.w!=null?st.w:''}" placeholder="w"/><input class="sm" data-act="ss_f" data-ei="${ei}" data-si="${si}" data-f="r" type="number" inputmode="numeric" value="${st.r!=null?st.r:''}" placeholder="reps"/><input class="sm" data-act="ss_f" data-ei="${ei}" data-si="${si}" data-f="rir" value="${st.rir!=null?st.rir:''}" placeholder="rir"/></div>`).join('');
     const badge=progBadgeFromProg(histProgress(e,s.id),'vs sesión previa de este ejercicio');
-    return `<div style="margin-bottom:12px"><div class="submeta" style="color:var(--o60);padding:0 0 5px">${escTxt(e.name)} <span style="color:var(--o40)">${escTxt(e.muscle||'')}</span>${badge}</div>${rows||'<div class="submeta">sin sets</div>'}</div>`;
+    // reorder arrows so legacy sessions (logged before the addex-position fix) can be corrected
+    const up=ei>0?`<span data-act="ss_exup" data-ei="${ei}" style="cursor:pointer;padding:0 4px;color:var(--o60)">▲</span>`:'<span style="padding:0 4px;color:var(--o20)">▲</span>';
+    const dn=ei<nEx-1?`<span data-act="ss_exdn" data-ei="${ei}" style="cursor:pointer;padding:0 4px;color:var(--o60)">▼</span>`:'<span style="padding:0 4px;color:var(--o20)">▼</span>';
+    return `<div style="margin-bottom:12px"><div class="submeta" style="color:var(--o60);padding:0 0 5px;display:flex;align-items:center;gap:4px"><span style="flex:1">${escTxt(e.name)} <span style="color:var(--o40)">${escTxt(e.muscle||'')}</span>${badge}</span><span>${up}${dn}</span></div>${rows||'<div class="submeta">sin sets</div>'}</div>`;
   }).join('');
   openModal(`<h3>${escTxt(s.dayName||'sesión')}</h3>
    <div class="field"><label>FECHA</label><input id="ss_date" type="date" value="${s.date||''}"/></div>
-   <div class="submeta" style="margin:2px 0 10px">${(s.exercises||[]).length} ejercicios · edita sets directo</div>
+   <div class="submeta" style="margin:2px 0 10px">${nEx} ejercicios · ▲▼ reordena · edita sets directo</div>
    ${exHtml||'<div class="submeta">sin ejercicios</div>'}
    <div class="sheetbtns" style="margin-top:12px"><button class="ok" data-act="ss_save">guardar</button><button class="cancel" data-act="sharesession" data-id="${s.id}">compartir</button><button class="cancel" data-act="ss_del">borrar</button><button class="cancel" data-act="closemodal">close</button></div>`);
 }
@@ -1679,6 +1686,8 @@ document.getElementById('app').addEventListener('click',e=>{
   else if(a==='okexedit'){ saveExEdit(); }
   else if(a==='ss_save'){ const s=db.sessions.find(x=>x.id===window._sessId); if(s){ const dt=document.getElementById('ss_date'); if(dt)s.date=dt.value; save(); closeModal(); render(); } }
   else if(a==='ss_del'){ if(confirm('¿Borrar esta sesión?')){ db.sessions=db.sessions.filter(x=>x.id!==window._sessId); save(); closeModal(); render(); } }
+  else if(a==='ss_exup'){ const s=db.sessions.find(x=>x.id===window._sessId); const i=+el.dataset.ei; if(s&&i>0){ const a=s.exercises; const t=a[i-1]; a[i-1]=a[i]; a[i]=t; save(); openSessionEdit(window._sessId); } }
+  else if(a==='ss_exdn'){ const s=db.sessions.find(x=>x.id===window._sessId); const i=+el.dataset.ei; if(s&&i<s.exercises.length-1){ const a=s.exercises; const t=a[i+1]; a[i+1]=a[i]; a[i]=t; save(); openSessionEdit(window._sessId); } }
   else if(a==='done'){ const w=db.activeWork; const ex=w.exercises[exi]; if(ex.unilateral){ const v=!(ex.sets[si]&&ex.sets[si].done); if(ex.sets[si]){ex.sets[si].done=v;ex.sets[si]._pf=false;} if(ex.sets[si+1]){ex.sets[si+1].done=v;ex.sets[si+1]._pf=false;} } else { ex.sets[si].done=!ex.sets[si].done; ex.sets[si]._pf=false; } save(); render(); }
   else if(a==='fs'){ const s=db.activeWork.exercises[exi].sets[si]; s.fsOn=!s.fsOn; save(); render(); }
   else if(a==='addset'){ const ex=db.activeWork.exercises[exi]; if(ex.unilateral){ const [s1,s2]=uniSides(ex); const lr=ex.sets[ex.sets.length-2]||null, ll=ex.sets[ex.sets.length-1]||null; ex.sets.push(emptySet(ex,s1,false,lr)); ex.sets.push(emptySet(ex,s2,false,ll)); } else { const lt=ex.sets[ex.sets.length-1]||null; ex.sets.push(emptySet(ex,null,false,lt)); } save(); state._scroll=document.getElementById('view').scrollTop; render(); }
@@ -1762,8 +1771,9 @@ function openExEdit(di,ei){
   const isNew=ei<0; const e=isNew?{name:'',muscle:'',type:'free',machine:'',unilateral:false,sets:2}:db.split.days[di].exercises[ei];
   window._exEdit={di,ei};
   const muscles=['chest','back','quads','hams','delts','biceps','tricep','calfs','abs','traps','glutes','neck'];
+  const knowns=knownExercises();
   openModal(`<h3>${isNew?'+ exercise':'edit exercise'}</h3>
-   <div class="field"><label>NAME</label><input id="ee_name" value="${(e.name||'').replace(/"/g,'&quot;')}" placeholder="bb incline"/></div>
+   <div class="field"><label>NAME${isNew?' · escribe o elige uno previo':''}</label><input id="ee_name" value="${(e.name||'').replace(/"/g,'&quot;')}" list="ee_namelist" placeholder="bb incline" autocomplete="off"/><datalist id="ee_namelist">${knowns.map(x=>`<option value="${escTxt(x.name)}"></option>`).join('')}</datalist></div>
    <div class="field"><label>MUSCLE</label><input id="ee_muscle" value="${(e.muscle||'').replace(/"/g,'&quot;')}" placeholder="chest"/><div class="chips" id="ee_msugg">${muscles.map(m=>`<span class="chip" data-act="ee_pickm" data-v="${m}">${m}</span>`).join('')}</div></div>
    <div class="field row2"><div><label>TYPE</label><div class="toggles" id="ee_type"><button class="t ${e.type!=='machine'?'on':''}" data-act="optpick" data-v="free">free</button><button class="t ${e.type==='machine'?'on':''}" data-act="optpick" data-v="machine">machine</button></div></div><div><label>SETS</label><input id="ee_sets" type="number" value="${e.sets||2}"/></div></div>
    <div class="field"><label>MACHINE/NOTE (opcional)</label><input id="ee_machine" value="${(e.machine||'').replace(/"/g,'&quot;')}" placeholder="barbell / pulley"/></div>
@@ -1771,6 +1781,16 @@ function openExEdit(di,ei){
    <div class="field" id="ee_startwrap"><label>UNILATERAL · EMPEZAR POR</label><div class="toggles" id="ee_start"><button class="t ${e.startSide!=='L'?'on':''}" data-act="optpick" data-v="R">R primero</button><button class="t ${e.startSide==='L'?'on':''}" data-act="optpick" data-v="L">L primero</button></div></div>
    <div class="sheetbtns"><button class="ok" data-act="okexedit">save</button><button class="cancel" data-act="closemodal">cancel</button></div>`);
   document.querySelectorAll('#ee_msugg .chip').forEach(c=>c.onclick=()=>{document.getElementById('ee_muscle').value=c.dataset.v;});
+  // memory: typing/picking a known name → autofill ALL remembered variables (consistency across split days)
+  const nm=document.getElementById('ee_name'); if(nm)nm.addEventListener('input',()=>{
+    const hit=lookupKnownExercise(nm.value); if(!hit)return;
+    const setIf=(id,v)=>{ const el=document.getElementById(id); if(el&&!el.value&&v!=null&&v!=='')el.value=v; };
+    setIf('ee_muscle',hit.muscle); setIf('ee_machine',hit.machine);
+    if(hit.sets!=null){ const sN=document.getElementById('ee_sets'); if(sN&&(sN.value==='2'||sN.value===''))sN.value=hit.sets; }
+    if(hit.type){ const tg=document.querySelector('#ee_type [data-v="'+hit.type+'"]'); if(tg&&!tg.classList.contains('on')){ document.querySelectorAll('#ee_type .t').forEach(x=>x.classList.remove('on')); tg.classList.add('on'); } }
+    if(hit.unilateral){ const u=document.getElementById('ee_uni'); if(u&&!u.checked)u.checked=true; }
+    if(hit.startSide){ const sb=document.querySelector('#ee_start [data-v="'+hit.startSide+'"]'); if(sb&&!sb.classList.contains('on')){ document.querySelectorAll('#ee_start .t').forEach(x=>x.classList.remove('on')); sb.classList.add('on'); } }
+  });
 }
 function saveExEdit(){
   const {di,ei}=window._exEdit||{}; const name=val('ee_name'); if(!name){alert('Pon nombre.');return;}
@@ -1861,9 +1881,28 @@ function openGymPicker(){
   document.getElementById('ng_add').onclick=()=>{ const n=val('ng_name'); if(!n)return; if(!db.gyms.includes(n))db.gyms.push(n); db.activeGym=n; if(db.activeWork)db.activeWork.gym=n; save(); closeModal(); render(); };
 }
 
-// known exercises (name+muscle) and used muscles, for suggestions when adding an exercise
-function knownExercises(){ const map={}; const add=e=>{ if(e&&e.name){ const k=e.name.toLowerCase().trim(); if(!map[k])map[k]={name:e.name,muscle:e.muscle||''}; } };
-  (db.split.days||[]).forEach(d=>(d.exercises||[]).forEach(add)); (db.sessions||[]).forEach(s=>(s.exercises||[]).forEach(add)); return Object.values(map); }
+// known exercises: returns the FULL property set per unique exercise name (last-seen wins for each prop).
+// Source order: split definitions FIRST (defaults), then sessions in chronological order (most recent overrides).
+// This makes exercise identity consistent across split days — pick a known name → auto-fill ALL its variables.
+function knownExercises(){
+  const map={};
+  const upsert=(src,e,fromSets)=>{ if(!e||!e.name)return; const k=e.name.toLowerCase().trim();
+    if(!map[k])map[k]={name:e.name};
+    const o=map[k];
+    ['muscle','type','machine','unilateral','startSide','useFS','unit','note'].forEach(p=>{ if(e[p]!=null&&e[p]!=='')o[p]=e[p]; });
+    if(e.sets!=null && typeof e.sets==='number') o.sets = e.sets;
+    if(fromSets && Array.isArray(e.sets) && e.sets.length){
+      if(e.sets.some(x=>x.side)) o.unilateral=true;  // detect uni from actual logged sets
+      const lastUnit=(e.sets[e.sets.length-1]||{}).unit; if(lastUnit) o.unit=lastUnit;
+    }
+  };
+  (db.split&&db.split.days||[]).forEach(d=>(d.exercises||[]).forEach(e=>upsert('split',e,false)));
+  (db.sessions||[]).slice().sort((a,b)=>String(a.date||'').localeCompare(String(b.date||''))).forEach(s=>{
+    if(s.type==='rest')return; (s.exercises||[]).forEach(e=>upsert('session',e,true));
+  });
+  return Object.values(map);
+}
+function lookupKnownExercise(name){ if(!name)return null; const k=name.toLowerCase().trim(); return knownExercises().find(x=>x.name.toLowerCase().trim()===k)||null; }
 function muscleSuggest(){ const def=['chest','back','quads','hams','delts','biceps','tricep','calfs','abs','traps','glutes','neck']; const used=[]; (db.split.days||[]).forEach(d=>(d.exercises||[]).forEach(e=>{ if(e.muscle&&used.indexOf(e.muscle)<0)used.push(e.muscle); })); return used.concat(def.filter(m=>used.indexOf(m)<0)); }
 function openAddExercise(afterExi){
   const exs=knownExercises(); const muscles=muscleSuggest();
@@ -1880,7 +1919,16 @@ function openAddExercise(afterExi){
   const f=document.getElementById('fx_free'),m=document.getElementById('fx_mach');
   f.onclick=()=>{f.classList.add('on');m.classList.remove('on');}; m.onclick=()=>{m.classList.add('on');f.classList.remove('on');};
   document.querySelectorAll('#fx_msugg .chip').forEach(c=>c.onclick=()=>{ document.getElementById('fx_muscle').value=c.dataset.v; });
-  const nm=document.getElementById('fx_name'); if(nm)nm.addEventListener('input',()=>{ const k=(nm.value||'').toLowerCase().trim(); const hit=exs.find(x=>x.name.toLowerCase()===k); if(hit&&hit.muscle&&!val('fx_muscle'))document.getElementById('fx_muscle').value=hit.muscle; });
+  // when the user picks/types a known name, propagate ALL remembered properties so each exercise has consistent identity across the split
+  const nm=document.getElementById('fx_name'); if(nm)nm.addEventListener('input',()=>{
+    const k=(nm.value||'').toLowerCase().trim(); const hit=exs.find(x=>x.name.toLowerCase()===k); if(!hit)return;
+    const setIf=(id,v)=>{ const el=document.getElementById(id); if(el&&!el.value&&v!=null&&v!=='')el.value=v; };
+    setIf('fx_muscle',hit.muscle); setIf('fx_machine',hit.machine);
+    if(hit.sets!=null){ const sN=document.getElementById('fx_sets'); if(sN&&(sN.value==='2'||sN.value===''))sN.value=hit.sets; }
+    if(hit.type==='machine'){ const mb=document.getElementById('fx_mach'); if(mb)mb.click(); }
+    if(hit.unilateral){ const u=document.getElementById('fx_uni'); if(u&&!u.checked)u.checked=true; }
+    if(hit.startSide){ const sb=document.querySelector('#fx_start [data-v="'+hit.startSide+'"]'); if(sb)sb.click(); }
+  });
   document.querySelector('[data-act="okaddex"]').onclick=()=>{
     const name=val('fx_name'); if(!name)return; const w=db.activeWork;
     const startSide=(((document.querySelector('#fx_start .t.on')||{}).dataset||{}).v==='L')?'L':'R';
