@@ -2340,9 +2340,9 @@ function openRegisterMenu(barcode){
   window._linkBarcode=barcode||''; window._faTag=window._faTag||'meal';
   openModal(`<h3>registrar alimento${barcode?' · vincular a '+barcode:''}</h3>
    <div class="submeta" style="margin-bottom:10px">${barcode?'código no encontrado en la base':'no se leyó el código'} · elige cómo seguir:</div>
-   <button class="start" data-act="fbarcode" style="margin-bottom:8px">↻ intentar de nuevo</button>
-   <button class="start" data-act="fphoto" style="margin-bottom:8px;background:transparent;border:1px solid var(--border);color:var(--fg)">foto de tabla nutricional</button>
-   <div class="secondary"><button class="b" data-act="ftext">pegar texto</button><button class="b" data-act="fmanual">manual</button></div>`);
+   <button class="start" data-act="fphoto" style="margin-bottom:8px">foto de tabla nutricional</button>
+   <button class="start" data-act="fmanual" style="margin-bottom:8px;background:transparent;border:1px solid var(--border);color:var(--fg)">registrar manualmente</button>
+   <div class="secondary"><button class="b" data-act="fbarcode">↻ intentar de nuevo</button><button class="b" data-act="ftext">pegar texto</button></div>`);
 }
 async function decodeImgSrc(url){
   try{ await loadScript('https://cdn.jsdelivr.net/npm/@ericblade/quagga2@1.8.4/dist/quagga.min.js','sha384-IkRTkdAeAAAqE2ct5zNAfMiX8+H35pGJp8j7+ZFwh7PKaJh5eunsOFAb9l6Z9R7r'); }catch(_){ return null; }
@@ -2364,11 +2364,12 @@ function openBarcode(){
     if(local){ openVerify(local,{fromId:local.id,qty:1,tag:window._faTag}); return; }
     const food=await lookupBarcode(code);
     if(food&&food.name){ openVerify(food,{isNew:true,tag:window._faTag}); return; }
-    // not found → straight to nutrition-label photo (link the scanned code)
+    // not found → show the register menu with the code linked. The menu offers
+    // ↻ intentar de nuevo · foto tabla · pegar texto · manual — user picks.
+    // (Used to auto-open the camera, but on iOS canceling the picker dropped the
+    //  user with no way back to "registrar manual" without re-scanning.)
     window._linkBarcode=code||''; window._faTag=window._faTag||curTag(); closeModal();
-    const inp=document.createElement('input'); inp.type='file'; inp.accept='image/*'; inp.setAttribute('capture','environment');
-    inp.onchange=()=>{ if(inp.files&&inp.files[0]) labelPhoto(inp.files[0], code||''); else openRegisterMenu(code); };
-    inp.click(); };
+    openRegisterMenu(code); };
   document.getElementById('bc_go').onclick=doLookup;
   const addReticle=cam=>{ try{ if(cam.querySelector('.scan-reticle'))return; const rt=document.createElement('div'); rt.className='scan-reticle'; rt.innerHTML='<div class="frame2"></div><div class="scl"></div><div class="chk">✓</div>'; cam.appendChild(rt); }catch(_){} };
   const stopScan=()=>{ const s=window._scanner; if(s){ if(s.timer){try{clearTimeout(s.timer);}catch(_){}} if(s.stream){ try{s.stream.getTracks().forEach(t=>t.stop());}catch(_){} } } window._scanner=null; };
