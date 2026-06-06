@@ -717,10 +717,17 @@ function renderSetRow(exi,si,set,ex,allowF){
   const we=`<input class="inp weight" data-act="setf" data-exi="${exi}" data-si="${si}" data-f="extraW" value="${set.extraW||''}" placeholder="+extra" inputmode="decimal"/>`;
   return {w,u,r,rr,del,we};
 }
-// "real progress" score for a set = RIR-adjusted estimated 1RM: weight × (1 + (reps + RIR)/30).
-// Folds weight + reps + closeness-to-failure into ONE capacity number, so progress isn't
-// "more weight" / "more reps" / "lower RIR" in isolation — it's higher estimated strength.
-function setScore(s){ const w=parseFloat(s&&s.w)||0, r=parseFloat(s&&s.r)||0; if(!(w>0&&r>0))return 0; const t=String((s&&s.rir)==null?'':s.rir).trim().toUpperCase(); let rv=(t===''||t==='F')?0:parseFloat(t); if(isNaN(rv))rv=0; rv=Math.max(0,Math.min(6,rv)); return w*(1+(r+rv)/30); }
+// Per-set HYPERTROPHY stimulus score = stimulating-reps × load = max(0, reps − RIR) × weight.
+// Why not Epley/e1RM: that's a STRENGTH proxy and grows when RIR grows holding weight×reps, which is
+// the OPPOSITE direction the literature wants for hypertrophy. Robinson/Refalo 2024 (Sports Med
+// meta-regression) shows RIR has a continuous negative slope with hypertrophy (lower RIR = more growth),
+// but a near-zero slope with strength. Schoenfeld 2025 (67 studies, 100% posterior) shows volume of
+// hard sets has a positive dose-response with hypertrophy — that's why callers SUM scores across sets.
+// F (failure) treated as RIR=0; Refalo 2024 RCT shows fail ≈ 1-2 RIR for hypertrophy, so no bonus.
+// Light-load floor (reps > 30 → 0) intentionally OMITTED for v1 — would unfairly penalize calf raises,
+// lateral raises and other isolation where high-rep near-failure work still drives growth (Schoenfeld 2017).
+// Empty RIR treated as 0 (assume close to failure) — matches old behavior, keeps backward compat for saved data.
+function setScore(s){ const w=parseFloat(s&&s.w)||0, r=parseFloat(s&&s.r)||0; if(!(w>0&&r>0))return 0; const t=String((s&&s.rir)==null?'':s.rir).trim().toUpperCase(); let rv=(t===''||t==='F')?0:parseFloat(t); if(isNaN(rv))rv=0; rv=Math.max(0,Math.min(6,rv)); return Math.max(0, r-rv) * w; }
 function bestScore(sets,confirmedOnly){ let b=0; (sets||[]).forEach(s=>{ if(confirmedOnly&&s._pf)return; const v=setScore(s); if(v>b)b=v; }); return b; }
 // totalScore = SUM of setScore over (confirmed) sets — so the progress signal reflects RIR AND every set,
 // not just the best one. Returned {sum,n} so callers can project an in-progress total to the previous session's set count.
@@ -739,7 +746,7 @@ function exerciseProgress(ex){
 function prevSetsForHist(name,uni,curId){ const key=(name||'').toLowerCase().trim(); const occ=[]; (db.sessions||[]).forEach((s,idx)=>{ if(s.type==='rest')return; (s.exercises||[]).forEach(e=>{ if((e.name||'').toLowerCase().trim()!==key||!e.sets||!e.sets.length)return; const eUni=e.sets.some(x=>x.side); if(!!uni!==eUni)return; occ.push({id:s.id,date:String(s.date||''),idx,sets:e.sets}); }); }); occ.sort((a,b)=> a.date.localeCompare(b.date) || a.idx-b.idx); const pos=occ.findIndex(o=>o.id===curId); if(pos<=0)return null; return occ[pos-1].sets; }
 function histProgress(e,sessId){ const uni=(e.sets||[]).some(x=>x.side); const cur=totalScore(e.sets,false), prev=totalScore(prevSetsForHist(e.name,uni,sessId),false); return progFromScores(cur.sum, prev.sum); }
 function sessionProgAgg(s){ let up=0,down=0; (s.exercises||[]).forEach(e=>{ const pr=histProgress(e,s.id); if(pr){ if(pr.dir==='up')up++; else if(pr.dir==='down')down++; } }); return {up,down}; }
-function progBadgeFromProg(pr,title){ if(!pr)return ''; const col=pr.dir==='up'?'var(--good)':pr.dir==='down'?'var(--bad)':'var(--o40)'; const ar=pr.dir==='up'?'▲':pr.dir==='down'?'▼':'='; const pc=pr.pct?((pr.pct>0?'+':'')+pr.pct+'%'):''; return `<span class="exprog" style="font-size:12px;font-weight:800;margin-left:7px;color:${col}" title="${title||'progreso vs última sesión (e1RM ajustado por RIR)'}">${ar}${pc}</span>`; }
+function progBadgeFromProg(pr,title){ if(!pr)return ''; const col=pr.dir==='up'?'var(--good)':pr.dir==='down'?'var(--bad)':'var(--o40)'; const ar=pr.dir==='up'?'▲':pr.dir==='down'?'▼':'='; const pc=pr.pct?((pr.pct>0?'+':'')+pr.pct+'%'):''; return `<span class="exprog" style="font-size:12px;font-weight:800;margin-left:7px;color:${col}" title="${title||'estímulo hipertrófico vs última sesión · Σ (reps − RIR) × peso'}">${ar}${pc}</span>`; }
 function progBadgeHTML(ex){ return progBadgeFromProg(exerciseProgress(ex)); }
 // live-update the badge while logging (setField avoids a full re-render to keep input focus)
 function updateProgBadge(exi){ const w=db.activeWork; if(!w||!w.exercises[exi])return; const nm=document.querySelector('.exhead .n[data-exi="'+exi+'"]'); if(!nm)return; const html=progBadgeHTML(w.exercises[exi]); const exist=nm.parentElement.querySelector('.exprog'); if(html){ if(exist)exist.outerHTML=html; else nm.insertAdjacentHTML('afterend',html); } else if(exist){ exist.remove(); } }
