@@ -740,40 +740,49 @@ function renderSetRow(exi,si,set,ex,allowF){
   const we=`<input class="inp weight" data-act="setf" data-exi="${exi}" data-si="${si}" data-f="extraW" value="${set.extraW||''}" placeholder="+extra" inputmode="decimal"/>`;
   return {w,u,r,rr,del,we};
 }
-// Per-set HYPERTROPHY stimulus score = stim_reps × load × loadFactor(intensity)
-//   stim_reps = max(0, reps − RIR)  — last reps-RIR are the ones recruiting max motor units (Beardsley);
-//                                      Robinson/Refalo 2024 shows continuous negative RIR→hypertrophy slope.
-//   load (peso) — mechanical tension. Schoenfeld 2017: 30-80% 1RM equivalent IF close to failure.
-//   loadFactor(weight/e1RM) — opinionated: 0 if <30% 1RM (Lasevicius 2018 hard floor),
-//                              ramp 30→65% linear, 1.0 from 65% onward (user's productive zone 75-85%+).
-//                              When no e1RM history yet → factor = 1 (give benefit of the doubt to new exercises).
-// F (failure) treated as RIR=0; Refalo 2024 RCT: fail ≈ 1-2 RIR for hypertrophy, no bonus.
-// Replaces strength-proxy Epley e1RM which grew when RIR grew — opposite direction for hypertrophy.
-// Empty RIR = 0 (assume close to failure) — keeps backward compat with old data.
-function loadFactor(weight,e1rm){ if(!e1rm||!weight)return 1; const i=weight/e1rm; if(i>=0.65)return 1; if(i>=0.30)return (i-0.30)/0.35; return 0; }
-function setScore(s,e1rm){ const w=parseFloat(s&&s.w)||0, r=parseFloat(s&&s.r)||0; if(!(w>0&&r>0))return 0; const t=String((s&&s.rir)==null?'':s.rir).trim().toUpperCase(); let rv=(t===''||t==='F')?0:parseFloat(t); if(isNaN(rv))rv=0; rv=Math.max(0,Math.min(6,rv)); return Math.max(0, r-rv) * w * loadFactor(w,e1rm); }
-function bestScore(sets,confirmedOnly,e1rm){ let b=0; (sets||[]).forEach(s=>{ if(confirmedOnly&&s._pf)return; const v=setScore(s,e1rm); if(v>b)b=v; }); return b; }
-function totalScore(sets,confirmedOnly,e1rm){ let sum=0,n=0; (sets||[]).forEach(s=>{ if(confirmedOnly&&s._pf)return; const v=setScore(s,e1rm); if(v>0){sum+=v;n++;} }); return {sum,n}; }
-// Best observed Epley+RIR e1RM across SAVED sessions of this exercise (matched by name + uni-ness).
-// Used ONLY as a reference for loadFactor — NOT as the progress signal. Bootstraps from user's actual lifting:
-// new exercises return 0 (loadFactor=1, no penalty); once you've done a heavy set, light work gets discounted.
+// Per-set HYPERTROPHY stimulus score = stim_reps × load × intensityFactor(intensity)
+//   stim_reps        = max(0, reps − RIR) — last reps-RIR are the ones recruiting max motor units (Beardsley);
+//                                            Robinson/Refalo 2024: continuous negative RIR→hypertrophy slope.
+//   load (peso)      — mechanical tension.
+//   intensityFactor  — based on IMPLIED %1RM derived from THIS set's reps + RIR (Epley inverse, self-contained:
+//                      no historical e1RM needed). Honors the productive zone for hypertrophy:
+//                        <55% 1RM (>32 reps to failure)  → 0     "demasiado floja" (e.g. 30 reps RIR 1)
+//                        55-70%   (12-32 reps to failure) → 0-1   "floja" (e.g. 15-20 reps RIR 2)
+//                        70-90%   (3-12 reps to failure)  → 1.0   "productiva" (5×5 to 12×3 territory)
+//                        >90%     (1-3 reps to failure)   → 1.0   "excesiva" — stim_reps naturally tiny → score low
+// F (failure) = RIR 0 (Refalo 2024). Empty RIR = 0.
+function impliedIntensity(reps,rir){ if(!(reps>0))return 0; const t=String(rir==null?'':rir).trim().toUpperCase(); const rv=(t===''||t==='F')?0:(parseFloat(t)||0); return 1/(1+(reps+Math.max(0,rv))/30); }
+function intensityFactor(i){ if(i<0.55)return 0; if(i<0.65)return (i-0.55)/0.10; return 1; }
+// setZone — quality flag used in UI to nudge the user:
+//   'light'      — push more weight (or fewer reps near failure)   <65% 1RM (>15 reps to failure)
+//   'productive' — in the productive zone (target for hypertrophy) 65-92% 1RM (3-15 reps to failure)
+//   'heavy'      — too heavy / too few reps for hypertrophy volume >92% 1RM (1-3 reps to failure)
+function setZone(s){ const r=parseFloat(s&&s.r)||0; if(!(r>0))return null; const i=impliedIntensity(r,s&&s.rir); if(i<0.65)return 'light'; if(i>0.92)return 'heavy'; return 'productive'; }
+function setScore(s){ const w=parseFloat(s&&s.w)||0, r=parseFloat(s&&s.r)||0; if(!(w>0&&r>0))return 0; const t=String((s&&s.rir)==null?'':s.rir).trim().toUpperCase(); let rv=(t===''||t==='F')?0:parseFloat(t); if(isNaN(rv))rv=0; rv=Math.max(0,Math.min(6,rv)); return Math.max(0, r-rv) * w * intensityFactor(impliedIntensity(r,rv)); }
+function bestScore(sets,confirmedOnly){ let b=0; (sets||[]).forEach(s=>{ if(confirmedOnly&&s._pf)return; const v=setScore(s); if(v>b)b=v; }); return b; }
+function totalScore(sets,confirmedOnly){ let sum=0,n=0; (sets||[]).forEach(s=>{ if(confirmedOnly&&s._pf)return; const v=setScore(s); if(v>0){sum+=v;n++;} }); return {sum,n}; }
+// Best observed Epley+RIR e1RM across SAVED sessions — kept as a reference helper (e.g. for future PR badges).
+// No longer used inside the per-set score — that signal is now self-contained from reps + RIR alone.
 function bestE1RM(name,uni){ const key=(name||'').toLowerCase().trim(); let best=0; (db.sessions||[]).forEach(s=>{ if(s.type==='rest')return; (s.exercises||[]).forEach(e=>{ if((e.name||'').toLowerCase().trim()!==key||!e.sets||!e.sets.length)return; const eUni=e.sets.some(x=>x.side); if(!!uni!==eUni)return; (e.sets||[]).forEach(st=>{ const w=parseFloat(st.w)||0, r=parseFloat(st.r)||0; if(!(w>0&&r>0))return; const t=String(st.rir==null?'':st.rir).trim().toUpperCase(); let rv=(t===''||t==='F')?0:parseFloat(t); if(isNaN(rv))rv=0; rv=Math.max(0,Math.min(6,rv)); const e1=w*(1+(r+rv)/30); if(e1>best)best=e1; }); }); }); return best; }
 function progFromScores(cur,last){ if(!(cur>0)||!(last>0))return null; const ratio=cur/last; return {dir:ratio>1.02?'up':(ratio<0.98?'down':'flat'), pct:Math.round((ratio-1)*100)}; }
 function exerciseProgress(ex){
-  const e1=bestE1RM(ex.name,ex.unilateral);
-  const cur=totalScore(ex.sets,true,e1); const prev=totalScore(lastLoggedSets(ex.name,ex.unilateral),false,e1);
+  const cur=totalScore(ex.sets,true); const prev=totalScore(lastLoggedSets(ex.name,ex.unilateral),false);
   if(!cur.n||!prev.n)return null;
   const projected = cur.n>=prev.n ? cur.sum : (cur.sum/cur.n)*prev.n;
   return progFromScores(projected, prev.sum);
 }
 // previous occurrence of an exercise (by date, then insertion order) BEFORE a given saved session — for history
 function prevSetsForHist(name,uni,curId){ const key=(name||'').toLowerCase().trim(); const occ=[]; (db.sessions||[]).forEach((s,idx)=>{ if(s.type==='rest')return; (s.exercises||[]).forEach(e=>{ if((e.name||'').toLowerCase().trim()!==key||!e.sets||!e.sets.length)return; const eUni=e.sets.some(x=>x.side); if(!!uni!==eUni)return; occ.push({id:s.id,date:String(s.date||''),idx,sets:e.sets}); }); }); occ.sort((a,b)=> a.date.localeCompare(b.date) || a.idx-b.idx); const pos=occ.findIndex(o=>o.id===curId); if(pos<=0)return null; return occ[pos-1].sets; }
-function histProgress(e,sessId){ const uni=(e.sets||[]).some(x=>x.side); const e1=bestE1RM(e.name,uni); const cur=totalScore(e.sets,false,e1), prev=totalScore(prevSetsForHist(e.name,uni,sessId),false,e1); return progFromScores(cur.sum, prev.sum); }
+function histProgress(e,sessId){ const cur=totalScore(e.sets,false), prev=totalScore(prevSetsForHist(e.name,(e.sets||[]).some(x=>x.side),sessId),false); return progFromScores(cur.sum, prev.sum); }
+// Count sets by zone — surfaced as a coaching hint next to the progress badge.
+function exerciseZones(ex){ const z={light:0,productive:0,heavy:0}; (ex.sets||[]).forEach(s=>{ if(s._pf)return; const zn=setZone(s); if(zn&&z[zn]!=null)z[zn]++; }); return z; }
 function sessionProgAgg(s){ let up=0,down=0; (s.exercises||[]).forEach(e=>{ const pr=histProgress(e,s.id); if(pr){ if(pr.dir==='up')up++; else if(pr.dir==='down')down++; } }); return {up,down}; }
-function progBadgeFromProg(pr,title){ if(!pr)return ''; const col=pr.dir==='up'?'var(--good)':pr.dir==='down'?'var(--bad)':'var(--o40)'; const ar=pr.dir==='up'?'▲':pr.dir==='down'?'▼':'='; const pc=pr.pct?((pr.pct>0?'+':'')+pr.pct+'%'):''; return `<span class="exprog" style="font-size:12px;font-weight:800;margin-left:7px;color:${col}" title="${title||'estímulo hipertrófico vs última sesión · Σ (reps − RIR) × peso × factor de carga (≥65% e1RM = full, <30% = 0)'}">${ar}${pc}</span>`; }
-function progBadgeHTML(ex){ return progBadgeFromProg(exerciseProgress(ex)); }
+function progBadgeFromProg(pr,title){ if(!pr)return ''; const col=pr.dir==='up'?'var(--good)':pr.dir==='down'?'var(--bad)':'var(--o40)'; const ar=pr.dir==='up'?'▲':pr.dir==='down'?'▼':'='; const pc=pr.pct?((pr.pct>0?'+':'')+pr.pct+'%'):''; return `<span class="exprog" style="font-size:12px;font-weight:800;margin-left:7px;color:${col}" title="${title||'estímulo hipertrófico vs última sesión · Σ (reps − RIR) × peso × factor de intensidad (productiva: 70-90% 1RM ≈ 3-12 reps al fallo)'}">${ar}${pc}</span>`; }
+function progBadgeHTML(ex){ const prog=progBadgeFromProg(exerciseProgress(ex)); const z=exerciseZones(ex); const total=z.light+z.productive+z.heavy; if(!total)return prog; const parts=[]; if(z.productive)parts.push(`<span style="color:var(--good)">${z.productive}✓</span>`); if(z.light)parts.push(`<span style="color:var(--warn)" title="series flojas — sube peso o llega más cerca al fallo">${z.light}↑</span>`); if(z.heavy)parts.push(`<span style="color:var(--warn)" title="series demasiado pesadas — baja peso o sube reps">${z.heavy}↓</span>`); const zonesBadge=`<span class="exzones" style="font-size:10px;font-weight:700;margin-left:6px;letter-spacing:.06em">${parts.join(' ')}</span>`; return prog+zonesBadge; }
 // live-update the badge while logging (setField avoids a full re-render to keep input focus)
-function updateProgBadge(exi){ const w=db.activeWork; if(!w||!w.exercises[exi])return; const nm=document.querySelector('.exhead .n[data-exi="'+exi+'"]'); if(!nm)return; const html=progBadgeHTML(w.exercises[exi]); const exist=nm.parentElement.querySelector('.exprog'); if(html){ if(exist)exist.outerHTML=html; else nm.insertAdjacentHTML('afterend',html); } else if(exist){ exist.remove(); } }
+function updateProgBadge(exi){ const w=db.activeWork; if(!w||!w.exercises[exi])return; const nm=document.querySelector('.exhead .n[data-exi="'+exi+'"]'); if(!nm)return; const html=progBadgeHTML(w.exercises[exi]); ['exprog','exzones'].forEach(cls=>{ const el=nm.parentElement.querySelector('.'+cls); if(el)el.remove(); }); if(html)nm.insertAdjacentHTML('afterend',html); }
+// also update per-set zone color in-place (called from setField after a weight/reps/RIR change)
+function updateSetZone(exi,si){ const w=db.activeWork; if(!w||!w.exercises[exi])return; const s=w.exercises[exi].sets[si]; if(!s)return; const z=setZone(s); const el=document.querySelector('.setn[data-exi="'+exi+'"][data-si="'+si+'"]'); if(!el)return; el.style.color = (!s.done && z==='light') ? 'var(--warn)' : (!s.done && z==='heavy') ? 'var(--bad)' : ''; }
 function renderExercise(exi,ex,allowF){
   const sets=ex.sets||[]; const isM=ex.type==='machine'; const isU=ex.unilateral;
   const rec=machineRec((db.activeWork||{}).gym,ex); const ed=`data-act="editmach" data-exi="${exi}"`;
@@ -793,7 +802,9 @@ function renderExercise(exi,ex,allowF){
     for(let p=0;p<sets.length;p+=2){
       const a=sets[p],b=sets[p+1]; const ca=renderSetRow(exi,p,a,ex,allowF); const cb=b?renderSetRow(exi,p+1,b,ex,allowF):null;
       const done=a&&a.done&&b&&b.done;
-      body+=`<div class="pair"><div class="setn ${done?'done':''}" data-act="done" data-exi="${exi}" data-si="${p}">#${p/2+1}</div><div class="prows">`
+      const z=!done && a ? setZone(a) : null;
+      const zSty=z==='light'?'color:var(--warn);':z==='heavy'?'color:var(--bad);':'';
+      body+=`<div class="pair"><div class="setn ${done?'done':''}" style="${zSty}" data-act="done" data-exi="${exi}" data-si="${p}">#${p/2+1}</div><div class="prows">`
         +`<div class="srow gc-uni"><div class="side">${escTxt(a.side||'R')}</div>${ca.w}${ca.u}${ca.r}${ca.rr}${ca.del}</div>`
         +(cb?`<div class="srow gc-uni"><div class="side">${escTxt(b.side||'L')}</div>${cb.w}${cb.u}${cb.r}${cb.rr}<span class="del" style="visibility:hidden">×</span></div>`:'')
         +`</div></div>`;
@@ -806,7 +817,8 @@ function renderExercise(exi,ex,allowF){
     let body='';
     sets.forEach((s,si)=>{ const c=renderSetRow(exi,si,s,ex,allowF); const fsOn=isM&&s.fsOn&&!s.isDrop;
       const fs=isM?`<button class="fs ${s.fsOn?'on':''}" data-act="fs" data-exi="${exi}" data-si="${si}">${s.isDrop?'DS':'FS'}</button>`:'';
-      body+=`<div class="srow ${fsOn?'gc-mach-fs':gc}"><div class="setn ${s.done?'done':''}" data-act="done" data-exi="${exi}" data-si="${si}">${s.isDrop?'↓':'#'+(si+1)}</div>${fs}${c.w}${fsOn?c.we:''}${c.u}${c.r}${c.rr}${c.del}</div>`;
+      const z=!s.done?setZone(s):null; const zSty=z==='light'?'color:var(--warn);':z==='heavy'?'color:var(--bad);':'';
+      body+=`<div class="srow ${fsOn?'gc-mach-fs':gc}"><div class="setn ${s.done?'done':''}" style="${zSty}" data-act="done" data-exi="${exi}" data-si="${si}">${s.isDrop?'↓':'#'+(si+1)}</div>${fs}${c.w}${fsOn?c.we:''}${c.u}${c.r}${c.rr}${c.del}</div>`;
     });
     const drop=isM?`<button class="addbtn" data-act="dropset" data-exi="${exi}">[↓ drop set]</button>`:'';
     const add=`<div class="addrow ${isM?'amach':'afree'}"><span class="aleft"><button class="addbtn" data-act="addset" data-exi="${exi}">[+ set]</button>${drop}</span><button class="addbtn aex" data-act="addex" data-exi="${exi}">[+ exercise]</button></div>`;
@@ -1606,6 +1618,8 @@ function setField(exi,si,f,val){ const w=db.activeWork; if(!w)return; const ex=w
     }
   }
   try{updateProgBadge(exi);}catch(_){}
+  // refresh per-set zone colors for the edited set + every propagated _pf set
+  try{ const w2=db.activeWork; if(w2&&w2.exercises[exi])w2.exercises[exi].sets.forEach((_,j)=>updateSetZone(exi,j)); }catch(_){}
   save(); }
 document.getElementById('app').addEventListener('click',e=>{
   const el=e.target.closest('[data-act]'); if(!el)return; const a=el.dataset.act;
