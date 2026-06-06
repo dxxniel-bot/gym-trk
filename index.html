@@ -116,6 +116,27 @@
   .pfv{font-size:14px; font-weight:700; line-height:1.35;} .pfv .up{color:var(--good);} .pfv .dn{color:var(--bad);}
   .pwk{display:flex; gap:6px; margin-top:12px;} .pwd{flex:1; height:5px; border-radius:3px; background:var(--track);} .pwd.on{background:var(--good);}
   .pgrid{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:11px;}
+  .ptile.tap{cursor:pointer; transition:transform .1s ease, opacity .1s ease;}
+  .ptile.tap:active{transform:scale(.98); opacity:.85;}
+  .ptchev{font-size:14px; color:var(--o30); margin-left:6px; line-height:1;}
+  .mdetail-wrap .sheet{max-height:88vh; overflow-y:auto;}
+  .mdetail{padding:0;}
+  .mdhd{display:flex; align-items:flex-end; justify-content:space-between; gap:8px; margin-bottom:14px;}
+  .mdhd h3{margin:0;}
+  .mdlog{font-size:11px; color:var(--o60); cursor:pointer; text-decoration:none; padding:4px 0;}
+  .mdlog:active{color:var(--fg);}
+  .mdtabs{display:flex; gap:0; background:var(--o12); border-radius:var(--radius); padding:3px; margin-bottom:18px;}
+  .mdtabs span{flex:1; text-align:center; padding:7px 0; font-size:11px; color:var(--o50); cursor:pointer; border-radius:calc(var(--radius) - 3px); letter-spacing:.5px; font-weight:600;}
+  .mdtabs span.on{background:var(--card); color:var(--fg);}
+  .mdval{font-size:36px; font-weight:800; letter-spacing:-.5px; margin-bottom:3px; line-height:1.05;}
+  .mdmeta{font-size:11px; color:var(--o50); margin-bottom:6px;}
+  .mdgood{color:var(--good);} .mdbad{color:var(--bad);} .mdflat{color:var(--o50);}
+  .mdstats{margin-top:14px; border-top:.5px solid var(--o12); padding-top:8px;}
+  .mdline{display:flex; align-items:baseline; padding:5px 0; font-size:12px;}
+  .mdk{color:var(--o60); white-space:nowrap;}
+  .mddots{flex:1; border-bottom:1px dotted var(--o20); margin:0 8px; position:relative; top:-3px;}
+  .mdv{color:var(--fg); white-space:nowrap; text-align:right;}
+  .mdsub{color:var(--o40); font-size:10px; margin-left:5px;}
   .ptile{background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:13px 13px 10px; min-width:0; overflow:hidden;}
   .ptile .ptlh{display:flex; align-items:center; justify-content:space-between; gap:6px;}
   .plbl{font-size:9px; color:var(--o40); letter-spacing:1px; text-transform:uppercase; margin-bottom:7px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
@@ -1174,6 +1195,83 @@ function openWeightLog(){ const ks=Object.keys(db.bodyweight||{}).sort(); const 
 function lastDays(n){ const now=new Date(); const out=[]; for(let i=n-1;i>=0;i--){ const d=new Date(now); d.setDate(now.getDate()-i); out.push(todayISO(d)); } return out; }
 function dayWater(iso){ const arr=db.meals[iso]; let w=0; if(arr)arr.forEach(m=>{ w+=+m.water||0; }); return w; }
 function avgPos(arr){ const v=arr.filter(x=>x>0); return v.length?v.reduce((a,b)=>a+b,0)/v.length:0; }
+// ---------- metric drill-down (peso / pasos / agua) — Apple-Health-style detail ----------
+function metricSeries(key, days){
+  if(key==='steps'){
+    const hd=lastDays(days);
+    const vals=hd.map(d=>(db.steps&&db.steps[d])||0);
+    const pos=vals.filter(x=>x>0);
+    return {key, title:'pasos', unit:'pasos', dates:hd, vals,
+      current:vals[vals.length-1]||0, currentISO:hd[hd.length-1],
+      avg: pos.length?Math.round(pos.reduce((a,b)=>a+b,0)/pos.length):0,
+      min: pos.length?Math.min.apply(null,pos):0,
+      max: vals.length?Math.max.apply(null,vals):0,
+      change: null, fmt:n=>n.toLocaleString(), zero:true, canLog:false};
+  }
+  if(key==='weight'){
+    const cutoff=lastDays(days)[0];
+    const all=Object.keys(db.bodyweight||{}).sort();
+    const dates=all.filter(k=>k>=cutoff);
+    const vals=dates.map(d=>db.bodyweight[d]);
+    const curAll=all.length?db.bodyweight[all[all.length-1]]:0;
+    const change=vals.length>=2?Math.round((vals[vals.length-1]-vals[0])*10)/10:null;
+    return {key, title:'peso corporal', unit:'kg', dates, vals,
+      current:curAll, currentISO:all[all.length-1]||null,
+      avg: vals.length?Math.round((vals.reduce((a,b)=>a+b,0)/vals.length)*10)/10:0,
+      min: vals.length?Math.min.apply(null,vals):0,
+      max: vals.length?Math.max.apply(null,vals):0,
+      change, fmt:n=>n+' kg', zero:false, canLog:true, logAct:'logweight'};
+  }
+  if(key==='water'){
+    const hd=lastDays(days);
+    const vals=hd.map(d=>Math.round(dayWater(d)*10)/10);
+    const pos=vals.filter(x=>x>0);
+    const goal=(db.settings&&db.settings.goals&&db.settings.goals.water)||0;
+    return {key, title:'agua', unit:'L', dates:hd, vals,
+      current:vals[vals.length-1]||0, currentISO:hd[hd.length-1],
+      avg: pos.length?Math.round((pos.reduce((a,b)=>a+b,0)/pos.length)*10)/10:0,
+      min: pos.length?Math.min.apply(null,pos):0,
+      max: vals.length?Math.max.apply(null,vals):0,
+      goal, change:null, fmt:n=>n+' L', zero:true, canLog:false};
+  }
+  return null;
+}
+function openMetricDetail(key){
+  const days=window._mdRange||14;
+  const sp=metricSeries(key, days);
+  if(!sp) return;
+  // best/worst day with date
+  let bestIso=null, worstIso=null;
+  if(sp.vals.length){ let mxI=0, mnI=0;
+    sp.vals.forEach((v,i)=>{ if(v>sp.vals[mxI])mxI=i; if(sp.vals[i]<sp.vals[mnI])mnI=i; });
+    bestIso=sp.dates[mxI]; worstIso=sp.dates[mnI];
+  }
+  const tab=(d,l)=>`<span data-act="mdrange" data-r="${d}" data-m="${key}" class="${days===d?'on':''}">${l}</span>`;
+  const segs=tab(7,'7D')+tab(14,'14D')+tab(30,'30D')+tab(90,'90D')+tab(365,'1A');
+  const labels=sp.vals.map((vv,ii)=>(vv?sp.fmt(vv):'sin registro')+' · '+fmtShort(sp.dates[ii]));
+  const chart=sp.vals.length?lineChart(sp.vals,{h:140, dates:sp.dates, zero:sp.zero, interactive:true, labels}):'';
+  const empty=!sp.vals.length;
+  const headBtn=sp.canLog?`<a class="mdlog" data-act="${sp.logAct}">+ log</a>`:'';
+  const chBlock=(sp.change!=null)?` · <span class="${sp.change<0?'mdbad':sp.change>0?'mdgood':'mdflat'}">${sp.change>0?'+':''}${sp.change} ${sp.unit} en ${days}d</span>`:'';
+  openModal(`<div class="mdetail">
+    <div class="mdhd"><h3>${sp.title}</h3>${headBtn}</div>
+    <div class="mdtabs">${segs}</div>
+    ${empty?'<div class="empty" style="padding:30px 0">sin registros en este rango</div>':`
+      <div class="mdval">${sp.current?sp.fmt(sp.current):'—'}</div>
+      <div class="mdmeta">${sp.currentISO?fmtShort(sp.currentISO):''}${chBlock}</div>
+      ${chart}
+      <div class="mdstats">
+        <div class="mdline"><span class="mdk">promedio</span><span class="mddots"></span><span class="mdv">${sp.fmt(sp.avg)}</span></div>
+        ${sp.max?`<div class="mdline"><span class="mdk">mejor día</span><span class="mddots"></span><span class="mdv">${sp.fmt(sp.max)} <span class="mdsub">${bestIso?fmtShort(bestIso):''}</span></span></div>`:''}
+        ${sp.min?`<div class="mdline"><span class="mdk">menor día</span><span class="mddots"></span><span class="mdv">${sp.fmt(sp.min)} <span class="mdsub">${worstIso?fmtShort(worstIso):''}</span></span></div>`:''}
+        ${sp.goal?`<div class="mdline"><span class="mdk">meta diaria</span><span class="mddots"></span><span class="mdv">${sp.fmt(sp.goal)}</span></div>`:''}
+        <div class="mdline"><span class="mdk">registros</span><span class="mddots"></span><span class="mdv">${sp.vals.filter(v=>v>0).length} de ${sp.dates.length} días</span></div>
+      </div>
+    `}
+    <div class="sheetbtns" style="margin-top:14px"><button class="cancel" data-act="closemodal">cerrar</button></div>
+  </div>`, 'mdetail-wrap');
+  window._mdKey=key;
+}
 function renderProgress(){
   const totalSessions=(db.sessions||[]).filter(s=>s.type!=='rest').length;
   const bwKeys=Object.keys(db.bodyweight||{}).sort(); const bwVals=bwKeys.map(k=>db.bodyweight[k]);
@@ -1200,15 +1298,14 @@ function renderProgress(){
   const tiles=[];
   // peso
   if(bwVals.length){ let st=''; let chartHtml='';
-    const _bseg=[7,14,30].map(r=>`<span data-act="bwrange" data-r="${r}" style="${r===_br?'color:var(--fill)':'color:var(--o40)'}">${r}</span>`).join('<span style="color:var(--o20)">·</span>');
     if(_bv.length>=2){ const _ch=Math.round((_bv[_bv.length-1]-_bv[0])*10)/10;
       let cls='flat'; if(_ch<0)cls=goal==='cut'?'good':goal==='bulk'?'bad':'flat'; else if(_ch>0)cls=goal==='bulk'?'good':goal==='cut'?'bad':'flat';
-      st=`<div class="pst ${cls}">${_ch>0?'↑':_ch<0?'↓':'='} ${Math.abs(_ch)} kg · <span class="lk" data-act="shareweight">compartir</span></div>`;
-      chartHtml=lineChart(_bv,{h:40,dates:_bk,interactive:true,labels:_bv.map((vv,ii)=>vv+' kg · '+fmtShort(_bk[ii]))});
-    } else if(_bv.length===1){ st=`<div class="pst flat">1 registro en ${_br}d</div>`;
-      chartHtml=lineChart(_bv,{h:40,dates:_bk,interactive:true,labels:_bv.map((vv,ii)=>vv+' kg · '+fmtShort(_bk[ii]))});
-    } else { st=`<div class="pst flat">sin registros en ${_br}d</div>`; }
-    tiles.push(`<div class="ptile"><div class="ptlh"><div class="plbl">peso · ${_br}d</div><span style="display:flex;gap:10px;align-items:center"><div class="prng">${_bseg}</div><a class="ptla" data-act="logweight">+ log</a></span></div>`
+      st=`<div class="pst ${cls}">${_ch>0?'↑':_ch<0?'↓':'='} ${Math.abs(_ch)} kg · 14d</div>`;
+      chartHtml=lineChart(_bv,{h:40,dates:_bk});
+    } else if(_bv.length===1){ st=`<div class="pst flat">1 registro · 14d</div>`;
+      chartHtml=lineChart(_bv,{h:40,dates:_bk});
+    } else { st=`<div class="pst flat">sin registros · 14d</div>`; }
+    tiles.push(`<div class="ptile tap" data-act="metricdetail" data-m="weight"><div class="ptlh"><div class="plbl">peso</div><span class="ptchev">›</span></div>`
       +`<div class="pval">${curBw||'—'}<span>kg</span></div>${st}${chartHtml}</div>`);
   }
   // volumen
@@ -1227,17 +1324,16 @@ function renderProgress(){
   }
   // pasos
   if(_stepsLog.length){ const _t=_stepsArr[_stepsArr.length-1], _a=Math.round(avgPos(_stepsArr));
-    const seg=[7,14,30].map(r=>`<span data-act="steprange" data-r="${r}" style="${r===_sr?'color:var(--fill)':'color:var(--o40)'}">${r}</span>`).join('<span style="color:var(--o20)">·</span>');
-    tiles.push(`<div class="ptile"><div class="ptlh"><div class="plbl">pasos · ${_sr}d</div><div class="prng">${seg}</div></div>`
+    tiles.push(`<div class="ptile tap" data-act="metricdetail" data-m="steps"><div class="ptlh"><div class="plbl">pasos</div><span class="ptchev">›</span></div>`
       +`<div class="pval">${_t?_t.toLocaleString():'—'}<span>hoy</span></div>`
-      +`<div class="pst flat">prom ${kFmt(_a)}/d</div>${lineChart(_stepsArr,{h:40,zero:true,dates:_shd,interactive:true,labels:_stepsArr.map((vv,ii)=>(vv?vv.toLocaleString()+' pasos':'sin registro')+' · '+fmtShort(_shd[ii]))})}</div>`);
+      +`<div class="pst flat">prom ${kFmt(_a)}/d · 14d</div>${lineChart(_stepsArr,{h:40,zero:true,dates:_shd})}</div>`);
   }
   // agua
   if(_waterLog.length){ const _g=db.settings.goals.water||0, _a=Math.round(avgPos(_waterArr)*10)/10;
     const cls=_g&&_a>=_g?'good':'flat';
-    tiles.push(`<div class="ptile"><div class="plbl">agua · 14d</div>`
+    tiles.push(`<div class="ptile tap" data-act="metricdetail" data-m="water"><div class="ptlh"><div class="plbl">agua</div><span class="ptchev">›</span></div>`
       +`<div class="pval">${_a}<span>L prom</span></div>`
-      +`<div class="pst ${cls}">${_g?(_a>=_g?'▲ en meta':'meta '+_g+'L'):'—'}</div>${lineChart(_waterArr,{h:32,zero:true})}</div>`);
+      +`<div class="pst ${cls}">${_g?(_a>=_g?'▲ en meta · 14d':'meta '+_g+'L · 14d'):'14d'}</div>${lineChart(_waterArr,{h:32,zero:true})}</div>`);
   }
   // kcal
   { const ak=avgKcal7(), gk=db.settings.goals.kcal||0; const kcalArr=lastDays(7).map(d=>Math.round((db.meals[d]||[]).reduce((a,m)=>a+(+m.kcal||0),0)));
@@ -1554,6 +1650,8 @@ document.getElementById('app').addEventListener('click',e=>{
   else if(a==='healthsync'){ healthSync(); }
   else if(a==='steprange'){ window._stepRange=+el.dataset.r||14; render(); }
   else if(a==='bwrange'){ window._bwRange=+el.dataset.r||14; render(); }
+  else if(a==='metricdetail'){ window._mdRange=window._mdRange||14; openMetricDetail(el.dataset.m); }
+  else if(a==='mdrange'){ window._mdRange=+el.dataset.r||14; openMetricDetail(el.dataset.m); }
   else if(a==='stacktick'){ stackToggleTick(el.dataset.id, todayISO()); }
   else if(a==='stackedit'){ openStackEdit(el.dataset.id); }
   else if(a==='stackadd'){ openStackEdit(null, el.dataset.c||'supp'); }
