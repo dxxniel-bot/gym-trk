@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="es"><head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no"/>
+<title>gym//TRK · mock avatar</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700;800&display=swap" rel="stylesheet"/>
+<style>
+  :root{
+    --bg:#000; --fg:#f3f3f4; --card:#0d0d10; --border:rgba(243,243,244,.09); --radius:14px;
+    --o60:rgba(243,243,244,.66); --o50:rgba(243,243,244,.56); --o40:rgba(243,243,244,.5); --o35:rgba(243,243,244,.46); --o20:rgba(243,243,244,.26); --o12:rgba(243,243,244,.1);
+    --good:#46c98b; --bad:#e5675c;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  body{background:#0a0a0a;font-family:'JetBrains Mono',ui-monospace,Menlo,monospace;color:var(--fg);min-height:100vh; padding:24px 16px 60px;}
+  h1{font-size:14px;font-weight:800;letter-spacing:1px;text-align:center;color:var(--fg);}
+  h1 b{color:var(--o40);font-weight:400;}
+  .sub{font-size:10px;color:var(--o50);text-align:center;margin-top:6px;letter-spacing:.5px;}
+  .grid{display:grid; grid-template-columns:repeat(auto-fit, minmax(260px, 1fr)); gap:16px; max-width:1200px; margin:24px auto 0;}
+  .col{background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:14px;}
+  .col .hdr{display:flex; justify-content:space-between; align-items:baseline; margin-bottom:4px;}
+  .col .hdr .v{font-size:9px; color:var(--o40); letter-spacing:1px; text-transform:uppercase;}
+  .col .name{font-size:11px; font-weight:800; letter-spacing:.5px;}
+  .col .desc{font-size:9px; color:var(--o50); margin-top:2px; line-height:1.45; min-height:24px;}
+  .av{display:block; margin:10px auto 6px; width:100%; max-width:280px;}
+  .footstats{display:flex; justify-content:space-between; align-items:baseline; font-size:9px; color:var(--o40); margin-top:8px; letter-spacing:.5px;}
+  .footstats b{color:var(--fg); font-weight:700;}
+  .controls{max-width:1200px; margin:28px auto 0; background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:16px;}
+  .controls .ctitle{font-size:9px; color:var(--o40); letter-spacing:1.5px; text-transform:uppercase; margin-bottom:14px;}
+  .row{display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:14px;}
+  .field{display:flex; flex-direction:column; gap:5px;}
+  .field label{font-size:9px; color:var(--o50); letter-spacing:.5px; display:flex; justify-content:space-between; align-items:baseline;}
+  .field label b{color:var(--fg); font-weight:700;}
+  .field input[type="range"]{width:100%; accent-color:var(--fg);}
+  .field select{font-family:inherit; font-size:11px; background:transparent; color:var(--fg); border:1px solid var(--o20); padding:6px 8px;}
+  .legend{max-width:1200px; margin:24px auto 0; font-size:9px; color:var(--o50); text-align:center; line-height:1.55;}
+  .legend b{color:var(--o60);}
+</style></head>
+<body>
+<h1>gym<b>//</b>TRK · mock <b>·</b> avatar de progreso (3 variantes)</h1>
+<div class="sub">silueta refleja composición + entrenamiento · densidad refleja realidad (consistencia/fuerza/peso/sexo)</div>
+
+<div class="grid" id="grid"></div>
+
+<div class="controls">
+  <div class="ctitle">simulador · ajusta y observa cómo cambia el avatar</div>
+  <div class="row">
+    <div class="field"><label>peso · <b><span id="lblW">75</span> kg</b></label><input type="range" id="w" min="50" max="120" value="75"/></div>
+    <div class="field"><label>estatura · <b><span id="lblH">175</span> cm</b></label><input type="range" id="h" min="150" max="200" value="175"/></div>
+    <div class="field"><label>sexo</label><select id="sex"><option value="M">M</option><option value="F">F</option></select></div>
+    <div class="field"><label>edad · <b><span id="lblA">27</span> años</b></label><input type="range" id="age" min="16" max="65" value="27"/></div>
+    <div class="field"><label>consistencia (logs/total) · <b><span id="lblC">0.72</span></b></label><input type="range" id="c" min="0" max="100" value="72"/></div>
+    <div class="field"><label>fuerza relativa (e1RM/peso) · <b><span id="lblS">1.40</span>×</b></label><input type="range" id="s" min="50" max="220" value="140"/></div>
+  </div>
+  <div class="row" style="margin-top:14px">
+    <div class="field"><label>vol pecho · <b><span id="lblVchest">14</span> sets/sem</b></label><input type="range" id="vchest" min="0" max="28" value="14"/></div>
+    <div class="field"><label>vol espalda · <b><span id="lblVback">16</span></b></label><input type="range" id="vback" min="0" max="28" value="16"/></div>
+    <div class="field"><label>vol hombros · <b><span id="lblVdelts">14</span></b></label><input type="range" id="vdelts" min="0" max="28" value="14"/></div>
+    <div class="field"><label>vol brazos · <b><span id="lblVarms">12</span></b></label><input type="range" id="varms" min="0" max="28" value="12"/></div>
+    <div class="field"><label>vol cuádriceps · <b><span id="lblVquads">12</span></b></label><input type="range" id="vquads" min="0" max="28" value="12"/></div>
+    <div class="field"><label>vol isquios · <b><span id="lblVhams">8</span></b></label><input type="range" id="vhams" min="0" max="28" value="8"/></div>
+    <div class="field"><label>vol abs · <b><span id="lblVabs">6</span></b></label><input type="range" id="vabs" min="0" max="28" value="6"/></div>
+    <div class="field"><label>vol pantorrillas · <b><span id="lblVcalves">4</span></b></label><input type="range" id="vcalves" min="0" max="28" value="4"/></div>
+  </div>
+</div>
+
+<div class="legend">
+  <b>cómo funciona</b> · BMI (peso/estatura) define ancho de hombros/cintura/piernas · sexo ajusta proporciones · consistencia y fuerza-relativa multiplican la densidad global · cada zona muscular (pecho/espalda/etc.) suma puntos a su región según volumen semanal · seed fijo = reproducible
+</div>
+
+<script>
+// ───────── inputs ─────────
+const $=id=>document.getElementById(id);
+const inputs=['w','h','sex','age','c','s','vchest','vback','vdelts','varms','vquads','vhams','vabs','vcalves'];
+inputs.forEach(id=>{ const e=$(id); e&&e.addEventListener('input',render); });
+
+function readState(){
+  return {
+    weightKg:+$('w').value, heightCm:+$('h').value, sex:$('sex').value, age:+$('age').value,
+    consistency:+$('c').value/100, strength:+$('s').value/100,
+    vol:{ chest:+$('vchest').value, back:+$('vback').value, delts:+$('vdelts').value, arms:+$('varms').value, quads:+$('vquads').value, hams:+$('vhams').value, abs:+$('vabs').value, calves:+$('vcalves').value, glutes:+$('vquads').value*0.6, traps:+$('vback').value*0.4 }
+  };
+}
+
+// ───────── body layout ─────────
+// viewBox 280x440, head at top
+function regions(S){
+  const bmi=S.weightKg/Math.pow(S.heightCm/100,2);
+  // Width factor: lean (bmi 17) -> 0.78, normal (22) -> 1.0, jacked (28) -> 1.22
+  const W=Math.max(0.75, Math.min(1.32, 0.75 + (bmi-17)/22));
+  // Sex factor (shoulders vs hips)
+  const sh=S.sex==='F'?0.88:1.0;
+  const hp=S.sex==='F'?1.10:1.0;
+  // Strength factor — beefier silhouette per limb
+  const ST=0.92 + Math.min(0.6, S.strength*0.3);
+  const wSh=W*sh*ST, wTorso=W*ST, wArm=W*ST, wLeg=W*hp*ST;
+  return [
+    { key:'head',    mus:[],            cx:140,            cy:46,  rx:21, ry:25 },
+    { key:'neck',    mus:['traps'],     cx:140,            cy:78,  rx:11*wTorso, ry:9 },
+    { key:'deltL',   mus:['delts'],     cx:140-46*wSh,     cy:104, rx:18*wSh, ry:18 },
+    { key:'deltR',   mus:['delts'],     cx:140+46*wSh,     cy:104, rx:18*wSh, ry:18 },
+    { key:'chest',   mus:['chest','back'], cx:140,         cy:128, rx:46*wTorso, ry:28 },
+    { key:'abs',     mus:['abs','back'], cx:140,           cy:182, rx:34*wTorso, ry:32 },
+    { key:'bicepL',  mus:['arms'],      cx:140-66*wArm,    cy:148, rx:14*wArm, ry:34 },
+    { key:'bicepR',  mus:['arms'],      cx:140+66*wArm,    cy:148, rx:14*wArm, ry:34 },
+    { key:'forearmL',mus:['arms'],      cx:140-72*wArm,    cy:210, rx:11*wArm, ry:32 },
+    { key:'forearmR',mus:['arms'],      cx:140+72*wArm,    cy:210, rx:11*wArm, ry:32 },
+    { key:'handL',   mus:[],            cx:140-74*wArm,    cy:250, rx:8, ry:10 },
+    { key:'handR',   mus:[],            cx:140+74*wArm,    cy:250, rx:8, ry:10 },
+    { key:'glutes',  mus:['glutes','hams'], cx:140,        cy:228, rx:34*wLeg, ry:18 },
+    { key:'quadL',   mus:['quads'],     cx:140-19*wLeg,    cy:286, rx:18*wLeg, ry:42 },
+    { key:'quadR',   mus:['quads'],     cx:140+19*wLeg,    cy:286, rx:18*wLeg, ry:42 },
+    { key:'calfL',   mus:['calves'],    cx:140-19*wLeg,    cy:364, rx:13*wLeg, ry:34 },
+    { key:'calfR',   mus:['calves'],    cx:140+19*wLeg,    cy:364, rx:13*wLeg, ry:34 },
+    { key:'footL',   mus:[],            cx:140-21*wLeg,    cy:404, rx:11, ry:8 },
+    { key:'footR',   mus:[],            cx:140+21*wLeg,    cy:404, rx:11, ry:8 },
+  ];
+}
+
+// ───────── density model ─────────
+// MAV (max adaptive volume) per group — RP-ish
+const MAV={ chest:20, back:22, delts:22, arms:18, quads:18, hams:16, abs:25, calves:16, glutes:16, traps:20 };
+function densityFor(r,S){
+  // base density: scales with consistency + strength (life-quality multiplier)
+  const overall = (0.55 + 0.65*S.consistency) * (0.7 + 0.5*Math.min(1.5,S.strength));
+  // per-region: bonus from muscle volume (vs MAV)
+  let mScore=0, n=0;
+  for(const m of r.mus){
+    const v=S.vol[m]||0; const mav=MAV[m]||16;
+    mScore += Math.min(1.4, v/mav);
+    n++;
+  }
+  if(n>0) mScore /= n; else mScore = 0.65; // neutral for head/hands/feet
+  const base = r.key==='head' ? 12 : (r.rx*r.ry)/30; // ellipse-area heuristic
+  return Math.max(4, Math.round(base * overall * (0.55 + 0.9*mScore)));
+}
+
+// ───────── seeded RNG (mulberry32) ─────────
+function rng32(seed){ let s=seed>>>0; return ()=>{ s=(s+0x6D2B79F5)>>>0; let t=s; t=Math.imul(t^t>>>15, t|1); t^=t+Math.imul(t^t>>>7, t|61); return ((t^t>>>14)>>>0)/4294967296; }; }
+
+function ellipsePts(r,n,rand){
+  const out=[]; for(let i=0;i<n;i++){ const rho=Math.sqrt(rand()), th=rand()*Math.PI*2;
+    out.push({x:r.cx+r.rx*rho*Math.cos(th), y:r.cy+r.ry*rho*Math.sin(th), region:r.key}); }
+  return out;
+}
+
+// ───────── renderers ─────────
+function pointCloud(allPts){
+  let s=''; for(const p of allPts) s+=`<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r=".75" fill="rgba(243,243,244,.72)"/>`;
+  return s;
+}
+function wireframe(allPts){
+  const N=allPts.length; const NB=20; // neighbor distance
+  let lines=''; const used=new Set();
+  for(let i=0;i<N;i++){
+    const p=allPts[i]; const cand=[];
+    for(let j=0;j<N;j++){ if(j===i)continue; const q=allPts[j]; const d=Math.hypot(q.x-p.x,q.y-p.y); if(d<NB) cand.push({j,d}); }
+    cand.sort((a,b)=>a.d-b.d);
+    for(let k=0;k<Math.min(2,cand.length);k++){
+      const key=Math.min(i,cand[k].j)+'-'+Math.max(i,cand[k].j);
+      if(used.has(key))continue; used.add(key);
+      const q=allPts[cand[k].j]; const op=(.42 - cand[k].d*.013).toFixed(2);
+      lines+=`<line x1="${p.x.toFixed(1)}" y1="${p.y.toFixed(1)}" x2="${q.x.toFixed(1)}" y2="${q.y.toFixed(1)}" stroke="rgba(243,243,244,${op})" stroke-width=".4"/>`;
+    }
+  }
+  let dots=''; for(const p of allPts) dots+=`<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r=".85" fill="rgba(243,243,244,.88)"/>`;
+  return lines+dots;
+}
+function constellation(allPts, regs, rand){
+  const hubs=regs.filter(r=>['chest','abs','glutes','deltL','deltR'].includes(r.key));
+  let lines='';
+  for(const hub of hubs){
+    const cand=allPts.filter(p=>p.region!==hub.key);
+    for(const t of cand){
+      if(rand()>.07)continue;
+      const d=Math.hypot(t.x-hub.cx,t.y-hub.cy);
+      const op=(.32 - d*.0018).toFixed(2);
+      lines+=`<line x1="${hub.cx}" y1="${hub.cy}" x2="${t.x.toFixed(1)}" y2="${t.y.toFixed(1)}" stroke="rgba(243,243,244,${op})" stroke-width=".32"/>`;
+    }
+  }
+  let dots=''; for(const p of allPts) dots+=`<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r=".75" fill="rgba(243,243,244,.78)"/>`;
+  return lines+dots;
+}
+
+// ───────── build everything ─────────
+function build(S){
+  const regs=regions(S);
+  const rand=rng32(0xA110CE);
+  const all=[];
+  for(const r of regs){ const n=densityFor(r,S); for(const p of ellipsePts(r,n,rand)) all.push(p); }
+  return {regs, all};
+}
+
+function svgFrame(content){
+  return `<svg class="av" viewBox="0 0 280 440" preserveAspectRatio="xMidYMid meet">`
+    +`<defs><pattern id="dotg" width="20" height="20" patternUnits="userSpaceOnUse"><circle cx=".7" cy=".7" r=".3" fill="rgba(243,243,244,.08)"/></pattern></defs>`
+    +`<rect width="280" height="440" fill="url(#dotg)"/>`
+    +`<line x1="140" y1="6" x2="140" y2="434" stroke="rgba(243,243,244,.06)" stroke-width=".5" stroke-dasharray="2 4"/>`
+    +`<g class="bodyfx">${content}</g>`
+    +`</svg>`;
+}
+
+function render(){
+  const S=readState();
+  // sync labels
+  $('lblW').textContent=S.weightKg; $('lblH').textContent=S.heightCm; $('lblA').textContent=S.age;
+  $('lblC').textContent=S.consistency.toFixed(2); $('lblS').textContent=S.strength.toFixed(2);
+  ['chest','back','delts','arms','quads','hams','abs','calves'].forEach(k=>{ const el=$('lblV'+k); if(el) el.textContent=S.vol[k]; });
+  const bmi=S.weightKg/Math.pow(S.heightCm/100,2);
+  const {regs,all}=build(S);
+  const totalPts=all.length;
+
+  const cards=[
+    {name:'A · point-cloud', desc:'solo puntos — densidad cuenta la historia. limpio, orgánico, fácil de leer.', svg: svgFrame(pointCloud(all))},
+    {name:'B · mesh (puntos + aristas locales)', desc:'puntos conectados a vecinos. estilo wireframe esqueleto, denso.', svg: svgFrame(wireframe(all))},
+    {name:'C · constellation', desc:'líneas radiantes desde hubs (pecho/abs/glúteos/hombros). estilo blueprint da Vinci.', svg: svgFrame(constellation(all,regs,rng32(0xC07EE7)))},
+  ];
+
+  $('grid').innerHTML = cards.map((c,i)=>(
+    `<div class="col"><div class="hdr"><span class="name">${c.name}</span><span class="v">v${i+1}</span></div>`
+    +`<div class="desc">${c.desc}</div>${c.svg}`
+    +`<div class="footstats"><span>pts: <b>${totalPts}</b></span><span>BMI: <b>${bmi.toFixed(1)}</b></span><span>regs: <b>${regs.length}</b></span></div></div>`
+  )).join('');
+}
+render();
+</script>
+</body></html>
