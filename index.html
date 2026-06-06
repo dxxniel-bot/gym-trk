@@ -873,7 +873,7 @@ function renderMacros(){
   const macroRing=(key,lbl,val,goal,unit,kpg)=>{
     const isRem=!!state.ringRem[key];
     let p,ctr,sub;
-    if(state.macroPct){ p=goal?val/goal*100:0; ctr=Math.round(val*kpg/mkcal*100)+'%'; sub='de kcal'; }
+    if(state.macroPct){ p=goal?val/goal*100:0; ctr=Math.round(p)+'%'; sub='completado'; }
     else if(isRem){ const r=goal-val; p=goal?r/goal*100:0; ctr=Math.round(r); sub='restante'; }
     else { p=goal?val/goal*100:0; ctr=Math.round(val); sub='/ '+goal+' '+unit; }
     return `<div class="cell ${macroStatus(val,goal)}" data-act="ringtog" data-k="${key}">${ringHTML(p,'<div class="num">'+ctr+'</div>',null,isRem)}<div class="cap">${lbl}</div><div class="sub">${sub}</div></div>`;
@@ -903,8 +903,7 @@ function renderMacros(){
   if(!items.length){ log=`<div class="empty">aún no registras comida hoy<br/>toca ＋ abajo para agregar</div>`; }
   tags.forEach(tag=>{ const list=byTag[tag];
     const mt={kcal:0,protein:0,carbs:0,fat:0,caffeine:0,alcohol:0}; list.forEach(m=>{mt.kcal+=+m.kcal||0;mt.protein+=+m.protein||0;mt.carbs+=+m.carbs||0;mt.fat+=+m.fat||0;mt.caffeine+=+m.caffeine||0;mt.alcohol+=+m.alcohol||0;});
-    const gcaf=(mt.alcohol>0?` · ${Math.round(mt.alcohol)}g alc`:'');
-    log+=`<div class="grp"><div class="ghead" data-act="mealsummary" data-tag="${escTxt(tag)}" style="cursor:pointer"><span><span class="hash">#</span>${escTxt(tag)}</span><span class="gmac">${Math.round(mt.protein)}P ${Math.round(mt.carbs)}C ${Math.round(mt.fat)}F</span><span class="gkc">${Math.round(mt.kcal)}${gcaf}</span></div>`;
+    log+=`<div class="grp"><div class="ghead" data-act="mealsummary" data-tag="${escTxt(tag)}" style="cursor:pointer"><span><span class="hash">#</span>${escTxt(tag)}</span><span class="gmac">${Math.round(mt.protein)}P ${Math.round(mt.carbs)}C ${Math.round(mt.fat)}F</span><span class="gkc">${Math.round(mt.kcal)}</span></div>`;
     list.forEach(m=>{ const nm=(m.name||'').replace(/ ×[\d.]+$/,''); const br=(m._food&&m._food.brand)||''; const exp=state.expandedMeal===m.id; const mp=Math.round(m.protein)||0,mc=Math.round(m.carbs)||0,mf=Math.round(m.fat)||0; const _ep=mp*4,_ec=mc*4,_ef=mf*9; const _dom=(mp+mc+mf)>0?(_ef>=_ep&&_ef>=_ec?'f':(_ec>=_ep?'c':'p')):''; const _bq=(v,l,k)=>_dom===k?`<b style="color:var(--fg)">${v}${l}</b>`:`${v}${l}`; const mq=(mp+mc+mf)>0?`${_bq(mp,'P','p')} ${_bq(mc,'C','c')} ${_bq(mf,'F','f')}`:'';
       log+=`<div class="item${exp?' exp':''}" data-act="viewmeal" data-id="${m.id}"><span class="nm"><b class="q">${itemQtyLabel(m)}</b>${escTxt(nm)}${br?' <span class="br">'+escTxt(br)+'</span>':''}</span><span class="macq">${mq}</span><span class="kc">${Math.round(m.kcal)||0}</span></div>`;
       if(exp) log+=mealDetailInline(m);
@@ -2373,7 +2372,7 @@ function openBarcode(){
    <div class="field"><label>O ESCRIBE EL CÓDIGO</label><input id="bc_code" inputmode="numeric" placeholder="7501..." autocomplete="off"/></div>
    <div class="sheetbtns"><button class="ok" id="bc_go">look up</button><button class="cancel" id="bc_cap">capturar</button><button class="cancel" data-act="closemodal">cancel</button></div>`);
   const doLookup=async()=>{ const code=val('bc_code'); if(!code)return; const m=document.getElementById('bc_msg'); if(m)m.innerHTML='<span class="spin"></span>buscando…';
-    const local=(db.foods||[]).find(f=>f.barcode===code);
+    const local=(db.foods||[]).find(f=>foodHasCode(f,code));
     if(local){ openVerify(local,{fromId:local.id,qty:1,tag:window._faTag}); return; }
     const food=await lookupBarcode(code);
     if(food&&food.name){ openVerify(food,{isNew:true,tag:window._faTag}); return; }
@@ -2627,18 +2626,34 @@ function scanCodeToInput(inputId){
   inp.click();
 }
 function barcodeOf(m){ return (m&&m._food&&m._food.barcode)||(m&&m.barcode)||''; }
+// multi-barcode: f.barcode is the legacy primary, f.barcodes[] holds ALL linked codes (presentaciones distintas).
+// el lookup revisa ambos campos para que escanear cualquier presentación encuentre el mismo producto.
+function foodCodes(f){ const out=new Set(); if(!f)return []; if(f.barcode)out.add(String(f.barcode)); (f.barcodes||[]).forEach(b=>{ if(b)out.add(String(b)); }); return [...out]; }
+function foodHasCode(f,code){ if(!code||!f)return false; const c=String(code); if(f.barcode===c)return true; return Array.isArray(f.barcodes) && f.barcodes.indexOf(c)>=0; }
+function addBarcodeToFood(f,code){ if(!f||!code)return; const c=String(code); f.barcodes=f.barcodes||[]; if(f.barcode===c)return; if(f.barcodes.indexOf(c)>=0)return; if(!f.barcode)f.barcode=c; else f.barcodes.push(c); }
 function openMealCode(){
   const t=curDate(); const m=(db.meals[t]||[]).find(x=>x.id===window._mealId); if(!m)return;
-  openModal(`<h3>código de barras</h3>
-   <div class="submeta" style="margin-bottom:8px">${(m.name||'').replace(/[<&]/g,c=>c==='<'?'&lt;':'&amp;')}</div>
-   <div class="field"><label>CÓDIGO</label><input id="mc_code" inputmode="numeric" value="${barcodeOf(m).replace(/"/g,'&quot;')}" placeholder="escanea o escribe los dígitos"/></div>
+  // resolve the saved-food entry to read/write its barcodes[] list
+  const baseName=(m.name||'').replace(/ ×[\d.]+$/,'');
+  const fdb=(db.foods||[]).find(x=>(m._food&&m._food.id&&x.id===m._food.id)||x.name===baseName);
+  const codes=fdb?foodCodes(fdb):foodCodes(m._food||{barcode:m.barcode});
+  const codeList=codes.length?codes.map(c=>`<div class="line"><span class="k">${escTxt(c)}</span><span class="dots"></span><span class="v"><a data-act="mc_rm" data-c="${escTxt(c)}" style="color:var(--bad);cursor:pointer;font-size:11px">×</a></span></div>`).join(''):'<div class="submeta" style="padding:6px 0">sin códigos · agrega uno abajo</div>';
+  openModal(`<h3>códigos de barras</h3>
+   <div class="submeta" style="margin-bottom:10px">${escTxt(m.name||'')} · varias presentaciones del mismo producto pueden tener distintos códigos</div>
+   <div style="margin-bottom:12px">${codeList}</div>
+   <div class="field"><label>AÑADIR CÓDIGO</label><input id="mc_code" inputmode="numeric" placeholder="escanea o escribe los dígitos" autocomplete="off"/></div>
    <button class="b" id="mc_scan" style="width:100%;margin-bottom:10px">escanear código (foto)</button>
-   <div class="sheetbtns"><button class="ok" id="mc_save">guardar</button><button class="cancel" data-act="closemodal">cancel</button></div>`);
+   <div class="sheetbtns"><button class="ok" id="mc_add">+ añadir</button><button class="cancel" data-act="closemodal">close</button></div>`);
   document.getElementById('mc_scan').onclick=()=>scanCodeToInput('mc_code');
-  document.getElementById('mc_save').onclick=()=>{ const code=val('mc_code'); m._food=m._food||{}; m._food.barcode=code; m.barcode=code;
-    const baseName=(m.name||'').replace(/ ×[\d.]+$/,'');
-    const fdb=(db.foods||[]).find(x=>(m._food.id&&x.id===m._food.id)||x.name===baseName); if(fdb)fdb.barcode=code;
-    save(); closeModal(); render(); };
+  document.getElementById('mc_add').onclick=()=>{ const code=(val('mc_code')||'').trim(); if(!code){ alert('Escribe o escanea un código.'); return; }
+    if(fdb)addBarcodeToFood(fdb,code);
+    m._food=m._food||{}; addBarcodeToFood(m._food,code); if(!m.barcode)m.barcode=code;
+    save(); closeModal(); openMealDetail(m.id); };
+  document.querySelectorAll('[data-act="mc_rm"]').forEach(el=>el.onclick=()=>{ const c=el.dataset.c; if(!confirm('¿Quitar el código '+c+'?'))return;
+    if(fdb){ if(fdb.barcode===c){ fdb.barcode=(fdb.barcodes||[]).shift()||''; } else { fdb.barcodes=(fdb.barcodes||[]).filter(x=>x!==c); } }
+    if(m._food){ if(m._food.barcode===c){ m._food.barcode=(m._food.barcodes||[]).shift()||''; } else { m._food.barcodes=(m._food.barcodes||[]).filter(x=>x!==c); } }
+    if(m.barcode===c)m.barcode=(fdb&&fdb.barcode)||'';
+    save(); closeModal(); openMealCode(); });
 }
 function openMealDetail(id){
   const t=curDate(); const m=(db.meals[t]||[]).find(x=>x.id===id); if(!m)return; window._mealId=id;
@@ -2648,7 +2663,7 @@ function openMealDetail(id){
    <div class="submeta" style="margin-bottom:8px">#${m.tag}${(m._food&&m._food.brand)?' · '+m._food.brand:''}${m.time?' · '+m.time:''}${m.serving?' · '+m.serving:''}${m.qty&&m.qty!==1?' · ×'+numTxt(m.qty):''}</div>
    ${row('kcal',m.kcal,'')}${row('protein',m.protein,'g')}${row('carbs',m.carbs,'g')}${row('fat',m.fat,'g')}${row('sugar',m.sugar,'g')}${row('fiber',m.fiber,'g')}${row('sodium',m.sodium,'mg')}${row('potassium',m.potassium,'mg')}${row('caffeine',m.caffeine,'mg')}${row('liquid',m.water,'L')}
    <div class="line"><span class="k">fuente</span><span class="dots"></span><span class="v">${(()=>{const s=foodSource(m._food);return (s.ok?'<span style="color:var(--good)">✓</span> ':'')+escTxt(s.label);})()}</span></div>
-   <div class="line"><span class="k">código</span><span class="dots"></span><span class="v">${bc?bc:'<a data-act="mealcode" style="text-decoration:underline;cursor:pointer">+ añadir</a>'}</span></div>
+   <div class="line"><span class="k">código${(()=>{const fdb=(db.foods||[]).find(x=>(m._food&&m._food.id&&x.id===m._food.id)||x.name===(m.name||'').replace(/ ×[\d.]+$/,'')); const n=(fdb?foodCodes(fdb):foodCodes(m._food||{barcode:bc})).length; return n>1?'s ('+n+')':'';})()}</span><span class="dots"></span><span class="v">${bc?(`<a data-act="mealcode" style="cursor:pointer;color:var(--fg)">${escTxt(bc)} ✎</a>`):'<a data-act="mealcode" style="text-decoration:underline;cursor:pointer">+ añadir</a>'}</span></div>
    <div class="sheetbtns" style="margin-top:12px"><button class="ok" data-act="editmeal">edit</button>${bc?'<button class="cancel" data-act="mealcode">código</button>':''}<button class="cancel" data-act="delmealnow">delete</button><button class="cancel" data-act="closemodal">close</button></div>`);
 }
 function commitLog(saveToDb){
