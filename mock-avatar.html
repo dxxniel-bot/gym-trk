@@ -2,7 +2,7 @@
 <html lang="es"><head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no"/>
-<title>gym//TRK · mock avatar v3</title>
+<title>gym//TRK · mock avatar v4 (anatomía real)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700;800&display=swap" rel="stylesheet"/>
 <style>
@@ -21,7 +21,7 @@
   .col .hdr .v{font-size:9px;color:var(--o40);letter-spacing:1px;text-transform:uppercase;}
   .col .name{font-size:11px;font-weight:800;letter-spacing:.5px;}
   .col .desc{font-size:9px;color:var(--o50);margin-top:2px;line-height:1.45;min-height:24px;}
-  .av{display:block;margin:8px auto 6px;width:100%;max-width:280px;}
+  .av{display:block;margin:8px auto 6px;width:100%;max-width:300px;}
   .footstats{display:flex;justify-content:space-between;align-items:baseline;font-size:9px;color:var(--o40);margin-top:8px;letter-spacing:.5px;flex-wrap:wrap;gap:4px}
   .footstats b{color:var(--fg);font-weight:700;}
   .controls{max-width:1100px;margin:28px auto 0;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:16px;}
@@ -36,15 +36,15 @@
   .legend b{color:var(--o60);}
 </style></head>
 <body>
-<h1>gym<b>//</b>TRK · mock <b>·</b> avatar v3 — anatomía real (canon 8 cabezas)</h1>
-<div class="sub">silueta continua · proporciones de Loomis · sampling por bandas horizontales · más puntos en bordes</div>
+<h1>gym<b>//</b>TRK · mock <b>·</b> avatar v4 — anatomía real (antropometría)</h1>
+<div class="sub">contorno definido por landmarks reales · músculos visibles · dimorfismo F/M documentado · distribución de grasa por sexo</div>
 
 <div class="grid" id="grid"></div>
 
 <div class="controls">
-  <div class="ctitle">simulador · ajusta y observa</div>
+  <div class="ctitle">simulador</div>
   <div class="row">
-    <div class="field"><label>peso · <b><span id="lblW">75</span> kg</b></label><input type="range" id="w" min="45" max="130" value="75"/></div>
+    <div class="field"><label>peso · <b><span id="lblW">75</span> kg</b></label><input type="range" id="w" min="42" max="135" value="75"/></div>
     <div class="field"><label>estatura · <b><span id="lblH">175</span> cm</b></label><input type="range" id="h" min="150" max="200" value="175"/></div>
     <div class="field"><label>sexo</label><select id="sex"><option value="M">M</option><option value="F">F</option></select></div>
     <div class="field"><label>edad · <b><span id="lblA">27</span></b></label><input type="range" id="age" min="16" max="65" value="27"/></div>
@@ -65,7 +65,7 @@
 </div>
 
 <div class="legend">
-  <b>canon de 8 cabezas (Vitruvio · Loomis)</b> · cabeza ≈ 50px · hombros 2.0 (M) / 1.6 (F) cabezas · cintura 1.4 (M) / 1.0 (F) · cadera 1.5 (M) / 1.8 (F) · brazo a la altura del pubis · piernas = 4 cabezas · centro vertical en pubis · pies apuntan ligeramente afuera
+  <b>datos aplicados</b> · <b>vertical</b>: head 13% · shoulder 81.7% · navel 60% · pubis 51% · knee 28.5% · ankle 4% (NASA/UAA antropometría) · <b>horizontal</b>: M biacromial 1.62 cabezas (V real, no 2.0 de comic) · F 1.35 cabezas (no excesivamente estrecho) · sho/hip M ≈ 1.15 · F ≈ 0.90 (cadera>hombros) · <b>BF</b>: M android (abdomen/cintura) · F gynoid (caderas/muslos/glúteos) · <b>músculo</b>: contornos influidos por delts (sho cap), bíceps (bulge arm), vasto lateral (outer thigh peak), gastro (calf inner bulge)
 </div>
 
 <script>
@@ -76,376 +76,487 @@ function readState(){
   return {
     weightKg:+$('w').value, heightCm:+$('h').value, sex:$('sex').value, age:+$('age').value,
     consistency:+$('c').value/100, strength:+$('s').value/100,
-    vol:{ chest:+$('vchest').value, back:+$('vback').value, delts:+$('vdelts').value, arms:+$('varms').value, quads:+$('vquads').value, hams:+$('vhams').value, glutes:+$('vglutes').value, abs:+$('vabs').value, calves:+$('vcalves').value }
+    vol:{chest:+$('vchest').value,back:+$('vback').value,delts:+$('vdelts').value,arms:+$('varms').value,quads:+$('vquads').value,hams:+$('vhams').value,glutes:+$('vglutes').value,abs:+$('vabs').value,calves:+$('vcalves').value}
   };
 }
 
-// ──────── helpers ────────
+// ─── helpers ───
 function lerp(a,b,t){ return a+(b-a)*t; }
 function smoothstep(t){ return t<0?0:t>1?1:t*t*(3-2*t); }
-function rng32(seed){ let s=seed>>>0; return ()=>{ s=(s+0x6D2B79F5)>>>0; let t=s; t=Math.imul(t^t>>>15,t|1); t^=t+Math.imul(t^t>>>7,t|61); return ((t^t>>>14)>>>0)/4294967296; }; }
+function rng32(seed){let s=seed>>>0;return()=>{s=(s+0x6D2B79F5)>>>0;let t=s;t=Math.imul(t^t>>>15,t|1);t^=t+Math.imul(t^t>>>7,t|61);return((t^t>>>14)>>>0)/4294967296;};}
+function clamp(v,lo,hi){return v<lo?lo:v>hi?hi:v;}
 
-// ──────── morphology (real anatomical proportions) ────────
+// ─── morphology with real anthropometric data ───
 function morphology(S){
-  const bmi=S.weightKg/Math.pow(S.heightCm/100,2);
-  const isF=S.sex==='F';
-  const volTot=S.vol.chest+S.vol.back+S.vol.delts+S.vol.arms+S.vol.quads+S.vol.hams+S.vol.abs+S.vol.calves+S.vol.glutes;
-  const muscleDev=Math.min(1.5,volTot/100);
-  const bf=Math.max(0.04,Math.min(0.40,(bmi-16)/24-muscleDev*0.13));
-  // moderate mass scaling — anatomy stays plausible
-  const mass=0.88+Math.min(0.40,(bmi-17)/20);
-  const STR=0.95+Math.min(0.30,S.strength*0.18);
-  const v=(m,mav,sc)=> 1 + sc*(S.vol[m]||0)/mav;
+  const bmi = S.weightKg / Math.pow(S.heightCm/100, 2);
+  const isF = S.sex === 'F';
+  const volTot = S.vol.chest+S.vol.back+S.vol.delts+S.vol.arms+S.vol.quads+S.vol.hams+S.vol.abs+S.vol.calves+S.vol.glutes;
+  const muscleDev = clamp(volTot/100, 0, 1.5);
+  // body-fat estimate (Deurenberg-like simple)
+  const bfRaw = isF
+    ? 1.20*bmi + 0.23*S.age - 5.4
+    : 1.20*bmi + 0.23*S.age - 16.2;
+  const bf = clamp(bfRaw/100, 0.05, 0.45) - muscleDev*0.04;
 
-  // 8-head canon · head = 50px height, ~37px wide
-  // viewBox 280×440 · headTop=18 · sole=418
-  const HEAD_H=50, HEAD_W=37;
+  // viewBox 280x440 · head at top 18 → sole at 418 (400px = "100%" body height)
+  // Apply real antropometric % to landmarks
+  const TOP=18, TOTAL=400;
+  const Y={};
+  // Vertical landmarks (NASA/UAA + Loomis modern adjustment)
+  Y.headTop = TOP;
+  Y.headBtm = TOP + TOTAL*0.130;        // 70
+  Y.chin = TOP + TOTAL*0.122;           // 67
+  Y.jaw = TOP + TOTAL*0.116;            // 64
+  Y.neckBtm = TOP + TOTAL*0.158;        // 81
+  Y.shoulder = TOP + TOTAL*0.183;       // 91 (acromion = 81.7% from sole → 18.3% from top)
+  Y.armpit = TOP + TOTAL*0.215;         // 104
+  Y.nipple = TOP + TOTAL*0.270;         // 126 (or bust apex F)
+  Y.sternum = TOP + TOTAL*0.320;        // 146
+  Y.ribs = TOP + TOTAL*0.355;           // 160
+  Y.waist = TOP + TOTAL*0.395;          // 176 (narrowest, just above navel)
+  Y.navel = TOP + TOTAL*0.420;          // 186
+  Y.iliac = TOP + TOTAL*0.450;          // 198 (top of iliac crest, hip start)
+  Y.trochanter = TOP + TOTAL*0.490;     // 214 (greater trochanter, widest hip)
+  Y.pubis = TOP + TOTAL*0.510;          // 222 (centro vertical real)
+  Y.crotch = TOP + TOTAL*0.520;         // 226
+  Y.thighWidest = TOP + TOTAL*0.555;    // 240 (just below crotch, vastus lateralis swell)
+  Y.midThigh = TOP + TOTAL*0.620;       // 266
+  Y.knee = TOP + TOTAL*0.715;           // 304 (kneecap top, real 28.5% from sole)
+  Y.kneeBtm = TOP + TOTAL*0.745;        // 316
+  Y.gastroPeak = TOP + TOTAL*0.815;     // 344 (medial gastro peak)
+  Y.midCalf = TOP + TOTAL*0.870;        // 366
+  Y.ankle = TOP + TOTAL*0.960;          // 402
+  Y.sole = TOP + TOTAL*1.000;           // 418
+  // Arm landmarks
+  Y.bicepPeak = TOP + TOTAL*0.260;      // 122 (just above nipple level, bicep belly)
+  Y.elbow = TOP + TOTAL*0.375;          // 168 (elbow ≈ above navel level)
+  Y.forearmPeak = TOP + TOTAL*0.420;    // 186
+  Y.wrist = TOP + TOTAL*0.485;          // 212 (wrist hangs at hip level)
+  Y.fingertip = TOP + TOTAL*0.555;      // 240 (mid-thigh)
 
-  // BASELINE widths in viewBox units at mass=1, in canon-relative head multiples
-  // M: shoulder 2.0h, chest 1.95h, waist 1.35h, hip 1.50h
-  // F: shoulder 1.55h, chest 1.50h, waist 0.95h, hip 1.85h  ← hourglass real
-  const BASE = isF ? {
-    neck:18, shoulder:HEAD_W*1.55, chest:HEAD_W*1.50, ribs:HEAD_W*1.20, waist:HEAD_W*0.95,
-    hip:HEAD_W*1.85, thigh:30, knee:18, calf:23, ankle:13, foot:32,
-    upperArm:24, elbow:19, forearm:20, wrist:13, hand:18,
-    bustOut:11, gluteOut:14
-  } : {
-    neck:22, shoulder:HEAD_W*2.00, chest:HEAD_W*1.95, ribs:HEAD_W*1.55, waist:HEAD_W*1.35,
-    hip:HEAD_W*1.50, thigh:33, knee:22, calf:28, ankle:16, foot:38,
-    upperArm:32, elbow:24, forearm:26, wrist:18, hand:22,
-    bustOut:0, gluteOut:5
+  // ─── horizontal widths (HALF-widths in viewBox px) ───
+  // Reference scale: head_w = 0.7 * head_h ≈ 28 px at canon
+  // M biacromial in real proportions = 1.62 head_h, so shoulder_full = 1.62*headH
+  // F = 1.35 head_h
+  const headH_px = TOTAL * 0.130;       // 52
+  const headW_full = headH_px * 0.74;   // 38.5 — head_w/h ratio
+  // baseline half-widths (full width / 2)
+  const M_BASE = {
+    head: headW_full/2,
+    neck: 9,
+    shoulder: (headH_px*1.62)/2,        // 42 → full 84
+    chest: (headH_px*1.40)/2,           // 36 → full 72
+    ribs: (headH_px*1.15)/2,            // 30
+    waist: (headH_px*1.18)/2,           // 30.5
+    hip: (headH_px*1.42)/2,             // 37 → full 74
+    thigh: (headH_px*0.56)/2,           // 14.5
+    knee: (headH_px*0.35)/2,            // 9
+    calf: (headH_px*0.45)/2,            // 11.5
+    ankle: (headH_px*0.22)/2,           // 5.7
+    bicep: (headH_px*0.45)/2,           // 11.7
+    elbow: (headH_px*0.36)/2,
+    forearm: (headH_px*0.42)/2,
+    wrist: (headH_px*0.25)/2,
   };
+  const F_BASE = {
+    head: headW_full/2 * 0.96,
+    neck: 7,
+    shoulder: (headH_px*1.35)/2,        // 35 → full 70
+    chest: (headH_px*1.18)/2,           // 30.5
+    ribs: (headH_px*1.05)/2,            // 27
+    waist: (headH_px*0.85)/2,           // 22 → full 44 (mucho más pinch)
+    hip: (headH_px*1.55)/2,             // 40 → full 80 (¡más ancha que hombros!)
+    thigh: (headH_px*0.60)/2,           // 15.6 (proporcionalmente más grueso)
+    knee: (headH_px*0.32)/2,            // 8.3
+    calf: (headH_px*0.40)/2,            // 10.4 (más delgado)
+    ankle: (headH_px*0.20)/2,           // 5.2
+    bicep: (headH_px*0.36)/2,           // 9.4
+    elbow: (headH_px*0.30)/2,
+    forearm: (headH_px*0.35)/2,
+    wrist: (headH_px*0.22)/2,
+  };
+  const BASE = isF ? F_BASE : M_BASE;
 
-  const M={};
-  for(const k in BASE) M[k]=BASE[k]*mass;
+  // Apply mass scaling (BMI modulation)
+  // Normal BMI 22 → mass 1.0; BMI 17 → 0.86; BMI 30 → 1.22
+  const mass = 0.86 + clamp((bmi-17)/13, 0, 1) * 0.36;
 
-  // Muscle bonuses
-  M.shoulder *= STR * v('delts',22,0.16);
-  M.chest    *= STR * v('chest',20,0.10) * v('back',22,0.06);
-  M.ribs     *= STR * v('back',22,0.05);
-  M.upperArm *= STR * v('arms',18,0.26);
-  M.elbow    *= STR * v('arms',18,0.10);
-  M.forearm  *= STR * v('arms',18,0.18);
-  M.thigh    *= STR * v('quads',18,0.22);
-  M.knee     *= STR * (1+0.05*(S.vol.quads/18));
-  M.calf     *= STR * v('calves',16,0.20);
-  M.gluteOut *= STR * (1+0.30*(S.vol.glutes/16));
+  // Sex-specific muscle bonus envelope: F caps muscle response at ~80%
+  const sexMuscle = isF ? 0.70 : 1.0;
+  const STR = 0.96 + S.strength*0.12;
 
-  // Body fat effects
-  M.waist *= (1+bf*0.65)*(1-0.05*(S.vol.abs/22));
-  M.ribs  *= (1+bf*0.25);
-  M.chest *= (1+bf*0.15);
-  M.hip   *= (1+bf*0.20);
-  M.thigh *= (1+bf*0.15);
-  M.bustOut *= (1+bf*0.25);
+  // Per-muscle multipliers (cuánto crece cada ancho con su volumen)
+  function vBoost(m, mav, sc){ return 1 + sc * sexMuscle * (S.vol[m]||0)/mav; }
 
-  M.isF=isF; M.bmi=bmi; M.bf=bf; M.mass=mass;
-  M.muscleDev=muscleDev; M.headH=HEAD_H; M.headW=HEAD_W;
-  return M;
+  const W = {};
+  for (const k in BASE) W[k] = BASE[k] * mass;
+
+  // Anatomical muscle bonuses (each one only affects relevant width)
+  W.shoulder *= vBoost('delts', 22, 0.15) * STR;
+  W.chest    *= vBoost('chest', 20, 0.08) * vBoost('back', 22, 0.05) * STR;
+  W.ribs     *= vBoost('back', 22, 0.04);
+  W.bicep    *= vBoost('arms', 18, 0.22) * STR;
+  W.elbow    *= vBoost('arms', 18, 0.08);
+  W.forearm  *= vBoost('arms', 18, 0.16) * STR;
+  W.thigh    *= vBoost('quads', 18, 0.20) * STR;
+  W.knee     *= 1 + 0.04*(S.vol.quads/18);
+  W.calf     *= vBoost('calves', 16, 0.20) * STR;
+
+  // Body-fat distribution (sex-specific patterns)
+  if (isF){
+    // gynoid: hip, thigh, buttock
+    W.hip   *= (1 + bf*0.55);
+    W.thigh *= (1 + bf*0.35);
+    W.waist *= (1 + bf*0.30);
+    W.chest *= (1 + bf*0.20);
+    W.bicep *= (1 + bf*0.15);
+    W.forearm *= (1 + bf*0.10);
+  } else {
+    // android: waist, abdomen
+    W.waist *= (1 + bf*0.80);
+    W.ribs  *= (1 + bf*0.30);
+    W.hip   *= (1 + bf*0.20);
+    W.chest *= (1 + bf*0.18);
+    W.bicep *= (1 + bf*0.12);
+    W.thigh *= (1 + bf*0.15);
+  }
+  // Abs vol slightly narrows waist
+  W.waist *= (1 - 0.05*(S.vol.abs/22));
+  // Glutes vol → hip extension (F much more pronounced)
+  const gluteExtra = (S.vol.glutes/16) * (isF ? 8 : 3) * mass;
+  W.hipGluteOut = gluteExtra;
+  // Bust (F)
+  W.bustOut = isF ? 7 * mass * (1 + bf*0.35) : 0;
+  // Pec shelf (M)
+  W.pecShelf = !isF ? 3 * mass * (1 + 0.20*(S.vol.chest/20)) : 0;
+
+  // Leg separation (between leg centers when standing)
+  W.legSep = W.thigh * 0.55;
+  // Arm position offset (each arm centered just inside shoulder edge)
+  W.armCx = W.shoulder - W.bicep*0.45;
+
+  return {Y, W, isF, bmi, bf, mass, muscleDev};
 }
 
-// ──────── silhouette via horizontal scanlines (anatomical) ────────
-// Generates points distributed across body bands, biased toward edges
-function buildSilhouette(M, consistency, rand){
-  const pts=[];
-  const CX=140;
-  // Density factor (consistency drives it). Step controls vertical granularity.
-  const dens = 0.10 + 0.40 * consistency;
-  const step = 2.2;
-
-  // Anatomical Y landmarks (8-head canon, viewBox 440)
-  const Y_TOP=18;
-  const Y_HEAD_BTM = Y_TOP + M.headH;          // 68
-  const Y_CHIN = Y_HEAD_BTM - 4;               // 64 (chin slightly above head-bottom curve)
-  const Y_NECK_BTM = Y_HEAD_BTM + 10;          // 78
-  const Y_SHOULDER = Y_NECK_BTM + 12;          // 90 (top of shoulder line)
-  const Y_NIPPLE = Y_TOP + 2*M.headH;          // 118
-  const Y_NAVEL = Y_TOP + 3*M.headH;           // 168
-  const Y_WAIST = Y_NAVEL - 4;                 // narrowest waist (just above navel)
-  const Y_HIP = Y_TOP + 3.5*M.headH;           // 193 (top of iliac crest)
-  const Y_CROTCH = Y_TOP + 4*M.headH;          // 218 (pubic line — body midpoint)
-  const Y_MID_THIGH = Y_TOP + 5*M.headH;       // 268
-  const Y_KNEE = Y_TOP + 6*M.headH;            // 318
-  const Y_MID_CALF = Y_TOP + 7*M.headH;        // 368
-  const Y_ANKLE = Y_TOP + 7.5*M.headH;         // 393
-  const Y_SOLE = Y_TOP + 8*M.headH;            // 418
-
-  // bandAt: push points along a horizontal slice of width w at row y, centered cx
-  // edgeBias 0=uniform, 1=concentrated at edges (good for crisp silhouette)
-  function band(cx, w, y, dy, factor=1, edgeBias=0.55){
-    if(w<=1) return;
-    const n = Math.max(1, Math.round(w * 0.16 * dens * factor));
-    for(let i=0;i<n;i++){
-      const u=(rand()*2-1);                  // -1..1
-      // bias toward edges using sign-preserving power curve
-      const ub = (rand()<edgeBias)
-        ? Math.sign(u)*Math.pow(Math.abs(u), 0.30)
-        : u;
-      const x = cx + ub * w * 0.5;
-      const yj = y + (rand()-0.5) * dy;
-      pts.push({x, y: yj});
-    }
-  }
-
-  // ===== HEAD (oval, slightly elongated) =====
-  for(let y=Y_TOP; y<=Y_HEAD_BTM; y+=step){
-    const t=(y-Y_TOP)/(Y_HEAD_BTM-Y_TOP);
-    // Asymmetric oval: wider in upper half, tapers to chin
+// ─── piecewise half-width functions per body part ───
+// torsoHalf(y, M) → half-width of torso at y (head/neck/shoulder/chest/waist/hip down to crotch)
+function torsoHalf(y, M){
+  const Y=M.Y, W=M.W;
+  if(y < Y.headTop || y > Y.crotch) return 0;
+  // Head: ellipse-like (gentle taper at top and bottom)
+  if(y <= Y.headBtm){
+    const t=(y-Y.headTop)/(Y.headBtm-Y.headTop);
+    // Wider in upper-middle, taper to chin
     let prof;
-    if(t<0.55) prof = Math.pow(Math.sin(t/0.55*Math.PI*0.5), 0.85);
-    else prof = Math.pow(Math.sin((1-(t-0.55)/0.45)*Math.PI*0.5), 1.1);
-    const w = M.headW * prof;
-    band(CX, w, y, step, 1.1, 0.50);
+    if(t<0.55) prof = Math.pow(Math.sin(t/0.55*Math.PI*0.5), 0.7);
+    else prof = Math.pow(Math.sin((1-(t-0.55)/0.45)*Math.PI*0.5), 1.2);
+    return W.head * prof;
   }
-
-  // ===== NECK (narrow) =====
-  for(let y=Y_HEAD_BTM; y<=Y_NECK_BTM; y+=step){
-    const t=(y-Y_HEAD_BTM)/(Y_NECK_BTM-Y_HEAD_BTM);
-    const w = lerp(M.headW*0.50, M.neck, smoothstep(t));
-    band(CX, w, y, step, 0.9, 0.65);
+  // Neck (taper from head edge down to neck width)
+  if(y <= Y.neckBtm){
+    const t=(y-Y.headBtm)/(Y.neckBtm-Y.headBtm);
+    return lerp(W.head*0.42, W.neck, smoothstep(t));
   }
-
-  // ===== TRAPS → SHOULDERS (rapid widening) =====
-  for(let y=Y_NECK_BTM; y<=Y_SHOULDER; y+=step){
-    const t=(y-Y_NECK_BTM)/(Y_SHOULDER-Y_NECK_BTM);
-    const w = lerp(M.neck, M.shoulder, t*t);   // accelerating
-    band(CX, w, y, step, 1.0, 0.60);
+  // Trap slope to shoulder
+  if(y <= Y.shoulder){
+    const t=(y-Y.neckBtm)/(Y.shoulder-Y.neckBtm);
+    return lerp(W.neck, W.shoulder, t*t);
   }
-
-  // ===== UPPER TORSO: shoulder → nipple line (chest plateau) =====
-  for(let y=Y_SHOULDER; y<=Y_NIPPLE+6; y+=step){
-    const t=(y-Y_SHOULDER)/(Y_NIPPLE+6-Y_SHOULDER);
-    // Slight narrowing from shoulder edge to ribcage
-    const w = lerp(M.shoulder, M.chest, smoothstep(t*1.1));
-    // Bust bulge (F): adds outward width centered between shoulder and nipple
-    let bust=0;
-    if(M.bustOut>0){
-      const bt = (y - (Y_SHOULDER+6)) / (Y_NIPPLE+8 - (Y_SHOULDER+6));
-      if(bt>0 && bt<1) bust = M.bustOut * Math.sin(bt*Math.PI);
+  // Below shoulder: delts drop, lats outside chest
+  if(y <= Y.armpit){
+    const t=(y-Y.shoulder)/(Y.armpit-Y.shoulder);
+    // Width drops from shoulder cap to chest at armpit, with a small step-down
+    return lerp(W.shoulder, W.chest + (W.shoulder-W.chest)*0.25, smoothstep(t));
+  }
+  // Chest area (with pec shelf for M, bust for F)
+  if(y <= Y.nipple+8){
+    const t=(y-Y.armpit)/((Y.nipple+8)-Y.armpit);
+    const base = lerp(W.chest + (W.shoulder-W.chest)*0.25, W.chest, smoothstep(t));
+    // Bust bulge (F)
+    let bustExtra = 0;
+    if(W.bustOut > 0){
+      const bt = (y-(Y.armpit+4))/((Y.nipple+6)-(Y.armpit+4));
+      if(bt>0 && bt<1) bustExtra = W.bustOut * Math.sin(bt*Math.PI);
     }
-    band(CX, w + bust*1.7, y, step, 1.0, 0.55);
+    return base + bustExtra;
   }
-
-  // ===== MID TORSO: chest → ribs → waist =====
-  for(let y=Y_NIPPLE+6; y<=Y_WAIST; y+=step){
-    const t=(y-(Y_NIPPLE+6))/(Y_WAIST-(Y_NIPPLE+6));
-    let w;
-    if(t<0.45){
-      const tt=t/0.45;
-      w = lerp(M.chest, M.ribs, smoothstep(tt));
-    } else {
-      const tt=(t-0.45)/0.55;
-      w = lerp(M.ribs, M.waist, smoothstep(tt));
-    }
-    band(CX, w, y, step, 1.0, 0.55);
+  // Underbust/ribs taper
+  if(y <= Y.ribs){
+    const t=(y-(Y.nipple+8))/(Y.ribs-(Y.nipple+8));
+    return lerp(W.chest, W.ribs, smoothstep(t));
   }
-
-  // ===== LOWER TORSO: waist → hip (flare) =====
-  for(let y=Y_WAIST; y<=Y_HIP; y+=step){
-    const t=(y-Y_WAIST)/(Y_HIP-Y_WAIST);
-    const w = lerp(M.waist, M.hip, smoothstep(t));
-    band(CX, w, y, step, 1.0, 0.55);
+  // Ribs to waist (most pinched)
+  if(y <= Y.waist){
+    const t=(y-Y.ribs)/(Y.waist-Y.ribs);
+    return lerp(W.ribs, W.waist, smoothstep(t));
   }
-
-  // ===== HIP → CROTCH (glutes, then taper to crotch where legs split) =====
-  for(let y=Y_HIP; y<=Y_CROTCH; y+=step){
-    const t=(y-Y_HIP)/(Y_CROTCH-Y_HIP);
-    // glute bulge peaks at ~t=0.4
-    const glute = M.gluteOut * Math.sin(t*Math.PI) * 1.6;
-    // body narrows from hip width down to combined thigh width
-    const inner = lerp(M.hip, M.thigh*2 + 8, smoothstep(t));
-    band(CX, inner + glute, y, step, 1.0, 0.55);
+  // Waist to navel (slight expansion)
+  if(y <= Y.navel){
+    const t=(y-Y.waist)/(Y.navel-Y.waist);
+    return lerp(W.waist, W.waist+(W.hip-W.waist)*0.15, smoothstep(t));
   }
-
-  // ===== LEGS (split, each leg as its own scanline) =====
-  const legSep = M.thigh * 0.95;   // distance between leg centers
-  for(let y=Y_CROTCH; y<=Y_ANKLE; y+=step){
-    const t=(y-Y_CROTCH)/(Y_ANKLE-Y_CROTCH);
-    let w;
-    if(t<0.35){
-      // upper thigh (peak just below crotch)
-      const tt = t/0.35;
-      const swell = 1 + 0.10*Math.sin(tt*Math.PI);
-      w = M.thigh * swell;
-    } else if(t<0.55){
-      // mid thigh → above knee
-      const tt = (t-0.35)/0.20;
-      w = lerp(M.thigh, M.thigh*0.78, smoothstep(tt));
-    } else if(t<0.62){
-      // knee
-      const tt = (t-0.55)/0.07;
-      w = lerp(M.thigh*0.78, M.knee, smoothstep(tt));
-    } else if(t<0.90){
-      // calf (belly peak at ~t=0.74)
-      const tt = (t-0.62)/0.28;
-      const baseW = lerp(M.knee, M.calf, smoothstep(tt*0.5));
-      const bulge = 1 + 0.40 * Math.sin(tt*Math.PI);
-      w = baseW * (tt<0.5 ? bulge : 1 + 0.4*Math.sin((1-tt)*Math.PI*2)/3);
-    } else {
-      // ankle taper
-      const tt = (t-0.90)/0.10;
-      w = lerp(M.calf*0.75, M.ankle, smoothstep(tt));
-    }
-    band(CX - legSep, w, y, step, 0.85, 0.55);
-    band(CX + legSep, w, y, step, 0.85, 0.55);
+  // Navel to iliac (hip flare begins)
+  if(y <= Y.iliac){
+    const t=(y-Y.navel)/(Y.iliac-Y.navel);
+    return lerp(W.waist+(W.hip-W.waist)*0.15, W.waist+(W.hip-W.waist)*0.50, smoothstep(t));
   }
-
-  // ===== FEET (point slightly outward) =====
-  for(let y=Y_ANKLE; y<=Y_SOLE; y+=step){
-    const t=(y-Y_ANKLE)/(Y_SOLE-Y_ANKLE);
-    const w = lerp(M.ankle, M.foot*0.5, t);
-    const outOffset = t * 3;
-    band(CX - legSep - outOffset, w, y, step, 0.8, 0.55);
-    band(CX + legSep + outOffset, w, y, step, 0.8, 0.55);
+  // Iliac to trochanter (hip widens to max)
+  if(y <= Y.trochanter){
+    const t=(y-Y.iliac)/(Y.trochanter-Y.iliac);
+    return lerp(W.waist+(W.hip-W.waist)*0.50, W.hip + W.hipGluteOut, smoothstep(t));
   }
-
-  // ===== ARMS (hanging at sides; from shoulder edge to ~hip level) =====
-  // armCx anchors arm at outer edge of shoulder
-  const armCx = M.shoulder/2 + M.upperArm*0.45;
-  const ARM_START = Y_SHOULDER + 6;
-  const ARM_END = Y_HIP + 12;        // wrist just below hip line (natural rest)
-  for(let y=ARM_START; y<=ARM_END; y+=step){
-    const t=(y-ARM_START)/(ARM_END-ARM_START);
-    let w;
-    if(t<0.45){
-      // upper arm: biceps bulge peaks at t~0.22
-      const tt = t/0.45;
-      const bulge = 1 + 0.18 * Math.sin(tt*Math.PI);
-      w = M.upperArm * bulge;
-    } else if(t<0.55){
-      // elbow
-      const tt = (t-0.45)/0.10;
-      w = lerp(M.upperArm*0.92, M.elbow, smoothstep(tt));
-    } else {
-      // forearm with mild bulge near top, taper to wrist
-      const tt = (t-0.55)/0.45;
-      const fbulge = 1 + 0.12 * Math.sin(tt*Math.PI);
-      w = lerp(M.forearm*fbulge, M.wrist, smoothstep(tt));
-    }
-    band(CX - armCx, w, y, step, 0.85, 0.55);
-    band(CX + armCx, w, y, step, 0.85, 0.55);
-  }
-
-  // ===== HANDS =====
-  const HAND_END = ARM_END + 16;
-  for(let y=ARM_END; y<=HAND_END; y+=step){
-    const t=(y-ARM_END)/(HAND_END-ARM_END);
-    // palm widens then taper to fingers
-    const w = M.wrist + (M.hand-M.wrist) * Math.sin(Math.min(1,t*1.3)*Math.PI*0.6) - t*4;
-    band(CX - armCx, Math.max(M.wrist*0.6, w), y, step, 0.75, 0.45);
-    band(CX + armCx, Math.max(M.wrist*0.6, w), y, step, 0.75, 0.45);
-  }
-
-  return {pts, Y:{Y_NIPPLE, Y_WAIST, Y_HIP, Y_NAVEL, Y_CROTCH, Y_KNEE}};
+  // Trochanter down to crotch (taper to leg separation)
+  const t=(y-Y.trochanter)/(Y.crotch-Y.trochanter);
+  return lerp(W.hip + W.hipGluteOut, W.legSep + W.thigh, smoothstep(t));
 }
 
-// ──────── renderers ────────
-function mesh(pts){
-  // build a uniform spatial hash for nearest neighbors (faster + nicer)
-  const NB=12;
-  const buckets={}; const bs=NB;
-  for(let i=0;i<pts.length;i++){
-    const p=pts[i]; const kx=Math.floor(p.x/bs), ky=Math.floor(p.y/bs);
-    const k=kx+','+ky; (buckets[k]=buckets[k]||[]).push(i);
+// Leg half-width
+function legHalf(y, M){
+  const Y=M.Y, W=M.W;
+  if(y < Y.crotch || y > Y.sole) return 0;
+  // Upper thigh: slight swell from crotch down to vastus lateralis peak
+  if(y <= Y.thighWidest){
+    const t=(y-Y.crotch)/(Y.thighWidest-Y.crotch);
+    return lerp(W.thigh*0.92, W.thigh*1.05, smoothstep(t));
   }
-  const seen=new Set();
-  let lines='';
-  for(let i=0;i<pts.length;i++){
-    const p=pts[i]; const kx=Math.floor(p.x/bs), ky=Math.floor(p.y/bs);
-    const cand=[];
-    for(let dx=-1;dx<=1;dx++) for(let dy=-1;dy<=1;dy++){
-      const bk=buckets[(kx+dx)+','+(ky+dy)]; if(!bk) continue;
-      for(const j of bk){ if(j===i) continue; const q=pts[j]; const d=Math.hypot(q.x-p.x,q.y-p.y); if(d<NB) cand.push({j,d}); }
+  // Down through mid-thigh, slight taper
+  if(y <= Y.midThigh){
+    const t=(y-Y.thighWidest)/(Y.midThigh-Y.thighWidest);
+    return lerp(W.thigh*1.05, W.thigh*0.90, smoothstep(t));
+  }
+  // Mid-thigh to knee top
+  if(y <= Y.knee){
+    const t=(y-Y.midThigh)/(Y.knee-Y.midThigh);
+    return lerp(W.thigh*0.90, W.knee*1.10, smoothstep(t));
+  }
+  // Knee (slight constriction)
+  if(y <= Y.kneeBtm){
+    const t=(y-Y.knee)/(Y.kneeBtm-Y.knee);
+    return lerp(W.knee*1.10, W.knee*0.95, smoothstep(t));
+  }
+  // Knee bottom to gastrocnemius peak (calf belly fills out)
+  if(y <= Y.gastroPeak){
+    const t=(y-Y.kneeBtm)/(Y.gastroPeak-Y.kneeBtm);
+    return lerp(W.knee*0.95, W.calf, smoothstep(t));
+  }
+  // Gastro peak down to mid-calf (still wide)
+  if(y <= Y.midCalf){
+    const t=(y-Y.gastroPeak)/(Y.midCalf-Y.gastroPeak);
+    return lerp(W.calf, W.calf*0.85, smoothstep(t));
+  }
+  // Mid-calf to ankle (sharp taper)
+  if(y <= Y.ankle){
+    const t=(y-Y.midCalf)/(Y.ankle-Y.midCalf);
+    return lerp(W.calf*0.85, W.ankle, smoothstep(t));
+  }
+  // Ankle to sole (foot region — small widening for heel/forefoot)
+  const t=(y-Y.ankle)/(Y.sole-Y.ankle);
+  return lerp(W.ankle, W.ankle*1.6, t);
+}
+
+// Arm half-width (for arms hanging at sides)
+function armHalf(y, M){
+  const Y=M.Y, W=M.W;
+  if(y < Y.shoulder+4 || y > Y.fingertip) return 0;
+  // Upper arm with biceps bulge
+  if(y <= Y.elbow){
+    const t=(y-(Y.shoulder+4))/(Y.elbow-(Y.shoulder+4));
+    // Bulge peaks at ~t=0.4 (bicep belly)
+    const bulge = 1 + 0.18 * Math.sin(t*Math.PI);
+    return lerp(W.bicep*bulge, W.elbow, smoothstep(t*0.85));
+  }
+  // Elbow (narrow point)
+  if(y <= Y.elbow+8){
+    return W.elbow;
+  }
+  // Forearm: brachioradialis bulge near elbow, taper to wrist
+  if(y <= Y.wrist){
+    const t=(y-(Y.elbow+8))/(Y.wrist-(Y.elbow+8));
+    const bulge = 1 + 0.15 * Math.sin(t*Math.PI);
+    return lerp(W.forearm*bulge, W.wrist, smoothstep(t*0.95));
+  }
+  // Hand
+  const t=(y-Y.wrist)/(Y.fingertip-Y.wrist);
+  // Palm widens slightly, then taper to fingertip
+  if(t < 0.35) return W.wrist + (W.wrist*0.5)*Math.sin(t/0.35*Math.PI*0.5);
+  return lerp(W.wrist*1.5, W.wrist*0.3, (t-0.35)/0.65);
+}
+
+// ─── inside-body test ───
+function isInside(x, y, M){
+  const cx = 140;
+  // Torso
+  const tw = torsoHalf(y, M);
+  if(tw > 0 && Math.abs(x-cx) <= tw) return 'torso';
+  // Legs
+  const lw = legHalf(y, M);
+  if(lw > 0){
+    if(Math.abs(x - (cx - M.W.legSep)) <= lw) return 'leg-l';
+    if(Math.abs(x - (cx + M.W.legSep)) <= lw) return 'leg-r';
+  }
+  // Arms
+  const aw = armHalf(y, M);
+  if(aw > 0){
+    if(Math.abs(x - (cx - M.W.armCx)) <= aw) return 'arm-l';
+    if(Math.abs(x - (cx + M.W.armCx)) <= aw) return 'arm-r';
+  }
+  return null;
+}
+
+// ─── build contour outline path for each part ───
+function buildPart(yStart, yEnd, halfFn, cxFn, step){
+  const right=[], left=[];
+  for(let y=yStart; y<=yEnd; y+=step){
+    const w = halfFn(y);
+    if(w<=0) continue;
+    const cx = cxFn(y);
+    right.push({x:cx+w, y});
+    left.unshift({x:cx-w, y});
+  }
+  if(right.length<2) return null;
+  let d=`M${right[0].x.toFixed(1)},${right[0].y.toFixed(1)}`;
+  for(let i=1;i<right.length;i++) d+=`L${right[i].x.toFixed(1)},${right[i].y.toFixed(1)}`;
+  for(let i=0;i<left.length;i++) d+=`L${left[i].x.toFixed(1)},${left[i].y.toFixed(1)}`;
+  d+='Z';
+  return d;
+}
+
+function bodyContourPaths(M){
+  const cx = 140;
+  return {
+    torso: buildPart(M.Y.headTop, M.Y.crotch, y=>torsoHalf(y,M), y=>cx, 1),
+    legL: buildPart(M.Y.crotch, M.Y.sole, y=>legHalf(y,M), y=>cx-M.W.legSep, 1),
+    legR: buildPart(M.Y.crotch, M.Y.sole, y=>legHalf(y,M), y=>cx+M.W.legSep, 1),
+    armL: buildPart(M.Y.shoulder+4, M.Y.fingertip, y=>armHalf(y,M), y=>cx-M.W.armCx, 1),
+    armR: buildPart(M.Y.shoulder+4, M.Y.fingertip, y=>armHalf(y,M), y=>cx+M.W.armCx, 1),
+  };
+}
+
+// ─── point sampling ───
+function samplePoints(M, consistency, rand){
+  // Distribute points using rejection sampling within bounding box
+  // ~half-and-half between edge (boundary-biased) and interior (uniform)
+  const pts = [];
+  const yMin = M.Y.headTop, yMax = M.Y.sole;
+  const xMin = 50, xMax = 230;
+  // Estimate area for target count
+  let area = 0;
+  for(let y=yMin; y<=yMax; y+=4){
+    const tw = torsoHalf(y, M)*2;
+    const lw = legHalf(y, M)*2;
+    const aw = armHalf(y, M)*2;
+    area += tw + lw*2 + aw*2;
+  }
+  area *= 4; // step compensation
+  const target = Math.round(area * (0.10 + 0.18*consistency));
+  // Walk Y, sample horizontally
+  for(let y=yMin; y<=yMax; y+=1.6){
+    // Torso
+    const tw = torsoHalf(y, M);
+    if(tw>0){
+      const n = Math.max(1, Math.round(tw * 0.18 * (0.55+consistency*0.85)));
+      for(let i=0;i<n;i++){
+        const u = (rand()*2-1);
+        // Bias 50% to edge, 50% interior
+        const x = (rand()<0.55)
+          ? 140 + Math.sign(u)*Math.pow(Math.abs(u),0.32)*tw
+          : 140 + u*tw;
+        pts.push({x, y: y+(rand()-0.5)*1.2});
+      }
     }
-    cand.sort((a,b)=>a.d-b.d);
-    if(cand.length){
-      const key=Math.min(i,cand[0].j)+'-'+Math.max(i,cand[0].j);
-      if(!seen.has(key)){
-        seen.add(key);
-        const q=pts[cand[0].j]; const op=(.45-cand[0].d*.020).toFixed(2);
-        if(+op>0) lines+=`<line x1="${p.x.toFixed(1)}" y1="${p.y.toFixed(1)}" x2="${q.x.toFixed(1)}" y2="${q.y.toFixed(1)}" stroke="rgba(243,243,244,${op})" stroke-width=".4"/>`;
+    // Legs
+    const lw = legHalf(y, M);
+    if(lw>0){
+      const n = Math.max(1, Math.round(lw * 0.18 * (0.55+consistency*0.85)));
+      for(let side of [-1,+1]){
+        const cx = 140 + side*M.W.legSep;
+        for(let i=0;i<n;i++){
+          const u=(rand()*2-1);
+          const x = (rand()<0.55)
+            ? cx + Math.sign(u)*Math.pow(Math.abs(u),0.32)*lw
+            : cx + u*lw;
+          pts.push({x, y: y+(rand()-0.5)*1.2});
+        }
+      }
+    }
+    // Arms
+    const aw = armHalf(y, M);
+    if(aw>0){
+      const n = Math.max(1, Math.round(aw * 0.18 * (0.55+consistency*0.85)));
+      for(let side of [-1,+1]){
+        const cx = 140 + side*M.W.armCx;
+        for(let i=0;i<n;i++){
+          const u=(rand()*2-1);
+          const x = (rand()<0.55)
+            ? cx + Math.sign(u)*Math.pow(Math.abs(u),0.32)*aw
+            : cx + u*aw;
+          pts.push({x, y: y+(rand()-0.5)*1.2});
+        }
       }
     }
   }
-  let dots=''; for(const p of pts) dots+=`<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r=".75" fill="rgba(243,243,244,.85)"/>`;
-  return lines+dots;
+  return pts;
 }
-function constellation(pts, Y, rand){
-  // hubs at key anatomical landmarks
+
+// ─── renderers ───
+function renderContour(paths, opacity){
+  let s='';
+  for(const k in paths){
+    if(paths[k]) s+=`<path d="${paths[k]}" fill="none" stroke="rgba(243,243,244,${opacity})" stroke-width=".55" stroke-linejoin="round"/>`;
+  }
+  return s;
+}
+function renderPoints(pts, fillOp){
+  let s='';
+  for(const p of pts) s+=`<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r=".75" fill="rgba(243,243,244,${fillOp})"/>`;
+  return s;
+}
+function renderMesh(pts){
+  // spatial-hash mesh, 1 nearest neighbor
+  const NB=11, bs=NB, b={}, seen=new Set();
+  for(let i=0;i<pts.length;i++){const p=pts[i];const k=Math.floor(p.x/bs)+','+Math.floor(p.y/bs);(b[k]=b[k]||[]).push(i);}
+  let lines='';
+  for(let i=0;i<pts.length;i++){
+    const p=pts[i];const kx=Math.floor(p.x/bs),ky=Math.floor(p.y/bs);
+    let best=null;
+    for(let dx=-1;dx<=1;dx++)for(let dy=-1;dy<=1;dy++){
+      const bk=b[(kx+dx)+','+(ky+dy)];if(!bk)continue;
+      for(const j of bk){if(j<=i)continue;const q=pts[j];const d=Math.hypot(q.x-p.x,q.y-p.y);if(d<NB&&(!best||d<best.d))best={j,d};}
+    }
+    if(best){
+      const key=i+'-'+best.j;if(seen.has(key))continue;seen.add(key);
+      const q=pts[best.j];const op=(0.42-best.d*0.022).toFixed(2);
+      if(+op>0) lines+=`<line x1="${p.x.toFixed(1)}" y1="${p.y.toFixed(1)}" x2="${q.x.toFixed(1)}" y2="${q.y.toFixed(1)}" stroke="rgba(243,243,244,${op})" stroke-width=".38"/>`;
+    }
+  }
+  return lines;
+}
+function renderConstellation(pts, M, rand){
   const hubs=[
-    {x:140, y:Y.Y_NIPPLE-4},  // chest
-    {x:140, y:Y.Y_WAIST},     // waist
-    {x:140, y:Y.Y_HIP+8},     // hip/glutes
+    {x:140, y:M.Y.nipple},      // chest
+    {x:140, y:M.Y.waist+2},     // waist
+    {x:140, y:M.Y.trochanter}   // hip
   ];
   let lines='';
   for(const hub of hubs){
     for(const t of pts){
-      if(rand()>.055) continue;
+      if(rand()>0.06)continue;
       const d=Math.hypot(t.x-hub.x,t.y-hub.y);
-      if(d<14) continue;
-      const op=(.32-d*.0016).toFixed(2);
-      if(+op<=0) continue;
-      lines+=`<line x1="${hub.x.toFixed(1)}" y1="${hub.y.toFixed(1)}" x2="${t.x.toFixed(1)}" y2="${t.y.toFixed(1)}" stroke="rgba(243,243,244,${op})" stroke-width=".3"/>`;
+      if(d<16)continue;
+      const op=(0.30-d*0.0014).toFixed(2);
+      if(+op>0) lines+=`<line x1="${hub.x.toFixed(1)}" y1="${hub.y.toFixed(1)}" x2="${t.x.toFixed(1)}" y2="${t.y.toFixed(1)}" stroke="rgba(243,243,244,${op})" stroke-width=".28"/>`;
     }
   }
-  let dots=''; for(const p of pts) dots+=`<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r=".7" fill="rgba(243,243,244,.78)"/>`;
-  return lines+dots;
-}
-function hybrid(pts, Y, rand){
-  // sparse mesh (only-closest) + sparse constellation
-  const NB=10; const seen=new Set(); let lines='';
-  const buckets={}; const bs=NB;
-  for(let i=0;i<pts.length;i++){
-    const p=pts[i]; const kx=Math.floor(p.x/bs), ky=Math.floor(p.y/bs);
-    const k=kx+','+ky; (buckets[k]=buckets[k]||[]).push(i);
-  }
-  for(let i=0;i<pts.length;i++){
-    const p=pts[i]; const kx=Math.floor(p.x/bs), ky=Math.floor(p.y/bs);
-    let best=null;
-    for(let dx=-1;dx<=1;dx++) for(let dy=-1;dy<=1;dy++){
-      const bk=buckets[(kx+dx)+','+(ky+dy)]; if(!bk) continue;
-      for(const j of bk){ if(j<=i) continue; const q=pts[j]; const d=Math.hypot(q.x-p.x,q.y-p.y); if(d<NB && (!best||d<best.d)) best={j,d}; }
-    }
-    if(best){
-      const key=i+'-'+best.j; if(seen.has(key)) continue; seen.add(key);
-      const q=pts[best.j]; const op=(.34-best.d*.018).toFixed(2);
-      if(+op<=0) continue;
-      lines+=`<line x1="${p.x.toFixed(1)}" y1="${p.y.toFixed(1)}" x2="${q.x.toFixed(1)}" y2="${q.y.toFixed(1)}" stroke="rgba(243,243,244,${op})" stroke-width=".38"/>`;
-    }
-  }
-  const hubs=[
-    {x:140, y:Y.Y_NIPPLE-4},
-    {x:140, y:Y.Y_WAIST},
-    {x:140, y:Y.Y_HIP+8},
-  ];
-  for(const hub of hubs){
-    for(const t of pts){
-      if(rand()>.020) continue;
-      const d=Math.hypot(t.x-hub.x,t.y-hub.y);
-      if(d<18) continue;
-      const op=(.22-d*.0014).toFixed(2);
-      if(+op<=0) continue;
-      lines+=`<line x1="${hub.x.toFixed(1)}" y1="${hub.y.toFixed(1)}" x2="${t.x.toFixed(1)}" y2="${t.y.toFixed(1)}" stroke="rgba(243,243,244,${op})" stroke-width=".26"/>`;
-    }
-  }
-  let dots=''; for(const p of pts) dots+=`<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r=".78" fill="rgba(243,243,244,.85)"/>`;
-  return lines+dots;
+  return lines;
 }
 
 function svgFrame(content){
   return `<svg class="av" viewBox="0 0 280 440" preserveAspectRatio="xMidYMid meet">`
-    +`<defs><pattern id="dotg" width="20" height="20" patternUnits="userSpaceOnUse"><circle cx=".7" cy=".7" r=".3" fill="rgba(243,243,244,.05)"/></pattern></defs>`
+    +`<defs><pattern id="dotg" width="20" height="20" patternUnits="userSpaceOnUse"><circle cx=".7" cy=".7" r=".3" fill="rgba(243,243,244,.04)"/></pattern></defs>`
     +`<rect width="280" height="440" fill="url(#dotg)"/>`
     +`<line x1="140" y1="6" x2="140" y2="434" stroke="rgba(243,243,244,.04)" stroke-width=".5" stroke-dasharray="2 4"/>`
     +`<g>${content}</g>`
     +`</svg>`;
-}
-
-function build(S){
-  const M=morphology(S);
-  const rand=rng32(0xA110CE);
-  const {pts, Y}=buildSilhouette(M, S.consistency, rand);
-  return {M, pts, Y};
 }
 
 function render(){
@@ -454,18 +565,23 @@ function render(){
   $('lblC').textContent=S.consistency.toFixed(2); $('lblS').textContent=S.strength.toFixed(2);
   ['chest','back','delts','arms','quads','hams','glutes','abs','calves'].forEach(k=>{ const el=$('lblV'+k); if(el) el.textContent=S.vol[k]; });
 
-  const {M, pts, Y}=build(S);
-  const total=pts.length;
+  const M=morphology(S);
+  const paths=bodyContourPaths(M);
+  const rand=rng32(0xA110CE);
+  const pts=samplePoints(M, S.consistency, rand);
 
   const cards=[
-    {name:'B · mesh', desc:'puntos densos + aristas locales — silueta como wireframe esqueleto.', svg:svgFrame(mesh(pts))},
-    {name:'C · constellation', desc:'líneas radiantes desde hubs anatómicos (pecho · cintura · cadera).', svg:svgFrame(constellation(pts,Y,rng32(0xC07EE7)))},
-    {name:'D · híbrido (B+C)', desc:'mesh sutil + constellation suave. lo más limpio.', svg:svgFrame(hybrid(pts,Y,rng32(0xB1DC0DE)))},
+    {name:'B · contour + mesh', desc:'contorno anatómico + puntos densos + aristas locales.',
+     svg:svgFrame(renderContour(paths,.18) + renderMesh(pts) + renderPoints(pts,.82))},
+    {name:'C · contour + constellation', desc:'contorno anatómico + líneas desde hubs (pecho/cintura/cadera).',
+     svg:svgFrame(renderContour(paths,.22) + renderConstellation(pts, M, rng32(0xC07EE7)) + renderPoints(pts,.78))},
+    {name:'D · solo puntos (LED)', desc:'solo puntos (sin contorno explícito) — densidad define la silueta.',
+     svg:svgFrame(renderPoints(pts,.88))},
   ];
   $('grid').innerHTML = cards.map((c,i)=>(
     `<div class="col"><div class="hdr"><span class="name">${c.name}</span><span class="v">v${i+1}</span></div>`
     +`<div class="desc">${c.desc}</div>${c.svg}`
-    +`<div class="footstats"><span>pts: <b>${total}</b></span><span>BMI: <b>${M.bmi.toFixed(1)}</b></span><span>BF≈ <b>${(M.bf*100).toFixed(0)}%</b></span><span>shldr: <b>${M.shoulder.toFixed(0)}</b></span><span>waist: <b>${M.waist.toFixed(0)}</b></span><span>hip: <b>${M.hip.toFixed(0)}</b></span></div></div>`
+    +`<div class="footstats"><span>pts: <b>${pts.length}</b></span><span>BMI: <b>${M.bmi.toFixed(1)}</b></span><span>BF: <b>${(M.bf*100).toFixed(0)}%</b></span><span>sho: <b>${(M.W.shoulder*2).toFixed(0)}</b></span><span>wst: <b>${(M.W.waist*2).toFixed(0)}</b></span><span>hip: <b>${(M.W.hip*2).toFixed(0)}</b></span></div></div>`
   )).join('');
 }
 render();
