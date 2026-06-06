@@ -2536,6 +2536,8 @@ function readRegister(){ const n=id=>{ const v=parseFloat(val(id)); return (isNa
   const per100={}; if(sg>0){ const f=100/sg; MACROKEYS.forEach(k=>per100[k]=Math.round((per[k]||0)*f*100)/100); } else { MACROKEYS.forEach(k=>per100[k]=per[k]||0); }
   const sizes={}; if(sg>0)sizes.serving=sg; const pcg=n('v_piece_g'); if(pcg>0)sizes.piece=pcg;
   const packG=n('v_pack_g'), packN=n('v_pack_servings'); if(packG>0)sizes.container=packG; else if(sg>0&&packN>0)sizes.container=Math.round(sg*packN*100)/100;
+  // derive piece weight from container÷servings when user didn't enter it explicitly
+  if(!sizes.piece && sizes.container>0 && packN>0) sizes.piece=Math.round(sizes.container/packN*100)/100;
   const vv=window._verify||{};
   return {id:vv.fromId||undefined,barcode:val('v_barcode')||vv.barcode||'',name:val('v_name'),brand:val('v_brand')||'',base,per100,sizes,servingLabel:val('v_serv_label')||'',gramsUnknown:false}; }
 // REGISTER screen: name + serving size + macros (per serving) + package. NO unit/qty (that's the LOG step).
@@ -2561,7 +2563,7 @@ function openVerify(food, opts){
    <div class="field row2">${nf('v_caffeine','CAFEÍNA mg',disp.caffeine)}${nf('v_alcohol','ALCOHOL g',disp.alcohol)}</div>
    <div class="submeta" style="margin:6px 0 2px;color:var(--o50)">ENVASE (opcional · para loguear "1 envase"):</div>
    <div class="field row2">${sz('v_pack_g','ENVASE NETO ('+base+')',fd.sizes.container)}${sz('v_pack_servings','PORCIONES/ENVASE',packServings)}</div>
-   <div class="field">${sz('v_piece_g','PESO POR PIEZA ('+base+', opc)',fd.sizes.piece)}</div>
+   <div class="field">${sz('v_piece_g','PESO POR PIEZA ('+base+', se deduce si dejas envase + porciones)',fd.sizes.piece)}</div>
    <div id="v_reg_sum" class="submeta" style="margin:6px 0 4px"></div>
    ${opts.ocrText?`<details style="margin-bottom:8px"><summary class="submeta" style="cursor:pointer">qué leyó la IA</summary><pre style="white-space:pre-wrap;font-size:9px;color:var(--o50);max-height:120px;overflow:auto;margin:6px 0 0">${(opts.ocrText||'').replace(/[<&]/g,c=>c==='<'?'&lt;':'&amp;')}</pre></details>`:''}
    <div class="sheetbtns"><button class="ok" data-act="vcontinue">continuar → loguear</button><button class="cancel" data-act="closemodal">cancel</button></div>`);
