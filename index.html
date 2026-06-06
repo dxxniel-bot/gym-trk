@@ -722,11 +722,22 @@ function renderSetRow(exi,si,set,ex,allowF){
 // "more weight" / "more reps" / "lower RIR" in isolation — it's higher estimated strength.
 function setScore(s){ const w=parseFloat(s&&s.w)||0, r=parseFloat(s&&s.r)||0; if(!(w>0&&r>0))return 0; const t=String((s&&s.rir)==null?'':s.rir).trim().toUpperCase(); let rv=(t===''||t==='F')?0:parseFloat(t); if(isNaN(rv))rv=0; rv=Math.max(0,Math.min(6,rv)); return w*(1+(r+rv)/30); }
 function bestScore(sets,confirmedOnly){ let b=0; (sets||[]).forEach(s=>{ if(confirmedOnly&&s._pf)return; const v=setScore(s); if(v>b)b=v; }); return b; }
+// totalScore = SUM of setScore over (confirmed) sets — so the progress signal reflects RIR AND every set,
+// not just the best one. Returned {sum,n} so callers can project an in-progress total to the previous session's set count.
+function totalScore(sets,confirmedOnly){ let sum=0,n=0; (sets||[]).forEach(s=>{ if(confirmedOnly&&s._pf)return; const v=setScore(s); if(v>0){sum+=v;n++;} }); return {sum,n}; }
 function progFromScores(cur,last){ if(!(cur>0)||!(last>0))return null; const ratio=cur/last; return {dir:ratio>1.02?'up':(ratio<0.98?'down':'flat'), pct:Math.round((ratio-1)*100)}; }
-function exerciseProgress(ex){ return progFromScores(bestScore(ex.sets,true), bestScore(lastLoggedSets(ex.name,ex.unilateral))); }
+// Honest in-session signal: project current avg-per-set to the prev session's set count.
+// If current already has >= prev sets, use raw total (rewards doing more sets). If current has fewer,
+// project: cur_avg × prev_n — i.e. "if you keep this pace through prev_n sets, you'd hit X" vs prev total.
+function exerciseProgress(ex){
+  const cur=totalScore(ex.sets,true); const prev=totalScore(lastLoggedSets(ex.name,ex.unilateral),false);
+  if(!cur.n||!prev.n)return null;
+  const projected = cur.n>=prev.n ? cur.sum : (cur.sum/cur.n)*prev.n;
+  return progFromScores(projected, prev.sum);
+}
 // previous occurrence of an exercise (by date, then insertion order) BEFORE a given saved session — for history
 function prevSetsForHist(name,uni,curId){ const key=(name||'').toLowerCase().trim(); const occ=[]; (db.sessions||[]).forEach((s,idx)=>{ if(s.type==='rest')return; (s.exercises||[]).forEach(e=>{ if((e.name||'').toLowerCase().trim()!==key||!e.sets||!e.sets.length)return; const eUni=e.sets.some(x=>x.side); if(!!uni!==eUni)return; occ.push({id:s.id,date:String(s.date||''),idx,sets:e.sets}); }); }); occ.sort((a,b)=> a.date.localeCompare(b.date) || a.idx-b.idx); const pos=occ.findIndex(o=>o.id===curId); if(pos<=0)return null; return occ[pos-1].sets; }
-function histProgress(e,sessId){ const uni=(e.sets||[]).some(x=>x.side); return progFromScores(bestScore(e.sets,false), bestScore(prevSetsForHist(e.name,uni,sessId),false)); }
+function histProgress(e,sessId){ const uni=(e.sets||[]).some(x=>x.side); const cur=totalScore(e.sets,false), prev=totalScore(prevSetsForHist(e.name,uni,sessId),false); return progFromScores(cur.sum, prev.sum); }
 function sessionProgAgg(s){ let up=0,down=0; (s.exercises||[]).forEach(e=>{ const pr=histProgress(e,s.id); if(pr){ if(pr.dir==='up')up++; else if(pr.dir==='down')down++; } }); return {up,down}; }
 function progBadgeFromProg(pr,title){ if(!pr)return ''; const col=pr.dir==='up'?'var(--good)':pr.dir==='down'?'var(--bad)':'var(--o40)'; const ar=pr.dir==='up'?'▲':pr.dir==='down'?'▼':'='; const pc=pr.pct?((pr.pct>0?'+':'')+pr.pct+'%'):''; return `<span class="exprog" style="font-size:12px;font-weight:800;margin-left:7px;color:${col}" title="${title||'progreso vs última sesión (e1RM ajustado por RIR)'}">${ar}${pc}</span>`; }
 function progBadgeHTML(ex){ return progBadgeFromProg(exerciseProgress(ex)); }
@@ -756,7 +767,7 @@ function renderExercise(exi,ex,allowF){
         +(cb?`<div class="srow gc-uni"><div class="side">${escTxt(b.side||'L')}</div>${cb.w}${cb.u}${cb.r}${cb.rr}<span class="del" style="visibility:hidden">×</span></div>`:'')
         +`</div></div>`;
     }
-    const add=`<div class="addrow auni"><span class="aleft"><button class="addbtn" data-act="addset" data-exi="${exi}">[+ set]</button></span><button class="addbtn aex" data-act="addex">[+ exercise]</button></div>`;
+    const add=`<div class="addrow auni"><span class="aleft"><button class="addbtn" data-act="addset" data-exi="${exi}">[+ set]</button></span><button class="addbtn aex" data-act="addex" data-exi="${exi}">[+ exercise]</button></div>`;
     rows=thead+body+add;
   } else {
     const gc=isM?'gc-mach':'gc-free';
@@ -767,7 +778,7 @@ function renderExercise(exi,ex,allowF){
       body+=`<div class="srow ${fsOn?'gc-mach-fs':gc}"><div class="setn ${s.done?'done':''}" data-act="done" data-exi="${exi}" data-si="${si}">${s.isDrop?'↓':'#'+(si+1)}</div>${fs}${c.w}${fsOn?c.we:''}${c.u}${c.r}${c.rr}${c.del}</div>`;
     });
     const drop=isM?`<button class="addbtn" data-act="dropset" data-exi="${exi}">[↓ drop set]</button>`:'';
-    const add=`<div class="addrow ${isM?'amach':'afree'}"><span class="aleft"><button class="addbtn" data-act="addset" data-exi="${exi}">[+ set]</button>${drop}</span><button class="addbtn aex" data-act="addex">[+ exercise]</button></div>`;
+    const add=`<div class="addrow ${isM?'amach':'afree'}"><span class="aleft"><button class="addbtn" data-act="addset" data-exi="${exi}">[+ set]</button>${drop}</span><button class="addbtn aex" data-act="addex" data-exi="${exi}">[+ exercise]</button></div>`;
     rows=thead+body+add;
   }
   return `<div class="ex">${head}${rows}</div>`;
@@ -1468,7 +1479,18 @@ function go(screen){ state.screen=screen; render(); }
 
 // ---------- events ----------
 function setField(exi,si,f,val){ const w=db.activeWork; if(!w)return; const ex=w.exercises[exi]; const s=ex.sets[si]; if(!s)return; s[f]=val; s._pf=false;
-  if(f==='w'&&ex.unilateral){ const pj=si^1; const ps=ex.sets[pj]; if(ps&&(ps.w===''||ps.w==null||ps._pf)){ ps.w=val; ps._pf=false; const pe=document.querySelector('[data-act="setf"][data-exi="'+exi+'"][data-si="'+pj+'"][data-f="w"]'); if(pe&&pe.value!==val)pe.value=val; } }
+  if(f==='w'){
+    const writeDom=(j,v)=>{ const pe=document.querySelector('[data-act="setf"][data-exi="'+exi+'"][data-si="'+j+'"][data-f="w"]'); if(pe&&pe.value!==v)pe.value=v; };
+    // uni: partner of the CURRENT pair becomes confirmed (it's the same working set, other side)
+    if(ex.unilateral){ const pj=si^1; const ps=ex.sets[pj]; if(ps&&(ps.w===''||ps.w==null||ps._pf)){ ps.w=val; ps._pf=false; writeDom(pj,val); } }
+    // propagate to all LATER sets that are still prefilled/empty — they stay marked _pf (suggestion),
+    // so they're cleared from the saved session unless the user edits/confirms them
+    const startProp = ex.unilateral ? (Math.max(si, si^1) + 1) : (si + 1);
+    for(let j=startProp; j<ex.sets.length; j++){
+      const ps=ex.sets[j];
+      if(ps && (ps.w===''||ps.w==null||ps._pf)){ ps.w=val; ps._pf=true; writeDom(j,val); }
+    }
+  }
   try{updateProgBadge(exi);}catch(_){}
   save(); }
 document.getElementById('app').addEventListener('click',e=>{
@@ -1552,7 +1574,7 @@ document.getElementById('app').addEventListener('click',e=>{
   else if(a==='addset'){ const ex=db.activeWork.exercises[exi]; if(ex.unilateral){ const [s1,s2]=uniSides(ex); const lr=ex.sets[ex.sets.length-2]||null, ll=ex.sets[ex.sets.length-1]||null; ex.sets.push(emptySet(ex,s1,false,lr)); ex.sets.push(emptySet(ex,s2,false,ll)); } else { const lt=ex.sets[ex.sets.length-1]||null; ex.sets.push(emptySet(ex,null,false,lt)); } save(); state._scroll=document.getElementById('view').scrollTop; render(); }
   else if(a==='dropset'){ const ex=db.activeWork.exercises[exi]; ex.sets.push(Object.assign(emptySet(ex),{isDrop:true,fsOn:true})); save(); state._scroll=document.getElementById('view').scrollTop; render(); }
   else if(a==='delset'){ const ex=db.activeWork.exercises[exi]; if(ex.unilateral){const p=Math.floor(si/2)*2; ex.sets.splice(p,2);} else ex.sets.splice(si,1); save(); state._scroll=document.getElementById('view').scrollTop; render(); }
-  else if(a==='addex'){ openAddExercise(); }
+  else if(a==='addex'){ openAddExercise(exi); }
   else if(a==='editmach'){ openMachineEdit(exi); }
   else if(a==='editexname'){ openExName(exi); }
   else if(a==='save'){ saveSession(); }
@@ -1733,11 +1755,12 @@ function openGymPicker(){
 function knownExercises(){ const map={}; const add=e=>{ if(e&&e.name){ const k=e.name.toLowerCase().trim(); if(!map[k])map[k]={name:e.name,muscle:e.muscle||''}; } };
   (db.split.days||[]).forEach(d=>(d.exercises||[]).forEach(add)); (db.sessions||[]).forEach(s=>(s.exercises||[]).forEach(add)); return Object.values(map); }
 function muscleSuggest(){ const def=['chest','back','quads','hams','delts','biceps','tricep','calfs','abs','traps','glutes','neck']; const used=[]; (db.split.days||[]).forEach(d=>(d.exercises||[]).forEach(e=>{ if(e.muscle&&used.indexOf(e.muscle)<0)used.push(e.muscle); })); return used.concat(def.filter(m=>used.indexOf(m)<0)); }
-function openAddExercise(){
+function openAddExercise(afterExi){
   const exs=knownExercises(); const muscles=muscleSuggest();
+  const w0=db.activeWork; const seedMuscle = (afterExi!=null && w0 && w0.exercises[afterExi] && w0.exercises[afterExi].muscle) || '';
   openModal(`<h3>+ exercise</h3>
    <div class="field"><label>NOMBRE · escribe o elige uno previo</label><input id="fx_name" list="fx_namelist" placeholder="cable pushdown" autocomplete="off"/><datalist id="fx_namelist">${exs.map(x=>`<option value="${escTxt(x.name)}"></option>`).join('')}</datalist></div>
-   <div class="field row2"><div><label>MÚSCULO</label><input id="fx_muscle" placeholder="chest"/></div><div><label>SETS</label><input id="fx_sets" type="number" value="2"/></div></div>
+   <div class="field row2"><div><label>MÚSCULO</label><input id="fx_muscle" value="${escTxt(seedMuscle).replace(/"/g,'&quot;')}" placeholder="chest"/></div><div><label>SETS</label><input id="fx_sets" type="number" value="2"/></div></div>
    <div class="chips" id="fx_msugg" style="margin:-4px 0 12px">${muscles.map(mm=>`<span class="chip" data-v="${escTxt(mm)}">${escTxt(mm)}</span>`).join('')}</div>
    <div class="field"><label>TYPE</label><div class="toggles"><button id="fx_free" class="on" data-t="free">freeweight</button><button id="fx_mach" data-t="machine">machine</button></div></div>
    <div class="field"><label>MACHINE / NOTE (optional)</label><input id="fx_machine" placeholder="barbell / pulley"/></div>
@@ -1751,8 +1774,13 @@ function openAddExercise(){
   document.querySelector('[data-act="okaddex"]').onclick=()=>{
     const name=val('fx_name'); if(!name)return; const w=db.activeWork;
     const startSide=(((document.querySelector('#fx_start .t.on')||{}).dataset||{}).v==='L')?'L':'R';
-    w.exercises.push({name,muscle:val('fx_muscle')||'other',type:m.classList.contains('on')?'machine':'free',machine:val('fx_machine'),unilateral:document.getElementById('fx_uni').checked,startSide,note:'',sets:[]});
-    const ex=w.exercises[w.exercises.length-1]; const n=Math.max(1,+val('fx_sets')||1); const last=lastLoggedSets(name,ex.unilateral); const [s1,s2]=uniSides(ex);
+    const newEx={name,muscle:val('fx_muscle')||'other',type:m.classList.contains('on')?'machine':'free',machine:val('fx_machine'),unilateral:document.getElementById('fx_uni').checked,startSide,note:'',sets:[]};
+    // insert AFTER the exercise where [+ exercise] was tapped (button is below each exercise as a positional hint);
+    // fall back to append when no anchor (shouldn't happen, but safe)
+    let insertAt;
+    if(afterExi!=null && afterExi>=0 && afterExi<w.exercises.length){ insertAt=afterExi+1; w.exercises.splice(insertAt,0,newEx); }
+    else { w.exercises.push(newEx); insertAt=w.exercises.length-1; }
+    const ex=w.exercises[insertAt]; const n=Math.max(1,+val('fx_sets')||1); const last=lastLoggedSets(name,ex.unilateral); const [s1,s2]=uniSides(ex);
     for(let i=0;i<n;i++){ if(ex.unilateral){ex.sets.push(emptySet(ex,s1,false,last?last[i*2]:null));ex.sets.push(emptySet(ex,s2,false,last?last[i*2+1]:null));} else ex.sets.push(emptySet(ex,null,false,last?(last[i]||last[last.length-1]):null)); }
     save(); closeModal(); render();
   };
