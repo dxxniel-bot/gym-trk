@@ -588,11 +588,22 @@ function streak(){ const ds=[...new Set(db.sessions.filter(s=>s.type!=='rest').m
 // weekly hard sets per muscle (RIR<=4 = hard) over last N days, with RP landmarks
 const VOL_LANDMARKS={chest:[10,20,22],back:[10,22,25],quads:[8,18,20],hams:[6,16,20],delts:[8,22,26],biceps:[8,20,26],tricep:[6,14,18],triceps:[6,14,18],calfs:[8,16,20],calves:[8,16,20],abs:[6,25,25],traps:[4,20,26],glutes:[4,16,16],neck:[4,12,16]};
 function isHardSet(st){ const r=st.rir; if(r===''||r==null)return true; if(r==='F')return true; const n=parseFloat(r); return isNaN(n)?true:n<=4; }
+// canonical muscles per exercise: [{name, weight}], first is primary (weight=1), subsequent are secondary (custom decimal 0..1).
+// Reads e.muscles array if present; falls back to wrapping legacy e.muscle string as single primary so old data keeps working.
+function exMuscles(e){
+  if(e&&Array.isArray(e.muscles)&&e.muscles.length){
+    return e.muscles.map((m,i)=>({name:String(m&&m.name||'').toLowerCase().trim(), weight: i===0?1:Math.max(0,Math.min(1,parseFloat(m&&m.weight)||0.5))})).filter(x=>x.name);
+  }
+  if(e&&e.muscle) return [{name:String(e.muscle).toLowerCase().trim(), weight:1}];
+  return [];
+}
+function fmtMuscles(e){ const m=exMuscles(e); if(!m.length)return ''; return m.map((x,i)=> i===0?x.name : x.name+' ('+x.weight+')').join(' · '); }
 function weeklySets(days){ days=days||7; const now=new Date(); const cut=new Date(now); cut.setDate(now.getDate()-days); const c=todayISO(cut);
   const byM={}; const freq={};
   db.sessions.forEach(s=>{ if(s.type==='rest'||s.date<c)return; const seen={};
-    (s.exercises||[]).forEach(e=>{ const m=(e.muscle||'other').toLowerCase(); let hard=0; (e.sets||[]).forEach(st=>{ if((st.w||st.r)&&isHardSet(st))hard++; });
-      if(hard>0){ byM[m]=(byM[m]||0)+hard; seen[m]=1; } });
+    (s.exercises||[]).forEach(e=>{ const muscles=exMuscles(e); if(!muscles.length)return;
+      let hard=0; (e.sets||[]).forEach(st=>{ if((st.w||st.r)&&isHardSet(st))hard++; });
+      if(hard>0){ muscles.forEach(m=>{ byM[m.name]=(byM[m.name]||0)+hard*m.weight; seen[m.name]=1; }); } });
     Object.keys(seen).forEach(m=>{ freq[m]=(freq[m]||0)+1; });
   });
   return {byM,freq};
@@ -786,7 +797,7 @@ function setBadgeHTML(curS,prevS){ const pr=setProgress(curS,prevS); if(!pr)retu
 // pair progress: for unilateral, sum L+R scores and compare against the same-position pair from the previous session.
 function pairBadgeHTML(curA,curB,prevA,prevB){ const cur=setScore(curA)+(curB?setScore(curB):0); const prev=(prevA?setScore(prevA):0)+(prevB?setScore(prevB):0); const pr=progFromScores(cur,prev); if(!pr)return ''; const col=pr.dir==='up'?'var(--good)':pr.dir==='down'?'var(--bad)':'var(--o40)'; const ar=pr.dir==='up'?'▲':pr.dir==='down'?'▼':'='; const pc=pr.pct?((pr.pct>0?'+':'')+pr.pct+'%'):''; return `<span class="setprog" style="font-size:9px;font-weight:700;color:${col}">${ar}${pc}</span>`; }
 // MUSCLE-LEVEL weekly score: aggregate setScore over all exercises tagged with this muscle, within a date window.
-function muscleWindowScore(muscle,startISO,endISO){ const m=(muscle||'').toLowerCase(); let total=0; (db.sessions||[]).forEach(s=>{ if(s.type==='rest')return; if(s.date<startISO||s.date>=endISO)return; (s.exercises||[]).forEach(e=>{ if((e.muscle||'').toLowerCase()!==m)return; (e.sets||[]).forEach(set=>{ total+=setScore(set); }); }); }); return total; }
+function muscleWindowScore(muscle,startISO,endISO){ const m=(muscle||'').toLowerCase(); let total=0; (db.sessions||[]).forEach(s=>{ if(s.type==='rest')return; if(s.date<startISO||s.date>=endISO)return; (s.exercises||[]).forEach(e=>{ const hit=exMuscles(e).find(x=>x.name===m); if(!hit)return; (e.sets||[]).forEach(set=>{ total+=setScore(set)*hit.weight; }); }); }); return total; }
 function muscleProgress(muscle){ const now=new Date(); const c7=new Date(now); c7.setDate(now.getDate()-7); const c14=new Date(now); c14.setDate(now.getDate()-14); const tomorrow=new Date(now); tomorrow.setDate(now.getDate()+1); const cur=muscleWindowScore(muscle,todayISO(c7),todayISO(tomorrow)); const prev=muscleWindowScore(muscle,todayISO(c14),todayISO(c7)); return progFromScores(cur,prev); }
 // live-update the badge while logging (setField avoids a full re-render to keep input focus)
 function updateProgBadge(exi){ const w=db.activeWork; if(!w||!w.exercises[exi])return; const nm=document.querySelector('.exhead .n[data-exi="'+exi+'"]'); if(!nm)return; const html=progBadgeHTML(w.exercises[exi]); ['exprog','exzones'].forEach(cls=>{ const el=nm.parentElement.querySelector('.'+cls); if(el)el.remove(); }); if(html)nm.insertAdjacentHTML('afterend',html); }
@@ -1567,7 +1578,7 @@ function renderSplitEdit(){
   (sp.days||[]).forEach((d,di)=>{
     body+=`<div class="seday"><div class="sehead"><input class="senm" data-act="sd_name" data-di="${di}" value="${(d.name||'').replace(/"/g,'&quot;')}"/><span class="semv"><span data-act="sd_dayup" data-di="${di}">▲</span><span data-act="sd_daydn" data-di="${di}">▼</span></span>${sp.days.length>1?`<span class="sedel" data-act="sd_deld" data-di="${di}">✕</span>`:''}</div>`;
     (d.exercises||[]).forEach((e,ei)=>{
-      body+=`<div class="seex"><span class="seexn" data-act="sd_ex" data-di="${di}" data-ei="${ei}">${escTxt(e.name)} <span class="seexm">${escTxt(e.muscle||'')}${e.unilateral?' · R/L':''}${e.type==='machine'?' · mach':''} · ${e.sets||1}×</span></span><span class="semv"><span data-act="sd_exup" data-di="${di}" data-ei="${ei}">▲</span><span data-act="sd_exdn" data-di="${di}" data-ei="${ei}">▼</span></span><span class="sedel" data-act="sd_delex" data-di="${di}" data-ei="${ei}">✕</span></div>`;
+      body+=`<div class="seex"><span class="seexn" data-act="sd_ex" data-di="${di}" data-ei="${ei}">${escTxt(e.name)} <span class="seexm">${escTxt(fmtMuscles(e))}${e.unilateral?' · R/L':''}${e.type==='machine'?' · mach':e.type==='pulley'?' · pulley':e.type==='bodyweight'?' · bw':''} · ${e.sets||1}×</span></span><span class="semv"><span data-act="sd_exup" data-di="${di}" data-ei="${ei}">▲</span><span data-act="sd_exdn" data-di="${di}" data-ei="${ei}">▼</span></span><span class="sedel" data-act="sd_delex" data-di="${di}" data-ei="${ei}">✕</span></div>`;
     });
     body+=`<div class="seadd" data-act="sd_addex" data-di="${di}">+ ejercicio</div></div>`;
   });
@@ -1817,7 +1828,8 @@ function openExEdit(di,ei){
   const types=[['free','freeweight'],['machine','machine'],['pulley','pulley'],['bodyweight','bodyweight']];
   openModal(`<h3>${isNew?'+ exercise':'edit exercise'}</h3>
    <div class="field"><label>NAME${isNew?' · escribe o elige uno previo':''}</label><input id="ee_name" value="${(e.name||'').replace(/"/g,'&quot;')}" list="ee_namelist" placeholder="bb incline"/><datalist id="ee_namelist">${knowns.map(x=>`<option value="${escTxt(x.name)}"></option>`).join('')}</datalist></div>
-   <div class="field"><label>MUSCLE · ${muscles.length} usados (o escribe uno nuevo)</label><input id="ee_muscle" value="${(e.muscle||'').replace(/"/g,'&quot;')}" placeholder="chest"/><div class="chips" id="ee_msugg">${muscles.map(m=>`<span class="chip" data-act="ee_pickm" data-v="${escTxt(m)}">${escTxt(m)}</span>`).join('')}</div></div>
+   <div class="field"><label>MÚSCULO 1 · primario · serie completa</label><input id="ee_muscle" value="${(exMuscles(e)[0]||{}).name||(e.muscle||'').replace(/"/g,'&quot;')}" placeholder="chest"/><div class="chips" id="ee_msugg">${muscles.map(m=>`<span class="chip" data-act="ee_pickm" data-v="${escTxt(m)}">${escTxt(m)}</span>`).join('')}</div></div>
+   ${(()=>{ const m2=exMuscles(e)[1]; const show=!!m2; return `<div class="field" id="ee_mus2wrap" style="display:${show?'block':'none'}"><label>MÚSCULO 2 · secundario · contribución del set</label><div style="display:flex;gap:6px;align-items:center"><input id="ee_mus2" style="flex:1" value="${m2?escTxt(m2.name):''}" placeholder="ej. rear delts"/><select id="ee_mus2w" style="width:80px">${[0.25,0.33,0.5,0.67,0.75].map(v=>`<option value="${v}"${m2&&Math.abs(m2.weight-v)<0.01?' selected':''}>${v}</option>`).join('')}</select><button class="cancel" data-act="ee_mus2_off" style="padding:4px 8px;flex:0 0 auto">×</button></div></div><div id="ee_mus2_addwrap" style="margin-bottom:10px;display:${show?'none':'block'}"><a data-act="ee_mus2_on" style="font-size:10px;color:var(--o60);cursor:pointer">+ músculo secundario</a></div>`; })()}
    <div class="field"><label>TYPE</label><div class="toggles" id="ee_type" style="flex-wrap:wrap;gap:4px">${types.map(([v,lbl])=>`<button class="t ${e.type===v||(v==='free'&&!e.type)?'on':''}" data-act="optpick" data-v="${v}" style="flex:1 1 calc(50% - 2px);min-width:0">${lbl}</button>`).join('')}</div></div>
    <div class="field row2"><div><label>SETS</label><input id="ee_sets" type="number" value="${e.sets||2}"/></div><div><label>MACHINE/NOTE</label><input id="ee_machine" value="${(e.machine||'').replace(/"/g,'&quot;')}" placeholder="opcional"/></div></div>
    <label style="font-size:9px;color:var(--o50);display:block;margin-bottom:10px"><input type="checkbox" id="ee_uni" ${e.unilateral?'checked':''} style="width:auto;vertical-align:middle"/> unilateral (R/L)</label>
@@ -1827,12 +1839,20 @@ function openExEdit(di,ei){
   document.querySelectorAll('#ee_msugg .chip').forEach(c=>c.onclick=()=>{document.getElementById('ee_muscle').value=c.dataset.v;});
   // L/R picker visibility tied to the unilateral checkbox
   const uniBox=document.getElementById('ee_uni'); if(uniBox)uniBox.addEventListener('change',()=>{ const w=document.getElementById('ee_startwrap'); if(w)w.style.display=uniBox.checked?'block':'none'; });
+  // secondary muscle: show/hide via in-modal link/×
+  const m2On=document.querySelector('[data-act="ee_mus2_on"]'); const m2Off=document.querySelector('[data-act="ee_mus2_off"]');
+  if(m2On)m2On.onclick=(ev)=>{ ev.preventDefault(); const w=document.getElementById('ee_mus2wrap'); const a=document.getElementById('ee_mus2_addwrap'); if(w)w.style.display='block'; if(a)a.style.display='none'; const i=document.getElementById('ee_mus2'); if(i)i.focus(); };
+  if(m2Off)m2Off.onclick=(ev)=>{ ev.preventDefault(); const w=document.getElementById('ee_mus2wrap'); const a=document.getElementById('ee_mus2_addwrap'); if(w)w.style.display='none'; if(a)a.style.display='block'; const i=document.getElementById('ee_mus2'); if(i)i.value=''; };
   // memory: typing OR picking a known name (datalist click) → autofill ALL remembered variables (input + change events for cross-browser reliability)
   const nm=document.getElementById('ee_name'); if(nm){
     const autofill=()=>{
       const hit=lookupKnownExercise(nm.value); if(!hit)return;
       const setIf=(id,v)=>{ const el=document.getElementById(id); if(el&&!el.value&&v!=null&&v!=='')el.value=v; };
-      setIf('ee_muscle',hit.muscle); setIf('ee_machine',hit.machine);
+      // primary muscle: prefer remembered muscles[0], fall back to legacy hit.muscle
+      const mList=Array.isArray(hit.muscles)&&hit.muscles.length?hit.muscles:(hit.muscle?[{name:hit.muscle,weight:1}]:[]);
+      setIf('ee_muscle',(mList[0]||{}).name); setIf('ee_machine',hit.machine);
+      // reveal + fill secondary if exercise has one
+      if(mList[1]){ const wrap=document.getElementById('ee_mus2wrap'); const add=document.getElementById('ee_mus2_addwrap'); if(wrap){wrap.style.display='block'; if(add)add.style.display='none'; setIf('ee_mus2',mList[1].name); const sw=document.getElementById('ee_mus2w'); if(sw){ const v=String(mList[1].weight); if([...sw.options].some(o=>o.value===v))sw.value=v; } } }
       if(hit.sets!=null){ const sN=document.getElementById('ee_sets'); if(sN&&(sN.value==='2'||sN.value===''))sN.value=hit.sets; }
       if(hit.type){ const tg=document.querySelector('#ee_type [data-v="'+hit.type+'"]'); if(tg&&!tg.classList.contains('on')){ document.querySelectorAll('#ee_type .t').forEach(x=>x.classList.remove('on')); tg.classList.add('on'); } }
       if(hit.unilateral){ const u=document.getElementById('ee_uni'); if(u&&!u.checked){ u.checked=true; const w=document.getElementById('ee_startwrap'); if(w)w.style.display='block'; } }
@@ -1845,7 +1865,15 @@ function saveExEdit(){
   const {di,ei}=window._exEdit||{}; const name=val('ee_name'); if(!name){alert('Pon nombre.');return;}
   const pv=id=>{const x=document.querySelector('#'+id+' .t.on');return x?x.dataset.v:'';};
   const t=pv('ee_type'); const validT=['machine','pulley','free','bodyweight'].indexOf(t)>=0?t:'free';
-  const ex={name,muscle:(val('ee_muscle')||'other').toLowerCase().trim(),type:validT,machine:val('ee_machine'),unilateral:document.getElementById('ee_uni').checked,startSide:(pv('ee_start')==='L'?'L':'R'),sets:Math.max(1,+val('ee_sets')||1)};
+  // build canonical muscles array: primary (1.0) + optional secondary (custom decimal). Keep e.muscle = primary name for legacy code paths.
+  const m1=(val('ee_muscle')||'other').toLowerCase().trim();
+  const muscles=[{name:m1,weight:1}];
+  const m2wrap=document.getElementById('ee_mus2wrap');
+  if(m2wrap && m2wrap.style.display!=='none'){
+    const m2=(val('ee_mus2')||'').toLowerCase().trim();
+    if(m2){ const w2=Math.max(0,Math.min(1,parseFloat(document.getElementById('ee_mus2w').value)||0.5)); muscles.push({name:m2,weight:w2}); }
+  }
+  const ex={name,muscle:m1,muscles,type:validT,machine:val('ee_machine'),unilateral:document.getElementById('ee_uni').checked,startSide:(pv('ee_start')==='L'?'L':'R'),sets:Math.max(1,+val('ee_sets')||1)};
   if(ei<0)db.split.days[di].exercises.push(ex); else db.split.days[di].exercises[ei]=ex;
   // optional: propagate the new metadata to past SESSIONS that logged this same exercise NAME at the current gym
   const propBox=document.getElementById('ee_propagate');
@@ -1929,7 +1957,7 @@ function saveSession(){
   const has=w.exercises.some(e=>e.sets.some(s=>(s.w||s.r)&&!s._pf));
   if(!has && !confirm('No registraste sets. ¿Guardar de todos modos?')){return;}
   const sess={id:w.id,date:w.date,dayId:w.dayId,dayName:w.dayName,gym:w.gym,type:'training',loggedAfter:!!w.loggedAfter,durSec:w.loggedAfter?((parseInt(w.manualDur,10)||0)*60):(w.startMs?Math.round((Date.now()-w.startMs)/1000):0),
-    exercises:w.exercises.map(e=>{const r=machineRec(w.gym,e); return {name:e.name,muscle:e.muscle,machine:r.na?'':r.brand,setup:r.na?'':r.setup,sets:e.sets.filter(s=>(s.w||s.r)&&!s._pf)};})};
+    exercises:w.exercises.map(e=>{const r=machineRec(w.gym,e); return {name:e.name,muscle:e.muscle,muscles:Array.isArray(e.muscles)?e.muscles.slice():undefined,machine:r.na?'':r.brand,setup:r.na?'':r.setup,sets:e.sets.filter(s=>(s.w||s.r)&&!s._pf)};})};
   if(!(w.loggedAfter&&w.noAdvance)){ const idx=db.split.days.findIndex(d=>d.id===w.dayId); db.rotIdx=(idx>=0?idx:db.rotIdx)+1; } db.activeWork=null; state.selDay=null; db.sessions.push(sess); save(); go('home');
 }
 
@@ -1954,6 +1982,7 @@ function knownExercises(){
     if(!map[k])map[k]={name:e.name};
     const o=map[k];
     ['muscle','type','machine','unilateral','startSide','useFS','unit','note'].forEach(p=>{ if(e[p]!=null&&e[p]!=='')o[p]=e[p]; });
+    if(Array.isArray(e.muscles)&&e.muscles.length) o.muscles=e.muscles.slice();  // remember primary+secondary muscles
     if(e.sets!=null && typeof e.sets==='number') o.sets = e.sets;
     if(fromSets && Array.isArray(e.sets) && e.sets.length){
       if(e.sets.some(x=>x.side)) o.unilateral=true;  // detect uni from actual logged sets
@@ -1974,7 +2003,11 @@ function exerciseDirectory(){
     (db.sessions||[]).forEach(s=>{ if(s.type==='rest')return; (s.exercises||[]).forEach(se=>{ if((se.name||'').toLowerCase().trim()===key){ if(s.gym)gyms.add(s.gym); sess++; } }); });
     e._gyms=[...gyms]; e._sess=sess;
   });
-  const byM={}; list.forEach(e=>{ const m=(e.muscle||'sin músculo'); (byM[m]=byM[m]||[]).push(e); });
+  // multi-muscle: exercise appears under EACH muscle it hits (with its weight noted as secondary)
+  const byM={};
+  list.forEach(e=>{ const muscles=exMuscles(e); if(!muscles.length){ (byM['sin músculo']=byM['sin músculo']||[]).push({...e,_w:1}); return; }
+    muscles.forEach(m=>{ (byM[m.name]=byM[m.name]||[]).push({...e,_w:m.weight}); });
+  });
   return byM;
 }
 function openExerciseDirectory(){
@@ -1987,7 +2020,9 @@ function openExerciseDirectory(){
       const tags=(e._gyms||[]).map(g=>`<span style="font-size:9px;color:var(--o60);border:.5px solid var(--o20);padding:1px 5px;margin-left:4px">${escTxt(g)}</span>`).join('');
       const meta=[]; if(e.type)meta.push(e.type); if(e.unilateral)meta.push('uni');
       const sub=meta.length?` <span style="color:var(--o40)">· ${meta.join(' · ')}</span>`:'';
-      html+=`<div style="display:flex;justify-content:space-between;gap:8px;padding:5px 0;border-bottom:.5px solid var(--o10)"><span style="font-size:12px;flex:1">${escTxt(e.name)}${sub}${tags}</span><span style="font-size:10px;color:var(--o50);white-space:nowrap">${e._sess||0} ${e._sess===1?'sesión':'sesiones'}</span></div>`;
+      // mark contribution when this exercise hits the muscle as secondary (weight < 1)
+      const contrib=e._w<1?` <span style="color:var(--warn);font-size:10px;font-weight:700">×${e._w}</span>`:'';
+      html+=`<div style="display:flex;justify-content:space-between;gap:8px;padding:5px 0;border-bottom:.5px solid var(--o10)"><span style="font-size:12px;flex:1">${escTxt(e.name)}${contrib}${sub}${tags}</span><span style="font-size:10px;color:var(--o50);white-space:nowrap">${e._sess||0} ${e._sess===1?'sesión':'sesiones'}</span></div>`;
     });
   });
   html+=`<div class="sheetbtns" style="margin-top:14px"><button class="cancel" data-act="closemodal">close</button></div>`;
