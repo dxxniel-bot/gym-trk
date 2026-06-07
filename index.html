@@ -784,7 +784,7 @@ function updateProgBadge(exi){ const w=db.activeWork; if(!w||!w.exercises[exi])r
 // also update per-set zone color in-place (called from setField after a weight/reps/RIR change)
 function updateSetZone(exi,si){ const w=db.activeWork; if(!w||!w.exercises[exi])return; const s=w.exercises[exi].sets[si]; if(!s)return; const z=setZone(s); const el=document.querySelector('.setn[data-exi="'+exi+'"][data-si="'+si+'"]'); if(!el)return; el.style.color = (!s.done && z==='light') ? 'var(--warn)' : (!s.done && z==='heavy') ? 'var(--bad)' : ''; }
 function renderExercise(exi,ex,allowF){
-  const sets=ex.sets||[]; const isM=ex.type==='machine'; const isU=ex.unilateral;
+  const sets=ex.sets||[]; const isM=ex.type==='machine'||ex.type==='pulley'; const isU=ex.unilateral;
   const rec=machineRec((db.activeWork||{}).gym,ex); const ed=`data-act="editmach" data-exi="${exi}"`;
   let mhtml;
   if(rec.na){ mhtml=`<span class="mch none" ${ed}>n/a</span>`; }
@@ -1546,7 +1546,7 @@ function renderSplitEdit(){
     });
     body+=`<div class="seadd" data-act="sd_addex" data-di="${di}">+ ejercicio</div></div>`;
   });
-  return body+`<div class="secondary" style="margin-top:6px"><button class="b" data-act="sd_addday">+ agregar día</button></div>`;
+  return body+`<div class="secondary" style="margin-top:6px"><button class="b" data-act="sd_addday">+ agregar día</button><button class="b" data-act="exdirectory">catálogo</button></div>`;
 }
 // ---------- render: history ----------
 function renderHistory(){
@@ -1697,6 +1697,7 @@ document.getElementById('app').addEventListener('click',e=>{
   else if(a==='sd_exdn'){ const di=+el.dataset.di,ei=+el.dataset.ei, ex=db.split.days[di].exercises; if(ei<ex.length-1){ const t=ex[ei+1];ex[ei+1]=ex[ei];ex[ei]=t; save(); render(); } }
   else if(a==='sd_ex'){ openExEdit(+el.dataset.di,+el.dataset.ei); }
   else if(a==='sd_addday'){ db.split.days.push({id:'d'+uid(),name:'new day',tag:'@ RIR · F',metric:'rir',allowFailure:true,exercises:[]}); save(); render(); }
+  else if(a==='exdirectory'){ openExerciseDirectory(); }
   else if(a==='okexedit'){ saveExEdit(); }
   else if(a==='ss_save'){ const s=db.sessions.find(x=>x.id===window._sessId); if(s){ const dt=document.getElementById('ss_date'); if(dt)s.date=dt.value; save(); closeModal(); render(); } }
   else if(a==='ss_del'){ if(confirm('¿Borrar esta sesión?')){ db.sessions=db.sessions.filter(x=>x.id!==window._sessId); save(); closeModal(); render(); } }
@@ -1784,33 +1785,55 @@ document.getElementById('app').addEventListener('input',e=>{
 function openExEdit(di,ei){
   const isNew=ei<0; const e=isNew?{name:'',muscle:'',type:'free',machine:'',unilateral:false,sets:2}:db.split.days[di].exercises[ei];
   window._exEdit={di,ei};
-  const muscles=['chest','back','quads','hams','delts','biceps','tricep','calfs','abs','traps','glutes','neck'];
+  const muscles=muscleSuggest();
   const knowns=knownExercises();
+  const types=[['free','freeweight'],['machine','machine'],['pulley','pulley'],['bodyweight','bodyweight']];
   openModal(`<h3>${isNew?'+ exercise':'edit exercise'}</h3>
-   <div class="field"><label>NAME${isNew?' · escribe o elige uno previo':''}</label><input id="ee_name" value="${(e.name||'').replace(/"/g,'&quot;')}" list="ee_namelist" placeholder="bb incline" autocomplete="off"/><datalist id="ee_namelist">${knowns.map(x=>`<option value="${escTxt(x.name)}"></option>`).join('')}</datalist></div>
-   <div class="field"><label>MUSCLE</label><input id="ee_muscle" value="${(e.muscle||'').replace(/"/g,'&quot;')}" placeholder="chest"/><div class="chips" id="ee_msugg">${muscles.map(m=>`<span class="chip" data-act="ee_pickm" data-v="${m}">${m}</span>`).join('')}</div></div>
-   <div class="field row2"><div><label>TYPE</label><div class="toggles" id="ee_type"><button class="t ${e.type!=='machine'?'on':''}" data-act="optpick" data-v="free">free</button><button class="t ${e.type==='machine'?'on':''}" data-act="optpick" data-v="machine">machine</button></div></div><div><label>SETS</label><input id="ee_sets" type="number" value="${e.sets||2}"/></div></div>
-   <div class="field"><label>MACHINE/NOTE (opcional)</label><input id="ee_machine" value="${(e.machine||'').replace(/"/g,'&quot;')}" placeholder="barbell / pulley"/></div>
+   <div class="field"><label>NAME${isNew?' · escribe o elige uno previo':''}</label><input id="ee_name" value="${(e.name||'').replace(/"/g,'&quot;')}" list="ee_namelist" placeholder="bb incline"/><datalist id="ee_namelist">${knowns.map(x=>`<option value="${escTxt(x.name)}"></option>`).join('')}</datalist></div>
+   <div class="field"><label>MUSCLE · ${muscles.length} usados (o escribe uno nuevo)</label><input id="ee_muscle" value="${(e.muscle||'').replace(/"/g,'&quot;')}" placeholder="chest"/><div class="chips" id="ee_msugg">${muscles.map(m=>`<span class="chip" data-act="ee_pickm" data-v="${escTxt(m)}">${escTxt(m)}</span>`).join('')}</div></div>
+   <div class="field"><label>TYPE</label><div class="toggles" id="ee_type" style="flex-wrap:wrap;gap:4px">${types.map(([v,lbl])=>`<button class="t ${e.type===v||(v==='free'&&!e.type)?'on':''}" data-act="optpick" data-v="${v}" style="flex:1 1 calc(50% - 2px);min-width:0">${lbl}</button>`).join('')}</div></div>
+   <div class="field row2"><div><label>SETS</label><input id="ee_sets" type="number" value="${e.sets||2}"/></div><div><label>MACHINE/NOTE</label><input id="ee_machine" value="${(e.machine||'').replace(/"/g,'&quot;')}" placeholder="opcional"/></div></div>
    <label style="font-size:9px;color:var(--o50);display:block;margin-bottom:10px"><input type="checkbox" id="ee_uni" ${e.unilateral?'checked':''} style="width:auto;vertical-align:middle"/> unilateral (R/L)</label>
-   <div class="field" id="ee_startwrap"><label>UNILATERAL · EMPEZAR POR</label><div class="toggles" id="ee_start"><button class="t ${e.startSide!=='L'?'on':''}" data-act="optpick" data-v="R">R primero</button><button class="t ${e.startSide==='L'?'on':''}" data-act="optpick" data-v="L">L primero</button></div></div>
+   <div class="field" id="ee_startwrap" style="display:${e.unilateral?'block':'none'}"><label>UNILATERAL · EMPEZAR POR</label><div class="toggles" id="ee_start"><button class="t ${e.startSide!=='L'?'on':''}" data-act="optpick" data-v="R">R primero</button><button class="t ${e.startSide==='L'?'on':''}" data-act="optpick" data-v="L">L primero</button></div></div>
+   ${isNew?'':'<div class="submeta" style="margin:8px 0 4px;color:var(--o40)">marca para propagar estos detalles a tus sesiones pasadas del mismo nombre + gym actual</div><label style="font-size:10px;color:var(--o60);display:block;margin-bottom:10px"><input type="checkbox" id="ee_propagate" style="width:auto;vertical-align:middle"/> actualizar sesiones pasadas</label>'}
    <div class="sheetbtns"><button class="ok" data-act="okexedit">save</button><button class="cancel" data-act="closemodal">cancel</button></div>`);
   document.querySelectorAll('#ee_msugg .chip').forEach(c=>c.onclick=()=>{document.getElementById('ee_muscle').value=c.dataset.v;});
-  // memory: typing/picking a known name → autofill ALL remembered variables (consistency across split days)
-  const nm=document.getElementById('ee_name'); if(nm)nm.addEventListener('input',()=>{
-    const hit=lookupKnownExercise(nm.value); if(!hit)return;
-    const setIf=(id,v)=>{ const el=document.getElementById(id); if(el&&!el.value&&v!=null&&v!=='')el.value=v; };
-    setIf('ee_muscle',hit.muscle); setIf('ee_machine',hit.machine);
-    if(hit.sets!=null){ const sN=document.getElementById('ee_sets'); if(sN&&(sN.value==='2'||sN.value===''))sN.value=hit.sets; }
-    if(hit.type){ const tg=document.querySelector('#ee_type [data-v="'+hit.type+'"]'); if(tg&&!tg.classList.contains('on')){ document.querySelectorAll('#ee_type .t').forEach(x=>x.classList.remove('on')); tg.classList.add('on'); } }
-    if(hit.unilateral){ const u=document.getElementById('ee_uni'); if(u&&!u.checked)u.checked=true; }
-    if(hit.startSide){ const sb=document.querySelector('#ee_start [data-v="'+hit.startSide+'"]'); if(sb&&!sb.classList.contains('on')){ document.querySelectorAll('#ee_start .t').forEach(x=>x.classList.remove('on')); sb.classList.add('on'); } }
-  });
+  // L/R picker visibility tied to the unilateral checkbox
+  const uniBox=document.getElementById('ee_uni'); if(uniBox)uniBox.addEventListener('change',()=>{ const w=document.getElementById('ee_startwrap'); if(w)w.style.display=uniBox.checked?'block':'none'; });
+  // memory: typing OR picking a known name (datalist click) → autofill ALL remembered variables (input + change events for cross-browser reliability)
+  const nm=document.getElementById('ee_name'); if(nm){
+    const autofill=()=>{
+      const hit=lookupKnownExercise(nm.value); if(!hit)return;
+      const setIf=(id,v)=>{ const el=document.getElementById(id); if(el&&!el.value&&v!=null&&v!=='')el.value=v; };
+      setIf('ee_muscle',hit.muscle); setIf('ee_machine',hit.machine);
+      if(hit.sets!=null){ const sN=document.getElementById('ee_sets'); if(sN&&(sN.value==='2'||sN.value===''))sN.value=hit.sets; }
+      if(hit.type){ const tg=document.querySelector('#ee_type [data-v="'+hit.type+'"]'); if(tg&&!tg.classList.contains('on')){ document.querySelectorAll('#ee_type .t').forEach(x=>x.classList.remove('on')); tg.classList.add('on'); } }
+      if(hit.unilateral){ const u=document.getElementById('ee_uni'); if(u&&!u.checked){ u.checked=true; const w=document.getElementById('ee_startwrap'); if(w)w.style.display='block'; } }
+      if(hit.startSide){ const sb=document.querySelector('#ee_start [data-v="'+hit.startSide+'"]'); if(sb&&!sb.classList.contains('on')){ document.querySelectorAll('#ee_start .t').forEach(x=>x.classList.remove('on')); sb.classList.add('on'); } }
+    };
+    nm.addEventListener('input',autofill); nm.addEventListener('change',autofill); nm.addEventListener('blur',autofill);
+  }
 }
 function saveExEdit(){
   const {di,ei}=window._exEdit||{}; const name=val('ee_name'); if(!name){alert('Pon nombre.');return;}
   const pv=id=>{const x=document.querySelector('#'+id+' .t.on');return x?x.dataset.v:'';};
-  const ex={name,muscle:(val('ee_muscle')||'other').toLowerCase(),type:pv('ee_type')==='machine'?'machine':'free',machine:val('ee_machine'),unilateral:document.getElementById('ee_uni').checked,startSide:(pv('ee_start')==='L'?'L':'R'),sets:Math.max(1,+val('ee_sets')||1)};
+  const t=pv('ee_type'); const validT=['machine','pulley','free','bodyweight'].indexOf(t)>=0?t:'free';
+  const ex={name,muscle:(val('ee_muscle')||'other').toLowerCase().trim(),type:validT,machine:val('ee_machine'),unilateral:document.getElementById('ee_uni').checked,startSide:(pv('ee_start')==='L'?'L':'R'),sets:Math.max(1,+val('ee_sets')||1)};
   if(ei<0)db.split.days[di].exercises.push(ex); else db.split.days[di].exercises[ei]=ex;
+  // optional: propagate the new metadata to past SESSIONS that logged this same exercise NAME at the current gym
+  const propBox=document.getElementById('ee_propagate');
+  if(propBox && propBox.checked){
+    const gym=db.activeGym||''; const key=ex.name.toLowerCase().trim(); let touched=0;
+    (db.sessions||[]).forEach(s=>{ if(s.type==='rest')return; if(gym && (s.gym||'')!==gym)return;
+      (s.exercises||[]).forEach(se=>{ if((se.name||'').toLowerCase().trim()!==key)return;
+        if(ex.muscle && ex.muscle!=='other')se.muscle=ex.muscle;
+        if(ex.machine)se.machine=ex.machine;
+        // keep saved sets untouched; only enrich metadata
+        touched++;
+      });
+    });
+    if(touched)alert('Actualizadas '+touched+' ocurrencias en sesiones pasadas en '+(gym||'(sin gym)')+'.');
+  }
   save(); closeModal(); render();
 }
 
@@ -1917,36 +1940,70 @@ function knownExercises(){
   return Object.values(map);
 }
 function lookupKnownExercise(name){ if(!name)return null; const k=name.toLowerCase().trim(); return knownExercises().find(x=>x.name.toLowerCase().trim()===k)||null; }
-function muscleSuggest(){ const def=['chest','back','quads','hams','delts','biceps','tricep','calfs','abs','traps','glutes','neck']; const used=[]; (db.split.days||[]).forEach(d=>(d.exercises||[]).forEach(e=>{ if(e.muscle&&used.indexOf(e.muscle)<0)used.push(e.muscle); })); return used.concat(def.filter(m=>used.indexOf(m)<0)); }
+// catalog: all knownExercises grouped by muscle, with gym tags + session counts gathered from sessions[].
+function exerciseDirectory(){
+  const list=knownExercises();
+  list.forEach(e=>{ const gyms=new Set(); let sess=0; const key=e.name.toLowerCase().trim();
+    (db.sessions||[]).forEach(s=>{ if(s.type==='rest')return; (s.exercises||[]).forEach(se=>{ if((se.name||'').toLowerCase().trim()===key){ if(s.gym)gyms.add(s.gym); sess++; } }); });
+    e._gyms=[...gyms]; e._sess=sess;
+  });
+  const byM={}; list.forEach(e=>{ const m=(e.muscle||'sin músculo'); (byM[m]=byM[m]||[]).push(e); });
+  return byM;
+}
+function openExerciseDirectory(){
+  const dir=exerciseDirectory(); const muscles=Object.keys(dir).sort(); const total=muscles.reduce((a,m)=>a+dir[m].length,0);
+  let html=`<h3>catálogo de ejercicios</h3><div class="submeta" style="margin-bottom:12px">${total} ejercicios · agrupados por músculo · etiquetas = gym(s) donde se han entrenado</div>`;
+  if(!total){ html+=`<div class="submeta">aún no hay ejercicios registrados</div>`; }
+  muscles.forEach(m=>{
+    html+=`<div style="font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--o50);margin:14px 0 4px">${escTxt(m)} <span style="color:var(--o30)">· ${dir[m].length}</span></div>`;
+    dir[m].sort((a,b)=>(b._sess||0)-(a._sess||0)).forEach(e=>{
+      const tags=(e._gyms||[]).map(g=>`<span style="font-size:9px;color:var(--o60);border:.5px solid var(--o20);padding:1px 5px;margin-left:4px">${escTxt(g)}</span>`).join('');
+      const meta=[]; if(e.type)meta.push(e.type); if(e.unilateral)meta.push('uni');
+      const sub=meta.length?` <span style="color:var(--o40)">· ${meta.join(' · ')}</span>`:'';
+      html+=`<div style="display:flex;justify-content:space-between;gap:8px;padding:5px 0;border-bottom:.5px solid var(--o10)"><span style="font-size:12px;flex:1">${escTxt(e.name)}${sub}${tags}</span><span style="font-size:10px;color:var(--o50);white-space:nowrap">${e._sess||0} ${e._sess===1?'sesión':'sesiones'}</span></div>`;
+    });
+  });
+  html+=`<div class="sheetbtns" style="margin-top:14px"><button class="cancel" data-act="closemodal">close</button></div>`;
+  openModal(html);
+}
+// muscleSuggest returns ONLY muscles the user has actually used (split + sessions).
+// Falls back to a minimal default set when totally empty (very new user). Lets users add
+// new muscle names by free typing — no exhaustive hardcoded chip list cluttering the UI.
+function muscleSuggest(){ const used=new Set(); (db.split&&db.split.days||[]).forEach(d=>(d.exercises||[]).forEach(e=>{ if(e.muscle)used.add(String(e.muscle).toLowerCase().trim()); })); (db.sessions||[]).forEach(s=>{ if(s.type==='rest')return; (s.exercises||[]).forEach(e=>{ if(e.muscle)used.add(String(e.muscle).toLowerCase().trim()); }); }); const arr=[...used].filter(Boolean); return arr.length?arr.sort():['chest','back','legs','delts','biceps','tricep']; }
 function openAddExercise(afterExi){
   const exs=knownExercises(); const muscles=muscleSuggest();
   const w0=db.activeWork; const seedMuscle = (afterExi!=null && w0 && w0.exercises[afterExi] && w0.exercises[afterExi].muscle) || '';
+  const types=[['free','freeweight'],['machine','machine'],['pulley','pulley'],['bodyweight','bodyweight']];
   openModal(`<h3>+ exercise</h3>
-   <div class="field"><label>NOMBRE · escribe o elige uno previo</label><input id="fx_name" list="fx_namelist" placeholder="cable pushdown" autocomplete="off"/><datalist id="fx_namelist">${exs.map(x=>`<option value="${escTxt(x.name)}"></option>`).join('')}</datalist></div>
-   <div class="field row2"><div><label>MÚSCULO</label><input id="fx_muscle" value="${escTxt(seedMuscle).replace(/"/g,'&quot;')}" placeholder="chest"/></div><div><label>SETS</label><input id="fx_sets" type="number" value="2"/></div></div>
+   <div class="field"><label>NOMBRE · escribe o elige uno previo</label><input id="fx_name" list="fx_namelist" placeholder="cable pushdown"/><datalist id="fx_namelist">${exs.map(x=>`<option value="${escTxt(x.name)}"></option>`).join('')}</datalist></div>
+   <div class="field row2"><div><label>MÚSCULO · ${muscles.length} usados</label><input id="fx_muscle" value="${escTxt(seedMuscle).replace(/"/g,'&quot;')}" placeholder="chest"/></div><div><label>SETS</label><input id="fx_sets" type="number" value="2"/></div></div>
    <div class="chips" id="fx_msugg" style="margin:-4px 0 12px">${muscles.map(mm=>`<span class="chip" data-v="${escTxt(mm)}">${escTxt(mm)}</span>`).join('')}</div>
-   <div class="field"><label>TYPE</label><div class="toggles"><button id="fx_free" class="on" data-t="free">freeweight</button><button id="fx_mach" data-t="machine">machine</button></div></div>
+   <div class="field"><label>TYPE</label><div class="toggles" id="fx_type" style="flex-wrap:wrap;gap:4px">${types.map(([v,lbl])=>`<button class="t ${v==='free'?'on':''}" data-act="optpick" data-v="${v}" style="flex:1 1 calc(50% - 2px);min-width:0">${lbl}</button>`).join('')}</div></div>
    <div class="field"><label>MACHINE / NOTE (optional)</label><input id="fx_machine" placeholder="barbell / pulley"/></div>
    <label style="font-size:8px;color:var(--o40)"><input type="checkbox" id="fx_uni" style="width:auto;height:auto"/> unilateral (R/L)</label>
-   <div class="field" style="margin-top:8px"><label>UNILATERAL · EMPEZAR POR</label><div class="toggles" id="fx_start"><button class="t on" data-act="optpick" data-v="R">R primero</button><button class="t" data-act="optpick" data-v="L">L primero</button></div></div>
+   <div class="field" id="fx_startwrap" style="margin-top:8px;display:none"><label>UNILATERAL · EMPEZAR POR</label><div class="toggles" id="fx_start"><button class="t on" data-act="optpick" data-v="R">R primero</button><button class="t" data-act="optpick" data-v="L">L primero</button></div></div>
    <div class="sheetbtns"><button class="ok" data-act="okaddex">add</button><button class="cancel" data-act="closemodal">cancel</button></div>`);
-  const f=document.getElementById('fx_free'),m=document.getElementById('fx_mach');
-  f.onclick=()=>{f.classList.add('on');m.classList.remove('on');}; m.onclick=()=>{m.classList.add('on');f.classList.remove('on');};
   document.querySelectorAll('#fx_msugg .chip').forEach(c=>c.onclick=()=>{ document.getElementById('fx_muscle').value=c.dataset.v; });
-  // when the user picks/types a known name, propagate ALL remembered properties so each exercise has consistent identity across the split
-  const nm=document.getElementById('fx_name'); if(nm)nm.addEventListener('input',()=>{
-    const k=(nm.value||'').toLowerCase().trim(); const hit=exs.find(x=>x.name.toLowerCase()===k); if(!hit)return;
-    const setIf=(id,v)=>{ const el=document.getElementById(id); if(el&&!el.value&&v!=null&&v!=='')el.value=v; };
-    setIf('fx_muscle',hit.muscle); setIf('fx_machine',hit.machine);
-    if(hit.sets!=null){ const sN=document.getElementById('fx_sets'); if(sN&&(sN.value==='2'||sN.value===''))sN.value=hit.sets; }
-    if(hit.type==='machine'){ const mb=document.getElementById('fx_mach'); if(mb)mb.click(); }
-    if(hit.unilateral){ const u=document.getElementById('fx_uni'); if(u&&!u.checked)u.checked=true; }
-    if(hit.startSide){ const sb=document.querySelector('#fx_start [data-v="'+hit.startSide+'"]'); if(sb)sb.click(); }
-  });
+  // L/R picker visibility tied to the unilateral checkbox
+  const uniBox=document.getElementById('fx_uni'); if(uniBox)uniBox.addEventListener('change',()=>{ const w=document.getElementById('fx_startwrap'); if(w)w.style.display=uniBox.checked?'block':'none'; });
+  // memory autofill — input + change + blur for cross-browser datalist reliability
+  const nm=document.getElementById('fx_name'); if(nm){
+    const autofill=()=>{
+      const k=(nm.value||'').toLowerCase().trim(); const hit=exs.find(x=>x.name.toLowerCase().trim()===k); if(!hit)return;
+      const setIf=(id,v)=>{ const el=document.getElementById(id); if(el&&!el.value&&v!=null&&v!=='')el.value=v; };
+      setIf('fx_muscle',hit.muscle); setIf('fx_machine',hit.machine);
+      if(hit.sets!=null){ const sN=document.getElementById('fx_sets'); if(sN&&(sN.value==='2'||sN.value===''))sN.value=hit.sets; }
+      if(hit.type){ const tg=document.querySelector('#fx_type [data-v="'+hit.type+'"]'); if(tg&&!tg.classList.contains('on')){ document.querySelectorAll('#fx_type .t').forEach(x=>x.classList.remove('on')); tg.classList.add('on'); } }
+      if(hit.unilateral){ const u=document.getElementById('fx_uni'); if(u&&!u.checked){ u.checked=true; const w=document.getElementById('fx_startwrap'); if(w)w.style.display='block'; } }
+      if(hit.startSide){ const sb=document.querySelector('#fx_start [data-v="'+hit.startSide+'"]'); if(sb&&!sb.classList.contains('on')){ document.querySelectorAll('#fx_start .t').forEach(x=>x.classList.remove('on')); sb.classList.add('on'); } }
+    };
+    nm.addEventListener('input',autofill); nm.addEventListener('change',autofill); nm.addEventListener('blur',autofill);
+  }
   document.querySelector('[data-act="okaddex"]').onclick=()=>{
     const name=val('fx_name'); if(!name)return; const w=db.activeWork;
     const startSide=(((document.querySelector('#fx_start .t.on')||{}).dataset||{}).v==='L')?'L':'R';
-    const newEx={name,muscle:val('fx_muscle')||'other',type:m.classList.contains('on')?'machine':'free',machine:val('fx_machine'),unilateral:document.getElementById('fx_uni').checked,startSide,note:'',sets:[]};
+    const typeOn=(document.querySelector('#fx_type .t.on')||{}).dataset; const validT=['machine','pulley','free','bodyweight'].indexOf(typeOn&&typeOn.v)>=0?typeOn.v:'free';
+    const newEx={name,muscle:val('fx_muscle')||'other',type:validT,machine:val('fx_machine'),unilateral:document.getElementById('fx_uni').checked,startSide,note:'',sets:[]};
     // insert AFTER the exercise where [+ exercise] was tapped (button is below each exercise as a positional hint);
     // fall back to append when no anchor (shouldn't happen, but safe)
     let insertAt;
