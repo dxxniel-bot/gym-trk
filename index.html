@@ -1828,31 +1828,56 @@ function openExEdit(di,ei){
   const types=[['free','freeweight'],['machine','machine'],['pulley','pulley'],['bodyweight','bodyweight']];
   openModal(`<h3>${isNew?'+ exercise':'edit exercise'}</h3>
    <div class="field"><label>NAME${isNew?' · escribe o elige uno previo':''}</label><input id="ee_name" value="${(e.name||'').replace(/"/g,'&quot;')}" list="ee_namelist" placeholder="bb incline"/><datalist id="ee_namelist">${knowns.map(x=>`<option value="${escTxt(x.name)}"></option>`).join('')}</datalist></div>
-   <div class="field"><label>MÚSCULO 1 · primario · serie completa</label><input id="ee_muscle" value="${(exMuscles(e)[0]||{}).name||(e.muscle||'').replace(/"/g,'&quot;')}" placeholder="chest"/><div class="chips" id="ee_msugg">${muscles.map(m=>`<span class="chip" data-act="ee_pickm" data-v="${escTxt(m)}">${escTxt(m)}</span>`).join('')}</div></div>
-   ${(()=>{ const m2=exMuscles(e)[1]; const show=!!m2; return `<div class="field" id="ee_mus2wrap" style="display:${show?'block':'none'}"><label>MÚSCULO 2 · secundario · contribución del set</label><div style="display:flex;gap:6px;align-items:center"><input id="ee_mus2" style="flex:1" value="${m2?escTxt(m2.name):''}" placeholder="ej. rear delts"/><select id="ee_mus2w" style="width:80px">${[0.25,0.33,0.5,0.67,0.75].map(v=>`<option value="${v}"${m2&&Math.abs(m2.weight-v)<0.01?' selected':''}>${v}</option>`).join('')}</select><button class="cancel" data-act="ee_mus2_off" style="padding:4px 8px;flex:0 0 auto">×</button></div></div><div id="ee_mus2_addwrap" style="margin-bottom:10px;display:${show?'none':'block'}"><a data-act="ee_mus2_on" style="font-size:10px;color:var(--o60);cursor:pointer">+ músculo secundario</a></div>`; })()}
+   ${(()=>{
+     const selSty="background:#161616;color:#f3f3f4;border:.5px solid var(--o20);font:inherit;font-size:13px;padding:7px 6px";
+     const cur1=(exMuscles(e)[0]||{}).name||''; const m2=exMuscles(e)[1]; const cur2=m2?m2.name:''; const show2=!!m2;
+     const opts=(curv)=>`<option value=""${!curv?' selected':''}>— elige músculo —</option>`+[...new Set([curv,...muscles].filter(Boolean))].map(m=>`<option value="${escTxt(m)}"${m===curv?' selected':''}>${escTxt(m)}</option>`).join('')+`<option value="__new__">+ nuevo músculo…</option>`;
+     return `
+   <div class="field"><label>MÚSCULO 1 · primario · serie completa</label>
+     <select id="ee_muscle_sel" style="width:100%;${selSty}">${opts(cur1)}</select>
+     <input id="ee_muscle" type="hidden" value="${escTxt(cur1)}"/>
+     <input id="ee_muscle_new" placeholder="escribe el músculo nuevo" style="display:none;margin-top:6px"/></div>
+   <div class="field" id="ee_mus2wrap" style="display:${show2?'block':'none'}"><label>MÚSCULO 2 · secundario · ¿cuánto cuenta el set? (0–1)</label>
+     <div style="display:flex;gap:6px;align-items:center">
+       <select id="ee_mus2sel" style="flex:1;${selSty}">${opts(cur2)}</select>
+       <input id="ee_mus2w" type="number" inputmode="decimal" step="0.05" min="0" max="1" style="width:72px" value="${m2?m2.weight:0.5}" placeholder="0.5"/>
+       <button class="cancel" data-act="ee_mus2_off" style="padding:4px 9px;flex:0 0 auto">×</button>
+     </div>
+     <input id="ee_mus2" type="hidden" value="${escTxt(cur2)}"/>
+     <input id="ee_mus2_new" placeholder="escribe el músculo nuevo" style="display:none;margin-top:6px"/>
+     <div class="submeta" style="margin-top:4px;color:var(--o40)">ej. 0.5 = el set cuenta como medio set para este músculo</div></div>
+   <div id="ee_mus2_addwrap" style="margin:2px 0 12px;display:${show2?'none':'block'}"><button class="b" data-act="ee_mus2_on" style="width:100%">+ agregar músculo secundario</button></div>`;
+   })()}
    <div class="field"><label>TYPE</label><div class="toggles" id="ee_type" style="flex-wrap:wrap;gap:4px">${types.map(([v,lbl])=>`<button class="t ${e.type===v||(v==='free'&&!e.type)?'on':''}" data-act="optpick" data-v="${v}" style="flex:1 1 calc(50% - 2px);min-width:0">${lbl}</button>`).join('')}</div></div>
    <div class="field row2"><div><label>SETS</label><input id="ee_sets" type="number" value="${e.sets||2}"/></div><div><label>MACHINE/NOTE</label><input id="ee_machine" value="${(e.machine||'').replace(/"/g,'&quot;')}" placeholder="opcional"/></div></div>
    <label style="font-size:9px;color:var(--o50);display:block;margin-bottom:10px"><input type="checkbox" id="ee_uni" ${e.unilateral?'checked':''} style="width:auto;vertical-align:middle"/> unilateral (R/L)</label>
    <div class="field" id="ee_startwrap" style="display:${e.unilateral?'block':'none'}"><label>UNILATERAL · EMPEZAR POR</label><div class="toggles" id="ee_start"><button class="t ${e.startSide!=='L'?'on':''}" data-act="optpick" data-v="R">R primero</button><button class="t ${e.startSide==='L'?'on':''}" data-act="optpick" data-v="L">L primero</button></div></div>
    ${isNew?'':'<div class="submeta" style="margin:8px 0 4px;color:var(--o40)">marca para propagar estos detalles a tus sesiones pasadas del mismo nombre + gym actual</div><label style="font-size:10px;color:var(--o60);display:block;margin-bottom:10px"><input type="checkbox" id="ee_propagate" style="width:auto;vertical-align:middle"/> actualizar sesiones pasadas</label>'}
    <div class="sheetbtns"><button class="ok" data-act="okexedit">save</button><button class="cancel" data-act="closemodal">cancel</button></div>`);
-  document.querySelectorAll('#ee_msugg .chip').forEach(c=>c.onclick=()=>{document.getElementById('ee_muscle').value=c.dataset.v;});
+  // muscle dropdowns: picking "+ nuevo músculo…" reveals a free-text input that feeds a hidden canonical field
+  function wireMuscleSelect(selId,newId,hidId){ const sel=document.getElementById(selId),nw=document.getElementById(newId),hid=document.getElementById(hidId); if(!sel||!nw||!hid)return;
+    const apply=()=>{ if(sel.value==='__new__'){ nw.style.display='block'; nw.focus(); hid.value=nw.value.trim(); } else { nw.style.display='none'; hid.value=sel.value; } };
+    sel.addEventListener('change',apply); nw.addEventListener('input',()=>{ hid.value=nw.value.trim(); }); }
+  function setMuscleSel(selId,newId,hidId,value){ if(value==null||value==='')return; const sel=document.getElementById(selId),nw=document.getElementById(newId),hid=document.getElementById(hidId); if(!sel)return; const opt=[...sel.options].find(o=>o.value.toLowerCase()===String(value).toLowerCase()); if(opt){sel.value=opt.value;} else { const o=document.createElement('option'); o.value=value; o.textContent=value; const newOpt=sel.querySelector('option[value="__new__"]'); sel.insertBefore(o,newOpt); sel.value=value; } if(nw)nw.style.display='none'; hid.value=sel.value; }
+  wireMuscleSelect('ee_muscle_sel','ee_muscle_new','ee_muscle');
+  wireMuscleSelect('ee_mus2sel','ee_mus2_new','ee_mus2');
   // L/R picker visibility tied to the unilateral checkbox
   const uniBox=document.getElementById('ee_uni'); if(uniBox)uniBox.addEventListener('change',()=>{ const w=document.getElementById('ee_startwrap'); if(w)w.style.display=uniBox.checked?'block':'none'; });
-  // secondary muscle: show/hide via in-modal link/×
+  // secondary muscle: show/hide via the visible button / ×
   const m2On=document.querySelector('[data-act="ee_mus2_on"]'); const m2Off=document.querySelector('[data-act="ee_mus2_off"]');
-  if(m2On)m2On.onclick=(ev)=>{ ev.preventDefault(); const w=document.getElementById('ee_mus2wrap'); const a=document.getElementById('ee_mus2_addwrap'); if(w)w.style.display='block'; if(a)a.style.display='none'; const i=document.getElementById('ee_mus2'); if(i)i.focus(); };
-  if(m2Off)m2Off.onclick=(ev)=>{ ev.preventDefault(); const w=document.getElementById('ee_mus2wrap'); const a=document.getElementById('ee_mus2_addwrap'); if(w)w.style.display='none'; if(a)a.style.display='block'; const i=document.getElementById('ee_mus2'); if(i)i.value=''; };
-  // memory: typing OR picking a known name (datalist click) → autofill ALL remembered variables (input + change events for cross-browser reliability)
+  if(m2On)m2On.onclick=(ev)=>{ ev.preventDefault(); const w=document.getElementById('ee_mus2wrap'); const a=document.getElementById('ee_mus2_addwrap'); if(w)w.style.display='block'; if(a)a.style.display='none'; const s=document.getElementById('ee_mus2sel'); if(s)s.focus(); };
+  if(m2Off)m2Off.onclick=(ev)=>{ ev.preventDefault(); const w=document.getElementById('ee_mus2wrap'); const a=document.getElementById('ee_mus2_addwrap'); if(w)w.style.display='none'; if(a)a.style.display='block'; const s=document.getElementById('ee_mus2sel'); if(s)s.value=''; const n=document.getElementById('ee_mus2_new'); if(n){n.style.display='none';n.value='';} const h=document.getElementById('ee_mus2'); if(h)h.value=''; };
+  // memory: typing OR picking a known name → autofill ALL remembered variables (input + change + blur for cross-browser reliability)
   const nm=document.getElementById('ee_name'); if(nm){
     const autofill=()=>{
       const hit=lookupKnownExercise(nm.value); if(!hit)return;
       const setIf=(id,v)=>{ const el=document.getElementById(id); if(el&&!el.value&&v!=null&&v!=='')el.value=v; };
-      // primary muscle: prefer remembered muscles[0], fall back to legacy hit.muscle
       const mList=Array.isArray(hit.muscles)&&hit.muscles.length?hit.muscles:(hit.muscle?[{name:hit.muscle,weight:1}]:[]);
-      setIf('ee_muscle',(mList[0]||{}).name); setIf('ee_machine',hit.machine);
+      // primary muscle into the dropdown (only if not already chosen)
+      if(!document.getElementById('ee_muscle').value) setMuscleSel('ee_muscle_sel','ee_muscle_new','ee_muscle',(mList[0]||{}).name);
+      setIf('ee_machine',hit.machine);
       // reveal + fill secondary if exercise has one
-      if(mList[1]){ const wrap=document.getElementById('ee_mus2wrap'); const add=document.getElementById('ee_mus2_addwrap'); if(wrap){wrap.style.display='block'; if(add)add.style.display='none'; setIf('ee_mus2',mList[1].name); const sw=document.getElementById('ee_mus2w'); if(sw){ const v=String(mList[1].weight); if([...sw.options].some(o=>o.value===v))sw.value=v; } } }
+      if(mList[1]){ const wrap=document.getElementById('ee_mus2wrap'); const add=document.getElementById('ee_mus2_addwrap'); if(wrap){wrap.style.display='block'; if(add)add.style.display='none';} setMuscleSel('ee_mus2sel','ee_mus2_new','ee_mus2',mList[1].name); const sw=document.getElementById('ee_mus2w'); if(sw)sw.value=mList[1].weight; }
       if(hit.sets!=null){ const sN=document.getElementById('ee_sets'); if(sN&&(sN.value==='2'||sN.value===''))sN.value=hit.sets; }
       if(hit.type){ const tg=document.querySelector('#ee_type [data-v="'+hit.type+'"]'); if(tg&&!tg.classList.contains('on')){ document.querySelectorAll('#ee_type .t').forEach(x=>x.classList.remove('on')); tg.classList.add('on'); } }
       if(hit.unilateral){ const u=document.getElementById('ee_uni'); if(u&&!u.checked){ u.checked=true; const w=document.getElementById('ee_startwrap'); if(w)w.style.display='block'; } }
