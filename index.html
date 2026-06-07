@@ -636,42 +636,42 @@ function renderHome(){
       +`</div>`
       +`<div class="submeta" style="margin-top:16px;text-align:center">crea tu rutina desde cero, explora plantillas, o impórtala</div>`;
   }
-  const di=selIdx(); const day=db.split.days[di]; const prev=lastSession(day.id); const s7=stat7(); const inprog=db.activeWork;
-  const segs=db.split.days.map((_,i)=>`<i class="seg ${i===di?'on':''}" data-act="selday" data-i="${i}"></i>`).join('');
-  let prevHTML='';
-  if(prev){
-    const exItems=prev.exercises.filter(e=>(e.sets||[]).length);
-    const exHtml=exItems.map(e=>{
-      const sets=e.sets.map(s=>{
-        const w=s.w?(numTxt(s.w)+(s.unit||'')):'—';
-        const reps=(s.r!==''&&s.r!=null)?s.r:'—';
-        const rir=(s.rir!==''&&s.rir!=null)?(' <span class="pr">@'+s.rir+'</span>'):'';
-        const mk=s.isDrop?'<span class="pk">↓</span> ':(s.fsOn?'<span class="pk">FS</span> ':'');
-        const side=s.side?('<span class="pk">'+s.side+'</span> '):'';
-        return `${mk}${side}${w}×${reps}${rir}`;
-      }).join('<span class="pdot"> · </span>');
-      const badge=progBadgeFromProg(histProgress(e,prev.id),'vs sesión previa de este ejercicio');
-      return `<div class="psd"><div class="pex">${escTxt(e.name)}${e.machine?` <span class="pm">${escTxt(e.machine)}</span>`:''}${badge}</div><div class="psets">${sets}</div></div>`;
-    }).join('');
-    let vol=0; prev.exercises.forEach(e=>(e.sets||[]).forEach(s=>vol+=(parseFloat(s.w)||0)*(parseFloat(s.r)||0)));
-    const dur=prev.durSec?Math.floor(prev.durSec/3600)+'h '+pad(Math.floor(prev.durSec%3600/60))+'m':'';
-    const ag=sessionProgAgg(prev); let agp=''; if(ag.up)agp+=` <span style="color:var(--good)">▲${ag.up}</span>`; if(ag.down)agp+=` <span style="color:var(--bad)">▼${ag.down}</span>`;
-    prevHTML=`<hr class="rule"/><div class="whdr"><div class="l1"><span class="s">//</span>PREV</div><div class="wname">${prev.dayName}</div><div class="l2">SESSION</div><div class="wmeta">${fmtShort(prev.date)} · ${exItems.length} exercises${agp}</div></div>`
-      +`<div class="prevsess">${exHtml}</div>`
-      +`<div class="rowend"><span>${kfmt(vol)} lb${dur?' · '+dur:''}</span></div>`;
+  const di=selIdx(); const cdi=curDayIdx(); const day=db.split.days[di]; const s7=stat7(); const inprog=db.activeWork;
+  // selected day status relative to the current rotation cycle:
+  //   isCurrent → day to actually start (▶ start workout)
+  //   isPast    → already done this cycle (show its session, button to view it)
+  //   isFuture  → upcoming (schedule it to calendar)
+  const isCurrent = di===cdi; const isPast = di<cdi; const isFuture = di>cdi;
+  const segs=db.split.days.map((_,i)=>{ const cls=i===di?'on':(i<cdi?'past':''); return `<i class="seg ${cls}" data-act="selday" data-i="${i}"></i>`; }).join('');
+  // most-recent session for the selected day's id (only meaningful when isPast — used as the prev to view)
+  const dayPast=lastSession(day.id);
+  // header label adapts to the day's status
+  const l1=isCurrent?'NEXT':isPast?'DONE':'NEXT IN';
+  const offsetDays=di-cdi; const offLabel = isFuture ? ` · +${offsetDays}d` : isPast ? ` · ${-offsetDays}d ago` : '';
+  // CTA varies by day status
+  let cta;
+  if(isCurrent){
+    cta = `<div class="cta"><button class="start" data-act="${inprog?'resume':'start'}">▶ ${inprog?'resume workout':'start workout'}</button>`
+      +`<div class="secondary"><button class="b" data-act="rest">rest day</button><button class="b" data-act="skip">skip day</button></div>`
+      +`<div style="text-align:center;margin-top:12px"><a data-act="loglater" style="font-size:10px;color:var(--o50);cursor:pointer">[+ log past session]</a></div></div>`;
+  } else if(isPast){
+    cta = dayPast
+      ? `<div class="cta"><button class="start" data-act="vieweditsession" data-id="${dayPast.id}">ver sesión pasada · ${fmtShort(dayPast.date)}</button></div>`
+      : `<div class="cta"><div class="submeta" style="text-align:center;padding:8px 0">no hay sesión registrada de este día</div></div>`;
+  } else {
+    cta = `<div class="cta"><button class="start" data-act="schedcal" data-di="${di}">schedule${offLabel}</button>`
+      +`<div class="submeta" style="margin-top:8px;text-align:center;color:var(--o50)">guarda en tu calendario · .ics</div></div>`;
   }
   return statusBar(false)
     +`<hr class="rule"/>`
-    +`<div class="rot"><span class="lbl">ROTATION</span><span class="n"><span class="arrow" data-act="prevday">‹</span> day ${di+1}/${dayCount()} <span class="arrow" data-act="nextday">›</span></span></div>`
+    +`<div class="rot"><span class="lbl">ROTATION</span><span class="n"><span class="arrow" data-act="prevday">‹</span> day ${di+1}/${dayCount()}${offLabel} <span class="arrow" data-act="nextday">›</span></span></div>`
     +`<div class="segs">${segs}</div>`
-    +`<div class="ctrls"><a data-act="changesplit">[change split]</a><a data-act="changegym">[change gym]</a><a data-act="schedule">[schedule]</a></div>`
-    +`<div class="whdr"><div class="l1"><span class="s">//</span>NEXT</div><div class="wname">${day.name}</div><div class="l2">WORKOUT</div><div class="wmeta">${db.split.name} · ${day.tag}</div></div>`
+    +`<div class="ctrls"><a data-act="changesplit">[change split]</a><a data-act="changegym">[change gym]</a><a data-act="history">[history]</a></div>`
+    +`<div class="whdr"><div class="l1"><span class="s">//</span>${l1}</div><div class="wname">${day.name}</div><div class="l2">WORKOUT</div><div class="wmeta">${db.split.name} · ${day.tag}</div></div>`
     +`<div class="wgym">${db.activeGym} · ${day.exercises.length} exercises</div>`
     +`<div style="text-align:center;margin:9px 0 2px"><a data-act="togglepreview" style="font-size:10px;color:var(--o50);cursor:pointer;letter-spacing:.04em">${state.previewDay?'[ ocultar rutina ▴ ]':'[ ver rutina ▾ ]'}</a></div>`
     +(state.previewDay?dayPreviewHTML(day):'')
-    +`<div class="cta"><button class="start" data-act="${inprog?'resume':'start'}">▶ ${inprog?'resume workout':'start workout'}</button>`
-    +`<div class="secondary"><button class="b" data-act="rest">rest day</button><button class="b" data-act="skip">skip day</button></div><div style="text-align:center;margin-top:12px"><a data-act="loglater" style="font-size:10px;color:var(--o50);cursor:pointer">[+ log past session]</a></div></div>`
-    +prevHTML
+    +cta
     +volumeSection()
     +`<hr class="rule"/><div class="section" style="margin-bottom:10px"><div class="h"><span class="s">//</span>STATS</div><div class="meta" data-act="settings">[settings]</div></div>`
     +`<div class="line stat"><span class="k">sessions · 7d</span><span class="dots"></span><span class="v">${s7.count}</span></div>`
@@ -1713,6 +1713,8 @@ document.getElementById('app').addEventListener('click',e=>{
   else if(a==='importsplit'){ openImportSplit(); }
   else if(a==='history'){ go('history'); }
   else if(a==='vieweditsession'){ openSessionEdit(el.dataset.id); }
+  else if(a==='schedcal'){ openScheduleModal(+el.dataset.di); }
+  else if(a==='dl_ics'){ downloadIcs(+el.dataset.di); }
   else if(a==='sd_deld'){ if(db.split.days.length>1&&confirm('¿Borrar este día?')){ db.split.days.splice(+el.dataset.di,1); save(); render(); } }
   else if(a==='sd_delex'){ db.split.days[+el.dataset.di].exercises.splice(+el.dataset.ei,1); save(); render(); }
   else if(a==='sd_addex'){ openExEdit(+el.dataset.di,-1); }
@@ -1990,6 +1992,40 @@ function openExerciseDirectory(){
   });
   html+=`<div class="sheetbtns" style="margin-top:14px"><button class="cancel" data-act="closemodal">close</button></div>`;
   openModal(html);
+}
+// schedule a future rotation day into the user's native calendar (iOS PWA opens .ics with "Add to Calendar")
+function openScheduleModal(di){
+  if(!db.split||!db.split.days[di])return; const day=db.split.days[di]; const cdi=curDayIdx(); const offset=Math.max(0,di-cdi);
+  const t=new Date(); t.setDate(t.getDate()+offset); const defISO=todayISO(t);
+  openModal(`<h3>schedule · ${escTxt(day.name)}</h3>
+   <div class="submeta" style="margin-bottom:8px">descarga .ics y tu sistema lo añade al calendario</div>
+   <div class="field row2"><div><label>FECHA</label><input id="sc_date" type="date" value="${defISO}"/></div><div><label>HORA</label><input id="sc_time" type="time" value="08:00"/></div></div>
+   <div class="field"><label>DURACIÓN (min)</label><input id="sc_dur" type="number" value="60"/></div>
+   <div class="submeta" style="color:var(--o50);margin-bottom:10px">${day.exercises.length} ejercicios · ${db.activeGym||'sin gym'}</div>
+   <div class="sheetbtns"><button class="ok" data-act="dl_ics" data-di="${di}">descargar .ics</button><button class="cancel" data-act="closemodal">cancel</button></div>`);
+}
+function downloadIcs(di){
+  const day=db.split&&db.split.days[di]; if(!day)return;
+  const date=val('sc_date'); const time=val('sc_time')||'08:00'; const dur=Math.max(15,+val('sc_dur')||60);
+  if(!date){ alert('Pon fecha.'); return; }
+  const fmt=d=>d.getFullYear()+String(d.getMonth()+1).padStart(2,'0')+String(d.getDate()).padStart(2,'0')+'T'+String(d.getHours()).padStart(2,'0')+String(d.getMinutes()).padStart(2,'0')+'00';
+  const startDt=new Date(date+'T'+time); const endDt=new Date(startDt.getTime()+dur*60000);
+  const exList=(day.exercises||[]).map(e=>`${e.name}${e.sets?' ('+e.sets+'x)':''}`).join('\\n');
+  const ics=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//gymtrk//EN','CALSCALE:GREGORIAN',
+    'BEGIN:VEVENT',
+    'UID:gymtrk-'+day.id+'-'+date.replace(/-/g,'')+'@gymtrk',
+    'DTSTAMP:'+fmt(new Date()),
+    'DTSTART:'+fmt(startDt),
+    'DTEND:'+fmt(endDt),
+    'SUMMARY:Gym · '+(day.name||'workout'),
+    'DESCRIPTION:'+(day.tag||'')+'\\n\\n'+exList,
+    'LOCATION:'+(db.activeGym||''),
+    'END:VEVENT','END:VCALENDAR'].join('\r\n');
+  const blob=new Blob([ics],{type:'text/calendar;charset=utf-8'});
+  const url=URL.createObjectURL(blob); const a=document.createElement('a');
+  a.href=url; a.download='gymtrk-'+(day.name||'workout').replace(/[^a-zA-Z0-9_-]+/g,'_')+'-'+date+'.ics';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(()=>URL.revokeObjectURL(url),1000); closeModal();
 }
 // muscleSuggest returns ONLY muscles the user has actually used (split + sessions).
 // Falls back to a minimal default set when totally empty (very new user). Lets users add
