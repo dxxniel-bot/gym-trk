@@ -515,13 +515,15 @@ function load(){
   try{ const r=localStorage.getItem(LS_KEY); if(r)main=JSON.parse(r); }catch(e){}
   try{ const r=localStorage.getItem(LS_BACKUP); if(r)bak=JSON.parse(r); }catch(e){}
   let d=null;
-  if(main&&main.profile)d=main;
+  // prefer whichever has more data (handles iOS Safari edge case where a stale snapshot lands in LS_KEY while LS_BACKUP holds newer)
+  if(main&&main.profile&&bak&&bak.profile){ d=(dbMass(bak)>dbMass(main))?bak:main; if(d===bak){window._recoveredFromBackup=true; console.warn('recovered from backup (had more data)');} }
+  else if(main&&main.profile)d=main;
   else if(bak&&bak.profile){ d=bak; window._recoveredFromBackup=true; console.warn('recovered from backup'); }
   else d=main||bak;
   if(!d)return seed();
   return migrate(d);
 }
-function migrate(d){ if(!d.version){d.version=1;} if(!d.meals)d.meals={}; if(!d.foods)d.foods=[]; d.foods=d.foods.map(f=>(f&&f.per100)?f:asCanonical(f)); if(!d.steps)d.steps={}; if(!d.machines)d.machines={}; if(!d.bodyweight)d.bodyweight={}; if(!d.mealTags)d.mealTags=['breakfast','lunch','snack','dinner']; if(!d.stack)d.stack=[]; if(!d.lastUsed)d.lastUsed={}; if(!d.settings)d.settings={goals:seed().settings.goals}; if(d.settings&&d.settings.goals&&d.settings.goals.alcohol==null)d.settings.goals.alcohol=(d.profile&&d.profile.sex==='F')?14:28;
+function migrate(d){ if(!d.version){d.version=1;} if(!d.meals||typeof d.meals!=='object'||Array.isArray(d.meals))d.meals={}; if(!Array.isArray(d.foods))d.foods=[]; d.foods=d.foods.map(f=>(f&&f.per100)?f:asCanonical(f)); if(!Array.isArray(d.sessions))d.sessions=[]; if(!d.split||typeof d.split!=='object')d.split={name:'',days:[]}; if(!Array.isArray(d.split.days))d.split.days=[]; if(!d.steps||typeof d.steps!=='object')d.steps={}; if(!d.machines||typeof d.machines!=='object')d.machines={}; if(!d.bodyweight||typeof d.bodyweight!=='object')d.bodyweight={}; if(!Array.isArray(d.mealTags))d.mealTags=['breakfast','lunch','snack','dinner']; if(!Array.isArray(d.stack))d.stack=[]; if(!d.lastUsed||typeof d.lastUsed!=='object')d.lastUsed={}; if(!d.settings||typeof d.settings!=='object')d.settings={goals:seed().settings.goals}; if(d.settings&&d.settings.goals&&d.settings.goals.alcohol==null)d.settings.goals.alcohol=(d.profile&&d.profile.sex==='F')?14:28;
   // recompute alcohol for old meal items logged before alcohol was in MACROKEYS
   try{ Object.values(d.meals||{}).forEach(arr=>arr.forEach(m=>{ if(m.alcohol==null){ if(m._food&&m._food.per100&&m._food.per100.alcohol&&m._unit){ m.alcohol=computeNutrients(m._food,m._unit,m.qty||1).alcohol; } else m.alcohol=0; } })); }catch(e){}
   // goalHist: snapshot of intake goals at the moment of first logging that day (history is FROZEN — past days never re-read the current goal)
@@ -536,10 +538,11 @@ let _saveBakT=0;
 function save(){ try{ const s=JSON.stringify(db); localStorage.setItem(LS_KEY,s);
   // redundant backup, throttled to once every ~4s (cheap safety net if primary key gets corrupted)
   const now=performance.now(); if(now-_saveBakT>4000){ _saveBakT=now; try{localStorage.setItem(LS_BACKUP,s);}catch(e){} }
-  }catch(e){console.warn('save failed',e);} }
-// data-safety: count meals+sessions so a restore can warn before shrinking your data
-function dbMass(o){ try{ const m=Object.values((o&&o.meals)||{}).reduce((n,a)=>n+(a?a.length:0),0); return m+(((o&&o.sessions)||[]).length); }catch(_){ return 0; } }
-function confirmReplace(incoming){ const cur=dbMass(db), inc=dbMass(incoming); if(cur>0 && inc<cur) return confirm('El respaldo a cargar tiene MENOS datos ('+inc+') que los actuales ('+cur+' comidas+sesiones). Reemplazará todo y no se puede deshacer. ¿Continuar?'); return true; }
+  }catch(e){ console.warn('save failed',e); if(!window._saveQuotaWarned){ window._saveQuotaWarned=true; try{ setTimeout(()=>{ try{toast('⚠ sin espacio: exporta y borra datos viejos para liberar');}catch(_){} },500); }catch(_){} } } }
+// data-safety: count all data records so a restore can warn before any loss (meals + sessions + foods + bodyweight days + steps days)
+function dbMass(o){ try{ const m=Object.values((o&&o.meals)||{}).reduce((n,a)=>n+(a?a.length:0),0); return m+(((o&&o.sessions)||[]).length)+(((o&&o.foods)||[]).length)+Object.keys((o&&o.bodyweight)||{}).length+Object.keys((o&&o.steps)||{}).length; }catch(_){ return 0; } }
+// ALWAYS ask before destructive replace (not just when shrinking) — silent imports on fresh accounts were a vector for malicious backups
+function confirmReplace(incoming){ const cur=dbMass(db), inc=dbMass(incoming); if(cur===0) return confirm('Esto reemplazará TODOS tus datos con el respaldo importado. ¿Continuar?'); if(inc<cur) return confirm('El respaldo a cargar tiene MENOS datos ('+inc+') que los actuales ('+cur+'). Reemplazará todo y no se puede deshacer. ¿Continuar?'); return confirm('Esto reemplazará todos tus datos actuales ('+cur+' registros) con el respaldo ('+inc+'). ¿Continuar?'); }
 
 // ---------- helpers ----------
 const dayCount=()=>db.split.days.length;
@@ -631,7 +634,7 @@ function renderNav(){
 // ---------- render: home ----------
 function statusBar(back){
   const d=new Date();
-  return `<div class="status"><div class="left"><div class="uname" data-act="navmenu" style="cursor:pointer">u/${db.profile.username} <span class="umcaret">▾</span></div>${back?'<span class="back" data-act="leave">← back</span>':''}</div>`
+  return `<div class="status"><div class="left"><div class="uname" data-act="navmenu" style="cursor:pointer">u/${escTxt(db.profile.username)} <span class="umcaret">▾</span></div>${back?'<span class="back" data-act="leave">← back</span>':''}</div>`
     +`<div class="center">${fmtDate(todayISO())}<br/>${nowHM()}</div>`
     +`<div class="streak">streak: <b>${streak()}</b></div></div>`;
 }
@@ -678,7 +681,7 @@ function renderHome(){
     +`<div class="rot"><span class="lbl">ROTATION</span><span class="n"><span class="arrow" data-act="prevday">‹</span> day ${di+1}/${dayCount()}${offLabel} <span class="arrow" data-act="nextday">›</span></span></div>`
     +`<div class="segs">${segs}</div>`
     +`<div class="ctrls"><a data-act="changesplit">[change split]</a><a data-act="changegym">[change gym]</a><a data-act="history">[history]</a></div>`
-    +`<div class="whdr"><div class="l1"><span class="s">//</span>${l1}</div><div class="wname">${day.name}</div><div class="l2">WORKOUT</div><div class="wmeta">${db.split.name} · ${day.tag}</div></div>`
+    +`<div class="whdr"><div class="l1"><span class="s">//</span>${l1}</div><div class="wname">${escTxt(day.name)}</div><div class="l2">WORKOUT</div><div class="wmeta">${escTxt(db.split.name)} · ${escTxt(day.tag)}</div></div>`
     +`<div class="wgym">${db.activeGym} · ${day.exercises.length} exercises</div>`
     +`<div style="text-align:center;margin:9px 0 2px"><a data-act="togglepreview" style="font-size:10px;color:var(--o50);cursor:pointer;letter-spacing:.04em">${state.previewDay?'[ ocultar rutina ▴ ]':'[ ver rutina ▾ ]'}</a></div>`
     +(state.previewDay?dayPreviewHTML(day):'')
@@ -821,7 +824,7 @@ function renderExercise(exi,ex,allowF){
     if(!rec.brand&&!rec.setup) p=`<span class="mch none" ${ed}>+ machine</span>`;
     mhtml=p; }
   const prBadge=progBadgeHTML(ex);
-  let head=`<div class="exhead"><span class="n" data-act="editexname" data-exi="${exi}" style="cursor:pointer">${ex.name}</span>${prBadge}${mhtml}${ex.note?`<span class="note">${escTxt(ex.note)}</span>`:''}${isU?'<span class="note">[uni]</span>':''}</div>`;
+  let head=`<div class="exhead"><span class="n" data-act="editexname" data-exi="${exi}" style="cursor:pointer">${escTxt(ex.name)}</span>${prBadge}${mhtml}${ex.note?`<span class="note">${escTxt(ex.note)}</span>`:''}${isU?'<span class="note">[uni]</span>':''}</div>`;
   let rows='';
   // PREV-session sets for position-based per-set comparison
   const prevSets=lastLoggedSets(ex.name,ex.unilateral);
@@ -880,7 +883,7 @@ function renderWorkout(){
       ? `<div class="rot" style="margin-top:14px"><span class="lbl">LOGGED AFTER</span><span class="n"><input type="date" value="${w.date}" max="${todayISO()}" data-act="setdate" style="background:transparent;border:.5px solid var(--o20);color:var(--fg);font:inherit;font-size:10px;padding:3px 5px"/></span></div><div class="rot" style="margin-top:6px"><span class="lbl">duración (min) · opcional</span><span class="n"><input type="number" value="${w.manualDur||''}" data-act="setdur" inputmode="numeric" placeholder="—" style="width:70px;background:transparent;border:.5px solid var(--o20);color:var(--fg);font:inherit;font-size:10px;padding:3px 5px;text-align:right"/></span></div><div class="rot" style="margin-top:6px"><span class="lbl">avanzar rotación</span><span class="n"><a data-act="togglenoadv" style="cursor:pointer;border:.5px solid var(--o20);padding:2px 10px;font-size:10px">${w.noAdvance?'no':'sí'}</a></span></div>`
       : `<div class="rot" style="margin-top:14px"><span class="lbl">ROTATION - DAY ${curDayIdx()+1}/${dayCount()}${w.startMs?' · '+elapsedStr(w.startMs):''}</span><span class="n" data-act="changegym" style="cursor:pointer">[change gym]</span></div>`)
     +`<div class="wprog"><i style="width:${total?Math.round(done/total*100):0}%"></i></div>`
-    +`<div class="whdr" style="margin-top:16px"><div class="l1"><span class="s">//</span>NOW</div><div class="wname">${w.dayName}</div><div class="l2"></div><div class="wmeta">${db.split.name} · ${day.tag}</div></div>`
+    +`<div class="whdr" style="margin-top:16px"><div class="l1"><span class="s">//</span>NOW</div><div class="wname">${escTxt(w.dayName)}</div><div class="l2"></div><div class="wmeta">${escTxt(db.split.name)} · ${escTxt(day.tag)}</div></div>`
     +`<div class="wgym">${w.gym}</div>`
     +body;
 }
@@ -1222,7 +1225,7 @@ function importHealth(sp){ const msg=[];
   if(sp.has('stepsh')){ db.steps=db.steps||{}; const c=importPairs(sp.get('stepsh'),(k,v)=>{ const n=parseInt(v,10); if(isNaN(n)||n<0||n>=200000)return false; db.steps[k]=n; return true; }); if(c)msg.push(c+' días de pasos'); }
   if(sp.has('weight')){ const w=parseFloat(sp.get('weight')); if(w>=20&&w<=400){ db.bodyweight=db.bodyweight||{}; db.bodyweight[todayISO()]=Math.round(w*10)/10; if(db.profile)db.profile.weightKg=Math.round(w*10)/10; msg.push((Math.round(w*10)/10)+' kg · hoy'); } }
   if(sp.has('weighth')){ db.bodyweight=db.bodyweight||{}; const c=importPairs(sp.get('weighth'),(k,v)=>{ const w=parseFloat(v); if(!(w>=20&&w<=400))return false; db.bodyweight[k]=Math.round(w*10)/10; return true; }); if(c){ const ks=Object.keys(db.bodyweight).sort(); if(ks.length&&db.profile)db.profile.weightKg=db.bodyweight[ks[ks.length-1]]; msg.push(c+' registros de peso'); } }
-  if(sp.has('stepsq')){ const arr=(sp.get('stepsq')||'').split(','); const N=arr.length; let end=sp.get('qend'); if(!/^\d{4}-\d{2}-\d{2}$/.test(end||''))end=todayISO(); db.steps=db.steps||{}; let c=0; for(let i=0;i<N;i++){ const n=parseInt(arr[i],10); if(isNaN(n)||n<0||n>=200000)continue; const d=shiftDate(end,-(N-1-i)); db.steps[d]=n; c++; } if(c)msg.push(c+' días de pasos'); }
+  if(sp.has('stepsq')){ const arr=(sp.get('stepsq')||'').split(','); const N=arr.length; let end=sp.get('qend'); const _tst=end&&/^\d{4}-\d{2}-\d{2}$/.test(end)?new Date(end+'T12:00:00'):null; if(!_tst||isNaN(_tst.getTime()))end=todayISO(); db.steps=db.steps||{}; let c=0; for(let i=0;i<N;i++){ const n=parseInt(arr[i],10); if(isNaN(n)||n<0||n>=200000)continue; const d=shiftDate(end,-(N-1-i)); if(!/^\d{4}-\d{2}-\d{2}$/.test(d))continue; db.steps[d]=n; c++; } if(c)msg.push(c+' días de pasos'); }
   return msg; }
 function healthSync(){
   function go(t){ t=(t||"").trim(); if(t.charAt(0)==="?")t=t.slice(1); var msg=[]; try{ if(/stepsh=|weighth=|stepsq=|(^|&)steps=|(^|&)weight=/.test(t)) msg=importHealth(new URLSearchParams(t)); }catch(_){} if(msg.length){ save(); render(); setTimeout(function(){ toast("\u2713 "+msg.join(" \u00b7 ")); },120); } else { openHealthImport(); } }
@@ -1726,7 +1729,7 @@ document.getElementById('app').addEventListener('click',e=>{
   else if(a==='vieweditsession'){ openSessionEdit(el.dataset.id); }
   else if(a==='schedcal'){ openScheduleModal(+el.dataset.di); }
   else if(a==='dl_ics'){ downloadIcs(+el.dataset.di); }
-  else if(a==='sd_deld'){ if(db.split.days.length>1&&confirm('¿Borrar este día?')){ db.split.days.splice(+el.dataset.di,1); save(); render(); } }
+  else if(a==='sd_deld'){ const di=+el.dataset.di; if(db.split.days.length>1&&confirm('¿Borrar este día?')){ db.split.days.splice(di,1); if(typeof db.rotIdx==='number'){ if(di<db.rotIdx)db.rotIdx--; if(db.rotIdx>=db.split.days.length)db.rotIdx=Math.max(0,db.split.days.length-1); } save(); render(); } }
   else if(a==='sd_delex'){ db.split.days[+el.dataset.di].exercises.splice(+el.dataset.ei,1); save(); render(); }
   else if(a==='sd_addex'){ openExEdit(+el.dataset.di,-1); }
   else if(a==='sd_dayup'){ const i=+el.dataset.di, d=db.split.days; if(i>0){ const t=d[i-1];d[i-1]=d[i];d[i]=t; if(db.rotIdx===i)db.rotIdx=i-1; else if(db.rotIdx===i-1)db.rotIdx=i; save(); render(); } }
@@ -1804,7 +1807,7 @@ document.getElementById('app').addEventListener('click',e=>{
   else if(a==='export'){ doExport(); }
   else if(a==='import'){ doImport(); }
   else if(a==='sync'){ openSync(); }
-  else if(a==='reset'){ if(confirm('¿Borrar TODOS los datos? (exporta primero)')){ localStorage.removeItem(LS_KEY); db=seed(); save(); go('home'); } }
+  else if(a==='reset'){ if(confirm('¿Borrar TODOS los datos? (exporta primero)')){ localStorage.removeItem(LS_KEY); try{localStorage.removeItem(LS_BACKUP);}catch(_){} _saveBakT=0; db=seed(); save(); go('home'); } }
   else if(a==='closemodal'){ closeModal(); }
 });
 document.getElementById('app').addEventListener('change',e=>{
@@ -1988,10 +1991,10 @@ function saveSession(){
 
 // ---------- modals ----------
 function openModal(html,cls){ closeModal(); const m=document.createElement('div'); m.className='modal'; m.id='modal'; m.innerHTML=`<div class="sheet ${cls||''}">${html}</div>`; m.addEventListener('click',ev=>{if(ev.target===m)closeModal();}); document.getElementById('app').appendChild(m); }
-function closeModal(){ const s=window._scanner; if(s){ try{ if(s.timer)clearTimeout(s.timer); }catch(_){} try{ if(s._q&&typeof Quagga!=='undefined'){ if(s._fn)Quagga.offDetected(s._fn); Quagga.stop(); } }catch(_){} try{ if(s.stream)s.stream.getTracks().forEach(t=>t.stop()); }catch(_){} window._scanner=null; } const m=document.getElementById('modal'); if(m)m.remove(); }
+function closeModal(){ const s=window._scanner; if(s){ try{ if(s.timer)clearTimeout(s.timer); }catch(_){} try{ if(s._q&&typeof Quagga!=='undefined'){ if(s._fn)Quagga.offDetected(s._fn); Quagga.stop(); } }catch(_){} try{ if(s.stream)s.stream.getTracks().forEach(t=>t.stop()); }catch(_){} window._scanner=null; } window._linkBarcode=''; const m=document.getElementById('modal'); if(m)m.remove(); }
 function val(id){ const e=document.getElementById(id); return e?e.value.trim():''; }
 function openGymPicker(){
-  const items=(db.gyms||[]).map(g=>`<div class="pickitem" data-act="pickgym" data-g="${(g+'').replace(/"/g,'&quot;')}">${g}${g===db.activeGym?'  ·':''}</div>`).join('');
+  const items=(db.gyms||[]).map(g=>`<div class="pickitem" data-act="pickgym" data-g="${escTxt(g+'')}">${escTxt(g)}${g===db.activeGym?'  ·':''}</div>`).join('');
   openModal(`<h3>gym</h3>${items||'<div class="submeta" style="margin-bottom:8px">no gyms yet</div>'}
     <div class="field" style="margin-top:12px"><label>ADD GYM</label><input id="ng_name" placeholder="gym name" autocomplete="off"/></div>
     <div class="sheetbtns"><button class="ok" id="ng_add">add gym</button><button class="cancel" data-act="closemodal">close</button></div>`);
@@ -2617,7 +2620,7 @@ function openFoodAdd(preset, lockTag){
     ? `<h3 style="margin-bottom:12px">add food <span style="color:var(--o40);font-weight:400">· ${escTxt(tag)}</span></h3><input type="hidden" id="fa_tagtxt" value="${(tag+'').replace(/"/g,'&quot;')}"/>`
     : `<h3 style="margin-bottom:10px">add food</h3>
        <div class="field" style="margin-bottom:10px"><label>COMIDA <span style="color:var(--o30);font-weight:400">· mantén pulsado un chip para borrarlo</span></label><input id="fa_tagtxt" value="${(tag+'').replace(/"/g,'&quot;')}" placeholder="ej. desayuno, pre-workout" autocomplete="off"/>
-       <div class="chips" id="fa_sugg">${sugg.map(s=>`<span class="chip" data-act="pickmealtag" data-v="${s.replace(/"/g,'&quot;')}">${s}</span>`).join('')}</div></div>`;
+       <div class="chips" id="fa_sugg">${sugg.map(s=>`<span class="chip" data-act="pickmealtag" data-v="${escTxt(s)}">${escTxt(s)}</span>`).join('')}</div></div>`;
   openModal(`<div class="fa-wrap">
      ${head}
      <div class="fa-top">
@@ -2997,8 +3000,8 @@ function openMealDetail(id){
   const t=curDate(); const m=(db.meals[t]||[]).find(x=>x.id===id); if(!m)return; window._mealId=id;
   const row=(lbl,v,u)=>`<div class="line"><span class="k">${lbl}</span><span class="dots"></span><span class="v">${v?(Math.round(v)+' '+u):'—'}</span></div>`;
   const bc=barcodeOf(m);
-  openModal(`<h3>${m.name}</h3>
-   <div class="submeta" style="margin-bottom:8px">#${m.tag}${(m._food&&m._food.brand)?' · '+m._food.brand:''}${m.time?' · '+m.time:''}${m.serving?' · '+m.serving:''}${m.qty&&m.qty!==1?' · ×'+numTxt(m.qty):''}</div>
+  openModal(`<h3>${escTxt(m.name)}</h3>
+   <div class="submeta" style="margin-bottom:8px">#${escTxt(m.tag)}${(m._food&&m._food.brand)?' · '+escTxt(m._food.brand):''}${m.time?' · '+escTxt(m.time):''}${m.serving?' · '+escTxt(m.serving):''}${m.qty&&m.qty!==1?' · ×'+numTxt(m.qty):''}</div>
    ${row('kcal',m.kcal,'')}${row('protein',m.protein,'g')}${row('carbs',m.carbs,'g')}${row('fat',m.fat,'g')}${row('sugar',m.sugar,'g')}${row('fiber',m.fiber,'g')}${row('sodium',m.sodium,'mg')}${row('potassium',m.potassium,'mg')}${row('caffeine',m.caffeine,'mg')}${row('liquid',m.water,'L')}
    <div class="line"><span class="k">fuente</span><span class="dots"></span><span class="v">${(()=>{const s=foodSource(m._food);return (s.ok?'<span style="color:var(--good)">✓</span> ':'')+escTxt(s.label);})()}</span></div>
    <div class="line"><span class="k">código${(()=>{const fdb=(db.foods||[]).find(x=>(m._food&&m._food.id&&x.id===m._food.id)||x.name===(m.name||'').replace(/ ×[\d.]+$/,'')); const n=(fdb?foodCodes(fdb):foodCodes(m._food||{barcode:bc})).length; return n>1?'s ('+n+')':'';})()}</span><span class="dots"></span><span class="v">${bc?(`<a data-act="mealcode" style="cursor:pointer;color:var(--fg)">${escTxt(bc)} ✎</a>`):'<a data-act="mealcode" style="text-decoration:underline;cursor:pointer">+ añadir</a>'}</span></div>
@@ -3302,7 +3305,7 @@ async function aiPhoto(file,barcode){ if(!file)return; window._faTag=window._faT
 // Pick AI when the proxy is configured, else on-device OCR.
 function labelPhoto(file,barcode){ if(AI_PROXY_URL) return aiPhoto(file,barcode); return ocrPhoto(file,barcode); }
 requestPersist();
-db=load(); try{ const _sp=new URLSearchParams(location.search); const _imp=importHealth(_sp); if(_imp.length){ window._healthImported=_imp; if(history.replaceState)history.replaceState(null,'',location.pathname); } }catch(_){} save(); render(); if(window._healthImported)setTimeout(()=>toast('✓ '+window._healthImported.join(' · ')),250); if(window._recoveredFromBackup)setTimeout(()=>{try{alert('Se recuperó un respaldo local: revisa tus datos, podrían faltar cambios muy recientes.');}catch(_){}},600);
+db=load(); try{ const _sp=new URLSearchParams(location.search); const _hasHistorical=_sp.has('stepsh')||_sp.has('weighth')||_sp.has('stepsq'); if(_hasHistorical){ const _hsp=_sp; if(history.replaceState)history.replaceState(null,'',location.pathname); setTimeout(()=>{ if(confirm('Este link quiere importar datos históricos (pasos/peso de varios días) a tu cuenta. ¿Aplicar? — solo dile que SÍ si vienes de tu propio Atajo de iOS.')){ try{ const _imp=importHealth(_hsp); if(_imp.length){ save(); render(); toast('✓ '+_imp.join(' · ')); } }catch(_){} } },400); } else { const _imp=importHealth(_sp); if(_imp.length){ window._healthImported=_imp; if(history.replaceState)history.replaceState(null,'',location.pathname); } } }catch(_){} save(); render(); if(window._healthImported)setTimeout(()=>toast('✓ '+window._healthImported.join(' · ')),250); if(window._recoveredFromBackup)setTimeout(()=>{try{alert('Se recuperó un respaldo local: revisa tus datos, podrían faltar cambios muy recientes.');}catch(_){}},600);
 applyDesign(); try{ if(/[?&]design\b/.test(location.search))localStorage.setItem('gymtrk_designmode','1'); if(localStorage.getItem('gymtrk_designmode')==='1')openDesignPanel(); }catch(_){}
 // Service worker with AUTO-UPDATE: when a new version is found, activate it and reload once.
 // Fixes iOS PWA serving stale cached builds from the home-screen icon.

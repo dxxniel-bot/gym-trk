@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+<meta http-equiv="Pragma" content="no-cache" />
+<meta http-equiv="Expires" content="0" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+<title>dividir//GASTOS</title>
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black" />
+<meta name="apple-mobile-web-app-title" content="gastos" />
+<meta name="theme-color" content="#000000" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700;800&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --bg:#000; --fg:#f3f3f4;
+    --o60:rgba(243,243,244,.66); --o50:rgba(243,243,244,.56); --o40:rgba(243,243,244,.5);
+    --o30:rgba(243,243,244,.4); --o20:rgba(243,243,244,.26); --o12:rgba(243,243,244,.1); --o08:rgba(243,243,244,.06);
+    --line:rgba(243,243,244,.09); --card:#0c0c0e; --card2:#16161c; --border:rgba(243,243,244,.11);
+    --faint:#3a3a3e; --bad:rgba(190,110,110,.95); --radius:14px;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0; padding:0; background:var(--bg);}
+  body{color:var(--fg); font-family:"JetBrains Mono",ui-monospace,Menlo,monospace;
+    font-weight:400; font-size:13px; line-height:1.45; letter-spacing:.2px;
+    -webkit-font-smoothing:antialiased; display:flex; justify-content:center;}
+  .frame{width:100%; max-width:440px; min-height:100vh; padding:26px 20px 80px;}
+  input,select,button{font-family:inherit; color:inherit; background:transparent; border:0; outline:0;}
+  input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none; margin:0;}
+
+  .top{display:flex; justify-content:space-between; align-items:flex-start;}
+  .brand{font-size:19px; font-weight:800; letter-spacing:1px; line-height:1;}
+  .brand .s{color:var(--o40);}
+  .top .tag{font-size:9px; color:var(--o40); text-align:right; line-height:1.4; letter-spacing:1px;}
+  .titlein{width:100%; font-size:12px; color:var(--o60); margin:14px 0 2px; padding:0; letter-spacing:1px;}
+  .titlein::placeholder{color:var(--o30);}
+
+  hr.rule{border:0; border-top:1px solid var(--line); margin:22px 0;}
+  .sec{display:flex; justify-content:space-between; align-items:baseline; margin:24px 0 12px;}
+  .sec .h{font-size:15px; font-weight:800; letter-spacing:.5px;} .sec .h .s{color:var(--o40);}
+  .sec .acts{display:flex; gap:14px;}
+  .act{font-size:11px; color:var(--o50); cursor:pointer; padding:4px 0; user-select:none;}
+  .act:active{color:var(--fg);}
+  .note{font-size:10px; color:var(--o40); line-height:1.55;} .note b{color:var(--o60); font-weight:500;}
+  .cur{color:var(--o30);}
+  .empty{font-size:11px; color:var(--o30); padding:12px 0; text-align:center;}
+
+  .curbar{display:flex; align-items:center; gap:7px; margin:14px 0 2px; flex-wrap:wrap;}
+  .curbar .ml{font-size:9px; color:var(--o40); letter-spacing:1.5px; margin-right:2px;}
+  .cchip{font-size:10px; letter-spacing:.5px; padding:5px 11px; border:1px solid var(--o12); color:var(--o40); cursor:pointer; user-select:none;}
+  .cchip.on{color:var(--bg); background:var(--fg); border-color:var(--fg); font-weight:700;}
+  .ratewrap{margin-left:auto; font-size:10px; color:var(--o40); display:flex; align-items:center; gap:4px; white-space:nowrap;}
+  .ratewrap input{width:42px; text-align:right; font-size:12px; color:var(--fg); border-bottom:1px solid var(--o12); padding:2px 0;}
+
+  .merow{display:flex; align-items:center; gap:10px; margin-bottom:8px;}
+  .merow .ml{font-size:9px; color:var(--o40); letter-spacing:1.5px;}
+  .merow input{flex:1; font-size:16px; font-weight:700; color:var(--fg); padding:3px 0; border-bottom:1px solid var(--o12);}
+
+  .prow{display:grid; grid-template-columns:1fr 22px; align-items:center; gap:8px; padding:8px 0; border-bottom:1px solid var(--line);}
+  .prow input{font-size:13px; color:var(--fg); padding:3px 0;} .prow input::placeholder{color:var(--o30);}
+  .rm{font-size:14px; color:var(--o20); cursor:pointer; text-align:center;} .rm:active{color:var(--bad);}
+
+  .line{display:flex; align-items:baseline; gap:8px; font-size:12px; margin:0 0 11px;}
+  .line .k{color:var(--o50); white-space:nowrap;}
+  .line .dots{flex:1; border-bottom:1px dotted var(--o12); transform:translateY(-3px);}
+  .line .v{color:var(--fg); font-weight:700; white-space:nowrap;} .line.big .v{font-size:16px;}
+  .line .v.owe{color:var(--fg);} .line .v.iowe{color:var(--fg);}
+
+  /* expense card */
+  .exp{border:1px solid var(--border); border-radius:var(--radius); padding:12px 13px; margin-bottom:13px; background:var(--card);}
+  .c-top{display:flex; align-items:center; gap:8px;}
+  .clabel{flex:1; font-size:14px; font-weight:700; color:var(--fg); padding:2px 0; min-width:0;}
+  .clabel::placeholder{color:var(--o30); font-weight:400;}
+  .cursel{font-size:11px; font-weight:700; width:24px; text-align:center; border:1px solid var(--o20); color:var(--fg); padding:3px 0; cursor:pointer; user-select:none;}
+  .crm{font-size:14px; color:var(--o20); cursor:pointer; padding:0 2px;} .crm:active{color:var(--bad);}
+  .modes{display:flex; gap:7px; margin:11px 0 3px; align-items:center;}
+  .mchip{font-size:10px; letter-spacing:.5px; padding:5px 11px; border:1px solid var(--o12); color:var(--o40); cursor:pointer; user-select:none;}
+  .mchip.on{color:var(--bg); background:var(--fg); border-color:var(--fg); font-weight:700;}
+  .meinc{margin-left:auto; font-size:9px; letter-spacing:.5px; color:var(--o40); border:1px solid var(--o12); padding:5px 8px; cursor:pointer; user-select:none; white-space:nowrap;}
+  .meinc.on{color:var(--fg); border-color:var(--o40);}
+  .erow{display:flex; align-items:center; gap:6px; margin-top:11px;}
+  .erow .el{font-size:10px; color:var(--o40); letter-spacing:.5px;}
+  .erow input.etotal{width:96px; text-align:right; font-size:15px; font-weight:700; color:var(--fg); border-bottom:1px solid var(--o12); padding:2px 0;}
+  .ehint{font-size:9px; color:var(--o30); margin-top:7px; letter-spacing:.3px;}
+  .extras{margin-top:9px;}
+  .exhdr{font-size:8px; color:var(--o40); letter-spacing:1px; margin-bottom:3px;}
+  .exrow{display:flex; align-items:center; gap:7px; padding:4px 0;}
+  .exlabel{flex:1; font-size:11px; color:var(--o60); padding:2px 0; border-bottom:1px solid var(--o08); min-width:0;}
+  .exlabel::placeholder{color:var(--o30);}
+  .excur{font-size:10px; width:18px; text-align:center; border:1px solid var(--o20); color:var(--fg); cursor:pointer; user-select:none; flex:none;}
+  .examt{width:64px; text-align:right; font-size:12px; color:var(--fg); border-bottom:1px solid var(--o12); padding:2px 0; flex:none;}
+  .exrm{font-size:12px; color:var(--o20); cursor:pointer; flex:none;} .exrm:active{color:var(--bad);}
+  .addex{font-size:10px; color:var(--o50); cursor:pointer; padding:5px 0; user-select:none;} .addex:active{color:var(--fg);}
+  .pucur{font-size:10px; width:16px; text-align:center; border:1px solid var(--o20); color:var(--fg); cursor:pointer; user-select:none;}
+  .paidby{font-size:10px; color:var(--o50); letter-spacing:.3px; margin-top:6px;}
+  .payerrow{display:flex; align-items:center; gap:9px; margin-top:11px;}
+  .payerrow .el{font-size:9px; color:var(--o40); letter-spacing:1px; white-space:nowrap;}
+  .payersel{flex:1; font-size:12px; font-weight:700; color:var(--fg); padding:4px 2px; border-bottom:1px solid var(--o12); appearance:none; -webkit-appearance:none; cursor:pointer; min-width:0;}
+  .payersel option{background:#111; color:#fff; font-weight:400;}
+  .paidtag{font-size:9px; letter-spacing:.5px; color:var(--fg); border:1px solid var(--o40); padding:3px 8px;}
+  .apbtns{display:flex; gap:16px; padding-top:7px;}
+  .bd.ap.din .apv{color:var(--fg);}
+  .selbar{display:flex; justify-content:space-between; align-items:center; margin-top:12px;}
+  .sellbl{font-size:9px; color:var(--o40); letter-spacing:1px;}
+  .seltog{font-size:10px; color:var(--o50); cursor:pointer; user-select:none; border:1px solid var(--o12); padding:4px 9px;}
+  .seltog:active{color:var(--fg);}
+  .selbox{display:flex; flex-wrap:wrap; gap:6px; margin-top:9px; padding:10px; border:1px solid var(--o08); border-radius:10px; background:rgba(243,243,244,.015);}
+  .pchip{font-size:11px; padding:5px 10px; border:1px solid var(--o12); color:var(--o40); cursor:pointer; user-select:none; white-space:nowrap;}
+  .pchip.on{color:var(--bg); background:var(--fg); border-color:var(--fg); font-weight:700;}
+  .plist{margin-top:9px; border-top:1px solid var(--line);}
+  .prow2{padding:8px 0; border-bottom:1px solid var(--line);}
+  .prow2.me{background:rgba(243,243,244,.02);}
+  .p2top{display:flex; align-items:center; gap:9px;}
+  .p2bot{display:flex; align-items:center; gap:8px; margin-top:6px; padding-left:29px;}
+  .pck{font-size:10px; width:20px; text-align:center; color:var(--o30); cursor:pointer; user-select:none; flex:none;}
+  .pck.on{color:var(--fg);} .pck.mez{color:var(--o40); cursor:default;}
+  .pwho{flex:1; font-size:12px; color:var(--o60); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .prow2.off .pwho{color:var(--o30);} .prow2.me .pwho{color:var(--o50);}
+  .tocaLbl{font-size:8px; color:var(--o40); letter-spacing:1px;}
+  .toca{font-size:12px; font-weight:700; color:var(--fg); white-space:nowrap; min-width:54px; text-align:right;}
+  .shr-empty{font-size:11px; color:var(--o20);}
+  .pl{font-size:8px; color:var(--o40); letter-spacing:1px;}
+  .emanual-wrap{display:flex; align-items:center; gap:2px;}
+  .emanual-wrap input{width:62px; text-align:right; font-size:13px; color:var(--fg); border-bottom:1px solid var(--o12); padding:2px 0;}
+  .falta{margin-left:auto; font-size:11px; font-weight:700; color:var(--bad); white-space:nowrap;}
+  .falta.ok{color:var(--o30); font-weight:400;} .falta.over{color:var(--fg);}
+  .efoot{display:flex; justify-content:space-between; align-items:baseline; margin-top:9px;}
+  .efoot .el{font-size:9px; color:var(--o40); letter-spacing:1px;}
+  .efoot .ev{font-size:12px; font-weight:700; color:var(--o50);}
+  .efoot.tot .ev{font-size:14px; color:var(--fg);}
+  .efoot .mx{font-size:9px; color:var(--o40); font-weight:400; margin-left:6px; letter-spacing:.5px;}
+
+  /* por persona */
+  .pacc{border:1px solid var(--border); border-radius:var(--radius); padding:11px 13px; margin-bottom:11px; background:var(--card);}
+  .pah{display:flex; align-items:center; gap:9px;}
+  .pah .pn{flex:1; font-size:14px; font-weight:700; color:var(--fg); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .pbadge{font-size:13px; font-weight:700; white-space:nowrap; color:var(--o30);}
+  .pbadge.owe{color:var(--fg);} .pbadge.owe .l{color:var(--o40);}
+  .pbadge.iowe{color:var(--fg);} .pbadge.iowe .l{color:var(--bad);}
+  .pbadge.fav{color:var(--fg);} .pbadge.fav .l{color:var(--o40);}
+  .pbadge .l{font-size:8px; font-weight:400; letter-spacing:1px; margin-right:6px;}
+  .bds{margin-top:9px; border-top:1px solid var(--line); padding-top:5px;}
+  .bsec{display:flex; justify-content:space-between; align-items:baseline; font-size:8px; letter-spacing:1.5px; color:var(--o40); margin:8px 0 2px; padding-top:8px; border-top:1px solid var(--line);}
+  .bsec.first{border-top:0; padding-top:2px;}
+  .bsub{font-size:11px; font-weight:700; color:var(--o60); letter-spacing:0;}
+  .bsmeta{font-size:9px; color:var(--o40); letter-spacing:0;}
+  .aptag{font-size:8px; letter-spacing:.5px; color:var(--o40); border:1px solid var(--o12); padding:2px 5px; flex:none; white-space:nowrap;}
+  .aptag.i{color:var(--fg); border-color:var(--o30);}
+  .bmath{margin-top:11px; padding-top:10px; border-top:1px solid var(--o20); font-size:11px; color:var(--o50); text-align:right; line-height:1.6;}
+  .bmath .op{color:var(--o30); margin:0 2px;} .bmath b{color:var(--fg); font-weight:700;}
+  .bnone{font-size:10px; color:var(--o30); padding:4px 0;}
+  .bd{display:flex; align-items:center; gap:8px; font-size:11px; padding:5px 0; color:var(--o50);}
+  .bd .bchk{font-size:10px; width:16px; text-align:center; color:var(--o30); cursor:pointer; user-select:none; flex:none;}
+  .bd .bchk.on{color:var(--fg);}
+  .bd .bl{flex:1; color:var(--o50); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .bd .bv{color:var(--o60); font-weight:700; white-space:nowrap;}
+  .bd.pd .bl,.bd.pd .bv{text-decoration:line-through; opacity:.45;}
+  .bd.ap .bchk{color:var(--o20);} .bd.ap .bchk:active{color:var(--bad);}
+  .bd.ap .apl{flex:1; font-size:11px; color:var(--o60); padding:2px 0; border-bottom:1px solid var(--o08); min-width:0;}
+  .bd.ap .apl::placeholder{color:var(--o30);}
+  .bd.ap .apv{display:flex; align-items:center; gap:2px; color:var(--fg); font-weight:700;}
+  .bd.ap .apcur{font-size:10px; width:16px; text-align:center; border:1px solid var(--o20); color:var(--fg); cursor:pointer; user-select:none;}
+  .bd.ap .apv input{width:56px; text-align:right; font-size:12px; color:var(--fg); border-bottom:1px solid var(--o12); padding:2px 0;}
+  .addap{font-size:10px; color:var(--o50); cursor:pointer; padding:7px 0 2px; user-select:none;} .addap:active{color:var(--fg);}
+
+  .foot{margin-top:30px; display:flex; justify-content:space-between; align-items:center;}
+  .foot .save{font-size:9px; color:var(--o20); letter-spacing:1px;}
+</style>
+</head>
+<body>
+<div class="frame">
+
+  <div class="top">
+    <div class="brand">dividir<span class="s">//</span>GASTOS</div>
+    <div class="tag">QUIÉN PUSO<br/>QUÉ FALTA</div>
+  </div>
+  <input class="titlein" id="title" placeholder="nombre del grupo / viaje…" />
+
+  <div class="curbar">
+    <span class="ml">TOTALES EN</span>
+    <span class="cchip" id="rollMxn" data-roll="mxn">$ MXN</span>
+    <span class="cchip" id="rollEur" data-roll="eur">€ EUR</span>
+    <span class="ratewrap">1€ = <input id="rate" inputmode="decimal" /> MXN</span>
+  </div>
+
+  <hr class="rule" />
+
+  <div class="sec"><div class="h"><span class="s">//</span>YO</div></div>
+  <div class="merow"><span class="ml">SOY</span><input id="me" placeholder="tu nombre" /></div>
+  <div class="note">en cada gasto: <b>toca</b> = lo que le corresponde a cada quien · <b>puso</b> = lo que ya aportó · <b>falta</b> = lo que le queda por dar · totales en <b>MXN</b> al tipo de cambio</div>
+
+  <hr class="rule" />
+
+  <div class="sec">
+    <div class="h"><span class="s">//</span>PERSONAS</div>
+    <div class="acts"><div class="act" id="addP">[+ persona]</div></div>
+  </div>
+  <div id="people"></div>
+
+  <hr class="rule" />
+
+  <div class="sec">
+    <div class="h"><span class="s">//</span>GASTOS</div>
+    <div class="acts"><div class="act" id="addE">[+ gasto]</div></div>
+  </div>
+  <div id="expenses"></div>
+
+  <hr class="rule" />
+
+  <div class="sec"><div class="h"><span class="s">//</span>RESUMEN</div></div>
+  <div class="line"><span class="k">te deben · por cobrar</span><span class="dots"></span><span class="v" id="sumOwed">$0.00</span></div>
+  <div class="line"><span class="k">a favor de otros · devolver</span><span class="dots"></span><span class="v" id="sumDebt">$0.00</span></div>
+  <div class="line big"><span class="k" id="sumNetK">a tu favor · neto</span><span class="dots"></span><span class="v" id="sumNet">$0.00</span></div>
+
+  <div class="sec"><div class="h"><span class="s">//</span>POR PERSONA</div></div>
+  <div class="note" style="margin-bottom:12px"><b>te debe</b> = te debe a ti · <b>a favor</b> = puso de más, hay que devolverle (no sale de tu bolsa)</div>
+  <div id="byperson"></div>
+
+  <div class="foot">
+    <div class="act" id="reset">[reiniciar]</div>
+    <div class="save" id="saved">guardado ·</div>
+  </div>
+
+</div>
+
+<script>
+"use strict";
+const $ = (s,r=document)=>r.querySelector(s);
+const esc = s => (window.CSS&&CSS.escape)?CSS.escape(s):String(s).replace(/[^\w-]/g,'\\$&');
+let _uidN = 0;
+const uid = ()=>'id'+(++_uidN).toString(36)+Math.floor(performance.now()).toString(36);
+const KEY = 'dividir_gastos_v6';
+const SYM = {eur:'€', mxn:'$'};
+
+let state = { title:'', me:'', rollup:'mxn', rate:22, lastCur:'mxn', people:[], expenses:[], pById:{}, eById:{} };
+const openSel = new Set();   // expense ids whose participant-picker is expanded (UI only)
+
+/* ---------- currency (each amount native to its currency) ---------- */
+const toCents = v => Math.round((parseFloat(String(v).replace(',','.'))||0)*100);
+const amtVal  = c => c ? (c/100).toFixed(2) : '';
+const fmt     = (c,cur) => SYM[cur] + (c/100).toFixed(2);
+function convert(c, from, to){ if(from===to) return c; const mxn = from==='eur' ? c*state.rate : c; return to==='eur' ? Math.round(mxn/state.rate) : Math.round(mxn); }
+const fmtR = c => fmt(c, state.rollup);
+
+function blankPerson(){ return {id:uid(), name:'', payments:[]}; }
+function blankExpense(){ return {id:uid(), label:'', currency:state.lastCur, total:0, mode:'equal', includeMe:true, payer:'__me', mineManual:0, minePuso:0, minePusoCur:state.lastCur, participants:[], manual:{}, puso:{}, pusoCur:{}, extras:[], paid:{}}; }
+function fresh(){ state.title=''; state.me='Daniel'; state.rollup='mxn'; state.rate=22; state.lastCur='mxn'; state.people=[blankPerson(),blankPerson(),blankPerson(),blankPerson()]; state.expenses=[]; }
+
+function load(){
+  try{
+    const raw=localStorage.getItem(KEY);
+    if(raw){ const d=JSON.parse(raw); Object.assign(state,{title:d.title||'',me:d.me||'',rollup:d.rollup||'mxn',rate:d.rate||22,lastCur:d.lastCur||'mxn',people:d.people||[],expenses:d.expenses||[]}); }
+    else fresh();
+  }catch(e){ fresh(); }
+  state.people.forEach(p=>{ p.payments=(p.payments||[]).map(x=>({currency:'mxn',dir:'they',...x})); });
+  state.expenses.forEach(e=>{ e.currency=e.currency||'mxn'; e.participants=e.participants||[]; e.manual=e.manual||{}; e.puso=e.puso||{}; e.pusoCur=e.pusoCur||{}; e.extras=e.extras||[]; e.paid=e.paid||{}; if(e.includeMe==null)e.includeMe=true; e.payer=e.payer||'__me'; e.mode=e.mode||'equal'; e.total=e.total||0; e.mineManual=e.mineManual||0; e.minePuso=e.minePuso||0; e.minePusoCur=e.minePusoCur||e.currency; });
+  if(!state.rate) state.rate=22;
+  reindex();
+}
+function reindex(){ state.pById={}; state.eById={}; state.people.forEach(p=>state.pById[p.id]=p); state.expenses.forEach(e=>state.eById[e.id]=e); }
+function save(){
+  try{ localStorage.setItem(KEY, JSON.stringify({title:state.title,me:state.me,rollup:state.rollup,rate:state.rate,lastCur:state.lastCur,people:state.people,expenses:state.expenses})); }catch(e){}
+  const el=$('#saved'); el.textContent='guardado ✓'; clearTimeout(save._t); save._t=setTimeout(()=>el.textContent='guardado ·',1200);
+}
+
+/* ---------- math (native cents per expense currency) ---------- */
+function splitEqual(total,n){ if(n<=0) return []; const base=Math.floor(total/n); let rem=total-base*n,a=[]; for(let i=0;i<n;i++)a.push(base+(i<rem?1:0)); return a; }
+const extrasTotal = e => (e.extras||[]).reduce((s,x)=>s+convert(x.amount||0, x.currency||e.currency, e.currency), 0);   // en moneda del gasto
+const splitBase   = e => (e.total||0)+extrasTotal(e);                                                                    // total a repartir (equitativo)
+function shareOf(e,pid){          // lo que le TOCA a un participante (en moneda del gasto)
+  if(!e.participants.includes(pid)) return 0;
+  if(e.mode==='manual') return e.manual[pid]||0;
+  const n=e.participants.length+(e.includeMe?1:0);
+  return splitEqual(splitBase(e),n)[e.participants.indexOf(pid)]||0;
+}
+function mineShare(e){            // lo que te toca a TI (Daniel)
+  if(!e.includeMe) return 0;
+  if(e.mode==='manual') return e.mineManual||0;
+  const n=e.participants.length+1;
+  return splitEqual(splitBase(e),n)[e.participants.length]||0;
+}
+const pusoCurOf = (e,pid)=> e.pusoCur[pid] || e.currency;
+const pusoOf    = (e,pid)=> convert(e.puso[pid]||0, pusoCurOf(e,pid), e.currency);          // lo que aportó (puso), en moneda del gasto
+const minePusoVal= e => convert(e.minePuso||0, e.minePusoCur||e.currency, e.currency);
+function manualAsignado(e){ let s=e.participants.reduce((a,p)=>a+(e.manual[p]||0),0); if(e.includeMe)s+=e.mineManual||0; return s; }
+function costoTotal(e){ if(e.mode==='manual'){ const base=(e.total>0?e.total:manualAsignado(e)); return base+extrasTotal(e); } return splitBase(e); }
+const faltaP  = (e,pid)=> e.paid[pid] ? 0 : (shareOf(e,pid)-pusoOf(e,pid));   // + falta / - de más
+const mineFalta= e => e.includeMe ? (mineShare(e)-minePusoVal(e)) : 0;
+function aportado(e){ let s=e.participants.reduce((a,p)=>a+pusoOf(e,p),0); if(e.includeMe)s+=minePusoVal(e); return s; }
+const faltaCubrir = e => costoTotal(e)-aportado(e);
+// rollup cents
+function personSaldo(pid){
+  let s=0; state.expenses.forEach(e=>{ if(e.participants.includes(pid)) s+=convert(faltaP(e,pid), e.currency, state.rollup); });
+  (state.pById[pid].payments||[]).forEach(x=>{ const v=convert(x.amount||0, x.currency||'mxn', state.rollup); s += (x.dir==='me'? v : -v); });
+  return s;
+}
+function danielSaldo(){ let s=0; state.expenses.forEach(e=>{ s+=convert(mineFalta(e), e.currency, state.rollup); }); return s; }
+
+/* ---------- helpers ---------- */
+function escapeHtml(s){ return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function escapeAttr(s){ return escapeHtml(s).replace(/'/g,'&#39;'); }
+function faltaCls(f){ return f>0?'':(f<0?'over':'ok'); }
+function faltaTxt(f,cur){ if(f>0) return 'falta '+fmt(f,cur); if(f<0) return fmt(-f,cur)+' de más'; return '✓ cubierto'; }
+function faltaCubrirHTML(e){
+  const fc=faltaCubrir(e), mx=v=>e.currency!==state.rollup?` <span class="mx">= ${fmt(convert(v,e.currency,state.rollup),state.rollup)}</span>`:'';
+  if(fc>0) return fmt(fc,e.currency)+mx(fc);
+  if(fc<0) return 'cubierto · sobran '+fmt(-fc,e.currency)+mx(-fc);
+  return fmt(0,e.currency);
+}
+
+/* ---------- personas ---------- */
+function renderPeople(){
+  const box=$('#people'); box.innerHTML='';
+  if(!state.people.length){ box.innerHTML='<div class="empty">sin personas — toca [+ persona]</div>'; return; }
+  state.people.forEach(p=>{
+    const row=document.createElement('div'); row.className='prow';
+    row.innerHTML=`<input value="${escapeAttr(p.name)}" placeholder="nombre" data-id="${p.id}" data-f="pname"/><span class="rm" data-id="${p.id}" data-f="prm">×</span>`;
+    box.appendChild(row);
+  });
+}
+
+/* ---------- gastos ---------- */
+function partRow(e, p){          // p = person, or null for Daniel ("yo")
+  const isMe=!p, pid=isMe?'__me':p.id, cs=SYM[e.currency];
+  if(isMe && !e.includeMe) return '';
+  const name=isMe? ('yo ('+(state.me||'yo')+')') : (p.name||'—');
+  const toca=isMe?mineShare(e):shareOf(e,p.id), falta=isMe?mineFalta(e):faltaP(e,p.id);
+  const psym=SYM[isMe?(e.minePusoCur||e.currency):(e.pusoCur[p.id]||e.currency)];
+  const chk=isMe?`<span class="pck mez">★</span>`:`<span class="pck mez">•</span>`;
+  const tocaCell=e.mode==='manual'
+    ? `<span class="emanual-wrap"><span class="cur">${cs}</span><input inputmode="decimal" data-exp="${e.id}" data-f="${isMe?'emineManual':'emanual'}" ${isMe?'':`data-pid="${p.id}"`} value="${amtVal(isMe?e.mineManual:(e.manual[p.id]||0))}" placeholder="0"/></span>`
+    : `<span class="toca" data-exp="${e.id}" data-pid="${pid}">${fmt(toca,e.currency)}</span>`;
+  const pusoCell=`<span class="pl">puso</span><span class="emanual-wrap"><span class="pucur" data-exp="${e.id}" data-f="${isMe?'pumineCur':'pucur'}" ${isMe?'':`data-pid="${p.id}"`}>${psym}</span><input inputmode="decimal" data-exp="${e.id}" data-f="${isMe?'eminePuso':'epuso'}" ${isMe?'':`data-pid="${p.id}"`} value="${amtVal(isMe?e.minePuso:(e.puso[p.id]||0))}" placeholder="0"/></span>`;
+  return `<div class="prow2 ${isMe?'me':''}">`+
+    `<div class="p2top">${chk}<span class="pwho" data-pid="${pid}">${escapeHtml(name)}</span><span class="tocaLbl">toca</span>${tocaCell}</div>`+
+    `<div class="p2bot">${pusoCell}<span class="falta ${faltaCls(falta)}" data-exp="${e.id}" data-pid="${pid}">${faltaTxt(falta,e.currency)}</span></div>`+
+  `</div>`;
+}
+function extrasHTML(e){
+  const rows=(e.extras||[]).map(x=>
+    `<div class="exrow"><input class="exlabel" data-exp="${e.id}" data-f="exlabel" data-ex="${x.id}" value="${escapeAttr(x.label)}" placeholder="extra (gas, casetas…)"/>`+
+    `<span class="excur" data-exp="${e.id}" data-f="excur" data-ex="${x.id}">${SYM[x.currency||e.currency]}</span>`+
+    `<input class="examt" inputmode="decimal" data-exp="${e.id}" data-f="examt" data-ex="${x.id}" value="${amtVal(x.amount)}" placeholder="0"/>`+
+    `<span class="exrm" data-exp="${e.id}" data-f="exrm" data-ex="${x.id}">×</span></div>`
+  ).join('');
+  return `<div class="extras">${(e.extras&&e.extras.length)?'<div class="exhdr">EXTRAS (se suman al costo)</div>':''}${rows}<div class="addex" data-exp="${e.id}" data-f="addex">[+ extra]</div></div>`;
+}
+function paidByText(e){
+  const names=[];
+  if(e.includeMe && (e.minePuso||0)>0) names.push(state.me||'yo');
+  state.people.forEach(p=>{ if(e.participants.includes(p.id) && (e.puso[p.id]||0)>0) names.push(p.name||'—'); });
+  return names.length ? 'pagó: '+names.join(', ') : 'pagó: —';
+}
+function paidByLine(e){ return `<div class="paidby" data-exp="${e.id}">${escapeHtml(paidByText(e))}</div>`; }
+function manualHint(e){
+  if(!(e.total>0)) return 'escribe cuánto gastó cada quien';
+  const a=manualAsignado(e), left=e.total-a;
+  if(left>0) return `repartido ${fmt(a,e.currency)} de ${fmt(e.total,e.currency)} · faltan ${fmt(left,e.currency)} por repartir`;
+  if(left<0) return `repartido ${fmt(a,e.currency)} · te pasaste ${fmt(-left,e.currency)} del total`;
+  return `✓ repartiste todo el ticket (${fmt(e.total,e.currency)})`;
+}
+function selectorHTML(e){
+  if(!state.people.length) return '<div class="empty">agrega personas arriba</div>';
+  return state.people.map(p=>{
+    const on=e.participants.includes(p.id);
+    return `<span class="pchip ${on?'on':''}" data-exp="${e.id}" data-f="ptoggle" data-pid="${p.id}">${on?'✓ ':''}${escapeHtml(p.name||'—')}</span>`;
+  }).join('');
+}
+function expenseHTML(e){
+  const cs=SYM[e.currency], divisor=e.participants.length+(e.includeMe?1:0);
+  const sel=state.people.filter(p=>e.participants.includes(p.id));
+  let rows=partRow(e,null)+sel.map(p=>partRow(e,p)).join('');
+  if(!rows) rows='<div class="bnone">nadie en este gasto — abre «agregar / quitar»</div>';
+  const open=openSel.has(e.id);
+  const selblock=`<div class="selbar"><span class="sellbl">PARTICIPANTES · ${e.participants.length}${e.includeMe?' + tú':''}</span>`+
+    `<span class="seltog" data-exp="${e.id}" data-f="seltog">${open?'ocultar ▴':'agregar / quitar ▾'}</span></div>`+
+    (open?`<div class="selbox">${selectorHTML(e)}</div>`:'');
+  return `<div class="exp" data-exp="${e.id}">`+
+    `<div class="c-top"><input class="clabel" value="${escapeAttr(e.label)}" placeholder="gasto (carro, gas, hotel…)" data-exp="${e.id}" data-f="elabel"/>`+
+      `<span class="cursel" data-exp="${e.id}" data-f="ecur">${cs}</span><span class="crm" data-exp="${e.id}" data-f="erm">×</span></div>`+
+    paidByLine(e)+
+    `<div class="modes">`+
+      `<span class="mchip ${e.mode==='equal'?'on':''}" data-exp="${e.id}" data-f="mode" data-v="equal">equitativo</span>`+
+      `<span class="mchip ${e.mode==='manual'?'on':''}" data-exp="${e.id}" data-f="mode" data-v="manual">manual</span>`+
+      `<span class="meinc ${e.includeMe?'on':''}" data-exp="${e.id}" data-f="includeMe">yo entro ${e.includeMe?'✓':'☐'}</span>`+
+    `</div>`+
+    (e.mode==='equal'
+      ? `<div class="erow"><span class="el">costo</span><span class="cur">${cs}</span><input inputmode="decimal" class="etotal" data-exp="${e.id}" data-f="etotal" value="${amtVal(e.total)}" placeholder="0"/></div>`+
+        `<div class="ehint">se reparte entre ${divisor} ${divisor===1?'persona':'personas'}${e.includeMe?' (tú incluido)':''}</div>`
+      : `<div class="erow"><span class="el">total ticket</span><span class="cur">${cs}</span><input inputmode="decimal" class="etotal" data-exp="${e.id}" data-f="etotal" value="${amtVal(e.total)}" placeholder="0"/></div>`+
+        `<div class="ehint manual-h" data-exp="${e.id}">${manualHint(e)}</div>`)+
+    extrasHTML(e)+
+    selblock+
+    `<div class="plist">${rows}</div>`+
+    `<div class="efoot"><span class="el">APORTADO / COSTO</span><span class="ev"><span class="eaport" data-exp="${e.id}">${fmt(aportado(e),e.currency)}</span> / <span class="ecosto" data-exp="${e.id}">${fmt(costoTotal(e),e.currency)}</span></span></div>`+
+    `<div class="efoot tot"><span class="el">FALTA POR CUBRIR</span><span class="ev"><span class="efaltac" data-exp="${e.id}">${faltaCubrirHTML(e)}</span></span></div>`+
+  `</div>`;
+}
+function renderExpenses(){
+  const box=$('#expenses'); box.innerHTML='';
+  if(!state.expenses.length){ box.innerHTML='<div class="empty">sin gastos — toca [+ gasto]</div>'; return; }
+  state.expenses.forEach(e=> box.insertAdjacentHTML('beforeend', expenseHTML(e)));
+}
+
+/* ---------- por persona ---------- */
+function badgeParts(s){
+  if(s>0) return {cls:'owe', html:`<span class="l">te debe</span>${fmtR(s)}`};
+  if(s<0) return {cls:'fav', html:`<span class="l">a favor</span>${fmtR(-s)}`};
+  return {cls:'even', html:'a mano'};
+}
+function setBadge(el,s){ const b=badgeParts(s); el.className='pbadge '+b.cls; el.innerHTML=b.html; }
+function payRowHTML(p,pay){
+  return `<div class="bd ap"><span class="bchk apx" data-f="aprm" data-id="${p.id}" data-pay="${pay.id}">×</span>`+
+    `<input class="apl" data-f="aplabel" data-id="${p.id}" data-pay="${pay.id}" value="${escapeAttr(pay.label)}" placeholder="concepto"/>`+
+    `<span class="apv"><span class="apcur" data-f="apcur" data-id="${p.id}" data-pay="${pay.id}">${SYM[pay.currency||'mxn']}</span><input inputmode="decimal" data-f="apamt" data-id="${p.id}" data-pay="${pay.id}" value="${amtVal(pay.amount)}" placeholder="0"/></span></div>`;
+}
+function personSubtotals(p){
+  let g=0; state.expenses.forEach(e=>{ if(e.participants.includes(p.id)) g+=convert(faltaP(e,p.id),e.currency,state.rollup); });
+  let t=0,i=0; (p.payments||[]).forEach(x=>{ const v=convert(x.amount||0,x.currency||'mxn',state.rollup); if(x.dir==='me') i+=v; else t+=v; });
+  return {g,t,i};
+}
+function mathLine(p){
+  const s=personSubtotals(p), net=s.g + s.i - s.t;
+  const r = net>0?`te debe ${fmtR(net)}` : net<0?`a favor ${fmtR(-net)}` : 'a mano';
+  let lhs = `gastos ${fmtR(s.g)}`;
+  if(s.i) lhs += ` <span class="op">+</span> yo ${fmtR(s.i)}`;
+  if(s.t) lhs += ` <span class="op">−</span> pagó ${fmtR(s.t)}`;
+  return `${lhs} <span class="op">=</span> <b>${r}</b>`;
+}
+function byPersonHTML(p){
+  const cargos=state.expenses.filter(e=>e.participants.includes(p.id)).map(e=>{
+    const pd=!!e.paid[p.id], f=faltaP(e,p.id);
+    const v = pd? '✓ saldado' : faltaTxt(f,e.currency);
+    return `<div class="bd ${pd?'pd':''}"><span class="bchk ${pd?'on':''}" data-f="cpaid" data-exp="${e.id}" data-pid="${p.id}">${pd?'✓':'☐'}</span>`+
+      `<span class="bl">${escapeHtml(e.label||'(sin nombre)')}</span><span class="bv">${v}</span></div>`;
+  }).join('');
+  const pays=p.payments||[];
+  const theyPaid=pays.filter(x=>x.dir!=='me').map(x=>payRowHTML(p,x)).join('');
+  const iPaid=pays.filter(x=>x.dir==='me').map(x=>payRowHTML(p,x)).join('');
+  const sub=personSubtotals(p), nm=escapeHtml(p.name||'—');
+  const b=badgeParts(personSaldo(p.id));
+  return `<div class="pacc" data-id="${p.id}">`+
+    `<div class="pah"><span class="pn">${nm}</span><span class="pbadge ${b.cls}" data-id="${p.id}">${b.html}</span></div>`+
+    `<div class="bds">`+
+      `<div class="bsec first"><span>GASTOS · le toca</span><span class="bsub g" data-id="${p.id}">${fmtR(sub.g)}</span></div>`+
+      (cargos||'<div class="bnone">no entra en ningún gasto</div>')+
+      `<div class="bsec"><span>YO LE PAGUÉ · mis aportes</span><span class="bsub i" data-id="${p.id}">+${fmtR(sub.i)}</span></div>`+
+      iPaid+
+      `<div class="addap" data-f="addme" data-id="${p.id}">[+ agregar]</div>`+
+      `<div class="bsec"><span>PAGÓ · sus aportes</span><span class="bsub t" data-id="${p.id}">−${fmtR(sub.t)}</span></div>`+
+      theyPaid+
+      `<div class="addap" data-f="addthey" data-id="${p.id}">[+ agregar]</div>`+
+      `<div class="bmath" data-id="${p.id}">${mathLine(p)}</div>`+
+    `</div>`+
+  `</div>`;
+}
+function renderByPerson(){
+  const box=$('#byperson'); box.innerHTML='';
+  if(!state.people.length){ box.innerHTML='<div class="empty">sin personas</div>'; return; }
+  state.people.forEach(p=> box.insertAdjacentHTML('beforeend', byPersonHTML(p)));
+}
+
+/* ---------- computed updates (keep focus) ---------- */
+function refreshExpenseCards(){
+  state.expenses.forEach(e=>{
+    document.querySelectorAll(`.toca[data-exp="${esc(e.id)}"]`).forEach(el=>{ const pid=el.dataset.pid; el.textContent=fmt(pid==='__me'?mineShare(e):shareOf(e,pid), e.currency); });
+    document.querySelectorAll(`.falta[data-exp="${esc(e.id)}"]`).forEach(el=>{ const pid=el.dataset.pid; const f=pid==='__me'?mineFalta(e):faltaP(e,pid); el.className='falta '+faltaCls(f); el.textContent=faltaTxt(f,e.currency); });
+    const ea=document.querySelector(`.eaport[data-exp="${esc(e.id)}"]`); if(ea) ea.textContent=fmt(aportado(e),e.currency);
+    const ec=document.querySelector(`.ecosto[data-exp="${esc(e.id)}"]`); if(ec) ec.textContent=fmt(costoTotal(e),e.currency);
+    const efc=document.querySelector(`.efaltac[data-exp="${esc(e.id)}"]`); if(efc) efc.innerHTML=faltaCubrirHTML(e);
+    const pb=document.querySelector(`.paidby[data-exp="${esc(e.id)}"]`); if(pb) pb.textContent=paidByText(e);
+    const mh=document.querySelector(`.manual-h[data-exp="${esc(e.id)}"]`); if(mh) mh.textContent=manualHint(e);
+  });
+  state.people.forEach(p=>document.querySelectorAll(`.pwho[data-pid="${esc(p.id)}"]`).forEach(el=>el.textContent=p.name||'—'));
+}
+function refreshBadges(){ state.people.forEach(p=>{
+  const acc=document.querySelector(`.pacc[data-id="${esc(p.id)}"]`); if(!acc) return;
+  const bg=acc.querySelector('.pbadge'); if(bg) setBadge(bg, personSaldo(p.id));
+  const sub=personSubtotals(p);
+  const sg=acc.querySelector('.bsub.g'); if(sg) sg.textContent=fmtR(sub.g);
+  const si=acc.querySelector('.bsub.i'); if(si) si.textContent='+'+fmtR(sub.i);
+  const st=acc.querySelector('.bsub.t'); if(st) st.textContent='−'+fmtR(sub.t);
+  const bm=acc.querySelector('.bmath'); if(bm) bm.innerHTML=mathLine(p);
+}); }
+function updateResumen(){
+  let owe=0,debt=0; state.people.forEach(p=>{ const s=personSaldo(p.id); if(s>0) owe+=s; else if(s<0) debt+=-s; });
+  $('#sumOwed').textContent=fmtR(owe); $('#sumDebt').textContent=fmtR(debt);
+  const net=owe-debt; $('#sumNet').textContent=fmtR(Math.abs(net));
+  $('#sumNetK').textContent = net>=0 ? 'a tu favor · neto' : 'tú debes · neto';
+}
+function renderAll(){
+  $('#title').value=state.title; $('#me').value=state.me; $('#rate').value=state.rate;
+  $('#rollMxn').classList.toggle('on',state.rollup==='mxn'); $('#rollEur').classList.toggle('on',state.rollup==='eur');
+  renderPeople(); renderExpenses(); renderByPerson(); refreshBadges(); updateResumen();
+}
+
+/* ---------- events: personas ---------- */
+$('#people').addEventListener('input', e=>{
+  if(e.target.dataset.f!=='pname') return; const p=state.pById[e.target.dataset.id];
+  if(p){ p.name=e.target.value; renderExpenses(); renderByPerson(); updateResumen(); save(); }
+});
+$('#people').addEventListener('click', e=>{
+  if(e.target.dataset.f!=='prm') return; const id=e.target.dataset.id, p=state.pById[id];
+  if(p && (p.name||personSaldo(id)) && !confirm(`¿Quitar a ${p.name||'esta persona'}?`)) return;
+  state.people=state.people.filter(x=>x.id!==id);
+  state.expenses.forEach(ex=>{ ex.participants=ex.participants.filter(x=>x!==id); delete ex.manual[id]; delete ex.puso[id]; delete ex.pusoCur[id]; delete ex.paid[id]; if(ex.payer===id) ex.payer='__me'; });
+  reindex(); renderPeople(); renderExpenses(); renderByPerson(); refreshBadges(); updateResumen(); save();
+});
+$('#addP').addEventListener('click', ()=>{
+  const p=blankPerson(); state.people.push(p); reindex(); renderPeople(); renderExpenses(); renderByPerson(); refreshBadges(); updateResumen(); save();
+  const ins=document.querySelector('#people .prow:last-child input'); ins&&ins.focus();
+});
+
+/* ---------- events: gastos ---------- */
+$('#expenses').addEventListener('input', e=>{
+  const id=e.target.dataset.exp, f=e.target.dataset.f, ex=state.eById[id]; if(!ex) return;
+  if(f==='elabel'){ ex.label=e.target.value; renderByPerson(); }
+  else if(f==='etotal'){ ex.total=toCents(e.target.value); refreshExpenseCards(); renderByPerson(); refreshBadges(); updateResumen(); }
+  else if(f==='emanual'){ ex.manual[e.target.dataset.pid]=toCents(e.target.value); refreshExpenseCards(); renderByPerson(); refreshBadges(); updateResumen(); }
+  else if(f==='emineManual'){ ex.mineManual=toCents(e.target.value); refreshExpenseCards(); updateResumen(); }
+  else if(f==='epuso'){ const pid=e.target.dataset.pid; ex.puso[pid]=toCents(e.target.value); if(!ex.pusoCur[pid]) ex.pusoCur[pid]=ex.currency; refreshExpenseCards(); renderByPerson(); refreshBadges(); updateResumen(); }
+  else if(f==='eminePuso'){ ex.minePuso=toCents(e.target.value); if(!ex.minePusoCur) ex.minePusoCur=ex.currency; refreshExpenseCards(); updateResumen(); }
+  else if(f==='exlabel'){ const x=(ex.extras||[]).find(o=>o.id===e.target.dataset.ex); if(x) x.label=e.target.value; }
+  else if(f==='examt'){ const x=(ex.extras||[]).find(o=>o.id===e.target.dataset.ex); if(x){ x.amount=toCents(e.target.value); refreshExpenseCards(); renderByPerson(); refreshBadges(); updateResumen(); } }
+  save();
+});
+$('#expenses').addEventListener('click', e=>{
+  const id=e.target.dataset.exp, f=e.target.dataset.f, ex=state.eById[id]; if(!ex) return;
+  if(f==='erm'){ if((ex.label||ex.total||ex.participants.length)&&!confirm(`¿Borrar el gasto ${ex.label||'sin nombre'}?`)) return;
+    state.expenses=state.expenses.filter(x=>x.id!==id); reindex(); renderExpenses(); renderByPerson(); refreshBadges(); updateResumen(); save(); }
+  else if(f==='ecur'){ const oc=ex.currency, nc=oc==='eur'?'mxn':'eur';
+    ex.total=convert(ex.total,oc,nc); ex.mineManual=convert(ex.mineManual,oc,nc);
+    Object.keys(ex.manual).forEach(k=>ex.manual[k]=convert(ex.manual[k],oc,nc));
+    ex.participants.forEach(pid=>{ if(!ex.pusoCur[pid]) ex.pusoCur[pid]=oc; }); if(!ex.minePusoCur) ex.minePusoCur=oc;
+    (ex.extras||[]).forEach(x=>{ if(!x.currency) x.currency=oc; });
+    ex.currency=nc; state.lastCur=nc; renderExpenses(); renderByPerson(); refreshBadges(); updateResumen(); save(); }
+  else if(f==='excur'){ const x=(ex.extras||[]).find(o=>o.id===e.target.dataset.ex); if(x){ const cur=x.currency||ex.currency, nc=cur==='eur'?'mxn':'eur'; x.amount=convert(x.amount,cur,nc); x.currency=nc; renderExpenses(); renderByPerson(); refreshBadges(); updateResumen(); save(); } }
+  else if(f==='addex'){ ex.extras=ex.extras||[]; ex.extras.push({id:uid(),label:'',amount:0,currency:ex.currency}); renderExpenses(); renderByPerson(); refreshBadges(); updateResumen(); save(); const ins=document.querySelector(`.exp[data-exp="${esc(id)}"] .exrow:last-of-type .exlabel`); ins&&ins.focus(); }
+  else if(f==='exrm'){ ex.extras=(ex.extras||[]).filter(o=>o.id!==e.target.dataset.ex); renderExpenses(); renderByPerson(); refreshBadges(); updateResumen(); save(); }
+  else if(f==='pucur'){ const pid=e.target.dataset.pid, cur=ex.pusoCur[pid]||ex.currency, nc=cur==='eur'?'mxn':'eur'; ex.puso[pid]=convert(ex.puso[pid]||0,cur,nc); ex.pusoCur[pid]=nc; renderExpenses(); renderByPerson(); refreshBadges(); updateResumen(); save(); }
+  else if(f==='pumineCur'){ const cur=ex.minePusoCur||ex.currency, nc=cur==='eur'?'mxn':'eur'; ex.minePuso=convert(ex.minePuso||0,cur,nc); ex.minePusoCur=nc; renderExpenses(); refreshBadges(); updateResumen(); save(); }
+  else if(f==='seltog'){ if(openSel.has(id)) openSel.delete(id); else openSel.add(id); renderExpenses(); }
+  else if(f==='mode'){ ex.mode=e.target.dataset.v; renderExpenses(); renderByPerson(); refreshBadges(); updateResumen(); save(); }
+  else if(f==='includeMe'){ ex.includeMe=!ex.includeMe; renderExpenses(); renderByPerson(); refreshBadges(); updateResumen(); save(); }
+  else if(f==='ptoggle'){ const pid=e.target.dataset.pid, i=ex.participants.indexOf(pid);
+    if(i>=0){ ex.participants.splice(i,1); delete ex.manual[pid]; delete ex.puso[pid]; delete ex.pusoCur[pid]; delete ex.paid[pid]; if(ex.payer===pid) ex.payer='__me'; } else ex.participants.push(pid);
+    renderExpenses(); renderByPerson(); refreshBadges(); updateResumen(); save(); }
+});
+$('#addE').addEventListener('click', ()=>{
+  const ex=blankExpense(); state.expenses.push(ex); reindex(); renderExpenses(); renderByPerson(); refreshBadges(); updateResumen(); save();
+  const ins=document.querySelector(`.exp[data-exp="${esc(ex.id)}"] .clabel`); ins&&ins.focus();
+});
+
+/* ---------- events: por persona ---------- */
+$('#byperson').addEventListener('input', e=>{
+  const f=e.target.dataset.f, p=state.pById[e.target.dataset.id]; if(!p) return;
+  const pay=(p.payments||[]).find(x=>x.id===e.target.dataset.pay); if(!pay) return;
+  if(f==='aplabel'){ pay.label=e.target.value; save(); }
+  else if(f==='apamt'){ pay.amount=toCents(e.target.value); refreshBadges(); updateResumen(); save(); }
+});
+$('#byperson').addEventListener('click', e=>{
+  const f=e.target.dataset.f;
+  if(f==='cpaid'){ const ex=state.eById[e.target.dataset.exp], pid=e.target.dataset.pid; if(!ex) return;
+    ex.paid[pid]=!ex.paid[pid]; renderByPerson(); refreshExpenseCards(); refreshBadges(); updateResumen(); save(); }
+  else if(f==='apcur'){ const p=state.pById[e.target.dataset.id]; if(!p) return; const pay=p.payments.find(x=>x.id===e.target.dataset.pay); if(!pay) return;
+    const nc=(pay.currency||'mxn')==='eur'?'mxn':'eur'; pay.amount=convert(pay.amount,pay.currency||'mxn',nc); pay.currency=nc; renderByPerson(); refreshBadges(); updateResumen(); save(); }
+  else if(f==='addthey'||f==='addme'){ const p=state.pById[e.target.dataset.id]; if(!p) return;
+    p.payments.push({id:uid(),label:'',amount:0,currency:'mxn',dir:(f==='addme'?'me':'they')}); renderByPerson(); refreshBadges(); updateResumen(); save();
+    const ins=document.querySelector(`.pacc[data-id="${esc(p.id)}"] .bd.ap:last-of-type .apl`); ins&&ins.focus(); }
+  else if(f==='aprm'){ const p=state.pById[e.target.dataset.id]; if(!p) return;
+    p.payments=p.payments.filter(x=>x.id!==e.target.dataset.pay); renderByPerson(); refreshBadges(); updateResumen(); save(); }
+});
+
+/* ---------- events: moneda + misc ---------- */
+$('#rollMxn').addEventListener('click', ()=>{ state.rollup='mxn'; renderAll(); save(); });
+$('#rollEur').addEventListener('click', ()=>{ state.rollup='eur'; renderAll(); save(); });
+$('#rate').addEventListener('input', e=>{ const r=parseFloat(String(e.target.value).replace(',','.')); state.rate=(r&&r>0)?r:state.rate; refreshExpenseCards(); refreshBadges(); updateResumen(); save(); });
+$('#title').addEventListener('input', e=>{ state.title=e.target.value; save(); });
+$('#me').addEventListener('input', e=>{ state.me=e.target.value; refreshExpenseCards(); updateResumen(); save(); });
+$('#reset').addEventListener('click', ()=>{ if(confirm('¿Borrar todo y empezar en blanco?')){ fresh(); reindex(); renderAll(); save(); } });
+
+/* ---------- go ---------- */
+load(); renderAll();
+</script>
+</body>
+</html>
