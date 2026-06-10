@@ -421,7 +421,7 @@ function seed(){
   return {
     version:1,
     profile:{username:''},
-    settings:{unit:'lbs',restSec:90,restBeep:true,goals:{kcal:2200,protein:165,carbs:240,fat:65,sodium:2300,potassium:3500,sugar:50,fiber:30,water:3.0,caffeine:400,alcohol:14}},
+    settings:{unit:'lbs',restSec:90,restBeep:true,goals:{kcal:2200,protein:165,carbs:240,fat:65,sodium:2300,potassium:3500,sugar:50,fiber:30,water:3.0,caffeine:400,alcohol:14,sleep:8}},
     activeGym:'',
     gyms:[],
     machines:{},
@@ -429,7 +429,8 @@ function seed(){
     split:{name:'', days:[]},   // blank — new account creates/imports its own split
     sessions:[],
     meals:{},
-    foods:[]
+    foods:[],
+    sleep:{}
   };
 }
 // demo split the user can load on demand from the empty gym screen
@@ -533,7 +534,7 @@ function load(){
   if(!d)return seed();
   return migrate(d);
 }
-function migrate(d){ if(!d.version){d.version=1;} if(!d.meals||typeof d.meals!=='object'||Array.isArray(d.meals))d.meals={}; if(!Array.isArray(d.foods))d.foods=[]; d.foods=d.foods.map(f=>(f&&f.per100)?f:asCanonical(f)); if(!Array.isArray(d.sessions))d.sessions=[]; if(!d.split||typeof d.split!=='object')d.split={name:'',days:[]}; if(!Array.isArray(d.split.days))d.split.days=[]; if(!d.steps||typeof d.steps!=='object')d.steps={}; if(!d.machines||typeof d.machines!=='object')d.machines={}; if(!d.bodyweight||typeof d.bodyweight!=='object')d.bodyweight={}; if(!Array.isArray(d.mealTags))d.mealTags=['breakfast','lunch','snack','dinner']; if(!Array.isArray(d.stack))d.stack=[]; if(!d.lastUsed||typeof d.lastUsed!=='object')d.lastUsed={}; if(!d.settings||typeof d.settings!=='object')d.settings={goals:seed().settings.goals}; if(d.settings&&d.settings.goals&&d.settings.goals.alcohol==null)d.settings.goals.alcohol=(d.profile&&d.profile.sex==='F')?14:28; if(d.settings&&d.settings.restSec==null)d.settings.restSec=90; if(d.settings&&d.settings.restBeep==null)d.settings.restBeep=true;
+function migrate(d){ if(!d.version){d.version=1;} if(!d.meals||typeof d.meals!=='object'||Array.isArray(d.meals))d.meals={}; if(!Array.isArray(d.foods))d.foods=[]; d.foods=d.foods.map(f=>(f&&f.per100)?f:asCanonical(f)); if(!Array.isArray(d.sessions))d.sessions=[]; if(!d.split||typeof d.split!=='object')d.split={name:'',days:[]}; if(!Array.isArray(d.split.days))d.split.days=[]; if(!d.steps||typeof d.steps!=='object')d.steps={}; if(!d.machines||typeof d.machines!=='object')d.machines={}; if(!d.bodyweight||typeof d.bodyweight!=='object')d.bodyweight={}; if(!d.sleep||typeof d.sleep!=='object')d.sleep={}; if(!Array.isArray(d.mealTags))d.mealTags=['breakfast','lunch','snack','dinner']; if(!Array.isArray(d.stack))d.stack=[]; if(!d.lastUsed||typeof d.lastUsed!=='object')d.lastUsed={}; if(!d.settings||typeof d.settings!=='object')d.settings={goals:seed().settings.goals}; if(d.settings&&d.settings.goals&&d.settings.goals.alcohol==null)d.settings.goals.alcohol=(d.profile&&d.profile.sex==='F')?14:28; if(d.settings&&d.settings.restSec==null)d.settings.restSec=90; if(d.settings&&d.settings.restBeep==null)d.settings.restBeep=true; if(d.settings&&d.settings.goals&&d.settings.goals.sleep==null)d.settings.goals.sleep=8;
   // recompute alcohol for old meal items logged before alcohol was in MACROKEYS
   try{ Object.values(d.meals||{}).forEach(arr=>arr.forEach(m=>{ if(m.alcohol==null){ if(m._food&&m._food.per100&&m._food.per100.alcohol&&m._unit){ m.alcohol=computeNutrients(m._food,m._unit,m.qty||1).alcohol; } else m.alcohol=0; } })); }catch(e){}
   // goalHist: snapshot of intake goals at the moment of first logging that day (history is FROZEN — past days never re-read the current goal)
@@ -550,7 +551,7 @@ function save(){ try{ const s=JSON.stringify(db); localStorage.setItem(LS_KEY,s)
   const now=performance.now(); if(now-_saveBakT>4000){ _saveBakT=now; try{localStorage.setItem(LS_BACKUP,s);}catch(e){} }
   }catch(e){ console.warn('save failed',e); if(!window._saveQuotaWarned){ window._saveQuotaWarned=true; try{ setTimeout(()=>{ try{toast('⚠ sin espacio: exporta y borra datos viejos para liberar');}catch(_){} },500); }catch(_){} } } }
 // data-safety: count all data records so a restore can warn before any loss (meals + sessions + foods + bodyweight days + steps days)
-function dbMass(o){ try{ const m=Object.values((o&&o.meals)||{}).reduce((n,a)=>n+(a?a.length:0),0); return m+(((o&&o.sessions)||[]).length)+(((o&&o.foods)||[]).length)+Object.keys((o&&o.bodyweight)||{}).length+Object.keys((o&&o.steps)||{}).length; }catch(_){ return 0; } }
+function dbMass(o){ try{ const m=Object.values((o&&o.meals)||{}).reduce((n,a)=>n+(a?a.length:0),0); return m+(((o&&o.sessions)||[]).length)+(((o&&o.foods)||[]).length)+Object.keys((o&&o.bodyweight)||{}).length+Object.keys((o&&o.steps)||{}).length+Object.keys((o&&o.sleep)||{}).length; }catch(_){ return 0; } }
 // ALWAYS ask before destructive replace (not just when shrinking) — silent imports on fresh accounts were a vector for malicious backups
 function confirmReplace(incoming){ const cur=dbMass(db), inc=dbMass(incoming); if(cur===0) return confirm('Esto reemplazará TODOS tus datos con el respaldo importado. ¿Continuar?'); if(inc<cur) return confirm('El respaldo a cargar tiene MENOS datos ('+inc+') que los actuales ('+cur+'). Reemplazará todo y no se puede deshacer. ¿Continuar?'); return confirm('Esto reemplazará todos tus datos actuales ('+cur+' registros) con el respaldo ('+inc+'). ¿Continuar?'); }
 
@@ -700,7 +701,8 @@ function renderHome(){
     +`<hr class="rule"/><div class="section" style="margin-bottom:10px"><div class="h"><span class="s">//</span>STATS</div><div class="meta" data-act="settings">[settings]</div></div>`
     +`<div class="line stat"><span class="k">sessions · 7d</span><span class="dots"></span><span class="v">${s7.count}</span></div>`
     +`<div class="line stat"><span class="k">streak</span><span class="dots"></span><span class="v">${streak()} days</span></div>`
-    +`<div class="line stat"><span class="k">steps · today</span><span class="dots"></span><span class="v" data-act="editsteps" style="cursor:pointer">${(db.steps&&db.steps[todayISO()])?db.steps[todayISO()].toLocaleString():'— tap'}</span></div>`;
+    +`<div class="line stat"><span class="k">steps · today</span><span class="dots"></span><span class="v" data-act="editsteps" style="cursor:pointer">${(db.steps&&db.steps[todayISO()])?db.steps[todayISO()].toLocaleString():'— tap'}</span></div>`
+    +`<div class="line stat"><span class="k">sleep · last night</span><span class="dots"></span><span class="v" data-act="logsleep" style="cursor:pointer">${(db.sleep&&db.sleep[todayISO()])?db.sleep[todayISO()]+' h':'— tap'}</span></div>`;
 }
 // read-only preview of a planned day's exercises (without starting the workout)
 function dayPreviewHTML(day){
@@ -1255,6 +1257,20 @@ function openWeightLog(){ const ks=Object.keys(db.bodyweight||{}).sort(); const 
    ${recent.length?`<div class="grp-label" style="margin:12px 0 4px">REGISTROS RECIENTES</div>`+rows+`<div class="submeta">toca una fecha para editarla · ✕ para borrar</div>`:''}`);
   document.getElementById('bw_save').onclick=()=>{ const v=parseFloat(val('bw_kg')); const d=val('bw_date')||todayISO(); if(!v||v<=0){ alert('Pon un peso válido.'); return; } db.bodyweight=db.bodyweight||{}; db.bodyweight[d]=Math.round(v*10)/10; const allk=Object.keys(db.bodyweight).sort(); if(allk.length&&db.profile)db.profile.weightKg=db.bodyweight[allk[allk.length-1]]; save(); closeModal(); render(); };
 }
+// sleep log — date = the morning you woke up ("anoche" = db.sleep[today]). Direct hours, no clock math.
+function openSleepLog(){ const ks=Object.keys(db.sleep||{}).sort(); const last=ks.length?db.sleep[ks[ks.length-1]]:'';
+  const recent=ks.slice(-8).reverse();
+  const rows=recent.map(d=>`<div class="line" style="padding:5px 0"><span class="k" data-act="editsleep" data-d="${d}" style="cursor:pointer;text-decoration:underline">${d}</span><span class="dots"></span><span class="v">${db.sleep[d]} h <span data-act="delsleep" data-d="${d}" style="color:var(--o40);cursor:pointer;margin-left:8px">✕</span></span></div>`).join('');
+  const chips=[6,6.5,7,7.5,8,8.5,9].map(h=>`<span class="chip" data-slh="${h}">${h}</span>`).join('');
+  openModal(`<h3>sueño</h3>
+   <div class="submeta" style="margin-bottom:8px">¿cuántas horas dormiste anoche?</div>
+   <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">${chips}</div>
+   <div class="field row2"><div><label>HORAS</label><input id="sl_h" type="number" inputmode="decimal" step="0.5" value="${last||''}" placeholder="ej. 7.5"/></div><div><label>FECHA (despertar)</label><input id="sl_date" type="date" value="${todayISO()}" max="${todayISO()}"/></div></div>
+   <div class="sheetbtns" style="margin-bottom:6px"><button class="ok" id="sl_save">guardar</button><button class="cancel" data-act="closemodal">cerrar</button></div>
+   ${recent.length?`<div class="grp-label" style="margin:12px 0 4px">REGISTROS RECIENTES</div>`+rows+`<div class="submeta">toca una fecha para editarla · ✕ para borrar</div>`:''}`);
+  document.querySelectorAll('[data-slh]').forEach(c=>c.onclick=()=>{ const e=document.getElementById('sl_h'); if(e)e.value=c.dataset.slh; });
+  document.getElementById('sl_save').onclick=()=>{ const v=parseFloat(val('sl_h')); const d=val('sl_date')||todayISO(); if(!v||v<=0||v>=24){ alert('Pon horas válidas (0–24).'); return; } db.sleep=db.sleep||{}; db.sleep[d]=Math.round(v*10)/10; save(); closeModal(); render(); };
+}
 // habit series helpers (last-N days, daily water summed from meals, avg of logged days)
 function lastDays(n){ const now=new Date(); const out=[]; for(let i=n-1;i>=0;i--){ const d=new Date(now); d.setDate(now.getDate()-i); out.push(todayISO(d)); } return out; }
 function dayWater(iso){ const arr=db.meals[iso]; let w=0; if(arr)arr.forEach(m=>{ w+=+m.water||0; }); return w; }
@@ -1297,6 +1313,18 @@ function metricSeries(key, days){
       min: pos.length?Math.min.apply(null,pos):0,
       max: vals.length?Math.max.apply(null,vals):0,
       goal, change:null, fmt:n=>n+' L', zero:true, canLog:false};
+  }
+  if(key==='sleep'){
+    const hd=lastDays(days);
+    const vals=hd.map(d=>(db.sleep&&db.sleep[d])||0);
+    const pos=vals.filter(x=>x>0);
+    const goal=(db.settings&&db.settings.goals&&db.settings.goals.sleep)||0;
+    return {key, title:'sueño', unit:'h', dates:hd, vals,
+      current:vals[vals.length-1]||0, currentISO:hd[hd.length-1],
+      avg: pos.length?Math.round((pos.reduce((a,b)=>a+b,0)/pos.length)*10)/10:0,
+      min: pos.length?Math.min.apply(null,pos):0,
+      max: vals.length?Math.max.apply(null,vals):0,
+      goal, change:null, fmt:n=>n+' h', zero:true, canLog:true, logAct:'logsleep'};
   }
   return null;
 }
@@ -1344,7 +1372,7 @@ function renderProgress(){
   const _sr=window._stepRange||14; const _shd=lastDays(_sr); const _stepsArr=_shd.map(d=>(db.steps&&db.steps[d])||0); const _stepsLog=_stepsArr.filter(x=>x>0);
   const _br=window._bwRange||14; const _bcut=lastDays(_br)[0]; const _bk=bwKeys.filter(k=>k>=_bcut); const _bv=_bk.map(k=>db.bodyweight[k]);
   let out=statusBar(false)+`<hr class="rule"/><div class="section"><div class="h"><span class="s">//</span>PROGRESS</div><div class="meta">${totalSessions} sesiones</div></div>`;
-  if(!totalSessions && !bwVals.length && !_stepsLog.length && !_waterLog.length){
+  if(!totalSessions && !bwVals.length && !_stepsLog.length && !_waterLog.length && !Object.keys(db.sleep||{}).length){
     return out+`<div class="empty">aún no hay datos<br/>entrena o registra tu peso para ver progreso</div>`
       +`<button class="start" data-act="logweight" style="margin-top:14px">+ registrar peso corporal</button>`;
   }
@@ -1398,6 +1426,15 @@ function renderProgress(){
     tiles.push(`<div class="ptile tap" data-act="metricdetail" data-m="water"><div class="ptlh"><div class="plbl">agua</div><span class="ptchev">›</span></div>`
       +`<div class="pval">${_a}<span>L prom</span></div>`
       +`<div class="pst ${cls}">${_g?(_a>=_g?'▲ en meta · 14d':'meta '+_g+'L · 14d'):'14d'}</div>${lineChart(_waterArr,{h:32,zero:true})}</div>`);
+  }
+  // sueño
+  { const _slArr=_hd.map(d=>(db.sleep&&db.sleep[d])||0); const _slLog=_slArr.filter(x=>x>0);
+    if(_slLog.length){ const _g=db.settings.goals.sleep||0, _a=Math.round(avgPos(_slArr)*10)/10, _ln=(db.sleep&&db.sleep[todayISO()])||0;
+      const cls=_g&&_a>=_g?'good':'flat';
+      tiles.push(`<div class="ptile tap" data-act="metricdetail" data-m="sleep"><div class="ptlh"><div class="plbl">sueño</div><span class="ptchev">›</span></div>`
+        +`<div class="pval">${_ln||'—'}<span>h anoche</span></div>`
+        +`<div class="pst ${cls}">${_g?(_a>=_g?'▲ prom '+_a+'h en meta · 14d':'prom '+_a+'h · meta '+_g+'h'):'prom '+_a+'h · 14d'}</div>${lineChart(_slArr,{h:32,zero:true})}</div>`);
+    }
   }
   // kcal
   { const ak=avgKcal7(), gk=db.settings.goals.kcal||0; const kcalArr=lastDays(7).map(d=>Math.round((db.meals[d]||[]).reduce((a,m)=>a+(+m.kcal||0),0)));
@@ -1741,6 +1778,9 @@ document.getElementById('app').addEventListener('click',e=>{
   else if(a==='workshop'){ openWorkshop(); }
   else if(a==='usetpl'){ const t=(window._tpls||[])[+el.dataset.i]; if(t){ db.split=t.build(); db.rotIdx=0; state.selDay=null; save(); closeModal(); go('splitedit'); } }
   else if(a==='logweight'){ openWeightLog(); }
+  else if(a==='logsleep'){ openSleepLog(); }
+  else if(a==='editsleep'){ const d=el.dataset.d; const dt=document.getElementById('sl_date'), hh=document.getElementById('sl_h'); if(dt)dt.value=d; if(hh){ hh.value=(db.sleep&&db.sleep[d])||''; hh.focus(); } }
+  else if(a==='delsleep'){ const d=el.dataset.d; if(confirm('¿Borrar el sueño de '+d+'?')){ if(db.sleep)delete db.sleep[d]; save(); openSleepLog(); } }
   else if(a==='healthimport'){ openHealthImport(); }
   else if(a==='healthsync'){ healthSync(); }
   else if(a==='steprange'){ window._stepRange=+el.dataset.r||14; render(); }
@@ -3131,7 +3171,7 @@ function openGoals(){
    <div class="field row2">${micro('g_sugar','AZÚCAR g',g.sugar)}${micro('g_fiber','FIBRA g',g.fiber)}</div>
    <div class="field row2">${micro('g_water','AGUA L',eg.water,1)}${micro('g_caffeine','CAFEÍNA mg',g.caffeine)}</div>
    <div class="submeta" style="font-size:9px;color:var(--o40);margin:-4px 0 8px"><span style="color:var(--good);font-weight:700">AUTO</span> = recalculado de tu actividad real (entrenos últimos 14d + pasos últimos 7d)</div>
-   <div class="field row2">${micro('g_alcohol','ALCOHOL g · límite',g.alcohol||0)}<div></div></div>
+   <div class="field row2">${micro('g_alcohol','ALCOHOL g · límite',g.alcohol||0)}${micro('g_sleep','SUEÑO h · meta',g.sleep||8)}</div>
    <div class="sheetbtns"><button class="ok" data-act="okgoals">save</button><button class="cancel" id="g_recalc" title="recalcular desde tu perfil + actividad">↻ perfil</button><button class="cancel" data-act="closemodal">cancel</button></div>`);
   const keys=['protein','carbs','fat'], DIV={protein:4,carbs:4,fat:9}, locks={protein:false,carbs:false,fat:false};
   const gr={protein:+g.protein||0, carbs:+g.carbs||0, fat:+g.fat||0};   // GRAMS = source of truth; locks pin grams
@@ -3175,7 +3215,7 @@ function openGoals(){
     if(window._goalMode==='pct'){ P=gr.protein; C=gr.carbs; F=gr.fat; kcal=Kget()||(P*4+C*4+F*9); }
     else { P=parseFloat(val('gg_protein'))||0; C=parseFloat(val('gg_carbs'))||0; F=parseFloat(val('gg_fat'))||0; kcal=P*4+C*4+F*9; }
     g.kcal=Math.round(kcal); g.protein=Math.round(P); g.carbs=Math.round(C); g.fat=Math.round(F);
-    ['sugar','fiber','caffeine','alcohol'].forEach(k=>{ const v=parseFloat(val('g_'+k)); if(!isNaN(v))g[k]=v; });   // Na/K/water are AUTO from derivedActivity()
+    ['sugar','fiber','caffeine','alcohol','sleep'].forEach(k=>{ const v=parseFloat(val('g_'+k)); if(!isNaN(v))g[k]=v; });   // Na/K/water are AUTO from derivedActivity()
     if(isPast){ db.goalHist=db.goalHist||{}; db.goalHist[day]=g; }            // past: only this day
     else { Object.assign(db.settings.goals, g); db.goalHist=db.goalHist||{}; db.goalHist[day]=Object.assign({},db.settings.goals); } // present/future: update current goal AND today/that-day's snapshot
     save(); closeModal(); render(); };
