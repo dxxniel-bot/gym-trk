@@ -214,6 +214,15 @@
 
   /* footer (workout) */
   .footer{flex:0 0 auto; display:flex; gap:10px; padding:12px 16px; border-top:1px solid var(--o12); background:var(--frame);}
+  /* rest timer capsule — lives OUTSIDE #view so render() never destroys it */
+  .restbar{flex:0 0 auto; display:none; align-items:center; gap:10px; padding:9px 16px; border-top:1px solid var(--o12); background:var(--frame); font-size:12px;}
+  .restbar.on{display:flex;}
+  .restbar .rl{color:var(--o50); font-size:10px; letter-spacing:.5px;}
+  .restbar .rt{font-weight:800; font-size:16px; font-variant-numeric:tabular-nums; min-width:52px;}
+  .restbar a{color:var(--o60); border:1px solid var(--border); border-radius:9px; padding:8px 10px; cursor:pointer; font-size:11px; user-select:none;}
+  .restbar.fin .rt{color:var(--good);}
+  .restbar.fin{animation:restdone .5s ease 3;}
+  @keyframes restdone{50%{border-top-color:var(--good);}}
   .footer .abort{font-size:10px; color:var(--o60); border:1px solid var(--abort); padding:9px 16px; background:none; cursor:pointer;}
   .footer .save{flex:1; text-align:center; font-size:10px; font-weight:700; color:#000; background:var(--fill); padding:9px 0; border:0; cursor:pointer;}
 
@@ -385,6 +394,7 @@
 <body>
   <div class="frame" id="app">
     <div class="scroll" id="view"></div>
+    <div class="restbar" id="resttimer"><span class="rl">descanso</span><span class="rt" id="resttime">0:00</span><span style="flex:1"></span><a data-act="restminus">−15</a><a data-act="restplus">+15</a><a data-act="restskip">skip</a></div>
     <div class="footer" id="wfooter" style="display:none"><button class="abort" data-act="abort">abort</button><button class="save" data-act="save">save session</button></div>
     <nav class="nav" id="nav"></nav>
   </div>
@@ -411,7 +421,7 @@ function seed(){
   return {
     version:1,
     profile:{username:''},
-    settings:{unit:'lbs',goals:{kcal:2200,protein:165,carbs:240,fat:65,sodium:2300,potassium:3500,sugar:50,fiber:30,water:3.0,caffeine:400,alcohol:14}},
+    settings:{unit:'lbs',restSec:90,restBeep:true,goals:{kcal:2200,protein:165,carbs:240,fat:65,sodium:2300,potassium:3500,sugar:50,fiber:30,water:3.0,caffeine:400,alcohol:14}},
     activeGym:'',
     gyms:[],
     machines:{},
@@ -523,7 +533,7 @@ function load(){
   if(!d)return seed();
   return migrate(d);
 }
-function migrate(d){ if(!d.version){d.version=1;} if(!d.meals||typeof d.meals!=='object'||Array.isArray(d.meals))d.meals={}; if(!Array.isArray(d.foods))d.foods=[]; d.foods=d.foods.map(f=>(f&&f.per100)?f:asCanonical(f)); if(!Array.isArray(d.sessions))d.sessions=[]; if(!d.split||typeof d.split!=='object')d.split={name:'',days:[]}; if(!Array.isArray(d.split.days))d.split.days=[]; if(!d.steps||typeof d.steps!=='object')d.steps={}; if(!d.machines||typeof d.machines!=='object')d.machines={}; if(!d.bodyweight||typeof d.bodyweight!=='object')d.bodyweight={}; if(!Array.isArray(d.mealTags))d.mealTags=['breakfast','lunch','snack','dinner']; if(!Array.isArray(d.stack))d.stack=[]; if(!d.lastUsed||typeof d.lastUsed!=='object')d.lastUsed={}; if(!d.settings||typeof d.settings!=='object')d.settings={goals:seed().settings.goals}; if(d.settings&&d.settings.goals&&d.settings.goals.alcohol==null)d.settings.goals.alcohol=(d.profile&&d.profile.sex==='F')?14:28;
+function migrate(d){ if(!d.version){d.version=1;} if(!d.meals||typeof d.meals!=='object'||Array.isArray(d.meals))d.meals={}; if(!Array.isArray(d.foods))d.foods=[]; d.foods=d.foods.map(f=>(f&&f.per100)?f:asCanonical(f)); if(!Array.isArray(d.sessions))d.sessions=[]; if(!d.split||typeof d.split!=='object')d.split={name:'',days:[]}; if(!Array.isArray(d.split.days))d.split.days=[]; if(!d.steps||typeof d.steps!=='object')d.steps={}; if(!d.machines||typeof d.machines!=='object')d.machines={}; if(!d.bodyweight||typeof d.bodyweight!=='object')d.bodyweight={}; if(!Array.isArray(d.mealTags))d.mealTags=['breakfast','lunch','snack','dinner']; if(!Array.isArray(d.stack))d.stack=[]; if(!d.lastUsed||typeof d.lastUsed!=='object')d.lastUsed={}; if(!d.settings||typeof d.settings!=='object')d.settings={goals:seed().settings.goals}; if(d.settings&&d.settings.goals&&d.settings.goals.alcohol==null)d.settings.goals.alcohol=(d.profile&&d.profile.sex==='F')?14:28; if(d.settings&&d.settings.restSec==null)d.settings.restSec=90; if(d.settings&&d.settings.restBeep==null)d.settings.restBeep=true;
   // recompute alcohol for old meal items logged before alcohol was in MACROKEYS
   try{ Object.values(d.meals||{}).forEach(arr=>arr.forEach(m=>{ if(m.alcohol==null){ if(m._food&&m._food.per100&&m._food.per100.alcohol&&m._unit){ m.alcohol=computeNutrients(m._food,m._unit,m.qty||1).alcohol; } else m.alcohol=0; } })); }catch(e){}
   // goalHist: snapshot of intake goals at the moment of first logging that day (history is FROZEN — past days never re-read the current goal)
@@ -1622,6 +1632,8 @@ function renderSettings(){
     +`<hr class="rule"/><div class="section"><div class="h"><span class="s">//</span>SETTINGS</div></div>`
     +`<div class="line"><span class="k">data</span><span class="dots"></span><span class="v">${(JSON.stringify(db).length/1024).toFixed(1)} kb</span></div>`
     +`<div class="line"><span class="k">sessions</span><span class="dots"></span><span class="v">${db.sessions.length}</span></div>`
+    +`<div class="line" data-act="editrest" style="cursor:pointer"><span class="k">descanso entre sets</span><span class="dots"></span><span class="v">${db.settings.restSec||90}s ›</span></div>`
+    +`<div class="line" data-act="togglebeep" style="cursor:pointer"><span class="k">beep fin de descanso</span><span class="dots"></span><span class="v">${db.settings.restBeep?'on':'off'} ›</span></div>`
     +`<div class="cta"><button class="start" data-act="sync">sync data (copy / paste)</button>`
     +`<div class="secondary"><button class="b" data-act="export">export file</button><button class="b" data-act="import">import file</button></div>`
     +`<div class="secondary" style="margin-top:10px"><button class="b" data-act="reset">reset data</button></div></div>`
@@ -1637,10 +1649,33 @@ function render(){
   if(sc==='workout'){ state.work=db.activeWork; if(!state.work){ state.screen=sc='home'; } }
   v.innerHTML = sc==='landing'?renderLanding() : sc==='login'?renderLogin() : sc==='onboard'?renderOnboard() : sc==='home'?renderHome() : sc==='workout'?renderWorkout() : sc==='macros'?renderMacros() : sc==='share'?renderShare() : sc==='progress'?renderProgress() : sc==='stack'?renderStack() : sc==='settings'?renderSettings() : sc==='splitedit'?renderSplitEdit() : sc==='history'?renderHistory() : renderHome();
   document.getElementById('wfooter').style.display = sc==='workout'?'flex':'none';
+  try{updateRestBar();}catch(_){}
   renderNav();
   v.scrollTop = state._scroll||0; state._scroll=0;
 }
 function go(screen){ state.screen=screen; render(); }
+
+// ---------- rest timer (between sets) ----------
+// state lives in db.activeWork.restEnd (epoch ms) → persisted by save(), survives re-renders, reloads and iOS kills.
+let _restFinT=0, _restAC=null;
+function fmtRest(s){ s=Math.max(0,Math.round(s)); return Math.floor(s/60)+':'+pad(s%60); }
+// AudioContext must be created/resumed inside a user gesture (iOS) — called on each 'done' tap
+function restAudioInit(){ if(!db.settings.restBeep)return; try{ const AC=window.AudioContext||window.webkitAudioContext; if(!AC)return; if(!_restAC)_restAC=new AC(); if(_restAC.state==='suspended')_restAC.resume().catch(()=>{}); }catch(_){} }
+function restNotify(){ try{ if(navigator.vibrate)navigator.vibrate(200); }catch(_){}
+  if(!db.settings.restBeep||!_restAC)return;
+  try{ const t=_restAC.currentTime; [0,.18].forEach(off=>{ const o=_restAC.createOscillator(), g=_restAC.createGain(); o.type='sine'; o.frequency.value=880; g.gain.setValueAtTime(0.0001,t+off); g.gain.exponentialRampToValueAtTime(0.15,t+off+.02); g.gain.exponentialRampToValueAtTime(0.0001,t+off+.08); o.connect(g); g.connect(_restAC.destination); o.start(t+off); o.stop(t+off+.1); }); }catch(_){}
+}
+function updateRestBar(){
+  const bar=document.getElementById('resttimer'), tEl=document.getElementById('resttime'); if(!bar||!tEl)return;
+  const w=db&&db.activeWork;
+  // expire (recomputed from Date.now() — survives iOS freezing timers in background)
+  if(w&&!w.loggedAfter&&w.restEnd&&w.restEnd<=Date.now()){ const late=Date.now()-w.restEnd>30000; w.restEnd=null; save(); if(!late){ restNotify(); _restFinT=Date.now(); } }
+  const show=state.screen==='workout'&&w&&!w.loggedAfter;
+  if(!show){ bar.classList.remove('on','fin'); return; }
+  if(w.restEnd){ bar.classList.add('on'); bar.classList.remove('fin'); tEl.textContent=fmtRest((w.restEnd-Date.now())/1000); return; }
+  if(_restFinT&&Date.now()-_restFinT<2200){ bar.classList.add('on'); bar.classList.add('fin'); tEl.textContent='listo'; return; }
+  bar.classList.remove('on','fin');
+}
 
 // ---------- events ----------
 function setField(exi,si,f,val){ const w=db.activeWork; if(!w)return; const ex=w.exercises[exi]; const s=ex.sets[si]; if(!s)return; s[f]=val; s._pf=false;
@@ -1744,7 +1779,7 @@ document.getElementById('app').addEventListener('click',e=>{
   else if(a==='ss_del'){ if(confirm('¿Borrar esta sesión?')){ db.sessions=db.sessions.filter(x=>x.id!==window._sessId); save(); closeModal(); render(); } }
   else if(a==='ss_exup'){ const s=db.sessions.find(x=>x.id===window._sessId); const i=+el.dataset.ei; if(s&&i>0){ const a=s.exercises; const t=a[i-1]; a[i-1]=a[i]; a[i]=t; save(); openSessionEdit(window._sessId); } }
   else if(a==='ss_exdn'){ const s=db.sessions.find(x=>x.id===window._sessId); const i=+el.dataset.ei; if(s&&i<s.exercises.length-1){ const a=s.exercises; const t=a[i+1]; a[i+1]=a[i]; a[i]=t; save(); openSessionEdit(window._sessId); } }
-  else if(a==='done'){ const w=db.activeWork; const ex=w.exercises[exi]; if(ex.unilateral){ const v=!(ex.sets[si]&&ex.sets[si].done); if(ex.sets[si]){ex.sets[si].done=v;ex.sets[si]._pf=false;} if(ex.sets[si+1]){ex.sets[si+1].done=v;ex.sets[si+1]._pf=false;} } else { ex.sets[si].done=!ex.sets[si].done; ex.sets[si]._pf=false; } save(); render(); }
+  else if(a==='done'){ const w=db.activeWork; const ex=w.exercises[exi]; let nowDone; if(ex.unilateral){ const v=!(ex.sets[si]&&ex.sets[si].done); nowDone=v; if(ex.sets[si]){ex.sets[si].done=v;ex.sets[si]._pf=false;} if(ex.sets[si+1]){ex.sets[si+1].done=v;ex.sets[si+1]._pf=false;} } else { ex.sets[si].done=!ex.sets[si].done; ex.sets[si]._pf=false; nowDone=ex.sets[si].done; } if(nowDone&&!w.loggedAfter){ restAudioInit(); w.restEnd=Date.now()+((db.settings.restSec||90)*1000); _restFinT=0; } save(); render(); }
   else if(a==='fs'){ const s=db.activeWork.exercises[exi].sets[si]; s.fsOn=!s.fsOn; save(); render(); }
   else if(a==='addset'){ const ex=db.activeWork.exercises[exi]; if(ex.unilateral){ const [s1,s2]=uniSides(ex); const lr=ex.sets[ex.sets.length-2]||null, ll=ex.sets[ex.sets.length-1]||null; ex.sets.push(emptySet(ex,s1,false,lr)); ex.sets.push(emptySet(ex,s2,false,ll)); } else { const lt=ex.sets[ex.sets.length-1]||null; ex.sets.push(emptySet(ex,null,false,lt)); } save(); state._scroll=document.getElementById('view').scrollTop; render(); }
   else if(a==='dropset'){ const ex=db.activeWork.exercises[exi]; ex.sets.push(Object.assign(emptySet(ex),{isDrop:true,fsOn:true})); save(); state._scroll=document.getElementById('view').scrollTop; render(); }
@@ -1808,6 +1843,11 @@ document.getElementById('app').addEventListener('click',e=>{
   else if(a==='import'){ doImport(); }
   else if(a==='sync'){ openSync(); }
   else if(a==='reset'){ if(confirm('¿Borrar TODOS los datos? (exporta primero)')){ localStorage.removeItem(LS_KEY); try{localStorage.removeItem(LS_BACKUP);}catch(_){} _saveBakT=0; db=seed(); save(); go('home'); } }
+  else if(a==='restminus'){ const w=db.activeWork; if(w&&w.restEnd){ w.restEnd-=15000; save(); updateRestBar(); } }
+  else if(a==='restplus'){ const w=db.activeWork; if(w&&w.restEnd){ w.restEnd+=15000; save(); updateRestBar(); } }
+  else if(a==='restskip'){ const w=db.activeWork; if(w){ w.restEnd=null; _restFinT=0; save(); updateRestBar(); } }
+  else if(a==='editrest'){ const v=prompt('segundos de descanso entre sets:',db.settings.restSec||90); if(v!=null){ const n=parseInt(v,10); if(!isNaN(n)&&n>=10&&n<=600){ db.settings.restSec=n; save(); render(); } } }
+  else if(a==='togglebeep'){ db.settings.restBeep=!db.settings.restBeep; save(); render(); }
   else if(a==='closemodal'){ closeModal(); }
 });
 document.getElementById('app').addEventListener('change',e=>{
@@ -3307,6 +3347,9 @@ function labelPhoto(file,barcode){ if(AI_PROXY_URL) return aiPhoto(file,barcode)
 requestPersist();
 db=load(); try{ const _sp=new URLSearchParams(location.search); const _hasHistorical=_sp.has('stepsh')||_sp.has('weighth')||_sp.has('stepsq'); if(_hasHistorical){ const _hsp=_sp; if(history.replaceState)history.replaceState(null,'',location.pathname); setTimeout(()=>{ if(confirm('Este link quiere importar datos históricos (pasos/peso de varios días) a tu cuenta. ¿Aplicar? — solo dile que SÍ si vienes de tu propio Atajo de iOS.')){ try{ const _imp=importHealth(_hsp); if(_imp.length){ save(); render(); toast('✓ '+_imp.join(' · ')); } }catch(_){} } },400); } else { const _imp=importHealth(_sp); if(_imp.length){ window._healthImported=_imp; if(history.replaceState)history.replaceState(null,'',location.pathname); } } }catch(_){} save(); render(); if(window._healthImported)setTimeout(()=>toast('✓ '+window._healthImported.join(' · ')),250); if(window._recoveredFromBackup)setTimeout(()=>{try{alert('Se recuperó un respaldo local: revisa tus datos, podrían faltar cambios muy recientes.');}catch(_){}},600);
 applyDesign(); try{ if(/[?&]design\b/.test(location.search))localStorage.setItem('gymtrk_designmode','1'); if(localStorage.getItem('gymtrk_designmode')==='1')openDesignPanel(); }catch(_){}
+// rest timer tick: writes textContent only (never re-renders); recompute on return from background (iOS freezes timers)
+setInterval(()=>{try{updateRestBar();}catch(_){}} ,500);
+document.addEventListener('visibilitychange',()=>{ if(!document.hidden){ try{updateRestBar();}catch(_){} } });
 // Service worker with AUTO-UPDATE: when a new version is found, activate it and reload once.
 // Fixes iOS PWA serving stale cached builds from the home-screen icon.
 if('serviceWorker' in navigator){
