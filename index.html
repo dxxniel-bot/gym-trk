@@ -386,6 +386,13 @@
   .umcaret{color:var(--o30); font-size:9px; margin-left:1px;}
   .nvm-list{margin-top:6px;}
   .nvm{display:flex; justify-content:space-between; align-items:center; padding:14px 2px; font-size:13px; cursor:pointer; border-bottom:1px solid var(--border);} .nvm:last-child{border-bottom:none;} .nvm:active{color:var(--o60);} .nvm-x{color:var(--o30); font-size:14px;}
+  /* boot / recap overlay — terminal status, tap or timeout dismisses */
+  .bootov{position:absolute; inset:0; z-index:9000; background:var(--frame); display:flex; flex-direction:column; justify-content:center; padding:0 34px; transition:opacity .18s ease;}
+  .bootov.out{opacity:0; pointer-events:none;}
+  .bootov .bt{font-size:18px; font-weight:800; letter-spacing:.02em; margin-bottom:18px;}
+  .bootov .bt .s{color:var(--o40);}
+  .bootov .line{font-size:12px; padding:4px 0;}
+  .bootov .bready{margin-top:18px; font-size:11px; color:var(--o50); animation:blink 1.15s step-end infinite;}
   .toast{position:fixed; left:50%; bottom:84px; transform:translateX(-50%); background:#13131a; border:1px solid var(--good); color:var(--fg); padding:9px 15px; border-radius:999px; font-size:12px; font-weight:600; z-index:10000; box-shadow:0 6px 22px rgba(0,0,0,.5); white-space:nowrap; animation:toastin .28s ease, toastout .4s ease 2.3s forwards;}
   @keyframes toastin{from{opacity:0; transform:translate(-50%,10px)} to{opacity:1; transform:translate(-50%,0)}}
   @keyframes toastout{to{opacity:0; transform:translate(-50%,8px)}}
@@ -534,7 +541,7 @@ function load(){
   if(!d)return seed();
   return migrate(d);
 }
-function migrate(d){ if(!d.version){d.version=1;} if(!d.meals||typeof d.meals!=='object'||Array.isArray(d.meals))d.meals={}; if(!Array.isArray(d.foods))d.foods=[]; d.foods=d.foods.map(f=>(f&&f.per100)?f:asCanonical(f)); if(!Array.isArray(d.sessions))d.sessions=[]; if(!d.split||typeof d.split!=='object')d.split={name:'',days:[]}; if(!Array.isArray(d.split.days))d.split.days=[]; if(!d.steps||typeof d.steps!=='object')d.steps={}; if(!d.machines||typeof d.machines!=='object')d.machines={}; if(!d.bodyweight||typeof d.bodyweight!=='object')d.bodyweight={}; if(!d.sleep||typeof d.sleep!=='object')d.sleep={}; if(!Array.isArray(d.mealTags))d.mealTags=['breakfast','lunch','snack','dinner']; if(!Array.isArray(d.stack))d.stack=[]; if(!d.lastUsed||typeof d.lastUsed!=='object')d.lastUsed={}; if(!d.settings||typeof d.settings!=='object')d.settings={goals:seed().settings.goals}; if(d.settings&&d.settings.goals&&d.settings.goals.alcohol==null)d.settings.goals.alcohol=(d.profile&&d.profile.sex==='F')?14:28; if(d.settings&&d.settings.restSec==null)d.settings.restSec=90; if(d.settings&&d.settings.restBeep==null)d.settings.restBeep=true; if(d.settings&&d.settings.goals&&d.settings.goals.sleep==null)d.settings.goals.sleep=8;
+function migrate(d){ if(!d.version){d.version=1;} if(!d.meals||typeof d.meals!=='object'||Array.isArray(d.meals))d.meals={}; if(!Array.isArray(d.foods))d.foods=[]; d.foods=d.foods.map(f=>(f&&f.per100)?f:asCanonical(f)); if(!Array.isArray(d.sessions))d.sessions=[]; if(!d.split||typeof d.split!=='object')d.split={name:'',days:[]}; if(!Array.isArray(d.split.days))d.split.days=[]; if(!d.steps||typeof d.steps!=='object')d.steps={}; if(!d.machines||typeof d.machines!=='object')d.machines={}; if(!d.bodyweight||typeof d.bodyweight!=='object')d.bodyweight={}; if(!d.sleep||typeof d.sleep!=='object')d.sleep={}; if(!Array.isArray(d.mealTags))d.mealTags=['breakfast','lunch','snack','dinner']; if(!Array.isArray(d.stack))d.stack=[]; if(!d.lastUsed||typeof d.lastUsed!=='object')d.lastUsed={}; if(!d.settings||typeof d.settings!=='object')d.settings={goals:seed().settings.goals}; if(d.settings&&d.settings.goals&&d.settings.goals.alcohol==null)d.settings.goals.alcohol=(d.profile&&d.profile.sex==='F')?14:28; if(d.settings&&d.settings.restSec==null)d.settings.restSec=90; if(d.settings&&d.settings.restBeep==null)d.settings.restBeep=true; if(d.settings&&d.settings.goals&&d.settings.goals.sleep==null)d.settings.goals.sleep=8; if(d.profile&&!d.profile.since){ try{ const _cd=[]; (d.sessions||[]).forEach(s=>{if(s.date)_cd.push(s.date);}); Object.keys(d.meals||{}).forEach(k=>_cd.push(k)); Object.keys(d.bodyweight||{}).forEach(k=>_cd.push(k)); if(_cd.length)d.profile.since=_cd.sort()[0]; }catch(_){} }
   // recompute alcohol for old meal items logged before alcohol was in MACROKEYS
   try{ Object.values(d.meals||{}).forEach(arr=>arr.forEach(m=>{ if(m.alcohol==null){ if(m._food&&m._food.per100&&m._food.per100.alcohol&&m._unit){ m.alcohol=computeNutrients(m._food,m._unit,m.qty||1).alcohol; } else m.alcohol=0; } })); }catch(e){}
   // goalHist: snapshot of intake goals at the moment of first logging that day (history is FROZEN — past days never re-read the current goal)
@@ -700,7 +707,7 @@ function renderHome(){
     +volumeSection()
     +`<hr class="rule"/><div class="section" style="margin-bottom:10px"><div class="h"><span class="s">//</span>STATS</div><div class="meta" data-act="settings">[settings]</div></div>`
     +`<div class="line stat"><span class="k">sessions · 7d</span><span class="dots"></span><span class="v">${s7.count}</span></div>`
-    +`<div class="line stat"><span class="k">streak</span><span class="dots"></span><span class="v">${streak()} days</span></div>`
+    +`<div class="line stat"><span class="k">uptime</span><span class="dots"></span><span class="v">${uptimeDays()}d</span></div>`
     +`<div class="line stat"><span class="k">steps · today</span><span class="dots"></span><span class="v" data-act="editsteps" style="cursor:pointer">${(db.steps&&db.steps[todayISO()])?db.steps[todayISO()].toLocaleString():'— tap'}</span></div>`
     +`<div class="line stat"><span class="k">sleep · last night</span><span class="dots"></span><span class="v" data-act="logsleep" style="cursor:pointer">${(db.sleep&&db.sleep[todayISO()])?db.sleep[todayISO()]+' h':'— tap'}</span></div>`;
 }
@@ -1713,6 +1720,36 @@ function updateRestBar(){
   if(_restFinT&&Date.now()-_restFinT<2200){ bar.classList.add('on'); bar.classList.add('fin'); tEl.textContent='listo'; return; }
   bar.classList.remove('on','fin');
 }
+
+// ---------- boot screen + day recap overlays (gamification: "disciplina visualizada", no confetti) ----------
+function uptimeDays(){ try{ const s=db.profile&&db.profile.since; if(!s)return 0; const ms=new Date(todayISO()+'T12:00:00')-new Date(s+'T12:00:00'); return Math.max(0,Math.round(ms/86400000)); }catch(_){ return 0; } }
+// generic full-frame overlay: tap or timeout dismisses; onDone chains (boot → recap, never stacked)
+function showOverlay(html,opts){ opts=opts||{}; try{
+  const old=document.getElementById('bootov'); if(old)old.remove();
+  const o=document.createElement('div'); o.className='bootov'; o.id='bootov'; o.innerHTML=html;
+  document.getElementById('app').appendChild(o);
+  let done=false; const kill=()=>{ if(done)return; done=true; o.classList.add('out'); setTimeout(()=>{ try{o.remove();}catch(_){} if(opts.onDone)opts.onDone(); },190); };
+  o.addEventListener('click',kill);
+  if(opts.ms)setTimeout(kill,opts.ms);
+}catch(_){ if(opts.onDone)opts.onDone(); } }
+function bootScreen(onDone){ try{
+  if(sessionStorage.getItem('gymtrk_boot')){ if(onDone)onDone(); return; }
+  if(!db.profile.username || !(db.sessions||[]).some(s=>s.type!=='rest')){ if(onDone)onDone(); return; }
+  sessionStorage.setItem('gymtrk_boot','1');
+  const L=(k,v)=>`<div class="line"><span class="k">${k}</span><span class="dots"></span><span class="v">${v}</span></div>`;
+  const tr=(db.sessions||[]).filter(s=>s.type!=='rest').sort((a,b)=>String(a.date).localeCompare(String(b.date)));
+  const last=tr[tr.length-1];
+  const dAgo=last?Math.max(0,Math.round((new Date(todayISO()+'T12:00:00')-new Date(last.date+'T12:00:00'))/86400000)):null;
+  const w=progWeekly(2); const cur=w.vols[1]||0, prev=w.vols[0]||0; const pct=prev>0?Math.round((cur-prev)/prev*100):null;
+  const kFmt=n=>n>=10000?(n/1000).toFixed(1)+'k':Math.round(n).toLocaleString();
+  const bwk=Object.keys(db.bodyweight||{}).sort(); const bw=bwk.length?db.bodyweight[bwk[bwk.length-1]]:null;
+  let rows=L('uptime',uptimeDays()+'d');
+  if(last)rows+=L('last session',escTxt(last.dayName||'sesión')+' · '+(dAgo===0?'hoy':dAgo===1?'ayer':'hace '+dAgo+'d'));
+  if(cur)rows+=L('weekly vol',kFmt(cur)+(pct!=null?' <span style="color:'+(pct>=0?'var(--good)':'var(--bad)')+'">'+(pct>=0?'▲ +'+pct:'▼ −'+Math.abs(pct))+'%</span>':''));
+  if(bw)rows+=L('bw',bw+' kg');
+  const sl=db.sleep&&db.sleep[todayISO()]; if(sl)rows+=L('sleep',sl+' h');
+  showOverlay(`<div class="bt"><span class="s">gym</span>//TRK</div>${rows}<div class="bready">[ready]</div>`,{ms:1300,onDone});
+}catch(_){ if(onDone)onDone(); } }
 
 // ---------- events ----------
 function setField(exi,si,f,val){ const w=db.activeWork; if(!w)return; const ex=w.exercises[exi]; const s=ex.sets[si]; if(!s)return; s[f]=val; s._pf=false;
@@ -3387,6 +3424,7 @@ function labelPhoto(file,barcode){ if(AI_PROXY_URL) return aiPhoto(file,barcode)
 requestPersist();
 db=load(); try{ const _sp=new URLSearchParams(location.search); const _hasHistorical=_sp.has('stepsh')||_sp.has('weighth')||_sp.has('stepsq'); if(_hasHistorical){ const _hsp=_sp; if(history.replaceState)history.replaceState(null,'',location.pathname); setTimeout(()=>{ if(confirm('Este link quiere importar datos históricos (pasos/peso de varios días) a tu cuenta. ¿Aplicar? — solo dile que SÍ si vienes de tu propio Atajo de iOS.')){ try{ const _imp=importHealth(_hsp); if(_imp.length){ save(); render(); toast('✓ '+_imp.join(' · ')); } }catch(_){} } },400); } else { const _imp=importHealth(_sp); if(_imp.length){ window._healthImported=_imp; if(history.replaceState)history.replaceState(null,'',location.pathname); } } }catch(_){} save(); render(); if(window._healthImported)setTimeout(()=>toast('✓ '+window._healthImported.join(' · ')),250); if(window._recoveredFromBackup)setTimeout(()=>{try{alert('Se recuperó un respaldo local: revisa tus datos, podrían faltar cambios muy recientes.');}catch(_){}},600);
 applyDesign(); try{ if(/[?&]design\b/.test(location.search))localStorage.setItem('gymtrk_designmode','1'); if(localStorage.getItem('gymtrk_designmode')==='1')openDesignPanel(); }catch(_){}
+try{ bootScreen(); }catch(_){}
 // rest timer tick: writes textContent only (never re-renders); recompute on return from background (iOS freezes timers)
 setInterval(()=>{try{updateRestBar();}catch(_){}} ,500);
 document.addEventListener('visibilitychange',()=>{ if(!document.hidden){ try{updateRestBar();}catch(_){} } });
