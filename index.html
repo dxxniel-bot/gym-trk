@@ -384,6 +384,9 @@
   .umcaret{color:var(--o30); font-size:9px; margin-left:1px;}
   .nvm-list{margin-top:6px;}
   .nvm{display:flex; justify-content:space-between; align-items:center; padding:14px 2px; font-size:13px; cursor:pointer; border-bottom:1px solid var(--border);} .nvm:last-child{border-bottom:none;} .nvm:active{color:var(--o60);} .nvm-x{color:var(--o30); font-size:14px;}
+  /* screen-change fade (applied by render() only when go() switches screens) */
+  @keyframes viewin{from{opacity:.4; transform:translateY(4px)}}
+  .fadein{animation:viewin 140ms ease-out;}
   /* boot / recap overlay — terminal status, tap or timeout dismisses */
   .bootov{position:absolute; inset:0; z-index:9000; background:var(--frame); display:flex; flex-direction:column; justify-content:center; padding:0 34px; transition:opacity .18s ease;}
   .bootov.out{opacity:0; pointer-events:none;}
@@ -1694,8 +1697,10 @@ function render(){
   try{updateRestBar();}catch(_){}
   renderNav();
   v.scrollTop = state._scroll||0; state._scroll=0;
+  // fade ONLY on screen changes via go() — never on same-screen re-renders (every keystroke re-renders)
+  if(state._trans){ state._trans=false; v.classList.remove('fadein'); void v.offsetWidth; v.classList.add('fadein'); }
 }
-function go(screen){ state.screen=screen; render(); }
+function go(screen){ state._trans=(state.screen!==screen); state.screen=screen; render(); }
 
 // ---------- rest timer (between sets) ----------
 // state lives in db.activeWork.restEnd (epoch ms) → persisted by save(), survives re-renders, reloads and iOS kills.
