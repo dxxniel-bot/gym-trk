@@ -1750,6 +1750,28 @@ function bootScreen(onDone){ try{
   const sl=db.sleep&&db.sleep[todayISO()]; if(sl)rows+=L('sleep',sl+' h');
   showOverlay(`<div class="bt"><span class="s">gym</span>//TRK</div>${rows}<div class="bready">[ready]</div>`,{ms:1300,onDone});
 }catch(_){ if(onDone)onDone(); } }
+// snap recap: one 5s screen after 21h closing the day's loop (kcal/steps/session/water/sleep). Once per day; ?recap=1 forces for QA.
+function snapRecap(){ try{
+  if(!db.profile.username)return;
+  const qa=/[?&]recap=1\b/.test(location.search);
+  const today=todayISO();
+  if(!qa){ if(new Date().getHours()<21)return; if(localStorage.getItem('gymtrk_recap')===today)return; }
+  const kcal=Math.round((db.meals[today]||[]).reduce((a,m)=>a+(+m.kcal||0),0));
+  const steps=(db.steps&&db.steps[today])||0;
+  const water=Math.round(dayWater(today)*10)/10;
+  const sess=(db.sessions||[]).find(s=>s.type!=='rest'&&s.date===today);
+  if(!(kcal||steps||water||sess))return;
+  if(!qa){ try{localStorage.setItem('gymtrk_recap',today);}catch(_){} }
+  const g=(db.settings&&db.settings.goals)||{};
+  const L=(k,v,cls)=>`<div class="line"><span class="k">${k}</span><span class="dots"></span><span class="v"${cls?' style="color:var(--'+cls+')"':''}>${v}</span></div>`;
+  let rows='';
+  if(kcal){ let cls=''; if(g.kcal){ cls=Math.abs(kcal-g.kcal)<=g.kcal*0.1?'good':(kcal>g.kcal?'bad':''); } rows+=L('kcal',kcal+(g.kcal?' / '+g.kcal:''),cls); }
+  if(steps)rows+=L('pasos',steps.toLocaleString());
+  rows+=L('sesión',sess?escTxt(sess.dayName||'sí')+' ✓':'descanso');
+  if(water)rows+=L('agua',water+(g.water?' / '+g.water:'')+' L',(g.water&&water>=g.water)?'good':'');
+  const sl=db.sleep&&db.sleep[today]; if(sl)rows+=L('sueño',sl+' h',(g.sleep&&sl>=g.sleep)?'good':'');
+  showOverlay(`<div class="bt"><span class="s">//</span>HOY <span style="font-size:11px;color:var(--o40);font-weight:400">· ${fmtShort(today)}</span></div>${rows}<div class="bready">[tap para cerrar]</div>`,{ms:5000});
+}catch(_){} }
 
 // ---------- events ----------
 function setField(exi,si,f,val){ const w=db.activeWork; if(!w)return; const ex=w.exercises[exi]; const s=ex.sets[si]; if(!s)return; s[f]=val; s._pf=false;
@@ -3424,7 +3446,7 @@ function labelPhoto(file,barcode){ if(AI_PROXY_URL) return aiPhoto(file,barcode)
 requestPersist();
 db=load(); try{ const _sp=new URLSearchParams(location.search); const _hasHistorical=_sp.has('stepsh')||_sp.has('weighth')||_sp.has('stepsq'); if(_hasHistorical){ const _hsp=_sp; if(history.replaceState)history.replaceState(null,'',location.pathname); setTimeout(()=>{ if(confirm('Este link quiere importar datos históricos (pasos/peso de varios días) a tu cuenta. ¿Aplicar? — solo dile que SÍ si vienes de tu propio Atajo de iOS.')){ try{ const _imp=importHealth(_hsp); if(_imp.length){ save(); render(); toast('✓ '+_imp.join(' · ')); } }catch(_){} } },400); } else { const _imp=importHealth(_sp); if(_imp.length){ window._healthImported=_imp; if(history.replaceState)history.replaceState(null,'',location.pathname); } } }catch(_){} save(); render(); if(window._healthImported)setTimeout(()=>toast('✓ '+window._healthImported.join(' · ')),250); if(window._recoveredFromBackup)setTimeout(()=>{try{alert('Se recuperó un respaldo local: revisa tus datos, podrían faltar cambios muy recientes.');}catch(_){}},600);
 applyDesign(); try{ if(/[?&]design\b/.test(location.search))localStorage.setItem('gymtrk_designmode','1'); if(localStorage.getItem('gymtrk_designmode')==='1')openDesignPanel(); }catch(_){}
-try{ bootScreen(); }catch(_){}
+try{ bootScreen(()=>{ try{snapRecap();}catch(_){} }); }catch(_){}
 // rest timer tick: writes textContent only (never re-renders); recompute on return from background (iOS freezes timers)
 setInterval(()=>{try{updateRestBar();}catch(_){}} ,500);
 document.addEventListener('visibilitychange',()=>{ if(!document.hidden){ try{updateRestBar();}catch(_){} } });
