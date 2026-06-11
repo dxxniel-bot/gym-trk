@@ -610,7 +610,8 @@ function stat7(){
 function streak(){ const ds=[...new Set(db.sessions.filter(s=>s.type!=='rest').map(s=>s.date))].sort().reverse(); if(!ds.length)return 0; let st=0; let d=new Date(); for(;;){const iso=todayISO(d); if(ds.includes(iso)){st++;d.setDate(d.getDate()-1);} else {if(iso===todayISO())d.setDate(d.getDate()-1); else break;}} return st; }
 // weekly hard sets per muscle (RIR<=4 = hard) over last N days, with RP landmarks
 const VOL_LANDMARKS={chest:[10,20,22],back:[10,22,25],quads:[8,18,20],hams:[6,16,20],delts:[8,22,26],biceps:[8,20,26],tricep:[6,14,18],triceps:[6,14,18],calfs:[8,16,20],calves:[8,16,20],abs:[6,25,25],traps:[4,20,26],glutes:[4,16,16],neck:[4,12,16]};
-// common EN/ES synonyms → canonical VOL_LANDMARKS key, so user-typed muscles still aggregate + get landmarks
+// common EN/ES synonyms → canonical VOL_LANDMARKS key. ONLY for landmark lookup (bar scale/status) —
+// NEVER renames or merges the user's muscle names: every row keeps exactly what the user typed.
 const MUSCLE_ALIAS={triceps:'tricep','tríceps':'tricep',calves:'calfs',calf:'calfs',pantorrilla:'calfs',pantorrillas:'calfs',gemelos:'calfs',shoulder:'delts',shoulders:'delts',hombro:'delts',hombros:'delts',deltoids:'delts',deltoide:'delts',deltoides:'delts',quad:'quads',quadriceps:'quads',cuadriceps:'quads','cuádriceps':'quads',hamstring:'hams',hamstrings:'hams',femoral:'hams',femorales:'hams',isquios:'hams',isquiotibiales:'hams',lat:'back',lats:'back',dorsal:'back',dorsales:'back',espalda:'back',pecho:'chest',pectoral:'chest',pectorales:'chest',bicep:'biceps','bíceps':'biceps',glute:'glutes',gluteo:'glutes',gluteos:'glutes','glúteo':'glutes','glúteos':'glutes',trap:'traps',trapecio:'traps',trapecios:'traps',cuello:'neck',abdominales:'abs',abdomen:'abs',core:'abs'};
 function canonM(n){ n=String(n||'').toLowerCase().trim(); return MUSCLE_ALIAS[n]||n; }
 function isHardSet(st){ const r=st.rir; if(r===''||r==null)return true; if(r==='F')return true; const n=parseFloat(r); return isNaN(n)?true:n<=4; }
@@ -632,12 +633,12 @@ function weeklySets(days){ days=days||7; const now=new Date(); const cut=new Dat
       let plain=0; const bySide={};
       (e.sets||[]).forEach(st=>{ if(!((st.w||st.r)&&isHardSet(st)))return; const v=st.isDrop?0.5:1; if(st.side)bySide[st.side]=(bySide[st.side]||0)+v; else plain+=v; });
       const sides=Object.keys(bySide); const hard=plain+(sides.length?Math.max.apply(null,sides.map(k=>bySide[k])):0);
-      if(hard>0){ muscles.forEach(m=>{ const k=canonM(m.name); byM[k]=(byM[k]||0)+hard*m.weight; seen[k]=1; }); } });
+      if(hard>0){ muscles.forEach(m=>{ byM[m.name]=(byM[m.name]||0)+hard*m.weight; seen[m.name]=1; }); } });
     Object.keys(seen).forEach(m=>{ freq[m]=(freq[m]||0)+1; });
   });
   return {byM,freq};
 }
-function volStatus(m,sets){ const L=VOL_LANDMARKS[m]; if(!L)return ''; if(sets<L[0])return 'under'; if(sets<=L[1])return 'optimal'; if(sets<=L[2])return 'high'; return 'over'; }
+function volStatus(m,sets){ const L=VOL_LANDMARKS[canonM(m)]; if(!L)return ''; if(sets<L[0])return 'under'; if(sets<=L[1])return 'optimal'; if(sets<=L[2])return 'high'; return 'over'; }
 function e1rmTrend(){ // best Epley e1RM per exercise, this week vs prior week
   const wk=(off)=>{ const now=new Date(); const a=new Date(now); a.setDate(now.getDate()-7*off-7); const b=new Date(now); b.setDate(now.getDate()-7*off); const ai=todayISO(a),bi=todayISO(b); const best={};
     db.sessions.forEach(s=>{ if(s.type==='rest'||s.date<ai||s.date>=bi)return; (s.exercises||[]).forEach(e=>{ (e.sets||[]).forEach(st=>{ const w=parseFloat(st.w)||0,r=parseFloat(st.r)||0; if(w&&r){ const e1=w*(1+repsToFailure(r,st.rir)/30); if(!best[e.name]||e1>best[e.name])best[e.name]=e1; } }); }); }); return best; };
@@ -737,11 +738,11 @@ function dayPreviewHTML(day){
 }
 // planned volume per muscle across the whole split (sets/rotation) vs RP landmarks — live feedback while building
 function plannedVolumeSection(){
-  const byM={}; (db.split&&db.split.days||[]).forEach(d=>(d.exercises||[]).forEach(e=>{ const m=canonM(e.muscle||'other'); byM[m]=(byM[m]||0)+Math.max(0,parseInt(e.sets,10)||0); }));
+  const byM={}; (db.split&&db.split.days||[]).forEach(d=>(d.exercises||[]).forEach(e=>{ const m=e.muscle||'other'; byM[m]=(byM[m]||0)+Math.max(0,parseInt(e.sets,10)||0); }));
   const muscles=Object.keys(byM).sort((a,b)=>byM[b]-byM[a]);
   if(!muscles.length)return '';
   let rows='';
-  muscles.forEach(m=>{ const sets=byM[m]; const L=VOL_LANDMARKS[m]; const st=volStatus(m,sets);
+  muscles.forEach(m=>{ const sets=byM[m]; const L=VOL_LANDMARKS[canonM(m)]; const st=volStatus(m,sets);
     const pct=Math.min(100,Math.round(sets/(L?L[2]:20)*100));
     const mevPct=L?Math.round(L[0]/L[2]*100):0, mavPct=L?Math.round(L[1]/L[2]*100):0;
     rows+=`<div class="vrow"><div class="vtop"><span class="vm">${escTxt(m)}</span><span class="vn">${sets} sets${st?` <span class="vst ${st}">${st}</span>`:''}</span></div>`
@@ -756,7 +757,7 @@ function volumeSection(){
   let rows='';
   if(!muscles.length){ rows=`<div class="submeta" style="padding:6px 0">aún sin sets esta semana</div>`; }
   const r1=n=>Math.round(n*10)/10;
-  muscles.forEach(m=>{ const sets=r1(byM[m]); const L=VOL_LANDMARKS[m]; const st=volStatus(m,sets);
+  muscles.forEach(m=>{ const sets=r1(byM[m]); const L=VOL_LANDMARKS[canonM(m)]; const st=volStatus(m,sets);
     const prevWk=r1((prevM[m]||0)-byM[m]); const d=r1(sets-prevWk); const darrow=d>0?'▲'+d:d<0?'▼'+(-d):'';
     // no landmarks (custom muscle) → draw against a neutral 20-set scale so the bar still moves
     const pct=Math.min(100,Math.round(sets/(L?L[2]:20)*100));
@@ -830,7 +831,7 @@ function setBadgeHTML(curS,prevS){ const pr=setProgress(curS,prevS); if(!pr)retu
 // pair progress: for unilateral, sum L+R scores and compare against the same-position pair from the previous session.
 function pairBadgeHTML(curA,curB,prevA,prevB){ const cur=setScore(curA)+(curB?setScore(curB):0); const prev=(prevA?setScore(prevA):0)+(prevB?setScore(prevB):0); const pr=progFromScores(cur,prev); if(!pr)return ''; const col=pr.dir==='up'?'var(--good)':pr.dir==='down'?'var(--bad)':'var(--o40)'; const ar=pr.dir==='up'?'▲':pr.dir==='down'?'▼':'='; const pc=pr.pct?((pr.pct>0?'+':'')+pr.pct+'%'):''; return `<span class="setprog" style="font-size:9px;font-weight:700;color:${col}">${ar}${pc}</span>`; }
 // MUSCLE-LEVEL weekly score: aggregate setScore over all exercises tagged with this muscle, within a date window.
-function muscleWindowScore(muscle,startISO,endISO){ const m=canonM(muscle); let total=0; (db.sessions||[]).forEach(s=>{ if(s.type==='rest')return; if(s.date<startISO||s.date>=endISO)return; (s.exercises||[]).forEach(e=>{ const hit=exMuscles(e).find(x=>canonM(x.name)===m); if(!hit)return; (e.sets||[]).forEach(set=>{ total+=setScore(set)*hit.weight; }); }); }); return total; }
+function muscleWindowScore(muscle,startISO,endISO){ const m=(muscle||'').toLowerCase(); let total=0; (db.sessions||[]).forEach(s=>{ if(s.type==='rest')return; if(s.date<startISO||s.date>=endISO)return; (s.exercises||[]).forEach(e=>{ const hit=exMuscles(e).find(x=>x.name===m); if(!hit)return; (e.sets||[]).forEach(set=>{ total+=setScore(set)*hit.weight; }); }); }); return total; }
 function muscleProgress(muscle){ const now=new Date(); const c7=new Date(now); c7.setDate(now.getDate()-6); const c14=new Date(now); c14.setDate(now.getDate()-13); const tomorrow=new Date(now); tomorrow.setDate(now.getDate()+1); const cur=muscleWindowScore(muscle,todayISO(c7),todayISO(tomorrow)); const prev=muscleWindowScore(muscle,todayISO(c14),todayISO(c7)); return progFromScores(cur,prev); }
 // live-update the badge while logging (setField avoids a full re-render to keep input focus)
 function updateProgBadge(exi){ const w=db.activeWork; if(!w||!w.exercises[exi])return; const nm=document.querySelector('.exhead .n[data-exi="'+exi+'"]'); if(!nm)return; const html=progBadgeHTML(w.exercises[exi]); ['exprog','exzones'].forEach(cls=>{ const el=nm.parentElement.querySelector('.'+cls); if(el)el.remove(); }); if(html)nm.insertAdjacentHTML('afterend',html); }
