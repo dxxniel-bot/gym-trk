@@ -571,7 +571,8 @@ function selIdx(){ return state.selDay==null?curDayIdx():((state.selDay%dayCount
 function lastSession(dayId){ const s=db.sessions.filter(x=>x.dayId===dayId&&x.type!=='rest').sort((a,b)=>b.date<a.date?-1:1); return s[0]||null; }
 function setsList(ex){ return ex.sets||[]; }
 function emptySet(ex,side,isDrop,src){ const s={w:'',r:'',rir:'',unit:(ex&&ex.unit)||db.settings.unit||'lbs',side:side||null,fsOn:!!(ex&&ex.useFS),extraW:'',isDrop:!!isDrop,done:false};
-  if(src){ s.w=src.w||''; s.r=src.r||''; if(src.unit)s.unit=src.unit; s._pf=true; } return s; }
+  if(ex&&ex.type==='bodyweight'){ s.bw=true; s.unit='kg'; const bwk=Object.keys(db.bodyweight||{}).sort(); if(bwk.length)s.w=String(db.bodyweight[bwk[bwk.length-1]]); }
+  if(src){ s.w=src.w||s.w||''; s.r=src.r||''; if(src.unit)s.unit=src.unit; if(src.bw)s.bw=true; s._pf=true; } return s; }
 // sets from the most recent prior session with this exercise — used to prefill a new workout (suggestions, flagged _pf until confirmed)
 function uniSides(ex){ return (ex&&ex.startSide==='L')?['L','R']:['R','L']; }
 // last logged sets for an exercise. A same-name UNILATERAL variant is a DIFFERENT exercise: match by name + uni-ness (detected via per-set side).
@@ -633,7 +634,7 @@ function weeklySets(days){ days=days||7; const now=new Date(); const cut=new Dat
 function volStatus(m,sets){ const L=VOL_LANDMARKS[m]; if(!L)return ''; if(sets<L[0])return 'under'; if(sets<=L[1])return 'optimal'; if(sets<=L[2])return 'high'; return 'over'; }
 function e1rmTrend(){ // best Epley e1RM per exercise, this week vs prior week
   const wk=(off)=>{ const now=new Date(); const a=new Date(now); a.setDate(now.getDate()-7*off-7); const b=new Date(now); b.setDate(now.getDate()-7*off); const ai=todayISO(a),bi=todayISO(b); const best={};
-    db.sessions.forEach(s=>{ if(s.type==='rest'||s.date<ai||s.date>=bi)return; (s.exercises||[]).forEach(e=>{ (e.sets||[]).forEach(st=>{ const w=parseFloat(st.w)||0,r=parseFloat(st.r)||0; if(w&&r){ const e1=w*(1+r/30); if(!best[e.name]||e1>best[e.name])best[e.name]=e1; } }); }); }); return best; };
+    db.sessions.forEach(s=>{ if(s.type==='rest'||s.date<ai||s.date>=bi)return; (s.exercises||[]).forEach(e=>{ (e.sets||[]).forEach(st=>{ const w=parseFloat(st.w)||0,r=parseFloat(st.r)||0; if(w&&r){ const e1=w*(1+repsToFailure(r,st.rir)/30); if(!best[e.name]||e1>best[e.name])best[e.name]=e1; } }); }); }); return best; };
   const cur=wk(0),prev=wk(1); const out=[];
   Object.keys(cur).forEach(k=>{ out.push({name:k,cur:cur[k],prev:prev[k]||null}); });
   return out.sort((a,b)=>b.cur-a.cur).slice(0,3);
@@ -768,7 +769,8 @@ function unitOpts(sel){ return ['kg','lbs','pla'].map(u=>`<option ${sel===u?'sel
 function rirOpts(sel){ sel=(sel==null?'':String(sel)); const base=['F','0','1','2','3','4','5']; if(sel&&base.indexOf(sel)<0)base.unshift(sel); return '<option value="">—</option>'+base.map(o=>`<option value="${o}"${o===sel?' selected':''}>${o}</option>`).join(''); }
 
 function renderSetRow(exi,si,set,ex,allowF){
-  const w=`<input class="inp weight" data-act="setf" data-exi="${exi}" data-si="${si}" data-f="w" value="${set.w}" placeholder="—" inputmode="decimal"/>`;
+  const _bw=set.bw||(ex&&ex.type==='bodyweight');
+  const w=`<input class="inp weight" data-act="setf" data-exi="${exi}" data-si="${si}" data-f="w" value="${set.w}" placeholder="${_bw?'BW':'—'}" inputmode="decimal" title="${_bw?'peso corporal (editable) — suma carga extra al número':''}"/>`;
   const u=`<select class="pick" data-act="setf" data-exi="${exi}" data-si="${si}" data-f="unit">${unitOpts(set.unit)}</select>`;
   const r=`<input class="inp" data-act="setf" data-exi="${exi}" data-si="${si}" data-f="r" value="${set.r}" placeholder="—" inputmode="numeric"/>`;
   const rr=`<select class="pick" data-act="setf" data-exi="${exi}" data-si="${si}" data-f="rir">${rirOpts(set.rir)}</select>`;
@@ -844,7 +846,7 @@ function renderExercise(exi,ex,allowF){
     if(!rec.brand&&!rec.setup) p=`<span class="mch none" ${ed}>+ machine</span>`;
     mhtml=p; }
   const prBadge=progBadgeHTML(ex);
-  let head=`<div class="exhead"><span class="n" data-act="editexname" data-exi="${exi}" style="cursor:pointer">${escTxt(ex.name)}</span>${prBadge}${mhtml}${ex.note?`<span class="note">${escTxt(ex.note)}</span>`:''}${isU?'<span class="note">[uni]</span>':''}</div>`;
+  let head=`<div class="exhead"><span class="n" data-act="editexname" data-exi="${exi}" style="cursor:pointer">${escTxt(ex.name)}</span>${prBadge}${mhtml}${ex.note?`<span class="note">${escTxt(ex.note)}</span>`:''}${isU?'<span class="note">[uni]</span>':''}<span class="exdel" data-act="delex" data-exi="${exi}" title="quitar de la sesión" style="margin-left:auto;align-self:center;color:var(--o35);cursor:pointer;font-size:13px;padding:2px 6px">✕</span></div>`;
   let rows='';
   // PREV-session sets for position-based per-set comparison
   const prevSets=lastLoggedSets(ex.name,ex.unilateral);
@@ -1886,9 +1888,14 @@ document.getElementById('app').addEventListener('click',e=>{
   else if(a==='addset'){ const ex=db.activeWork.exercises[exi]; if(ex.unilateral){ const [s1,s2]=uniSides(ex); const lr=ex.sets[ex.sets.length-2]||null, ll=ex.sets[ex.sets.length-1]||null; ex.sets.push(emptySet(ex,s1,false,lr)); ex.sets.push(emptySet(ex,s2,false,ll)); } else { const lt=ex.sets[ex.sets.length-1]||null; ex.sets.push(emptySet(ex,null,false,lt)); } save(); state._scroll=document.getElementById('view').scrollTop; render(); }
   else if(a==='dropset'){ const ex=db.activeWork.exercises[exi]; ex.sets.push(Object.assign(emptySet(ex),{isDrop:true,fsOn:true})); save(); state._scroll=document.getElementById('view').scrollTop; render(); }
   else if(a==='delset'){ const ex=db.activeWork.exercises[exi]; if(ex.unilateral){const p=Math.floor(si/2)*2; ex.sets.splice(p,2);} else ex.sets.splice(si,1); save(); state._scroll=document.getElementById('view').scrollTop; render(); }
+  else if(a==='delex'){ const w=db.activeWork; if(w&&w.exercises[exi]&&confirm('¿Quitar "'+((w.exercises[exi].name)||'este ejercicio')+'" de la sesión? (no toca tu split)')){ w.exercises.splice(exi,1); save(); state._scroll=(document.getElementById('view')||{}).scrollTop||0; render(); } }
   else if(a==='addex'){ openAddExercise(exi); }
+  else if(a==='axmus'){ openAddExStep2((window._axCtx||{}).afterExi, el.dataset.v); }
+  else if(a==='axpick'){ const x=(window._axList||[])[+el.dataset.i]; if(x)addExFromKnown((window._axCtx||{}).afterExi,x); }
+  else if(a==='axnewex'){ const c=window._axCtx||{}; openAddExForm(c.afterExi,c.muscle); }
+  else if(a==='axback'){ openAddExercise((window._axCtx||{}).afterExi); }
   else if(a==='editmach'){ openMachineEdit(exi); }
-  else if(a==='editexname'){ openExName(exi); }
+  else if(a==='editexname'){ openExEdit(null,-1,exi); }
   else if(a==='save'){ saveSession(); }
   else if(a==='togglemacros'){ state._scroll=document.getElementById('view').scrollTop; state.macroOpen=!state.macroOpen; render(); }
   else if(a==='toggleMacroUnit'){ state.macroPct=!state.macroPct; render(); }
@@ -1965,9 +1972,10 @@ document.getElementById('app').addEventListener('input',e=>{
   const sp=e.target.closest('[data-act="sd_splitname"]'); if(sp){ db.split.name=sp.value; save(); return; }
   const ssf=e.target.closest('[data-act="ss_f"]'); if(ssf){ const s=db.sessions.find(x=>x.id===window._sessId); if(s){ const st=s.exercises[+ssf.dataset.ei].sets[+ssf.dataset.si]; if(st){ st[ssf.dataset.f]=ssf.value; save(); } } return; }
 });
-function openExEdit(di,ei){
-  const isNew=ei<0; const e=isNew?{name:'',muscle:'',type:'free',machine:'',unilateral:false,sets:2}:db.split.days[di].exercises[ei];
-  window._exEdit={di,ei};
+function openExEdit(di,ei,liveExi){
+  const live=(liveExi!=null&&db.activeWork)?db.activeWork.exercises[liveExi]:null;
+  const isNew=ei<0&&!live; const e=live?live:(isNew?{name:'',muscle:'',type:'free',machine:'',unilateral:false,sets:2}:db.split.days[di].exercises[ei]);
+  window._exEdit={di,ei,liveExi:(liveExi==null?null:liveExi),origName:(e&&e.name)||''};
   const muscles=muscleSuggest();
   const knowns=knownExercises();
   const types=[['free','freeweight'],['machine','machine'],['pulley','pulley'],['bodyweight','bodyweight']];
@@ -1994,7 +2002,7 @@ function openExEdit(di,ei){
    <div id="ee_mus2_addwrap" style="margin:2px 0 12px;display:${show2?'none':'block'}"><button class="b" data-act="ee_mus2_on" style="width:100%">+ agregar músculo secundario</button></div>`;
    })()}
    <div class="field"><label>TYPE</label><div class="toggles" id="ee_type" style="flex-wrap:wrap;gap:4px">${types.map(([v,lbl])=>`<button class="t ${e.type===v||(v==='free'&&!e.type)?'on':''}" data-act="optpick" data-v="${v}" style="flex:1 1 calc(50% - 2px);min-width:0">${lbl}</button>`).join('')}</div></div>
-   <div class="field row2"><div><label>SETS</label><input id="ee_sets" type="number" value="${e.sets||2}"/></div><div><label>MACHINE/NOTE</label><input id="ee_machine" value="${(e.machine||'').replace(/"/g,'&quot;')}" placeholder="opcional"/></div></div>
+   <div class="field row2"><div><label>SETS</label><input id="ee_sets" type="number" value="${Array.isArray(e.sets)?e.sets.length:(e.sets||2)}"/></div><div><label>MACHINE/NOTE</label><input id="ee_machine" value="${(e.machine||'').replace(/"/g,'&quot;')}" placeholder="opcional"/></div></div>
    <label style="font-size:9px;color:var(--o50);display:block;margin-bottom:10px"><input type="checkbox" id="ee_uni" ${e.unilateral?'checked':''} style="width:auto;vertical-align:middle"/> unilateral (R/L)</label>
    <div class="field" id="ee_startwrap" style="display:${e.unilateral?'block':'none'}"><label>UNILATERAL · EMPEZAR POR</label><div class="toggles" id="ee_start"><button class="t ${e.startSide!=='L'?'on':''}" data-act="optpick" data-v="R">R primero</button><button class="t ${e.startSide==='L'?'on':''}" data-act="optpick" data-v="L">L primero</button></div></div>
    ${isNew?'':'<div class="submeta" style="margin:8px 0 4px;color:var(--o40)">marca para propagar estos detalles a tus sesiones pasadas del mismo nombre + gym actual</div><label style="font-size:10px;color:var(--o60);display:block;margin-bottom:10px"><input type="checkbox" id="ee_propagate" style="width:auto;vertical-align:middle"/> actualizar sesiones pasadas</label>'}
@@ -2044,6 +2052,16 @@ function saveExEdit(){
     if(m2){ const w2=Math.max(0,Math.min(1,parseFloat(document.getElementById('ee_mus2w').value)||0.5)); muscles.push({name:m2,weight:w2}); }
   }
   const ex={name,muscle:m1,muscles,type:validT,machine:val('ee_machine'),unilateral:document.getElementById('ee_uni').checked,startSide:(pv('ee_start')==='L'?'L':'R'),sets:Math.max(1,+val('ee_sets')||1)};
+  const {liveExi,origName}=window._exEdit||{};
+  if(liveExi!=null && db.activeWork && db.activeWork.exercises[liveExi]){
+    const w=db.activeWork; const lx=w.exercises[liveExi];
+    // update metadata IN PLACE — keep logged sets + the unilateral structure of the live session intact
+    lx.name=ex.name; lx.muscle=ex.muscle; lx.muscles=ex.muscles; lx.type=ex.type; lx.machine=ex.machine;
+    // mirror the change into the split definition so it persists for future sessions
+    const di2=(db.split.days||[]).findIndex(d=>d.id===w.dayId);
+    if(di2>=0){ const arr=db.split.days[di2].exercises||[]; let j=arr.findIndex(x=>(x.name||'').toLowerCase().trim()===String(origName||'').toLowerCase().trim()); if(j<0)j=arr.findIndex(x=>(x.name||'').toLowerCase().trim()===ex.name.toLowerCase().trim()); if(j>=0)arr[j]=Object.assign({},arr[j],{name:ex.name,muscle:ex.muscle,muscles:ex.muscles,type:ex.type,machine:ex.machine,unilateral:ex.unilateral,startSide:ex.startSide}); }
+    save(); closeModal(); render(); return;
+  }
   if(ei<0)db.split.days[di].exercises.push(ex); else db.split.days[di].exercises[ei]=ex;
   // optional: propagate the new metadata to past SESSIONS that logged this same exercise NAME at the current gym
   const propBox=document.getElementById('ee_propagate');
@@ -2236,9 +2254,39 @@ function downloadIcs(di){
 // Falls back to a minimal default set when totally empty (very new user). Lets users add
 // new muscle names by free typing — no exhaustive hardcoded chip list cluttering the UI.
 function muscleSuggest(){ const used=new Set(); (db.split&&db.split.days||[]).forEach(d=>(d.exercises||[]).forEach(e=>{ if(e.muscle)used.add(String(e.muscle).toLowerCase().trim()); })); (db.sessions||[]).forEach(s=>{ if(s.type==='rest')return; (s.exercises||[]).forEach(e=>{ if(e.muscle)used.add(String(e.muscle).toLowerCase().trim()); }); }); const arr=[...used].filter(Boolean); return arr.length?arr.sort():['chest','back','legs','delts','biceps','tricep']; }
+// STEP 1: pick a muscle first
 function openAddExercise(afterExi){
+  window._axCtx={afterExi}; const muscles=muscleSuggest();
+  openModal(`<h3>+ ejercicio · elige músculo</h3>
+   <div class="chips" id="ax_mus" style="margin-bottom:14px">${muscles.map(mm=>`<span class="chip" data-act="axmus" data-v="${escTxt(mm)}">${escTxt(mm)}</span>`).join('')}</div>
+   <div class="field"><label>O MÚSCULO NUEVO</label><input id="ax_newmus" placeholder="ej. antebrazo" autocomplete="off"/></div>
+   <div class="sheetbtns"><button class="ok" id="ax_newmus_go">continuar →</button><button class="cancel" data-act="closemodal">cancel</button></div>`);
+  const go=document.getElementById('ax_newmus_go'); const ni=document.getElementById('ax_newmus');
+  const cont=()=>{ const m=val('ax_newmus'); if(m)openAddExStep2(afterExi,m); };
+  if(go)go.onclick=cont; if(ni)ni.addEventListener('keydown',e=>{ if(e.key==='Enter')cont(); });
+}
+// STEP 2: pick a registered exercise of that muscle, or add a new one
+function openAddExStep2(afterExi,muscle){
+  const dir=exerciseDirectory(); const key=String(muscle).toLowerCase().trim(); const list=(dir[key]||dir[muscle]||[]).slice().sort((a,b)=>(b._sess||0)-(a._sess||0));
+  window._axList=list; window._axCtx={afterExi,muscle:key};
+  openModal(`<h3>${escTxt(muscle)} · elige ejercicio</h3>
+   ${list.length?`<div class="submeta" style="margin-bottom:6px">ya los usas · toca para agregar</div><div>${list.map((x,i)=>`<div class="pickitem" data-act="axpick" data-i="${i}">${escTxt(x.name)}${x.machine?` <span style="color:var(--o40);font-size:10px">${escTxt(x.machine)}</span>`:''}${x.type&&x.type!=='free'?` <span style="color:var(--o35);font-size:9px">${escTxt(x.type)}</span>`:''}<span style="float:right;color:var(--o40);font-size:10px">${x._sess||0}×</span></div>`).join('')}</div><hr class="rule" style="margin:10px 0"/>`:`<div class="submeta" style="margin-bottom:10px">sin ejercicios registrados para "${escTxt(muscle)}" todavía</div>`}
+   <button class="b" data-act="axnewex" style="width:100%">+ ejercicio nuevo</button>
+   <div class="sheetbtns" style="margin-top:10px"><button class="cancel" data-act="axback">← músculo</button><button class="cancel" data-act="closemodal">cancel</button></div>`);
+}
+// add a known exercise straight into the live session (with its remembered props + prefilled sets)
+function addExFromKnown(afterExi,x){
+  const w=db.activeWork; if(!w||!x)return;
+  const newEx={name:x.name,muscle:x.muscle||((x.muscles&&x.muscles[0]&&x.muscles[0].name)||'other'),muscles:x.muscles,type:x.type||'free',machine:x.machine||'',unilateral:!!x.unilateral,startSide:x.startSide||'R',note:'',sets:[]};
+  let insertAt; if(afterExi!=null&&afterExi>=0&&afterExi<w.exercises.length){ insertAt=afterExi+1; w.exercises.splice(insertAt,0,newEx); } else { w.exercises.push(newEx); insertAt=w.exercises.length-1; }
+  const ex=w.exercises[insertAt]; const n=Math.max(1,(typeof x.sets==='number'?x.sets:2)); const last=lastLoggedSets(x.name,ex.unilateral); const [s1,s2]=uniSides(ex);
+  for(let i=0;i<n;i++){ if(ex.unilateral){ex.sets.push(emptySet(ex,s1,false,last?last[i*2]:null));ex.sets.push(emptySet(ex,s2,false,last?last[i*2+1]:null));} else ex.sets.push(emptySet(ex,null,false,last?(last[i]||last[last.length-1]):null)); }
+  save(); closeModal(); render();
+}
+// FORM: new exercise (muscle pre-filled from step 1)
+function openAddExForm(afterExi,muscle){
   const exs=knownExercises(); const muscles=muscleSuggest();
-  const w0=db.activeWork; const seedMuscle = (afterExi!=null && w0 && w0.exercises[afterExi] && w0.exercises[afterExi].muscle) || '';
+  const w0=db.activeWork; const seedMuscle = muscle || (afterExi!=null && w0 && w0.exercises[afterExi] && w0.exercises[afterExi].muscle) || '';
   const types=[['free','freeweight'],['machine','machine'],['pulley','pulley'],['bodyweight','bodyweight']];
   openModal(`<h3>+ exercise</h3>
    <div class="field"><label>NOMBRE · escribe o elige uno previo</label><input id="fx_name" list="fx_namelist" placeholder="cable pushdown"/><datalist id="fx_namelist">${exs.map(x=>`<option value="${escTxt(x.name)}"></option>`).join('')}</datalist></div>
@@ -3047,13 +3095,14 @@ function openVerify(food, opts){
   window._verify={tag:opts.tag||curTag(),barcode:fd.barcode||(food&&food.barcode)||'',fromId:opts.fromId||null};
   const disp={}; MACROKEYS.forEach(k=>disp[k]=Math.round((fd.per100[k]||0)*factor*100)/100);
   const packServings=(fd.sizes.container&&sg)?Math.round(fd.sizes.container/sg*100)/100:'';
-  const nf=(id,lbl,v)=>`<div><label>${lbl}</label><input id="${id}" type="number" inputmode="decimal" value="${(v===0||v)?numTxt(v):''}"/></div>`;
+  const nf=(id,lbl,v)=>`<div><label>${lbl}</label><input id="${id}" type="number" inputmode="decimal" value="${v?numTxt(v):''}" placeholder="0"/></div>`;
   const sz=(id,lbl,v)=>`<div><label>${lbl}</label><input id="${id}" type="number" inputmode="decimal" value="${v?numTxt(v):''}" placeholder="—"/></div>`;
   openModal(`<h3>registrar alimento</h3>
    <div class="field"><label>NOMBRE DEL PRODUCTO</label><input id="v_name" value="${(fd.name||'').replace(/"/g,'&quot;')}" placeholder="ej. galletas marías"/></div>
    <div class="field"><label>MARCA (opcional)</label><input id="v_brand" value="${(fd.brand||'').replace(/"/g,'&quot;')}" placeholder="ej. Gamesa"/></div>
    <div class="field"><label>CÓDIGO DE BARRAS (obligatorio)</label><input id="v_barcode" inputmode="numeric" value="${(window._verify.barcode||'').replace(/"/g,'&quot;')}" placeholder="escanea o escribe los dígitos"/></div>
    <button class="b" id="v_bc_scan" style="width:100%;margin-bottom:8px">escanear código (foto)</button>
+   <button class="b" id="v_label_photo" style="width:100%;margin-bottom:8px">foto de tabla nutricional → rellenar</button>
    <div class="field row2"><div><label>TIPO</label><select id="v_base" class="pick"><option value="g"${base==='g'?' selected':''}>sólido · g</option><option value="ml"${base==='ml'?' selected':''}>líquido · ml</option></select></div>${sz('v_serv_g','PORCIÓN ('+base+')',sg)}</div>
    <div class="field"><label>ETIQUETA PORCIÓN (opc)</label><input id="v_serv_label" value="${(fd.servingLabel||'').replace(/"/g,'&quot;')}" placeholder="ej. 4 galletas, 1 taza"/></div>
    <div class="submeta" id="v_perlbl" style="margin:4px 0 4px;color:var(--o50)"></div>
@@ -3074,6 +3123,7 @@ function openVerify(food, opts){
   ['v_serv_g','v_kcal','v_protein','v_carbs','v_fat','v_sugar','v_fiber','v_sodium','v_potassium','v_caffeine','v_alcohol','v_pack_g','v_pack_servings','v_piece_g'].forEach(id=>{ const e=document.getElementById(id); if(e)e.addEventListener('input',rsum); });
   const vb=document.getElementById('v_base'); if(vb)vb.addEventListener('change',rsum);
   const bcs=document.getElementById('v_bc_scan'); if(bcs)bcs.onclick=()=>scanCodeToInput('v_barcode');
+  const lph=document.getElementById('v_label_photo'); if(lph)lph.onclick=()=>{ window._faTag=(window._verify||{}).tag||window._faTag; const inp=document.createElement('input'); inp.type='file'; inp.accept='image/*'; inp.setAttribute('capture','environment'); inp.onchange=()=>{ if(inp.files&&inp.files[0])labelPhoto(inp.files[0], val('v_barcode')); }; inp.click(); };
   rsum();
 }
 // LOG screen: pick unit (dropdown of defaults) + qty → add to meal.
@@ -3214,18 +3264,18 @@ function openGoals(){
   let pP=Math.round(pk0/tk*100), pF=Math.round(fk0/tk*100), pC=Math.max(0,100-pP-pF);
   const eg=effectiveGoals();
   const scopeLabel=isPast?('· '+dayLabel(day)+' (pasado · solo este día)'):isFuture?('· '+dayLabel(day)+' (futuro · default)'):'';
-  const micro=(id,lbl,v,ro)=>`<div><label>${lbl}${ro?' <span style="color:var(--good);font-size:8px;font-weight:700">AUTO</span>':''}</label><input id="${id}" type="number" inputmode="decimal" value="${ro?Math.round(v*100)/100:v}"${ro?' disabled style="opacity:.55"':''}/></div>`;
+  const micro=(id,lbl,v,ro)=>`<div><label>${lbl}${ro?' <span style="color:var(--good);font-size:8px;font-weight:700">AUTO</span>':''}</label><input id="${id}" type="number" inputmode="decimal" value="${ro?Math.round(v*100)/100:(v?v:'')}"${ro?' disabled style="opacity:.55"':' placeholder="0"'}/></div>`;
   const sl=(k,lbl,pct)=>`<div class="gsl"><div class="gsl-h"><span>${lbl} <button type="button" class="lk" id="lk_${k}" title="fijar">🔒</button></span><span><b id="sp_${k}">${pct}</b>% · <span class="gg" id="sg_${k}">0</span> g</span></div><input type="range" id="sl_${k}" min="0" max="100" value="${pct}" class="gslider"/></div>`;
   openModal(`<h3>edit goals${scopeLabel?' <span style="color:var(--o50);font-weight:400;font-size:11px;letter-spacing:0">'+escTxt(scopeLabel)+'</span>':''}</h3>
    <div class="toggles" id="gm_tog" style="margin-bottom:14px"><button class="t ${window._goalMode==='pct'?'on':''}" data-gm="pct">% de kcal</button><button class="t ${window._goalMode==='grams'?'on':''}" data-gm="grams">gramos</button></div>
    <div id="g_bal" class="submeta" style="margin:-6px 0 13px;font-size:11px"></div>
    <div id="gm_pct" style="display:${window._goalMode==='pct'?'block':'none'}">
-     <div class="field"><label>KCAL · total fijo</label><input id="gp_kcal" type="number" inputmode="numeric" value="${Math.round(g.kcal||0)}"/></div>
+     <div class="field"><label>KCAL · total fijo</label><input id="gp_kcal" type="number" inputmode="numeric" value="${g.kcal?Math.round(g.kcal):''}" placeholder="0"/></div>
      ${sl('protein','proteína',pP)}${sl('carbs','carbohidratos',pC)}${sl('fat','grasa',pF)}
      <div id="gp_sum" class="submeta" style="margin:2px 0 10px"></div>
    </div>
    <div id="gm_grams" style="display:${window._goalMode==='grams'?'block':'none'}">
-     <div class="field row3"><div><label>PROT g</label><input id="gg_protein" type="number" inputmode="numeric" value="${Math.round(g.protein||0)}"/></div><div><label>CARB g</label><input id="gg_carbs" type="number" inputmode="numeric" value="${Math.round(g.carbs||0)}"/></div><div><label>GRASA g</label><input id="gg_fat" type="number" inputmode="numeric" value="${Math.round(g.fat||0)}"/></div></div>
+     <div class="field row3"><div><label>PROT g</label><input id="gg_protein" type="number" inputmode="numeric" value="${g.protein?Math.round(g.protein):''}" placeholder="0"/></div><div><label>CARB g</label><input id="gg_carbs" type="number" inputmode="numeric" value="${g.carbs?Math.round(g.carbs):''}" placeholder="0"/></div><div><label>GRASA g</label><input id="gg_fat" type="number" inputmode="numeric" value="${g.fat?Math.round(g.fat):''}" placeholder="0"/></div></div>
      <div id="gg_kcal" class="submeta" style="margin:2px 0 10px;font-size:13px"></div>
    </div>
    <hr class="rule" style="margin:4px 0 14px"/>
