@@ -23,10 +23,14 @@
     --card:#0d0d10; --card2:#16161c; --border:rgba(243,243,244,.09); --radius:16px;
     --good:#46c98b; --bad:#e5675c; --warn:#e3b34f; --info:#6aa6ff;
     --good-glow:rgba(70,201,139,.5); --bad-glow:rgba(229,103,92,.5); --warn-glow:rgba(227,179,79,.45);
-    /* spacing scale (current values; ajustable en vivo con ?design) */
+    /* radius system: pill / control / card / sheet (controls=12 unifica botones+inputs) */
+    --r-ctl:12px; --r-pill:999px;
+    /* page-rhythm knobs (ajustables en vivo con ?design) */
     --sp-py:22px; --sp-px:18px; --sp-card:15px; --sp-gap:12px; --sp-section:14px; --sp-field:12px; --sp-row:12px; --sp-sheet:18px; --r-sheet:22px;
-    /* type scale (una sola escala; se va aplicando) */
-    --t-display:22px; --t-section:16px; --t-body:13px; --t-meta:11px; --t-caption:9px;
+    /* spacing scale (grid 4px; para spacings de componente) */
+    --s1:2px; --s2:4px; --s3:8px; --s4:12px; --s5:16px; --s6:24px;
+    /* type scale (una sola escala) — display 22 · section 16 · body 13 · sm 12 · meta 11 · xs 10 · caption 9 */
+    --t-display:22px; --t-section:16px; --t-body:13px; --t-sm:12px; --t-meta:11px; --t-xs:10px; --t-caption:9px;
   }
   *{margin:0;padding:0;box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
   :focus{outline:none;}
@@ -52,7 +56,7 @@
   /* status bar */
   .status{display:flex; justify-content:space-between; align-items:flex-start; font-size:10px; color:var(--o50);}
   .status .uname{font-weight:800; font-size:12px; color:var(--fg);}
-  .status .back{display:inline-block; margin-top:4px; font-size:11px; color:var(--o60); border:1px solid var(--o20); padding:10px 12px; cursor:pointer; border-radius:11px;}
+  .status .back{display:inline-block; margin-top:4px; font-size:var(--t-meta); color:var(--o60); border:1px solid var(--o20); padding:10px 12px; cursor:pointer; border-radius:var(--r-ctl);}
   .status .center{text-align:center; line-height:1.4;}
   .status .streak{font-size:12px; font-weight:800; color:var(--o50);}
   .status b{color:var(--o60); font-weight:500;}
@@ -81,13 +85,13 @@
   /* CTA buttons */
   .cta{margin-top:18px;}
   /* canonical button roles — primary 48px r13 · secondary 44px r11 (≥44px tap targets) */
-  .start{display:block; width:100%; text-align:center; background:var(--fill); color:#000; font-weight:600; font-size:13px; height:48px; padding:0; letter-spacing:.3px; border:0; border-radius:13px; cursor:pointer;}
+  .start{display:block; width:100%; text-align:center; background:var(--fill); color:#000; font-weight:600; font-size:var(--t-body); height:48px; padding:0; letter-spacing:.3px; border:0; border-radius:var(--r-ctl); cursor:pointer;}
   .secondary{display:flex; gap:10px; margin-top:10px;}
-  .secondary .b{flex:1; text-align:center; font-size:12px; color:var(--fg); border:1px solid var(--border); height:44px; padding:0; background:transparent; cursor:pointer; letter-spacing:.3px; border-radius:11px;}
+  .secondary .b{flex:1; text-align:center; font-size:var(--t-sm); color:var(--fg); border:1px solid var(--border); height:44px; padding:0; background:transparent; cursor:pointer; letter-spacing:.3px; border-radius:var(--r-ctl);}
   .secondary .b:active{background:var(--card2);}
 
   /* prev + stats lists */
-  .line{display:flex; align-items:baseline; gap:10px; font-size:11px; padding:3px 0;}
+  .line{display:flex; align-items:baseline; gap:10px; font-size:var(--t-meta); padding:3px 0;}
   .line .k{color:var(--o60);} .line .dots{flex:1; border-bottom:1px dotted var(--line); transform:translateY(-3px);} .line .v{color:var(--fg);}
   .line.stat .k{color:var(--o50);} .line.stat .v{font-weight:700;}
   .vrow{margin-bottom:11px;} .vtop{display:flex;justify-content:space-between;align-items:baseline;font-size:11px;margin-bottom:5px;} .vm{color:var(--fg);} .vn{color:var(--o50);font-size:10px;} .vd{color:var(--o40);}
@@ -112,7 +116,7 @@
   .cell .sub{transition:color .25s;} .cell .cap{transition:color .25s;}
   .grp-label{font-size:9px; color:var(--o50); letter-spacing:1.5px; margin-bottom:14px;}
   /* progress dashboard tiles (área Progreso · layout Diseño) */
-  .pfeat{background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:15px; margin-top:14px;}
+  .pfeat{background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:var(--sp-card); margin-top:14px;}
   .pfl{font-size:9px; color:var(--o40); letter-spacing:1.5px; text-transform:uppercase; margin-bottom:8px;}
   .pfv{font-size:14px; font-weight:700; line-height:1.35;} .pfv .up{color:var(--good);} .pfv .dn{color:var(--bad);}
   .pwk{display:flex; gap:6px; margin-top:12px;} .pwd{flex:1; height:5px; border-radius:3px; background:var(--track);} .pwd.on{background:var(--good);}
@@ -133,12 +137,12 @@
   .mdmeta{font-size:11px; color:var(--o50); margin-bottom:6px;}
   .mdgood{color:var(--good);} .mdbad{color:var(--bad);} .mdflat{color:var(--o50);}
   .mdstats{margin-top:14px; border-top:.5px solid var(--o12); padding-top:8px;}
-  .mdline{display:flex; align-items:baseline; padding:5px 0; font-size:12px;}
+  .mdline{display:flex; align-items:baseline; padding:5px 0; font-size:var(--t-sm);}
   .mdk{color:var(--o60); white-space:nowrap;}
   .mddots{flex:1; border-bottom:1px dotted var(--o20); margin:0 8px; position:relative; top:-3px;}
   .mdv{color:var(--fg); white-space:nowrap; text-align:right;}
   .mdsub{color:var(--o40); font-size:10px; margin-left:5px;}
-  .ptile{background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:13px 13px 10px; min-width:0; overflow:hidden;}
+  .ptile{background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:var(--s4); min-width:0; overflow:hidden;}
   .ptile .ptlh{display:flex; align-items:center; justify-content:space-between; gap:6px;}
   .plbl{font-size:9px; color:var(--o40); letter-spacing:1px; text-transform:uppercase; margin-bottom:7px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
   .ptlh .plbl{margin-bottom:0;}
@@ -247,7 +251,7 @@
   #bc_cam video{width:100%; height:auto; display:block;} #bc_cam canvas.drawingBuffer{display:none;}
   .sheet h3{font-size:11px; color:var(--o50); letter-spacing:1px; margin-bottom:14px; font-weight:800;}
   .field{margin-bottom:var(--sp-field);} .field label{display:block; font-size:10px; color:var(--o50); letter-spacing:.5px; margin-bottom:5px;}
-  .field input,.field select{width:100%; height:42px; border:1px solid var(--border); background:var(--card); color:var(--fg); font-size:16px; padding:0 10px; appearance:none; border-radius:11px;}
+  .field input,.field select{width:100%; height:44px; border:1px solid var(--border); background:var(--card); color:var(--fg); font-size:16px; padding:0 var(--s4); appearance:none; border-radius:var(--r-ctl);}
   .field.row2{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
   .field.row3{display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px;}
   .gsl{margin-bottom:13px;} .gsl-h{display:flex; justify-content:space-between; align-items:baseline; font-size:11px; color:var(--o60); margin-bottom:6px;} .gsl-h b{color:var(--fg); font-weight:700;} .gsl-h .gg{color:var(--fg);}
@@ -259,7 +263,7 @@
   .hbal{text-align:center; font-size:10px; color:var(--o50); margin-top:8px;}
   .lkc{text-align:center; margin:10px 0 6px;} .lkc b{font-size:22px; font-weight:800; color:var(--fg);} .lkc .u{font-size:11px; color:var(--o50);}
   .lnut{max-height:38vh; overflow-y:auto; -webkit-overflow-scrolling:touch; margin:2px 0 10px;} .lnut .line{padding:3px 0;}
-  .toggles{display:flex; gap:8px;} .toggles button{flex:1; height:44px; border:1px solid var(--border); background:transparent; color:var(--o50); font-size:12px; cursor:pointer; border-radius:11px;} .toggles button.on{background:var(--fill); color:#000;}
+  .toggles{display:flex; gap:8px;} .toggles button{flex:1; height:44px; border:1px solid var(--border); background:transparent; color:var(--o50); font-size:var(--t-sm); cursor:pointer; border-radius:var(--r-ctl);} .toggles button.on{background:var(--fill); color:#000;}
   .toggles.wrap{flex-wrap:wrap;} .toggles.wrap button{flex:1 1 44%;}
   .chips{display:flex;flex-wrap:wrap;gap:7px;margin-top:8px;} .chip{font-size:11px;color:var(--o50);border:.5px solid var(--o20);padding:11px 13px;cursor:pointer;} .chip:active{background:var(--o12);}
   .seday{border-left:1px solid var(--o12);padding-left:12px;margin:0 0 18px 2px;} .sehead{display:flex;align-items:center;gap:8px;margin-bottom:8px;} .senm{flex:1;background:transparent;border:none;border-bottom:.5px solid var(--o20);color:var(--fg);font:inherit;font-size:15px;font-weight:800;padding:2px 0;}
@@ -267,7 +271,7 @@
   .semv{display:inline-flex;gap:1px;flex:0 0 auto;} .semv span{color:var(--o30);cursor:pointer;font-size:11px;padding:2px 4px;line-height:1;} .semv span:active{color:var(--fg);}
   .seadd{font-size:10px;color:var(--o50);cursor:pointer;padding:8px 0;}
   .srowm{display:grid;grid-template-columns:30px 1fr 1fr 1fr;gap:6px;align-items:center;margin-bottom:5px;} .srowm .sn{font-size:10px;color:var(--o50);text-align:center;} .srowm .sm{height:36px;background:transparent;border:.5px solid var(--o20);color:var(--fg);font:inherit;font-size:13px;text-align:center;}
-  .sheetbtns{display:flex; gap:10px; margin-top:10px;} .sheetbtns .ok{flex:1; height:48px; background:var(--fill); color:#000; font-weight:600; border:0; font-size:13px; cursor:pointer; border-radius:13px;} .sheetbtns .cancel{height:48px; padding:0 18px; border:1px solid var(--border); background:none; color:var(--o60); font-size:12px; cursor:pointer; border-radius:13px;}
+  .sheetbtns{display:flex; gap:10px; margin-top:10px;} .sheetbtns .ok{flex:1; height:48px; background:var(--fill); color:#000; font-weight:600; border:0; font-size:var(--t-body); cursor:pointer; border-radius:var(--r-ctl);} .sheetbtns .cancel{height:48px; padding:0 18px; border:1px solid var(--border); background:none; color:var(--o60); font-size:var(--t-sm); cursor:pointer; border-radius:var(--r-ctl);}
   .pickitem{padding:12px 6px; font-size:13px; border-bottom:1px solid var(--line); cursor:pointer;} .pickitem:hover{color:#fff;} .pickitem:active{background:var(--o10);}
 
   .empty{font-size:11px; color:var(--o50); text-align:center; padding:30px 0; line-height:1.8;}
@@ -290,12 +294,12 @@
   .sheet{border-radius:0 0 var(--r-sheet) var(--r-sheet); background:#0a0a0c; border-top:0; border-bottom:1px solid var(--border); padding-top:calc(14px + env(safe-area-inset-top));}
   .pickitem{border-bottom-color:var(--border);}
   /* pill chips (toggles consolidated above) */
-  .chip{border-radius:999px; border-color:var(--border);}
+  .chip{border-radius:var(--r-pill); border-color:var(--border);}
   /* bottom nav as pill tabs */
   .nav{border-top:1px solid var(--border); gap:6px;}
-  .nav a{border-radius:999px; padding:10px 16px;} .nav a.active{background:var(--fill); color:#000; font-weight:700;}
+  .nav a{border-radius:var(--r-pill); padding:10px 16px;} .nav a.active{background:var(--fill); color:#000; font-weight:700;}
   /* rounded progress bars */
-  .bar,.wprog,.vbar{border-radius:999px;} .bar>i,.wprog>i,.vbar>i{border-radius:999px;}
+  .bar,.wprog,.vbar{border-radius:var(--r-pill);} .bar>i,.wprog>i,.vbar>i{border-radius:var(--r-pill);}
   /* workout sets table: terminal style (sharp, dense) — like Expo/ironLOG */
   .inp,.pick,.fs,.srowm .sm{border-radius:2px; border-color:var(--o20);}
   .senm{border-bottom-color:var(--border);} .seday{border-left-color:var(--border);} .mbody{border-left-color:var(--border);}
@@ -338,15 +342,15 @@
   .sheet.tall{height:90vh; display:flex; flex-direction:column; padding-bottom:calc(14px + env(safe-area-inset-bottom));}
   .fa-wrap{display:flex; flex-direction:column; height:100%; min-height:0;}
   .fa-top{flex:0 0 auto;}
-  #fa_q{width:100%; height:44px; border:1px solid var(--border); border-radius:12px; background:var(--card); color:var(--fg); font-size:16px; padding:0 14px; margin-bottom:10px;}
+  #fa_q{width:100%; height:44px; border:1px solid var(--border); border-radius:var(--r-ctl); background:var(--card); color:var(--fg); font-size:16px; padding:0 14px; margin-bottom:10px;}
   .fa-btns{display:flex; gap:8px;}
-  .fa-btns .b{flex:1 1 0; text-align:center; font-family:inherit; font-size:12px; font-weight:600; letter-spacing:.4px; color:var(--fg); border:1px solid var(--border); border-radius:12px; padding:13px 0; background:var(--card); cursor:pointer;}
+  .fa-btns .b{flex:1 1 0; text-align:center; font-family:inherit; font-size:var(--t-sm); font-weight:600; letter-spacing:.4px; color:var(--fg); border:1px solid var(--border); border-radius:var(--r-ctl); padding:13px 0; background:var(--card); cursor:pointer;}
   .fa-btns .b:active{background:var(--card2);}
   /* empty-state hint: sequenced animation of scan → photo → register */
   .fa-empty{padding:18px 6px; color:var(--o50); font-size:11px; line-height:1.55;}
   .fa-empty .fa-em-h{color:var(--fg); font-weight:700; font-size:12px; margin-bottom:11px; display:block; text-align:center;}
   .fa-empty .fa-em-steps{display:flex; gap:6px; align-items:stretch; justify-content:center;}
-  .fa-empty .fa-em-step{flex:1 1 0; max-width:96px; text-align:center; padding:12px 6px 11px; border:1px solid var(--border); border-radius:11px; background:var(--card); cursor:pointer; opacity:0; transform:translateY(6px); animation:faPop .35s ease forwards; color:var(--fg);}
+  .fa-empty .fa-em-step{flex:1 1 0; max-width:96px; text-align:center; padding:12px 6px 11px; border:1px solid var(--border); border-radius:var(--r-ctl); background:var(--card); cursor:pointer; opacity:0; transform:translateY(6px); animation:faPop .35s ease forwards; color:var(--fg);}
   .fa-empty .fa-em-step .ic{display:flex; justify-content:center; align-items:center; height:26px; margin-bottom:5px; color:var(--fg);}
   .fa-empty .fa-em-step .ic svg{width:auto; height:22px; display:block;}
   .fa-empty .fa-em-step .lb{font-size:9.5px; color:var(--o60); letter-spacing:.3px; line-height:1.25;}
@@ -2186,7 +2190,7 @@ function importIronlogSplit(d){
 function openImportSplit(){
   openModal(`<h3>importar split · ironLOG</h3>
    <div class="submeta" style="margin-bottom:8px">pega el JSON de tu split. reemplaza el split actual · tus sesiones guardadas no se tocan.</div>
-   <textarea id="imp_txt" style="width:100%;height:160px;border:1px solid var(--border);border-radius:11px;background:var(--card);color:var(--fg);font-family:inherit;font-size:11px;padding:10px" placeholder='{ "name": "...", "days": [ ... ] }'></textarea>
+   <textarea id="imp_txt" style="width:100%;height:160px;border:1px solid var(--border);border-radius:var(--r-ctl);background:var(--card);color:var(--fg);font-family:inherit;font-size:11px;padding:10px" placeholder='{ "name": "...", "days": [ ... ] }'></textarea>
    <div id="imp_msg" class="submeta" style="margin-top:6px"></div>
    <div class="sheetbtns" style="margin-top:10px"><button class="ok" id="imp_go">importar</button><button class="cancel" data-act="closemodal">cancel</button></div>`);
   document.getElementById('imp_go').onclick=()=>{ const m=document.getElementById('imp_msg');
