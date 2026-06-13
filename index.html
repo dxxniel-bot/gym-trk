@@ -20,11 +20,11 @@
     --o35:rgba(243,243,244,.46); --o30:rgba(243,243,244,.4); --o20:rgba(243,243,244,.26);
     --o12:rgba(243,243,244,.1); --o10:rgba(243,243,244,.06);
     --faint:#3a3a3e; --line:rgba(243,243,244,.08); --track:#191920; --fill:#f3f3f4; --abort:rgba(190,110,110,.55);
-    --card:#0d0d10; --card2:#16161c; --border:rgba(243,243,244,.09); --radius:16px;
+    --card:#0d0d10; --card2:#16161c; --border:rgba(243,243,244,.09); --radius:16px; --sheet-bg:#0a0a0c;
     --good:#46c98b; --bad:#e5675c; --warn:#e3b34f; --info:#6aa6ff;
     --good-glow:rgba(70,201,139,.5); --bad-glow:rgba(229,103,92,.5); --warn-glow:rgba(227,179,79,.45);
     /* radius system: pill / control / card / sheet (controls=12 unifica botones+inputs) */
-    --r-ctl:12px; --r-pill:999px;
+    --r-ctl:12px; --r-pill:999px; --r-sm:2px;
     /* page-rhythm knobs (ajustables en vivo con ?design) */
     --sp-py:22px; --sp-px:18px; --sp-card:15px; --sp-gap:12px; --sp-section:14px; --sp-field:12px; --sp-row:12px; --sp-sheet:18px; --r-sheet:22px;
     /* spacing scale (grid 4px; para spacings de componente) */
@@ -424,6 +424,35 @@
   .toast{position:fixed; left:50%; bottom:84px; transform:translateX(-50%); background:#13131a; border:1px solid var(--good); color:var(--fg); padding:9px 15px; border-radius:999px; font-size:12px; font-weight:600; z-index:10000; box-shadow:0 6px 22px rgba(0,0,0,.5); white-space:nowrap; animation:toastin .28s ease, toastout .4s ease 2.3s forwards;}
   @keyframes toastin{from{opacity:0; transform:translate(-50%,10px)} to{opacity:1; transform:translate(-50%,0)}}
   @keyframes toastout{to{opacity:0; transform:translate(-50%,8px)}}
+
+  /* ===== shared vocabulary (v156) — clases compartidas para homogeneizar; reemplazan style="" inline ===== */
+  /* form: textarea unificada (.ta funciona con o sin .field; font-size:16 mata zoom iOS; altura por tier) */
+  textarea.ta{width:100%; border:1px solid var(--border); background:var(--card); color:var(--fg); font-family:inherit; font-size:16px; padding:10px var(--s4); border-radius:var(--r-ctl); resize:none; line-height:1.5;}
+  textarea.ta.sm{height:64px;} textarea.ta.md{height:96px;} textarea.ta.lg{height:124px;} textarea.ta.xl{height:160px;}
+  .field .inline-row{display:flex; gap:6px; align-items:center;}
+  .field select.grow{flex:1;} .field input.w72{width:72px; flex:0 0 auto;}
+  /* sheet header: subtítulo (· tag) */
+  .sheet h3 .sub{color:var(--o40); font-weight:400;}
+  /* meta/label text — reemplazan font-size+color inline repetidos */
+  .t-meta{font-size:var(--t-meta); color:var(--o50);}
+  .t-xs{font-size:var(--t-xs); color:var(--o40);}
+  .muted{color:var(--o40);} .muted2{color:var(--o50);}
+  .kc-right{float:right; color:var(--o50);}
+  /* fila de preview/lista genérica (dayPreview, etc.) */
+  .prow{display:flex; justify-content:space-between; gap:var(--s3); padding:3px 0; border-bottom:.5px solid var(--o10); font-size:var(--t-sm);}
+  .prow .pr-r{font-size:var(--t-xs); color:var(--o50); white-space:nowrap;}
+  /* reorder arrows: extremo deshabilitado (reusa .semv span) */
+  .semv span.off{color:var(--o20); cursor:default;}
+  /* botón destructivo (hereda .cancel) */
+  .cancel.danger{color:var(--bad);}
+  /* header de gym en workout (variante con margen superior) */
+  .whdr.top{margin-top:var(--s5);}
+  /* detalle de sesión: ejercicio en tarjeta */
+  .sess-exh{display:flex; align-items:center; gap:var(--s2); margin-bottom:var(--s3);}
+  .sess-exn{flex:1; font-size:var(--t-body); font-weight:700; color:var(--fg);}
+  /* spacing helpers (uso puntual para huérfanos; no abusar) */
+  .submeta.gap{margin-bottom:var(--s4);}
+  .mt-s3{margin-top:var(--s3);} .mt-s4{margin-top:var(--s4);} .mt-s5{margin-top:var(--s5);} .mb-s4{margin-bottom:var(--s4);}
 </style>
 </head>
 <body>
@@ -1190,7 +1219,7 @@ function renderLogin(){
     <div class="submeta" style="margin-bottom:10px">esto es solo si guardaste un respaldo de tu cuenta en otro dispositivo. si no, regresa y dale <b style="color:var(--o60)">empezar</b>.</div>
     <button class="b" data-act="loginfile" style="width:100%;margin-bottom:10px">elegir archivo de respaldo</button>
     <div class="submeta" style="margin-bottom:6px">o pega el texto del respaldo:</div>
-    <textarea id="li_txt" style="width:100%;height:110px;border:.5px solid var(--o20);background:transparent;color:var(--fg);font-family:'JetBrains Mono',monospace;font-size:10px;padding:8px" placeholder="{ ... }"></textarea>
+    <textarea id="li_txt" class="ta lg" placeholder="{ ... }"></textarea>
     <button class="start" data-act="dologin" style="margin-top:10px">restaurar</button>
     <div style="text-align:center;margin-top:14px"><a data-act="backlanding" style="font-size:11px;color:var(--o50);cursor:pointer">← regresar</a></div>
     <div id="li_msg" class="submeta" style="margin-top:10px"></div>
@@ -1307,7 +1336,7 @@ function healthSync(){
   try{ if(navigator.clipboard&&navigator.clipboard.readText){ navigator.clipboard.readText().then(go,function(){ openHealthImport(); }); } else { openHealthImport(); } }catch(_){ openHealthImport(); }
 }
 function openHealthImport(){
-  openModal('<h3>importar de Salud</h3><div class="submeta" style="margin-bottom:10px">corre tu Atajo (copia los datos), regresa y pega abajo. acepta pasos y/o peso.</div><textarea id="hi_txt" style="width:100%;height:88px;border:.5px solid var(--o20);background:transparent;color:var(--fg);font-size:10px;padding:8px" placeholder="stepsh=2026-05-30:8200,...   weighth=2026-05-15:81.2,..."></textarea><button class="b" id="hi_paste" style="width:100%;margin:8px 0">pegar del portapapeles</button><div class="sheetbtns"><button class="ok" id="hi_go">importar</button><button class="cancel" data-act="closemodal">cancel</button></div>');
+  openModal('<h3>importar de Salud</h3><div class="submeta" style="margin-bottom:10px">corre tu Atajo (copia los datos), regresa y pega abajo. acepta pasos y/o peso.</div><textarea id="hi_txt" class="ta md" placeholder="stepsh=2026-05-30:8200,...   weighth=2026-05-15:81.2,..."></textarea><button class="b" id="hi_paste" style="width:100%;margin:8px 0">pegar del portapapeles</button><div class="sheetbtns"><button class="ok" id="hi_go">importar</button><button class="cancel" data-act="closemodal">cancel</button></div>');
   var p=document.getElementById("hi_paste"); if(p)p.onclick=function(){ try{ navigator.clipboard.readText().then(function(t){ var e=document.getElementById("hi_txt"); if(e)e.value=t; },function(){ alert("Pega a mano: manten presionado el cuadro y elige Pegar."); }); }catch(_){ alert("Pega a mano: manten presionado el cuadro y elige Pegar."); } };
   var g=document.getElementById("hi_go"); if(g)g.onclick=function(){ var txt=(val("hi_txt")||"").trim(); if(txt.charAt(0)==="?")txt=txt.slice(1); var msg=[]; try{ msg=importHealth(new URLSearchParams(txt)); }catch(_){} if(msg.length){ save(); closeModal(); render(); setTimeout(function(){ toast("\u2713 "+msg.join(" \u00b7 ")); },120); } else { alert("No reconoci datos. Debe verse como  stepsh=fecha:valor,...  o  weighth=fecha:kg,..."); } };
 }
@@ -2092,18 +2121,17 @@ function openExEdit(di,ei,liveExi){
   openModal(`<h3>${isNew?'+ exercise':'edit exercise'}</h3>
    <div class="field"><label>NAME${isNew?' · escribe o elige uno previo':''}</label><input id="ee_name" value="${(e.name||'').replace(/"/g,'&quot;')}" list="ee_namelist" placeholder="bb incline"/><datalist id="ee_namelist">${knowns.map(x=>`<option value="${escTxt(x.name)}"></option>`).join('')}</datalist></div>
    ${(()=>{
-     const selSty="background:#161616;color:#f3f3f4;border:.5px solid var(--o20);font:inherit;font-size:13px;padding:7px 6px";
      const cur1=(exMuscles(e)[0]||{}).name||''; const m2=exMuscles(e)[1]; const cur2=m2?m2.name:''; const show2=!!m2;
      const opts=(curv)=>`<option value=""${!curv?' selected':''}>— elige músculo —</option>`+[...new Set([curv,...muscles].filter(Boolean))].map(m=>`<option value="${escTxt(m)}"${m===curv?' selected':''}>${escTxt(m)}</option>`).join('')+`<option value="__new__">+ nuevo músculo…</option>`;
      return `
    <div class="field"><label>MÚSCULO 1 · primario · serie completa</label>
-     <select id="ee_muscle_sel" style="width:100%;${selSty}">${opts(cur1)}</select>
+     <select id="ee_muscle_sel">${opts(cur1)}</select>
      <input id="ee_muscle" type="hidden" value="${escTxt(cur1)}"/>
      <input id="ee_muscle_new" placeholder="escribe el músculo nuevo" style="display:none;margin-top:6px"/></div>
    <div class="field" id="ee_mus2wrap" style="display:${show2?'block':'none'}"><label>MÚSCULO 2 · secundario · ¿cuánto cuenta el set? (0–1)</label>
-     <div style="display:flex;gap:6px;align-items:center">
-       <select id="ee_mus2sel" style="flex:1;${selSty}">${opts(cur2)}</select>
-       <input id="ee_mus2w" type="number" inputmode="decimal" step="0.05" min="0" max="1" style="width:72px" value="${m2?m2.weight:0.5}" placeholder="0.5"/>
+     <div class="inline-row">
+       <select id="ee_mus2sel" class="grow">${opts(cur2)}</select>
+       <input id="ee_mus2w" type="number" inputmode="decimal" step="0.05" min="0" max="1" class="w72" value="${m2?m2.weight:0.5}" placeholder="0.5"/>
        <button class="cancel" data-act="ee_mus2_off" style="padding:4px 9px;flex:0 0 auto">×</button>
      </div>
      <input id="ee_mus2" type="hidden" value="${escTxt(cur2)}"/>
@@ -2210,7 +2238,7 @@ function importIronlogSplit(d){
 function openImportSplit(){
   openModal(`<h3>importar split · ironLOG</h3>
    <div class="submeta" style="margin-bottom:8px">pega el JSON de tu split. reemplaza el split actual · tus sesiones guardadas no se tocan.</div>
-   <textarea id="imp_txt" style="width:100%;height:160px;border:1px solid var(--border);border-radius:var(--r-ctl);background:var(--card);color:var(--fg);font-family:inherit;font-size:11px;padding:10px" placeholder='{ "name": "...", "days": [ ... ] }'></textarea>
+   <textarea id="imp_txt" class="ta xl" placeholder='{ "name": "...", "days": [ ... ] }'></textarea>
    <div id="imp_msg" class="submeta" style="margin-top:6px"></div>
    <div class="sheetbtns" style="margin-top:10px"><button class="ok" id="imp_go">importar</button><button class="cancel" data-act="closemodal">cancel</button></div>`);
   document.getElementById('imp_go').onclick=()=>{ const m=document.getElementById('imp_msg');
@@ -2452,7 +2480,7 @@ function openMachineEdit(exi){
   openModal(`<h3>machine / setup</h3>
    <div class="submeta" style="margin-bottom:10px">${escTxt(ex.name)} · en <b>${escTxt(w.gym)}</b></div>
    <div class="field"><label>MÁQUINA / MARCA</label><input id="mc_brand" value="${(rec.brand||'').replace(/"/g,'&quot;')}" placeholder="ej. Hammer Strength, Technogym" autocomplete="off"/></div>
-   <div class="field"><label>SETUP (opcional)</label><textarea id="mc_setup" style="width:100%;height:54px;border:.5px solid var(--o20);background:transparent;color:var(--fg);font-family:'JetBrains Mono',monospace;font-size:11px;padding:8px" placeholder="asiento 4 · respaldo 2 · pin 60kg">${escTxt(rec.setup||'')}</textarea></div>
+   <div class="field"><label>SETUP (opcional)</label><textarea id="mc_setup" class="ta sm" placeholder="asiento 4 · respaldo 2 · pin 60kg">${escTxt(rec.setup||'')}</textarea></div>
    <div class="submeta" style="margin:2px 0 10px">queda vinculado a <b>${escTxt(w.gym)}</b> · al cambiar de gym se muestra el suyo</div>
    <div class="sheetbtns"><button class="ok" id="mc_save">guardar</button><button class="cancel" id="mc_na">N/A</button><button class="cancel" data-act="closemodal">cancel</button></div>`);
   document.getElementById('mc_save').onclick=()=>{ setMachine(w.gym,ex,{brand:val('mc_brand'),setup:val('mc_setup'),na:false}); closeModal(); render(); };
@@ -3163,7 +3191,7 @@ function openNameSearch(barcode){
 function openTextParse(){
   window._faTag=curTag();
   openModal(`<h3>from text</h3><div class="submeta" style="margin-bottom:10px">pega la tabla nutrimental (o escribe los valores)</div>
-   <textarea id="tx_in" style="width:100%;height:118px;border:.5px solid var(--o20);background:transparent;color:var(--fg);font-family:'JetBrains Mono',monospace;font-size:11px;padding:8px" placeholder="calories 250 · protein 20g · carbs 30g · fat 8g · sodium 400mg ..."></textarea>
+   <textarea id="tx_in" class="ta lg" placeholder="calories 250 · protein 20g · carbs 30g · fat 8g · sodium 400mg ..."></textarea>
    <div class="field" style="margin-top:8px"><label>NAME</label><input id="tx_name" placeholder="food name"/></div>
    <div class="sheetbtns"><button class="ok" id="tx_go">parse →</button><button class="cancel" data-act="closemodal">cancel</button></div>`);
   document.getElementById('tx_go').onclick=()=>{ openVerify({name:val('tx_name'),serving:'1 serving',per:parseNutritionText(val('tx_in'))},{isNew:true,tag:window._faTag}); };
@@ -3541,7 +3569,7 @@ function moveItemTo(newTag){ const t=curDate(); const arr=db.meals[t]||[]; const
 function openSync(){
   openModal(`<h3>sync data</h3>
    <div class="submeta" style="margin-bottom:10px">Copia este texto para respaldar o pasar a otro equipo (iPhone ↔ aquí). O pega un backup y dale import.</div>
-   <textarea id="sy_txt" style="width:100%;height:150px;border:.5px solid var(--o20);background:transparent;color:var(--fg);font-family:'JetBrains Mono',monospace;font-size:10px;padding:8px;"></textarea>
+   <textarea id="sy_txt" class="ta xl"></textarea>
    <div class="sheetbtns"><button class="ok" data-act="sycopy">copy</button><button class="cancel" data-act="syimport">import from text</button><button class="cancel" data-act="closemodal">close</button></div>`);
   const ta=document.getElementById('sy_txt'); ta.value=JSON.stringify(db);
   document.querySelector('[data-act="sycopy"]').onclick=()=>{ ta.select(); ta.setSelectionRange(0,ta.value.length); let ok=false; try{ok=document.execCommand('copy');}catch(e){} if(navigator.clipboard){navigator.clipboard.writeText(ta.value).then(()=>{},()=>{});} alert('Copiado al portapapeles.'); };
