@@ -582,17 +582,26 @@ function lastSession(dayId){ const s=db.sessions.filter(x=>x.dayId===dayId&&x.ty
 function setsList(ex){ return ex.sets||[]; }
 function emptySet(ex,side,isDrop,src){ const s={w:'',r:'',rir:'',unit:(ex&&ex.unit)||db.settings.unit||'lbs',side:side||null,fsOn:!!(ex&&ex.useFS),extraW:'',isDrop:!!isDrop,done:false};
   if(ex&&ex.type==='bodyweight'){ s.bw=true; s.unit='kg'; const bwk=Object.keys(db.bodyweight||{}).sort(); if(bwk.length)s.w=String(db.bodyweight[bwk[bwk.length-1]]); }
-  if(src){ s.w=src.w||s.w||''; s.r=src.r||''; if(src.unit)s.unit=src.unit; if(src.bw)s.bw=true; s._pf=true; } return s; }
+  if(src){ s.w=src.w||s.w||''; s.r=src.r||''; if(src.unit)s.unit=src.unit; if(src.bw)s.bw=true; if(src.isDrop)s.isDrop=true; if(src.fsOn)s.fsOn=true; s._pf=true; } return s; }
 // sets from the most recent prior session with this exercise — used to prefill a new workout (suggestions, flagged _pf until confirmed)
 function uniSides(ex){ return (ex&&ex.startSide==='L')?['L','R']:['R','L']; }
 // last logged sets for an exercise. A same-name UNILATERAL variant is a DIFFERENT exercise: match by name + uni-ness (detected via per-set side).
 function lastLoggedSets(name,uni){ const key=(name||'').toLowerCase().trim(); let best=null,bd=''; (db.sessions||[]).forEach(s=>{ if(s.type==='rest')return; (s.exercises||[]).forEach(e=>{ if((e.name||'').toLowerCase().trim()!==key||!e.sets||!e.sets.length)return; const eUni=e.sets.some(x=>x.side); if(!!uni!==eUni)return; if(s.date>=bd){ bd=s.date; best=e.sets; } }); }); return best; }
+// prefilled sets for a new/changed exercise: mirror the LAST logged session's structure
+// (set count + drop-set flags + L/R sides) so drop sets carry over; else a plain count from the split.
+function seedSets(ex,fallbackN){
+  const last=lastLoggedSets(ex.name,ex.unilateral);
+  if(last&&last.length) return last.map(s=>emptySet(ex,s.side||null,!!s.isDrop,s));
+  const n=Math.max(1,fallbackN||(typeof ex.sets==='number'?ex.sets:2)); const [s1,s2]=uniSides(ex); const out=[];
+  for(let i=0;i<n;i++){ if(ex.unilateral){ out.push(emptySet(ex,s1,false,null)); out.push(emptySet(ex,s2,false,null)); } else out.push(emptySet(ex,null,false,null)); }
+  return out;
+}
 function newWorkSession(){
   const day=db.split.days[selIdx()];
   const exs=day.exercises.map(e=>{
-    const sets=[]; const n=e.sets||1; const last=lastLoggedSets(e.name,e.unilateral); const [s1,s2]=uniSides(e);
-    for(let i=0;i<n;i++){ if(e.unilateral){ sets.push(emptySet(e,s1,false,last?last[i*2]:null)); sets.push(emptySet(e,s2,false,last?last[i*2+1]:null)); } else { sets.push(emptySet(e,null,false,last?(last[i]||last[last.length-1]):null)); } }
-    return {name:e.name,muscle:e.muscle,type:e.type,machine:e.machine,unilateral:e.unilateral,note:e.note||'',sets};
+    const ex={name:e.name,muscle:e.muscle,type:e.type,machine:e.machine,unilateral:e.unilateral,note:e.note||'',sets:[]};
+    ex.sets=seedSets(ex,e.sets||1);
+    return ex;
   });
   return {id:uid(),date:todayISO(),dayId:day.id,dayName:day.name,gym:db.activeGym,startTs:nowHM(),startMs:Date.now(),loggedAfter:false,exercises:exs};
 }
@@ -837,9 +846,11 @@ function progBadgeFromProg(pr,title){ if(!pr)return ''; const col=pr.dir==='up'?
 function progBadgeHTML(ex){ const z=exerciseZones(ex); const total=z.light+z.productive+z.heavy; if(!total)return ''; const parts=[]; if(z.productive)parts.push(`<span style="color:var(--good)">${z.productive}✓</span>`); if(z.light)parts.push(`<span style="color:var(--warn)" title="series flojas — sube peso o llega más cerca al fallo">${z.light}↑</span>`); if(z.heavy)parts.push(`<span style="color:var(--warn)" title="series demasiado pesadas — baja peso o sube reps">${z.heavy}↓</span>`); return `<span class="exzones" style="font-size:10px;font-weight:700;margin-left:6px;letter-spacing:.06em">${parts.join(' ')}</span>`; }
 // per-SET progress: compare current set's score vs the same-position set from the previous session.
 function setProgress(curS,prevS){ if(!curS||!prevS)return null; const cur=setScore(curS), prev=setScore(prevS); return progFromScores(cur,prev); }
-function setBadgeHTML(curS,prevS){ const pr=setProgress(curS,prevS); if(!pr)return ''; const col=pr.dir==='up'?'var(--good)':pr.dir==='down'?'var(--bad)':'var(--o40)'; const ar=pr.dir==='up'?'▲':pr.dir==='down'?'▼':'='; const pc=pr.pct?((pr.pct>0?'+':'')+pr.pct+'%'):''; const ptxt=(prevS&&prevS.w?`${numTxt(prevS.w)}×${prevS.r||'—'}${prevS.rir!=null&&prevS.rir!==''?'@'+prevS.rir:''}`:''); return `<span class="setprog" style="font-size:9px;font-weight:700;color:${col}" title="vs ant ${ptxt}">${ar}${pc}</span>`; }
+// a set "counts" for progress only when fully entered: weight + reps + RIR, and no longer a prefill suggestion.
+function setComplete(s){ if(!s||s._pf)return false; return s.w!==''&&s.w!=null&&+s.w>0 && s.r!==''&&s.r!=null&&+s.r>0 && s.rir!==''&&s.rir!=null; }
+function setBadgeHTML(curS,prevS){ if(!setComplete(curS))return ''; const pr=setProgress(curS,prevS); if(!pr)return ''; const col=pr.dir==='up'?'var(--good)':pr.dir==='down'?'var(--bad)':'var(--o40)'; const ar=pr.dir==='up'?'▲':pr.dir==='down'?'▼':'='; const pc=pr.pct?((pr.pct>0?'+':'')+pr.pct+'%'):''; const ptxt=(prevS&&prevS.w?`${numTxt(prevS.w)}×${prevS.r||'—'}${prevS.rir!=null&&prevS.rir!==''?'@'+prevS.rir:''}`:''); return `<span class="setprog" style="font-size:9px;font-weight:700;color:${col}" title="vs ant ${ptxt}">${ar}${pc}</span>`; }
 // pair progress: for unilateral, sum L+R scores and compare against the same-position pair from the previous session.
-function pairBadgeHTML(curA,curB,prevA,prevB){ const cur=setScore(curA)+(curB?setScore(curB):0); const prev=(prevA?setScore(prevA):0)+(prevB?setScore(prevB):0); const pr=progFromScores(cur,prev); if(!pr)return ''; const col=pr.dir==='up'?'var(--good)':pr.dir==='down'?'var(--bad)':'var(--o40)'; const ar=pr.dir==='up'?'▲':pr.dir==='down'?'▼':'='; const pc=pr.pct?((pr.pct>0?'+':'')+pr.pct+'%'):''; return `<span class="setprog" style="font-size:9px;font-weight:700;color:${col}">${ar}${pc}</span>`; }
+function pairBadgeHTML(curA,curB,prevA,prevB){ if(!setComplete(curA)||!setComplete(curB))return ''; const cur=setScore(curA)+(curB?setScore(curB):0); const prev=(prevA?setScore(prevA):0)+(prevB?setScore(prevB):0); const pr=progFromScores(cur,prev); if(!pr)return ''; const col=pr.dir==='up'?'var(--good)':pr.dir==='down'?'var(--bad)':'var(--o40)'; const ar=pr.dir==='up'?'▲':pr.dir==='down'?'▼':'='; const pc=pr.pct?((pr.pct>0?'+':'')+pr.pct+'%'):''; return `<span class="setprog" style="font-size:9px;font-weight:700;color:${col}">${ar}${pc}</span>`; }
 // MUSCLE-LEVEL weekly score: aggregate setScore over all exercises tagged with this muscle, within a date window.
 function muscleWindowScore(muscle,startISO,endISO){ const m=(muscle||'').toLowerCase(); let total=0; (db.sessions||[]).forEach(s=>{ if(s.type==='rest')return; if(s.date<startISO||s.date>=endISO)return; (s.exercises||[]).forEach(e=>{ const hit=exMuscles(e).find(x=>x.name===m); if(!hit)return; (e.sets||[]).forEach(set=>{ total+=setScore(set)*hit.weight; }); }); }); return total; }
 function muscleProgress(muscle){ const now=new Date(); const c7=new Date(now); c7.setDate(now.getDate()-6); const c14=new Date(now); c14.setDate(now.getDate()-13); const tomorrow=new Date(now); tomorrow.setDate(now.getDate()+1); const cur=muscleWindowScore(muscle,todayISO(c7),todayISO(tomorrow)); const prev=muscleWindowScore(muscle,todayISO(c14),todayISO(c7)); return progFromScores(cur,prev); }
@@ -866,7 +877,7 @@ function renderExercise(exi,ex,allowF,canReorder){
     mhtml=p; }
   const prBadge=progBadgeHTML(ex);
   const gripE=canReorder?`<span class="dgrip" data-drage="${exi}" title="mantén y arrastra · reordena dentro del músculo">⠿</span>`:'';
-  let head=`<div class="exhead">${gripE}<span class="n" data-act="editexname" data-exi="${exi}" style="cursor:pointer">${escTxt(ex.name)}</span>${prBadge}${mhtml}${ex.note?`<span class="note">${escTxt(ex.note)}</span>`:''}${isU?'<span class="note">[uni]</span>':''}<span class="exdel" data-act="delex" data-exi="${exi}" title="quitar de la sesión" style="margin-left:auto;align-self:center;color:var(--o35);cursor:pointer;font-size:13px;padding:2px 6px">✕</span></div>`;
+  let head=`<div class="exhead">${gripE}<span class="n" data-act="editexname" data-exi="${exi}" style="cursor:pointer">${escTxt(ex.name)}</span>${prBadge}${mhtml}<span class="note" data-act="editexnote" data-exi="${exi}" style="cursor:pointer${ex.note?'':';color:var(--o30)'}" title="${ex.note?'editar nota':'agregar nota'}">${ex.note?escTxt(ex.note):'+ nota'}</span>${isU?'<span class="note">[uni]</span>':''}<span class="exdel" data-act="delex" data-exi="${exi}" title="quitar de la sesión" style="margin-left:auto;align-self:center;color:var(--o35);cursor:pointer;font-size:13px;padding:2px 6px">✕</span></div>`;
   let rows='';
   // PREV-session sets for position-based per-set comparison
   const prevSets=lastLoggedSets(ex.name,ex.unilateral);
@@ -1920,6 +1931,7 @@ document.getElementById('app').addEventListener('click',e=>{
   else if(a==='axback'){ openAddExercise((window._axCtx||{}).afterExi); }
   else if(a==='editmach'){ openMachineEdit(exi); }
   else if(a==='editexname'){ openExEdit(null,-1,exi); }
+  else if(a==='editexnote'){ const w=db.activeWork; if(w&&w.exercises[exi]){ const cur=w.exercises[exi].note||''; const v=prompt('nota · '+((w.exercises[exi].name)||'ejercicio')+':',cur); if(v!=null){ w.exercises[exi].note=String(v).trim(); save(); state._scroll=(document.getElementById('view')||{}).scrollTop||0; render(); } } }
   else if(a==='save'){ saveSession(); }
   else if(a==='togglemacros'){ state._scroll=document.getElementById('view').scrollTop; state.macroOpen=!state.macroOpen; render(); }
   else if(a==='toggleMacroUnit'){ state.macroPct=!state.macroPct; render(); }
@@ -2352,8 +2364,7 @@ function addExFromKnown(afterExi,x){
   const w=db.activeWork; if(!w||!x)return;
   const newEx={name:x.name,muscle:x.muscle||((x.muscles&&x.muscles[0]&&x.muscles[0].name)||'other'),muscles:x.muscles,type:x.type||'free',machine:x.machine||'',unilateral:!!x.unilateral,startSide:x.startSide||'R',note:'',sets:[]};
   let insertAt; if(afterExi!=null&&afterExi>=0&&afterExi<w.exercises.length){ insertAt=afterExi+1; w.exercises.splice(insertAt,0,newEx); } else { w.exercises.push(newEx); insertAt=w.exercises.length-1; }
-  const ex=w.exercises[insertAt]; const n=Math.max(1,(typeof x.sets==='number'?x.sets:2)); const last=lastLoggedSets(x.name,ex.unilateral); const [s1,s2]=uniSides(ex);
-  for(let i=0;i<n;i++){ if(ex.unilateral){ex.sets.push(emptySet(ex,s1,false,last?last[i*2]:null));ex.sets.push(emptySet(ex,s2,false,last?last[i*2+1]:null));} else ex.sets.push(emptySet(ex,null,false,last?(last[i]||last[last.length-1]):null)); }
+  const ex=w.exercises[insertAt]; ex.sets=seedSets(ex,(typeof x.sets==='number'?x.sets:2));
   save(); closeModal(); render();
 }
 // FORM: new exercise (muscle pre-filled from step 1)
@@ -2396,8 +2407,7 @@ function openAddExForm(afterExi,muscle){
     let insertAt;
     if(afterExi!=null && afterExi>=0 && afterExi<w.exercises.length){ insertAt=afterExi+1; w.exercises.splice(insertAt,0,newEx); }
     else { w.exercises.push(newEx); insertAt=w.exercises.length-1; }
-    const ex=w.exercises[insertAt]; const n=Math.max(1,+val('fx_sets')||1); const last=lastLoggedSets(name,ex.unilateral); const [s1,s2]=uniSides(ex);
-    for(let i=0;i<n;i++){ if(ex.unilateral){ex.sets.push(emptySet(ex,s1,false,last?last[i*2]:null));ex.sets.push(emptySet(ex,s2,false,last?last[i*2+1]:null));} else ex.sets.push(emptySet(ex,null,false,last?(last[i]||last[last.length-1]):null)); }
+    const ex=w.exercises[insertAt]; ex.sets=seedSets(ex,+val('fx_sets')||1);
     save(); closeModal(); render();
   };
 }
