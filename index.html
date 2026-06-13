@@ -173,6 +173,19 @@
   .item .macq{color:var(--o40); font-size:9px; text-align:right; white-space:nowrap;}
   .item .kc{color:var(--o50); font-size:10px; font-weight:400; text-align:right;}
   .item.exp{background:var(--o10);}
+  /* session history — agrupado por mes, fila de 2 líneas (reusa .grp) */
+  .hmon{font-size:var(--t-caption); color:var(--o40); letter-spacing:1.5px; text-transform:uppercase; margin:var(--s4) 0 var(--s2) 2px;}
+  .hmon:first-of-type{margin-top:var(--s2);}
+  .hrow{display:flex; align-items:center; justify-content:space-between; gap:var(--s4); padding:var(--s4) 0; cursor:pointer; border-bottom:1px solid var(--border);}
+  .grp .hrow:last-child{border-bottom:0;}
+  .hrow:active{background:var(--o10);}
+  .hrow .hL{min-width:0;}
+  .hrow .hnm{font-size:var(--t-body); font-weight:700; color:var(--fg); line-height:1.2; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .hrow .hmeta{font-size:var(--t-meta); color:var(--o40); margin-top:3px;}
+  .hrow .hR{display:flex; align-items:center; gap:var(--s3); flex:0 0 auto;}
+  .hrow .hday{font-size:var(--t-meta); color:var(--o50); white-space:nowrap;}
+  .hrow .hagg{font-size:var(--t-meta); white-space:nowrap;}
+  .hrow .hchev{color:var(--o30); font-size:var(--t-body); line-height:1;}
   /* inline meal detail under a tapped log item */
   .mdetail{padding:8px 10px 10px 22px; margin-bottom:2px; border-left:2px solid var(--o20); animation:mdslide .2s ease;}
   @keyframes mdslide{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
@@ -429,6 +442,7 @@ const LS_KEY='gymtrk_db_v1';
 const AI_PROXY_URL='';
 const pad=n=>String(n).padStart(2,'0');
 const MON=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+const DOW=['dom','lun','mar','mié','jue','vie','sáb'];
 const MONFULL=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
 function todayISO(d){d=d||new Date();return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());}
 function fmtDate(iso){const[y,m,dd]=iso.split('-');return dd+' '+MON[(+m)-1]+' '+y;}
@@ -1688,10 +1702,16 @@ function renderHistory(){
   const sess=(db.sessions||[]).filter(s=>s.type!=='rest').slice().sort((a,b)=>String(b.date).localeCompare(String(a.date)));
   let body=statusBar(true)+`<hr class="rule"/><div class="section"><div class="h"><span class="s">//</span>HISTORY</div><div class="meta">${sess.length}</div></div>`;
   if(!sess.length) return body+`<div class="empty">sin sesiones registradas<br/><span class="ehint">termina un entreno para verlo aquí</span></div>`;
-  sess.slice(0,80).forEach(s=>{ let sets=0; (s.exercises||[]).forEach(e=>sets+=(e.sets||[]).length); const exn=(s.exercises||[]).length;
-    const ag=sessionProgAgg(s); let agp=''; if(ag.up)agp+=` <span style="color:var(--good)">▲${ag.up}</span>`; if(ag.down)agp+=` <span style="color:var(--bad)">▼${ag.down}</span>`;
-    body+=`<div class="item" data-act="vieweditsession" data-id="${s.id}" style="grid-template-columns:1fr auto"><span class="nm">${escTxt(s.dayName||'sesión')} <span class="br">${s.date}</span></span><span class="kc" style="color:var(--o50)">${exn} ej · ${sets} sets${agp}</span></div>`;
+  let curKey='';
+  sess.slice(0,80).forEach(s=>{
+    let sets=0; (s.exercises||[]).forEach(e=>sets+=(e.sets||[]).length); const exn=(s.exercises||[]).length;
+    const ag=sessionProgAgg(s); let agp=''; if(ag.up)agp+=`<span style="color:var(--good)">▲${ag.up}</span>`; if(ag.down)agp+=`${ag.up?' ':''}<span style="color:var(--bad)">▼${ag.down}</span>`;
+    const p=String(s.date).split('-'), yy=p[0], mm=+p[1], dd=p[2], key=yy+'-'+p[1];
+    if(key!==curKey){ if(curKey)body+='</div>'; body+=`<div class="hmon">${MON[mm-1]||'?'} ${yy}</div><div class="grp">`; curKey=key; }
+    const dt=new Date(s.date+'T00:00'), dow=isNaN(dt)?'':DOW[dt.getDay()]+' ';
+    body+=`<div class="hrow" data-act="vieweditsession" data-id="${s.id}"><div class="hL"><div class="hnm">${escTxt(s.dayName||'sesión')}</div><div class="hmeta">${exn} ej · ${sets} sets</div></div><div class="hR"><span class="hday">${dow}${dd}</span>${agp?`<span class="hagg">${agp}</span>`:''}<span class="hchev">›</span></div></div>`;
   });
+  body+='</div>';
   return body;
 }
 function openSessionEdit(id){
