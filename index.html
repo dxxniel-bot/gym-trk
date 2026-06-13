@@ -757,23 +757,18 @@ function dayPreviewHTML(day){
 }
 // planned volume per muscle across the whole split (sets/rotation) vs RP landmarks — live feedback while building
 function plannedVolumeSection(){
-  // WEEKLY planned volume: each day's sets ×its perWeek (veces/semana), so a short split repeated N× counts N×.
-  const byM={}, freq={};
-  (db.split&&db.split.days||[]).forEach(d=>{ const f=Math.max(1,parseInt(d.perWeek,10)||1); const seen={};
-    (d.exercises||[]).forEach(e=>{ const m=e.muscle||'other'; byM[m]=(byM[m]||0)+Math.max(0,parseInt(e.sets,10)||0)*f; seen[m]=1; });
-    Object.keys(seen).forEach(m=>{ freq[m]=(freq[m]||0)+f; });
-  });
+  const byM={}; (db.split&&db.split.days||[]).forEach(d=>(d.exercises||[]).forEach(e=>{ const m=e.muscle||'other'; byM[m]=(byM[m]||0)+Math.max(0,parseInt(e.sets,10)||0); }));
   const muscles=Object.keys(byM).sort((a,b)=>byM[b]-byM[a]);
   if(!muscles.length)return '';
   let rows='';
   muscles.forEach(m=>{ const sets=byM[m]; const L=VOL_LANDMARKS[canonM(m)]; const st=volStatus(m,sets);
     const pct=Math.min(100,Math.round(sets/(L?L[2]:20)*100));
     const mevPct=L?Math.round(L[0]/L[2]*100):0, mavPct=L?Math.round(L[1]/L[2]*100):0;
-    rows+=`<div class="vrow"><div class="vtop"><span class="vm">${escTxt(m)}</span><span class="vn">${sets} sets${st?` <span class="vst ${st}">${st}</span>`:''} ${freq[m]||0}×/wk</span></div>`
+    rows+=`<div class="vrow"><div class="vtop"><span class="vm">${escTxt(m)}</span><span class="vn">${sets} sets${st?` <span class="vst ${st}">${st}</span>`:''}</span></div>`
       +`<div class="vbar"><i style="width:${pct}%"></i>${L?`<span class="mev" style="left:${mevPct}%"></span><span class="mav" style="left:${mavPct}%"></span>`:''}</div></div>`;
   });
-  return `<hr class="rule"/><div class="section" style="margin-bottom:10px"><div class="h"><span class="s">//</span>VOLUMEN PLANEADO</div><div class="meta">sets/músculo · semanal</div></div>`+rows
-    +`<div class="submeta" style="margin-top:8px">volumen semanal del split (sets × veces/semana por día) · marcas MEV·MAV·MRV (semanales, RP)</div>`;
+  return `<hr class="rule"/><div class="section" style="margin-bottom:10px"><div class="h"><span class="s">//</span>VOLUMEN PLANEADO</div><div class="meta">sets/músculo · por vuelta</div></div>`+rows
+    +`<div class="submeta" style="margin-top:8px">suma de sets de todo el split · marcas MEV·MAV·MRV (semanales, RP)</div>`;
 }
 function volumeSection(){
   const {byM,freq}=weeklySets(7); const {byM:prevM}=weeklySets(14);
@@ -1676,7 +1671,7 @@ function renderSplitEdit(){
    +`<div class="field" style="margin-bottom:16px"><label>NOMBRE DEL SPLIT</label><input data-act="sd_splitname" value="${(sp.name||'').replace(/"/g,'&quot;')}" placeholder="ej. Push/Pull/Legs"/></div>`
    +plannedVolumeSection();
   (sp.days||[]).forEach((d,di)=>{
-    body+=`<div class="seday"><div class="sehead"><input class="senm" data-act="sd_name" data-di="${di}" value="${(d.name||'').replace(/"/g,'&quot;')}"/><span class="seweek" title="veces por semana que repites este día" style="flex:0 0 auto;white-space:nowrap;font-size:9px;color:var(--o50)">×<input data-act="sd_perweek" data-di="${di}" type="number" inputmode="numeric" min="1" max="14" value="${Math.max(1,parseInt(d.perWeek,10)||1)}" style="width:30px;background:transparent;border:.5px solid var(--o20);color:var(--fg);font:inherit;font-size:11px;font-weight:700;text-align:center;padding:2px 3px;margin:0 3px"/>/sem</span><span class="semv"><span data-act="sd_dayup" data-di="${di}">▲</span><span data-act="sd_daydn" data-di="${di}">▼</span></span>${sp.days.length>1?`<span class="sedel" data-act="sd_deld" data-di="${di}">✕</span>`:''}</div>`;
+    body+=`<div class="seday"><div class="sehead"><input class="senm" data-act="sd_name" data-di="${di}" value="${(d.name||'').replace(/"/g,'&quot;')}"/><span class="semv"><span data-act="sd_dayup" data-di="${di}">▲</span><span data-act="sd_daydn" data-di="${di}">▼</span></span>${sp.days.length>1?`<span class="sedel" data-act="sd_deld" data-di="${di}">✕</span>`:''}</div>`;
     (d.exercises||[]).forEach((e,ei)=>{
       body+=`<div class="seex"><span class="seexn" data-act="sd_ex" data-di="${di}" data-ei="${ei}">${escTxt(e.name)} <span class="seexm">${escTxt(fmtMuscles(e))}${e.unilateral?' · R/L':''}${e.type==='machine'?' · mach':e.type==='pulley'?' · pulley':e.type==='bodyweight'?' · bw':''} · ${e.sets||1}×</span></span><span class="semv"><span data-act="sd_exup" data-di="${di}" data-ei="${ei}">▲</span><span data-act="sd_exdn" data-di="${di}" data-ei="${ei}">▼</span></span><span class="sedel" data-act="sd_delex" data-di="${di}" data-ei="${ei}">✕</span></div>`;
     });
@@ -2052,7 +2047,6 @@ document.getElementById('app').addEventListener('click',e=>{
 })();
 document.getElementById('app').addEventListener('change',e=>{
   const sd=e.target.closest('[data-act="setdate"]'); if(sd){ if(db.activeWork){db.activeWork.date=sd.value;save();} return; }
-  const pw=e.target.closest('[data-act="sd_perweek"]'); if(pw){ const di=+pw.dataset.di; if(db.split&&db.split.days[di]){ db.split.days[di].perWeek=Math.max(1,Math.min(14,parseInt(pw.value,10)||1)); save(); state._scroll=(document.getElementById('view')||{}).scrollTop||0; render(); } return; }
   const du=e.target.closest('[data-act="setdur"]'); if(du){ if(db.activeWork){db.activeWork.manualDur=du.value;save();} return; }
   const dc=e.target.closest('[data-act="daycal"]'); if(dc){ if(dc.value){ state.macroDate=dc.value; render(); } return; }
   const el=e.target.closest('[data-act="setf"]'); if(!el)return;
