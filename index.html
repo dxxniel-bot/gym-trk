@@ -283,7 +283,7 @@
   .seex{display:flex;align-items:baseline;justify-content:space-between;gap:8px;padding:4px 0;} .seexn{flex:1;font-size:12px;color:var(--o60);cursor:pointer;} .seexn .seexm{font-size:9px;color:var(--o40);} .sedel{color:var(--o30);cursor:pointer;font-size:13px;padding:0 4px;}
   .semv{display:inline-flex;gap:1px;flex:0 0 auto;} .semv span{color:var(--o30);cursor:pointer;font-size:11px;padding:2px 4px;line-height:1;} .semv span:active{color:var(--fg);}
   .seadd{font-size:10px;color:var(--o50);cursor:pointer;padding:8px 0;}
-  .srowm{display:grid;grid-template-columns:30px 1fr 1fr 1fr;gap:6px;align-items:center;margin-bottom:5px;} .srowm .sn{font-size:10px;color:var(--o50);text-align:center;} .srowm .sm{height:36px;background:transparent;border:.5px solid var(--o20);color:var(--fg);font:inherit;font-size:13px;text-align:center;}
+  .srowm{display:grid;grid-template-columns:30px 1fr 1fr 1fr;gap:6px;align-items:center;margin-bottom:5px;} .srowm .sn{font-size:10px;color:var(--o50);text-align:center;} .srowm .sm{height:44px;background:var(--card);border:1px solid var(--border);color:var(--fg);font:inherit;font-size:13px;text-align:center;border-radius:var(--r-ctl);}
   .sheetbtns{display:flex; gap:10px; margin-top:10px;} .sheetbtns .ok{flex:1; height:48px; background:var(--fill); color:#000; font-weight:600; border:0; font-size:var(--t-body); cursor:pointer; border-radius:var(--r-ctl);} .sheetbtns .cancel{height:48px; padding:0 18px; border:1px solid var(--border); background:none; color:var(--o60); font-size:var(--t-sm); cursor:pointer; border-radius:var(--r-ctl);}
   .pickitem{padding:12px 6px; font-size:13px; border-bottom:1px solid var(--line); cursor:pointer;} .pickitem:hover{color:#fff;} .pickitem:active{background:var(--o10);}
 
@@ -314,7 +314,7 @@
   /* rounded progress bars */
   .bar,.wprog,.vbar{border-radius:var(--r-pill);} .bar>i,.wprog>i,.vbar>i{border-radius:var(--r-pill);}
   /* workout sets table: terminal style (sharp, dense) — like Expo/ironLOG */
-  .inp,.pick,.fs,.srowm .sm{border-radius:2px; border-color:var(--o20);}
+  .inp,.pick,.fs{border-radius:2px; border-color:var(--o20);}
   .senm{border-bottom-color:var(--border);} .seday{border-left-color:var(--border);} .mbody{border-left-color:var(--border);}
   /* fab */
   .fab{background:var(--fill); color:#000; box-shadow:0 4px 22px rgba(0,0,0,.7);}
@@ -1750,15 +1750,15 @@ function openSessionEdit(id){
     const rows=(e.sets||[]).map((st,si)=>`<div class="srowm"><span class="sn">#${si+1}</span><input class="sm" data-act="ss_f" data-ei="${ei}" data-si="${si}" data-f="w" type="number" inputmode="decimal" value="${st.w!=null?st.w:''}" placeholder="w"/><input class="sm" data-act="ss_f" data-ei="${ei}" data-si="${si}" data-f="r" type="number" inputmode="numeric" value="${st.r!=null?st.r:''}" placeholder="reps"/><input class="sm" data-act="ss_f" data-ei="${ei}" data-si="${si}" data-f="rir" value="${st.rir!=null?st.rir:''}" placeholder="rir"/></div>`).join('');
     const badge=progBadgeFromProg(histProgress(e,s.id),'vs sesión previa de este ejercicio');
     // reorder arrows so legacy sessions (logged before the addex-position fix) can be corrected
-    const up=ei>0?`<span data-act="ss_exup" data-ei="${ei}" style="cursor:pointer;padding:0 4px;color:var(--o60)">▲</span>`:'<span style="padding:0 4px;color:var(--o20)">▲</span>';
-    const dn=ei<nEx-1?`<span data-act="ss_exdn" data-ei="${ei}" style="cursor:pointer;padding:0 4px;color:var(--o60)">▼</span>`:'<span style="padding:0 4px;color:var(--o20)">▼</span>';
-    return `<div style="margin-bottom:12px"><div class="submeta" style="color:var(--o60);padding:0 0 5px;display:flex;align-items:center;gap:4px"><span style="flex:1">${escTxt(e.name)} <span style="color:var(--o40)">${escTxt(e.muscle||'')}</span>${badge}</span><span>${up}${dn}</span></div>${rows||'<div class="submeta">sin sets</div>'}</div>`;
+    const up=ei>0?`<span data-act="ss_exup" data-ei="${ei}">▲</span>`:`<span class="off">▲</span>`;
+    const dn=ei<nEx-1?`<span data-act="ss_exdn" data-ei="${ei}">▼</span>`:`<span class="off">▼</span>`;
+    return `<div class="card"><div class="sess-exh"><span class="sess-exn">${escTxt(e.name)} <span class="muted">${escTxt(e.muscle||'')}</span>${badge}</span><span class="semv">${up}${dn}</span></div>${rows||'<div class="submeta">sin sets</div>'}</div>`;
   }).join('');
   openModal(`<h3>${escTxt(s.dayName||'sesión')}</h3>
    <div class="field"><label>FECHA</label><input id="ss_date" type="date" value="${s.date||''}"/></div>
-   <div class="submeta" style="margin:2px 0 10px">${nEx} ejercicios · ▲▼ reordena · edita sets directo</div>
+   <div class="submeta gap">${nEx} ejercicios · ▲▼ reordena · edita sets directo</div>
    ${exHtml||'<div class="submeta">sin ejercicios</div>'}
-   <div class="sheetbtns" style="margin-top:12px"><button class="ok" data-act="ss_save">guardar</button><button class="cancel" data-act="sharesession" data-id="${s.id}">compartir</button><button class="cancel" data-act="ss_del">borrar</button><button class="cancel" data-act="closemodal">close</button></div>`);
+   <div class="sheetbtns"><button class="ok" data-act="ss_save">guardar</button><button class="cancel" data-act="sharesession" data-id="${s.id}">compartir</button><button class="cancel danger" data-act="ss_del">borrar</button><button class="cancel" data-act="closemodal">close</button></div>`);
 }
 
 // ---------- render: settings ----------
