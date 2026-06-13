@@ -1925,12 +1925,13 @@ document.getElementById('app').addEventListener('click',e=>{
   else if(a==='delset'){ const ex=db.activeWork.exercises[exi]; if(ex.unilateral){const p=Math.floor(si/2)*2; ex.sets.splice(p,2);} else ex.sets.splice(si,1); save(); state._scroll=document.getElementById('view').scrollTop; render(); }
   else if(a==='delex'){ const w=db.activeWork; if(w&&w.exercises[exi]&&confirm('¿Quitar "'+((w.exercises[exi].name)||'este ejercicio')+'" de la sesión? (no toca tu split)')){ w.exercises.splice(exi,1); save(); state._scroll=(document.getElementById('view')||{}).scrollTop||0; render(); } }
   else if(a==='addex'){ openAddExercise(exi); }
-  else if(a==='axmus'){ openAddExStep2((window._axCtx||{}).afterExi, el.dataset.v); }
-  else if(a==='axpick'){ const x=(window._axList||[])[+el.dataset.i]; if(x)addExFromKnown((window._axCtx||{}).afterExi,x); }
-  else if(a==='axnewex'){ const c=window._axCtx||{}; openAddExForm(c.afterExi,c.muscle); }
-  else if(a==='axback'){ openAddExercise((window._axCtx||{}).afterExi); }
+  else if(a==='axmus'){ const c=window._axCtx||{}; openAddExStep2(c.afterExi, el.dataset.v, c.replaceExi); }
+  else if(a==='axpick'){ const c=window._axCtx||{}; const x=(window._axList||[])[+el.dataset.i]; if(x){ if(c.replaceExi!=null)replaceExFromKnown(c.replaceExi,x); else addExFromKnown(c.afterExi,x); } }
+  else if(a==='axnewex'){ const c=window._axCtx||{}; openAddExForm(c.afterExi,c.muscle,c.replaceExi); }
+  else if(a==='axback'){ const c=window._axCtx||{}; openAddExercise(c.afterExi,c.replaceExi); }
+  else if(a==='axdetails'){ const c=window._axCtx||{}; if(c.replaceExi!=null)openExEdit(null,-1,c.replaceExi); }
   else if(a==='editmach'){ openMachineEdit(exi); }
-  else if(a==='editexname'){ openExEdit(null,-1,exi); }
+  else if(a==='editexname'){ const w=db.activeWork; const ex=w&&w.exercises[exi]; if(ex&&ex.muscle){ openAddExStep2(exi, ex.muscle, exi); } else { openAddExercise(exi, exi); } }
   else if(a==='editexnote'){ const w=db.activeWork; if(w&&w.exercises[exi]){ const cur=w.exercises[exi].note||''; const v=prompt('nota · '+((w.exercises[exi].name)||'ejercicio')+':',cur); if(v!=null){ w.exercises[exi].note=String(v).trim(); save(); state._scroll=(document.getElementById('view')||{}).scrollTop||0; render(); } } }
   else if(a==='save'){ saveSession(); }
   else if(a==='togglemacros'){ state._scroll=document.getElementById('view').scrollTop; state.macroOpen=!state.macroOpen; render(); }
@@ -2340,23 +2341,23 @@ function downloadIcs(di){
 // new muscle names by free typing — no exhaustive hardcoded chip list cluttering the UI.
 function muscleSuggest(){ const used=new Set(); (db.split&&db.split.days||[]).forEach(d=>(d.exercises||[]).forEach(e=>{ if(e.muscle)used.add(String(e.muscle).toLowerCase().trim()); })); (db.sessions||[]).forEach(s=>{ if(s.type==='rest')return; (s.exercises||[]).forEach(e=>{ if(e.muscle)used.add(String(e.muscle).toLowerCase().trim()); }); }); const arr=[...used].filter(Boolean); return arr.length?arr.sort():['chest','back','legs','delts','biceps','tricep']; }
 // STEP 1: pick a muscle first
-function openAddExercise(afterExi){
-  window._axCtx={afterExi}; const muscles=muscleSuggest();
-  openModal(`<h3>+ ejercicio · elige músculo</h3>
+function openAddExercise(afterExi,replaceExi){
+  window._axCtx={afterExi,replaceExi}; const muscles=muscleSuggest();
+  openModal(`<h3>${replaceExi!=null?'cambiar ejercicio':'+ ejercicio'} · elige músculo</h3>
    <div class="chips" id="ax_mus" style="margin-bottom:14px">${muscles.map(mm=>`<span class="chip" data-act="axmus" data-v="${escTxt(mm)}">${escTxt(mm)}</span>`).join('')}</div>
    <div class="field"><label>O MÚSCULO NUEVO</label><input id="ax_newmus" placeholder="ej. antebrazo" autocomplete="off"/></div>
    <div class="sheetbtns"><button class="ok" id="ax_newmus_go">continuar →</button><button class="cancel" data-act="closemodal">cancel</button></div>`);
   const go=document.getElementById('ax_newmus_go'); const ni=document.getElementById('ax_newmus');
-  const cont=()=>{ const m=val('ax_newmus'); if(m)openAddExStep2(afterExi,m); };
+  const cont=()=>{ const m=val('ax_newmus'); if(m)openAddExStep2(afterExi,m,replaceExi); };
   if(go)go.onclick=cont; if(ni)ni.addEventListener('keydown',e=>{ if(e.key==='Enter')cont(); });
 }
 // STEP 2: pick a registered exercise of that muscle, or add a new one
-function openAddExStep2(afterExi,muscle){
+function openAddExStep2(afterExi,muscle,replaceExi){
   const dir=exerciseDirectory(); const key=String(muscle).toLowerCase().trim(); const list=(dir[key]||dir[muscle]||[]).slice().sort((a,b)=>(b._sess||0)-(a._sess||0));
-  window._axList=list; window._axCtx={afterExi,muscle:key};
-  openModal(`<h3>${escTxt(muscle)} · elige ejercicio</h3>
+  window._axList=list; window._axCtx={afterExi,muscle:key,replaceExi};
+  openModal(`<h3>${escTxt(muscle)} · ${replaceExi!=null?'cambiar ejercicio':'elige ejercicio'}</h3>
    ${list.length?`<div class="submeta" style="margin-bottom:6px">ya los usas · toca para agregar</div><div>${list.map((x,i)=>`<div class="pickitem" data-act="axpick" data-i="${i}">${escTxt(x.name)}${x.machine?` <span style="color:var(--o40);font-size:10px">${escTxt(x.machine)}</span>`:''}${x.type&&x.type!=='free'?` <span style="color:var(--o35);font-size:9px">${escTxt(x.type)}</span>`:''}<span style="float:right;color:var(--o40);font-size:10px">${x._sess||0}×</span></div>`).join('')}</div><hr class="rule" style="margin:10px 0"/>`:`<div class="submeta" style="margin-bottom:10px">sin ejercicios registrados para "${escTxt(muscle)}" todavía</div>`}
-   <button class="b" data-act="axnewex" style="width:100%">+ ejercicio nuevo</button>
+   <button class="b" data-act="axnewex" style="width:100%">+ ejercicio nuevo</button>${replaceExi!=null?'<button class="b" data-act="axdetails" style="width:100%;margin-top:8px">✎ editar detalles de este ejercicio</button>':''}
    <div class="sheetbtns" style="margin-top:10px"><button class="cancel" data-act="axback">← músculo</button><button class="cancel" data-act="closemodal">cancel</button></div>`);
 }
 // add a known exercise straight into the live session (with its remembered props + prefilled sets)
@@ -2367,12 +2368,20 @@ function addExFromKnown(afterExi,x){
   const ex=w.exercises[insertAt]; ex.sets=seedSets(ex,(typeof x.sets==='number'?x.sets:2));
   save(); closeModal(); render();
 }
+// REPLACE the live exercise at exi with a REGISTERED one: registry metadata + re-seeded sets, position kept (#4/#6/#7)
+function replaceExFromKnown(exi,x){
+  const w=db.activeWork; if(!w||!w.exercises[exi]||!x)return; const ex=w.exercises[exi];
+  if((ex.sets||[]).some(s=>s&&!s._pf&&(s.done||(+s.w>0)||(+s.r>0)))&&!confirm('Ya registraste series en "'+(ex.name||'este ejercicio')+'". Cambiar de ejercicio descarta lo registrado. ¿Continuar?'))return;
+  ex.name=x.name; ex.muscle=x.muscle||((x.muscles&&x.muscles[0]&&x.muscles[0].name)||'other'); ex.muscles=x.muscles; ex.type=x.type||'free'; ex.machine=x.machine||''; ex.unilateral=!!x.unilateral; ex.startSide=x.startSide||'R'; ex.note='';
+  ex.sets=seedSets(ex,(typeof x.sets==='number'?x.sets:2));
+  save(); closeModal(); render();
+}
 // FORM: new exercise (muscle pre-filled from step 1)
-function openAddExForm(afterExi,muscle){
+function openAddExForm(afterExi,muscle,replaceExi){
   const exs=knownExercises(); const muscles=muscleSuggest();
   const w0=db.activeWork; const seedMuscle = muscle || (afterExi!=null && w0 && w0.exercises[afterExi] && w0.exercises[afterExi].muscle) || '';
   const types=[['free','freeweight'],['machine','machine'],['pulley','pulley'],['bodyweight','bodyweight']];
-  openModal(`<h3>+ exercise</h3>
+  openModal(`<h3>${replaceExi!=null?'+ nuevo (reemplaza)':'+ exercise'}</h3>
    <div class="field"><label>NOMBRE · escribe o elige uno previo</label><input id="fx_name" list="fx_namelist" placeholder="cable pushdown"/><datalist id="fx_namelist">${exs.map(x=>`<option value="${escTxt(x.name)}"></option>`).join('')}</datalist></div>
    <div class="field row2"><div><label>MÚSCULO · ${muscles.length} usados</label><input id="fx_muscle" value="${escTxt(seedMuscle).replace(/"/g,'&quot;')}" placeholder="chest"/></div><div><label>SETS</label><input id="fx_sets" type="number" value="2"/></div></div>
    <div class="chips" id="fx_msugg" style="margin:-4px 0 12px">${muscles.map(mm=>`<span class="chip" data-v="${escTxt(mm)}">${escTxt(mm)}</span>`).join('')}</div>
@@ -2401,10 +2410,13 @@ function openAddExForm(afterExi,muscle){
     const name=val('fx_name'); if(!name)return; const w=db.activeWork;
     const startSide=(((document.querySelector('#fx_start .t.on')||{}).dataset||{}).v==='L')?'L':'R';
     const typeOn=(document.querySelector('#fx_type .t.on')||{}).dataset; const validT=['machine','pulley','free','bodyweight'].indexOf(typeOn&&typeOn.v)>=0?typeOn.v:'free';
-    const newEx={name,muscle:val('fx_muscle')||'other',type:validT,machine:val('fx_machine'),unilateral:document.getElementById('fx_uni').checked,startSide,note:'',sets:[]};
-    // insert AFTER the exercise where [+ exercise] was tapped (button is below each exercise as a positional hint);
-    // fall back to append when no anchor (shouldn't happen, but safe)
-    let insertAt;
+    const meta={name,muscle:val('fx_muscle')||'other',type:validT,machine:val('fx_machine'),unilateral:document.getElementById('fx_uni').checked,startSide,note:''};
+    // REPLACE mode (entró por "cambiar ejercicio"): sobreescribe el ejercicio actual en su lugar + re-siembra series
+    if(replaceExi!=null && w && w.exercises[replaceExi]){ const ex=w.exercises[replaceExi];
+      if((ex.sets||[]).some(s=>s&&!s._pf&&(s.done||(+s.w>0)||(+s.r>0)))&&!confirm('Ya registraste series en "'+(ex.name||'este ejercicio')+'". Cambiar descarta lo registrado. ¿Continuar?'))return;
+      Object.assign(ex,meta); delete ex.muscles; ex.sets=seedSets(ex,+val('fx_sets')||1); save(); closeModal(); render(); return; }
+    // INSERT mode: agrega DESPUÉS del ejercicio ancla (o al final)
+    const newEx=Object.assign({},meta,{sets:[]}); let insertAt;
     if(afterExi!=null && afterExi>=0 && afterExi<w.exercises.length){ insertAt=afterExi+1; w.exercises.splice(insertAt,0,newEx); }
     else { w.exercises.push(newEx); insertAt=w.exercises.length-1; }
     const ex=w.exercises[insertAt]; ex.sets=seedSets(ex,+val('fx_sets')||1);
