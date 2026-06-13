@@ -193,6 +193,16 @@
   .mbody{border-left:1px solid var(--o12); padding-left:14px; margin-left:4px;}
   .ex{margin-bottom:var(--sp-card);} .ex:last-child{margin-bottom:0;}
   .exhead{display:flex; align-items:baseline; flex-wrap:wrap; gap:7px; margin-bottom:9px;} .exhead .n{font-size:16px; font-weight:800;} .exhead .mch{font-size:11px; color:var(--o50); cursor:pointer; border-bottom:.5px dashed var(--o20);} .exhead .mch.none{color:var(--o35); border-bottom:none;} .exhead .mch:active{color:var(--fg);} .exhead .mset{font-size:10px; color:var(--o40); cursor:pointer;} .exhead .note{font-size:10px; color:var(--o35);}
+  /* hold & drag — reorder exercises within a muscle, and whole muscle blocks */
+  .dgrip{display:inline-block; align-self:center; cursor:grab; color:var(--o30); font-size:13px; line-height:1; padding:3px 8px 3px 0; touch-action:none; -webkit-user-select:none; user-select:none; -webkit-touch-callout:none;}
+  .dgrip:active{color:var(--o60); cursor:grabbing;}
+  .mhead .dgrip{padding:2px 6px 2px 0; vertical-align:-1px;}
+  .ex.dragsrc, .mgroup.dragsrc{opacity:.3;}
+  body.dragging, body.dragging *{-webkit-user-select:none; user-select:none;}
+  body.dragging{cursor:grabbing;}
+  .dragghost{position:fixed; left:0; top:0; z-index:9999; pointer-events:none; background:var(--card2); border:1px solid var(--fg); color:var(--fg); padding:6px 11px; font-size:12px; font-weight:700; border-radius:10px; box-shadow:0 8px 26px rgba(0,0,0,.6); white-space:nowrap; letter-spacing:.02em;}
+  .ex.dropbefore, .mgroup.dropbefore{position:relative;} .ex.dropbefore::before, .mgroup.dropbefore::before{content:''; position:absolute; left:0; right:0; top:-6px; height:2px; background:var(--fill); border-radius:2px;}
+  .ex.dropafter, .mgroup.dropafter{position:relative;} .ex.dropafter::after, .mgroup.dropafter::after{content:''; position:absolute; left:0; right:0; bottom:-6px; height:2px; background:var(--fill); border-radius:2px;}
   .thead,.srow{display:grid; gap:4px; align-items:center;} .thead{margin-bottom:6px;} .thead .cl{font-size:9px; color:var(--o40); text-align:center; letter-spacing:.5px;} .thead .cl.w{text-align:left; padding-left:2px;}
   .gc-free{grid-template-columns:22px 1fr 38px 44px 40px 18px;} .gc-mach{grid-template-columns:22px 26px 1fr 38px 44px 40px 18px;} .gc-uni{grid-template-columns:20px 1fr 38px 44px 40px 18px;}
   .gc-mach-fs{grid-template-columns:22px 26px 1fr 1fr 38px 44px 40px 18px;}
@@ -844,7 +854,7 @@ function updateSetProgress(exi,si){ const w=db.activeWork; if(!w||!w.exercises[e
   const el=document.querySelector('.setprogline[data-exi="'+exi+'"][data-si="'+anchorSi+'"]'); if(!el)return;
   el.innerHTML=html||''; el.style.height=html?'11px':'0'; el.style.lineHeight='11px';
 }
-function renderExercise(exi,ex,allowF){
+function renderExercise(exi,ex,allowF,canReorder){
   const sets=ex.sets||[]; const isM=ex.type==='machine'||ex.type==='pulley'; const isU=ex.unilateral;
   const rec=machineRec((db.activeWork||{}).gym,ex); const ed=`data-act="editmach" data-exi="${exi}"`;
   let mhtml;
@@ -855,7 +865,8 @@ function renderExercise(exi,ex,allowF){
     if(!rec.brand&&!rec.setup) p=`<span class="mch none" ${ed}>+ machine</span>`;
     mhtml=p; }
   const prBadge=progBadgeHTML(ex);
-  let head=`<div class="exhead"><span class="n" data-act="editexname" data-exi="${exi}" style="cursor:pointer">${escTxt(ex.name)}</span>${prBadge}${mhtml}${ex.note?`<span class="note">${escTxt(ex.note)}</span>`:''}${isU?'<span class="note">[uni]</span>':''}<span class="exdel" data-act="delex" data-exi="${exi}" title="quitar de la sesión" style="margin-left:auto;align-self:center;color:var(--o35);cursor:pointer;font-size:13px;padding:2px 6px">✕</span></div>`;
+  const gripE=canReorder?`<span class="dgrip" data-drage="${exi}" title="mantén y arrastra · reordena dentro del músculo">⠿</span>`:'';
+  let head=`<div class="exhead">${gripE}<span class="n" data-act="editexname" data-exi="${exi}" style="cursor:pointer">${escTxt(ex.name)}</span>${prBadge}${mhtml}${ex.note?`<span class="note">${escTxt(ex.note)}</span>`:''}${isU?'<span class="note">[uni]</span>':''}<span class="exdel" data-act="delex" data-exi="${exi}" title="quitar de la sesión" style="margin-left:auto;align-self:center;color:var(--o35);cursor:pointer;font-size:13px;padding:2px 6px">✕</span></div>`;
   let rows='';
   // PREV-session sets for position-based per-set comparison
   const prevSets=lastLoggedSets(ex.name,ex.unilateral);
@@ -894,19 +905,23 @@ function renderExercise(exi,ex,allowF){
     const add=`<div class="addrow ${isM?'amach':'afree'}"><span class="aleft"><button class="addbtn" data-act="addset" data-exi="${exi}">[+ set]</button>${drop}</span><button class="addbtn aex" data-act="addex" data-exi="${exi}">[+ exercise]</button></div>`;
     rows=thead+body+add;
   }
-  return `<div class="ex">${head}${rows}</div>`;
+  return `<div class="ex" data-exi="${exi}">${head}${rows}</div>`;
 }
 function renderWorkout(){
   const w=state.work; if(!w)return renderHome();
   const day=db.split.days.find(d=>d.id===w.dayId)||curDay();
   let total=0,done=0; w.exercises.forEach(e=>e.sets.forEach(s=>{total++; if(s.done)done++;}));
   // render in array order; a muscle header starts each contiguous run -> respects the order exercises were added/reordered
-  let body=''; let curM=null;
+  let body=''; let curM=null; let blk=-1; let curBlkEx=0;
+  // total contiguous muscle blocks → muscle-level reorder only makes sense when there's more than one
+  let nblk=0; { let pm=null; w.exercises.forEach(ex=>{ const m=ex.muscle||'other'; if(m!==pm){nblk++; pm=m;} }); }
   w.exercises.forEach((ex,exi)=>{ const m=ex.muscle||'other';
-    if(m!==curM){ if(curM!==null)body+='</div></div>';
-      let cnt=0; for(let j=exi;j<w.exercises.length&&(w.exercises[j].muscle||'other')===m;j++)cnt+=w.exercises[j].sets.length;
-      body+=`<div class="mgroup"><div class="mhead">${escTxt(m)} <span style="color:var(--o50)">|</span> ${cnt} sets</div><div class="mbody">`; curM=m; }
-    body+=renderExercise(exi,ex,day.allowFailure);
+    if(m!==curM){ if(curM!==null)body+='</div></div>'; blk++;
+      let cnt=0,exCnt=0; for(let j=exi;j<w.exercises.length&&(w.exercises[j].muscle||'other')===m;j++){cnt+=w.exercises[j].sets.length; exCnt++;}
+      curBlkEx=exCnt;
+      const gripM=nblk>1?`<span class="dgrip" data-dragm="${blk}" title="mantén y arrastra · mueve el músculo completo">⠿</span> `:'';
+      body+=`<div class="mgroup" data-mg="${blk}"><div class="mhead">${gripM}${escTxt(m)} <span style="color:var(--o50)">|</span> ${cnt} sets</div><div class="mbody">`; curM=m; }
+    body+=renderExercise(exi,ex,day.allowFailure, curBlkEx>1);
   });
   if(curM!==null)body+='</div></div>';
   return statusBar(true)
@@ -1968,6 +1983,55 @@ document.getElementById('app').addEventListener('click',e=>{
   else if(a==='togglebeep'){ db.settings.restBeep=!db.settings.restBeep; save(); render(); }
   else if(a==='closemodal'){ closeModal(); }
 });
+// ---------- hold & drag reorder: exercises within a muscle + whole muscle blocks ----------
+// HTML5 native DnD is unreliable on iOS Safari, so this is a manual touch+mouse engine.
+// No cross-muscle moves: an exercise is clamped to its block's index range; a muscle moves as a block.
+(function(){
+  let d=null; // active drag state, or null
+  const wkey=ex=>ex.muscle||'other';
+  function curBlocks(){ const w=db.activeWork, bs=[]; if(!w||!w.exercises)return bs; const xs=w.exercises; let i=0;
+    while(i<xs.length){ const k=wkey(xs[i]); let j=i; while(j<xs.length&&wkey(xs[j])===k)j++; bs.push({start:i,end:j,key:k}); i=j; } return bs; }
+  function blockOf(exi){ const bs=curBlocks(); for(const b of bs){ if(exi>=b.start&&exi<b.end)return b; } return null; }
+  function pt(e){ return (e.touches&&e.touches[0])||(e.changedTouches&&e.changedTouches[0])||e; }
+  function clearMarks(){ document.querySelectorAll('.dropbefore,.dropafter').forEach(el=>el.classList.remove('dropbefore','dropafter')); }
+  function begin(kind,g,x,y){ const w=db.activeWork; if(!w)return;
+    if(kind==='ex'){ const exi=+g.dataset.drage, b=blockOf(exi); if(!b||b.end-b.start<2)return; d={kind,exi,blk:b,x0:x,y0:y,live:false,name:(w.exercises[exi]||{}).name||''}; }
+    else { const bs=curBlocks(); if(bs.length<2)return; const mg=+g.dataset.dragm; d={kind,mg,x0:x,y0:y,live:false,name:(bs[mg]||{}).key||''}; }
+    document.addEventListener('touchmove',move,{passive:false}); document.addEventListener('touchend',end); document.addEventListener('touchcancel',end);
+    document.addEventListener('mousemove',move); document.addEventListener('mouseup',end);
+  }
+  function activate(){ d.live=true; document.body.classList.add('dragging');
+    const src=document.querySelector(d.kind==='ex'?'.ex[data-exi="'+d.exi+'"]':'.mgroup[data-mg="'+d.mg+'"]'); if(src)src.classList.add('dragsrc');
+    const g=document.createElement('div'); g.className='dragghost'; g.textContent='⠿ '+(d.name||(d.kind==='ex'?'ejercicio':'músculo')); document.body.appendChild(g); d.ghost=g;
+    if(navigator.vibrate){ try{navigator.vibrate(28);}catch(_){} }
+  }
+  function dropTargets(){ if(d.kind==='ex'){ return [].slice.call(document.querySelectorAll('.ex[data-exi]')).filter(el=>{ const i=+el.dataset.exi; return i>=d.blk.start&&i<d.blk.end; }); }
+    return [].slice.call(document.querySelectorAll('.mgroup[data-mg]')); }
+  function move(e){ if(!d)return; const p=pt(e), x=p.clientX, y=p.clientY;
+    if(!d.live){ if(Math.abs(x-d.x0)<6&&Math.abs(y-d.y0)<6)return; activate(); }
+    if(e.cancelable)e.preventDefault();
+    d.ghost.style.left=(x+14)+'px'; d.ghost.style.top=(y-16)+'px';
+    const view=document.getElementById('view'); if(view){ const H=window.innerHeight; if(y<96)view.scrollTop-=11; else if(y>H-96)view.scrollTop+=11; }
+    clearMarks(); const els=dropTargets(); let idx=els.length, before=null;
+    for(let i=0;i<els.length;i++){ const r=els[i].getBoundingClientRect(); if(y<r.top+r.height/2){ idx=i; before=els[i]; break; } }
+    d.idx=idx; if(before)before.classList.add('dropbefore'); else if(els.length)els[els.length-1].classList.add('dropafter');
+  }
+  function end(){ const cur=d; cleanup(); if(!cur||!cur.live)return; const w=db.activeWork; if(!w)return; const xs=w.exercises; let changed=false;
+    if(cur.kind==='ex'){ const b=cur.blk, len=b.end-b.start, p=cur.exi-b.start; let q=Math.max(0,Math.min(len, cur.idx==null?len:cur.idx)); const fin=q>p?q-1:q;
+      if(fin!==p){ const it=xs.splice(cur.exi,1)[0]; xs.splice(b.start+fin,0,it); changed=true; } }
+    else { const bs=curBlocks(), m=cur.mg; let q=Math.max(0,Math.min(bs.length, cur.idx==null?bs.length:cur.idx)); const fin=q>m?q-1:q;
+      if(fin!==m){ const slices=bs.map(b=>xs.slice(b.start,b.end)); const order=bs.map((_,i)=>i); order.splice(m,1); order.splice(fin,0,m);
+        const flat=[]; order.forEach(i=>{ for(const it of slices[i])flat.push(it); }); xs.length=0; for(const it of flat)xs.push(it); changed=true; } }
+    if(changed){ save(); state._scroll=(document.getElementById('view')||{}).scrollTop||0; render(); }
+  }
+  function cleanup(){ document.removeEventListener('touchmove',move); document.removeEventListener('touchend',end); document.removeEventListener('touchcancel',end);
+    document.removeEventListener('mousemove',move); document.removeEventListener('mouseup',end);
+    clearMarks(); document.body.classList.remove('dragging'); document.querySelectorAll('.dragsrc').forEach(el=>el.classList.remove('dragsrc'));
+    if(d&&d.ghost&&d.ghost.parentNode)d.ghost.parentNode.removeChild(d.ghost); d=null; }
+  const app=document.getElementById('app');
+  app.addEventListener('touchstart',e=>{ if(d)return; const g=e.target.closest('.dgrip'); if(!g)return; const p=pt(e); begin(g.dataset.drage!=null?'ex':'mg',g,p.clientX,p.clientY); },{passive:true});
+  app.addEventListener('mousedown',e=>{ if(d)return; const g=e.target.closest('.dgrip'); if(!g)return; e.preventDefault(); begin(g.dataset.drage!=null?'ex':'mg',g,e.clientX,e.clientY); });
+})();
 document.getElementById('app').addEventListener('change',e=>{
   const sd=e.target.closest('[data-act="setdate"]'); if(sd){ if(db.activeWork){db.activeWork.date=sd.value;save();} return; }
   const du=e.target.closest('[data-act="setdur"]'); if(du){ if(db.activeWork){db.activeWork.manualDur=du.value;save();} return; }
