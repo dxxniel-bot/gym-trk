@@ -732,17 +732,21 @@ function exMuscles(e){
 }
 function fmtMuscles(e){ const m=exMuscles(e); if(!m.length)return ''; return m.map((x,i)=> i===0?x.name : x.name+' ('+x.weight+')').join(' · '); }
 function weeklySets(days){ days=days||7; const now=new Date(); const cut=new Date(now); cut.setDate(now.getDate()-days); const c=todayISO(cut);
-  const byM={}; const freq={};
+  const byM={}; const freq={}; const effM={};
   db.sessions.forEach(s=>{ if(s.type==='rest'||s.date<=c)return; const seen={};
     (s.exercises||[]).forEach(e=>{ const muscles=exMuscles(e); if(!muscles.length)return;
-      // RP-style counting: a unilateral R+L pair = 1 set (max across sides), a drop set = 0.5
-      let plain=0; const bySide={};
-      (e.sets||[]).forEach(st=>{ if(!((st.w||st.r)&&isHardSet(st)))return; const v=st.isDrop?0.5:1; if(st.side)bySide[st.side]=(bySide[st.side]||0)+v; else plain+=v; });
+      // hard sets (RIR<=4): uni R+L pair = 1 (max across sides), drop = 0.5
+      // EFFECTIVE sets = hard AND en zona de tensión real (productive/heavy, no 'light'/junk)
+      let plain=0, effPlain=0; const bySide={}, effBySide={};
+      (e.sets||[]).forEach(st=>{ if(!((st.w||st.r)&&isHardSet(st)))return; const v=st.isDrop?0.5:1;
+        if(st.side)bySide[st.side]=(bySide[st.side]||0)+v; else plain+=v;
+        const z=setZone(st); if(z==='productive'||z==='heavy'){ if(st.side)effBySide[st.side]=(effBySide[st.side]||0)+v; else effPlain+=v; } });
       const sides=Object.keys(bySide); const hard=plain+(sides.length?Math.max.apply(null,sides.map(k=>bySide[k])):0);
-      if(hard>0){ muscles.forEach(m=>{ byM[m.name]=(byM[m.name]||0)+hard*m.weight; seen[m.name]=1; }); } });
+      const es=Object.keys(effBySide); const eff=effPlain+(es.length?Math.max.apply(null,es.map(k=>effBySide[k])):0);
+      if(hard>0){ muscles.forEach(m=>{ byM[m.name]=(byM[m.name]||0)+hard*m.weight; if(eff>0)effM[m.name]=(effM[m.name]||0)+eff*m.weight; seen[m.name]=1; }); } });
     Object.keys(seen).forEach(m=>{ freq[m]=(freq[m]||0)+1; });
   });
-  return {byM,freq};
+  return {byM,freq,effM};
 }
 function volStatus(m,sets){ const L=VOL_LANDMARKS[canonM(m)]; if(!L)return ''; if(sets<L[0])return 'under'; if(sets<=L[1])return 'optimal'; if(sets<=L[2])return 'high'; return 'over'; }
 function e1rmTrend(){ // best Epley e1RM per exercise, this week vs prior week
@@ -844,37 +848,34 @@ function dayPreviewHTML(day){
 }
 // planned volume per muscle across the whole split (sets/rotation) vs RP landmarks — live feedback while building
 function plannedVolumeSection(){
+  // cobertura del split por músculo (sets/vuelta). La tensión real no se planea — se mide al loguear.
   const byM={}; (db.split&&db.split.days||[]).forEach(d=>(d.exercises||[]).forEach(e=>{ const m=e.muscle||'other'; byM[m]=(byM[m]||0)+Math.max(0,parseInt(e.sets,10)||0); }));
   const muscles=Object.keys(byM).sort((a,b)=>byM[b]-byM[a]);
   if(!muscles.length)return '';
-  let rows='';
-  muscles.forEach(m=>{ const sets=byM[m]; const L=VOL_LANDMARKS[canonM(m)]; const st=volStatus(m,sets);
-    const pct=Math.min(100,Math.round(sets/(L?L[2]:20)*100));
-    const mevPct=L?Math.round(L[0]/L[2]*100):0, mavPct=L?Math.round(L[1]/L[2]*100):0;
-    rows+=`<div class="vrow"><div class="vtop"><span class="vm">${escTxt(m)}</span><span class="vn">${sets} sets${st?` <span class="vst ${st}">${st}</span>`:''}</span></div>`
-      +`<div class="vbar"><i style="width:${pct}%"></i>${L?`<span class="mev" style="left:${mevPct}%"></span><span class="mav" style="left:${mavPct}%"></span>`:''}</div></div>`;
+  let rows=''; const CEIL=20, DR=10, drPct=Math.round(DR/CEIL*100);
+  muscles.forEach(m=>{ const sets=byM[m]; const pct=Math.min(100,Math.round(sets/CEIL*100));
+    rows+=`<div class="vrow"><div class="vtop"><span class="vm">${escTxt(m)}</span><span class="vn">${sets} sets/vuelta</span></div>`
+      +`<div class="vbar"><i style="width:${pct}%"></i><span class="mev" style="left:${drPct}%"></span></div></div>`;
   });
-  return `<hr class="rule"/><div class="section" style="margin-bottom:10px"><div class="h"><span class="s">//</span>VOLUMEN PLANEADO</div><div class="meta">sets/músculo · por vuelta</div></div>`+rows
-    +`<div class="submeta" style="margin-top:8px">suma de sets de todo el split · marcas MEV·MAV·MRV (semanales, RP)</div>`;
+  return `<hr class="rule"/><div class="section" style="margin-bottom:10px"><div class="h"><span class="s">//</span>COBERTURA</div><div class="meta">sets/músculo · por vuelta</div></div>`+rows
+    +`<div class="submeta" style="margin-top:8px">cobertura del split por músculo · la tensión real se mide al loguear · marca ~10 = rendimientos decrecientes</div>`;
 }
 function volumeSection(){
-  const {byM,freq}=weeklySets(7); const {byM:prevM}=weeklySets(14);
-  const muscles=Object.keys(byM).sort((a,b)=>byM[b]-byM[a]);
+  // TENSIÓN, no volumen: serie EFECTIVA = dura (RIR≤4) en zona productiva. Progreso = Σ e1RM × factor de zona (tensión).
+  const {byM,freq,effM}=weeklySets(7);
+  const muscles=Object.keys(byM).sort((a,b)=>(effM[b]||0)-(effM[a]||0));
   let rows='';
-  if(!muscles.length){ rows=`<div class="submeta" style="padding:6px 0">aún sin sets esta semana</div>`; }
-  const r1=n=>Math.round(n*10)/10;
-  muscles.forEach(m=>{ const sets=r1(byM[m]); const L=VOL_LANDMARKS[canonM(m)]; const st=volStatus(m,sets);
-    const prevWk=r1((prevM[m]||0)-byM[m]); const d=r1(sets-prevWk); const darrow=d>0?'▲'+d:d<0?'▼'+(-d):'';
-    // no landmarks (custom muscle) → draw against a neutral 20-set scale so the bar still moves
-    const pct=Math.min(100,Math.round(sets/(L?L[2]:20)*100));
-    const mevPct=L?Math.round(L[0]/L[2]*100):0, mavPct=L?Math.round(L[1]/L[2]*100):0;
-    // muscle-level strength-capacity progress vs prev week (Σ e1RM × intensityFactor)
-    const mp=muscleProgress(m); const mpBadge=mp?progBadgeFromProg(mp,'progreso del músculo · 7d vs 7d previos (Σ e1RM × factor de zona productiva)'):'';
-    rows+=`<div class="vrow"><div class="vtop"><span class="vm">${escTxt(m)}${mpBadge}</span><span class="vn">${sets} sets${st?` <span class="vst ${st}">${st}</span>`:''} ${freq[m]||0}×/wk ${darrow?'<span class="vd">'+darrow+'</span>':''}</span></div>`
-      +`<div class="vbar"><i style="width:${pct}%"></i>${L?`<span class="mev" style="left:${mevPct}%"></span><span class="mav" style="left:${mavPct}%"></span>`:''}</div></div>`;
+  if(!muscles.length){ rows=`<div class="submeta" style="padding:6px 0">aún sin series duras esta semana</div>`; }
+  const r1=n=>Math.round(n*10)/10; const CEIL=20, DR=10, drPct=Math.round(DR/CEIL*100);
+  muscles.forEach(m=>{ const eff=r1(effM[m]||0), hard=r1(byM[m]);
+    const mp=muscleProgress(m); const mpBadge=mp?progBadgeFromProg(mp,'progreso de tensión del músculo · 7d vs 7d previos (Σ e1RM × factor de zona productiva)'):'';
+    const pct=Math.min(100,Math.round(eff/CEIL*100));
+    const junk=r1(hard-eff); const jn=junk>0?` <span style="color:var(--o30)" title="series duras pero de baja tensión (zona ligera) — sube carga / acércate al fallo">+${junk} lig.</span>`:'';
+    rows+=`<div class="vrow"><div class="vtop"><span class="vm">${escTxt(m)}${mpBadge}</span><span class="vn">${eff} ef.${jn} · ${freq[m]||0}×/wk</span></div>`
+      +`<div class="vbar"><i style="width:${pct}%"></i><span class="mev" style="left:${drPct}%"></span></div></div>`;
   });
-  return `<hr class="rule"/><div class="section" style="margin-bottom:12px"><div class="h"><span class="s">//</span>VOLUME</div><div class="meta">sets/músculo · 7d</div></div>`+rows
-    +`<div class="submeta" style="margin-top:8px">marcas: MEV · MAV · MRV (RP) · solo sets duros (RIR≤4)</div>`;
+  return `<hr class="rule"/><div class="section" style="margin-bottom:12px"><div class="h"><span class="s">//</span>TENSIÓN</div><div class="meta">series efectivas/músculo · 7d</div></div>`+rows
+    +`<div class="submeta" style="margin-top:8px">ef. = series duras (RIR≤4) en zona productiva (tensión real) · marca ~10 = rendimientos decrecientes · ▲▼ = progreso de tensión (e1RM)</div>`;
 }
 
 // ---------- render: workout ----------
