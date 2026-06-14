@@ -2278,7 +2278,7 @@ document.getElementById('app').addEventListener('click',e=>{
   else if(a==='fphoto'){ window._faTag=window._faTag||curTag(); const inp=document.createElement('input'); inp.type='file'; inp.accept='image/*'; inp.setAttribute('capture','environment'); inp.onchange=()=>{ if(inp.files&&inp.files[0]) labelPhoto(inp.files[0], window._linkBarcode||''); }; inp.click(); }
   else if(a==='nspick'){ snapshotFaCtx(); const f=(window._nsRes||[])[+el.dataset.i]; if(!f)return; if(window._linkBarcode)f.barcode=window._linkBarcode; openVerify(f,{isNew:true,tag:window._faTag||curTag()}); }
   else if(a==='ofpick'){ snapshotFaCtx(); const f=(window._ofRes||[])[+el.dataset.i]; if(!f)return; openLog(f,{tag:window._faTag||curTag(),isNew:true}); }
-  else if(a==='faback'){ const c=window._faCtx; window._faCtx=null; closeModal(); openFoodAdd(c&&c.tag, c&&c.lock); if(c&&c.q){ const q=document.getElementById('fa_q'); if(q){ q.value=c.q; q.dispatchEvent(new Event('input',{bubbles:true})); } } }
+  else if(a==='faback'){ const c=window._faCtx; window._faCtx=null; closeModal(); openFoodAdd(c&&c.tag, c&&c.lock); if(c&&c.q){ const q=document.getElementById('fa_q'); if(q){ q.value=c.q; q.dispatchEvent(new Event('input',{bubbles:true})); const term=(c.q||'').trim(); if(c.off && window._faLast===term){ renderOFFRows(term); } } } }
   else if(a==='ftext'){ openTextParse(); }
   else if(a==='fmanual'){ openVerify({name:'',base:'g',per100:{},sizes:{}},{isNew:true,tag:curTag()}); }
   else if(a==='vcontinue'){ const f=readRegister(); if(!f.name){ alert('Pon nombre.'); return; } if(!f.barcode && !confirm('No pusiste código de barras. ¿Registrar sin código?')) return; const vv=window._verify||{}; openLog(f,{tag:vv.tag,barcode:f.barcode,fromId:vv.fromId,isNew:true}); }
@@ -3194,8 +3194,14 @@ const BASE_FOODS=(function(){ const L=[];
   add('Sushi (roll)',160,4.5,30,1.5,{na:240,sv:100,en:'sushi roll'}); // bumped from 145; salmon roll averages higher
   return L;
 })();
-// snapshot the current food-search context (query + tag + lockTag) so openLog can offer a back button
-function snapshotFaCtx(){ try{ const q=document.getElementById('fa_q'); const tg=document.getElementById('fa_tagtxt'); window._faCtx={ q:q?q.value:'', tag:tg?tg.value:(window._faTag||curTag()), lock:!!(tg&&tg.type==='hidden') }; }catch(_){ window._faCtx=null; } }
+// snapshot the current food-search context (query + tag + lockTag + online term) so openLog can offer a back button
+function snapshotFaCtx(){ try{ const qel=document.getElementById('fa_q')||document.getElementById('ns_q'); const tg=document.getElementById('fa_tagtxt'); const qv=qel?qel.value:''; window._faCtx={ q:qv, tag:tg?tg.value:(window._faTag||curTag()), lock:!!(tg&&tg.type==='hidden'), off:(window._faLast===(qv||'').trim()?window._faLast:null) }; }catch(_){ window._faCtx=null; } }
+// re-render the cached OpenFoodFacts ("EN LÍNEA") rows for a restored search (no re-fetch). No-op if rows already present.
+function renderOFFRows(term){ const list=document.getElementById('fa_list'); const res=window._ofRes; if(!list||!res||!res.length)return false;
+  if(list.querySelector('[data-act="ofpick"]'))return true;
+  const html=res.slice(0,15).map((f,i)=>`<div class="pickitem" data-act="ofpick" data-i="${i}">${escTxt(f.name)}${foodSource(f).ok?' <span style="color:var(--good);font-size:9px" title="OpenFoodFacts">✓</span>':''}${f.brand?' <span style="color:var(--o35);font-size:10px">'+escTxt(f.brand)+'</span>':''} <span style="float:right;color:var(--o50)">${Math.round((f.per100&&f.per100.kcal)||foodKcal100(f)||0)} /100${f.base==='ml'?'ml':'g'}</span></div>`).join('');
+  const head='<div class="grp-label" style="margin:12px 0 6px;color:var(--o35)">EN LÍNEA · '+escTxt(term)+'</div>';
+  list.insertAdjacentHTML('beforeend',head+html); return true; }
 // last-used cache: per-food (unit, qty) snapshot so re-logging the same food prefills the previous portion.
 // Key strategy: barcode > id > normalized name+brand. Covers db.foods (saved), BASE_FOODS, and OFF results.
 function lastUsedKey(f){ if(!f)return ''; if(f.barcode)return 'b:'+f.barcode; if(f.id)return 'i:'+f.id; return 'n:'+bfNorm((f.name||'')+'|'+(f.brand||'')); }
@@ -3494,7 +3500,7 @@ function openVerify(food, opts){
   const packServings=(fd.sizes.container&&sg)?Math.round(fd.sizes.container/sg*100)/100:'';
   const nf=(id,lbl,v)=>`<div><label>${lbl}</label><input id="${id}" type="number" inputmode="decimal" value="${v?numTxt(v):''}" placeholder="0"/></div>`;
   const sz=(id,lbl,v)=>`<div><label>${lbl}</label><input id="${id}" type="number" inputmode="decimal" value="${v?numTxt(v):''}" placeholder="—"/></div>`;
-  openModal(`<h3>registrar alimento</h3>
+  openModal(`<h3>${window._faCtx?'<a data-act="faback" style="color:var(--o50);font-size:11px;font-weight:600;cursor:pointer;margin-right:8px;letter-spacing:.3px" title="volver a la búsqueda">← back</a>':''}registrar alimento</h3>
    <div class="field"><label>NOMBRE DEL PRODUCTO</label><input id="v_name" value="${(fd.name||'').replace(/"/g,'&quot;')}" placeholder="ej. galletas marías"/></div>
    <div class="field"><label>MARCA (opcional)</label><input id="v_brand" value="${(fd.brand||'').replace(/"/g,'&quot;')}" placeholder="ej. Gamesa"/></div>
    <div class="field"><label>CÓDIGO DE BARRAS (obligatorio)</label><input id="v_barcode" inputmode="numeric" value="${(window._verify.barcode||'').replace(/"/g,'&quot;')}" placeholder="escanea o escribe los dígitos"/></div>
