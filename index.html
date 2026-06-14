@@ -2851,7 +2851,12 @@ function servingToGrams(str){ if(!str)return 0; const m=(''+str).toLowerCase().m
 function foodKcal100(f){ if(f&&f.per100)return f.per100.kcal||0; if(f&&f.per)return f.per.kcal||0; return 0; }
 // upgrade any food (canonical or legacy {per,serving,isLiquid}) to canonical shape
 // origen de los datos de un alimento (para transparencia/verificación): bf_=curado, barcode=OFF, resto=manual
-function foodSource(f){ f=f||{}; const id=((f.id||'')+''), bc=f.barcode||''; if(id.indexOf('bf_')===0){ return f.brand?{ok:true,label:'etiqueta · '+f.brand}:{ok:true,label:'USDA · aprox.'}; } if(bc){ return {ok:true,label:'OpenFoodFacts'}; } return {ok:false,label:'lo registraste tú'}; }
+function foodSource(f){ f=f||{}; const id=((f.id||'')+''), bc=f.barcode||''; if(id.indexOf('bf_')===0){ return f.brand?{ok:true,kind:'verified',label:'etiqueta · '+f.brand}:{ok:true,kind:'verified',label:'USDA · aprox.'}; } if(bc){ return {ok:true,kind:'community',label:'OpenFoodFacts · comunidad'}; } return {ok:false,kind:'self',label:'lo registraste tú'}; }
+// sello por fuente: ✓ verde = curado/verificado por nosotros · ◦ gris = data de comunidad (OFF) · ⚠ = comunidad con kcal implausible (4-4-9) o macros incompletos. NO altera valores guardados, solo el sello.
+function kcalPlausible(f){ const p=(f&&f.per100)||{}; const k=+p.kcal||0; if(k<=0)return false; const calc=4*(+p.protein||0)+4*(+p.carbs||0)+9*(+p.fat||0)+7*(+p.alcohol||0); if(calc<=0)return false; return Math.abs(calc-k)/k<=0.30; }
+function dataIncomplete(f){ const p=(f&&f.per100)||{}; return (+p.kcal||0)>0 && ((+p.protein||0)+(+p.carbs||0)+(+p.fat||0))===0; }
+function srcMark(f){ const s=foodSource(f); if(s.kind==='self')return ''; if(s.kind==='verified')return ' <span style="color:var(--good);font-size:9px" title="verificado · '+escTxt(s.label)+'">✓</span>'; const bad=dataIncomplete(f)||!kcalPlausible(f); return ' <span style="color:var(--o40);font-size:9px" title="'+(bad?'comunidad · revisa los valores':'comunidad · verifica')+'">'+(bad?'⚠':'◦')+'</span>'; }
+function srcPrefix(f){ const s=foodSource(f); if(s.kind==='verified')return '<span style="color:var(--good)">✓</span> '; if(s.kind==='community'){ const bad=dataIncomplete(f)||!kcalPlausible(f); return '<span style="color:var(--o40)">'+(bad?'⚠':'◦')+'</span> '; } return ''; }
 function asCanonical(food){ food=food||{};
   if(food.per100){ const per100=Object.assign({},foodPer(),food.per100); delete per100.water;
     return {id:food.id,barcode:food.barcode||'',name:food.name||'',brand:food.brand||'',base:food.base||'g',per100,sizes:food.sizes||{},servingLabel:food.servingLabel||'',gramsUnknown:!!food.gramsUnknown}; }
@@ -3306,7 +3311,7 @@ function snapshotFaCtx(){ try{ const qel=document.getElementById('fa_q')||docume
 // re-render the cached OpenFoodFacts ("EN LÍNEA") rows for a restored search (no re-fetch). No-op if rows already present.
 function renderOFFRows(term){ const list=document.getElementById('fa_list'); const res=window._ofRes; if(!list||!res||!res.length)return false;
   if(list.querySelector('[data-act="ofpick"]'))return true;
-  const html=res.slice(0,15).map((f,i)=>`<div class="pickitem" data-act="ofpick" data-i="${i}">${escTxt(f.name)}${foodSource(f).ok?' <span style="color:var(--good);font-size:9px" title="OpenFoodFacts">✓</span>':''}${f.brand?' <span style="color:var(--o35);font-size:10px">'+escTxt(f.brand)+'</span>':''} <span style="float:right;color:var(--o50)">${Math.round((f.per100&&f.per100.kcal)||foodKcal100(f)||0)} /100${f.base==='ml'?'ml':'g'}</span></div>`).join('');
+  const html=res.slice(0,15).map((f,i)=>`<div class="pickitem" data-act="ofpick" data-i="${i}">${escTxt(f.name)}${srcMark(f)}${f.brand?' <span style="color:var(--o35);font-size:10px">'+escTxt(f.brand)+'</span>':''} <span style="float:right;color:var(--o50)">${Math.round((f.per100&&f.per100.kcal)||foodKcal100(f)||0)} /100${f.base==='ml'?'ml':'g'}</span></div>`).join('');
   const head='<div class="grp-label" style="margin:12px 0 6px;color:var(--o35)">EN LÍNEA · '+escTxt(term)+'</div>';
   list.insertAdjacentHTML('beforeend',head+html); return true; }
 // last-used cache: per-food (unit, qty) snapshot so re-logging the same food prefills the previous portion.
@@ -3330,7 +3335,7 @@ function openFoodAdd(preset, lockTag){
      <div class="fa-listwrap"><div class="grp-label" id="fa_lbl" style="margin:0 0 8px">RECIENTES</div><div id="fa_list"></div></div>
    </div>`,'tall');
   const q=document.getElementById('fa_q');
-  const foodRow=(f,act)=>`<div class="pickitem" data-act="${act}" data-id="${f.id}">${escTxt(f.name)}${foodSource(f).ok?' <span style="color:var(--good);font-size:9px" title="fuente conocida">✓</span>':''}${f.brand?' <span style="color:var(--o35);font-size:10px">'+escTxt(f.brand)+'</span>':''} <span style="float:right;color:var(--o50)">${Math.round(foodKcal100(f))} /100${f.base==='ml'?'ml':'g'}</span></div>`;
+  const foodRow=(f,act)=>`<div class="pickitem" data-act="${act}" data-id="${f.id}">${escTxt(f.name)}${srcMark(f)}${f.brand?' <span style="color:var(--o35);font-size:10px">'+escTxt(f.brand)+'</span>':''} <span style="float:right;color:var(--o50)">${Math.round(foodKcal100(f))} /100${f.base==='ml'?'ml':'g'}</span></div>`;
   const _icBarcode='<svg viewBox="0 0 32 22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="3" x2="3" y2="19"/><line x1="7" y1="3" x2="7" y2="19"/><line x1="11" y1="3" x2="11" y2="19" stroke-width="3"/><line x1="16" y1="3" x2="16" y2="19"/><line x1="20" y1="3" x2="20" y2="19" stroke-width="3"/><line x1="25" y1="3" x2="25" y2="19"/><line x1="29" y1="3" x2="29" y2="19"/></svg>';
   const _icTable='<svg viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><rect x="3" y="2" width="16" height="18" rx="1.5"/><line x1="3" y1="7" x2="19" y2="7" stroke-width="2"/><line x1="3" y1="11" x2="19" y2="11"/><line x1="3" y1="14.5" x2="19" y2="14.5"/><line x1="3" y1="18" x2="19" y2="18"/><line x1="11" y1="11" x2="11" y2="20"/></svg>';
   const _icCheck='<svg viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 12 9 17 18 6"/></svg>';
@@ -3365,7 +3370,7 @@ function openFoodAdd(preset, lockTag){
     const old=document.getElementById('fa_offhint'); if(old)old.remove(); list.appendChild(hint);
     try{ const res=await searchFoods(term); window._faLast=term; if(seq!==_offSeq||q.value.trim()!==term)return;
       const oldh=document.getElementById('fa_offhint'); if(oldh)oldh.remove();
-      if(res && res.length){ window._ofRes=res; const html=res.slice(0,15).map((f,i)=>`<div class="pickitem" data-act="ofpick" data-i="${i}">${escTxt(f.name)}${foodSource(f).ok?' <span style="color:var(--good);font-size:9px" title="OpenFoodFacts">✓</span>':''}${f.brand?' <span style="color:var(--o35);font-size:10px">'+escTxt(f.brand)+'</span>':''} <span style="float:right;color:var(--o50)">${Math.round((f.per100&&f.per100.kcal)||foodKcal100(f)||0)} /100${f.base==='ml'?'ml':'g'}</span></div>`).join('');
+      if(res && res.length){ window._ofRes=res; const html=res.slice(0,15).map((f,i)=>`<div class="pickitem" data-act="ofpick" data-i="${i}">${escTxt(f.name)}${srcMark(f)}${f.brand?' <span style="color:var(--o35);font-size:10px">'+escTxt(f.brand)+'</span>':''} <span style="float:right;color:var(--o50)">${Math.round((f.per100&&f.per100.kcal)||foodKcal100(f)||0)} /100${f.base==='ml'?'ml':'g'}</span></div>`).join('');
         const head='<div class="grp-label" style="margin:12px 0 6px;color:var(--o35)">EN LÍNEA · '+escTxt(term)+'</div>';
         list.insertAdjacentHTML('beforeend',head+html);
       }
@@ -3546,7 +3551,7 @@ function openNameSearch(barcode){
     const bm=BASE_FOODS.map(f=>({f,sc:searchScore(q,f)})).filter(x=>x.sc>0).sort((a,b)=>b.sc-a.sc).slice(0,15).map(x=>x.f);
     const res=await searchFoods(q); window._nsRes=res; const tot=bm.length+res.length; msg.textContent=tot?(tot+' resultados'):'sin resultados';
     const baseHtml=bm.map(f=>`<div class="pickitem" data-act="pickbase" data-id="${f.id}">${f.name}<span style="float:right;color:var(--o50)">${Math.round(foodKcal100(f))}/100${f.base==='ml'?'ml':'g'}</span></div>`).join('');
-    const offHtml=res.slice(0,20).map((f,i)=>`<div class="pickitem" data-act="nspick" data-i="${i}">${escTxt(f.name)}${foodSource(f).ok?' <span style="color:var(--good);font-size:9px" title="OpenFoodFacts">✓</span>':''}${f.brand?' <span style="color:var(--o40)">'+escTxt(f.brand)+'</span>':''}<span style="float:right;color:var(--o50)">${Math.round(foodKcal100(f))}/100</span></div>`).join('');
+    const offHtml=res.slice(0,20).map((f,i)=>`<div class="pickitem" data-act="nspick" data-i="${i}">${escTxt(f.name)}${srcMark(f)}${f.brand?' <span style="color:var(--o40)">'+escTxt(f.brand)+'</span>':''}<span style="float:right;color:var(--o50)">${Math.round(foodKcal100(f))}/100</span></div>`).join('');
     document.getElementById('ns_list').innerHTML=(bm.length?'<div class="grp-label" style="margin:2px 0 6px;color:var(--o35)">BÁSICOS</div>'+baseHtml:'')+(res.length?'<div class="grp-label" style="margin:10px 0 6px;color:var(--o35)">PRODUCTOS</div>'+offHtml:''); };
   document.getElementById('ns_go').onclick=run;
   const qi=document.getElementById('ns_q'); qi.onkeydown=e=>{ if(e.key==='Enter')run(); };
@@ -3646,7 +3651,7 @@ function openLog(food, opts){ opts=opts||{}; const fd=asCanonical(food);
   const defTime=editing?(opts.time||''):nowHM();   // HORA opcional: alta asume hora actual; edición usa la del item (vacío si null)
   const hasBack=!editing && window._faCtx;
   openModal(`<h3>${hasBack?'<a data-act="faback" style="color:var(--o50);font-size:11px;font-weight:600;cursor:pointer;margin-right:8px;letter-spacing:.3px" title="volver a la búsqueda">← back</a>':''}${editing?'editar registro':'loguear'} · ${escTxt(fd.name||'alimento')}</h3>
-   <div class="submeta" style="margin:-2px 0 9px;font-size:10px">${(()=>{const s=foodSource(fd);return (s.ok?'<span style="color:var(--good)">✓</span> ':'')+'fuente: '+escTxt(s.label);})()}</div>
+   <div class="submeta" style="margin:-2px 0 9px;font-size:10px">${srcPrefix(fd)}fuente: ${escTxt(foodSource(fd).label)}</div>
    <div class="field row2"><div><label>UNIDAD${lu?' <span style="color:var(--good);font-size:8px;font-weight:700" title="última vez">↺</span>':''}</label><select id="l_unit" class="pick">${units.map(u=>`<option value="${u.key}"${u.key===defUnit?' selected':''}>${u.label}</option>`).join('')}</select></div><div><label>CANTIDAD</label><input id="l_qty" type="number" inputmode="decimal" step="0.25" value="${defQty}"/></div></div>
    <div class="field row2"><div><label>HORA · opcional</label><input id="l_time" type="time" value="${defTime}"/></div><div style="display:flex;align-items:flex-end;padding-bottom:13px"><span class="submeta" style="font-size:10px;color:var(--o35)">vacío = sin hora</span></div></div>
    <div class="lkc" id="l_kcal"></div>
@@ -3707,7 +3712,7 @@ function openMealDetail(id){
   openModal(`<h3>${escTxt(m.name)}</h3>
    <div class="submeta" style="margin-bottom:8px">#${escTxt(m.tag)}${(m._food&&m._food.brand)?' · '+escTxt(m._food.brand):''}${m.time?' · '+escTxt(m.time):''}${m.serving?' · '+escTxt(m.serving):''}${m.qty&&m.qty!==1?' · ×'+numTxt(m.qty):''}</div>
    ${row('kcal',m.kcal,'')}${row('protein',m.protein,'g')}${row('carbs',m.carbs,'g')}${row('fat',m.fat,'g')}${row('sugar',m.sugar,'g')}${row('fiber',m.fiber,'g')}${row('sodium',m.sodium,'mg')}${row('potassium',m.potassium,'mg')}${row('caffeine',m.caffeine,'mg')}${row('liquid',m.water,'L')}
-   <div class="line"><span class="k">fuente</span><span class="dots"></span><span class="v">${(()=>{const s=foodSource(m._food);return (s.ok?'<span style="color:var(--good)">✓</span> ':'')+escTxt(s.label);})()}</span></div>
+   <div class="line"><span class="k">fuente</span><span class="dots"></span><span class="v">${srcPrefix(m._food)}${escTxt(foodSource(m._food).label)}</span></div>
    <div class="line"><span class="k">código${(()=>{const fdb=(db.foods||[]).find(x=>(m._food&&m._food.id&&x.id===m._food.id)||x.name===(m.name||'').replace(/ ×[\d.]+$/,'')); const n=(fdb?foodCodes(fdb):foodCodes(m._food||{barcode:bc})).length; return n>1?'s ('+n+')':'';})()}</span><span class="dots"></span><span class="v">${bc?(`<a data-act="mealcode" style="cursor:pointer;color:var(--fg)">${escTxt(bc)} ✎</a>`):'<a data-act="mealcode" style="text-decoration:underline;cursor:pointer">+ añadir</a>'}</span></div>
    <div class="sheetbtns" style="margin-top:12px"><button class="ok" data-act="editmeal">edit</button>${bc?'<button class="cancel" data-act="mealcode">código</button>':''}<button class="cancel" data-act="delmealnow">delete</button><button class="cancel" data-act="closemodal">close</button></div>`);
 }
