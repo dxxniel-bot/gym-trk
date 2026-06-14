@@ -1367,19 +1367,42 @@ function progWeekly(n){ const now=new Date(); const buckets=[]; for(let i=n-1;i>
 function avgKcal7(){ const now=new Date(); let sum=0,days=0; for(let i=0;i<7;i++){ const d=new Date(now); d.setDate(now.getDate()-i); const arr=db.meals[todayISO(d)]; if(arr&&arr.length){ days++; sum+=arr.reduce((a,m)=>a+(+m.kcal||0),0); } } return days?Math.round(sum/days):0; }
 // ── import health history from URL (iOS Shortcut). steps=N (hoy) · stepsh=fecha:n,fecha:n (histórico) · weight=kg (hoy) · weighth=fecha:kg,... (histórico)
 function importPairs(str,fn){ let n=0; (str||'').split(',').slice(0,500).forEach(p=>{ const i=p.indexOf(':'); if(i<1)return; const k=p.slice(0,i).trim(), v=p.slice(i+1).trim(); if(!/^\d{4}-\d{2}-\d{2}$/.test(k))return; try{ if(fn(k,v))n++; }catch(_){} }); return n; }
+// parse a ?sleep= value into the stored sleep shape (mismo que openSleepLog):
+//   "7.5"               -> 7.5  (número = horas dormidas, sin ventana)
+//   "23:30-07:00"       -> {start,end,date,isNocturnal,hours=duración en-cama}
+//   "7.5@23:30-07:00"   -> {start,end,date,isNocturnal,hours=7.5}  (horas dormidas + ventana en-cama de Salud)
+// devuelve null si es inválido (se descarta, como steps/weight).
+function parseSleepVal(raw, date){
+  raw=String(raw||'').trim(); if(!raw) return null;
+  const validHM=x=>{ const a=String(x).split(':'); if(a.length!==2)return false; const H=+a[0],M=+a[1]; return isFinite(H)&&isFinite(M)&&H>=0&&H<=23&&M>=0&&M<=59; }; // valida HH:MM (param no confiable)
+  let hours=null, win=null;
+  if(raw.indexOf('@')>=0){ const a=raw.split('@'); hours=parseFloat(a[0]); win=a[1]; }
+  else if(raw.indexOf('-')>=0){ win=raw; }
+  else { hours=parseFloat(raw); }
+  if(win){ const m=String(win).split('-'); const s=(m[0]||'').trim(), e=(m[1]||'').trim();
+    if(!validHM(s)||!validHM(e)) return null;
+    const h=(hours!=null&&isFinite(hours))?hours:sleepDur(s,e);
+    if(!(h>0&&h<24)) return null;
+    return {start:s, end:e, date:date, isNocturnal:isNocturnal(s), hours:Math.round(h*10)/10};
+  }
+  if(hours!=null&&isFinite(hours)&&hours>0&&hours<24) return Math.round(hours*10)/10;
+  return null;
+}
 function importHealth(sp){ const msg=[];
   if(sp.has('steps')){ const n=parseInt(sp.get('steps'),10); if(!isNaN(n)&&n>=0&&n<200000){ db.steps=db.steps||{}; db.steps[todayISO()]=n; msg.push(n.toLocaleString()+' pasos · hoy'); } }
   if(sp.has('stepsh')){ db.steps=db.steps||{}; const c=importPairs(sp.get('stepsh'),(k,v)=>{ const n=parseInt(v,10); if(isNaN(n)||n<0||n>=200000)return false; db.steps[k]=n; return true; }); if(c)msg.push(c+' días de pasos'); }
   if(sp.has('weight')){ const w=parseFloat(sp.get('weight')); if(w>=20&&w<=400){ db.bodyweight=db.bodyweight||{}; db.bodyweight[todayISO()]=Math.round(w*10)/10; if(db.profile)db.profile.weightKg=Math.round(w*10)/10; msg.push((Math.round(w*10)/10)+' kg · hoy'); } }
   if(sp.has('weighth')){ db.bodyweight=db.bodyweight||{}; const c=importPairs(sp.get('weighth'),(k,v)=>{ const w=parseFloat(v); if(!(w>=20&&w<=400))return false; db.bodyweight[k]=Math.round(w*10)/10; return true; }); if(c){ const ks=Object.keys(db.bodyweight).sort(); if(ks.length&&db.profile)db.profile.weightKg=db.bodyweight[ks[ks.length-1]]; msg.push(c+' registros de peso'); } }
   if(sp.has('stepsq')){ const arr=(sp.get('stepsq')||'').split(','); const N=arr.length; let end=sp.get('qend'); const _tst=end&&/^\d{4}-\d{2}-\d{2}$/.test(end)?new Date(end+'T12:00:00'):null; if(!_tst||isNaN(_tst.getTime()))end=todayISO(); db.steps=db.steps||{}; let c=0; for(let i=0;i<N;i++){ const n=parseInt(arr[i],10); if(isNaN(n)||n<0||n>=200000)continue; const d=shiftDate(end,-(N-1-i)); if(!/^\d{4}-\d{2}-\d{2}$/.test(d))continue; db.steps[d]=n; c++; } if(c)msg.push(c+' días de pasos'); }
+  if(sp.has('sleep')){ const v=parseSleepVal(sp.get('sleep'), todayISO()); if(v!=null){ db.sleep=db.sleep||{}; db.sleep[todayISO()]=v; msg.push(sleepHours(v)+' h de sueño · hoy'); } }
+  if(sp.has('sleeph')){ db.sleep=db.sleep||{}; const c=importPairs(sp.get('sleeph'),(k,val)=>{ const v=parseSleepVal(val,k); if(v==null)return false; db.sleep[k]=v; return true; }); if(c)msg.push(c+' días de sueño'); }
   return msg; }
 function healthSync(){
-  function go(t){ t=(t||"").trim(); if(t.charAt(0)==="?")t=t.slice(1); var msg=[]; try{ if(/stepsh=|weighth=|stepsq=|(^|&)steps=|(^|&)weight=/.test(t)) msg=importHealth(new URLSearchParams(t)); }catch(_){} if(msg.length){ save(); render(); setTimeout(function(){ toast("\u2713 "+msg.join(" \u00b7 ")); },120); } else { openHealthImport(); } }
+  function go(t){ t=(t||"").trim(); if(t.charAt(0)==="?")t=t.slice(1); var msg=[]; try{ if(/stepsh=|weighth=|stepsq=|sleeph=|(^|&)steps=|(^|&)weight=|(^|&)sleep=/.test(t)) msg=importHealth(new URLSearchParams(t)); }catch(_){} if(msg.length){ save(); render(); setTimeout(function(){ toast("\u2713 "+msg.join(" \u00b7 ")); },120); } else { openHealthImport(); } }
   try{ if(navigator.clipboard&&navigator.clipboard.readText){ navigator.clipboard.readText().then(go,function(){ openHealthImport(); }); } else { openHealthImport(); } }catch(_){ openHealthImport(); }
 }
 function openHealthImport(){
-  openModal('<h3>importar de Salud</h3><div class="submeta" style="margin-bottom:10px">corre tu Atajo (copia los datos), regresa y pega abajo. acepta pasos y/o peso.</div><textarea id="hi_txt" class="ta md" placeholder="stepsh=2026-05-30:8200,...   weighth=2026-05-15:81.2,..."></textarea><button class="b" id="hi_paste" style="width:100%;margin:8px 0">pegar del portapapeles</button><div class="sheetbtns"><button class="ok" id="hi_go">importar</button><button class="cancel" data-act="closemodal">cancel</button></div>');
+  openModal('<h3>importar de Salud</h3><div class="submeta" style="margin-bottom:10px">corre tu Atajo (copia los datos), regresa y pega abajo. acepta pasos, peso y/o sueño.</div><textarea id="hi_txt" class="ta md" placeholder="stepsh=2026-05-30:8200,...   weighth=2026-05-15:81.2,...   sleeph=2026-05-30:7.5@23:30-07:00,..."></textarea><button class="b" id="hi_paste" style="width:100%;margin:8px 0">pegar del portapapeles</button><div class="sheetbtns"><button class="ok" id="hi_go">importar</button><button class="cancel" data-act="closemodal">cancel</button></div>');
   var p=document.getElementById("hi_paste"); if(p)p.onclick=function(){ try{ navigator.clipboard.readText().then(function(t){ var e=document.getElementById("hi_txt"); if(e)e.value=t; },function(){ alert("Pega a mano: manten presionado el cuadro y elige Pegar."); }); }catch(_){ alert("Pega a mano: manten presionado el cuadro y elige Pegar."); } };
   var g=document.getElementById("hi_go"); if(g)g.onclick=function(){ var txt=(val("hi_txt")||"").trim(); if(txt.charAt(0)==="?")txt=txt.slice(1); var msg=[]; try{ msg=importHealth(new URLSearchParams(txt)); }catch(_){} if(msg.length){ save(); closeModal(); render(); setTimeout(function(){ toast("\u2713 "+msg.join(" \u00b7 ")); },120); } else { alert("No reconoci datos. Debe verse como  stepsh=fecha:valor,...  o  weighth=fecha:kg,..."); } };
 }
@@ -2326,11 +2349,11 @@ document.getElementById('app').addEventListener('click',e=>{
   else if(a==='viewtag'){ state._scroll=document.getElementById('view').scrollTop; state.expandedTag = state.expandedTag===el.dataset.tag ? null : el.dataset.tag; render(); }
   else if(a==='pickmealtag'){ const e=document.getElementById('fa_tagtxt'); if(e)e.value=el.dataset.v; }
   else if(a==='editmeal'){ const t=curDate(); const m=(db.meals[t]||[]).find(x=>x.id===window._mealId); if(m){ closeModal();
-      if(m._food){ openLog(m._food,{editId:m.id,qty:m.qty||1,unit:m._unit,tag:m.tag}); }
-      else { const q=m.qty||1; const per={}; ['kcal','protein','carbs','fat','sugar','sodium','potassium','fiber','caffeine','alcohol','water'].forEach(k=>per[k]=(+m[k]||0)/q); openLog({name:(m.name||'').replace(/ ×[\d.]+$/,''),serving:m.serving||'1 serving',per},{editId:m.id,qty:q,tag:m.tag}); } } }
+      if(m._food){ openLog(m._food,{editId:m.id,qty:m.qty||1,unit:m._unit,tag:m.tag,time:m.time}); }
+      else { const q=m.qty||1; const per={}; ['kcal','protein','carbs','fat','sugar','sodium','potassium','fiber','caffeine','alcohol','water'].forEach(k=>per[k]=(+m[k]||0)/q); openLog({name:(m.name||'').replace(/ ×[\d.]+$/,''),serving:m.serving||'1 serving',per},{editId:m.id,qty:q,tag:m.tag,time:m.time}); } } }
   else if(a==='delmealnow'){ state._scroll=document.getElementById('view').scrollTop; const t=curDate(); db.meals[t]=(db.meals[t]||[]).filter(m=>m.id!==window._mealId); save(); closeModal(); render(); }
   else if(a==='delmealgroup'){ const tag=el.dataset.tag; if(!tag||!confirm('¿Borrar TODA la meal "'+tag+'" (todos sus alimentos)?'))return; state._scroll=document.getElementById('view').scrollTop; const t=curDate(); db.meals[t]=(db.meals[t]||[]).filter(m=>m.tag!==tag); save(); closeModal(); render(); }
-  else if(a==='editmealx'){ const id=el.dataset.id; const t=curDate(); const m=(db.meals[t]||[]).find(x=>x.id===id); if(m){ if(m._food){ openLog(m._food,{editId:m.id,qty:m.qty||1,unit:m._unit,tag:m.tag}); } else { const q=m.qty||1; const per={}; ['kcal','protein','carbs','fat','sugar','sodium','potassium','fiber','caffeine','alcohol','water'].forEach(k=>per[k]=(+m[k]||0)/q); openLog({name:(m.name||'').replace(/ ×[\d.]+$/,''),serving:m.serving||'1 serving',per},{editId:m.id,qty:q,tag:m.tag}); } } }
+  else if(a==='editmealx'){ const id=el.dataset.id; const t=curDate(); const m=(db.meals[t]||[]).find(x=>x.id===id); if(m){ if(m._food){ openLog(m._food,{editId:m.id,qty:m.qty||1,unit:m._unit,tag:m.tag,time:m.time}); } else { const q=m.qty||1; const per={}; ['kcal','protein','carbs','fat','sugar','sodium','potassium','fiber','caffeine','alcohol','water'].forEach(k=>per[k]=(+m[k]||0)/q); openLog({name:(m.name||'').replace(/ ×[\d.]+$/,''),serving:m.serving||'1 serving',per},{editId:m.id,qty:q,tag:m.tag,time:m.time}); } } }
   else if(a==='delmealx'){ state._scroll=document.getElementById('view').scrollTop; const id=el.dataset.id; const t=curDate(); db.meals[t]=(db.meals[t]||[]).filter(m=>m.id!==id); if(state.expandedMeal===id)state.expandedMeal=null; save(); render(); }
   else if(a==='vfixkcal'){ const P=parseFloat(val('v_protein'))||0,C=parseFloat(val('v_carbs'))||0,F=parseFloat(val('v_fat'))||0; const e=document.getElementById('v_kcal'); if(e){ e.value=Math.round(P*4+C*4+F*9); e.dispatchEvent(new Event('input',{bubbles:true})); } }
   else if(a==='foodadd'){ closeAddPop(); openFoodAdd(); }
@@ -3620,10 +3643,12 @@ function openLog(food, opts){ opts=opts||{}; const fd=asCanonical(food);
   const defUnit=opts.unit||(lu && units.some(u=>u.key===lu.unit)?lu.unit:(fd.sizes.serving?'serving':units[0].key));
   const defQty=(opts.qty!=null)?opts.qty:(lu && lu.qty>0 ? lu.qty : 1);
   const editing=!!opts.editId; const primary=editing?'guardar cambios':(window._log.isNew?'guardar + loguear':'loguear');
+  const defTime=editing?(opts.time||''):nowHM();   // HORA opcional: alta asume hora actual; edición usa la del item (vacío si null)
   const hasBack=!editing && window._faCtx;
   openModal(`<h3>${hasBack?'<a data-act="faback" style="color:var(--o50);font-size:11px;font-weight:600;cursor:pointer;margin-right:8px;letter-spacing:.3px" title="volver a la búsqueda">← back</a>':''}${editing?'editar registro':'loguear'} · ${escTxt(fd.name||'alimento')}</h3>
    <div class="submeta" style="margin:-2px 0 9px;font-size:10px">${(()=>{const s=foodSource(fd);return (s.ok?'<span style="color:var(--good)">✓</span> ':'')+'fuente: '+escTxt(s.label);})()}</div>
    <div class="field row2"><div><label>UNIDAD${lu?' <span style="color:var(--good);font-size:8px;font-weight:700" title="última vez">↺</span>':''}</label><select id="l_unit" class="pick">${units.map(u=>`<option value="${u.key}"${u.key===defUnit?' selected':''}>${u.label}</option>`).join('')}</select></div><div><label>CANTIDAD</label><input id="l_qty" type="number" inputmode="decimal" step="0.25" value="${defQty}"/></div></div>
+   <div class="field row2"><div><label>HORA · opcional</label><input id="l_time" type="time" value="${defTime}"/></div><div style="display:flex;align-items:flex-end;padding-bottom:13px"><span class="submeta" style="font-size:10px;color:var(--o35)">vacío = sin hora</span></div></div>
    <div class="lkc" id="l_kcal"></div>
    <div class="lnut" id="l_full"></div>
    <div class="sheetbtns"><button class="ok" data-act="logsave">${primary}</button>${editing?'<button class="cancel" data-act="closemodal">cancel</button>':('<button class="cancel" data-act="logonly">'+(window._log.isNew?'loguear sin guardar':'cancel')+'</button>')}</div>`);
@@ -3690,6 +3715,7 @@ function commitLog(saveToDb){
   window._faCtx=null;   // committed: drop the back-to-search context
   const L=window._log||{}; const f=L.food; if(!f){ closeModal(); return; } if(!f.name){ alert('Pon nombre.'); return; }
   const unit=(document.getElementById('l_unit')||{}).value; const qty=parseFloat(val('l_qty'))||1;
+  const timeVal=val('l_time')||null;   // HORA opcional: '' (borrado) → null; nunca asume si el usuario lo vació
   const nut=computeNutrients(f,unit,qty); const unitLabel=(foodUnits(f).find(u=>u.key===unit)||{}).label||unit;
   saveLastUsed(f,unit,qty);                                          // remember portion for next time
   const bc=L.barcode||f.barcode||'';
@@ -3700,9 +3726,9 @@ function commitLog(saveToDb){
     if(ex)Object.assign(ex,stored); else db.foods.push(stored); foodId=stored.id;
   } else if(L.fromId){ const ex=(db.foods||[]).find(x=>x.id===L.fromId); if(ex)ex.lastUsed=Date.now(); }
   const t=curDate(); db.meals[t]=db.meals[t]||[]; snapshotGoal(t);
-  const apply=m=>{ m.tag=L.tag; m.name=f.name+(qty!==1?' ×'+numTxt(qty):''); m.qty=qty; m.serving=unitLabel; MACROKEYS.forEach(k=>m[k]=nut[k]); m.water=nut.water; m._food={id:foodId,base:f.base,per100:f.per100,sizes:f.sizes,servingLabel:f.servingLabel,name:f.name,brand:f.brand||'',barcode:bc}; m._unit=unit; };
+  const apply=m=>{ m.tag=L.tag; m.name=f.name+(qty!==1?' ×'+numTxt(qty):''); m.qty=qty; m.serving=unitLabel; MACROKEYS.forEach(k=>m[k]=nut[k]); m.water=nut.water; m._food={id:foodId,base:f.base,per100:f.per100,sizes:f.sizes,servingLabel:f.servingLabel,name:f.name,brand:f.brand||'',barcode:bc}; m._unit=unit; m.time=timeVal; };
   if(L.editId){ const m=(db.meals[t]||[]).find(x=>x.id===L.editId); if(m){ apply(m); save(); closeModal(); render(); return; } }
-  const item={id:uid(),time:nowHM()}; apply(item); db.meals[t].push(item);
+  const item={id:uid()}; apply(item); db.meals[t].push(item);
   save(); closeModal(); render();
 }
 // maintenance (TDEE) from profile via Mifflin-St Jeor × activity — same basis as onboarding
@@ -3984,7 +4010,7 @@ async function aiPhoto(file,barcode){ if(!file)return; window._faTag=window._faT
 // Pick AI when the proxy is configured, else on-device OCR.
 function labelPhoto(file,barcode){ if(AI_PROXY_URL) return aiPhoto(file,barcode); return ocrPhoto(file,barcode); }
 requestPersist();
-db=load(); try{ const _sp=new URLSearchParams(location.search); const _hasHistorical=_sp.has('stepsh')||_sp.has('weighth')||_sp.has('stepsq'); if(_hasHistorical){ const _hsp=_sp; if(history.replaceState)history.replaceState(null,'',location.pathname); setTimeout(()=>{ if(confirm('Este link quiere importar datos históricos (pasos/peso de varios días) a tu cuenta. ¿Aplicar? — solo dile que SÍ si vienes de tu propio Atajo de iOS.')){ try{ const _imp=importHealth(_hsp); if(_imp.length){ save(); render(); toast('✓ '+_imp.join(' · ')); } }catch(_){} } },400); } else { const _imp=importHealth(_sp); if(_imp.length){ window._healthImported=_imp; if(history.replaceState)history.replaceState(null,'',location.pathname); } } }catch(_){} save(); render(); if(window._healthImported)setTimeout(()=>toast('✓ '+window._healthImported.join(' · ')),250); if(window._recoveredFromBackup)setTimeout(()=>{try{alert('Se recuperó un respaldo local: revisa tus datos, podrían faltar cambios muy recientes.');}catch(_){}},600);
+db=load(); try{ const _sp=new URLSearchParams(location.search); const _hasHistorical=_sp.has('stepsh')||_sp.has('weighth')||_sp.has('stepsq')||_sp.has('sleeph'); if(_hasHistorical){ const _hsp=_sp; if(history.replaceState)history.replaceState(null,'',location.pathname); setTimeout(()=>{ if(confirm('Este link quiere importar datos históricos (pasos/peso/sueño de varios días) a tu cuenta. ¿Aplicar? — solo dile que SÍ si vienes de tu propio Atajo de iOS.')){ try{ const _imp=importHealth(_hsp); if(_imp.length){ save(); render(); toast('✓ '+_imp.join(' · ')); } }catch(_){} } },400); } else { const _imp=importHealth(_sp); if(_imp.length){ window._healthImported=_imp; if(history.replaceState)history.replaceState(null,'',location.pathname); } } }catch(_){} save(); render(); if(window._healthImported)setTimeout(()=>toast('✓ '+window._healthImported.join(' · ')),250); if(window._recoveredFromBackup)setTimeout(()=>{try{alert('Se recuperó un respaldo local: revisa tus datos, podrían faltar cambios muy recientes.');}catch(_){}},600);
 applyDesign(); try{ if(/[?&]design\b/.test(location.search))localStorage.setItem('gymtrk_designmode','1'); if(localStorage.getItem('gymtrk_designmode')==='1')openDesignPanel(); }catch(_){}
 try{ bootScreen(()=>{ try{
   if(/[?&]wrap=1\b/.test(location.search)){ monthlyWrap(prevMonthYm(), true); return; }
