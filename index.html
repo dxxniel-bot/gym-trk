@@ -1027,7 +1027,7 @@ function renderWorkout(){
   if(curM!==null)body+='</div></div>';
   return statusBar(true)
     +(w.loggedAfter
-      ? `<div class="rot" style="margin-top:14px"><span class="lbl">LOGGED AFTER</span><span class="n"><input type="date" value="${w.date}" max="${todayISO()}" data-act="setdate" style="background:transparent;border:.5px solid var(--o20);color:var(--fg);font:inherit;font-size:10px;padding:3px 5px"/></span></div><div class="rot" style="margin-top:6px"><span class="lbl">duración (min) · opcional</span><span class="n"><input type="number" value="${w.manualDur||''}" data-act="setdur" inputmode="numeric" placeholder="—" style="width:70px;background:transparent;border:.5px solid var(--o20);color:var(--fg);font:inherit;font-size:10px;padding:3px 5px;text-align:right"/></span></div><div class="rot" style="margin-top:6px"><span class="lbl">avanzar rotación</span><span class="n"><a data-act="togglenoadv" style="cursor:pointer;border:.5px solid var(--o20);padding:2px 10px;font-size:10px">${w.noAdvance?'no':'sí'}</a></span></div>`
+      ? `<div class="rot" style="margin-top:14px"><span class="lbl">LOGGED AFTER</span><span class="n"><input type="date" value="${w.date}" max="${todayISO()}" data-act="setdate" style="background:transparent;border:.5px solid var(--o20);color:var(--fg);font:inherit;font-size:10px;padding:3px 5px"/></span></div><div class="rot" style="margin-top:6px"><span class="lbl">duración (min) · opcional</span><span class="n"><input type="number" value="${w.manualDur||''}" data-act="setdur" inputmode="numeric" placeholder="—" style="width:70px;background:transparent;border:.5px solid var(--o20);color:var(--fg);font:inherit;font-size:10px;padding:3px 5px;text-align:right"/></span></div><div class="rot" style="margin-top:6px"><span class="lbl">inicio · opcional</span><span class="n"><input type="time" value="${w.startTime||''}" data-act="setstarttime" style="background:transparent;border:.5px solid var(--o20);color:var(--fg);font:inherit;font-size:10px;padding:3px 5px"/></span></div><div class="rot" style="margin-top:6px"><span class="lbl">fin · opcional</span><span class="n"><input type="time" value="${w.endTime||''}" data-act="setendtime" style="background:transparent;border:.5px solid var(--o20);color:var(--fg);font:inherit;font-size:10px;padding:3px 5px"/></span></div><div class="rot" style="margin-top:6px"><span class="lbl">avanzar rotación</span><span class="n"><a data-act="togglenoadv" style="cursor:pointer;border:.5px solid var(--o20);padding:2px 10px;font-size:10px">${w.noAdvance?'no':'sí'}</a></span></div>`
       : `<div class="rot" style="margin-top:14px"><span class="lbl">ROTATION - DAY ${curDayIdx()+1}/${dayCount()}${w.startMs?' · '+elapsedStr(w.startMs):''}</span><span class="n" data-act="changegym" style="cursor:pointer">[change gym]</span></div>`)
     +`<div class="wprog"><i style="width:${total?Math.round(done/total*100):0}%"></i></div>`
     +`<div class="whdr" style="margin-top:16px"><div class="l1"><span class="s">//</span>NOW</div><div class="wname">${escTxt(w.dayName)}</div><div class="l2"></div><div class="wmeta">${escTxt(db.split.name)} · ${escTxt(day.tag)}</div></div>`
@@ -2002,6 +2002,7 @@ function openSessionEdit(id){
   }).join('');
   openModal(`<h3>${escTxt(s.dayName||'sesión')}</h3>
    <div class="field"><label>FECHA</label><input id="ss_date" type="date" value="${s.date||''}"/></div>
+   <div style="display:flex;gap:8px"><div class="field" style="flex:1"><label>INICIO</label><input id="ss_start" type="time" value="${s.startTime||''}"/></div><div class="field" style="flex:1"><label>FIN</label><input id="ss_end" type="time" value="${s.endTime||''}"/></div></div>
    <div class="submeta gap">${nEx} ejercicios · ▲▼ reordena · edita sets directo</div>
    ${exHtml||'<div class="submeta">sin ejercicios</div>'}
    <div class="sheetbtns"><button class="ok" data-act="ss_save">guardar</button><button class="cancel" data-act="sharesession" data-id="${s.id}">compartir</button><button class="cancel danger" data-act="ss_del">borrar</button><button class="cancel" data-act="closemodal">close</button></div>`);
@@ -2298,7 +2299,7 @@ document.getElementById('app').addEventListener('click',e=>{
   else if(a==='sd_addday'){ db.split.days.push({id:'d'+uid(),name:'new day',tag:'@ RIR · F',metric:'rir',allowFailure:true,exercises:[]}); save(); render(); }
   else if(a==='exdirectory'){ openExerciseDirectory(); }
   else if(a==='okexedit'){ saveExEdit(); }
-  else if(a==='ss_save'){ const s=db.sessions.find(x=>x.id===window._sessId); if(s){ const dt=document.getElementById('ss_date'); if(dt)s.date=dt.value; save(); closeModal(); render(); } }
+  else if(a==='ss_save'){ const s=db.sessions.find(x=>x.id===window._sessId); if(s){ const dt=document.getElementById('ss_date'); if(dt)s.date=dt.value; const sst=document.getElementById('ss_start'); if(sst)s.startTime=sst.value||null; const set=document.getElementById('ss_end'); if(set)s.endTime=set.value||null; save(); closeModal(); render(); } }
   else if(a==='ss_del'){ if(confirm('¿Borrar esta sesión?')){ db.sessions=db.sessions.filter(x=>x.id!==window._sessId); save(); closeModal(); render(); } }
   else if(a==='ss_exup'){ const s=db.sessions.find(x=>x.id===window._sessId); const i=+el.dataset.ei; if(s&&i>0){ const a=s.exercises; const t=a[i-1]; a[i-1]=a[i]; a[i]=t; save(); openSessionEdit(window._sessId); } }
   else if(a==='ss_exdn'){ const s=db.sessions.find(x=>x.id===window._sessId); const i=+el.dataset.ei; if(s&&i<s.exercises.length-1){ const a=s.exercises; const t=a[i+1]; a[i+1]=a[i]; a[i]=t; save(); openSessionEdit(window._sessId); } }
@@ -2432,6 +2433,8 @@ document.getElementById('app').addEventListener('click',e=>{
 document.getElementById('app').addEventListener('change',e=>{
   const sd=e.target.closest('[data-act="setdate"]'); if(sd){ if(db.activeWork){db.activeWork.date=sd.value;save();} return; }
   const du=e.target.closest('[data-act="setdur"]'); if(du){ if(db.activeWork){db.activeWork.manualDur=du.value;save();} return; }
+  const stt=e.target.closest('[data-act="setstarttime"]'); if(stt){ if(db.activeWork){db.activeWork.startTime=stt.value||null;save();} return; }
+  const ett=e.target.closest('[data-act="setendtime"]'); if(ett){ if(db.activeWork){db.activeWork.endTime=ett.value||null;save();} return; }
   const dc=e.target.closest('[data-act="daycal"]'); if(dc){ if(dc.value){ state.macroDate=dc.value; render(); } return; }
   const el=e.target.closest('[data-act="setf"]'); if(!el)return;
   setField(+el.dataset.exi,+el.dataset.si,el.dataset.f,el.value);
@@ -2613,7 +2616,7 @@ function saveSession(){
   const w=db.activeWork; if(!w){go('home');return;}
   const has=w.exercises.some(e=>e.sets.some(s=>(s.w||s.r)&&!s._pf));
   if(!has && !confirm('No registraste sets. ¿Guardar de todos modos?')){return;}
-  const sess={id:w.id,date:w.date,dayId:w.dayId,dayName:w.dayName,gym:w.gym,type:'training',loggedAfter:!!w.loggedAfter,durSec:w.loggedAfter?((parseInt(w.manualDur,10)||0)*60):(w.startMs?Math.round((Date.now()-w.startMs)/1000):0),
+  const sess={id:w.id,date:w.date,dayId:w.dayId,dayName:w.dayName,gym:w.gym,type:'training',loggedAfter:!!w.loggedAfter,durSec:w.loggedAfter?((parseInt(w.manualDur,10)||0)*60):(w.startMs?Math.round((Date.now()-w.startMs)/1000):0),startTime:w.loggedAfter?(w.startTime||null):(w.startTs||null),endTime:w.loggedAfter?(w.endTime||null):nowHM(),
     exercises:w.exercises.map(e=>{const r=machineRec(w.gym,e); return {name:e.name,muscle:e.muscle,muscles:Array.isArray(e.muscles)?e.muscles.slice():undefined,machine:r.na?'':r.brand,setup:r.na?'':r.setup,sets:e.sets.filter(s=>(s.w||s.r)&&!s._pf)};})};
   if(!(w.loggedAfter&&w.noAdvance)){ const idx=db.split.days.findIndex(d=>d.id===w.dayId); db.rotIdx=(idx>=0?idx:db.rotIdx)+1; } db.activeWork=null; state.selDay=null; db.sessions.push(sess); save(); go('home');
 }
