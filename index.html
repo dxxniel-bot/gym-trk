@@ -828,7 +828,7 @@ function renderHome(){
     +`<div class="line stat"><span class="k">sessions · 7d</span><span class="dots"></span><span class="v">${s7.count}</span></div>`
     +`<div class="line stat"><span class="k">uptime</span><span class="dots"></span><span class="v">${uptimeDays()}d</span></div>`
     +`<div class="line stat"><span class="k">steps · today</span><span class="dots"></span><span class="v" data-act="editsteps" style="cursor:pointer">${(db.steps&&db.steps[todayISO()])?db.steps[todayISO()].toLocaleString():'— tap'}</span></div>`
-    +`<div class="line stat"><span class="k">sleep · last night</span><span class="dots"></span><span class="v" data-act="logsleep" style="cursor:pointer">${(db.sleep&&db.sleep[todayISO()])?db.sleep[todayISO()]+' h':'— tap'}</span></div>`;
+    +`<div class="line stat"><span class="k">sleep · last night</span><span class="dots"></span><span class="v" data-act="logsleep" style="cursor:pointer">${(db.sleep&&db.sleep[todayISO()])?sleepHours(db.sleep[todayISO()])+' h':'— tap'}</span></div>`;
 }
 // read-only preview of a planned day's exercises (without starting the workout)
 function dayPreviewHTML(day){
@@ -1390,19 +1390,50 @@ function openWeightLog(){ const ks=Object.keys(db.bodyweight||{}).sort(); const 
    ${recent.length?`<div class="grp-label" style="margin:12px 0 4px">REGISTROS RECIENTES</div>`+rows+`<div class="submeta">toca una fecha para editarla · ✕ para borrar</div>`:''}`);
   document.getElementById('bw_save').onclick=()=>{ const v=parseFloat(val('bw_kg')); const d=val('bw_date')||todayISO(); if(!v||v<=0){ alert('Pon un peso válido.'); return; } db.bodyweight=db.bodyweight||{}; db.bodyweight[d]=Math.round(v*10)/10; const allk=Object.keys(db.bodyweight).sort(); if(allk.length&&db.profile)db.profile.weightKg=db.bodyweight[allk[allk.length-1]]; save(); closeModal(); render(); };
 }
-// sleep log — date = the morning you woke up ("anoche" = db.sleep[today]). Direct hours, no clock math.
-function openSleepLog(){ const ks=Object.keys(db.sleep||{}).sort(); const last=ks.length?db.sleep[ks[ks.length-1]]:'';
+// sleep compat + clock math (lazy migration): legacy/manual entries are plain numbers; scheduled entries are
+// {start,end,date,isNocturnal,hours}. sleepHours() unifies reads so existing data never breaks.
+function sleepHours(v){ if(v==null)return 0; if(typeof v==='number')return v; const h=+v.hours; return isFinite(h)?h:0; }
+function hm2min(s){ if(!s||typeof s!=='string'||s.indexOf(':')<0)return NaN; const a=s.split(':'); const H=+a[0],M=+a[1]; return (isFinite(H)&&isFinite(M))?H*60+M:NaN; }
+function sleepDur(start,end){ const a=hm2min(start),b=hm2min(end); if(!isFinite(a)||!isFinite(b))return 0; let diff=b-a; if(diff<0)diff+=1440; return Math.round(diff/6)/10; } // minutos→horas (0.1); cruza medianoche; iguales→0 (rechazado)
+function isNocturnal(start){ const a=hm2min(start); if(!isFinite(a))return true; return a>=1200||a<360; } // inicio ≥20:00 ó <06:00
+// sleep log — date = the morning you woke up. Hora de dormir + despertar (cruza medianoche); fallback manual de horas.
+function openSleepLog(){
+  const ks=Object.keys(db.sleep||{}).sort();
   const recent=ks.slice(-8).reverse();
-  const rows=recent.map(d=>`<div class="line" style="padding:5px 0"><span class="k" data-act="editsleep" data-d="${d}" style="cursor:pointer;text-decoration:underline">${d}</span><span class="dots"></span><span class="v">${db.sleep[d]} h <span data-act="delsleep" data-d="${d}" style="color:var(--o40);cursor:pointer;margin-left:8px">✕</span></span></div>`).join('');
-  const chips=[6,6.5,7,7.5,8,8.5,9].map(h=>`<span class="chip" data-slh="${h}">${h}</span>`).join('');
+  const rows=recent.map(d=>{ const v=db.sleep[d]; const h=sleepHours(v);
+    const rng=(v&&typeof v==='object'&&v.start&&v.end)?escTxt(v.start)+'–'+escTxt(v.end)+' · ':'';
+    return `<div class="line" style="padding:5px 0"><span class="k" data-act="editsleep" data-d="${d}" style="cursor:pointer;text-decoration:underline">${d}</span><span class="dots"></span><span class="v">${rng}${h} h <span data-act="delsleep" data-d="${d}" style="color:var(--o40);cursor:pointer;margin-left:8px">✕</span></span></div>`; }).join('');
+  const lastObj=[...ks].reverse().map(d=>db.sleep[d]).find(v=>v&&typeof v==='object'&&v.start&&v.end);
+  const dStart=lastObj?lastObj.start:'23:00', dEnd=lastObj?lastObj.end:'07:00';
   openModal(`<h3>sueño</h3>
-   <div class="submeta" style="margin-bottom:8px">¿cuántas horas dormiste anoche?</div>
-   <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">${chips}</div>
-   <div class="field row2"><div><label>HORAS</label><input id="sl_h" type="number" inputmode="decimal" step="0.5" value="${last||''}" placeholder="ej. 7.5"/></div><div><label>FECHA (despertar)</label><input id="sl_date" type="date" value="${todayISO()}" max="${todayISO()}"/></div></div>
+   <div class="submeta" style="margin-bottom:8px">¿a qué hora te dormiste y despertaste?</div>
+   <div class="field row2"><div><label>SE DURMIÓ</label><input id="sl_start" type="time" value="${dStart}"/></div><div><label>DESPERTÓ</label><input id="sl_end" type="time" value="${dEnd}"/></div></div>
+   <div class="field row2"><div><label>FECHA (despertar)</label><input id="sl_date" type="date" value="${todayISO()}" max="${todayISO()}"/></div><div><label>DURACIÓN</label><div id="sl_read" style="height:44px;display:flex;align-items:center;font-size:16px;color:var(--o50)">—</div></div></div>
+   <div id="sl_manualwrap" class="field" style="display:none"><label>HORAS (sin horario)</label><input id="sl_h" type="number" inputmode="decimal" step="0.5" placeholder="ej. 7.5"/></div>
+   <a id="sl_mtog" style="display:inline-block;font-size:11px;color:var(--o50);cursor:pointer;margin:0 0 10px;text-decoration:underline">¿no sabes la hora exacta? ingresar horas →</a>
    <div class="sheetbtns" style="margin-bottom:6px"><button class="ok" id="sl_save">guardar</button><button class="cancel" data-act="closemodal">cerrar</button></div>
    ${recent.length?`<div class="grp-label" style="margin:12px 0 4px">REGISTROS RECIENTES</div>`+rows+`<div class="submeta">toca una fecha para editarla · ✕ para borrar</div>`:''}`);
-  document.querySelectorAll('[data-slh]').forEach(c=>c.onclick=()=>{ const e=document.getElementById('sl_h'); if(e)e.value=c.dataset.slh; });
-  document.getElementById('sl_save').onclick=()=>{ const v=parseFloat(val('sl_h')); const d=val('sl_date')||todayISO(); if(!v||v<=0||v>=24){ alert('Pon horas válidas (0–24).'); return; } db.sleep=db.sleep||{}; db.sleep[d]=Math.round(v*10)/10; save(); closeModal(); render(); };
+  const manualOn=()=>{ const w=document.getElementById('sl_manualwrap'); return !!(w&&w.style.display!=='none'); };
+  const recalc=()=>{ const out=document.getElementById('sl_read'); if(!out)return;
+    if(manualOn()){ const mh=parseFloat(val('sl_h')); if(mh>0&&mh<24){ out.textContent=(Math.round(mh*10)/10)+' h · manual'; out.style.color='var(--o50)'; } else { out.textContent='—'; out.style.color=mh>=24?'var(--bad)':'var(--o50)'; } return; }
+    const s=val('sl_start'), e=val('sl_end');
+    if(!s||!e){ out.textContent='—'; out.style.color='var(--o50)'; return; }
+    const h=sleepDur(s,e);
+    if(h<=0||h>=24){ out.textContent='—'; out.style.color='var(--bad)'; return; }
+    out.textContent=h+' h · '+(isNocturnal(s)?'nocturno':'diurno'); out.style.color='var(--o50)';
+  };
+  ['sl_start','sl_end','sl_h'].forEach(id=>{ const el=document.getElementById(id); if(el)el.oninput=recalc; });
+  const tog=document.getElementById('sl_mtog'); if(tog)tog.onclick=()=>{ const w=document.getElementById('sl_manualwrap'); if(w)w.style.display=w.style.display==='none'?'block':'none'; recalc(); };
+  document.getElementById('sl_save').onclick=()=>{ const d=val('sl_date')||todayISO(); db.sleep=db.sleep||{};
+    if(manualOn()){ const mh=parseFloat(val('sl_h')); if(!mh||mh<=0||mh>=24){ alert('Pon horas válidas (0–24).'); return; } db.sleep[d]=Math.round(mh*10)/10; save(); closeModal(); render(); return; }
+    const s=val('sl_start'), e=val('sl_end');
+    if(!s||!e){ alert('Pon hora de dormir y de despertar (o usa "ingresar horas").'); return; }
+    const h=sleepDur(s,e);
+    if(h<=0){ alert('La hora de despertar debe ser distinta a la de dormir.'); return; }
+    if(h>=24){ alert('Duración inválida (debe ser menor a 24 h).'); return; }
+    db.sleep[d]={ start:s, end:e, date:d, isNocturnal:isNocturnal(s), hours:h };
+    save(); closeModal(); render();
+  };
 }
 // habit series helpers (last-N days, daily water summed from meals, avg of logged days)
 function lastDays(n){ const now=new Date(); const out=[]; for(let i=n-1;i>=0;i--){ const d=new Date(now); d.setDate(now.getDate()-i); out.push(todayISO(d)); } return out; }
@@ -1449,7 +1480,7 @@ function metricSeries(key, days){
   }
   if(key==='sleep'){
     const hd=lastDays(days);
-    const vals=hd.map(d=>(db.sleep&&db.sleep[d])||0);
+    const vals=hd.map(d=>sleepHours(db.sleep&&db.sleep[d]));
     const pos=vals.filter(x=>x>0);
     const goal=(db.settings&&db.settings.goals&&db.settings.goals.sleep)||0;
     return {key, title:'sueño', unit:'h', dates:hd, vals,
@@ -1691,8 +1722,8 @@ function renderProgress(){
       +`<div class="pst ${cls}">${_g?(_a>=_g?'▲ en meta · 14d':'meta '+_g+'L · 14d'):'14d'}</div>${lineChart(_waterArr,{h:32,zero:true})}</div>`);
   }
   // sueño
-  { const _slArr=_hd.map(d=>(db.sleep&&db.sleep[d])||0); const _slLog=_slArr.filter(x=>x>0);
-    if(_slLog.length){ const _g=db.settings.goals.sleep||0, _a=Math.round(avgPos(_slArr)*10)/10, _ln=(db.sleep&&db.sleep[todayISO()])||0;
+  { const _slArr=_hd.map(d=>sleepHours(db.sleep&&db.sleep[d])); const _slLog=_slArr.filter(x=>x>0);
+    if(_slLog.length){ const _g=db.settings.goals.sleep||0, _a=Math.round(avgPos(_slArr)*10)/10, _ln=sleepHours(db.sleep&&db.sleep[todayISO()]);
       const cls=_g&&_a>=_g?'good':'flat';
       tiles.push(`<div class="ptile tap" data-act="metricdetail" data-m="sleep"><div class="ptlh"><div class="plbl">sueño</div><span class="ptchev">›</span></div>`
         +`<div class="pval">${_ln||'—'}<span>h anoche</span></div>`
@@ -2012,7 +2043,7 @@ function bootScreen(onDone){ try{
   if(last)rows+=L('last session',escTxt(last.dayName||'sesión')+' · '+(dAgo===0?'hoy':dAgo===1?'ayer':'hace '+dAgo+'d'));
   if(cur)rows+=L('weekly vol',kFmt(cur)+(pct!=null?' <span style="color:'+(pct>=0?'var(--good)':'var(--bad)')+'">'+(pct>=0?'▲ +'+pct:'▼ −'+Math.abs(pct))+'%</span>':''));
   if(bw)rows+=L('bw',bw+' kg');
-  const sl=db.sleep&&db.sleep[todayISO()]; if(sl)rows+=L('sleep',sl+' h');
+  const sl=sleepHours(db.sleep&&db.sleep[todayISO()]); if(sl)rows+=L('sleep',sl+' h');
   showOverlay(`<div class="bt"><span class="s">gym</span>//TRK</div>${rows}<div class="bready">[ready]</div>`,{ms:1300,onDone});
 }catch(_){ if(onDone)onDone(); } }
 // snap recap: one 5s screen after 21h closing the day's loop (kcal/steps/session/water/sleep). Once per day; ?recap=1 forces for QA.
@@ -2034,7 +2065,7 @@ function snapRecap(){ try{
   if(steps)rows+=L('pasos',steps.toLocaleString());
   rows+=L('sesión',sess?escTxt(sess.dayName||'sí')+' ✓':'descanso');
   if(water)rows+=L('agua',water+(g.water?' / '+g.water:'')+' L',(g.water&&water>=g.water)?'good':'');
-  const sl=db.sleep&&db.sleep[today]; if(sl)rows+=L('sueño',sl+' h',(g.sleep&&sl>=g.sleep)?'good':'');
+  const sl=sleepHours(db.sleep&&db.sleep[today]); if(sl)rows+=L('sueño',sl+' h',(g.sleep&&sl>=g.sleep)?'good':'');
   showOverlay(`<div class="bt"><span class="s">//</span>HOY <span style="font-size:11px;color:var(--o40);font-weight:400">· ${fmtShort(today)}</span></div>${rows}<div class="bready">[tap para cerrar]</div>`,{ms:5000});
 }catch(_){} }
 
@@ -2054,8 +2085,8 @@ function wrapMonthData(y,m){
   const avgKcal=kDays?Math.round(kSum/kDays):0;
   const bwk=Object.keys(db.bodyweight||{}).filter(inMonth).sort();
   const bwStart=bwk.length?db.bodyweight[bwk[0]]:null, bwEnd=bwk.length?db.bodyweight[bwk[bwk.length-1]]:null;
-  const avgOf=obj=>{ let s=0,n=0; Object.keys(obj||{}).forEach(d=>{ if(!inMonth(d))return; const v=+obj[d]||0; if(v>0){s+=v;n++;} }); return n?s/n:0; };
-  const avgSleep=Math.round(avgOf(db.sleep)*10)/10, avgSteps=Math.round(avgOf(db.steps));
+  const avgOf=(obj,fn)=>{ let s=0,n=0; Object.keys(obj||{}).forEach(d=>{ if(!inMonth(d))return; const v=fn?fn(obj[d]):(+obj[d]||0); if(v>0){s+=v;n++;} }); return n?s/n:0; };
+  const avgSleep=Math.round(avgOf(db.sleep,sleepHours)*10)/10, avgSteps=Math.round(avgOf(db.steps));
   let wSum=0,wDays=0; Object.keys(db.meals||{}).forEach(d=>{ if(!inMonth(d))return; const ww=dayWater(d); if(ww>0){wSum+=ww;wDays++;} }); const avgWater=wDays?Math.round(wSum/wDays*10)/10:0;
   const hasData = sess.length>0 || kDays>0 || bwk.length>0;
   return {y,m,pre,monthName:MONFULL[m],sessions:sess.length,activeDays,totalVol,bestWeek,topLift,topE1:Math.round(topE1),avgKcal,kDays,bwStart,bwEnd,avgSleep,avgSteps,avgWater,hasData};
@@ -2176,7 +2207,11 @@ document.getElementById('app').addEventListener('click',e=>{
   else if(a==='usetpl'){ const t=(window._tpls||[])[+el.dataset.i]; if(t){ db.split=t.build(); db.rotIdx=0; state.selDay=null; save(); closeModal(); go('splitedit'); } }
   else if(a==='logweight'){ openWeightLog(); }
   else if(a==='logsleep'){ openSleepLog(); }
-  else if(a==='editsleep'){ const d=el.dataset.d; const dt=document.getElementById('sl_date'), hh=document.getElementById('sl_h'); if(dt)dt.value=d; if(hh){ hh.value=(db.sleep&&db.sleep[d])||''; hh.focus(); } }
+  else if(a==='editsleep'){ const d=el.dataset.d; const v=db.sleep&&db.sleep[d];
+    const dt=document.getElementById('sl_date'); if(dt)dt.value=d;
+    const ss=document.getElementById('sl_start'), ee=document.getElementById('sl_end'), mw=document.getElementById('sl_manualwrap'), mh=document.getElementById('sl_h');
+    if(v&&typeof v==='object'){ if(ss)ss.value=v.start||''; if(ee)ee.value=v.end||''; if(mw)mw.style.display='none'; if(ss){ ss.focus(); ss.dispatchEvent(new Event('input')); } }
+    else { if(mw)mw.style.display='block'; if(mh){ mh.value=(typeof v==='number'?v:''); mh.focus(); mh.dispatchEvent(new Event('input')); } if(ss)ss.value=''; if(ee)ee.value=''; } }
   else if(a==='delsleep'){ const d=el.dataset.d; if(confirm('¿Borrar el sueño de '+d+'?')){ if(db.sleep)delete db.sleep[d]; save(); openSleepLog(); } }
   else if(a==='healthimport'){ openHealthImport(); }
   else if(a==='healthsync'){ healthSync(); }
