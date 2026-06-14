@@ -432,6 +432,27 @@
   .bootov .bt .s{color:var(--o40);}
   .bootov .line{font-size:12px; padding:4px 0;}
   .bootov .bready{margin-top:18px; font-size:11px; color:var(--o50); animation:blink 1.15s step-end infinite;}
+  /* monthly wrap — tap-through story, mono/terminal, screenshot-shareable */
+  .wrapov{justify-content:space-between; padding:0; cursor:pointer;}
+  .wtop{padding:24px 26px 0;}
+  .wdots{display:flex; gap:5px;}
+  .wdot{flex:1; height:3px; border-radius:2px; background:var(--o20);} .wdot.on{background:var(--fill);} .wdot.done{background:var(--o50);}
+  .wstage{flex:1; display:flex; flex-direction:column; justify-content:center; align-items:center; text-align:center; padding:0 30px; animation:wsin .32s ease;}
+  @keyframes wsin{from{opacity:0; transform:translateY(10px)} to{opacity:1; transform:none}}
+  .wnav{text-align:center; padding:0 0 28px; font-size:11px; color:var(--o40); letter-spacing:.5px; animation:blink 1.5s step-end infinite;}
+  .ws-big{font-size:60px; font-weight:800; letter-spacing:-2px; line-height:1; max-width:100%; overflow:hidden; text-overflow:ellipsis;} .ws-big span{font-size:20px; font-weight:600; color:var(--o40); letter-spacing:0; margin-left:4px;}
+  .ws-lbl{font-size:13px; color:var(--o60); margin-top:16px; letter-spacing:.5px;}
+  .ws-sub{font-size:11px; color:var(--o40); margin-top:8px; letter-spacing:.3px; max-width:280px;}
+  .ws-kick{font-size:13px; font-weight:800; letter-spacing:1px; color:var(--o50);} .ws-kick .s{color:var(--o30);}
+  .ws-month{font-size:44px; font-weight:800; letter-spacing:-1.5px; text-transform:lowercase; margin-top:18px; line-height:1;}
+  .ws-year{font-size:20px; font-weight:700; color:var(--o40); letter-spacing:3px; margin-top:4px;}
+  .ws-hwrap{width:100%; max-width:240px;}
+  .ws-h{display:flex; justify-content:space-between; align-items:baseline; padding:10px 0; border-bottom:.5px solid var(--o12); font-size:16px;} .ws-h span{color:var(--o50); font-size:12px;} .ws-h b{font-weight:800;}
+  .ws-card{width:100%; max-width:280px; border:1px solid var(--border); border-radius:var(--radius); padding:20px 18px; background:var(--card);}
+  .ws-cardh{font-size:10px; letter-spacing:2px; text-transform:uppercase; color:var(--o40); text-align:center; margin-bottom:14px;}
+  .ws-card .line{padding:6px 0; font-size:13px;}
+  .ws-cardf{text-align:center; font-size:15px; font-weight:800; color:var(--o35); margin-top:16px; letter-spacing:.5px;} .ws-cardf span{color:var(--o20);}
+  .ws-share{font-size:11px; color:var(--o40); margin-top:18px; letter-spacing:.3px;}
   .toast{position:fixed; left:50%; bottom:84px; transform:translateX(-50%); background:#13131a; border:1px solid var(--good); color:var(--fg); padding:9px 15px; border-radius:999px; font-size:12px; font-weight:600; z-index:10000; box-shadow:0 6px 22px rgba(0,0,0,.5); white-space:nowrap; animation:toastin .28s ease, toastout .4s ease 2.3s forwards;}
   @keyframes toastin{from{opacity:0; transform:translate(-50%,10px)} to{opacity:1; transform:translate(-50%,0)}}
   @keyframes toastout{to{opacity:0; transform:translate(-50%,8px)}}
@@ -1691,6 +1712,7 @@ function renderProgress(){
   if(e1.length>1){ out+=`<hr class="rule"/><div class="grp-label">FUERZA · e1RM Epley (vs semana previa)</div>`;
     e1.forEach(x=>{ const d=x.prev!=null?Math.round(x.cur-x.prev):null; const arr=d==null?'·':(d>0?'▲':d<0?'▼':'='); const col=d>0?'var(--good)':d<0?'var(--bad)':'var(--o40)';
       out+=`<div class="line" data-act="liftdetail" data-ex="${escTxt(x.name)}" style="cursor:pointer"><span class="k">${escTxt(x.name)}</span><span class="dots"></span><span class="v">${Math.round(x.cur)} <span style="color:${col};font-size:10px">${arr}${d?Math.abs(d):''}</span> <span class="ptchev" style="font-size:12px">›</span></span></div>`; }); }
+  try{ const _wp=prevMonthYm().split('-'); if(wrapMonthData(+_wp[0],+_wp[1]-1).hasData) out+='<div style="text-align:center;margin:18px 0 2px"><a data-act="wrapview" style="font-size:11px;color:var(--o60);cursor:pointer">▸ ver tu wrap · '+escTxt(MONFULL[+_wp[1]-1])+'</a></div>'; }catch(_){}
   out+='<div style="text-align:center;margin:16px 0 2px"><a data-act="healthsync" style="font-size:11px;color:var(--o60);cursor:pointer">↻ sync de Salud (pasos/peso)</a></div>';
   return out;
 }
@@ -2015,6 +2037,79 @@ function snapRecap(){ try{
   showOverlay(`<div class="bt"><span class="s">//</span>HOY <span style="font-size:11px;color:var(--o40);font-weight:400">· ${fmtShort(today)}</span></div>${rows}<div class="bready">[tap para cerrar]</div>`,{ms:5000});
 }catch(_){} }
 
+// ---------- monthly wrap (gamification tier 1 #3): 8-slide retrospective, screenshot-shareable, NO casino/confetti ----------
+// month stats (m = 0-indexed) computed only from existing data; hasData gates whether a wrap can show.
+function wrapMonthData(y,m){
+  const mi=pad(m+1); const pre=y+'-'+mi; const inMonth=iso=>iso&&iso.slice(0,7)===pre;
+  const sess=(db.sessions||[]).filter(s=>s.type!=='rest'&&inMonth(s.date));
+  const activeDays=new Set(sess.map(s=>s.date)).size;
+  let totalVol=0; const dayVol={};
+  sess.forEach(s=>{ let v=0; (s.exercises||[]).forEach(e=>(e.sets||[]).forEach(st=>{ v+=(parseFloat(st.w)||0)*(parseFloat(st.r)||0); })); totalVol+=v; dayVol[s.date]=(dayVol[s.date]||0)+v; });
+  const dim=new Date(y,m+1,0).getDate(); const mdays=[]; for(let d=1;d<=dim;d++)mdays.push(pre+'-'+pad(d));
+  let bestWeek=0; for(let i=0;i<mdays.length;i++){ let s=0; for(let j=i;j<i+7&&j<mdays.length;j++)s+=dayVol[mdays[j]]||0; if(s>bestWeek)bestWeek=s; }
+  let topLift=null, topE1=0;
+  sess.forEach(s=>(s.exercises||[]).forEach(e=>(e.sets||[]).forEach(st=>{ const w=parseFloat(st.w)||0,r=parseFloat(st.r)||0; if(w&&r){ const e1=w*(1+repsToFailure(r,st.rir)/30); if(e1>topE1){topE1=e1;topLift=e.name;} } })));
+  let kSum=0,kDays=0; Object.keys(db.meals||{}).forEach(d=>{ if(!inMonth(d))return; const arr=db.meals[d]; if(arr&&arr.length){ const kk=arr.reduce((a,mm)=>a+(+mm.kcal||0),0); if(kk>0){kSum+=kk;kDays++;} } });
+  const avgKcal=kDays?Math.round(kSum/kDays):0;
+  const bwk=Object.keys(db.bodyweight||{}).filter(inMonth).sort();
+  const bwStart=bwk.length?db.bodyweight[bwk[0]]:null, bwEnd=bwk.length?db.bodyweight[bwk[bwk.length-1]]:null;
+  const avgOf=obj=>{ let s=0,n=0; Object.keys(obj||{}).forEach(d=>{ if(!inMonth(d))return; const v=+obj[d]||0; if(v>0){s+=v;n++;} }); return n?s/n:0; };
+  const avgSleep=Math.round(avgOf(db.sleep)*10)/10, avgSteps=Math.round(avgOf(db.steps));
+  let wSum=0,wDays=0; Object.keys(db.meals||{}).forEach(d=>{ if(!inMonth(d))return; const ww=dayWater(d); if(ww>0){wSum+=ww;wDays++;} }); const avgWater=wDays?Math.round(wSum/wDays*10)/10:0;
+  const hasData = sess.length>0 || kDays>0 || bwk.length>0;
+  return {y,m,pre,monthName:MONFULL[m],sessions:sess.length,activeDays,totalVol,bestWeek,topLift,topE1:Math.round(topE1),avgKcal,kDays,bwStart,bwEnd,avgSleep,avgSteps,avgWater,hasData};
+}
+function prevMonthYm(){ const now=new Date(); const m=now.getMonth(), y=now.getFullYear(); const pm=m===0?11:m-1, py=m===0?y-1:y; return py+'-'+pad(pm+1); }
+// previous month's ym if its wrap is due (new month, within first 5 days, not yet shown, has data) — else null
+function monthlyWrapDue(){
+  try{
+    if(!db.profile.username)return null;
+    const ym=prevMonthYm();
+    if(localStorage.getItem('gymtrk_wrap')===ym)return null;
+    if(new Date().getDate()>5)return null;
+    const p=ym.split('-'); if(!wrapMonthData(+p[0],+p[1]-1).hasData)return null;
+    return ym;
+  }catch(_){ return null; }
+}
+function wrapBig(big,unit,lbl,sub){ return `<div class="ws-big">${big}${unit?`<span>${unit}</span>`:''}</div><div class="ws-lbl">${lbl}</div>${sub?`<div class="ws-sub">${sub}</div>`:''}`; }
+function buildWrapSlides(d){
+  const kFmt=n=>n>=10000?(n/1000).toFixed(1)+'k':Math.round(n).toLocaleString();
+  const g=(db.settings&&db.settings.goals)||{}; const slides=[];
+  slides.push(`<div class="ws-intro"><div class="ws-kick">gym<span class="s">//</span>TRK · wrap</div><div class="ws-month">${escTxt(d.monthName)}</div><div class="ws-year">${d.y}</div><div class="ws-sub">tu mes en disciplina</div></div>`);
+  if(d.sessions)slides.push(wrapBig(d.sessions,'','sesiones', d.activeDays+' días entrenados'));
+  if(d.totalVol)slides.push(wrapBig(kFmt(d.totalVol),' vol','volumen movido', d.bestWeek?('mejor semana: '+kFmt(d.bestWeek)+' vol'):''));
+  if(d.topLift)slides.push(wrapBig(d.topE1,' kg','tu mejor e1RM', escTxt(d.topLift)));
+  if(d.kDays)slides.push(wrapBig(kFmt(d.avgKcal),' kcal','promedio diario', d.kDays+' días registrados'+(g.kcal?' · meta '+g.kcal:'')));
+  if(d.bwStart!=null&&d.bwEnd!=null){ const ch=Math.round((d.bwEnd-d.bwStart)*10)/10; slides.push(wrapBig(d.bwEnd,' kg','peso al cierre', (ch>0?'+':'')+ch+' kg en el mes')); }
+  if(d.avgSleep||d.avgWater||d.avgSteps){ let lines=''; if(d.avgSleep)lines+=`<div class="ws-h"><span>sueño</span><b>${d.avgSleep} h</b></div>`; if(d.avgWater)lines+=`<div class="ws-h"><span>agua</span><b>${d.avgWater} L</b></div>`; if(d.avgSteps)lines+=`<div class="ws-h"><span>pasos</span><b>${d.avgSteps.toLocaleString()}</b></div>`;
+    slides.push(`<div class="ws-lbl" style="margin-bottom:16px">hábitos · promedio diario</div><div class="ws-hwrap">${lines}</div>`); }
+  let recap=''; const R=(k,v)=>`<div class="line"><span class="k">${k}</span><span class="dots"></span><span class="v">${v}</span></div>`;
+  if(d.sessions)recap+=R('sesiones',d.sessions);
+  if(d.totalVol)recap+=R('volumen',kFmt(d.totalVol));
+  if(d.topLift)recap+=R('top e1RM',d.topE1+' kg');
+  if(d.kDays)recap+=R('kcal/día',kFmt(d.avgKcal));
+  if(d.bwStart!=null&&d.bwEnd!=null){ const ch=Math.round((d.bwEnd-d.bwStart)*10)/10; recap+=R('peso',(ch>0?'+':'')+ch+' kg'); }
+  if(d.avgSleep)recap+=R('sueño',d.avgSleep+' h');
+  slides.push(`<div class="ws-card"><div class="ws-cardh">${escTxt(d.monthName)} ${d.y} · wrap</div>${recap}<div class="ws-cardf">gym<span>//</span>TRK</div></div><div class="ws-share">captura para compartir 📸</div>`);
+  return slides;
+}
+function monthlyWrap(ym, manual){
+  try{
+    const p=String(ym||'').split('-'); const y=+p[0], m=+p[1]-1;
+    if(!(y>0)||!(m>=0&&m<=11)){ if(manual)toast('mes inválido'); return; }
+    const d=wrapMonthData(y,m);
+    if(!d.hasData){ if(manual)toast('sin datos de ese mes'); return; }
+    const slides=buildWrapSlides(d); let i=0;
+    const old=document.getElementById('bootov'); if(old)old.remove();
+    const o=document.createElement('div'); o.className='bootov wrapov'; o.id='bootov'; document.getElementById('app').appendChild(o);
+    const dots=()=>slides.map((_,k)=>`<i class="wdot${k===i?' on':k<i?' done':''}"></i>`).join('');
+    const paint=()=>{ o.innerHTML=`<div class="wtop"><div class="wdots">${dots()}</div></div><div class="wstage">${slides[i]}</div><div class="wnav">${i<slides.length-1?'tap →':'[ tap para cerrar ]'}</div>`; };
+    let done=false; const kill=()=>{ if(done)return; done=true; o.classList.add('out'); setTimeout(()=>{ try{o.remove();}catch(_){} },190); };
+    o.addEventListener('click',()=>{ if(i<slides.length-1){ i++; paint(); } else kill(); });
+    paint();
+    if(!manual){ try{ localStorage.setItem('gymtrk_wrap', ym); }catch(_){} }
+  }catch(_){ }
+}
 // ---------- events ----------
 function setField(exi,si,f,val){ const w=db.activeWork; if(!w)return; const ex=w.exercises[exi]; const s=ex.sets[si]; if(!s)return; s[f]=val; s._pf=false;
   if(f==='w'){
@@ -2092,6 +2187,7 @@ document.getElementById('app').addEventListener('click',e=>{
   else if(a==='volweeks'){ window._volWeeks=+el.dataset.w||12; openVolumeDetail(); }
   else if(a==='liftdetail'){ window._liftDays=window._liftDays||90; openLiftDetail(el.dataset.ex||window._liftName); }
   else if(a==='liftrange'){ window._liftDays=+el.dataset.r||90; openLiftDetail(window._liftName); }
+  else if(a==='wrapview'){ monthlyWrap(prevMonthYm(), true); }
   else if(a==='stacktick'){ stackToggleTick(el.dataset.id, todayISO()); }
   else if(a==='stackedit'){ openStackEdit(el.dataset.id); }
   else if(a==='stackadd'){ openStackEdit(null, el.dataset.c||'supp'); }
@@ -3799,7 +3895,11 @@ function labelPhoto(file,barcode){ if(AI_PROXY_URL) return aiPhoto(file,barcode)
 requestPersist();
 db=load(); try{ const _sp=new URLSearchParams(location.search); const _hasHistorical=_sp.has('stepsh')||_sp.has('weighth')||_sp.has('stepsq'); if(_hasHistorical){ const _hsp=_sp; if(history.replaceState)history.replaceState(null,'',location.pathname); setTimeout(()=>{ if(confirm('Este link quiere importar datos históricos (pasos/peso de varios días) a tu cuenta. ¿Aplicar? — solo dile que SÍ si vienes de tu propio Atajo de iOS.')){ try{ const _imp=importHealth(_hsp); if(_imp.length){ save(); render(); toast('✓ '+_imp.join(' · ')); } }catch(_){} } },400); } else { const _imp=importHealth(_sp); if(_imp.length){ window._healthImported=_imp; if(history.replaceState)history.replaceState(null,'',location.pathname); } } }catch(_){} save(); render(); if(window._healthImported)setTimeout(()=>toast('✓ '+window._healthImported.join(' · ')),250); if(window._recoveredFromBackup)setTimeout(()=>{try{alert('Se recuperó un respaldo local: revisa tus datos, podrían faltar cambios muy recientes.');}catch(_){}},600);
 applyDesign(); try{ if(/[?&]design\b/.test(location.search))localStorage.setItem('gymtrk_designmode','1'); if(localStorage.getItem('gymtrk_designmode')==='1')openDesignPanel(); }catch(_){}
-try{ bootScreen(()=>{ try{snapRecap();}catch(_){} }); }catch(_){}
+try{ bootScreen(()=>{ try{
+  if(/[?&]wrap=1\b/.test(location.search)){ monthlyWrap(prevMonthYm(), true); return; }
+  const _due=monthlyWrapDue(); if(_due){ monthlyWrap(_due, false); return; }
+  snapRecap();
+}catch(_){ try{snapRecap();}catch(__){} } }); }catch(_){}
 // rest timer tick: writes textContent only (never re-renders); recompute on return from background (iOS freezes timers)
 setInterval(()=>{try{updateRestBar();}catch(_){}} ,500);
 document.addEventListener('visibilitychange',()=>{ if(!document.hidden){ try{updateRestBar();}catch(_){} } });
