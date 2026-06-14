@@ -861,7 +861,7 @@ function plannedVolumeSection(){
     +`<div class="submeta" style="margin-top:8px">cobertura del split por músculo · la tensión real se mide al loguear · marca ~10 = rendimientos decrecientes</div>`;
 }
 function volumeSection(){
-  // TENSIÓN, no volumen: serie EFECTIVA = dura (RIR≤4) en zona productiva. Progreso = Σ e1RM × factor de zona (tensión).
+  // EFFECTIVE VOLUME (volumen efectivo, no crudo): serie EFECTIVA = dura (RIR≤4) en zona productiva. Progreso = tensión (Σ e1RM × factor de zona).
   const {byM,freq,effM}=weeklySets(7);
   const muscles=Object.keys(byM).sort((a,b)=>(effM[b]||0)-(effM[a]||0));
   let rows='';
@@ -874,7 +874,7 @@ function volumeSection(){
     rows+=`<div class="vrow"><div class="vtop"><span class="vm">${escTxt(m)}${mpBadge}</span><span class="vn">${eff} ef.${jn} · ${freq[m]||0}×/wk</span></div>`
       +`<div class="vbar"><i style="width:${pct}%"></i><span class="mev" style="left:${drPct}%"></span></div></div>`;
   });
-  return `<hr class="rule"/><div class="section" style="margin-bottom:12px"><div class="h"><span class="s">//</span>TENSIÓN</div><div class="meta">series efectivas/músculo · 7d</div></div>`+rows
+  return `<hr class="rule"/><div class="section" style="margin-bottom:12px"><div class="h"><span class="s">//</span>EFFECTIVE VOLUME</div><div class="meta">series efectivas/músculo · 7d</div></div>`+rows
     +`<div class="submeta" style="margin-top:8px">ef. = series duras (RIR≤4) en zona productiva (tensión real) · marca ~10 = rendimientos decrecientes · ▲▼ = progreso de tensión (e1RM)</div>`;
 }
 
