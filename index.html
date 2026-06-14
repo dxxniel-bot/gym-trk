@@ -535,7 +535,8 @@ function seed(){
     sessions:[],
     meals:{},
     foods:[],
-    sleep:{}
+    sleep:{},
+    mood:{}
   };
 }
 // demo split the user can load on demand from the empty gym screen
@@ -639,7 +640,7 @@ function load(){
   if(!d)return seed();
   return migrate(d);
 }
-function migrate(d){ if(!d.version){d.version=1;} if(!d.meals||typeof d.meals!=='object'||Array.isArray(d.meals))d.meals={}; if(!Array.isArray(d.foods))d.foods=[]; d.foods=d.foods.map(f=>(f&&f.per100)?f:asCanonical(f)); if(!Array.isArray(d.sessions))d.sessions=[]; if(!d.split||typeof d.split!=='object')d.split={name:'',days:[]}; if(!Array.isArray(d.split.days))d.split.days=[]; if(!d.steps||typeof d.steps!=='object')d.steps={}; if(!d.machines||typeof d.machines!=='object')d.machines={}; if(!d.bodyweight||typeof d.bodyweight!=='object')d.bodyweight={}; if(!d.sleep||typeof d.sleep!=='object')d.sleep={}; if(!Array.isArray(d.mealTags))d.mealTags=['breakfast','lunch','snack','dinner']; if(!Array.isArray(d.stack))d.stack=[]; if(!d.lastUsed||typeof d.lastUsed!=='object')d.lastUsed={}; if(!d.settings||typeof d.settings!=='object')d.settings={goals:seed().settings.goals}; if(d.settings&&d.settings.goals&&d.settings.goals.alcohol==null)d.settings.goals.alcohol=(d.profile&&d.profile.sex==='F')?14:28; if(d.settings&&d.settings.restSec==null)d.settings.restSec=90; if(d.settings&&d.settings.restBeep==null)d.settings.restBeep=true; if(d.settings&&d.settings.goals&&d.settings.goals.sleep==null)d.settings.goals.sleep=8; if(d.profile&&!d.profile.since){ try{ const _cd=[]; (d.sessions||[]).forEach(s=>{if(s.date)_cd.push(s.date);}); Object.keys(d.meals||{}).forEach(k=>_cd.push(k)); Object.keys(d.bodyweight||{}).forEach(k=>_cd.push(k)); if(_cd.length)d.profile.since=_cd.sort()[0]; }catch(_){} }
+function migrate(d){ if(!d.version){d.version=1;} if(!d.meals||typeof d.meals!=='object'||Array.isArray(d.meals))d.meals={}; if(!Array.isArray(d.foods))d.foods=[]; d.foods=d.foods.map(f=>(f&&f.per100)?f:asCanonical(f)); if(!Array.isArray(d.sessions))d.sessions=[]; if(!d.split||typeof d.split!=='object')d.split={name:'',days:[]}; if(!Array.isArray(d.split.days))d.split.days=[]; if(!d.steps||typeof d.steps!=='object')d.steps={}; if(!d.machines||typeof d.machines!=='object')d.machines={}; if(!d.bodyweight||typeof d.bodyweight!=='object')d.bodyweight={}; if(!d.sleep||typeof d.sleep!=='object')d.sleep={}; if(!d.mood||typeof d.mood!=='object')d.mood={}; if(!Array.isArray(d.mealTags))d.mealTags=['breakfast','lunch','snack','dinner']; if(!Array.isArray(d.stack))d.stack=[]; if(!d.lastUsed||typeof d.lastUsed!=='object')d.lastUsed={}; if(!d.settings||typeof d.settings!=='object')d.settings={goals:seed().settings.goals}; if(d.settings&&d.settings.goals&&d.settings.goals.alcohol==null)d.settings.goals.alcohol=(d.profile&&d.profile.sex==='F')?14:28; if(d.settings&&d.settings.restSec==null)d.settings.restSec=90; if(d.settings&&d.settings.restBeep==null)d.settings.restBeep=true; if(d.settings&&d.settings.goals&&d.settings.goals.sleep==null)d.settings.goals.sleep=8; if(d.profile&&!d.profile.since){ try{ const _cd=[]; (d.sessions||[]).forEach(s=>{if(s.date)_cd.push(s.date);}); Object.keys(d.meals||{}).forEach(k=>_cd.push(k)); Object.keys(d.bodyweight||{}).forEach(k=>_cd.push(k)); if(_cd.length)d.profile.since=_cd.sort()[0]; }catch(_){} }
   // recompute alcohol for old meal items logged before alcohol was in MACROKEYS
   try{ Object.values(d.meals||{}).forEach(arr=>arr.forEach(m=>{ if(m.alcohol==null){ if(m._food&&m._food.per100&&m._food.per100.alcohol&&m._unit){ m.alcohol=computeNutrients(m._food,m._unit,m.qty||1).alcohol; } else m.alcohol=0; } })); }catch(e){}
   // goalHist: snapshot of intake goals at the moment of first logging that day (history is FROZEN — past days never re-read the current goal)
@@ -828,7 +829,8 @@ function renderHome(){
     +`<div class="line stat"><span class="k">sessions · 7d</span><span class="dots"></span><span class="v">${s7.count}</span></div>`
     +`<div class="line stat"><span class="k">uptime</span><span class="dots"></span><span class="v">${uptimeDays()}d</span></div>`
     +`<div class="line stat"><span class="k">steps · today</span><span class="dots"></span><span class="v" data-act="editsteps" style="cursor:pointer">${(db.steps&&db.steps[todayISO()])?db.steps[todayISO()].toLocaleString():'— tap'}</span></div>`
-    +`<div class="line stat"><span class="k">sleep · last night</span><span class="dots"></span><span class="v" data-act="logsleep" style="cursor:pointer">${(db.sleep&&db.sleep[todayISO()])?sleepHours(db.sleep[todayISO()])+' h':'— tap'}</span></div>`;
+    +`<div class="line stat"><span class="k">sleep · last night</span><span class="dots"></span><span class="v" data-act="logsleep" style="cursor:pointer">${(db.sleep&&db.sleep[todayISO()])?sleepHours(db.sleep[todayISO()])+' h':'— tap'}</span></div>`
+    +`<div class="line stat"><span class="k">mood · today</span><span class="dots"></span><span class="v" data-act="logmood" style="cursor:pointer">${(db.mood&&db.mood[todayISO()])?db.mood[todayISO()]+' / 10':'— tap'}</span></div>`;
 }
 // read-only preview of a planned day's exercises (without starting the workout)
 function dayPreviewHTML(day){
@@ -1390,6 +1392,20 @@ function openWeightLog(){ const ks=Object.keys(db.bodyweight||{}).sort(); const 
    ${recent.length?`<div class="grp-label" style="margin:12px 0 4px">REGISTROS RECIENTES</div>`+rows+`<div class="submeta">toca una fecha para editarla · ✕ para borrar</div>`:''}`);
   document.getElementById('bw_save').onclick=()=>{ const v=parseFloat(val('bw_kg')); const d=val('bw_date')||todayISO(); if(!v||v<=0){ alert('Pon un peso válido.'); return; } db.bodyweight=db.bodyweight||{}; db.bodyweight[d]=Math.round(v*10)/10; const allk=Object.keys(db.bodyweight).sort(); if(allk.length&&db.profile)db.profile.weightKg=db.bodyweight[allk[allk.length-1]]; save(); closeModal(); render(); };
 }
+// mood — daily "cómo me siento" 1-10. db.mood{'YYYY-MM-DD':score}. 1-tap (chip guarda directo), editable.
+function openMoodLog(){ const ks=Object.keys(db.mood||{}).sort();
+  const recent=ks.slice(-8).reverse();
+  const rows=recent.map(d=>`<div class="line" style="padding:5px 0"><span class="k" data-act="editmood" data-d="${d}" style="cursor:pointer;text-decoration:underline">${d}</span><span class="dots"></span><span class="v">${db.mood[d]}/10 <span data-act="delmood" data-d="${d}" style="color:var(--o40);cursor:pointer;margin-left:8px">✕</span></span></div>`).join('');
+  const cur=(db.mood&&db.mood[todayISO()])||0;
+  const chips=[1,2,3,4,5,6,7,8,9,10].map(n=>`<span class="chip" data-mood="${n}"${n===cur?' style="border-color:var(--fill);color:var(--fill)"':''}>${n}</span>`).join('');
+  openModal(`<h3>cómo me siento</h3>
+   <div class="submeta" style="margin-bottom:8px">tu ánimo de hoy · 1 = pésimo · 10 = increíble</div>
+   <div class="chips" style="margin-bottom:12px">${chips}</div>
+   <div class="field"><label>FECHA</label><input id="mo_date" type="date" value="${todayISO()}" max="${todayISO()}"/></div>
+   <div class="sheetbtns" style="margin-bottom:6px"><button class="cancel" data-act="closemodal">cerrar</button></div>
+   ${recent.length?`<div class="grp-label" style="margin:12px 0 4px">REGISTROS RECIENTES</div>`+rows+`<div class="submeta">toca un número para guardar · toca una fecha para editarla · ✕ para borrar</div>`:''}`);
+  document.querySelectorAll('[data-mood]').forEach(c=>c.onclick=()=>{ const d=val('mo_date')||todayISO(); db.mood=db.mood||{}; db.mood[d]=+c.dataset.mood; save(); closeModal(); render(); });
+}
 // sleep compat + clock math (lazy migration): legacy/manual entries are plain numbers; scheduled entries are
 // {start,end,date,isNocturnal,hours}. sleepHours() unifies reads so existing data never breaks.
 function sleepHours(v){ if(v==null)return 0; if(typeof v==='number')return v; const h=+v.hours; return isFinite(h)?h:0; }
@@ -1501,6 +1517,17 @@ function metricSeries(key, days){
       min: pos.length?Math.min.apply(null,pos):0,
       max: vals.length?Math.max.apply(null,vals):0,
       goal, change:null, fmt:n=>Math.round(n).toLocaleString(), zero:true, canLog:false};
+  }
+  if(key==='mood'){
+    const hd=lastDays(days);
+    const vals=hd.map(d=>(db.mood&&db.mood[d])||0);
+    const pos=vals.filter(x=>x>0);
+    return {key, title:'ánimo', unit:'/10', dates:hd, vals,
+      current:vals[vals.length-1]||0, currentISO:hd[hd.length-1],
+      avg: pos.length?Math.round((pos.reduce((a,b)=>a+b,0)/pos.length)*10)/10:0,
+      min: pos.length?Math.min.apply(null,pos):0,
+      max: vals.length?Math.max.apply(null,vals):0,
+      change:null, fmt:n=>n+'/10', zero:false, canLog:true, logAct:'logmood'};
   }
   return null;
 }
@@ -1739,6 +1766,14 @@ function renderProgress(){
       +`<div class="pval">${ak||'—'}<span>${gk?'/ '+gk:''}</span></div>`
       +`<div class="pst ${cls}">${txt}</div>${kcalArr.some(x=>x>0)?lineChart(kcalArr,{h:32,zero:true}):''}</div>`);
   }
+  // ánimo (mood)
+  { const _moArr=_hd.map(d=>(db.mood&&db.mood[d])||0); const _moLog=_moArr.filter(x=>x>0);
+    if(_moLog.length){ const _a=Math.round(avgPos(_moArr)*10)/10, _mn=(db.mood&&db.mood[todayISO()])||0;
+      tiles.push(`<div class="ptile tap" data-act="metricdetail" data-m="mood"><div class="ptlh"><div class="plbl">ánimo</div><span class="ptchev">›</span></div>`
+        +`<div class="pval">${_mn||'—'}<span>/10 hoy</span></div>`
+        +`<div class="pst flat">prom ${_a} · 14d</div>${lineChart(_moArr,{h:32})}</div>`);
+    }
+  }
   out+=`<div class="pgrid">${tiles.join('')}</div>`;
   // fuerza detalle (lista completa) — preserva el detalle del fork de Progreso/Gym
   if(e1.length>1){ out+=`<hr class="rule"/><div class="grp-label">FUERZA · e1RM Epley (vs semana previa)</div>`;
@@ -1749,8 +1784,12 @@ function renderProgress(){
   return out;
 }
 // ---------- stack: supplements / skincare / meds ----------
-// item shape: { id, name, category:'supp'|'skin'|'meds', dose, when:[], periodization:{type,value}, notes,
-//               startDate, endDate?, med?:{doctor,duration}, ticks:{'YYYY-MM-DD':true}, archived? }
+// item shape: { id, name, category:'supp'|'skin'|'meds', dose, unit?, when:[], periodization:{type,value}, notes,
+//               startDate, endDate?, med?:{doctor,duration}, ticks:{'YYYY-MM-DD':'taken'|'late'|'skipped'}, archived? }
+// (legacy: ticks guardaban `true` = taken; SIEMPRE leer vía tickState — migración lazy, sin reescribir)
+function tickState(v){ if(v===true)return 'taken'; if(v==='taken'||v==='late'||v==='skipped')return v; return null; }
+function tickDone(v){ const s=tickState(v); return s==='taken'||s==='late'; } // adherencia: tomado o tarde cuenta; saltado no
+const TICK_SYM={taken:'✓',late:'~',skipped:'✗'};
 function isDueToday(item, iso){
   if(!item || item.archived) return false;
   if(item.startDate && iso < item.startDate) return false;
@@ -1776,13 +1815,14 @@ function stackPeriodLabel(item){
 function stackPct(iso){
   const due=(db.stack||[]).filter(x=>isDueToday(x,iso));
   if(!due.length) return null;
-  const done=due.filter(x=>x.ticks&&x.ticks[iso]).length;
+  const done=due.filter(x=>x.ticks&&tickDone(x.ticks[iso])).length;
   return {done, total:due.length, pct:Math.round(done/due.length*100)};
 }
 function stackToggleTick(id, iso){
   const it=(db.stack||[]).find(x=>x.id===id); if(!it) return;
   it.ticks=it.ticks||{};
-  if(it.ticks[iso]) delete it.ticks[iso]; else it.ticks[iso]=true;
+  const order=[null,'taken','late','skipped']; const next=order[(order.indexOf(tickState(it.ticks[iso]))+1)%order.length];
+  if(next) it.ticks[iso]=next; else delete it.ticks[iso];
   save(); render();
 }
 function renderStack(){
@@ -1806,13 +1846,13 @@ function renderStack(){
       anyShown=true;
       out+=`<div class="grp-label" style="margin-top:10px">${c.lbl}</div>`;
       items.forEach(it=>{
-        const checked=it.ticks && it.ticks[iso];
+        const st=it.ticks && tickState(it.ticks[iso]);
         const isDue=isDueToday(it,iso);
-        const dose=it.dose?(' · '+escTxt(it.dose)):'';
+        const dose=it.dose?(' · '+escTxt(it.dose)+(it.unit?' '+escTxt(it.unit):'')):'';
         const when=it.when&&it.when.length?(' · '+escTxt(it.when.join('/'))):'';
         const period=escTxt(stackPeriodLabel(it));
         const tickDisp=isDue
-          ?`<span data-act="stacktick" data-id="${it.id}" style="cursor:pointer;font-family:'JetBrains Mono',monospace;color:${checked?'var(--fill)':'var(--o40)'};padding-right:4px">[${checked?'✓':' '}]</span>`
+          ?`<span data-act="stacktick" data-id="${it.id}" title="tap: tomado → tarde → saltado" style="cursor:pointer;font-family:'JetBrains Mono',monospace;color:${st?(st==='skipped'?'var(--bad)':'var(--fill)'):'var(--o40)'};padding-right:4px">[${st?TICK_SYM[st]:' '}]</span>`
           :`<span style="color:var(--o20);padding-right:4px">[—]</span>`;
         out+=`<div class="line" style="padding:6px 0;align-items:flex-start">`
           +`<span class="k" style="display:flex;align-items:center;flex-wrap:wrap">${tickDisp}<span data-act="stackedit" data-id="${it.id}" style="cursor:pointer">${escTxt(it.name)}</span><span style="color:var(--o40);font-size:10px;margin-left:4px">${dose}${when}</span></span>`
@@ -1837,7 +1877,7 @@ function openStackEdit(id, presetCat){
   const isNew=!existing;
   const it=existing || {
     id:'st_'+Date.now()+Math.random().toString(36).slice(2,5),
-    name:'', category:presetCat||'supp', dose:'', when:[],
+    name:'', category:presetCat||'supp', dose:'', unit:'', when:[],
     periodization:{type:'daily'}, notes:'',
     startDate:todayISO(), ticks:{}
   };
@@ -1848,11 +1888,14 @@ function openStackEdit(id, presetCat){
   const dayLbl=['D','L','M','M','J','V','S'];
   const dayBtn=i=>`<button class="t ${(p.type==='weekly'&&(p.value||[]).indexOf(i)>=0)?'on':''}" data-day="${i}" type="button">${dayLbl[i]}</button>`;
   const ptBtn=(k,l)=>`<button class="t ${p.type===k?'on':''}" data-pt="${k}" type="button">${l}</button>`;
-  const dosePh=it.category==='skin'?'1 capa':it.category==='meds'?'25 mg':'5 g';
+  const dosePh=it.category==='skin'?'1':it.category==='meds'?'25':'5';
+  const UNITS=['','mg','g','mcg','ml','cap','tab','UI','gotas','scoop','puff'];
+  const unitOpts=UNITS.map(u=>`<option value="${u}"${(it.unit||'')===u?' selected':''}>${u||'—'}</option>`).join('');
   openModal(`<h3>${isNew?'agregar a tu stack':'editar item'}</h3>
     <div class="field"><label>NOMBRE</label><input id="se_name" value="${escTxt(it.name||'')}" placeholder="ej. creatina monohidratada" autocomplete="off"/></div>
     <div class="field"><label>CATEGORÍA</label><div class="toggles" id="se_cat">${catBtn('supp','supp')}${catBtn('skin','skin')}${catBtn('meds','meds')}</div></div>
-    <div class="field row2"><div><label>DOSIS</label><input id="se_dose" value="${escTxt(it.dose||'')}" placeholder="${dosePh}" autocomplete="off"/></div><div><label>INICIO</label><input id="se_start" type="date" value="${it.startDate||todayISO()}"/></div></div>
+    <div class="field row2"><div><label>DOSIS</label><input id="se_dose" value="${escTxt(it.dose||'')}" placeholder="${dosePh}" inputmode="decimal" autocomplete="off"/></div><div><label>UNIDAD</label><select id="se_unit">${unitOpts}</select></div></div>
+    <div class="field"><label>INICIO</label><input id="se_start" type="date" value="${it.startDate||todayISO()}"/></div>
     <div class="field"><label>CUÁNDO</label><div class="toggles wrap" id="se_when">${whenOpts.map(whenBtn).join('')}</div></div>
     <div class="field"><label>PERIODIZACIÓN</label>
       <div class="toggles wrap" id="se_pt">${ptBtn('daily','diario')}${ptBtn('weekly','días sem')}${ptBtn('everyN','cada N')}${ptBtn('cycle','ciclo')}${ptBtn('range','rango')}</div>
@@ -1870,7 +1913,7 @@ function openStackEdit(id, presetCat){
     b.classList.add('on');
     const c=b.dataset.cat;
     root.querySelector('#se_meds').style.display=(c==='meds')?'block':'none';
-    const doseInp=root.querySelector('#se_dose'); if(doseInp&&!doseInp.value) doseInp.placeholder=c==='skin'?'1 capa':c==='meds'?'25 mg':'5 g';
+    const doseInp=root.querySelector('#se_dose'); if(doseInp&&!doseInp.value) doseInp.placeholder=c==='skin'?'1':c==='meds'?'25':'5';
   });
   root.querySelectorAll('#se_when button').forEach(b=>b.onclick=()=>b.classList.toggle('on'));
   root.querySelectorAll('#se_pt button').forEach(b=>b.onclick=()=>{
@@ -1887,7 +1930,7 @@ function openStackEdit(id, presetCat){
     const name=val('se_name'); if(!name){ alert('pon un nombre.'); return; }
     it.name=name;
     it.category=root.querySelector('#se_cat .on').dataset.cat;
-    it.dose=val('se_dose');
+    it.dose=val('se_dose'); it.unit=val('se_unit');
     it.when=Array.from(root.querySelectorAll('#se_when button.on')).map(b=>b.dataset.when);
     it.notes=val('se_notes');
     it.startDate=val('se_start')||todayISO();
@@ -2213,6 +2256,9 @@ document.getElementById('app').addEventListener('click',e=>{
     if(v&&typeof v==='object'){ if(ss)ss.value=v.start||''; if(ee)ee.value=v.end||''; if(mw)mw.style.display='none'; if(ss){ ss.focus(); ss.dispatchEvent(new Event('input')); } }
     else { if(mw)mw.style.display='block'; if(mh){ mh.value=(typeof v==='number'?v:''); mh.focus(); mh.dispatchEvent(new Event('input')); } if(ss)ss.value=''; if(ee)ee.value=''; } }
   else if(a==='delsleep'){ const d=el.dataset.d; if(confirm('¿Borrar el sueño de '+d+'?')){ if(db.sleep)delete db.sleep[d]; save(); openSleepLog(); } }
+  else if(a==='logmood'){ openMoodLog(); }
+  else if(a==='editmood'){ const d=el.dataset.d; const dt=document.getElementById('mo_date'); if(dt)dt.value=d; }
+  else if(a==='delmood'){ const d=el.dataset.d; if(confirm('¿Borrar el ánimo de '+d+'?')){ if(db.mood)delete db.mood[d]; save(); openMoodLog(); } }
   else if(a==='healthimport'){ openHealthImport(); }
   else if(a==='healthsync'){ healthSync(); }
   else if(a==='steprange'){ window._stepRange=+el.dataset.r||14; render(); }
