@@ -1,8 +1,9 @@
 # gym//TRK — STYLEMAP (mapa de estilos por pantalla)
 
-> Referencia viva para hacer correcciones de UI. Refleja el estado en **v159** + la dirección aprobada de Liquid Glass (chrome) y consolidación de color.
+> Referencia viva + **design-system** para TODOS los forks. Estado **v171**: Liquid Glass (chrome) **LANDED** (sheets/toast v169, nav flotante v170), color consolidado (v160), headers tokenizados (v171).
 > Alma locked: mono/ASCII, JetBrains Mono, monocromático (negro + escala de opacidad blanco + verde/rojo). Solo capa visual; nunca renombrar etiquetas del usuario; anillos solo en macros.
-> Todo vive en `index.html` (`<style>` l.16-427; renders en `<script>`). Editar → `node --check` → bump `sw.js` → push → verificar iPhone `?v=N`.
+> Todo vive en `index.html` (`<style>` ~l.16-490; renders en `<script>`). Editar → `node --check` → bump `sw.js` → push → verificar iPhone `?v=N`.
+> ⚠️ **Deuda de inline `style=`: 361 (creció +120 con features de los forks).** La homogeneización es disciplina COMPARTIDA: usa las clases de §DESIGN SYSTEM (abajo), no `style=` inline. La nav/sheets/toast ya son glass — NO meterles inline.
 
 ## 1. Pantallas (`state.screen`, router en `render()`)
 
@@ -78,5 +79,26 @@
 - `.scan-reticle` usa `rgba(...,.85)` (1 uso, overlay de cámara).
 - `.dz` design panel: estética dev-only (`?design=1`), no parte de la app de usuario.
 
+## 7. DESIGN SYSTEM — clases compartidas (TODOS los forks: úsalas, no `style=` inline)
+Existen en `<style>`; reemplazan los patrones inline más repetidos. Antes de escribir `style="font-size:…"` o `style="color:…"`, usa una de estas:
+
+**Texto / meta** (matan `font-size`+`color` inline):
+- `.t-meta` (11px o50) · `.t-xs` (10px o40) · `.muted` (o40 dentro de otra línea) · `.muted2` (o50) · `.kc-right` (`float:right;color:o50` — kcal a la derecha en filas de food).
+
+**Form:**
+- `.field` (wrapper + label) · `.field input/select` (h44, r-ctl, --card) · **`textarea.ta`** (+ `.sm/.md/.lg/.xl` por altura — NO textarea inline) · `.field .inline-row` / `.field select.grow` / `.field input.w72` (selects en fila).
+
+**Sheet / modal:** `.sheet` (ya es **glass-strong**, no tocar bg) · `.sheet h3` (título) · `.sheet h3 .sub` (subtítulo `· tag`) · `.sheetbtns` (.ok/.cancel/`.cancel.danger`).
+
+**Botones:** `.start` (primario filled h48) · `.secondary .b` / `.toggles button` (outline) · texto sobre `--fill` = `var(--on-fill)` (NO `#000`/`#0c0c0c`).
+
+**Listas / tarjetas:** `.card` · `.grp`+`.item` (food log) · `.line`/`.mdline` · `.prow`+`.pr-r` (fila genérica) · `.semv span` (flechas reorder, `.off`=extremo).
+
+**Glass (chrome flotante, neutro/acromático):** `.glass` / `.glass-strong` (= bg translúcido + `backdrop-filter` + edge highlight + safeguards iOS + fallbacks). Aplicado a nav/sheet/toast. **NO** en contenido, **NUNCA** en la tabla de workout (sharp por diseño).
+
+**Spacing puntual:** `.submeta.gap` · `.mt-s3/.mt-s4/.mt-s5/.mb-s4` (huérfanos; preferir tokens `--s1..6` en clases).
+
+> Si un patrón inline se repite ≥3×, conviene clase nueva (no utility-soup). El benchmark de cero-inline es `renderShare`.
+
 ---
-*Generado v159 · actualizar al avanzar los lotes de glass/color.*
+*Actualizado v171 — glass landed; deuda inline 361 (disciplina compartida). Generado base v159.*
