@@ -496,26 +496,25 @@
   @supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){ .glass{background:var(--card);} .glass-strong{background:var(--sheet-bg);} }
   /* accesibilidad: reducir transparencia → opaco, sin blur */
   @media (prefers-reduced-transparency:reduce){ .glass,.glass-strong{ -webkit-backdrop-filter:none; backdrop-filter:none; background:var(--glass-bg-strong); } }
-  /* ===== agenda del día (24h) — eje + buckets, posiciones inline (data-driven), look en clases ===== */
+  /* ===== agenda del día (24h) estilo calendario rimu — bloques rellenos + chips; posiciones inline (data-driven) ===== */
   .toggles.agf{margin-bottom:var(--s4);}
-  .ag-buck{margin-top:var(--s5);} .ag-buck .gl{font-size:var(--t-caption); color:var(--o40); letter-spacing:2px; margin-bottom:var(--s2);}
-  .agt{cursor:pointer;} .agt:active{background:var(--o10);}
   .agm{font-weight:700;} .agm.g{color:var(--good);} .agm.w{color:var(--warn);} .agm.b{color:var(--bad);} .agm.o{color:var(--o40); font-weight:400;}
+  .ag-nohr{margin-bottom:var(--s2);} .ag-nohr .gl{font-size:var(--t-caption); color:var(--o40); letter-spacing:2px; margin-bottom:var(--s3);}
+  .ag-chips{display:flex; flex-wrap:wrap; gap:6px;}
+  .ag-chip{display:inline-flex; align-items:center; gap:5px; background:var(--card2); border:1px solid var(--border); border-radius:var(--r-pill); padding:6px 11px; font-size:var(--t-meta); color:var(--o60); white-space:nowrap;}
+  .ag-chip.supp{cursor:pointer;} .ag-chip.supp:active{background:var(--card);}
   .ag-axis{position:relative; margin-top:var(--s4);}
   .ag-hr{position:absolute; left:0; right:0; height:0;}
   .ag-hr .ag-hl{position:absolute; left:0; top:-7px; width:20px; text-align:right; font-size:var(--t-caption); color:var(--o30); font-variant-numeric:tabular-nums;}
   .ag-hr i{display:block; margin-left:30px; border-top:1px solid var(--line);}
-  .ag-now{position:absolute; left:30px; right:0; height:0; border-top:1px solid var(--good); z-index:4;}
+  .ag-now{position:absolute; left:30px; right:0; height:0; border-top:1px solid var(--good); z-index:5;}
   .ag-now::before{content:''; position:absolute; left:-3px; top:-3px; width:5px; height:5px; border-radius:50%; background:var(--good);}
-  .ag-ev{position:absolute; left:30px; right:0; display:flex; align-items:baseline; gap:var(--s3); font-size:var(--t-meta); line-height:1.2; white-space:nowrap; z-index:3;}
-  .ag-ev .ag-t{color:var(--o50); font-variant-numeric:tabular-nums; flex:0 0 auto;}
-  .ag-ev .ag-tag{color:var(--fg); overflow:hidden; text-overflow:ellipsis;}
-  .ag-ev .ag-kc{color:var(--o40); margin-left:auto; flex:0 0 auto;}
-  .ag-blk{position:absolute; left:30px; right:0; border-left:2px solid var(--o60); padding:1px 0 0 var(--s3); overflow:hidden; z-index:2;}
-  .ag-blk .ag-bn{font-size:var(--t-meta); color:var(--fg); line-height:1.2; white-space:nowrap; text-overflow:ellipsis; overflow:hidden;}
-  .ag-blk .ag-bm{font-size:var(--t-caption); color:var(--o50);}
-  .ag-sleep{position:absolute; left:30px; right:0; background:rgba(243,243,244,.04); border:1px solid var(--o20); border-radius:var(--r-sm); z-index:1;}
-  .ag-sleep .ag-sl{position:absolute; top:3px; left:8px; font-size:var(--t-caption); color:var(--o50);}
+  .ag-blk{position:absolute; left:30px; right:4px; background:var(--card2); border:1px solid var(--border); border-radius:8px; padding:4px 9px; overflow:hidden; z-index:3;}
+  .ag-blk .bt{font-size:var(--t-meta); color:var(--fg); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; line-height:1.35;}
+  .ag-blk .bt .bk{float:right; color:var(--o40); font-weight:400; margin-left:8px;}
+  .ag-blk .bs{font-size:var(--t-caption); color:var(--o50); line-height:1.3;}
+  .ag-blk.gym{border-left:2px solid var(--o50);}
+  .ag-blk.slp{background:rgba(243,243,244,.035); border-color:var(--o12); z-index:1;}
 </style>
 </head>
 <body>
@@ -1882,33 +1881,25 @@ function renderAgenda(){
     +`<div class="section"><div class="h dnavh"><a data-act="agprev" class="dnav">‹</a><span class="dnlbl-wrap"><span class="dnlbl">${dayLabel(ISO)}</span><input type="date" class="dcal" data-act="agcal" value="${ISO}"/></span><a data-act="agnext" class="dnav">›</a></div></div>`;
   const fb=(k,l)=>`<button class="${f[k]?'on':''}" data-act="agenfilter" data-f="${k}">${l}</button>`;
   body+=`<div class="toggles agf">${fb('meals','comidas')}${fb('train','entreno')}${fb('supps','supps')}${fb('sleep','sueño')}</div>`;
-  if(f.supps){ const due=(db.stack||[]).filter(x=>isDueToday(x,ISO)&&!x.archived);
-    if(due.length){ body+=`<div class="ag-buck"><div class="gl">SUPPS</div>`;
-      due.forEach(x=>{ const s=tickState(x.ticks&&x.ticks[ISO]); const mk=s==='taken'?'<b class="agm g">✓</b>':s==='late'?'<b class="agm w">tarde</b>':s==='skipped'?'<b class="agm b">✕</b>':'<b class="agm o">pendiente</b>';
-        body+=`<div class="line agt" data-act="agsupptick" data-id="${escTxt(x.id||'')}"><span class="k">${escTxt(x.name||'supp')}</span><span class="dots"></span><span class="v">${escTxt((x.when||[]).join(' / ')||stackPeriodLabel(x))} · ${mk}</span></div>`; });
-      body+=`</div>`; } }
-  const evs=[], noTime=[];
-  if(f.meals)((db.meals&&db.meals[ISO])||[]).forEach(m=>{ const mn=hm2min(m.time); if(isFinite(mn)) evs.push({mn,kind:'meal',m}); else noTime.push({kind:'meal',m}); });
-  if(f.train)(db.sessions||[]).filter(s=>s.date===ISO&&s.type!=='rest').forEach(s=>{ const mn=hm2min(s.startTime); if(isFinite(mn)) evs.push({mn,kind:'sess',s,durM:Math.max(20,Math.round((s.durSec||0)/60))}); else noTime.push({kind:'sess',s}); });
+  // recolectar eventos con hora + chips "sin hora" (estilo rimu: SIN HORA arriba)
+  const evs=[]; let chips='';
+  if(f.meals)((db.meals&&db.meals[ISO])||[]).forEach(m=>{ const mn=hm2min(m.time); if(isFinite(mn)) evs.push({mn,kind:'meal',m}); else chips+=`<span class="ag-chip">${escTxt(m.tag||'comida')} · ${Math.round(m.kcal)||0}</span>`; });
+  if(f.train)(db.sessions||[]).filter(s=>s.date===ISO&&s.type!=='rest').forEach(s=>{ const mn=hm2min(s.startTime); if(isFinite(mn)) evs.push({mn,kind:'sess',s,durM:Math.max(20,Math.round((s.durSec||0)/60))}); else chips+=`<span class="ag-chip">${escTxt(s.dayName||'sesión')}${s.durSec?' · '+Math.round(s.durSec/60)+'m':''}</span>`; });
   let sleep=null; const sv=db.sleep&&db.sleep[ISO];
-  if(f.sleep&&sv&&typeof sv==='object'&&sv.end&&isFinite(hm2min(sv.end))) sleep=sv; else if(f.sleep&&sv) noTime.push({kind:'sleep',sv:sv});
+  if(f.sleep&&sv&&typeof sv==='object'&&sv.end&&isFinite(hm2min(sv.end))) sleep=sv; else if(f.sleep&&sv) chips+=`<span class="ag-chip">sueño · ${sleepHours(sv)}h</span>`;
+  if(f.supps)(db.stack||[]).filter(x=>isDueToday(x,ISO)&&!x.archived).forEach(x=>{ const s=tickState(x.ticks&&x.ticks[ISO]); const mk=s==='taken'?' <b class="agm g">✓</b>':s==='late'?' <b class="agm w">tarde</b>':s==='skipped'?' <b class="agm b">✕</b>':''; chips+=`<span class="ag-chip supp" data-act="agsupptick" data-id="${escTxt(x.id||'')}">${escTxt(x.name||'supp')}${mk}</span>`; });
+  if(chips) body+=`<div class="ag-nohr"><div class="gl">SIN HORA</div><div class="ag-chips">${chips}</div></div>`;
   const hasAxis=evs.length||sleep;
   if(hasAxis){ let ax=`<div class="ag-axis" style="height:${CANVAS}px">`;
     for(let H=0;H<24;H++) ax+=`<div class="ag-hr" style="top:${top(H*60)}px"><span class="ag-hl">${pad(H)}</span><i></i></div>`;
     if(ISO===todayISO()){ const nm=hm2min(nowHM()); if(isFinite(nm)) ax+=`<div class="ag-now" style="top:${top(nm)}px"></div>`; }
-    if(sleep){ const e=hm2min(sleep.end); let s0,h; if(isNocturnal(sleep.start)){ s0=0; h=top(e); } else { const sM=hm2min(sleep.start); s0=isFinite(sM)?top(sM):0; h=top(e)-s0; } h=Math.max(20,h);
-      ax+=`<div class="ag-sleep" style="top:${s0}px;height:${h}px"><span class="ag-sl">sueño · ${escTxt(sleep.start||'?')}–${escTxt(sleep.end)} · ${sleepHours(sleep)}h</span></div>`; }
-    evs.filter(x=>x.kind==='sess').forEach(x=>{ const h=Math.max(26,top(x.durM)); ax+=`<div class="ag-blk" style="top:${top(x.mn)}px;height:${h}px"><div class="ag-bn">${escTxt(x.s.dayName||'sesión')}</div><div class="ag-bm">${escTxt(x.s.startTime)}–${minToHM(x.mn+x.durM)} · ${durTxt(x.durM)}</div></div>`; });
+    if(sleep){ const e=hm2min(sleep.end); let s0,h; if(isNocturnal(sleep.start)){ s0=0; h=top(e); } else { const sM=hm2min(sleep.start); s0=isFinite(sM)?top(sM):0; h=top(e)-s0; } h=Math.max(22,h);
+      ax+=`<div class="ag-blk slp" style="top:${s0}px;height:${h}px"><div class="bt">sueño</div><div class="bs">${escTxt(sleep.start||'?')}–${escTxt(sleep.end)} · ${sleepHours(sleep)}h</div></div>`; }
+    evs.filter(x=>x.kind==='sess').forEach(x=>{ const h=Math.max(36,top(x.durM)); ax+=`<div class="ag-blk gym" style="top:${top(x.mn)}px;height:${h}px"><div class="bt">${escTxt(x.s.dayName||'sesión')}</div><div class="bs">${escTxt(x.s.startTime)}–${minToHM(x.mn+x.durM)} · ${durTxt(x.durM)}</div></div>`; });
     const ml=evs.filter(x=>x.kind==='meal').sort((a,b)=>a.mn-b.mn); let prev=-99;
-    ml.forEach(x=>{ let t=top(x.mn); if(t-prev<20)t=prev+20; prev=t; ax+=`<div class="ag-ev" style="top:${t}px"><span class="ag-t">${escTxt(x.m.time)}</span><span class="ag-tag">${escTxt(x.m.tag||'comida')}</span><span class="ag-kc">${Math.round(x.m.kcal)||0}</span></div>`; });
+    ml.forEach(x=>{ let t=top(x.mn); if(t-prev<40)t=prev+40; prev=t; ax+=`<div class="ag-blk meal" style="top:${t}px"><div class="bt">${escTxt(x.m.tag||'comida')}<span class="bk">${Math.round(x.m.kcal)||0}</span></div><div class="bs">${escTxt(x.m.time)}</div></div>`; });
     ax+=`</div>`; body+=ax; }
-  if(noTime.length){ body+=`<div class="ag-buck"><div class="gl">SIN HORA</div>`;
-    noTime.forEach(x=>{ if(x.kind==='meal') body+=`<div class="line"><span class="k">${escTxt(x.m.tag||'comida')}</span><span class="dots"></span><span class="v">${Math.round(x.m.kcal)||0} kcal</span></div>`;
-      else if(x.kind==='sess') body+=`<div class="line"><span class="k">${escTxt(x.s.dayName||'sesión')}</span><span class="dots"></span><span class="v">${x.s.durSec?Math.round(x.s.durSec/60)+'m':'sesión'}</span></div>`;
-      else if(x.kind==='sleep') body+=`<div class="line"><span class="k">sueño</span><span class="dots"></span><span class="v">${sleepHours(x.sv)}h</span></div>`; });
-    body+=`</div>`; }
-  const anySupp=f.supps&&(db.stack||[]).some(x=>isDueToday(x,ISO)&&!x.archived);
-  if(!hasAxis && !noTime.length && !anySupp) body+=`<div class="empty">sin registros este día<br/><span class="ehint">tus comidas, entrenos y sueño con hora aparecen en el eje</span></div>`;
+  if(!hasAxis && !chips) body+=`<div class="empty">sin registros este día<br/><span class="ehint">tus comidas, entrenos y sueño con hora aparecen en el calendario</span></div>`;
   return body;
 }
 function renderStack(){
