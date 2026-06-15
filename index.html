@@ -321,12 +321,14 @@
   .chip{border-radius:var(--r-pill); border-color:var(--border);}
   /* bottom nav: píldora flotante glass (absolute al .frame; el scroll vive en .scroll, no en body → esquiva el bug iOS de fixed) */
   .nav{ position:absolute; left:0; right:0; bottom:calc(12px + env(safe-area-inset-bottom)); margin:0 auto; width:max-content; max-width:calc(100% - 32px); z-index:7; flex:0 0 auto; gap:4px; padding:5px; border-radius:var(--r-pill); background:var(--glass-bg); -webkit-backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-sat)); backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-sat)); border:1px solid var(--glass-ring); box-shadow:var(--glass-shadow), inset 0 1px 0 var(--glass-edge); will-change:backdrop-filter; transform:translateZ(0); -webkit-backface-visibility:hidden; backface-visibility:hidden;}
-  /* expandable tabs: ícono colapsado · el activo expande label + relleno glass sutil */
-  .nav a{display:flex; align-items:center; gap:0; border-radius:var(--r-pill); padding:9px; color:var(--o50); overflow:hidden; transition:gap .35s cubic-bezier(.2,1,.3,1), padding .35s cubic-bezier(.2,1,.3,1), background .25s ease, color .25s ease;}
+  /* expandable tabs (ref ExpandableTabs): ícono colapsado · activo expande con spring; anima al togglear .active sobre nodos persistentes (renderNav build-once) */
+  .nav a{display:flex; align-items:center; gap:0; border-radius:var(--r-pill); padding:9px 8px; color:var(--o50); transition:gap .5s cubic-bezier(.22,1,.36,1) .08s, padding .5s cubic-bezier(.22,1,.36,1) .08s, background .3s ease, color .3s ease;}
   .nav a .ic{flex:0 0 auto; width:20px; height:20px; display:flex; align-items:center; justify-content:center;}
-  .nav a .ic svg{width:20px; height:20px; stroke:currentColor; fill:none; stroke-width:1.6; stroke-linecap:round; stroke-linejoin:round;}
-  .nav a .lbl{max-width:0; opacity:0; overflow:hidden; white-space:nowrap; font-weight:600; letter-spacing:.3px; transition:max-width .35s cubic-bezier(.2,1,.3,1), opacity .25s ease;}
-  .nav a.active{gap:7px; padding:9px 13px; color:var(--fg); background:var(--o12);} .nav a.active .lbl{max-width:84px; opacity:1;}
+  .nav a .ic svg{width:20px; height:20px; stroke:currentColor; fill:none; stroke-width:1.6; stroke-linecap:round; stroke-linejoin:round; pointer-events:none;}
+  .nav a .lbl{display:grid; grid-template-columns:0fr; opacity:0; transition:grid-template-columns .5s cubic-bezier(.22,1,.36,1) .08s, opacity .35s ease .08s;}
+  .nav a .lbl>span{overflow:hidden; min-width:0; white-space:nowrap; font-weight:600; letter-spacing:.3px;}
+  .nav a.active{gap:8px; padding:9px 16px; color:var(--fg); background:var(--o12);}
+  .nav a.active .lbl{grid-template-columns:1fr; opacity:1;}
   /* rounded progress bars */
   .bar,.wprog,.vbar{border-radius:var(--r-pill);} .bar>i,.wprog>i,.vbar>i{border-radius:var(--r-pill);}
   /* workout sets table: terminal style (sharp, dense) — like Expo/ironLOG */
@@ -797,10 +799,14 @@ const NAVIC={
   agenda:'<svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="16" rx="2"/><line x1="4" y1="9.5" x2="20" y2="9.5"/><line x1="8.5" y1="3" x2="8.5" y2="6"/><line x1="15.5" y1="3" x2="15.5" y2="6"/></svg>'
 };
 function renderNav(){
-  const n=document.getElementById('nav'); const sc=state.screen;
+  const n=document.getElementById('nav'); if(!n) return; const sc=state.screen;
   if(sc==='workout'||sc==='settings'||sc==='splitedit'||sc==='history'||sc==='share'||!db.profile.username){ n.style.display='none'; return; } n.style.display='flex';
-  const tab=(id,lbl)=>`<a data-act="nav" data-screen="${id}" class="${sc===id?'active':''}" aria-label="${lbl}"><span class="ic">${NAVIC[id]||''}</span><span class="lbl">${lbl}</span></a>`;
-  n.innerHTML=tab('progress','progress')+tab('home','gym')+tab('macros','macros')+tab('stack','stack')+tab('agenda','día');
+  if(n.dataset.built!=='1'){ // construir UNA vez; luego solo toggle .active → la transición CSS anima (innerHTML cada render mataría la animación)
+    const tabs=[['progress','progress'],['home','gym'],['macros','macros'],['stack','stack'],['agenda','día']];
+    n.innerHTML=tabs.map(t=>`<a data-act="nav" data-screen="${t[0]}" aria-label="${t[1]}"><span class="ic">${NAVIC[t[0]]||''}</span><span class="lbl"><span>${t[1]}</span></span></a>`).join('');
+    n.dataset.built='1';
+  }
+  Array.prototype.forEach.call(n.querySelectorAll('a'),a=>a.classList.toggle('active', a.dataset.screen===sc));
 }
 
 // ---------- render: home ----------
