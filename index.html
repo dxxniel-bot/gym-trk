@@ -53,7 +53,7 @@
   /* on a real phone: frame fills the screen, no floating card */
   @media (max-width:440px){ body{display:block;} .frame{width:100%; height:100%; max-height:none; border-radius:0; box-shadow:none;} }
   input,select,textarea{font-size:16px; -webkit-user-select:text; user-select:text;}
-  .scroll{flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; overscroll-behavior-y:contain; padding:var(--sp-py) var(--sp-px) calc(34px + env(safe-area-inset-bottom));}
+  .scroll{flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; overscroll-behavior-y:contain; padding:var(--sp-py) var(--sp-px) calc(84px + env(safe-area-inset-bottom));}
   .scroll::-webkit-scrollbar{width:6px} .scroll::-webkit-scrollbar-thumb{background:var(--o10)}
   input,select,button{font-family:inherit;}
 
@@ -319,8 +319,8 @@
   .pickitem{border-bottom-color:var(--border);}
   /* pill chips (toggles consolidated above) */
   .chip{border-radius:var(--r-pill); border-color:var(--border);}
-  /* bottom nav as pill tabs */
-  .nav{border-top:1px solid var(--border); gap:6px;}
+  /* bottom nav: píldora flotante glass (absolute al .frame; el scroll vive en .scroll, no en body → esquiva el bug iOS de fixed) */
+  .nav{ position:absolute; left:0; right:0; bottom:calc(12px + env(safe-area-inset-bottom)); margin:0 auto; width:max-content; max-width:calc(100% - 32px); z-index:7; flex:0 0 auto; gap:4px; padding:5px; border-radius:var(--r-pill); background:var(--glass-bg); -webkit-backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-sat)); backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-sat)); border:1px solid var(--glass-ring); box-shadow:var(--glass-shadow), inset 0 1px 0 var(--glass-edge); will-change:backdrop-filter; transform:translateZ(0); -webkit-backface-visibility:hidden; backface-visibility:hidden;}
   .nav a{border-radius:var(--r-pill); padding:10px 16px;} .nav a.active{background:var(--fill); color:var(--on-fill); font-weight:700;}
   /* rounded progress bars */
   .bar,.wprog,.vbar{border-radius:var(--r-pill);} .bar>i,.wprog>i,.vbar>i{border-radius:var(--r-pill);}
@@ -455,8 +455,8 @@
   .ws-share{font-size:11px; color:var(--o40); margin-top:18px; letter-spacing:.3px;}
   .toast{position:fixed; left:50%; bottom:84px; transform:translateX(-50%); background:var(--glass-bg-strong); -webkit-backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-sat)); backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-sat)); -webkit-backface-visibility:hidden; backface-visibility:hidden; border:1px solid var(--good); color:var(--fg); padding:9px 15px; border-radius:999px; font-size:12px; font-weight:600; z-index:10000; box-shadow:0 6px 22px rgba(0,0,0,.5), inset 0 1px 0 var(--glass-edge); white-space:nowrap; animation:toastin .28s ease, toastout .4s ease 2.3s forwards;}
   /* glass chrome fallbacks (sin backdrop-filter / reduce transparency) */
-  @supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){ .sheet{background:var(--sheet-bg);} .toast{background:var(--card2);} }
-  @media (prefers-reduced-transparency:reduce){ .sheet,.toast{-webkit-backdrop-filter:none; backdrop-filter:none;} .sheet{background:var(--sheet-bg);} .toast{background:var(--card2);} }
+  @supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){ .sheet{background:var(--sheet-bg);} .toast,.nav{background:var(--card2);} }
+  @media (prefers-reduced-transparency:reduce){ .sheet,.toast,.nav{-webkit-backdrop-filter:none; backdrop-filter:none;} .sheet{background:var(--sheet-bg);} .toast,.nav{background:var(--card2);} }
   @keyframes toastin{from{opacity:0; transform:translate(-50%,10px)} to{opacity:1; transform:translate(-50%,0)}}
   @keyframes toastout{to{opacity:0; transform:translate(-50%,8px)}}
 
@@ -1142,7 +1142,6 @@ function renderMacros(){
     +`<div class="card" style="padding:18px 16px 16px"><button class="hero ${open?'open':''} ${kStat}" data-act="togglemacros">${ringHTML(pct,`<div class="num">${Math.round(t.kcal).toLocaleString()}</div><div class="of">/ ${g.kcal.toLocaleString()} kcal</div>`,'lg')}<div class="hero-meta"><span class="left ${left<0?'over':'under'}">${left>=0?left+' left':Math.abs(left)+' over'}</span> · ${Math.round(pct)}% <span class="chev">▾</span></div></button>${(function(){var b=balanceOf(g.kcal);return b?'<div class="hbal">'+(b.label==='mantenimiento'?'en mantenimiento':'<span style="color:'+b.col+';font-weight:700">'+b.label+'</span> '+Math.abs(b.delta)+' kcal')+' · mant. ≈ '+b.maint+'</div>':'';})()}${details}</div>`
     +`<div class="section" style="margin-bottom:10px"><div class="h"><span class="s">//</span>LOG&nbsp; today</div></div>`
     +log
-    +`<div style="height:84px" aria-hidden="true"></div>`
     +`<button class="fab" data-act="addmenu" aria-label="agregar">+</button>`;
 }
 // ---------- render: shareable summary (gym//TRK aesthetic, horizontal banner) ----------
