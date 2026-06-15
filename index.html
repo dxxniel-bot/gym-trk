@@ -434,6 +434,7 @@
   .fadein{animation:viewin 140ms ease-out;}
   /* boot / recap overlay — terminal status, tap or timeout dismisses */
   .bootov{position:absolute; inset:0; z-index:9000; background:var(--frame); display:flex; flex-direction:column; justify-content:center; padding:0 34px; transition:opacity .18s ease;}
+  .bootov .bootsh{position:absolute; inset:0; width:100%; height:100%; z-index:-1; pointer-events:none; opacity:.5;}
   .bootov.out{opacity:0; pointer-events:none;}
   .bootov .bt{font-size:18px; font-weight:800; letter-spacing:.02em; margin-bottom:18px;}
   .bootov .bt .s{color:var(--o40);}
@@ -2163,11 +2164,33 @@ function updateRestBar(){
 // ---------- boot screen + day recap overlays (gamification: "disciplina visualizada", no confetti) ----------
 function uptimeDays(){ try{ const s=db.profile&&db.profile.since; if(!s)return 0; const ms=new Date(todayISO()+'T12:00:00')-new Date(s+'T12:00:00'); return Math.max(0,Math.round(ms/86400000)); }catch(_){ return 0; } }
 // generic full-frame overlay: tap or timeout dismisses; onDone chains (boot → recap, never stacked)
+// raw WebGL (sin Three.js → offline-safe): shader de mosaico de líneas MONOCROMO para la carga/boot. Devuelve un stop().
+function startShader(canvas){
+  let gl=null; try{ gl=canvas.getContext('webgl',{antialias:false,alpha:false})||canvas.getContext('experimental-webgl'); }catch(_){}
+  if(!gl) return null;
+  const VS='attribute vec2 p;void main(){gl_Position=vec4(p,0.0,1.0);}';
+  const FS='precision highp float;uniform vec2 res;uniform float time;float rnd(float x){return fract(sin(x)*1e4);}void main(){vec2 uv=(gl_FragCoord.xy*2.0-res)/min(res.x,res.y);vec2 ms=vec2(4.0,2.0);vec2 ss=vec2(256.0,256.0);uv.x=floor(uv.x*ss.x/ms.x)/(ss.x/ms.x);uv.y=floor(uv.y*ss.y/ms.y)/(ss.y/ms.y);float t=time*0.06+rnd(uv.x)*0.4;float lw=0.0008;float v=0.0;for(int j=0;j<3;j++){for(int i=0;i<5;i++){v+=lw*float(i*i)/abs(fract(t-0.01*float(j)+float(i)*0.01)-length(uv));}}v=clamp(v/3.0,0.0,1.0);gl_FragColor=vec4(vec3(v),1.0);}';
+  const mk=(ty,s)=>{ const sh=gl.createShader(ty); gl.shaderSource(sh,s); gl.compileShader(sh); return sh; };
+  let prog; try{ prog=gl.createProgram(); gl.attachShader(prog,mk(gl.VERTEX_SHADER,VS)); gl.attachShader(prog,mk(gl.FRAGMENT_SHADER,FS)); gl.linkProgram(prog); if(!gl.getProgramParameter(prog,gl.LINK_STATUS))return null; }catch(_){ return null; }
+  gl.useProgram(prog);
+  const b=gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER,b); gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,3,-1,-1,3]),gl.STATIC_DRAW);
+  const pl=gl.getAttribLocation(prog,'p'); gl.enableVertexAttribArray(pl); gl.vertexAttribPointer(pl,2,gl.FLOAT,false,0,0);
+  const uRes=gl.getUniformLocation(prog,'res'), uTime=gl.getUniformLocation(prog,'time');
+  const dpr=Math.min(window.devicePixelRatio||1,2);
+  const size=()=>{ const r=canvas.getBoundingClientRect(); canvas.width=Math.max(1,(r.width*dpr)|0); canvas.height=Math.max(1,(r.height*dpr)|0); gl.viewport(0,0,canvas.width,canvas.height); };
+  size();
+  let raf=0, alive=true, t0=performance.now();
+  const draw=()=>{ if(!alive)return; const tm=(performance.now()-t0)/1000; gl.uniform2f(uRes,canvas.width,canvas.height); gl.uniform1f(uTime,tm+1.0); gl.drawArrays(gl.TRIANGLES,0,3); raf=requestAnimationFrame(draw); };
+  draw();
+  return ()=>{ alive=false; try{cancelAnimationFrame(raf);}catch(_){} try{ const x=gl.getExtension('WEBGL_lose_context'); if(x)x.loseContext(); }catch(_){} };
+}
 function showOverlay(html,opts){ opts=opts||{}; try{
   const old=document.getElementById('bootov'); if(old)old.remove();
   const o=document.createElement('div'); o.className='bootov'; o.id='bootov'; o.innerHTML=html;
   document.getElementById('app').appendChild(o);
-  let done=false; const kill=()=>{ if(done)return; done=true; o.classList.add('out'); setTimeout(()=>{ try{o.remove();}catch(_){} if(opts.onDone)opts.onDone(); },190); };
+  let stopSh=null;
+  if(opts.shader){ try{ const cv=document.createElement('canvas'); cv.className='bootsh'; o.insertBefore(cv,o.firstChild); stopSh=startShader(cv); }catch(_){} }
+  let done=false; const kill=()=>{ if(done)return; done=true; if(stopSh){try{stopSh();}catch(_){}} o.classList.add('out'); setTimeout(()=>{ try{o.remove();}catch(_){} if(opts.onDone)opts.onDone(); },190); };
   o.addEventListener('click',kill);
   if(opts.ms)setTimeout(kill,opts.ms);
 }catch(_){ if(opts.onDone)opts.onDone(); } }
@@ -2187,7 +2210,7 @@ function bootScreen(onDone){ try{
   if(cur)rows+=L('weekly vol',kFmt(cur)+(pct!=null?' <span style="color:'+(pct>=0?'var(--good)':'var(--bad)')+'">'+(pct>=0?'▲ +'+pct:'▼ −'+Math.abs(pct))+'%</span>':''));
   if(bw)rows+=L('bw',bw+' kg');
   const sl=sleepHours(db.sleep&&db.sleep[todayISO()]); if(sl)rows+=L('sleep',sl+' h');
-  showOverlay(`<div class="bt"><span class="s">gym</span>//TRK</div>${rows}<div class="bready">[ready]</div>`,{ms:1300,onDone});
+  showOverlay(`<div class="bt"><span class="s">gym</span>//TRK</div>${rows}<div class="bready">[ready]</div>`,{ms:1300,onDone,shader:true});
 }catch(_){ if(onDone)onDone(); } }
 // snap recap: one 5s screen after 21h closing the day's loop (kcal/steps/session/water/sleep). Once per day; ?recap=1 forces for QA.
 function snapRecap(){ try{
