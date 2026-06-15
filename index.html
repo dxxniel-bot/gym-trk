@@ -1246,6 +1246,9 @@ function renderShareWeight(){
     +`<div class="shstat"><div class="shstat-n" style="color:${col}">${ch>=0?'+':''}${ch}</div><div class="shstat-l">kg · ${vals.length} reg.</div></div></div>`;
   return summaryShell('peso corporal', banner, `<div class="shlog">${lineChart(vals.slice(-16))}</div>`);
 }
+// meal-level: hora opcional por meal. El objeto meal = db.mealMeta[date][tag] = {time:'HH:MM'}. Aditivo; ausencia = sin hora (nunca asumir). La timeline referencia mealMeta[date][tag].time.
+function mealTime(date,tag){ try{ const o=((db.mealMeta||{})[date]||{})[tag]; return (o&&o.time)||''; }catch(_){ return ''; } }
+function setMealTime(date,tag,hhmm){ db.mealMeta=db.mealMeta||{}; db.mealMeta[date]=db.mealMeta[date]||{}; const o=db.mealMeta[date][tag]||{}; if(hhmm){ o.time=hhmm; db.mealMeta[date][tag]=o; } else if(db.mealMeta[date][tag]){ delete db.mealMeta[date][tag].time; if(!Object.keys(db.mealMeta[date][tag]).length){ delete db.mealMeta[date][tag]; if(!Object.keys(db.mealMeta[date]).length) delete db.mealMeta[date]; } } }
 function openMealSummary(tag){
   const items=(db.meals[curDate()]||[]).filter(m=>m.tag===tag); if(!items.length)return;
   const t={kcal:0,protein:0,carbs:0,fat:0,sugar:0,fiber:0,sodium:0,potassium:0,caffeine:0,alcohol:0,water:0};
@@ -1259,10 +1262,11 @@ function openMealSummary(tag){
   const macros=row('protein',t.protein,'g',cal(pk))+row('carbs',t.carbs,'g',cal(ck))+row('fat',t.fat,'g',cal(fk))+row('alcohol',t.alcohol,'g',cal(ak));
   const micros=row('fiber',t.fiber,'g',day(t.fiber,'fiber'))+row('sugar',t.sugar,'g',day(t.sugar,'sugar'))+row('sodium',t.sodium,'mg',day(t.sodium,'sodium'))+row('potassium',t.potassium,'mg',day(t.potassium,'potassium'))+row('caffeine',t.caffeine,'mg',day(t.caffeine,'caffeine'));
   const nutList=macros+micros;
-  openModal(`<h3>#${escTxt(tag)}</h3>
+  openModal(`<h3 style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">#${escTxt(tag)}<input type="time" id="ms_time" value="${mealTime(curDate(),tag)}" title="hora de la comida (opcional)" style="font-size:13px;font-weight:400;height:30px;width:118px;border:.5px solid var(--o20);background:transparent;color:var(--fg);padding:0 8px;border-radius:var(--r-ctl)"/></h3>
    <div class="msum-top"><div class="msum-rad">${mealRadar(t,_mg)}</div><div class="msum-right"><div class="msum-list">${nutList}</div><div class="msum-kcal">${Math.round(t.kcal)}<span>KCAL</span></div></div></div>
    <div class="shlog" style="margin-top:14px">${mealFoodRows(items)}</div>
    <div class="sheetbtns" style="margin-top:14px"><button class="ok" data-act="addtomeal" data-tag="${escTxt(tag)}">+ add food</button><button class="cancel" data-act="dupmeal" data-tag="${escTxt(tag)}" title="duplicar esta meal">⎘ duplicar</button><button class="cancel" data-act="delmealgroup" data-tag="${escTxt(tag)}" title="borrar toda la meal" style="color:var(--bad)">🗑 borrar</button></div>`);
+  const _mt=document.getElementById('ms_time'); if(_mt)_mt.onchange=()=>{ setMealTime(curDate(),tag,_mt.value||null); save(); };
   // la gráfica SIEMPRE igual de alto que la columna derecha (tabla + kcal), manteniendo proporción del viewBox
   (function(){ try{ const tp=document.querySelector('.msum-top'); if(!tp)return; const rt=tp.querySelector('.msum-right'), rd=tp.querySelector('.msum-rad'); if(!rt||!rd)return; const fit=function(){ const h=rt.getBoundingClientRect().height; if(h>4) rd.style.flex='0 0 '+(h*168/156).toFixed(1)+'px'; }; if(window.ResizeObserver){ new ResizeObserver(fit).observe(rt); } else { requestAnimationFrame(function(){requestAnimationFrame(fit);}); } if(document.fonts&&document.fonts.ready){ document.fonts.ready.then(fit); } }catch(_){} })();
 }
