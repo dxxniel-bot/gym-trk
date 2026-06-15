@@ -75,11 +75,11 @@
   .ctrls{display:flex; gap:14px; font-size:10px; margin-bottom:22px;} .ctrls a{color:var(--o50); cursor:pointer; padding:12px 6px; margin:-12px -6px;}
 
   /* section header (stacked label + name) */
-  .whdr{display:grid; grid-template-columns:auto 1fr; column-gap:8px; row-gap:3px; align-items:baseline; margin-bottom:8px;}
-  .whdr .l1,.whdr .l2{grid-column:1; justify-self:end; text-align:right; font-size:16px; font-weight:800; line-height:1; letter-spacing:2px; color:var(--o50);}
+  .whdr{display:grid; grid-template-columns:auto 1fr; column-gap:var(--s3); row-gap:3px; align-items:baseline; margin-bottom:var(--s3);}
+  .whdr .l1,.whdr .l2{grid-column:1; justify-self:end; text-align:right; font-size:var(--t-section); font-weight:800; line-height:1; letter-spacing:2px; color:var(--o50);}
   .whdr .l1{grid-row:1;} .whdr .l2{grid-row:2;} .whdr .l1 .s{color:var(--o50);}
-  .whdr .wname{grid-column:2; grid-row:1; font-size:22px; font-weight:800; letter-spacing:-.3px; line-height:1;}
-  .whdr .wmeta{grid-column:2; grid-row:2; font-size:8px; color:var(--o50); line-height:1; letter-spacing:.2px;}
+  .whdr .wname{grid-column:2; grid-row:1; font-size:var(--t-display); font-weight:800; letter-spacing:-.3px; line-height:1;}
+  .whdr .wmeta{grid-column:2; grid-row:2; font-size:var(--t-caption); color:var(--o50); line-height:1; letter-spacing:.2px;}
   .wgym{text-align:center; font-size:10px; color:var(--o40); margin-top:8px;}
 
   .section{display:flex; align-items:baseline; justify-content:space-between; margin-bottom:var(--sp-section);}
@@ -1033,7 +1033,7 @@ function renderWorkout(){
       ? `<div class="rot" style="margin-top:14px"><span class="lbl">LOGGED AFTER</span><span class="n"><input type="date" value="${w.date}" max="${todayISO()}" data-act="setdate" style="background:transparent;border:.5px solid var(--o20);color:var(--fg);font:inherit;font-size:10px;padding:3px 5px"/></span></div><div class="rot" style="margin-top:6px"><span class="lbl">duración (min) · opcional</span><span class="n"><input type="number" value="${w.manualDur||''}" data-act="setdur" inputmode="numeric" placeholder="—" style="width:70px;background:transparent;border:.5px solid var(--o20);color:var(--fg);font:inherit;font-size:10px;padding:3px 5px;text-align:right"/></span></div><div class="rot" style="margin-top:6px"><span class="lbl">inicio · opcional</span><span class="n"><input type="time" value="${w.startTime||''}" data-act="setstarttime" style="background:transparent;border:.5px solid var(--o20);color:var(--fg);font:inherit;font-size:10px;padding:3px 5px"/></span></div><div class="rot" style="margin-top:6px"><span class="lbl">fin · opcional</span><span class="n"><input type="time" value="${w.endTime||''}" data-act="setendtime" style="background:transparent;border:.5px solid var(--o20);color:var(--fg);font:inherit;font-size:10px;padding:3px 5px"/></span></div><div class="rot" style="margin-top:6px"><span class="lbl">avanzar rotación</span><span class="n"><a data-act="togglenoadv" style="cursor:pointer;border:.5px solid var(--o20);padding:2px 10px;font-size:10px">${w.noAdvance?'no':'sí'}</a></span></div>`
       : `<div class="rot" style="margin-top:14px"><span class="lbl">ROTATION - DAY ${curDayIdx()+1}/${dayCount()}${w.startMs?' · '+elapsedStr(w.startMs):''}</span><span class="n" data-act="changegym" style="cursor:pointer">[change gym]</span></div>`)
     +`<div class="wprog"><i style="width:${total?Math.round(done/total*100):0}%"></i></div>`
-    +`<div class="whdr" style="margin-top:16px"><div class="l1"><span class="s">//</span>NOW</div><div class="wname">${escTxt(w.dayName)}</div><div class="l2"></div><div class="wmeta">${escTxt(db.split.name)} · ${escTxt(day.tag)}</div></div>`
+    +`<div class="whdr top"><div class="l1"><span class="s">//</span>NOW</div><div class="wname">${escTxt(w.dayName)}</div><div class="l2"></div><div class="wmeta">${escTxt(db.split.name)} · ${escTxt(day.tag)}</div></div>`
     +`<div class="wgym">${w.gym}</div>`
     +body;
 }
