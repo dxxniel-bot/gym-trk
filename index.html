@@ -271,7 +271,7 @@
 
   /* modal / forms */
   .modal{position:absolute; inset:0; background:rgba(0,0,0,.6); display:flex; align-items:flex-start; z-index:5;}
-  .sheet{width:100%; background:#0c0c0c; border-top:1px solid var(--o20); padding:16px var(--sp-sheet) 22px; max-height:80%; overflow-y:auto;}
+  .sheet{width:100%; background:var(--sheet-bg); border-top:1px solid var(--o20); padding:16px var(--sp-sheet) 22px; max-height:80%; overflow-y:auto;}
   #bc_cam video{width:100%; height:auto; display:block;} #bc_cam canvas.drawingBuffer{display:none;}
   .sheet h3{font-size:11px; color:var(--o50); letter-spacing:1px; margin-bottom:14px; font-weight:800;}
   .field{margin-bottom:var(--sp-field);} .field label{display:block; font-size:10px; color:var(--o50); letter-spacing:.5px; margin-bottom:5px;}
@@ -315,7 +315,7 @@
   /* rounded controls (base rules consolidated above) */
   .field input::placeholder{color:var(--o30);}
   /* bottom sheet (sheetbtns consolidated above) */
-  .sheet{border-radius:0 0 var(--r-sheet) var(--r-sheet); background:#0a0a0c; border-top:0; border-bottom:1px solid var(--border); padding-top:calc(14px + env(safe-area-inset-top));}
+  .sheet{border-radius:0 0 var(--r-sheet) var(--r-sheet); background:var(--glass-bg-strong); -webkit-backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-sat)); backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-sat)); border-top:0; border-bottom:1px solid var(--glass-ring); box-shadow:inset 0 1px 0 var(--glass-edge), inset 0 -1px 0 var(--glass-edge-lo); will-change:backdrop-filter; transform:translateZ(0); padding-top:calc(14px + env(safe-area-inset-top));}
   .pickitem{border-bottom-color:var(--border);}
   /* pill chips (toggles consolidated above) */
   .chip{border-radius:var(--r-pill); border-color:var(--border);}
@@ -453,7 +453,10 @@
   .ws-card .line{padding:6px 0; font-size:13px;}
   .ws-cardf{text-align:center; font-size:15px; font-weight:800; color:var(--o35); margin-top:16px; letter-spacing:.5px;} .ws-cardf span{color:var(--o20);}
   .ws-share{font-size:11px; color:var(--o40); margin-top:18px; letter-spacing:.3px;}
-  .toast{position:fixed; left:50%; bottom:84px; transform:translateX(-50%); background:#13131a; border:1px solid var(--good); color:var(--fg); padding:9px 15px; border-radius:999px; font-size:12px; font-weight:600; z-index:10000; box-shadow:0 6px 22px rgba(0,0,0,.5); white-space:nowrap; animation:toastin .28s ease, toastout .4s ease 2.3s forwards;}
+  .toast{position:fixed; left:50%; bottom:84px; transform:translateX(-50%); background:var(--glass-bg-strong); -webkit-backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-sat)); backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-sat)); -webkit-backface-visibility:hidden; backface-visibility:hidden; border:1px solid var(--good); color:var(--fg); padding:9px 15px; border-radius:999px; font-size:12px; font-weight:600; z-index:10000; box-shadow:0 6px 22px rgba(0,0,0,.5), inset 0 1px 0 var(--glass-edge); white-space:nowrap; animation:toastin .28s ease, toastout .4s ease 2.3s forwards;}
+  /* glass chrome fallbacks (sin backdrop-filter / reduce transparency) */
+  @supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){ .sheet{background:var(--sheet-bg);} .toast{background:var(--card2);} }
+  @media (prefers-reduced-transparency:reduce){ .sheet,.toast{-webkit-backdrop-filter:none; backdrop-filter:none;} .sheet{background:var(--sheet-bg);} .toast{background:var(--card2);} }
   @keyframes toastin{from{opacity:0; transform:translate(-50%,10px)} to{opacity:1; transform:translate(-50%,0)}}
   @keyframes toastout{to{opacity:0; transform:translate(-50%,8px)}}
 
