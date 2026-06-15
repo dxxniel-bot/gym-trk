@@ -2972,12 +2972,12 @@ const BASE_FOODS=(function(){ const L=[];
   add('Yogur de coco',130,1.5,11,9,{s:7,na:15,sv:170,en:'coconut yogurt vegan'});
   add('Kefir',55,3.3,4.5,2.5,{s:4,na:40,base:'ml',sv:240,en:'kefir'});
   add('Skyr islandés',63,11,4,0.2,{s:4,na:50,k:150,sv:170,en:'skyr icelandic yogurt'});
-  add('Queso panela',215,18.6,3.5,14.5,{na:430,k:120,en:'panela cheese'});
+  add('Queso panela',283,18.6,3.5,21.5,{na:430,k:120,en:'panela cheese'}); // v3 etiqueta MX ~283 (FatSecret FUD/Tio Francisco)
   add('Queso Oaxaca',321,24,2,22,{na:600,k:90,en:'oaxaca string cheese'}); // CHANGED kcal 290->321, P 21->24 (Tio Francisco/Fitia)
   add('Queso fresco',145,11.5,3,9.7,{na:350,k:90,en:'fresh cheese'});
   add('Queso manchego',403,23,3.4,33,{na:653,k:76,en:'manchego cheese'});
   add('Queso cheddar',403,24.9,1.3,33,{na:621,k:98,en:'cheddar cheese'});
-  add('Queso mozzarella',280,28,3.1,17,{na:627,k:76,en:'mozzarella cheese'});
+  add('Queso mozzarella',280,24,3.1,17,{na:627,k:76,en:'mozzarella cheese'}); // v3 proteina 28->24 (USDA part-skim 24.3)
   add('Queso parmesano',431,38,4.1,29,{na:1529,k:125,en:'parmesan cheese'});
   add('Queso crema',342,6,4.1,34,{s:3.2,na:321,k:138,sv:30,en:'cream cheese'});
   add('Queso cotija',380,22,2,31,{na:1200,en:'cotija cheese'});
@@ -2986,6 +2986,40 @@ const BASE_FOODS=(function(){ const L=[];
   add('Mantequilla',717,0.9,0.1,81,{na:11,sv:14,sl:'cda',en:'butter'});
   add('Margarina',717,0.2,0.7,81,{na:751,sv:14,sl:'cda',en:'margarine'});
   add('Helado de vainilla',207,3.5,24,11,{s:21,na:80,k:199,sv:65,en:'vanilla ice cream'});
+  // LÁCTEOS DE MARCA (MX) — deep-research v3 (etiquetas / FatSecret MX / OFF MX)
+  add('Leche Lala Entera',61,3.1,4.8,3.3,{s:4.8,na:18,base:'ml',sv:240,br:'Lala',en:'whole milk'});
+  add('Leche Lala Light',46,3.1,4.8,1.6,{s:4.8,na:46,base:'ml',sv:240,br:'Lala',en:'low fat semiskim milk'});
+  add('Leche Lala Deslactosada',48,3.1,4.8,1.8,{s:4.8,na:46,base:'ml',sv:240,br:'Lala',en:'lactose free milk'});
+  add('Leche Lala Deslactosada Light',44,5.4,3.4,1,{s:3.4,na:33,base:'ml',sv:240,br:'Lala',en:'lactose free light milk'});
+  add('Leche Lala 100 Deslactosada +Proteína',53,5.4,3.4,2,{na:33,base:'ml',sv:240,br:'Lala',en:'lala 100 lactose free protein milk'});
+  add('Yogur Lala Natural',76,4.8,7,3.2,{s:5.5,na:50,sv:150,br:'Lala',en:'plain yogurt'});
+  add('Yogur Lala Natural Sin Azúcar',74,4.2,7,3.2,{s:5,na:50,sv:150,br:'Lala',en:'plain unsweetened yogurt'});
+  add('Yogur Bebible Lala Fresa',78,2.1,13.4,1.8,{s:12.4,na:30,sv:240,br:'Lala',en:'drinkable strawberry yogurt'});
+  add('Leche Alpura Entera',62,3.1,4.8,3.4,{s:4.8,na:50,base:'ml',sv:240,br:'Alpura',en:'whole milk'});
+  add('Leche Alpura Light',36,3.1,4.8,0.5,{s:4.8,na:51,base:'ml',sv:240,br:'Alpura',en:'light skim milk'});
+  add('Leche Alpura Deslactosada',48,3.1,4.8,1.8,{s:4.8,na:20,base:'ml',sv:240,br:'Alpura',en:'lactose free milk'});
+  add('Leche Alpura Deslactosada Light',36,3.1,4.8,0.5,{s:4.8,na:51,base:'ml',sv:240,br:'Alpura',en:'lactose free light milk'});
+  add('Yogur Alpura Natural Sin Azúcar',69,3.84,4.48,4,{s:4.48,na:61,sv:125,br:'Alpura',en:'plain unsweetened yogurt'});
+  add('Yogur Griego Alpura Natural',67,9,7.4,0.2,{s:7.4,sv:125,br:'Alpura',en:'greek yogurt'});
+  add('Yogur Bebible Alpura Durazno',101,3.1,15.66,2.83,{s:14.97,fi:0.69,na:49,sv:145,br:'Alpura',en:'drinkable peach yogurt'});
+  add('Leche Santa Clara Entera',61,3,5.6,3,{s:5,na:52,base:'ml',sv:240,br:'Santa Clara',en:'whole milk'});
+  add('Leche Santa Clara Deslactosada',51,3,4.7,2.2,{s:4.5,na:52,base:'ml',sv:240,br:'Santa Clara',en:'lactose free milk'});
+  add('Leche Santa Clara Light',37,3,5,0.5,{s:5,na:53,base:'ml',sv:240,br:'Santa Clara',en:'light skim milk'});
+  add('Leche Santa Clara Semidescremada',49,3,4.7,2,{s:4.5,na:52,base:'ml',sv:240,br:'Santa Clara',en:'semi skim reduced fat milk'});
+  add('Leche Santa Clara Deslactosada Light',37,3,5,0.5,{s:5,na:52,base:'ml',sv:240,br:'Santa Clara',en:'lactose free light milk'});
+  add('Yogur Santa Clara Natural',61,4.2,6.8,2,{s:6.8,na:53,sv:125,br:'Santa Clara',en:'plain yogurt'});
+  add('Yogur Santa Clara Fresa',91,3.4,16,1.6,{s:15.6,na:50,sv:150,br:'Santa Clara',en:'strawberry yogurt'});
+  add('Leche Nutri Entera',53,2,4.5,3,{s:4.5,na:49,base:'ml',sv:240,br:'Nutri',en:'whole milk'});
+  add('Leche Nutri Deslactosada',53,2,4.5,3,{s:4.5,na:53,base:'ml',sv:240,br:'Nutri',en:'lactose free milk'});
+  add('Leche Nutri Light',40,2.2,5.5,1,{s:5.2,na:50,base:'ml',sv:240,br:'Nutri',en:'light low fat milk'});
+  add('Yogur Nutri Natural',70,3.3,9.1,2.3,{s:7.9,na:120,sv:150,br:'Nutri',en:'plain yogurt'});
+  add('Leche Sello Rojo Entera',58,3,4.9,3,{s:4.9,na:64,base:'ml',sv:240,br:'Sello Rojo',en:'whole milk'});
+  add('Leche Sello Rojo Entera Deslactosada',58,3,4.9,3,{s:4.9,na:55,base:'ml',sv:240,br:'Sello Rojo',en:'whole lactose free milk'});
+  add('Leche Sello Rojo Deslactosada 2%',49,3,4.9,2,{s:4.9,na:50,base:'ml',sv:240,br:'Sello Rojo',en:'semi skim lactose free milk'});
+  add('Leche Sello Rojo Deslactosada Light 1%',40,3,4.9,1,{s:4.9,na:50,base:'ml',sv:240,br:'Sello Rojo',en:'light lactose free milk'});
+  add('Leche Sello Rojo Deslactosada Sin Grasa',33,3,4.9,0.2,{s:4.9,na:64,base:'ml',sv:240,br:'Sello Rojo',en:'fat free skim lactose free milk'});
+  add('Yogur Sello Rojo Delighurt Fresa',98,2.9,16,2.4,{s:14.6,fi:0.8,na:65,sv:125,br:'Sello Rojo',en:'strawberry yogurt'});
+  add('Yogur Sello Rojo Delighurt Durazno',99,2.9,16.1,2.4,{s:14.8,fi:0.8,na:65,sv:125,br:'Sello Rojo',en:'peach yogurt'});
   // POLLO & PAVO
   add('Pechuga de pollo',120,22.5,0,2.6,{na:45,k:334,en:'chicken breast raw'});
   add('Pechuga de pollo cocida',165,31,0,3.6,{na:74,k:256,en:'cooked grilled chicken breast'});
@@ -3000,7 +3034,7 @@ const BASE_FOODS=(function(){ const L=[];
   add('Res molida 80/20',254,17,0,20,{na:66,k:270,en:'ground beef 80 20 regular'});
   add('Res molida magra',176,20,0,10,{na:66,k:300,en:'lean ground beef 90 10'});
   add('Bistec de res',143,21.6,0,5.7,{na:53,k:350,en:'beef steak sirloin'});
-  add('Rib eye',291,24,0,21,{na:54,k:310,en:'ribeye steak'});
+  add('Rib eye',244,24,0,16,{na:54,k:310,en:'ribeye steak'}); // v3 base cruda lean+fat ~244/16 (291/21 era cocido)
   add('Arrachera',215,22,0,14,{na:60,k:300,en:'skirt steak flank'});
   add('Lengua de res',224,15,3.7,16,{na:69,k:255,en:'beef tongue'});
   add('Hígado de res',135,20,3.9,3.6,{na:69,k:313,en:'beef liver'});
@@ -3021,7 +3055,7 @@ const BASE_FOODS=(function(){ const L=[];
   add('Atún en agua (lata)',116,26,0,0.8,{na:247,k:237,en:'canned tuna in water'});
   add('Atún en aceite (lata)',198,29,0,8,{na:354,k:207,en:'canned tuna in oil'});
   add('Atún en aceite (escurrido)',186,29,0,8,{na:354,k:207,sv:85,sl:'lata',en:'tuna in oil drained'});
-  add('Atún fresco',144,23,0,5,{na:39,k:252,en:'fresh tuna ahi'});
+  add('Atún fresco',109,24,0,0.5,{na:39,k:252,en:'fresh tuna ahi yellowfin'}); // v3 ahi/yellowfin USDA (144/5 era bluefin)
   add('Salmón',208,20,0,13,{na:59,k:363,en:'salmon'});
   add('Tilapia',96,20,0,1.7,{na:52,k:302,en:'tilapia'});
   add('Bacalao',82,18,0,0.7,{na:54,k:413,en:'cod fish'});
@@ -3215,7 +3249,7 @@ const BASE_FOODS=(function(){ const L=[];
   add('Barra de proteína',350,30,40,9,{s:5,fi:8,na:200,pc:60,en:'protein bar'});
   add('Barrita Quest Bar',317,35,37,15,{s:1.7,fi:22,na:380,br:'Quest',pc:60,sl:'pza',en:'quest protein bar chocolate'}); // CHANGED — official Quest 190 kcal / 60 g bar
   add('Barrita One Bar',367,33,40,13,{s:1.7,fi:15,na:380,br:'One',pc:60,sl:'pza',en:'one protein bar'});
-  add('Barrita RXBar',365,23,46,13,{s:25,fi:9,na:260,br:'RXBar',pc:52,sl:'pza',en:'rxbar protein bar'}); // CHANGED — was 404/23/46/17; actual 190/12/24/7/52g bar → /100g: 365/23/46/13
+  add('Barrita RXBar',404,23,46,17,{s:25,fi:9,na:260,br:'RXBar',pc:52,sl:'pza',en:'rxbar protein bar'}); // v3 etiqueta 210 kcal/9g grasa por barra 52g
   add('Dona',452,4.9,51,25,{s:23,na:326,pc:60,en:'donut doughnut'});
   add('Muffin',377,5,53,16,{s:28,na:340,pc:113,en:'muffin'});
   add('Pastel / cake',350,4,52,14,{s:35,na:280,sv:80,en:'cake'});
@@ -3239,14 +3273,14 @@ const BASE_FOODS=(function(){ const L=[];
   add('Whey ISO 100',367,83,3,0,{na:160,br:'Dymatize',sv:32,sl:'scoop',en:'iso 100 hydrolyzed whey protein isolate'}); // fat 0.8->0 per Dymatize
   add('Birdman Falcon (vegan)',406,69,6,9,{fi:9,na:600,br:'Birdman',sv:32,sl:'scoop',en:'birdman falcon vegan plant protein'}); // CHANGED carbs 15->6, fat 8->9 per official 22P/2C/3F per 32g scoop
   add('Premier Protein Shake',49,9.2,1.5,0.9,{s:0.3,na:70,br:'Premier',base:'ml',sv:325,en:'premier protein shake'}); // carbs 1.2->1.5 per official 5 g/325 ml
-  add('Mass gainer (polvo)',380,15,60,5,{s:20,na:200,sv:150,sl:'scoop',en:'mass weight gainer'});
-  add('Pre-workout',32,1,7,0,{caf:200,sv:8,sl:'scoop',en:'pre workout supplement c4'});
+  add('Mass gainer (polvo)',380,15,68,5,{s:20,na:200,sv:150,sl:'scoop',en:'mass weight gainer'}); // v3 carbos 60->68 para cuadrar 380 kcal
+  add('Pre-workout',32,1,7,0,{caf:2222,sv:8,sl:'scoop',en:'pre workout supplement c4'}); // v3 caf por-100: ~178 mg por scoop 8g (200 daba 16 mg)
   add('BCAA polvo',40,9,1,0,{na:120,sv:10,sl:'scoop',en:'bcaa branched chain amino'});
   add('Glutamina',350,80,0,0,{sv:5,sl:'cda',en:'glutamine'});
-  add('Beta-alanina',350,0,87,0,{sv:3,en:'beta alanine'});
+  add('Beta-alanina',0,0,0,0,{sv:3,en:'beta alanine'}); // v3 aminoacido puro, etiqueta 0 kcal/0 carbos
   add('Creatina',0,0,0,0,{sv:5,en:'creatine monohydrate'});
   add('Multivitamínico',0,0,0,0,{sv:1,sl:'pza',en:'multivitamin'});
-  add('Omega-3 (cápsula)',9,0,0,1,{sv:1,sl:'pza',en:'omega 3 fish oil capsule'});
+  add('Omega-3 (cápsula)',902,0,0,100,{sv:1,sl:'pza',en:'omega 3 fish oil capsule'}); // v3 aceite de pescado por-100; sv 1g capsula -> 9 kcal
   // BEBIDAS
   add('Café americano',2,0.1,0.3,0,{caf:50,k:80,base:'ml',sv:240,en:'americano coffee black'});
   add('Espresso',9,0.1,1.7,0.2,{caf:212,k:115,base:'ml',sv:30,en:'espresso'});
@@ -3268,11 +3302,11 @@ const BASE_FOODS=(function(){ const L=[];
   add('Leche de avena',47,1,7,1.5,{s:4,na:42,base:'ml',sv:240,en:'oat milk oatly'});
   add('Chocolate caliente',77,3.5,10,2.3,{s:9,na:52,caf:2,base:'ml',sv:240,en:'hot chocolate'});
   // CERVEZAS — all values per 100 ml. ABV % shown as alcohol-g/100ml = ABV × 0.789.
-  add('Modelo Especial',40,1.1,3.8,0,{br:'Modelo',en:'beer cerveza lager',sv:355,base:'ml',alc:3.6}); // CHANGED P 0.3->1.1, alc 3.5->3.6 (4.5% ABV)
+  add('Modelo Especial',40,0.3,3.8,0,{br:'Modelo',en:'beer cerveza lager',sv:355,base:'ml',alc:3.6}); // v3 P 0.3/100ml (1.1 g era por botella 355ml)
   add('Negra Modelo',48,0.4,4.4,0,{br:'Modelo',en:'beer cerveza lager dark',sv:355,base:'ml',alc:4.6}); // CHANGED kcal 51->48, P 0.5->0.4, c 4.6->4.4, alc 4.3->4.6 (5.4% ABV)
   add('Corona Extra',42,0.3,3.9,0,{br:'Corona',en:'beer cerveza lager',sv:355,base:'ml',alc:3.6}); // unchanged
   add('Corona Light',28,0.3,1.4,0,{br:'Corona',en:'beer cerveza lager light',sv:355,base:'ml',alc:3.2}); // c 2.2->1.4 (5g/355ml = 1.4g/100ml)
-  add('Corona Cero',22,0.4,4.7,0,{br:'Corona',en:'beer cerveza lager non alcoholic',sv:355,base:'ml',alc:0.0});
+  add('Corona Cero',17,0.4,3.9,0,{br:'Corona',en:'beer cerveza lager non alcoholic',sv:355,base:'ml',alc:0.0}); // v3 17 kcal/100ml (FatSecret ES/OFF)
   add('Victoria',41,0.3,3.6,0,{br:'Victoria',en:'beer cerveza lager',sv:355,base:'ml',alc:3.2}); // slight refine
   add('Pacifico',40,0.3,3.7,0,{br:'Pacifico',en:'beer cerveza lager',sv:355,base:'ml',alc:3.5}); // 143 cal/355ml = 40.3/100ml
   add('Tecate',40,0.3,3.4,0,{br:'Tecate',en:'beer cerveza lager',sv:355,base:'ml',alc:3.6}); // 142 cal/355ml = 40
@@ -3295,9 +3329,9 @@ const BASE_FOODS=(function(){ const L=[];
   add('Guacamole',153,2,8.5,13.5,{fi:6,na:300,k:330,sv:30,en:'guacamole'}); // tiny adjust
   add('Quesadilla',280,12,28,14,{na:540,pc:120,en:'quesadilla'});
   add('Taco al pastor',218,12,18,11,{na:400,pc:80,en:'taco al pastor'});
-  add('Tamal',230,5,30,10,{na:380,pc:120,en:'tamale'});
+  add('Tamal',206,5,24,10,{na:380,pc:120,en:'tamale'}); // v3 ~206 kcal/100g; carbos 30->24 para cuadrar
   add('Enchiladas',170,8,18,8,{na:500,sv:150,en:'enchiladas'});
-  add('Chilaquiles',165,9,14,10,{na:430,sv:200,en:'chilaquiles'}); // SnapCalorie consensus
+  add('Chilaquiles',195,9,14,11,{na:430,sv:200,en:'chilaquiles'}); // v3 ~195 kcal/100g (FatSecret MX/nutritionvalue)
   add('Pozole',90,7.5,5,4,{na:350,sv:250,en:'pozole soup'}); // MyFoodDiary
   add('Sopa de fideo',60,2,10,1.5,{na:300,sv:200,en:'noodle soup'});
   add('Hamburguesa',254,13,30,9,{na:497,pc:110,en:'hamburger'});
