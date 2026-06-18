@@ -100,5 +100,28 @@ Existen en `<style>`; reemplazan los patrones inline más repetidos. Antes de es
 
 > Si un patrón inline se repite ≥3×, conviene clase nueva (no utility-soup). El benchmark de cero-inline es `renderShare`.
 
+## 8. Tooling de diseño — qué skills/MCP usar (y cuáles NO)
+> Criba 2026-06-16, calibrada al alma terminal/mono + JetBrains Mono, offline single-file. Objetivo: evitar "design slop" (fuentes nuevas, gradientes, glass colorido, "premium SaaS") que rompería el sello.
+
+**ADOPTAR (van con el sello o son agnósticas de estética):**
+- **`brutalist-skill`** — estrella polar: monospace, rejilla rígida, radius 0, color semántico mínimo, cero gradiente/sombra. Referencia de estilo, NO generador.
+- **`impeccable`** — modo audit/polish/animate sobre lo existente (no genera de cero). Ideal para evolución-no-rediseño.
+- **`emil-design-eng`** — filosofía de motion (animar solo con razón, easing custom, respeta reduced-motion). Implementable en CSS vanilla.
+- **`ecc:accessibility`** (WCAG 2.2) · **`ecc:browser-qa`** — audit, agnósticas, offline-safe.
+- **MCP `playwright`** — review visual sistemático (ver loop QA abajo). Reemplaza los scripts puppeteer ad-hoc (`tools/export-pdfs.cjs`).
+- A revisar al tocar glass: **`ecc:liquid-glass-design`**, **`ecc:make-interfaces-feel-better`** (no leídas aún).
+
+**MEDIAS — solo la filosofía (asumen React/Tailwind; no portear su stack):** `minimalist-skill` · `taste-skill` · `redesign-skill` · `ecc:design-system`.
+
+**EVITAR — romperían el sello o el stack (React/Tailwind/offline):** `frontend-design` · `soft-skill` · `ui-ux-pro-max` · `gpt-tasteskill` · `stitch-skill` · `imagegen-*` · **MCP `magic`/21st** (genera componentes React).
+
+### Loop QA con Playwright (review de cada lote — glass REAL, no fallback sólido)
+1. Servir: `python -m http.server 4599 -d repo` (background).
+2. `browser_navigate http://localhost:4599/index.html` → `browser_resize 393×852`.
+3. Sembrar demo: `browser_evaluate` con el cuerpo de `buildDemo()` de `tools/export-pdfs.cjs` (usa `seed()/demoSplit()/todayISO()` de la app) → escribe `gymtrk_db_v1` + `sessionStorage.gymtrk_boot='1'`.
+4. Recargar → `browser_evaluate go('<screen>')` → `browser_take_screenshot {fullPage:true}` → `Read` el PNG.
+5. Pantallas de entrada (landing/login/onboard): `localStorage.removeItem('gymtrk_db_v1')` + reload antes de capturar.
+> Ventaja vs PDF/SVG: renderiza el `backdrop-filter` en vivo, estados interactivos y sheets. Para handoff editable a Illustrator sigue siendo `tools/export-svg.cjs` (SVG) — ver design-exports.
+
 ---
-*Actualizado v171 — glass landed; deuda inline 361 (disciplina compartida). Generado base v159.*
+*Actualizado 2026-06-16 — §8 tooling/skills criba + loop Playwright QA. (v171 base: glass landed; deuda inline 361, disciplina compartida.)*

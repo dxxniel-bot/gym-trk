@@ -505,6 +505,7 @@
   /* accesibilidad: reducir transparencia → opaco, sin blur */
   @media (prefers-reduced-transparency:reduce){ .glass,.glass-strong{ -webkit-backdrop-filter:none; backdrop-filter:none; background:var(--glass-bg-strong); } }
   /* ===== agenda del día (24h) estilo calendario rimu — bloques rellenos + chips; posiciones inline (data-driven) ===== */
+  .ag-head{position:sticky;top:0;z-index:8;background:#000;padding-bottom:var(--s3);}
   .toggles.agf{margin-bottom:var(--s4);}
   .agm{font-weight:700;} .agm.g{color:var(--good);} .agm.w{color:var(--warn);} .agm.b{color:var(--bad);} .agm.o{color:var(--o40); font-weight:400;}
   .ag-nohr{margin-bottom:var(--s2);} .ag-nohr .gl{font-size:var(--t-caption); color:var(--o40); letter-spacing:2px; margin-bottom:var(--s3);}
@@ -1900,10 +1901,10 @@ function renderAgenda(){
   const ISO=curAgendaDate(), f=agendaFilters(), PXMIN=1.2, top=m=>Math.round(m*PXMIN), CANVAS=top(1440);
   const durTxt=m=>{ const h=Math.floor(m/60),mm=Math.round(m%60); return h?(h+'h'+(mm?' '+mm+'m':'')):(mm+'m'); };
   let body=statusBar(false)
-    +`<hr class="rule"/>`
+    +`<div class="ag-head"><hr class="rule"/>`
     +`<div class="section"><div class="h dnavh"><a data-act="agprev" class="dnav">‹</a><span class="dnlbl-wrap"><span class="dnlbl">${dayLabel(ISO)}</span><input type="date" class="dcal" data-act="agcal" value="${ISO}"/></span><a data-act="agnext" class="dnav">›</a></div></div>`;
   const fb=(k,l)=>`<button class="${f[k]?'on':''}" data-act="agenfilter" data-f="${k}">${l}</button>`;
-  body+=`<div class="toggles agf">${fb('meals','comidas')}${fb('train','entreno')}${fb('supps','supps')}${fb('sleep','sueño')}</div>`;
+  body+=`<div class="toggles agf">${fb('meals','comidas')}${fb('train','entreno')}${fb('supps','supps')}${fb('sleep','sueño')}</div></div>`;
   // recolectar eventos con hora + chips "sin hora" (estilo rimu: SIN HORA arriba)
   const evs=[]; let chips='';
   if(f.meals)((db.meals&&db.meals[ISO])||[]).forEach(m=>{ const mn=hm2min(m.time); if(isFinite(mn)) evs.push({mn,kind:'meal',m}); else chips+=`<span class="ag-chip">${escTxt(m.tag||'comida')} · ${Math.round(m.kcal)||0}</span>`; });
