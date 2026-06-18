@@ -1599,6 +1599,74 @@ function metricSeries(key, days){
   }
   return null;
 }
+// total hard sets in [aISO,bISO] inclusive — RP counting (uni pair=max side, drop=0.5). mirror of setsWeek for arbitrary span.
+function spanHardSets(aISO,bISO){
+  let total=0;
+  (db.sessions||[]).forEach(s=>{ if(s.type==='rest'||!s.date||s.date<aISO||s.date>bISO)return;
+    (s.exercises||[]).forEach(e=>{ let plain=0; const bySide={};
+      (e.sets||[]).forEach(st=>{ if(!((st.w||st.r)&&isHardSet(st)))return; const v=st.isDrop?0.5:1;
+        if(st.side)bySide[st.side]=(bySide[st.side]||0)+v; else plain+=v; });
+      const sides=Object.keys(bySide); total+=plain+(sides.length?Math.max.apply(null,sides.map(k=>bySide[k])):0); }); });
+  return total;
+}
+// pure derivation — no new storage. estimates fat/muscle/water split of the bodyweight delta over `days`.
+function compositionEstimate(days){
+  const sp=metricSeries('weight',days); if(!sp||sp.dates.length<2)return{ok:false,reason:'registra ≥2 pesos en este rango'};
+  const aISO=sp.dates[0],bISO=sp.dates[sp.dates.length-1];
+  const deltaKg=Math.round((sp.vals[sp.vals.length-1]-sp.vals[0])*100)/100;
+  const spanDays=Math.round((new Date(bISO+'T12:00:00')-new Date(aISO+'T12:00:00'))/86400000);
+  if(spanDays<7)return{ok:false,reason:'rango muy corto · registra peso durante ≥7 días'};
+  const maint=maintenanceKcal(); if(!maint)return{ok:false,reason:'completa tu perfil · peso · estatura · edad'};
+  const weeks=spanDays/7;
+  const logKcal=[]; Object.keys(db.meals||{}).sort().forEach(d=>{ if(d<aISO||d>bISO)return;
+    const dk=(db.meals[d]||[]).reduce((s,m)=>s+(+m.kcal||0),0); if(dk>0)logKcal.push(dk); });
+  const avgKcal=logKcal.length?logKcal.reduce((a,b)=>a+b,0)/logKcal.length:0;
+  const mealCov=spanDays>0?logKcal.length/spanDays:0;
+  const surplus=avgKcal>0?avgKcal-maint:0;
+  let fatKg=0; if(avgKcal>0){
+    fatKg=Math.round(surplus*spanDays/7700*100)/100;
+    const bw=+(db.profile&&db.profile.weightKg)||80;
+    fatKg=Math.max(-(bw*0.01*weeks),Math.min(0.5*weeks,fatKg));
+  }
+  const setsWk=spanHardSets(aISO,bISO)/weeks;
+  const stim=Math.min(1,Math.max(0,setsWk/10));
+  const bw2=+(db.profile&&db.profile.weightKg)||70;
+  const gProt=+(db.settings&&db.settings.goals&&db.settings.goals.protein)||0;
+  const protK=gProt>0?Math.min(1,gProt/Math.max(1,bw2*1.6)):0.7;
+  let muscleKg=surplus<0
+    ?(stim>0?Math.min(0.25*weeks*stim*protK,0.25*weeks):-(0.05*weeks))
+    :(stim>0?Math.min(0.5*weeks*stim*protK,0.5*weeks):0);
+  muscleKg=Math.round(muscleKg*100)/100;
+  let waterKg=Math.round((deltaKg-fatKg-muscleKg)*100)/100;
+  const wCap=Math.abs(deltaKg)+1.5;
+  if(Math.abs(waterKg)>wCap){ waterKg=waterKg>0?wCap:-wCap; waterKg=Math.round(waterKg*100)/100; fatKg=Math.round((deltaKg-muscleKg-waterKg)*100)/100; }
+  const dominant=Math.abs(fatKg)>=Math.abs(muscleKg)&&Math.abs(fatKg)>=Math.abs(waterKg)?'grasa':Math.abs(muscleKg)>=Math.abs(waterKg)?'músculo':'agua';
+  const dem=Math.max(0.1,Math.abs(deltaKg));
+  const pct={fat:Math.round(Math.abs(fatKg)/dem*100),muscle:Math.round(Math.abs(muscleKg)/dem*100),water:Math.round(Math.abs(waterKg)/dem*100)};
+  const isWaterFluct=Math.abs(waterKg)>=0.6*Math.abs(deltaKg)&&spanDays<=21&&Math.abs(deltaKg)>=1;
+  let confidence='alta'; if(days>=365||mealCov<0.2)confidence='baja'; else if(mealCov<0.4||spanDays<14)confidence='media';
+  const goal=(db.profile&&db.profile.goal)||'maintain';
+  const isGood=(goal==='cut'&&deltaKg<0)||(goal==='bulk'&&deltaKg>0)||(goal==='maintain'&&Math.abs(deltaKg)<=1);
+  const readoutCls=isGood?'good':Math.abs(deltaKg)<0.3?'flat':'bad';
+  return{ok:true,deltaKg,spanDays,weeks,fatKg,muscleKg,waterKg,pct,dominant,isWaterFluct,readoutCls,confidence,loggedDays:logKcal.length,mealCov,aISO,bISO};
+}
+function compositionBlock(days){
+  const c=compositionEstimate(days);
+  if(!c.ok)return`<div class="grp-label" style="margin:16px 0 4px">COMPOSICIÓN</div><div class="submeta" style="color:var(--o40)">${escTxt(c.reason)}</div>`;
+  const sign=c.deltaKg>0?'+':''; const dir=v=>v>0?'↑':v<0?'↓':'=';
+  const readout=c.isWaterFluct
+    ?`${sign}${Math.abs(c.deltaKg)} kg · principalmente fluctuación de agua`
+    :`${sign}${Math.abs(c.deltaKg)} kg en ${c.spanDays}d · dominante: ${escTxt(c.dominant)}`;
+  const caveat=`estimación · no medición · ${c.loggedDays} días con comida · confianza: ${c.confidence}`;
+  return`<div class="grp-label" style="margin:16px 0 4px">COMPOSICIÓN · estimación del cambio</div>
+    <div class="pst ${c.readoutCls}" style="margin-bottom:8px">${readout}</div>
+    <div class="mdstats">
+      <div class="mdline"><span class="mdk">grasa</span><span class="mddots"></span><span class="mdv">${dir(c.fatKg)} ${Math.abs(c.fatKg)} kg <span class="mdsub">${c.pct.fat}%</span></span></div>
+      <div class="mdline"><span class="mdk">músculo</span><span class="mddots"></span><span class="mdv">${dir(c.muscleKg)} ${Math.abs(c.muscleKg)} kg <span class="mdsub">${c.pct.muscle}%</span></span></div>
+      <div class="mdline"><span class="mdk">agua/glucóg.</span><span class="mddots"></span><span class="mdv">${dir(c.waterKg)} ${Math.abs(c.waterKg)} kg <span class="mdsub">${c.pct.water}%</span></span></div>
+    </div>
+    <div class="submeta" style="color:var(--o40);margin-top:4px">${escTxt(caveat)}</div>`;
+}
 function openMetricDetail(key){
   const days=window._mdRange||14;
   const sp=metricSeries(key, days);
@@ -1631,6 +1699,7 @@ function openMetricDetail(key){
         <div class="mdline"><span class="mdk">registros</span><span class="mddots"></span><span class="mdv">${sp.vals.filter(v=>v>0).length} de ${sp.dates.length} días</span></div>
       </div>
     `}
+    ${key==='weight'?compositionBlock(days):''}
     <div class="sheetbtns" style="margin-top:14px"><button class="cancel" data-act="closemodal">cerrar</button></div>
   </div>`, 'mdetail-wrap');
   window._mdKey=key;
@@ -1907,7 +1976,7 @@ function renderAgenda(){
   body+=`<div class="toggles agf">${fb('meals','comidas')}${fb('train','entreno')}${fb('supps','supps')}${fb('sleep','sueño')}</div></div>`;
   // recolectar eventos con hora + chips "sin hora" (estilo rimu: SIN HORA arriba)
   const evs=[]; let chips='';
-  if(f.meals)((db.meals&&db.meals[ISO])||[]).forEach(m=>{ const mn=hm2min(m.time); if(isFinite(mn)) evs.push({mn,kind:'meal',m}); else chips+=`<span class="ag-chip">${escTxt(m.tag||'comida')} · ${Math.round(m.kcal)||0}</span>`; });
+  if(f.meals){ const _byT={}; ((db.meals&&db.meals[ISO])||[]).forEach(m=>{ const tg=m.tag||'comida'; (_byT[tg]=_byT[tg]||{tag:tg,kcal:0}).kcal+=+m.kcal||0; }); Object.keys(_byT).forEach(tg=>{ const hm=mealTime(ISO,tg); const mn=hm2min(hm); if(isFinite(mn)) evs.push({mn,kind:'meal',tag:tg,kcal:_byT[tg].kcal,time:hm}); else chips+=`<span class="ag-chip">${escTxt(tg)} · ${Math.round(_byT[tg].kcal)||0}</span>`; }); }
   if(f.train)(db.sessions||[]).filter(s=>s.date===ISO&&s.type!=='rest').forEach(s=>{ const mn=hm2min(s.startTime); if(isFinite(mn)) evs.push({mn,kind:'sess',s,durM:Math.max(20,Math.round((s.durSec||0)/60))}); else chips+=`<span class="ag-chip">${escTxt(s.dayName||'sesión')}${s.durSec?' · '+Math.round(s.durSec/60)+'m':''}</span>`; });
   let sleep=null; const sv=db.sleep&&db.sleep[ISO];
   if(f.sleep&&sv&&typeof sv==='object'&&sv.end&&isFinite(hm2min(sv.end))) sleep=sv; else if(f.sleep&&sv) chips+=`<span class="ag-chip">sueño · ${sleepHours(sv)}h</span>`;
@@ -1921,7 +1990,7 @@ function renderAgenda(){
       ax+=`<div class="ag-blk slp" style="top:${s0}px;height:${h}px"><div class="bt">sueño</div><div class="bs">${escTxt(sleep.start||'?')}–${escTxt(sleep.end)} · ${sleepHours(sleep)}h</div></div>`; }
     evs.filter(x=>x.kind==='sess').forEach(x=>{ const h=Math.max(36,top(x.durM)); ax+=`<div class="ag-blk gym" style="top:${top(x.mn)}px;height:${h}px"><div class="bt">${escTxt(x.s.dayName||'sesión')}</div><div class="bs">${escTxt(x.s.startTime)}–${minToHM(x.mn+x.durM)} · ${durTxt(x.durM)}</div></div>`; });
     const ml=evs.filter(x=>x.kind==='meal').sort((a,b)=>a.mn-b.mn); let prev=-99;
-    ml.forEach(x=>{ let t=top(x.mn); if(t-prev<40)t=prev+40; prev=t; ax+=`<div class="ag-blk meal" style="top:${t}px"><div class="bt">${escTxt(x.m.tag||'comida')}<span class="bk">${Math.round(x.m.kcal)||0}</span></div><div class="bs">${escTxt(x.m.time)}</div></div>`; });
+    ml.forEach(x=>{ let t=top(x.mn); if(t-prev<40)t=prev+40; prev=t; ax+=`<div class="ag-blk meal" style="top:${t}px"><div class="bt">${escTxt(x.tag||'comida')}<span class="bk">${Math.round(x.kcal)||0}</span></div><div class="bs">${escTxt(x.time)}</div></div>`; });
     ax+=`</div>`; body+=ax; }
   if(!hasAxis && !chips) body+=`<div class="empty">sin registros este día<br/><span class="ehint">tus comidas, entrenos y sueño con hora aparecen en el calendario</span></div>`;
   return body;
@@ -2449,11 +2518,11 @@ document.getElementById('app').addEventListener('click',e=>{
   else if(a==='viewtag'){ state._scroll=document.getElementById('view').scrollTop; state.expandedTag = state.expandedTag===el.dataset.tag ? null : el.dataset.tag; render(); }
   else if(a==='pickmealtag'){ const e=document.getElementById('fa_tagtxt'); if(e)e.value=el.dataset.v; }
   else if(a==='editmeal'){ const t=curDate(); const m=(db.meals[t]||[]).find(x=>x.id===window._mealId); if(m){ closeModal();
-      if(m._food){ openLog(m._food,{editId:m.id,qty:m.qty||1,unit:m._unit,tag:m.tag,time:m.time}); }
-      else { const q=m.qty||1; const per={}; ['kcal','protein','carbs','fat','sugar','sodium','potassium','fiber','caffeine','alcohol','water'].forEach(k=>per[k]=(+m[k]||0)/q); openLog({name:(m.name||'').replace(/ ×[\d.]+$/,''),serving:m.serving||'1 serving',per},{editId:m.id,qty:q,tag:m.tag,time:m.time}); } } }
+      if(m._food){ openLog(m._food,{editId:m.id,qty:m.qty||1,unit:m._unit,tag:m.tag}); }
+      else { const q=m.qty||1; const per={}; ['kcal','protein','carbs','fat','sugar','sodium','potassium','fiber','caffeine','alcohol','water'].forEach(k=>per[k]=(+m[k]||0)/q); openLog({name:(m.name||'').replace(/ ×[\d.]+$/,''),serving:m.serving||'1 serving',per},{editId:m.id,qty:q,tag:m.tag}); } } }
   else if(a==='delmealnow'){ state._scroll=document.getElementById('view').scrollTop; const t=curDate(); db.meals[t]=(db.meals[t]||[]).filter(m=>m.id!==window._mealId); save(); closeModal(); render(); }
   else if(a==='delmealgroup'){ const tag=el.dataset.tag; if(!tag||!confirm('¿Borrar TODA la meal "'+tag+'" (todos sus alimentos)?'))return; state._scroll=document.getElementById('view').scrollTop; const t=curDate(); db.meals[t]=(db.meals[t]||[]).filter(m=>m.tag!==tag); save(); closeModal(); render(); }
-  else if(a==='editmealx'){ const id=el.dataset.id; const t=curDate(); const m=(db.meals[t]||[]).find(x=>x.id===id); if(m){ if(m._food){ openLog(m._food,{editId:m.id,qty:m.qty||1,unit:m._unit,tag:m.tag,time:m.time}); } else { const q=m.qty||1; const per={}; ['kcal','protein','carbs','fat','sugar','sodium','potassium','fiber','caffeine','alcohol','water'].forEach(k=>per[k]=(+m[k]||0)/q); openLog({name:(m.name||'').replace(/ ×[\d.]+$/,''),serving:m.serving||'1 serving',per},{editId:m.id,qty:q,tag:m.tag,time:m.time}); } } }
+  else if(a==='editmealx'){ const id=el.dataset.id; const t=curDate(); const m=(db.meals[t]||[]).find(x=>x.id===id); if(m){ if(m._food){ openLog(m._food,{editId:m.id,qty:m.qty||1,unit:m._unit,tag:m.tag}); } else { const q=m.qty||1; const per={}; ['kcal','protein','carbs','fat','sugar','sodium','potassium','fiber','caffeine','alcohol','water'].forEach(k=>per[k]=(+m[k]||0)/q); openLog({name:(m.name||'').replace(/ ×[\d.]+$/,''),serving:m.serving||'1 serving',per},{editId:m.id,qty:q,tag:m.tag}); } } }
   else if(a==='delmealx'){ state._scroll=document.getElementById('view').scrollTop; const id=el.dataset.id; const t=curDate(); db.meals[t]=(db.meals[t]||[]).filter(m=>m.id!==id); if(state.expandedMeal===id)state.expandedMeal=null; save(); render(); }
   else if(a==='vfixkcal'){ const P=parseFloat(val('v_protein'))||0,C=parseFloat(val('v_carbs'))||0,F=parseFloat(val('v_fat'))||0; const e=document.getElementById('v_kcal'); if(e){ e.value=Math.round(P*4+C*4+F*9); e.dispatchEvent(new Event('input',{bubbles:true})); } }
   else if(a==='foodadd'){ closeAddPop(); openFoodAdd(); }
@@ -3013,7 +3082,7 @@ function openAddMenu(){
 }
 function closeAddPop(){ ['addpop','addscrim'].forEach(id=>{const e=document.getElementById(id); if(e)e.remove();}); }
 function logWater(ml){ if(!(ml>0))return; const t=curDate(); db.meals[t]=db.meals[t]||[]; snapshotGoal(t);
-  db.meals[t].push({id:uid(),time:nowHM(),tag:'drink',name:'agua',qty:1,serving:numTxt(ml)+' ml',kcal:0,protein:0,carbs:0,fat:0,sugar:0,fiber:0,sodium:0,potassium:0,caffeine:0,water:Math.round(ml/1000*1000)/1000}); save(); }
+  db.meals[t].push({id:uid(),tag:'drink',name:'agua',qty:1,serving:numTxt(ml)+' ml',kcal:0,protein:0,carbs:0,fat:0,sugar:0,fiber:0,sodium:0,potassium:0,caffeine:0,water:Math.round(ml/1000*1000)/1000}); save(); }
 function openDrink(){
   openModal(`<h3>add drink</h3>
    <div class="submeta" style="margin-bottom:10px">agua y bebidas · suma a líquidos</div>
@@ -3792,7 +3861,7 @@ function openLog(food, opts){ opts=opts||{}; const fd=asCanonical(food);
   openModal(`<h3>${hasBack?'<a data-act="faback" style="color:var(--o50);font-size:11px;font-weight:600;cursor:pointer;margin-right:8px;letter-spacing:.3px" title="volver a la búsqueda">← back</a>':''}${editing?'editar registro':'loguear'} · ${escTxt(fd.name||'alimento')}</h3>
    <div class="submeta" style="margin:-2px 0 9px;font-size:10px">${srcPrefix(fd)}fuente: ${escTxt(foodSource(fd).label)}</div>
    <div class="field row2"><div><label>UNIDAD${lu?' <span style="color:var(--good);font-size:8px;font-weight:700" title="última vez">↺</span>':''}</label><select id="l_unit" class="pick">${units.map(u=>`<option value="${u.key}"${u.key===defUnit?' selected':''}>${u.label}</option>`).join('')}</select></div><div><label>CANTIDAD</label><input id="l_qty" type="number" inputmode="decimal" step="0.25" value="${defQty}"/></div></div>
-   <div class="field row2"><div><label>HORA · opcional</label><input id="l_time" type="time" value="${defTime}"/></div><div style="display:flex;align-items:flex-end;padding-bottom:13px"><span class="submeta" style="font-size:10px;color:var(--o35)">vacío = sin hora</span></div></div>
+
    <div class="lkc" id="l_kcal"></div>
    <div class="lnut" id="l_full"></div>
    <div class="sheetbtns"><button class="ok" data-act="logsave">${primary}</button>${editing?'<button class="cancel" data-act="closemodal">cancel</button>':('<button class="cancel" data-act="logonly">'+(window._log.isNew?'loguear sin guardar':'cancel')+'</button>')}</div>`);
@@ -3849,7 +3918,7 @@ function openMealDetail(id){
   const row=(lbl,v,u)=>`<div class="line"><span class="k">${lbl}</span><span class="dots"></span><span class="v">${v?(Math.round(v)+' '+u):'—'}</span></div>`;
   const bc=barcodeOf(m);
   openModal(`<h3>${escTxt(m.name)}</h3>
-   <div class="submeta" style="margin-bottom:8px">#${escTxt(m.tag)}${(m._food&&m._food.brand)?' · '+escTxt(m._food.brand):''}${m.time?' · '+escTxt(m.time):''}${m.serving?' · '+escTxt(m.serving):''}${m.qty&&m.qty!==1?' · ×'+numTxt(m.qty):''}</div>
+   <div class="submeta" style="margin-bottom:8px">#${escTxt(m.tag)}${(m._food&&m._food.brand)?' · '+escTxt(m._food.brand):''}${m.serving?' · '+escTxt(m.serving):''}${m.qty&&m.qty!==1?' · ×'+numTxt(m.qty):''}</div>
    ${row('kcal',m.kcal,'')}${row('protein',m.protein,'g')}${row('carbs',m.carbs,'g')}${row('fat',m.fat,'g')}${row('sugar',m.sugar,'g')}${row('fiber',m.fiber,'g')}${row('sodium',m.sodium,'mg')}${row('potassium',m.potassium,'mg')}${row('caffeine',m.caffeine,'mg')}${row('liquid',m.water,'L')}
    <div class="line"><span class="k">fuente</span><span class="dots"></span><span class="v">${srcPrefix(m._food)}${escTxt(foodSource(m._food).label)}</span></div>
    <div class="line"><span class="k">código${(()=>{const fdb=(db.foods||[]).find(x=>(m._food&&m._food.id&&x.id===m._food.id)||x.name===(m.name||'').replace(/ ×[\d.]+$/,'')); const n=(fdb?foodCodes(fdb):foodCodes(m._food||{barcode:bc})).length; return n>1?'s ('+n+')':'';})()}</span><span class="dots"></span><span class="v">${bc?(`<a data-act="mealcode" style="cursor:pointer;color:var(--fg)">${escTxt(bc)} ✎</a>`):'<a data-act="mealcode" style="text-decoration:underline;cursor:pointer">+ añadir</a>'}</span></div>
@@ -3870,7 +3939,7 @@ function commitLog(saveToDb){
     if(ex)Object.assign(ex,stored); else db.foods.push(stored); foodId=stored.id;
   } else if(L.fromId){ const ex=(db.foods||[]).find(x=>x.id===L.fromId); if(ex)ex.lastUsed=Date.now(); }
   const t=curDate(); db.meals[t]=db.meals[t]||[]; snapshotGoal(t);
-  const apply=m=>{ m.tag=L.tag; m.name=f.name+(qty!==1?' ×'+numTxt(qty):''); m.qty=qty; m.serving=unitLabel; MACROKEYS.forEach(k=>m[k]=nut[k]); m.water=nut.water; m._food={id:foodId,base:f.base,per100:f.per100,sizes:f.sizes,servingLabel:f.servingLabel,name:f.name,brand:f.brand||'',barcode:bc}; m._unit=unit; m.time=timeVal; };
+  const apply=m=>{ m.tag=L.tag; m.name=f.name+(qty!==1?' ×'+numTxt(qty):''); m.qty=qty; m.serving=unitLabel; MACROKEYS.forEach(k=>m[k]=nut[k]); m.water=nut.water; m._food={id:foodId,base:f.base,per100:f.per100,sizes:f.sizes,servingLabel:f.servingLabel,name:f.name,brand:f.brand||'',barcode:bc}; m._unit=unit; };
   if(L.editId){ const m=(db.meals[t]||[]).find(x=>x.id===L.editId); if(m){ apply(m); save(); closeModal(); render(); return; } }
   const item={id:uid()}; apply(item); db.meals[t].push(item);
   save(); closeModal(); render();
@@ -4054,7 +4123,7 @@ function openDupMeal(tag){
   document.getElementById('dm_go').onclick=()=>{
     const nt=(val('dm_tag')||tag).trim()||tag; const nd=val('dm_date')||src;
     db.meals[nd]=db.meals[nd]||[]; snapshotGoal(nd);
-    items.forEach((m,i)=>{ const cp=JSON.parse(JSON.stringify(m)); cp.id=uid()+'_'+i; cp.tag=nt; cp.time=nowHM(); db.meals[nd].push(cp); });
+    items.forEach((m,i)=>{ const cp=JSON.parse(JSON.stringify(m)); cp.id=uid()+'_'+i; cp.tag=nt; db.meals[nd].push(cp); });
     save(); closeModal(); state.macroDate=nd; render();
   };
 }
