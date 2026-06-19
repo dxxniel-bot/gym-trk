@@ -506,6 +506,12 @@
   @media (prefers-reduced-transparency:reduce){ .glass,.glass-strong{ -webkit-backdrop-filter:none; backdrop-filter:none; background:var(--glass-bg-strong); } }
   /* ===== agenda del día (24h) estilo calendario rimu — bloques rellenos + chips; posiciones inline (data-driven) ===== */
   .ag-head{position:sticky;top:0;z-index:8;background:#000;padding-bottom:var(--s3);}
+  /* stack: bloques de timing colapsables (details nativo) */
+  .stk-blk{border-top:1px solid var(--line);}
+  .stk-blk summary{list-style:none;cursor:pointer;padding:8px 0;font-size:11px;letter-spacing:1px;color:var(--o50);}
+  .stk-blk summary::-webkit-details-marker{display:none;}
+  .stk-blk summary::before{content:'▸ ';color:var(--o30);}
+  .stk-blk[open] summary::before{content:'▾ ';}
   .toggles.agf{margin-bottom:var(--s4);}
   .agm{font-weight:700;} .agm.g{color:var(--good);} .agm.w{color:var(--warn);} .agm.b{color:var(--bad);} .agm.o{color:var(--o40); font-weight:400;}
   .ag-nohr{margin-bottom:var(--s2);} .ag-nohr .gl{font-size:var(--t-caption); color:var(--o40); letter-spacing:2px; margin-bottom:var(--s3);}
@@ -2009,33 +2015,42 @@ function renderStack(){
   if(!all.length){
     out+=`<div class="empty" style="margin:24px 0 18px">stack vacío<br/><span class="ehint">agrega tu primer suplemento, skincare o medicamento abajo</span></div>`;
   } else {
-    const cats=[{k:'supp',lbl:'SUPLEMENTOS'},{k:'skin',lbl:'SKINCARE'},{k:'meds',lbl:'MEDICAMENTOS'}];
-    let anyShown=false;
-    cats.forEach(c=>{
-      let items=all.filter(x=>x.category===c.k && !x.archived);
-      if(view==='today') items=items.filter(x=>isDueToday(x,iso));
+    // agrupado por TIMING (no por categoría): bloques colapsables AM/PM/ENTRENO/OTROS
+    const BLOCKS=[{k:'AM',lbl:'AM'},{k:'PM',lbl:'PM'},{k:'entreno',lbl:'ENTRENO'},{k:'otros',lbl:'OTROS'}];
+    const inBlock=(it,bk)=>{ const w=it.when||[]; return bk==='otros' ? !(w.indexOf('AM')>=0||w.indexOf('PM')>=0||w.indexOf('entreno')>=0) : w.indexOf(bk)>=0; };
+    // ponytail: 1 tick/día/item — un item multi-timing (AM+PM) aparece en ambos bloques y comparte el mismo check; si se requiere check por-horario, ticks[iso][block]
+    const li=it=>{
+      const st=it.ticks && tickState(it.ticks[iso]);
+      const isDue=isDueToday(it,iso);
+      const dose=it.dose?(' · '+escTxt(it.dose)+(it.unit?' '+escTxt(it.unit):'')):'';
+      const when=it.when&&it.when.length?(' · '+escTxt(it.when.join('/'))):'';
+      const period=escTxt(stackPeriodLabel(it));
+      const cat=` <span style="color:var(--o30);font-size:9px">[${escTxt(it.category||'supp')}]</span>`;
+      const _sub=identifySubstance(it.name)||(it.subId?SUBSTANCE_DB.find(s=>s.id===it.subId):null);
+      let idMark='';
+      if(_sub){ if(_sub.kind==='active'){ idMark=` <span data-act="suppinfo" data-id="${it.id}" style="cursor:pointer;color:var(--o40);font-size:9px" title="ver ficha de ${escTxt(_sub.name)}">ⓘ</span>`; } else { const _hasN=it.nutr&&Object.keys(it.nutr).length; idMark=_hasN?` <span style="color:var(--good);font-size:9px" title="aporta nutrición${it.nutrSrc==='db'?' · auto':''}">✓</span>`:` <span data-act="suppfill" data-id="${it.id}" style="cursor:pointer;color:var(--o40);font-size:9px" title="rellenar nutrición de ${escTxt(_sub.name)}">+ nutr</span>`; } }
+      const tickDisp=isDue
+        ?`<span data-act="stacktick" data-id="${it.id}" title="tap: tomado → tarde → saltado" style="cursor:pointer;font-family:'JetBrains Mono',monospace;color:${st?(st==='skipped'?'var(--bad)':'var(--fill)'):'var(--o40)'};padding-right:4px">[${st?TICK_SYM[st]:' '}]</span>`
+        :`<span style="color:var(--o20);padding-right:4px">[—]</span>`;
+      return `<div class="line" style="padding:6px 0;align-items:flex-start">`
+        +`<span class="k" style="display:flex;align-items:center;flex-wrap:wrap">${tickDisp}<span data-act="stackedit" data-id="${it.id}" style="cursor:pointer">${escTxt(it.name)}</span><span style="color:var(--o40);font-size:10px;margin-left:4px">${dose}${when}</span>${cat}${idMark}</span>`
+        +`<span class="dots"></span>`
+        +`<span class="v" style="font-size:10px;color:var(--o40);text-align:right">${period}</span>`
+        +`</div>`;
+    };
+    const visible=all.filter(x=>!x.archived && (view==='all'||isDueToday(x,iso)));
+    let anyShown=false, openedYet=false;
+    BLOCKS.forEach(b=>{
+      const items=visible.filter(x=>inBlock(x,b.k));
       if(!items.length) return;
       anyShown=true;
-      out+=`<div class="grp-label" style="margin-top:10px">${c.lbl}</div>`;
-      items.forEach(it=>{
-        const st=it.ticks && tickState(it.ticks[iso]);
-        const isDue=isDueToday(it,iso);
-        const dose=it.dose?(' · '+escTxt(it.dose)+(it.unit?' '+escTxt(it.unit):'')):'';
-        const when=it.when&&it.when.length?(' · '+escTxt(it.when.join('/'))):'';
-        const period=escTxt(stackPeriodLabel(it));
-
-        const _sub=identifySubstance(it.name)||(it.subId?SUBSTANCE_DB.find(s=>s.id===it.subId):null);
-        let idMark='';
-        if(_sub){ if(_sub.kind==='active'){ idMark=` <span data-act="suppinfo" data-id="${it.id}" style="cursor:pointer;color:var(--o40);font-size:9px" title="ver ficha de ${escTxt(_sub.name)}">ⓘ</span>`; } else { const _hasN=it.nutr&&Object.keys(it.nutr).length; idMark=_hasN?` <span style="color:var(--good);font-size:9px" title="aporta nutrición${it.nutrSrc==='db'?' · auto':''}">✓</span>`:` <span data-act="suppfill" data-id="${it.id}" style="cursor:pointer;color:var(--o40);font-size:9px" title="rellenar nutrición de ${escTxt(_sub.name)}">+ nutr</span>`; } }
-        const tickDisp=isDue
-          ?`<span data-act="stacktick" data-id="${it.id}" title="tap: tomado → tarde → saltado" style="cursor:pointer;font-family:'JetBrains Mono',monospace;color:${st?(st==='skipped'?'var(--bad)':'var(--fill)'):'var(--o40)'};padding-right:4px">[${st?TICK_SYM[st]:' '}]</span>`
-          :`<span style="color:var(--o20);padding-right:4px">[—]</span>`;
-        out+=`<div class="line" style="padding:6px 0;align-items:flex-start">`
-          +`<span class="k" style="display:flex;align-items:center;flex-wrap:wrap">${tickDisp}<span data-act="stackedit" data-id="${it.id}" style="cursor:pointer">${escTxt(it.name)}</span><span style="color:var(--o40);font-size:10px;margin-left:4px">${dose}${when}</span>${idMark}</span>`
-          +`<span class="dots"></span>`
-          +`<span class="v" style="font-size:10px;color:var(--o40);text-align:right">${period}</span>`
-          +`</div>`;
-      });
+      const due=items.filter(x=>isDueToday(x,iso));
+      const doneN=due.filter(x=>tickState(x.ticks&&x.ticks[iso])).length;
+      const incomplete=due.some(x=>!tickState(x.ticks&&x.ticks[iso]));
+      // expandir SOLO el primer bloque con item due sin loguear
+      const openAttr=(!openedYet&&incomplete)?' open':''; if(openAttr) openedYet=true;
+      const cnt=due.length?` <span style="color:var(--o30)">· ${doneN}/${due.length}</span>`:'';
+      out+=`<details class="stk-blk"${openAttr}><summary>${b.lbl}${cnt}</summary>${items.map(li).join('')}</details>`;
     });
     if(!anyShown){
       out+=`<div class="empty" style="margin:24px 0 18px">${view==='today'?'no toca nada hoy ✓<br/>cambia a TODOS para ver tu lista completa':'sin items activos'}</div>`;
