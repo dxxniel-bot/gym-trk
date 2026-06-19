@@ -2023,11 +2023,15 @@ function renderStack(){
         const dose=it.dose?(' · '+escTxt(it.dose)+(it.unit?' '+escTxt(it.unit):'')):'';
         const when=it.when&&it.when.length?(' · '+escTxt(it.when.join('/'))):'';
         const period=escTxt(stackPeriodLabel(it));
+
+        const _sub=identifySubstance(it.name)||(it.subId?SUBSTANCE_DB.find(s=>s.id===it.subId):null);
+        let idMark='';
+        if(_sub){ if(_sub.kind==='active'){ idMark=` <span data-act="suppinfo" data-id="${it.id}" style="cursor:pointer;color:var(--o40);font-size:9px" title="ver ficha de ${escTxt(_sub.name)}">ⓘ</span>`; } else { const _hasN=it.nutr&&Object.keys(it.nutr).length; idMark=_hasN?` <span style="color:var(--good);font-size:9px" title="aporta nutrición${it.nutrSrc==='db'?' · auto':''}">✓</span>`:` <span data-act="suppfill" data-id="${it.id}" style="cursor:pointer;color:var(--o40);font-size:9px" title="rellenar nutrición de ${escTxt(_sub.name)}">+ nutr</span>`; } }
         const tickDisp=isDue
           ?`<span data-act="stacktick" data-id="${it.id}" title="tap: tomado → tarde → saltado" style="cursor:pointer;font-family:'JetBrains Mono',monospace;color:${st?(st==='skipped'?'var(--bad)':'var(--fill)'):'var(--o40)'};padding-right:4px">[${st?TICK_SYM[st]:' '}]</span>`
           :`<span style="color:var(--o20);padding-right:4px">[—]</span>`;
         out+=`<div class="line" style="padding:6px 0;align-items:flex-start">`
-          +`<span class="k" style="display:flex;align-items:center;flex-wrap:wrap">${tickDisp}<span data-act="stackedit" data-id="${it.id}" style="cursor:pointer">${escTxt(it.name)}</span><span style="color:var(--o40);font-size:10px;margin-left:4px">${dose}${when}</span></span>`
+          +`<span class="k" style="display:flex;align-items:center;flex-wrap:wrap">${tickDisp}<span data-act="stackedit" data-id="${it.id}" style="cursor:pointer">${escTxt(it.name)}</span><span style="color:var(--o40);font-size:10px;margin-left:4px">${dose}${when}</span>${idMark}</span>`
           +`<span class="dots"></span>`
           +`<span class="v" style="font-size:10px;color:var(--o40);text-align:right">${period}</span>`
           +`</div>`;
@@ -2065,6 +2069,7 @@ function openStackEdit(id, presetCat){
   const unitOpts=UNITS.map(u=>`<option value="${u}"${(it.unit||'')===u?' selected':''}>${u||'—'}</option>`).join('');
   openModal(`<h3>${isNew?'agregar a tu stack':'editar item'}</h3>
     <div class="field"><label>NOMBRE</label><input id="se_name" value="${escTxt(it.name||'')}" placeholder="ej. creatina monohidratada" autocomplete="off"/></div>
+    <div class="field" style="margin-top:-2px"><div id="se_idstrip" style="min-height:14px"></div><div id="se_idcard"></div></div>
     <div class="field"><label>CATEGORÍA</label><div class="toggles" id="se_cat">${catBtn('supp','supp')}${catBtn('skin','skin')}${catBtn('meds','meds')}</div></div>
     <div class="field row2"><div><label>DOSIS</label><input id="se_dose" value="${escTxt(it.dose||'')}" placeholder="${dosePh}" inputmode="decimal" autocomplete="off"/></div><div><label>UNIDAD</label><select id="se_unit">${unitOpts}</select></div></div>
     <div class="field"><label>INICIO</label><input id="se_start" type="date" value="${it.startDate||todayISO()}"/></div>
@@ -2099,6 +2104,26 @@ function openStackEdit(id, presetCat){
     root.querySelector('#se_prg').style.display=t==='range'?'block':'none';
   });
   root.querySelectorAll('#se_dayrow button').forEach(b=>b.onclick=()=>b.classList.toggle('on'));
+
+  // Tarea 3: identificación de sustancia en el editor (reconoce nombre -> rellenar nutrición / ficha)
+  var _idSel = it.subId || null;
+  var _nutrFromDb = (it.nutrSrc==='db');
+  var _fillNutr=function(s){ MACROKEYS.forEach(function(k){ var el=document.getElementById('se_n_'+k); if(el) el.value=(s.nutr&&s.nutr[k]!=null)?s.nutr[k]:''; }); MICROS.forEach(function(mi){ var el=document.getElementById('se_n_'+mi.k); if(el) el.value=(s.nutr&&s.nutr[mi.k]!=null)?s.nutr[mi.k]:''; }); var di=document.getElementById('se_dose'); if(di&&!di.value&&s.dose) di.value=s.dose; var ui=document.getElementById('se_unit'); if(ui&&!ui.value&&s.unit&&UNITS.indexOf(s.unit)>=0) ui.value=s.unit; var d=root.querySelector('details.field'); if(d) d.open=true; };
+  function _renderId(){ var strip=document.getElementById('se_idstrip'); if(!strip) return; var nm=val('se_name'); var s=identifySubstance(nm); var card=document.getElementById('se_idcard'); strip.innerHTML='';
+    if(!s){ _idSel=null; if(card) card.innerHTML=''; if(nm&&nm.trim().length>=3) strip.innerHTML='<span style="color:var(--o35);font-size:10px">sin identificar · dame marca/dosis para datos exactos</span>'; return; }
+    var aprox = s.conf==='típico'?' <span style="color:var(--o35)">· aprox.</span>':'';
+    if(s.kind==='nutrient'){
+      strip.innerHTML='<span style="color:var(--good);font-size:10px">✓ '+escTxt(s.name)+aprox+'</span> <button class="t" type="button" id="se_idfill" style="font-size:10px;padding:2px 8px;margin-left:6px">rellenar nutrición</button>';
+      var bf=document.getElementById('se_idfill'); if(bf) bf.onclick=function(){ _fillNutr(s); _idSel=s.id; _nutrFromDb=true; if(window.toast)toast(s.name+' · valores típicos, edítalos si tu etiqueta difiere'); };
+    } else {
+      _idSel=s.id;
+      strip.innerHTML='<span style="color:var(--good);font-size:10px">✓ '+escTxt(s.name)+aprox+' <span style="color:var(--o40)">· activo</span></span> <button class="t" type="button" id="se_idficha" style="font-size:10px;padding:2px 8px;margin-left:6px">ver ficha</button>';
+      var bc=document.getElementById('se_idficha'); if(bc) bc.onclick=function(){ if(card) card.innerHTML = card.innerHTML?'':suppInfoCard(s); };
+    }
+  }
+  var _seNameEl=document.getElementById('se_name'); if(_seNameEl) _seNameEl.addEventListener('input',_renderId);
+  root.querySelectorAll('[id^="se_n_"]').forEach(function(el){ el.addEventListener('input',function(){ _nutrFromDb=false; }); });
+  _renderId();
   root.querySelector('#se_save').onclick=()=>{
     const name=val('se_name'); if(!name){ alert('pon un nombre.'); return; }
     it.name=name;
@@ -2117,7 +2142,7 @@ function openStackEdit(id, presetCat){
       const doc=val('se_doc'), dur=val('se_dur');
       if(doc||dur) it.med={doctor:doc, duration:dur}; else delete it.med;
     } else { delete it.med; }
-    const _NK=['kcal','protein','carbs','fat','sugar','fiber','sodium','potassium','caffeine','alcohol']; const _nutr={}; let _hasN=false; _NK.forEach(k=>{ const v=parseFloat(val('se_n_'+k)); if(!isNaN(v)&&v!==0){ _nutr[k]=v; _hasN=true; } }); MICROS.forEach(mi=>{ const v=parseFloat(val('se_n_'+mi.k)); if(!isNaN(v)&&v!==0){ _nutr[mi.k]=v; _hasN=true; } }); if(_hasN) it.nutr=_nutr; else delete it.nutr;
+    const _NK=['kcal','protein','carbs','fat','sugar','fiber','sodium','potassium','caffeine','alcohol']; const _nutr={}; let _hasN=false; _NK.forEach(k=>{ const v=parseFloat(val('se_n_'+k)); if(!isNaN(v)&&v!==0){ _nutr[k]=v; _hasN=true; } }); MICROS.forEach(mi=>{ const v=parseFloat(val('se_n_'+mi.k)); if(!isNaN(v)&&v!==0){ _nutr[mi.k]=v; _hasN=true; } }); if(_hasN){ it.nutr=_nutr; it.nutrSrc=_nutrFromDb?"db":"user"; } else { delete it.nutr; delete it.nutrSrc; } if(_idSel){ it.subId=_idSel; } else { delete it.subId; }
     if(isNew){ db.stack=db.stack||[]; db.stack.push(it); }
     save(); closeModal(); render();
   };
@@ -2469,6 +2494,9 @@ document.getElementById('app').addEventListener('click',e=>{
   else if(a==='wrapview'){ monthlyWrap(prevMonthYm(), true); }
   else if(a==='stacktick'){ stackToggleTick(el.dataset.id, todayISO()); }
   else if(a==='stackedit'){ openStackEdit(el.dataset.id); }
+
+  else if(a==='suppinfo'){ const it=(db.stack||[]).find(x=>x.id===el.dataset.id); const s=it&&(identifySubstance(it.name)||(it.subId?SUBSTANCE_DB.find(z=>z.id===it.subId):null)); if(s) openModal(`<h3>${escTxt(s.name)}</h3>`+suppInfoCard(s)+`<div class="sheetbtns"><button class="cancel" data-act="closemodal">cerrar</button></div>`); }
+  else if(a==='suppfill'){ const it=(db.stack||[]).find(x=>x.id===el.dataset.id); const s=it&&identifySubstance(it.name); if(s&&s.nutr&&Object.keys(s.nutr).length){ it.nutr=Object.assign({},s.nutr); it.nutrSrc='db'; it.subId=s.id; save(); render(); if(window.toast)toast(s.name+': nutrición aplicada · ajústala en el item'); } }
   else if(a==='stackadd'){ openStackEdit(null, el.dataset.c||'supp'); }
   else if(a==='stackview'){ window._stackView=el.dataset.v||'today'; render(); }
   else if(a==='chartpt'){ try{ const pts=JSON.parse(el.dataset.pts||'[]'); if(pts.length){ const r=el.getBoundingClientRect(); const x=(e.clientX-r.left)/(r.width||1); let best=pts[0],bd=9; pts.forEach(p=>{ const d=Math.abs(p.f-x); if(d<bd){bd=d;best=p;} }); if(best&&best.l)toast(best.l); } }catch(_){} }
@@ -3025,6 +3053,57 @@ function foodPer(){ return {kcal:0,protein:0,carbs:0,fat:0,sugar:0,sodium:0,pota
 // ---- canonical food model: store per-100 g/ml; log via unit dropdown × qty ----
 const MICROS=[{k:'vitA',l:'vit A',u:'µg',rda:900},{k:'vitC',l:'vit C',u:'mg',rda:90},{k:'vitD',l:'vit D',u:'µg',rda:20},{k:'vitE',l:'vit E',u:'mg',rda:15},{k:'vitK',l:'vit K',u:'µg',rda:120},{k:'vitB6',l:'vit B6',u:'mg',rda:1.7},{k:'folate',l:'folato',u:'µg',rda:400},{k:'vitB12',l:'vit B12',u:'µg',rda:2.4},{k:'calcium',l:'calcio',u:'mg',rda:1300},{k:'iron',l:'hierro',u:'mg',rda:18},{k:'magnesium',l:'magnesio',u:'mg',rda:420},{k:'zinc',l:'zinc',u:'mg',rda:11}];
 const MACROKEYS=['kcal','protein','carbs','fat','sugar','fiber','sodium','potassium','caffeine','alcohol'];
+/* ====== Tarea 3: identificación de sustancias del stack (supps/skin/meds) ======
+   Reusa searchScore()/bfNorm() (matcher de alimentos). NUNCA renombra it.name:
+   identificar = lookup interno -> llena it.nutr (nutricional) o muestra ficha (activo). */
+const SUBSTANCE_DB=(function(){ const L=[];
+  const N=(id,name,alt,nutr,o)=>{ o=o||{}; L.push({id:'sb_'+id,name:name,alt:alt||'',brand:o.br||'',cat:o.cat||'supp',kind:'nutrient',dose:o.dose||'',unit:o.unit||'',nutr:nutr||{},conf:o.conf||'típico'}); };
+  const A=(id,name,alt,ref,o)=>{ o=o||{}; L.push({id:'sb_'+id,name:name,alt:alt||'',brand:o.br||'',cat:o.cat||'skin',kind:'active',dose:o.dose||'',unit:o.unit||'',ref:ref,conf:o.conf||'típico'}); };
+  // nutricionales (aportan al día; valores TÍPICOS por dosis)
+  N('potasio','Potasio','potassium cloruro gluconato citrato de potasio k',{potassium:99},{dose:'99',unit:'mg'});
+  N('magnesio','Magnesio','magnesium glicinato citrato oxido malato mg',{magnesium:200},{dose:'200',unit:'mg'});
+  N('zinc','Zinc','zinc cinc gluconato picolinato',{zinc:15},{dose:'15',unit:'mg'});
+  N('calcio','Calcio','calcium carbonato citrato de calcio ca',{calcium:500},{dose:'500',unit:'mg'});
+  N('hierro','Hierro','iron sulfato ferroso bisglicinato fe',{iron:18},{dose:'18',unit:'mg'});
+  N('vitd','Vitamina D','vitamin d d3 colecalciferol vit d',{vitD:50},{dose:'2000',unit:'UI'});
+  N('vitc','Vitamina C','vitamin c ascorbico acido ascorbico vit c',{vitC:500},{dose:'500',unit:'mg'});
+  N('vitb12','Vitamina B12','vitamin b12 cobalamina cianocobalamina metilcobalamina',{vitB12:500},{dose:'500',unit:'mcg'});
+  N('vitb6','Vitamina B6','vitamin b6 piridoxina',{vitB6:10},{dose:'10',unit:'mg'});
+  N('folato','Folato','folate acido folico folic acid b9 metilfolato',{folate:400},{dose:'400',unit:'mcg'});
+  N('vita','Vitamina A','vitamin a retinol palmitato',{vitA:900},{dose:'900',unit:'mcg'});
+  N('vite','Vitamina E','vitamin e tocoferol',{vitE:67},{dose:'100',unit:'UI'});
+  N('vitk','Vitamina K','vitamin k k2 mk7 filoquinona menaquinona',{vitK:120},{dose:'120',unit:'mcg'});
+  N('complejob','Complejo B','vitamin b complex complejo b vitaminas b',{vitB6:10,folate:400,vitB12:50},{dose:'1',unit:'tab'});
+  N('multivit','Multivitamínico','multivitamin multivitaminico centrum animal pak opti-men optimen gnc mega men one a day',{vitA:800,vitC:90,vitD:25,vitE:15,vitK:60,vitB6:2,folate:400,vitB12:6,calcium:200,iron:8,magnesium:50,zinc:11},{dose:'1',unit:'tab'});
+  N('omega3','Omega-3','omega 3 aceite de pescado fish oil epa dha pescado',{kcal:10,fat:1},{dose:'1',unit:'cap'});
+  N('cafeina','Cafeína','caffeine cafeina pastilla pre workout',{caffeine:200},{dose:'200',unit:'mg'});
+  N('electrolitos','Electrolitos','electrolytes lmnt suero sales de rehidratacion sodio potasio',{sodium:1000,potassium:200,magnesium:60},{dose:'1',unit:'g'});
+  // activos / skincare (ficha; NO aportan nutrición)
+  A('tretinoina','Tretinoína','tretinoin retin-a acido retinoico retinoic acid',{class:'Retinoide tópico (derivado de vitamina A)',use:'Acné, fotoenvejecimiento y textura — acelera el recambio celular y estimula colágeno.',dose:'Crema/gel 0.025–0.1%, capa fina por la noche; empezar 2–3×/semana y subir según tolerancia.',caution:'Fotosensibilidad: usa SPF en la mañana. Irritación/peeling inicial. Evitar en embarazo/lactancia. No combinar con otros irritantes fuertes (AHA/BHA/peróxido) el mismo uso.'});
+  A('retinol','Retinol','retinol vitamina a serum',{class:'Retinoide cosmético (vitamina A)',use:'Antiedad y textura; más suave que la tretinoína (la piel lo convierte a ácido retinoico).',dose:'Sérum/crema 0.1–1% por la noche; introducir gradualmente.',caution:'Fotosensibilidad: SPF. Irritación. Precaución en embarazo. No apilar con AHA/BHA fuertes el mismo uso.'});
+  A('adapaleno','Adapaleno','adapalene differin',{class:'Retinoide tópico de 3ª generación (Differin)',use:'Acné comedónico e inflamatorio.',dose:'Gel 0.1–0.3%, 1 vez por la noche.',caution:'Más fotoestable y menos irritante que la tretinoína, pero igual usa SPF. Sequedad inicial. Embarazo: consultar.'});
+  A('niacinamida','Niacinamida','niacinamide vitamina b3 nicotinamida',{class:'Vitamina B3 tópica',use:'Refuerza la barrera, controla sebo, atenúa manchas y poros; antiinflamatorio.',dose:'Sérum 2–10%, AM y/o PM.',caution:'Muy bien tolerada; arriba de 10% puede irritar. Combina con casi todo.'});
+  A('salicilico','Ácido salicílico','salicylic acid bha beta hidroxiacido',{class:'BHA (beta-hidroxiácido), lipofílico',use:'Exfolia y limpia poros; acné graso y comedones.',dose:'Leave-on 0.5–2%; limpiador 2%.',caution:'Sequedad/irritación. Fotosensibilidad leve: SPF. No apilar con retinoide fuerte el mismo uso.'});
+  A('glicolico','Ácido glicólico','glycolic acid aha alfa hidroxiacido',{class:'AHA (alfa-hidroxiácido)',use:'Exfoliación superficial: textura, luminosidad, manchas.',dose:'Leave-on 5–10% por la noche; peels mayores con profesional.',caution:'Fotosensibilidad marcada: SPF obligatorio. Irritación. No con retinoide el mismo uso.'});
+  A('vitc_topica','Vitamina C tópica','vitamin c topica acido ascorbico serum antioxidante',{class:'Antioxidante tópico (ácido ascórbico/derivados)',use:'Antioxidante de mañana: ilumina, atenúa manchas, apoya colágeno.',dose:'Sérum 10–20% (L-ascórbico) en la mañana, bajo SPF.',caution:'Se oxida (si amarillea, está degradado). Irritación a alto %. Sensible a pH/estabilidad.'});
+  A('benzoilo','Peróxido de benzoilo','benzoyl peroxide peroxido de benzoilo',{class:'Antibacteriano/queratolítico',use:'Acné inflamatorio (reduce C. acnes).',dose:'Gel o lavado 2.5–5%, 1–2 veces al día.',caution:'Reseca; blanquea telas y cabello. Irritación. No usar con retinoide simultáneamente el mismo uso; introducir gradual.'});
+  A('azelaico','Ácido azelaico','azelaic acid azelaico',{class:'Ácido dicarboxílico',use:'Rosácea, acné y manchas/hiperpigmentación.',dose:'Crema 10–20%, 1–2 veces al día.',caution:'Bien tolerado; picor/ardor inicial. De los pocos seguros en embarazo (consultar).'});
+  A('spf','Protector solar (SPF)','sunscreen spf protector solar fps bloqueador',{class:'Fotoprotector',use:'Bloquea UV: previene fotoenvejecimiento y daño; OBLIGATORIO con retinoides/ácidos.',dose:'SPF 30–50; reaplicar cada 2 h con exposición.',caution:'Aplicar cantidad suficiente y reaplicar.'});
+  // meds (ficha factual; cautela)
+  A('finasterida','Finasterida','finasteride propecia proscar',{class:'Inhibidor de la 5-alfa-reductasa',use:'Alopecia androgénica (1 mg) e hiperplasia prostática (5 mg).',dose:'1 mg/día para cabello (según receta).',caution:'Posible baja de libido/disfunción eréctil. Teratógeno: embarazadas no deben manipular comprimidos partidos. Consulta médica.'},{cat:'meds'});
+  A('minoxidil','Minoxidil','minoxidil rogaine kirkland',{class:'Vasodilatador (tópico/oral)',use:'Alopecia: prolonga la fase de crecimiento del folículo.',dose:'Tópico 2–5%, 1–2 veces al día; oral en dosis bajas SOLO con médico.',caution:'"Shedding" inicial. Irritación tópica. Oral: efectos cardiovasculares/edema, hipotensión — solo bajo supervisión.'},{cat:'meds'});
+  A('isotretinoina','Isotretinoína','isotretinoin accutane roacutan oral',{class:'Retinoide ORAL (vitamina A)',use:'Acné severo o resistente.',dose:'mg/kg/día según peso, bajo dermatólogo.',caution:'TERATÓGENO potente: embarazo prohibido (anticoncepción estricta). Sequedad intensa; sube lípidos y enzimas hepáticas (requiere labs). SOLO con receta y seguimiento.'},{cat:'meds'});
+  A('ibuprofeno','Ibuprofeno','ibuprofen advil motrin',{class:'AINE (antiinflamatorio no esteroideo)',use:'Dolor, inflamación, fiebre.',dose:'200–400 mg cada 6–8 h con alimento (OTC máx ~1200 mg/día).',caution:'Irritación gástrica/úlcera; función renal; precaución cardiovascular/HTA. No combinar con otros AINE.'},{cat:'meds'});
+  A('paracetamol','Paracetamol','acetaminophen paracetamol tylenol tempra',{class:'Analgésico/antipirético',use:'Dolor y fiebre.',dose:'500–1000 mg cada 6–8 h (máx ~3–4 g/día).',caution:'Hepatotoxicidad por sobredosis: respeta el máximo, cuidado con alcohol y con productos combinados que ya lo incluyen.'},{cat:'meds'});
+  A('omeprazol','Omeprazol','omeprazole prilosec losec',{class:'Inhibidor de bomba de protones (IBP)',use:'Reflujo/ERGE, úlcera, acidez.',dose:'20 mg/día antes del desayuno.',caution:'Uso prolongado: baja B12/magnesio/calcio y riesgo de fracturas. Efecto rebote al suspender. Interacciones (p. ej. clopidogrel).'},{cat:'meds'});
+  return L;
+})();
+function identifySubstance(name){ var q=(name||'').trim(); if(!q) return null; var best=null,bs=0; for(var ii=0;ii<SUBSTANCE_DB.length;ii++){ var sc=searchScore(q,SUBSTANCE_DB[ii]); if(sc>bs){ bs=sc; best=SUBSTANCE_DB[ii]; } } return (best && bs>=500) ? best : null; }
+function suppInfoCard(s){ if(!s||!s.ref) return ''; var r=s.ref; var row=function(l,v){ return v?'<div style="margin:4px 0"><span style="color:var(--o50);font-size:9px;letter-spacing:.5px">'+l+'</span><br/><span style="font-size:11px">'+escTxt(v)+'</span></div>':''; };
+  return '<div style="border:1px solid var(--o20);border-radius:8px;padding:10px;margin-top:6px">'
+    +'<div style="font-size:11px;color:var(--o40);margin-bottom:4px">'+escTxt(s.name)+' · ficha</div>'
+    +row('QUÉ ES',r.class)+row('PARA QUÉ',r.use)+row('DOSIS TÍPICA',r.dose)+row('PRECAUCIONES',r.caution)
+    +'<div style="margin-top:8px;color:var(--o35);font-size:9px;letter-spacing:.3px">referencia informativa · no es consejo médico</div></div>'; }
 function numTxt(n){ n=Math.round((+n||0)*100)/100; return ''+n; }
 function servingToGrams(str){ if(!str)return 0; const m=(''+str).toLowerCase().match(/(\d+(?:[.,]\d+)?)\s*(kg|g|gr|grs|gramos?|ml|cl|dl|l)\b/); if(!m)return 0; let v=parseFloat(m[1].replace(',','.'))||0; const u=m[2]; if(u==='kg'||u==='l')v*=1000; else if(u==='dl')v*=100; else if(u==='cl')v*=10; return v; }
 function foodKcal100(f){ if(f&&f.per100)return f.per100.kcal||0; if(f&&f.per)return f.per.kcal||0; return 0; }
