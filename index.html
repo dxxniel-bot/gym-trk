@@ -290,6 +290,10 @@
   .toggles{display:flex; gap:8px;} .toggles button{flex:1; height:44px; border:1px solid var(--border); background:transparent; color:var(--o50); font-size:var(--t-sm); cursor:pointer; border-radius:var(--r-ctl);} .toggles button.on{background:var(--fill); color:var(--on-fill);}
   .toggles.wrap{flex-wrap:wrap;} .toggles.wrap button{flex:1 1 44%;}
   .chips{display:flex;flex-wrap:wrap;gap:7px;margin-top:8px;} .chip{font-size:11px;color:var(--o50);border:.5px solid var(--o20);padding:11px 13px;cursor:pointer;} .chip:active{background:var(--o12);}
+  .moodpad{position:relative;width:100%;max-width:300px;aspect-ratio:1;min-height:240px;margin:0 auto 8px;border:.5px solid var(--o20);border-radius:var(--r-ctl);touch-action:none;overflow:hidden;}
+  .moodpad::before,.moodpad::after{content:'';position:absolute;background:var(--o20);} .moodpad::before{left:0;right:0;top:50%;height:1px;} .moodpad::after{top:0;bottom:0;left:50%;width:1px;}
+  .moodax{position:absolute;font-size:9px;color:var(--o40);letter-spacing:.3px;pointer-events:none;white-space:nowrap;}
+  .moodpt{position:absolute;left:50%;top:50%;width:18px;height:18px;border-radius:50%;background:var(--good);border:2px solid #fff;box-shadow:0 0 8px var(--good);transform:translate(-50%,-50%);pointer-events:none;}
   .seday{border-left:1px solid var(--o12);padding-left:12px;margin:0 0 18px 2px;} .sehead{display:flex;align-items:center;gap:8px;margin-bottom:8px;} .senm{flex:1;background:transparent;border:none;border-bottom:.5px solid var(--o20);color:var(--fg);font:inherit;font-size:15px;font-weight:800;padding:2px 0;}
   .seex{display:flex;align-items:baseline;justify-content:space-between;gap:8px;padding:4px 0;} .seexn{flex:1;font-size:12px;color:var(--o60);cursor:pointer;} .seexn .seexm{font-size:9px;color:var(--o40);} .sedel{color:var(--o30);cursor:pointer;font-size:13px;padding:0 4px;}
   .semv{display:inline-flex;gap:1px;flex:0 0 auto;} .semv span{color:var(--o30);cursor:pointer;font-size:11px;padding:2px 4px;line-height:1;} .semv span:active{color:var(--fg);}
@@ -536,7 +540,7 @@
   <div class="frame" id="app">
     <div class="scroll" id="view"></div>
     <div class="restbar" id="resttimer"><span class="rl">descanso</span><span class="rt" id="resttime">0:00</span><span style="flex:1"></span><a data-act="restminus">−15</a><a data-act="restplus">+15</a><a data-act="restskip">skip</a></div>
-    <div class="footer" id="wfooter" style="display:none"><button class="abort" data-act="abort">abort</button><button class="save" data-act="save">save session</button></div>
+    <div class="footer" id="wfooter" style="display:none"><button class="abort" data-act="abort">abort</button><button class="abort" data-act="undo" style="min-width:0;padding:0 14px">↩</button><button class="save" data-act="save">save session</button></div>
     <nav class="nav" id="nav"></nav>
   </div>
 
@@ -878,7 +882,7 @@ function renderHome(){
     +`<div class="line stat"><span class="k">uptime</span><span class="dots"></span><span class="v">${uptimeDays()}d</span></div>`
     +`<div class="line stat"><span class="k">steps · today</span><span class="dots"></span><span class="v" data-act="editsteps" style="cursor:pointer">${(db.steps&&db.steps[todayISO()])?db.steps[todayISO()].toLocaleString():'— tap'}</span></div>`
     +`<div class="line stat"><span class="k">sleep · last night</span><span class="dots"></span><span class="v" data-act="logsleep" style="cursor:pointer">${(db.sleep&&db.sleep[todayISO()])?sleepHours(db.sleep[todayISO()])+' h':'— tap'}</span></div>`
-    +`<div class="line stat"><span class="k">mood · today</span><span class="dots"></span><span class="v" data-act="logmood" style="cursor:pointer">${(db.mood&&db.mood[todayISO()])?db.mood[todayISO()]+' / 10':'— tap'}</span></div>`;
+    +`<div class="line stat"><span class="k">mood · today</span><span class="dots"></span><span class="v" data-act="logmood" style="cursor:pointer">${(function(){var o=moodVal(db.mood&&db.mood[todayISO()]);return o?escTxt(o.label||(o.y+' / 10')):'— tap';})()}</span></div>`;
 }
 // read-only preview of a planned day's exercises (without starting the workout)
 function dayPreviewHTML(day){
@@ -936,12 +940,13 @@ function rirOpts(sel){ sel=(sel==null?'':String(sel)); const base=['F','0','1','
 
 function renderSetRow(exi,si,set,ex,allowF){
   const _bw=set.bw||(ex&&ex.type==='bodyweight');
-  const w=`<input class="inp weight" data-act="setf" data-exi="${exi}" data-si="${si}" data-f="w" value="${set.w}" placeholder="${_bw?'BW':'—'}" inputmode="decimal" title="${_bw?'peso corporal (editable) — suma carga extra al número':''}"/>`;
-  const u=`<select class="pick" data-act="setf" data-exi="${exi}" data-si="${si}" data-f="unit">${unitOpts(set.unit)}</select>`;
-  const r=`<input class="inp" data-act="setf" data-exi="${exi}" data-si="${si}" data-f="r" value="${set.r}" placeholder="—" inputmode="numeric"/>`;
-  const rr=`<select class="pick" data-act="setf" data-exi="${exi}" data-si="${si}" data-f="rir">${rirOpts(set.rir)}</select>`;
+  const lk=setComplete(set)&&!set._pf?'data-locked="1"':''; const ro=lk?'readonly':'';
+  const w=`<input class="inp weight" data-act="setf" data-exi="${exi}" data-si="${si}" data-f="w" value="${set.w}" placeholder="${_bw?'BW':'—'}" inputmode="decimal" title="${_bw?'peso corporal (editable) — suma carga extra al número':''}" ${ro} ${lk}/>`;
+  const u=`<select class="pick" data-act="setf" data-exi="${exi}" data-si="${si}" data-f="unit" ${lk}>${unitOpts(set.unit)}</select>`;
+  const r=`<input class="inp" data-act="setf" data-exi="${exi}" data-si="${si}" data-f="r" value="${set.r}" placeholder="—" inputmode="numeric" ${ro} ${lk}/>`;
+  const rr=`<select class="pick" data-act="setf" data-exi="${exi}" data-si="${si}" data-f="rir" ${lk}>${rirOpts(set.rir)}</select>`;
   const del=`<button class="del" data-act="delset" data-exi="${exi}" data-si="${si}">×</button>`;
-  const we=`<input class="inp weight" data-act="setf" data-exi="${exi}" data-si="${si}" data-f="extraW" value="${set.extraW||''}" placeholder="+extra" inputmode="decimal"/>`;
+  const we=`<input class="inp weight" data-act="setf" data-exi="${exi}" data-si="${si}" data-f="extraW" value="${set.extraW||''}" placeholder="+extra" inputmode="decimal" ${ro} ${lk}/>`;
   return {w,u,r,rr,del,we};
 }
 // Per-set score = Epley e1RM × intensityFactor — STRENGTH CAPACITY within the hypertrophy zone.
@@ -1468,19 +1473,34 @@ function openWeightLog(){ const ks=Object.keys(db.bodyweight||{}).sort(); const 
    ${recent.length?`<div class="grp-label" style="margin:12px 0 4px">REGISTROS RECIENTES</div>`+rows+`<div class="submeta">toca una fecha para editarla · ✕ para borrar</div>`:''}`);
   document.getElementById('bw_save').onclick=()=>{ const v=parseFloat(val('bw_kg')); const d=val('bw_date')||todayISO(); if(!v||v<=0){ alert('Pon un peso válido.'); return; } db.bodyweight=db.bodyweight||{}; db.bodyweight[d]=Math.round(v*10)/10; const allk=Object.keys(db.bodyweight).sort(); if(allk.length&&db.profile)db.profile.weightKg=db.bodyweight[allk[allk.length-1]]; save(); closeModal(); render(); };
 }
-// mood — daily "cómo me siento" 1-10. db.mood{'YYYY-MM-DD':score}. 1-tap (chip guarda directo), editable.
+// mood — circumplejo 2D: db.mood{'YYYY-MM-DD':{x:energía 0-10, y:valencia 0-10, label, ts}}. Legacy: número 1-10 = valencia.
+const MOOD_RING=['alerta','motivado','contento','tranquilo','aletargado','agotado','decaído','ansioso']; // 0=E,45=NE/Q1,90=N,135=NO/Q2,180=O,225=SO/Q3,270=S,315=SE/Q4
+function moodVal(v){ if(v==null)return null; if(typeof v==='number')return{x:5,y:v,label:'',legacy:true}; return v; } // migración lazy — nunca reescribe data vieja
+function moodLabel(x,y){ const dx=x-5,dy=y-5,r=Math.hypot(dx,dy); if(r<1.5)return'neutral';
+  let ang=Math.atan2(dy,dx)*180/Math.PI; if(ang<0)ang+=360; const i=ang/45,lo=Math.floor(i)%8,hi=(lo+1)%8,f=i-Math.floor(i);
+  return f<0.25?MOOD_RING[lo]:f>0.75?MOOD_RING[hi]:MOOD_RING[lo]+' · '+MOOD_RING[hi]; }
 function openMoodLog(){ const ks=Object.keys(db.mood||{}).sort();
   const recent=ks.slice(-8).reverse();
-  const rows=recent.map(d=>`<div class="line" style="padding:5px 0"><span class="k" data-act="editmood" data-d="${d}" style="cursor:pointer;text-decoration:underline">${d}</span><span class="dots"></span><span class="v">${db.mood[d]}/10 <span data-act="delmood" data-d="${d}" style="color:var(--o40);cursor:pointer;margin-left:8px">✕</span></span></div>`).join('');
-  const cur=(db.mood&&db.mood[todayISO()])||0;
-  const chips=[1,2,3,4,5,6,7,8,9,10].map(n=>`<span class="chip" data-mood="${n}"${n===cur?' style="border-color:var(--fill);color:var(--fill)"':''}>${n}</span>`).join('');
+  const rows=recent.map(d=>{ const o=moodVal(db.mood[d]); const disp=o?(o.label||(o.y+'/10')):'—';
+    return `<div class="line" style="padding:5px 0"><span class="k" data-act="editmood" data-d="${d}" style="cursor:pointer;text-decoration:underline">${d}</span><span class="dots"></span><span class="v">${escTxt(disp)} <span data-act="delmood" data-d="${d}" style="color:var(--o40);cursor:pointer;margin-left:8px">✕</span></span></div>`; }).join('');
   openModal(`<h3>cómo me siento</h3>
-   <div class="submeta" style="margin-bottom:8px">tu ánimo de hoy · 1 = pésimo · 10 = increíble</div>
-   <div class="chips" style="margin-bottom:12px">${chips}</div>
+   <div class="submeta" style="margin-bottom:10px">arrastra el punto · → energía · ↑ ánimo</div>
+   <div class="moodpad" id="mo_pad"><span class="moodax" style="top:5px;left:50%;transform:translateX(-50%)">+ ánimo</span><span class="moodax" style="bottom:5px;left:50%;transform:translateX(-50%)">− ánimo</span><span class="moodax" style="left:5px;top:50%;transform:translateY(-50%)">sin energía</span><span class="moodax" style="right:5px;top:50%;transform:translateY(-50%)">con energía</span><div class="moodpt" id="mo_pt"></div></div>
+   <div class="submeta" id="mo_read" style="text-align:center;margin-bottom:10px;min-height:16px">arrastra o toca para marcar tu ánimo</div>
    <div class="field"><label>FECHA</label><input id="mo_date" type="date" value="${todayISO()}" max="${todayISO()}"/></div>
    <div class="sheetbtns" style="margin-bottom:6px"><button class="cancel" data-act="closemodal">cerrar</button></div>
-   ${recent.length?`<div class="grp-label" style="margin:12px 0 4px">REGISTROS RECIENTES</div>`+rows+`<div class="submeta">toca un número para guardar · toca una fecha para editarla · ✕ para borrar</div>`:''}`);
-  document.querySelectorAll('[data-mood]').forEach(c=>c.onclick=()=>{ const d=val('mo_date')||todayISO(); db.mood=db.mood||{}; db.mood[d]=+c.dataset.mood; save(); closeModal(); render(); });
+   ${recent.length?`<div class="grp-label" style="margin:12px 0 4px">REGISTROS RECIENTES</div>`+rows+`<div class="submeta">toca una fecha para editarla · ✕ para borrar</div>`:''}`);
+  (function(){ const pad=document.getElementById('mo_pad'),pt=document.getElementById('mo_pt'),read=document.getElementById('mo_read'),dt=document.getElementById('mo_date'); if(!pad)return;
+    let mx=5,my=5,drag=false;
+    function paint(){ pt.style.left=(mx*10)+'%'; pt.style.top=((10-my)*10)+'%'; read.textContent=moodLabel(mx,my)+' · energía '+mx.toFixed(1)+' · ánimo '+my.toFixed(1); }
+    function place(cx,cy){ const r=pad.getBoundingClientRect(); let px=(cx-r.left)/r.width,py=(cy-r.top)/r.height; px=Math.min(1,Math.max(0,px)); py=Math.min(1,Math.max(0,py)); mx=Math.round(px*100)/10; my=Math.round((1-py)*100)/10; paint(); }
+    function initFor(d){ const o=moodVal(db.mood&&db.mood[d]); mx=o?o.x:5; my=o?o.y:5; pt.style.left=(mx*10)+'%'; pt.style.top=((10-my)*10)+'%'; read.textContent=o?(moodLabel(mx,my)+' · energía '+mx.toFixed(1)+' · ánimo '+my.toFixed(1)):'arrastra o toca para marcar tu ánimo'; }
+    pad.onpointerdown=e=>{ drag=true; try{pad.setPointerCapture(e.pointerId);}catch(_){} place(e.clientX,e.clientY); };
+    pad.onpointermove=e=>{ if(drag)place(e.clientX,e.clientY); };
+    pad.onpointerup=()=>{ if(!drag)return; drag=false; const d=val('mo_date')||todayISO(); db.mood=db.mood||{}; db.mood[d]={x:mx,y:my,label:moodLabel(mx,my),ts:Date.now()}; save(); closeModal(); render(); };
+    if(dt)dt.onchange=()=>initFor(dt.value);
+    initFor(todayISO());
+  })();
 }
 // sleep compat + clock math (lazy migration): legacy/manual entries are plain numbers; scheduled entries are
 // {start,end,date,isNocturnal,hours}. sleepHours() unifies reads so existing data never breaks.
@@ -1596,7 +1616,7 @@ function metricSeries(key, days){
   }
   if(key==='mood'){
     const hd=lastDays(days);
-    const vals=hd.map(d=>(db.mood&&db.mood[d])||0);
+    const vals=hd.map(d=>{const o=moodVal(db.mood&&db.mood[d]);return o?o.y:0;});
     const pos=vals.filter(x=>x>0);
     return {key, title:'ánimo', unit:'/10', dates:hd, vals,
       current:vals[vals.length-1]||0, currentISO:hd[hd.length-1],
@@ -1912,10 +1932,10 @@ function renderProgress(){
       +`<div class="pst ${cls}">${txt}</div>${kcalArr.some(x=>x>0)?lineChart(kcalArr,{h:32,zero:true}):''}</div>`);
   }
   // ánimo (mood)
-  { const _moArr=_hd.map(d=>(db.mood&&db.mood[d])||0); const _moLog=_moArr.filter(x=>x>0);
-    if(_moLog.length){ const _a=Math.round(avgPos(_moArr)*10)/10, _mn=(db.mood&&db.mood[todayISO()])||0;
+  { const _moArr=_hd.map(d=>{const o=moodVal(db.mood&&db.mood[d]);return o?o.y:0;}); const _moLog=_moArr.filter(x=>x>0);
+    if(_moLog.length){ const _a=Math.round(avgPos(_moArr)*10)/10, _to=moodVal(db.mood&&db.mood[todayISO()]); const _lbl=_to?(_to.label||(_to.y+'/10')):'—';
       tiles.push(`<div class="ptile tap" data-act="metricdetail" data-m="mood"><div class="ptlh"><div class="plbl">ánimo</div><span class="ptchev">›</span></div>`
-        +`<div class="pval">${_mn||'—'}<span>/10 hoy</span></div>`
+        +`<div class="pval" style="font-size:18px">${escTxt(_lbl)}<span> hoy</span></div>`
         +`<div class="pst flat">prom ${_a} · 14d</div>${lineChart(_moArr,{h:32})}</div>`);
     }
   }
@@ -2026,9 +2046,8 @@ function renderStack(){
       const when=it.when&&it.when.length?(' · '+escTxt(it.when.join('/'))):'';
       const period=escTxt(stackPeriodLabel(it));
       const cat=` <span style="color:var(--o30);font-size:9px">[${escTxt(it.category||'supp')}]</span>`;
-      const _sub=identifySubstance(it.name)||(it.subId?SUBSTANCE_DB.find(s=>s.id===it.subId):null);
-      let idMark='';
-      if(_sub){ if(_sub.kind==='active'){ idMark=` <span data-act="suppinfo" data-id="${it.id}" style="cursor:pointer;color:var(--o40);font-size:9px" title="ver ficha de ${escTxt(_sub.name)}">ⓘ</span>`; } else { const _hasN=it.nutr&&Object.keys(it.nutr).length; idMark=_hasN?` <span style="color:var(--good);font-size:9px" title="aporta nutrición${it.nutrSrc==='db'?' · auto':''}">✓</span>`:` <span data-act="suppfill" data-id="${it.id}" style="cursor:pointer;color:var(--o40);font-size:9px" title="rellenar nutrición de ${escTxt(_sub.name)}">+ nutr</span>`; } }
+      const _subs=(()=>{ var r=identifyAllSubstances(it.name); if(it.subId&&!r.find(s=>s.id===it.subId)){ var fb=SUBSTANCE_DB.find(s=>s.id===it.subId); if(fb)r.push(fb); } return r; })();
+      let idMark=_subs.map(function(_sub){ if(_sub.kind==='active'){ return ` <span data-act="suppinfo" data-id="${it.id}" data-sub="${_sub.id}" style="cursor:pointer;color:var(--o40);font-size:9px" title="ver ficha de ${escTxt(_sub.name)}">ⓘ</span>`; } else { const _hasN=it.nutr&&Object.keys(it.nutr).length; return _hasN?` <span style="color:var(--good);font-size:9px" title="aporta nutrición${it.nutrSrc==='db'?' · auto':''}">✓</span>`:` <span data-act="suppfill" data-id="${it.id}" data-sub="${_sub.id}" style="cursor:pointer;color:var(--o40);font-size:9px" title="rellenar nutrición de ${escTxt(_sub.name)}">+ nutr</span>`; } }).join('');
       const tickDisp=isDue
         ?`<span data-act="stacktick" data-id="${it.id}" title="tap: tomado → tarde → saltado" style="cursor:pointer;font-family:'JetBrains Mono',monospace;color:${st?(st==='skipped'?'var(--bad)':'var(--fill)'):'var(--o40)'};padding-right:4px">[${st?TICK_SYM[st]:' '}]</span>`
         :`<span style="color:var(--o20);padding-right:4px">[—]</span>`;
@@ -2248,6 +2267,7 @@ function render(){
   try{updateRestBar();}catch(_){}
   renderNav();
   v.scrollTop = state._scroll||0; state._scroll=0;
+  if(state._autoScroll&&sc==='workout'){ state._autoScroll=false; const fp=v.querySelector('[data-act="setf"][data-f="rir"]:not([data-locked])'); if(fp)fp.scrollIntoView({block:'center',behavior:'smooth'}); }
   // fade ONLY on screen changes via go() — never on same-screen re-renders (every keystroke re-renders)
   if(state._trans){ state._trans=false; v.classList.remove('fadein'); void v.offsetWidth; v.classList.add('fadein'); }
 }
@@ -2423,11 +2443,11 @@ function monthlyWrap(ym, manual){
   }catch(_){ }
 }
 // ---------- events ----------
-function setField(exi,si,f,val){ const w=db.activeWork; if(!w)return; const ex=w.exercises[exi]; const s=ex.sets[si]; if(!s)return; s[f]=val; s._pf=false;
+function setField(exi,si,f,val,skipMirror){ const w=db.activeWork; if(!w)return; const ex=w.exercises[exi]; const s=ex.sets[si]; if(!s)return; s[f]=val; s._pf=false;
   if(f==='w'){
     const writeDom=(j,v)=>{ const pe=document.querySelector('[data-act="setf"][data-exi="'+exi+'"][data-si="'+j+'"][data-f="w"]'); if(pe&&pe.value!==v)pe.value=v; };
     // uni: partner of the CURRENT pair becomes confirmed (it's the same working set, other side)
-    if(ex.unilateral){ const pj=si^1; const ps=ex.sets[pj]; if(ps&&(ps.w===''||ps.w==null||ps._pf)){ ps.w=val; ps._pf=false; writeDom(pj,val); } }
+    if(!skipMirror&&ex.unilateral){ const pj=si^1; const ps=ex.sets[pj]; if(ps&&(ps.w===''||ps.w==null||ps._pf)){ ps.w=val; ps._pf=false; writeDom(pj,val); } }
     // propagate to all LATER sets that are still prefilled/empty — they stay marked _pf (suggestion),
     // so they're cleared from the saved session unless the user edits/confirms them
     const startProp = ex.unilateral ? (Math.max(si, si^1) + 1) : (si + 1);
@@ -2443,8 +2463,9 @@ function setField(exi,si,f,val){ const w=db.activeWork; if(!w)return; const ex=w
 document.getElementById('app').addEventListener('click',e=>{
   const el=e.target.closest('[data-act]'); if(!el)return; const a=el.dataset.act;
   const exi=el.dataset.exi!=null?+el.dataset.exi:null, si=el.dataset.si!=null?+el.dataset.si:null;
+  if(a==='setf'&&el.dataset.locked){ e.preventDefault(); if(!confirm('¿Editar set completado?'))return; document.querySelectorAll('[data-act="setf"][data-exi="'+el.dataset.exi+'"][data-si="'+el.dataset.si+'"]').forEach(f=>{f.removeAttribute('data-locked');f.removeAttribute('readonly');}); el.focus&&el.focus(); return; }
   if(a==='nav'){ go(el.dataset.screen); }
-  else if(a==='start'){ db.activeWork=newWorkSession(); save(); go('workout'); }
+  else if(a==='start'){ db.activeWork=newWorkSession(); save(); state._autoScroll=true; go('workout'); }
   else if(a==='togglepreview'){ state.previewDay=!state.previewDay; render(); }
   else if(a==='loglater'){ const w=newWorkSession(); w.loggedAfter=true; w.startMs=null; const y=new Date(); y.setDate(y.getDate()-1); w.date=todayISO(y); db.activeWork=w; save(); go('workout'); }
   else if(a==='togglenoadv'){ if(db.activeWork){ db.activeWork.noAdvance=!db.activeWork.noAdvance; render(); } }
@@ -2494,7 +2515,7 @@ document.getElementById('app').addEventListener('click',e=>{
     else { if(mw)mw.style.display='block'; if(mh){ mh.value=(typeof v==='number'?v:''); mh.focus(); mh.dispatchEvent(new Event('input')); } if(ss)ss.value=''; if(ee)ee.value=''; } }
   else if(a==='delsleep'){ const d=el.dataset.d; if(confirm('¿Borrar el sueño de '+d+'?')){ if(db.sleep)delete db.sleep[d]; save(); openSleepLog(); } }
   else if(a==='logmood'){ openMoodLog(); }
-  else if(a==='editmood'){ const d=el.dataset.d; const dt=document.getElementById('mo_date'); if(dt)dt.value=d; }
+  else if(a==='editmood'){ const d=el.dataset.d; const dt=document.getElementById('mo_date'); if(dt){ dt.value=d; dt.dispatchEvent(new Event('change')); } }
   else if(a==='delmood'){ const d=el.dataset.d; if(confirm('¿Borrar el ánimo de '+d+'?')){ if(db.mood)delete db.mood[d]; save(); openMoodLog(); } }
   else if(a==='healthimport'){ openHealthImport(); }
   else if(a==='healthsync'){ healthSync(); }
@@ -2510,8 +2531,8 @@ document.getElementById('app').addEventListener('click',e=>{
   else if(a==='stacktick'){ stackToggleTick(el.dataset.id, todayISO()); }
   else if(a==='stackedit'){ openStackEdit(el.dataset.id); }
 
-  else if(a==='suppinfo'){ const it=(db.stack||[]).find(x=>x.id===el.dataset.id); const s=it&&(identifySubstance(it.name)||(it.subId?SUBSTANCE_DB.find(z=>z.id===it.subId):null)); if(s) openModal(`<h3>${escTxt(s.name)}</h3>`+suppInfoCard(s)+`<div class="sheetbtns"><button class="cancel" data-act="closemodal">cerrar</button></div>`); }
-  else if(a==='suppfill'){ const it=(db.stack||[]).find(x=>x.id===el.dataset.id); const s=it&&identifySubstance(it.name); if(s&&s.nutr&&Object.keys(s.nutr).length){ it.nutr=Object.assign({},s.nutr); it.nutrSrc='db'; it.subId=s.id; save(); render(); if(window.toast)toast(s.name+': nutrición aplicada · ajústala en el item'); } }
+  else if(a==='suppinfo'){ const it=(db.stack||[]).find(x=>x.id===el.dataset.id); const sid=el.dataset.sub; const s=it&&(sid?SUBSTANCE_DB.find(z=>z.id===sid):(identifySubstance(it.name)||(it.subId?SUBSTANCE_DB.find(z=>z.id===it.subId):null))); if(s) openModal(`<h3>${escTxt(s.name)}</h3>`+suppInfoCard(s)+`<div class="sheetbtns"><button class="cancel" data-act="closemodal">cerrar</button></div>`); }
+  else if(a==='suppfill'){ const it=(db.stack||[]).find(x=>x.id===el.dataset.id); const sid=el.dataset.sub; const s=it&&(sid?SUBSTANCE_DB.find(z=>z.id===sid):identifySubstance(it.name)); if(s&&s.nutr&&Object.keys(s.nutr).length){ it.nutr=Object.assign({},it.nutr||{},s.nutr); it.nutrSrc='db'; it.subId=s.id; save(); render(); if(window.toast)toast(s.name+': nutrición aplicada · ajústala en el item'); } }
   else if(a==='stackadd'){ openStackEdit(null, el.dataset.c||'supp'); }
   else if(a==='stackview'){ window._stackView=el.dataset.v||'today'; render(); }
   else if(a==='chartpt'){ try{ const pts=JSON.parse(el.dataset.pts||'[]'); if(pts.length){ const r=el.getBoundingClientRect(); const x=(e.clientX-r.left)/(r.width||1); let best=pts[0],bd=9; pts.forEach(p=>{ const d=Math.abs(p.f-x); if(d<bd){bd=d;best=p;} }); if(best&&best.l)toast(best.l); } }catch(_){} }
@@ -2542,7 +2563,7 @@ document.getElementById('app').addEventListener('click',e=>{
   else if(a==='ss_del'){ if(confirm('¿Borrar esta sesión?')){ db.sessions=db.sessions.filter(x=>x.id!==window._sessId); save(); closeModal(); render(); } }
   else if(a==='ss_exup'){ const s=db.sessions.find(x=>x.id===window._sessId); const i=+el.dataset.ei; if(s&&i>0){ const a=s.exercises; const t=a[i-1]; a[i-1]=a[i]; a[i]=t; save(); openSessionEdit(window._sessId); } }
   else if(a==='ss_exdn'){ const s=db.sessions.find(x=>x.id===window._sessId); const i=+el.dataset.ei; if(s&&i<s.exercises.length-1){ const a=s.exercises; const t=a[i+1]; a[i+1]=a[i]; a[i]=t; save(); openSessionEdit(window._sessId); } }
-  else if(a==='done'){ const w=db.activeWork; const ex=w.exercises[exi]; let nowDone; if(ex.unilateral){ const v=!(ex.sets[si]&&ex.sets[si].done); nowDone=v; if(ex.sets[si]){ex.sets[si].done=v;ex.sets[si]._pf=false;} if(ex.sets[si+1]){ex.sets[si+1].done=v;ex.sets[si+1]._pf=false;} } else { ex.sets[si].done=!ex.sets[si].done; ex.sets[si]._pf=false; nowDone=ex.sets[si].done; } if(nowDone&&!w.loggedAfter){ restAudioInit(); w.restEnd=Date.now()+((db.settings.restSec||90)*1000); _restFinT=0; } save(); render(); }
+  else if(a==='done'){ const w=db.activeWork; const ex=w.exercises[exi]; let nowDone; if(ex.unilateral){ const v=!(ex.sets[si]&&ex.sets[si].done); nowDone=v; if(ex.sets[si]){ex.sets[si].done=v;ex.sets[si]._pf=false;} if(ex.sets[si+1]){ex.sets[si+1].done=v;ex.sets[si+1]._pf=false;} } else { ex.sets[si].done=!ex.sets[si].done; ex.sets[si]._pf=false; nowDone=ex.sets[si].done; } if(nowDone&&!w.loggedAfter){ restAudioInit(); w.restEnd=Date.now()+((db.settings.restSec||90)*1000); _restFinT=0; } if(nowDone)state._autoScroll=true; save(); render(); }
   else if(a==='fs'){ const s=db.activeWork.exercises[exi].sets[si]; s.fsOn=!s.fsOn; save(); render(); }
   else if(a==='addset'){ const ex=db.activeWork.exercises[exi]; if(ex.unilateral){ const [s1,s2]=uniSides(ex); const lr=ex.sets[ex.sets.length-2]||null, ll=ex.sets[ex.sets.length-1]||null; ex.sets.push(emptySet(ex,s1,false,lr)); ex.sets.push(emptySet(ex,s2,false,ll)); } else { const lt=ex.sets[ex.sets.length-1]||null; ex.sets.push(emptySet(ex,null,false,lt)); } save(); state._scroll=document.getElementById('view').scrollTop; render(); }
   else if(a==='dropset'){ const ex=db.activeWork.exercises[exi]; ex.sets.push(Object.assign(emptySet(ex),{isDrop:true,fsOn:true})); save(); state._scroll=document.getElementById('view').scrollTop; render(); }
@@ -2622,7 +2643,8 @@ document.getElementById('app').addEventListener('click',e=>{
   else if(a==='restskip'){ const w=db.activeWork; if(w){ w.restEnd=null; _restFinT=0; save(); updateRestBar(); } }
   else if(a==='editrest'){ const v=prompt('segundos de descanso entre sets:',db.settings.restSec||90); if(v!=null){ const n=parseInt(v,10); if(!isNaN(n)&&n>=10&&n<=600){ db.settings.restSec=n; save(); render(); } } }
   else if(a==='togglebeep'){ db.settings.restBeep=!db.settings.restBeep; save(); render(); }
-  else if(a==='closemodal'){ closeModal(); }
+  else if(a==='undo'){ const w=db.activeWork; if(!w)return; let lExi=-1,lSi=-1; w.exercises.forEach((ex,ei)=>ex.sets.forEach((s,si)=>{ if(setComplete(s)&&!s._pf){lExi=ei;lSi=si;} })); if(lExi<0)return; const s=w.exercises[lExi].sets[lSi]; s.w='';s.r='';s.rir='';s.done=false;s._pf=false; if(w.exercises[lExi].unilateral){ const pj=lSi^1,ps=w.exercises[lExi].sets[pj]; if(ps&&setComplete(ps)){ps.w='';ps.r='';ps.rir='';ps.done=false;ps._pf=false;} } save(); state._scroll=document.getElementById('view').scrollTop; render(); }
+  else if(a==='closemodal'){ closeModal(); render(); }
 });
 // ---------- hold & drag reorder: exercises within a muscle + whole muscle blocks ----------
 // HTML5 native DnD is unreliable on iOS Safari, so this is a manual touch+mouse engine.
@@ -2684,7 +2706,7 @@ document.getElementById('app').addEventListener('change',e=>{
   setField(+el.dataset.exi,+el.dataset.si,el.dataset.f,el.value);
 });
 document.getElementById('app').addEventListener('input',e=>{
-  const sf=e.target.closest('[data-act="setf"]'); if(sf&&sf.tagName==='INPUT'){ setField(+sf.dataset.exi,+sf.dataset.si,sf.dataset.f,sf.value); return; }
+  const sf=e.target.closest('[data-act="setf"]'); if(sf&&sf.tagName==='INPUT'){ setField(+sf.dataset.exi,+sf.dataset.si,sf.dataset.f,sf.value,sf.dataset.f==='w'); return; }
   const sn=e.target.closest('[data-act="sd_name"]'); if(sn){ db.split.days[+sn.dataset.di].name=sn.value; save(); return; }
   const sp=e.target.closest('[data-act="sd_splitname"]'); if(sp){ db.split.name=sp.value; save(); return; }
   const ssf=e.target.closest('[data-act="ss_f"]'); if(ssf){ const s=db.sessions.find(x=>x.id===window._sessId); if(s){ const st=s.exercises[+ssf.dataset.ei].sets[+ssf.dataset.si]; if(st){ st[ssf.dataset.f]=ssf.value; save(); } } return; }
@@ -3114,6 +3136,7 @@ const SUBSTANCE_DB=(function(){ const L=[];
   return L;
 })();
 function identifySubstance(name){ var q=(name||'').trim(); if(!q) return null; var best=null,bs=0; for(var ii=0;ii<SUBSTANCE_DB.length;ii++){ var sc=searchScore(q,SUBSTANCE_DB[ii]); if(sc>bs){ bs=sc; best=SUBSTANCE_DB[ii]; } } return (best && bs>=500) ? best : null; }
+function identifyAllSubstances(text){ var tokens=(text||'').trim().split(/\s+/).filter(Boolean),seen={},out=[]; var add=function(q){ var s=identifySubstance(q); if(s&&!seen[s.id]){seen[s.id]=true;out.push(s);} }; for(var i=0;i<tokens.length;i++){ if(i+2<tokens.length)add(tokens.slice(i,i+3).join(' ')); if(i+1<tokens.length)add(tokens.slice(i,i+2).join(' ')); add(tokens[i]); } return out; }
 function suppInfoCard(s){ if(!s||!s.ref) return ''; var r=s.ref; var row=function(l,v){ return v?'<div style="margin:4px 0"><span style="color:var(--o50);font-size:9px;letter-spacing:.5px">'+l+'</span><br/><span style="font-size:11px">'+escTxt(v)+'</span></div>':''; };
   return '<div style="border:1px solid var(--o20);border-radius:8px;padding:10px;margin-top:6px">'
     +'<div style="font-size:11px;color:var(--o40);margin-bottom:4px">'+escTxt(s.name)+' · ficha</div>'
