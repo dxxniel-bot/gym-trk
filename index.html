@@ -2559,7 +2559,7 @@ document.getElementById('app').addEventListener('click',e=>{
   else if(a==='sd_addday'){ db.split.days.push({id:'d'+uid(),name:'new day',tag:'@ RIR · F',metric:'rir',allowFailure:true,exercises:[]}); save(); render(); }
   else if(a==='exdirectory'){ openExerciseDirectory(); }
   else if(a==='okexedit'){ saveExEdit(); }
-  else if(a==='ss_save'){ const s=db.sessions.find(x=>x.id===window._sessId); if(s){ const dt=document.getElementById('ss_date'); if(dt)s.date=dt.value; const sst=document.getElementById('ss_start'); if(sst)s.startTime=sst.value||null; const set=document.getElementById('ss_end'); if(set)s.endTime=set.value||null; save(); closeModal(); render(); } }
+  else if(a==='ss_save'){ const s=db.sessions.find(x=>x.id===window._sessId); if(s){ const dt=document.getElementById('ss_date'); if(dt)s.date=dt.value; const sst=document.getElementById('ss_start'); if(sst)s.startTime=sst.value||null; const set=document.getElementById('ss_end'); if(set)s.endTime=set.value||null; if(s.startTime&&s.endTime){let d=hm2min(s.endTime)-hm2min(s.startTime);if(d<0)d+=1440;s.durSec=d*60;} save(); closeModal(); render(); } }
   else if(a==='ss_del'){ if(confirm('¿Borrar esta sesión?')){ db.sessions=db.sessions.filter(x=>x.id!==window._sessId); save(); closeModal(); render(); } }
   else if(a==='ss_exup'){ const s=db.sessions.find(x=>x.id===window._sessId); const i=+el.dataset.ei; if(s&&i>0){ const a=s.exercises; const t=a[i-1]; a[i-1]=a[i]; a[i]=t; save(); openSessionEdit(window._sessId); } }
   else if(a==='ss_exdn'){ const s=db.sessions.find(x=>x.id===window._sessId); const i=+el.dataset.ei; if(s&&i<s.exercises.length-1){ const a=s.exercises; const t=a[i+1]; a[i+1]=a[i]; a[i]=t; save(); openSessionEdit(window._sessId); } }
