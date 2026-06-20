@@ -1099,7 +1099,7 @@ function dayLabel(iso){ const t=todayISO(); if(iso===t)return 'HOY'; if(iso===sh
 function macroTotals(){
   const today=curDate(); const items=db.meals[today]||[]; const t={kcal:0,protein:0,carbs:0,fat:0,sodium:0,potassium:0,sugar:0,fiber:0,water:0,caffeine:0,alcohol:0};
   items.forEach(m=>{ for(const k in t){ t[k]+=parseFloat(m[k])||0; } });
-  const micros={}; (db.stack||[]).forEach(x=>{ if(x.nutr&&isDueToday(x,today)&&tickDone(x.ticks&&x.ticks[today])){ for(const k in t){ t[k]+=parseFloat(x.nutr[k])||0; } MICROS.forEach(mi=>{ const v=parseFloat(x.nutr[mi.k]); if(!isNaN(v)) micros[mi.k]=(micros[mi.k]||0)+v; }); } }); return {items,t,micros};
+  const micros={}; (db.stack||[]).forEach(x=>{ const _n=(x.nutr&&Object.keys(x.nutr).length?x.nutr:null)||(identifySubstance(x.name)||{}).nutr; if(_n&&isDueToday(x,today)&&tickDone(x.ticks&&x.ticks[today])){ for(const k in t){ t[k]+=parseFloat(_n[k])||0; } MICROS.forEach(mi=>{ const v=parseFloat(_n[mi.k]); if(!isNaN(v)) micros[mi.k]=(micros[mi.k]||0)+v; }); } }); return {items,t,micros};
 }
 function bloating(t,g){
   // Subcutaneous (extracellular) water-retention tendency — acute, same-day heuristic.
