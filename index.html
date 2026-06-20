@@ -2016,7 +2016,7 @@ function renderAgenda(){
     if(ISO===todayISO()){ const nm=hm2min(nowHM()); if(isFinite(nm)) ax+=`<div class="ag-now" style="top:${top(nm)}px"></div>`; }
     if(sleep){ const e=hm2min(sleep.end); let s0,h; if(isNocturnal(sleep.start)){ s0=0; h=top(e); } else { const sM=hm2min(sleep.start); s0=isFinite(sM)?top(sM):0; h=top(e)-s0; } h=Math.max(22,h);
       ax+=`<div class="ag-blk slp" style="top:${s0}px;height:${h}px"><div class="bt">sueño</div><div class="bs">${escTxt(sleep.start||'?')}–${escTxt(sleep.end)} · ${sleepHours(sleep)}h</div></div>`; }
-    evs.filter(x=>x.kind==='sess').forEach(x=>{ const h=Math.max(36,top(x.durM)); ax+=`<div class="ag-blk gym" style="top:${top(x.mn)}px;height:${h}px"><div class="bt">${escTxt(x.s.dayName||'sesión')}</div><div class="bs">${escTxt(x.s.startTime)}–${minToHM(x.mn+x.durM)} · ${durTxt(x.durM)}</div></div>`; });
+    evs.filter(x=>x.kind==='sess').forEach(x=>{ const _eRaw=hm2min(x.s.endTime); const eM=isFinite(_eRaw)?(_eRaw<x.mn?_eRaw+1440:_eRaw):x.mn+x.durM; const dM=Math.max(20,eM-x.mn); const h=Math.max(36,top(dM)); ax+=`<div class="ag-blk gym" style="top:${top(x.mn)}px;height:${h}px"><div class="bt">${escTxt(x.s.dayName||'sesión')}</div><div class="bs">${escTxt(x.s.startTime)}–${minToHM(eM)} · ${durTxt(dM)}</div></div>`; });
     const ml=evs.filter(x=>x.kind==='meal').sort((a,b)=>a.mn-b.mn); let prev=-99;
     ml.forEach(x=>{ let t=top(x.mn); if(t-prev<40)t=prev+40; prev=t; ax+=`<div class="ag-blk meal" style="top:${t}px"><div class="bt">${escTxt(x.tag||'comida')}<span class="bk">${Math.round(x.kcal)||0}</span></div><div class="bs">${escTxt(x.time)}</div></div>`; });
     ax+=`</div>`; body+=ax; }
