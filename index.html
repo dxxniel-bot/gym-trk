@@ -2271,7 +2271,7 @@ function render(){
   // fade ONLY on screen changes via go() — never on same-screen re-renders (every keystroke re-renders)
   if(state._trans){ state._trans=false; v.classList.remove('fadein'); void v.offsetWidth; v.classList.add('fadein'); }
 }
-function go(screen){ state._trans=(state.screen!==screen); state.screen=screen; render(); }
+function go(screen){ state._trans=(state.screen!==screen); state.screen=screen; if(screen==='macros') state.macroDate=todayISO(); render(); }
 
 // ---------- rest timer (between sets) ----------
 // state lives in db.activeWork.restEnd (epoch ms) → persisted by save(), survives re-renders, reloads and iOS kills.
