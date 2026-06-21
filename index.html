@@ -299,6 +299,7 @@
   .semv{display:inline-flex;gap:1px;flex:0 0 auto;} .semv span{color:var(--o30);cursor:pointer;font-size:11px;padding:2px 4px;line-height:1;} .semv span:active{color:var(--fg);}
   .seadd{font-size:10px;color:var(--o50);cursor:pointer;padding:8px 0;}
   .srowm{display:grid;grid-template-columns:24px 56px 48px 48px;gap:6px;align-items:center;justify-content:start;margin-bottom:5px;} .srowm .sn{font-size:10px;color:var(--o50);text-align:center;} .srowm .sm{height:36px;background:transparent;border:.5px solid var(--o20);color:var(--fg);font:inherit;font-size:12px;text-align:center;width:100%;}
+  .slblk{display:flex;gap:8px;align-items:center;margin-bottom:6px;} .slblk input{height:38px;background:transparent;border:.5px solid var(--o20);color:var(--fg);font:inherit;font-size:13px;padding:0 6px;min-width:0;} .slblk input[type=time]{flex:0 0 auto;} .slblk .slsep{color:var(--o40);} .slblk .sllbl{flex:1;font-size:11px;color:var(--o50);text-align:right;white-space:nowrap;} .slblk .slx{color:var(--o40);cursor:pointer;padding:0 4px;flex:0 0 auto;}
   .sheetbtns{display:flex; gap:10px; margin-top:10px;} .sheetbtns .ok{flex:1; height:48px; background:var(--fill); color:var(--on-fill); font-weight:600; border:0; font-size:var(--t-body); cursor:pointer; border-radius:var(--r-ctl);} .sheetbtns .cancel{height:48px; padding:0 18px; border:1px solid var(--border); background:none; color:var(--o60); font-size:var(--t-sm); cursor:pointer; border-radius:var(--r-ctl);}
   .pickitem{padding:12px 6px; font-size:13px; border-bottom:1px solid var(--line); cursor:pointer;} .pickitem:hover{color:#fff;} .pickitem:active{background:var(--o10);}
 
@@ -1176,7 +1177,9 @@ function renderMacros(){
   const order=['breakfast','lunch','snack','dinner','drink']; const byTag={};
   items.forEach(m=>{(byTag[m.tag]=byTag[m.tag]||[]).push(m);});
   let log='';
-  const tags=Object.keys(byTag).sort((a,b)=>order.indexOf(a)-order.indexOf(b));
+  // orden cronológico por hora de meal (mealMeta[date][tag].time); sin hora -> al final; tiebreak = enum
+  const _tmin=tg=>{ const mm=hm2min(mealTime(curDate(),tg)); return isFinite(mm)?mm:Infinity; };
+  const tags=Object.keys(byTag).sort((a,b)=>{ const A=_tmin(a),B=_tmin(b); return A!==B ? A-B : (order.indexOf(a)-order.indexOf(b)); });
   if(!items.length){ log=`<div class="empty">sin comida registrada hoy<br/><span class="ehint">toca ＋ abajo para agregar</span></div>`; }
   tags.forEach(tag=>{ const list=byTag[tag];
     const mt={kcal:0,protein:0,carbs:0,fat:0,caffeine:0,alcohol:0}; list.forEach(m=>{mt.kcal+=+m.kcal||0;mt.protein+=+m.protein||0;mt.carbs+=+m.carbs||0;mt.fat+=+m.fat||0;mt.caffeine+=+m.caffeine||0;mt.alcohol+=+m.alcohol||0;});
@@ -1502,50 +1505,53 @@ function openMoodLog(){ const ks=Object.keys(db.mood||{}).sort();
     initFor(todayISO());
   })();
 }
-// sleep compat + clock math (lazy migration): legacy/manual entries are plain numbers; scheduled entries are
-// {start,end,date,isNocturnal,hours}. sleepHours() unifies reads so existing data never breaks.
-function sleepHours(v){ if(v==null)return 0; if(typeof v==='number')return v; const h=+v.hours; return isFinite(h)?h:0; }
+// sleep compat + clock math (lazy migration): un día = array de bloques [{start,end,type,date,hours}].
+// legacy: número (h) u objeto único {start,end,...}. sleepBlocks() normaliza a array, sleepHours() suma — reads nunca se rompen.
+function sleepBlocks(v){ if(v==null)return []; if(Array.isArray(v))return v; if(typeof v==='number')return [{hours:v}]; return [v]; }
+function sleepHours(v){ return Math.round(sleepBlocks(v).reduce((s,b)=>{ const h=+(b&&b.hours); return s+(isFinite(h)?h:0); },0)*10)/10; }
 function hm2min(s){ if(!s||typeof s!=='string'||s.indexOf(':')<0)return NaN; const a=s.split(':'); const H=+a[0],M=+a[1]; return (isFinite(H)&&isFinite(M))?H*60+M:NaN; }
 function sleepDur(start,end){ const a=hm2min(start),b=hm2min(end); if(!isFinite(a)||!isFinite(b))return 0; let diff=b-a; if(diff<0)diff+=1440; return Math.round(diff/6)/10; } // minutos→horas (0.1); cruza medianoche; iguales→0 (rechazado)
 function isNocturnal(start){ const a=hm2min(start); if(!isFinite(a))return true; return a>=1200||a<360; } // inicio ≥20:00 ó <06:00
-// sleep log — date = the morning you woke up. Hora de dormir + despertar (cruza medianoche); fallback manual de horas.
+// sleep log — date = the morning you woke up. Multi-bloque: noche + siestas; cada uno hora dormir+despertar (cruza medianoche) o horas manuales.
 function openSleepLog(){
   const ks=Object.keys(db.sleep||{}).sort();
   const recent=ks.slice(-8).reverse();
-  const rows=recent.map(d=>{ const v=db.sleep[d]; const h=sleepHours(v);
-    const rng=(v&&typeof v==='object'&&v.start&&v.end)?escTxt(v.start)+'–'+escTxt(v.end)+' · ':'';
-    return `<div class="line" style="padding:5px 0"><span class="k" data-act="editsleep" data-d="${d}" style="cursor:pointer;text-decoration:underline">${d}</span><span class="dots"></span><span class="v">${rng}${h} h <span data-act="delsleep" data-d="${d}" style="color:var(--o40);cursor:pointer;margin-left:8px">✕</span></span></div>`; }).join('');
-  const lastObj=[...ks].reverse().map(d=>db.sleep[d]).find(v=>v&&typeof v==='object'&&v.start&&v.end);
-  const dStart=lastObj?lastObj.start:'23:00', dEnd=lastObj?lastObj.end:'07:00';
+  const rows=recent.map(d=>{ const n=sleepBlocks(db.sleep[d]).length; const h=sleepHours(db.sleep[d]);
+    return `<div class="line" style="padding:5px 0"><span class="k" data-act="editsleep" data-d="${d}" style="cursor:pointer;text-decoration:underline">${d}</span><span class="dots"></span><span class="v">${h} h${n>1?' · '+n+' bloques':''} <span data-act="delsleep" data-d="${d}" style="color:var(--o40);cursor:pointer;margin-left:8px">✕</span></span></div>`; }).join('');
   openModal(`<h3>sueño</h3>
-   <div class="submeta" style="margin-bottom:8px">¿a qué hora te dormiste y despertaste?</div>
-   <div class="field row2"><div><label>SE DURMIÓ</label><input id="sl_start" type="time" value="${dStart}"/></div><div><label>DESPERTÓ</label><input id="sl_end" type="time" value="${dEnd}"/></div></div>
-   <div class="field row2"><div><label>FECHA (despertar)</label><input id="sl_date" type="date" value="${todayISO()}" max="${todayISO()}"/></div><div><label>DURACIÓN</label><div id="sl_read" style="height:44px;display:flex;align-items:center;font-size:16px;color:var(--o50)">—</div></div></div>
-   <div id="sl_manualwrap" class="field" style="display:none"><label>HORAS (sin horario)</label><input id="sl_h" type="number" inputmode="decimal" step="0.5" placeholder="ej. 7.5"/></div>
-   <a id="sl_mtog" style="display:inline-block;font-size:11px;color:var(--o50);cursor:pointer;margin:0 0 10px;text-decoration:underline">¿no sabes la hora exacta? ingresar horas →</a>
+   <div class="submeta" style="margin-bottom:8px">noche + siestas · el total del día es la suma de los bloques</div>
+   <div class="field"><label>FECHA (despertar)</label><input id="sl_date" type="date" value="${todayISO()}" max="${todayISO()}"/></div>
+   <div class="grp-label" style="margin:6px 0 4px">BLOQUES</div>
+   <div id="sl_blocks"></div>
+   <div style="display:flex;gap:12px;align-items:center;margin:8px 0 4px"><button class="b" id="sl_add" style="flex:0 0 auto">+ siesta</button><a id="sl_manual" style="font-size:11px;color:var(--o50);cursor:pointer;text-decoration:underline">¿sin hora? horas →</a><span id="sl_total" class="submeta" style="margin-left:auto">total — h</span></div>
    <div class="sheetbtns" style="margin-bottom:6px"><button class="ok" id="sl_save">guardar</button><button class="cancel" data-act="closemodal">cerrar</button></div>
    ${recent.length?`<div class="grp-label" style="margin:12px 0 4px">REGISTROS RECIENTES</div>`+rows+`<div class="submeta">toca una fecha para editarla · ✕ para borrar</div>`:''}`);
-  const manualOn=()=>{ const w=document.getElementById('sl_manualwrap'); return !!(w&&w.style.display!=='none'); };
-  const recalc=()=>{ const out=document.getElementById('sl_read'); if(!out)return;
-    if(manualOn()){ const mh=parseFloat(val('sl_h')); if(mh>0&&mh<24){ out.textContent=(Math.round(mh*10)/10)+' h · manual'; out.style.color='var(--o50)'; } else { out.textContent='—'; out.style.color=mh>=24?'var(--bad)':'var(--o50)'; } return; }
-    const s=val('sl_start'), e=val('sl_end');
-    if(!s||!e){ out.textContent='—'; out.style.color='var(--o50)'; return; }
-    const h=sleepDur(s,e);
-    if(h<=0||h>=24){ out.textContent='—'; out.style.color='var(--bad)'; return; }
-    out.textContent=h+' h · '+(isNocturnal(s)?'nocturno':'diurno'); out.style.color='var(--o50)';
+  let blocks=[];
+  const blkTimed=b=>b.start!==undefined; // manual block has no start key
+  const blkH=b=>blkTimed(b)?((b.start&&b.end)?sleepDur(b.start,b.end):0):(+b.hours>0?Math.round(+b.hours*10)/10:0);
+  const blkLabel=b=>{ const h=blkH(b); if(h<=0)return'—'; return h+'h · '+(blkTimed(b)?(isNocturnal(b.start)?'nocturno':'siesta'):'manual'); };
+  function total(){ const el=document.getElementById('sl_total'); if(el){ let t=0; blocks.forEach(b=>t+=blkH(b)); el.textContent='total '+(Math.round(t*10)/10)+' h'; } }
+  function relabel(i){ const el=document.getElementById('sllbl'+i); if(el)el.textContent=blkLabel(blocks[i]); }
+  function paint(){ const wrap=document.getElementById('sl_blocks'); if(!wrap)return;
+    wrap.innerHTML=blocks.map((b,i)=> blkTimed(b)
+      ? `<div class="slblk"><input type="time" data-i="${i}" data-f="start" value="${escTxt(b.start||'')}"/><span class="slsep">–</span><input type="time" data-i="${i}" data-f="end" value="${escTxt(b.end||'')}"/><span class="sllbl" id="sllbl${i}">${blkLabel(b)}</span><a class="slx" data-i="${i}">✕</a></div>`
+      : `<div class="slblk"><input type="number" inputmode="decimal" step="0.5" placeholder="horas" data-i="${i}" data-f="hours" value="${escTxt(b.hours!=null?b.hours:'')}" style="flex:1"/><span class="sllbl" id="sllbl${i}">${blkLabel(b)}</span><a class="slx" data-i="${i}">✕</a></div>`
+    ).join('');
+    wrap.querySelectorAll('input').forEach(inp=>{ inp.oninput=()=>{ const i=+inp.dataset.i; blocks[i][inp.dataset.f]=inp.value; relabel(i); total(); }; });
+    wrap.querySelectorAll('.slx').forEach(x=>{ x.onclick=()=>{ blocks.splice(+x.dataset.i,1); paint(); }; });
+    total();
+  }
+  function load(d){ blocks=sleepBlocks(db.sleep&&db.sleep[d]).map(b=>(b&&typeof b==='object')?Object.assign({},b):{hours:b}); if(!blocks.length)blocks=[{start:'23:00',end:'07:00'}]; paint(); }
+  document.getElementById('sl_add').onclick=()=>{ blocks.push({start:'',end:''}); paint(); };
+  document.getElementById('sl_manual').onclick=()=>{ blocks.push({hours:''}); paint(); };
+  document.getElementById('sl_date').onchange=function(){ load(this.value); };
+  document.getElementById('sl_save').onclick=()=>{ const d=val('sl_date')||todayISO(); const out=[];
+    blocks.forEach(b=>{ if(blkTimed(b)){ if(b.start&&b.end){ const h=sleepDur(b.start,b.end); if(h>0&&h<24)out.push({start:b.start,end:b.end,date:d,type:isNocturnal(b.start)?'nocturno':'siesta',hours:h}); } }
+      else { const mh=Math.round((+b.hours)*10)/10; if(mh>0&&mh<24)out.push({date:d,type:'nocturno',hours:mh}); } });
+    if(!out.length){ alert('Agrega al menos un bloque válido: hora de dormir + despertar, o usa "horas".'); return; }
+    db.sleep=db.sleep||{}; db.sleep[d]=out; save(); closeModal(); render();
   };
-  ['sl_start','sl_end','sl_h'].forEach(id=>{ const el=document.getElementById(id); if(el)el.oninput=recalc; });
-  const tog=document.getElementById('sl_mtog'); if(tog)tog.onclick=()=>{ const w=document.getElementById('sl_manualwrap'); if(w)w.style.display=w.style.display==='none'?'block':'none'; recalc(); };
-  document.getElementById('sl_save').onclick=()=>{ const d=val('sl_date')||todayISO(); db.sleep=db.sleep||{};
-    if(manualOn()){ const mh=parseFloat(val('sl_h')); if(!mh||mh<=0||mh>=24){ alert('Pon horas válidas (0–24).'); return; } db.sleep[d]=Math.round(mh*10)/10; save(); closeModal(); render(); return; }
-    const s=val('sl_start'), e=val('sl_end');
-    if(!s||!e){ alert('Pon hora de dormir y de despertar (o usa "ingresar horas").'); return; }
-    const h=sleepDur(s,e);
-    if(h<=0){ alert('La hora de despertar debe ser distinta a la de dormir.'); return; }
-    if(h>=24){ alert('Duración inválida (debe ser menor a 24 h).'); return; }
-    db.sleep[d]={ start:s, end:e, date:d, isNocturnal:isNocturnal(s), hours:h };
-    save(); closeModal(); render();
-  };
+  load(todayISO());
 }
 // habit series helpers (last-N days, daily water summed from meals, avg of logged days)
 function lastDays(n){ const now=new Date(); const out=[]; for(let i=n-1;i>=0;i--){ const d=new Date(now); d.setDate(now.getDate()-i); out.push(todayISO(d)); } return out; }
@@ -1918,7 +1924,7 @@ function renderProgress(){
     if(_slLog.length){ const _g=db.settings.goals.sleep||0, _a=Math.round(avgPos(_slArr)*10)/10, _ln=sleepHours(db.sleep&&db.sleep[todayISO()]);
       const cls=_g&&_a>=_g?'good':'flat';
       tiles.push(`<div class="ptile tap" data-act="metricdetail" data-m="sleep"><div class="ptlh"><div class="plbl">sueño</div><span class="ptchev">›</span></div>`
-        +`<div class="pval">${_ln||'—'}<span>h anoche</span></div>`
+        +`<div class="pval">${_ln||'—'}<span>h dormidas</span></div>`
         +`<div class="pst ${cls}">${_g?(_a>=_g?'▲ prom '+_a+'h en meta · 14d':'prom '+_a+'h · meta '+_g+'h'):'prom '+_a+'h · 14d'}</div>${lineChart(_slArr,{h:32,zero:true})}</div>`);
     }
   }
@@ -2006,16 +2012,16 @@ function renderAgenda(){
   const evs=[]; let chips='';
   if(f.meals){ const _byT={}; ((db.meals&&db.meals[ISO])||[]).forEach(m=>{ const tg=m.tag||'comida'; (_byT[tg]=_byT[tg]||{tag:tg,kcal:0}).kcal+=+m.kcal||0; }); Object.keys(_byT).forEach(tg=>{ const hm=mealTime(ISO,tg); const mn=hm2min(hm); if(isFinite(mn)) evs.push({mn,kind:'meal',tag:tg,kcal:_byT[tg].kcal,time:hm}); else chips+=`<span class="ag-chip">${escTxt(tg)} · ${Math.round(_byT[tg].kcal)||0}</span>`; }); }
   if(f.train)(db.sessions||[]).filter(s=>s.date===ISO&&s.type!=='rest').forEach(s=>{ const mn=hm2min(s.startTime); if(isFinite(mn)) evs.push({mn,kind:'sess',s,durM:Math.max(20,Math.round((s.durSec||0)/60))}); else chips+=`<span class="ag-chip">${escTxt(s.dayName||'sesión')}${s.durSec?' · '+Math.round(s.durSec/60)+'m':''}</span>`; });
-  let sleep=null; const sv=db.sleep&&db.sleep[ISO];
-  if(f.sleep&&sv&&typeof sv==='object'&&sv.end&&isFinite(hm2min(sv.end))) sleep=sv; else if(f.sleep&&sv) chips+=`<span class="ag-chip">sueño · ${sleepHours(sv)}h</span>`;
+  const sleepEvs=[]; const sv=db.sleep&&db.sleep[ISO];
+  if(f.sleep&&sv) sleepBlocks(sv).forEach(b=>{ if(b&&b.start&&b.end&&isFinite(hm2min(b.end))) sleepEvs.push(b); else if(b){ const hh=Math.round((+(b&&b.hours)||0)*10)/10; chips+=`<span class="ag-chip">${(b&&b.start&&!isNocturnal(b.start))?'siesta':'sueño'} · ${hh}h</span>`; } });
   if(f.supps)(db.stack||[]).filter(x=>isDueToday(x,ISO)&&!x.archived).forEach(x=>{ const s=tickState(x.ticks&&x.ticks[ISO]); const mk=s==='taken'?' <b class="agm g">✓</b>':s==='late'?' <b class="agm w">tarde</b>':s==='skipped'?' <b class="agm b">✕</b>':''; chips+=`<span class="ag-chip supp" data-act="agsupptick" data-id="${escTxt(x.id||'')}">${escTxt(x.name||'supp')}${mk}</span>`; });
   if(chips) body+=`<div class="ag-nohr"><div class="gl">SIN HORA</div><div class="ag-chips">${chips}</div></div>`;
-  const hasAxis=evs.length||sleep;
+  const hasAxis=evs.length||sleepEvs.length;
   if(hasAxis){ let ax=`<div class="ag-axis" style="height:${CANVAS}px">`;
     for(let H=0;H<24;H++) ax+=`<div class="ag-hr" style="top:${top(H*60)}px"><span class="ag-hl">${pad(H)}</span><i></i></div>`;
     if(ISO===todayISO()){ const nm=hm2min(nowHM()); if(isFinite(nm)) ax+=`<div class="ag-now" style="top:${top(nm)}px"></div>`; }
-    if(sleep){ const e=hm2min(sleep.end); let s0,h; if(isNocturnal(sleep.start)){ s0=0; h=top(e); } else { const sM=hm2min(sleep.start); s0=isFinite(sM)?top(sM):0; h=top(e)-s0; } h=Math.max(22,h);
-      ax+=`<div class="ag-blk slp" style="top:${s0}px;height:${h}px"><div class="bt">sueño</div><div class="bs">${escTxt(sleep.start||'?')}–${escTxt(sleep.end)} · ${sleepHours(sleep)}h</div></div>`; }
+    sleepEvs.forEach(sleep=>{ const e=hm2min(sleep.end); let s0,h; if(isNocturnal(sleep.start)){ s0=0; h=top(e); } else { const sM=hm2min(sleep.start); s0=isFinite(sM)?top(sM):0; h=top(e)-s0; } h=Math.max(22,h); const nap=!isNocturnal(sleep.start); const bh=Math.round((+sleep.hours||sleepDur(sleep.start,sleep.end))*10)/10;
+      ax+=`<div class="ag-blk slp" style="top:${s0}px;height:${h}px"><div class="bt">${nap?'siesta':'sueño'}</div><div class="bs">${escTxt(sleep.start||'?')}–${escTxt(sleep.end)} · ${bh}h</div></div>`; });
     evs.filter(x=>x.kind==='sess').forEach(x=>{ const _eRaw=hm2min(x.s.endTime); const eM=isFinite(_eRaw)?(_eRaw<x.mn?_eRaw+1440:_eRaw):x.mn+x.durM; const dM=Math.max(20,eM-x.mn); const h=Math.max(36,top(dM)); ax+=`<div class="ag-blk gym" style="top:${top(x.mn)}px;height:${h}px"><div class="bt">${escTxt(x.s.dayName||'sesión')}</div><div class="bs">${escTxt(x.s.startTime)}–${minToHM(eM)} · ${durTxt(dM)}</div></div>`; });
     const ml=evs.filter(x=>x.kind==='meal').sort((a,b)=>a.mn-b.mn); let prev=-99;
     ml.forEach(x=>{ let t=top(x.mn); if(t-prev<40)t=prev+40; prev=t; ax+=`<div class="ag-blk meal" style="top:${t}px"><div class="bt">${escTxt(x.tag||'comida')}<span class="bk">${Math.round(x.kcal)||0}</span></div><div class="bs">${escTxt(x.time)}</div></div>`; });
@@ -2508,11 +2514,7 @@ document.getElementById('app').addEventListener('click',e=>{
   else if(a==='usetpl'){ const t=(window._tpls||[])[+el.dataset.i]; if(t){ db.split=t.build(); db.rotIdx=0; state.selDay=null; save(); closeModal(); go('splitedit'); } }
   else if(a==='logweight'){ openWeightLog(); }
   else if(a==='logsleep'){ openSleepLog(); }
-  else if(a==='editsleep'){ const d=el.dataset.d; const v=db.sleep&&db.sleep[d];
-    const dt=document.getElementById('sl_date'); if(dt)dt.value=d;
-    const ss=document.getElementById('sl_start'), ee=document.getElementById('sl_end'), mw=document.getElementById('sl_manualwrap'), mh=document.getElementById('sl_h');
-    if(v&&typeof v==='object'){ if(ss)ss.value=v.start||''; if(ee)ee.value=v.end||''; if(mw)mw.style.display='none'; if(ss){ ss.focus(); ss.dispatchEvent(new Event('input')); } }
-    else { if(mw)mw.style.display='block'; if(mh){ mh.value=(typeof v==='number'?v:''); mh.focus(); mh.dispatchEvent(new Event('input')); } if(ss)ss.value=''; if(ee)ee.value=''; } }
+  else if(a==='editsleep'){ const d=el.dataset.d; const dt=document.getElementById('sl_date'); if(dt){ dt.value=d; dt.dispatchEvent(new Event('change')); } }
   else if(a==='delsleep'){ const d=el.dataset.d; if(confirm('¿Borrar el sueño de '+d+'?')){ if(db.sleep)delete db.sleep[d]; save(); openSleepLog(); } }
   else if(a==='logmood'){ openMoodLog(); }
   else if(a==='editmood'){ const d=el.dataset.d; const dt=document.getElementById('mo_date'); if(dt){ dt.value=d; dt.dispatchEvent(new Event('change')); } }
