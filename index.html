@@ -1185,7 +1185,7 @@ function renderMacros(){
       ? `<span style="display:inline-flex;align-items:center"><span class="hash">#</span><input id="mealrnm" value="${escTxt(tag)}" onclick="event.stopPropagation()" autocomplete="off" autocapitalize="none" style="font:inherit;color:var(--fg);background:transparent;border:none;border-bottom:1px solid var(--o40);padding:0 0 1px;width:${Math.max(4,(tag||'').length+1)}ch;max-width:160px;outline:none"/></span>`
       : `<span data-act="mealrename" data-tag="${escTxt(tag)}" style="cursor:text" title="renombrar"><span class="hash">#</span>${escTxt(tag)}</span>`;
     log+=`<div class="grp"><div class="ghead" data-act="mealsummary" data-tag="${escTxt(tag)}" style="cursor:pointer">${_nameCell}<span class="gmac">${Math.round(mt.protein)}P ${Math.round(mt.carbs)}C ${Math.round(mt.fat)}F</span><span class="gkc">${Math.round(mt.kcal)}</span></div>`;
-    list.forEach(m=>{ const nm=(m.name||'').replace(/ ×[\d.]+$/,''); const br=(m._food&&m._food.brand)||''; const exp=state.expandedMeal===m.id; const mp=Math.round(m.protein)||0,mc=Math.round(m.carbs)||0,mf=Math.round(m.fat)||0; const _dom=(mp+mc+mf)>0?((mp>=mc&&mp>=mf)?'p':(mc>=mf?'c':'f')):'';  // dominante por GRAMOS; empate P>C>F const _bq=(v,l,k)=>_dom===k?`<b style="color:var(--fg)">${v}${l}</b>`:`${v}${l}`; const mq=(mp+mc+mf)>0?`${_bq(mp,'P','p')} ${_bq(mc,'C','c')} ${_bq(mf,'F','f')}`:'';
+    list.forEach(m=>{ const nm=(m.name||'').replace(/ ×[\d.]+$/,''); const br=(m._food&&m._food.brand)||''; const exp=state.expandedMeal===m.id; const mp=Math.round(m.protein)||0,mc=Math.round(m.carbs)||0,mf=Math.round(m.fat)||0; const _dom=(mp+mc+mf)>0?((mp>=mc&&mp>=mf)?'p':(mc>=mf?'c':'f')):''; const _bq=(v,l,k)=>_dom===k?`<b style="color:var(--fg)">${v}${l}</b>`:`${v}${l}`; const mq=(mp+mc+mf)>0?`${_bq(mp,'P','p')} ${_bq(mc,'C','c')} ${_bq(mf,'F','f')}`:'';
       log+=`<div class="item${exp?' exp':''}" data-act="viewmeal" data-id="${m.id}"><span class="nm"><b class="q">${itemQtyLabel(m)}</b>${escTxt(nm)}${br?' <span class="br">'+escTxt(br)+'</span>':''}</span><span class="macq">${mq}</span><span class="kc">${Math.round(m.kcal)||0}</span></div>`;
       if(exp) log+=mealDetailInline(m);
     });
@@ -2273,7 +2273,7 @@ function renderSettings(){
     +`<div class="line" data-act="editrest" style="cursor:pointer"><span class="k">descanso entre sets</span><span class="dots"></span><span class="v">${db.settings.restSec||90}s ›</span></div>`
     +`<div class="line" data-act="togglebeep" style="cursor:pointer"><span class="k">beep fin de descanso</span><span class="dots"></span><span class="v">${db.settings.restBeep?'on':'off'} ›</span></div>`
     +`<div class="cta"><button class="start" data-act="sync">sync data (copy / paste)</button>`
-    +`<div class="secondary"><button class="b" data-act="export">export file</button><button class="b" data-act="import">import file</button></div>`
+    +`<div class="secondary"><button class="b" data-act="export">export file</button><button class="b" data-act="exportmd">export .md</button><button class="b" data-act="import">import file</button></div>`
     +`<div class="secondary" style="margin-top:10px"><button class="b" data-act="reset">reset data</button></div></div>`
     +`<div class="submeta" style="margin-top:14px">tus datos se guardan solos en este dispositivo (con respaldo automático). para no perderlos: <b style="color:var(--o60)">agrega la app a inicio</b> y ábrela seguido. si vas a cambiar de teléfono, usa export.</div>`;
 }
@@ -2668,6 +2668,7 @@ document.getElementById('app').addEventListener('click',e=>{
   else if(a==='goalsechtog'){ const k=el.dataset.sec; db.settings=db.settings||{}; const arr=db.settings.hiddenGoalSections=db.settings.hiddenGoalSections||[]; const i=arr.indexOf(k); if(i>=0)arr.splice(i,1); else arr.push(k); save(); openGoals(); }
   else if(a==='editsteps'){ const cur=(db.steps&&db.steps[todayISO()])||''; const v=prompt('pasos de hoy (de Apple Health):',cur); if(v!=null){ const n=parseInt(String(v).replace(/[^0-9]/g,''),10); if(!isNaN(n)){ db.steps=db.steps||{}; db.steps[todayISO()]=n; save(); render(); } } }
   else if(a==='export'){ doExport(); }
+  else if(a==='exportmd'){ exportMarkdown(db); }
   else if(a==='import'){ doImport(); }
   else if(a==='sync'){ openSync(); }
   else if(a==='reset'){ if(confirm('¿Borrar TODOS los datos? (exporta primero)')){ localStorage.removeItem(LS_KEY); try{localStorage.removeItem(LS_BACKUP);}catch(_){} _saveBakT=0; db=seed(); save(); go('home'); } }
@@ -4349,6 +4350,69 @@ function openSync(){
 function doExport(){
   const blob=new Blob([JSON.stringify(db,null,2)],{type:'application/json'});
   const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='gymtrk-backup-'+todayISO()+'.json'; a.click(); URL.revokeObjectURL(url);
+}
+// Markdown journal export (legible, para Obsidian/archivo). El JSON sigue siendo el backup máquina; esto es su contraparte humana.
+// ponytail: etiquetas del usuario van CRUDAS (sin escTxt) — regla dura "nunca renombrar" + Markdown es texto plano; la única tabla es numérica (//HÁBITOS) → cero riesgo de `|` en texto de usuario.
+function buildExportMd(db){
+  const L=[]; const P=db.profile||{}; const G=(db.settings&&db.settings.goals)||{};
+  const n=v=>{ v=Math.round((+v||0)*10)/10; return (v%1===0)?String(v):v.toFixed(1); }; // ponytail: 1 decimal sin lib
+  const fd=d=>d?fmtDate(d):'sin fecha';
+  const bw=db.bodyweight||{}; const bwk=Object.keys(bw).sort();
+  L.push('# gym//TRK · export · '+fd(todayISO()),'');
+  L.push('## //PERFIL');
+  if(P.username)L.push('- usuario: '+P.username);
+  if(P.since)L.push('- desde: '+P.since);
+  if(P.goal)L.push('- objetivo: '+P.goal);
+  if(bwk.length)L.push('- peso actual: '+n(bw[bwk[bwk.length-1]])+' kg');
+  if(P.age)L.push('- edad: '+P.age);
+  if(P.heightCm)L.push('- altura: '+P.heightCm+' cm');
+  L.push('');
+  const sess=(db.sessions||[]).slice().sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+  L.push('## //GYM ('+sess.length+' sesiones)','');
+  sess.forEach(s=>{
+    L.push('### '+fd(s.date)+' · '+(s.dayName||'sesión')+(s.gym?' · '+s.gym:''));
+    let vol=0;
+    (s.exercises||[]).forEach(e=>{
+      const sets=(e.sets||[]).filter(x=>(x.w||x.r)&&!x._pf); // mismo filtro real que saveSession
+      if(!sets.length)return;
+      const parts=sets.map(x=>{ const w=+x.w||0,r=+x.r||0; if(w&&r)vol+=w*r; return n(w)+(x.unit||'')+'×'+(r||0)+(x.side?' '+x.side:'')+(x.isDrop?' ↓':'')+((x.rir!=null&&x.rir!=='')?' · RIR'+x.rir:''); });
+      L.push('- '+e.name+(e.muscle?' ('+e.muscle+')':'')+' — '+parts.join(' · '));
+    });
+    if(vol>0)L.push('  · volumen: '+n(vol)+' (Σ peso×reps)');
+    L.push('');
+  });
+  const meals=db.meals||{}; const mdates=Object.keys(meals).filter(d=>(meals[d]||[]).length).sort().reverse();
+  L.push('## //NUTRICIÓN ('+mdates.length+' días)','');
+  mdates.forEach(d=>{
+    L.push('### '+fd(d));
+    const t={kcal:0,protein:0,carbs:0,fat:0};
+    (meals[d]||[]).forEach(m=>{
+      t.kcal+=+m.kcal||0; t.protein+=+m.protein||0; t.carbs+=+m.carbs||0; t.fat+=+m.fat||0;
+      L.push('- '+(m.time?m.time+' · ':'')+(m.tag?m.tag+' · ':'')+m.name+(m.qty?' '+m.qty:'')+' — '+Math.round(+m.kcal||0)+'kcal P'+n(m.protein)+' C'+n(m.carbs)+' F'+n(m.fat));
+    });
+    L.push('**día: '+Math.round(t.kcal)+' kcal · P'+n(t.protein)+' C'+n(t.carbs)+' F'+n(t.fat)+(G.kcal?' · meta '+G.kcal:'')+'**','');
+  });
+  const sleep=db.sleep||{}, steps=db.steps||{};
+  const waterFor=d=>(meals[d]||[]).reduce((a,m)=>a+(+m.water||0),0);
+  const hdates=Array.from(new Set([].concat(Object.keys(sleep),Object.keys(bw),Object.keys(steps),Object.keys(meals)))).filter(Boolean).sort().reverse();
+  const hrows=hdates.map(d=>{ const w=waterFor(d); return {d,sl:sleep[d]!=null?n(sleepHours(sleep[d]))+'h':'—',pe:bw[d]!=null?n(bw[d])+'kg':'—',pa:steps[d]!=null?Math.round(steps[d]):'—',ag:w>0?n(w)+'L':'—',any:(sleep[d]!=null||bw[d]!=null||steps[d]!=null||w>0)}; }).filter(r=>r.any);
+  L.push('## //HÁBITOS','');
+  if(hrows.length){ L.push('| fecha | sueño | peso | pasos | agua |','| --- | --- | --- | --- | --- |'); hrows.forEach(r=>L.push('| '+fd(r.d)+' | '+r.sl+' | '+r.pe+' | '+r.pa+' | '+r.ag+' |')); L.push(''); }
+  else { L.push('// sin datos',''); }
+  const stack=(db.stack||[]).filter(x=>!x.archived);
+  if(stack.length){
+    L.push('## //REGÍMENES ('+stack.length+')','');
+    stack.forEach(it=>L.push('- '+it.name+(it.dose?' · '+it.dose+(it.unit?' '+it.unit:''):'')+(it.when&&it.when.length?' · '+it.when.join('/'):'')+(it.category?' ['+it.category+']':'')));
+    L.push('');
+  }
+  return L.join('\n');
+}
+function exportMarkdown(db){
+  const blob=new Blob([buildExportMd(db)],{type:'text/markdown;charset=utf-8'});
+  const url=URL.createObjectURL(blob); const a=document.createElement('a');
+  a.href=url; a.download='gymtrk-export-'+todayISO()+'.md';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
 }
 function doImport(){
   const inp=document.createElement('input'); inp.type='file'; inp.accept='.json,application/json';
