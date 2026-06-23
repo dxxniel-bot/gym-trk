@@ -534,6 +534,7 @@
   .ag-blk .bt .bk{float:right; color:var(--o40); font-weight:400; margin-left:8px;}
   .ag-blk .bs{font-size:var(--t-caption); color:var(--o50); line-height:1.3;}
   .ag-blk.gym{border-left:2px solid var(--o50);}
+  .ag-blk.supp{border-left:2px solid var(--o40); cursor:pointer;}
   .ag-blk.slp{background:rgba(243,243,244,.035); border-color:var(--o12); z-index:1;}
 </style>
 </head>
@@ -1856,13 +1857,14 @@ function throwbackBlock(){
   }catch(_){ return ''; }
 }
 function renderProgress(){
+  const cfg=progMetrics();
   const totalSessions=(db.sessions||[]).filter(s=>s.type!=='rest').length;
   const bwKeys=Object.keys(db.bodyweight||{}).sort(); const bwVals=bwKeys.map(k=>db.bodyweight[k]);
   const curBw=bwVals.length?bwVals[bwVals.length-1]:(db.profile.weightKg||0);
   const _hd=lastDays(14); const _waterArr=_hd.map(d=>Math.round(dayWater(d)*10)/10); const _waterLog=_waterArr.filter(x=>x>0);
   const _sr=window._stepRange||14; const _shd=lastDays(_sr); const _stepsArr=_shd.map(d=>(db.steps&&db.steps[d])||0); const _stepsLog=_stepsArr.filter(x=>x>0);
   const _br=window._bwRange||14; const _bcut=lastDays(_br)[0]; const _bk=bwKeys.filter(k=>k>=_bcut); const _bv=_bk.map(k=>db.bodyweight[k]);
-  let out=statusBar(false)+`<hr class="rule"/><div class="section"><div class="h"><span class="s">//</span>PROGRESS</div><div class="meta">${totalSessions} sesiones</div></div>`;
+  let out=statusBar(false)+`<hr class="rule"/><div class="section"><div class="h"><span class="s">//</span>PROGRESS</div><div class="meta">${totalSessions} sesiones <span data-act="progconfig" style="cursor:pointer;color:var(--o40);margin-left:6px">[config]</span></div></div>`;
   if(!totalSessions && !bwVals.length && !_stepsLog.length && !_waterLog.length && !Object.keys(db.sleep||{}).length){
     return out+`<div class="empty">aún no hay datos<br/><span class="ehint">marca tu primer set o registra tu peso para ver progreso</span></div>`
       +`<button class="start" data-act="logweight" style="margin-top:14px">+ registrar peso corporal</button>`;
@@ -1871,7 +1873,7 @@ function renderProgress(){
   const kFmt=n=>n>=10000?(n/1000).toFixed(1)+'k':Math.round(n).toLocaleString();
   const goal=(db.profile&&db.profile.goal)||'maintain';
   // featured: esta semana (consistencia)
-  if(totalSessions){
+  if(totalSessions && cfg.consistency){
     const last7=lastDays(7), sessSet=new Set((db.sessions||[]).filter(s=>s.type!=='rest').map(s=>s.date));
     const dots=last7.map(d=>`<i class="pwd${sessSet.has(d)?' on':''}"></i>`).join('');
     out+=`<div class="pfeat"><div class="pfl">esta semana</div>`
@@ -1881,7 +1883,7 @@ function renderProgress(){
   out+=throwbackBlock();
   const tiles=[];
   // peso
-  if(bwVals.length){ let st=''; let chartHtml='';
+  if(bwVals.length && cfg.weight){ let st=''; let chartHtml='';
     if(_bv.length>=2){ const _ch=Math.round((_bv[_bv.length-1]-_bv[0])*10)/10;
       let cls='flat'; if(_ch<0)cls=goal==='cut'?'good':goal==='bulk'?'bad':'flat'; else if(_ch>0)cls=goal==='bulk'?'good':goal==='cut'?'bad':'flat';
       st=`<div class="pst ${cls}">${_ch>0?'↑':_ch<0?'↓':'='} ${Math.abs(_ch)} kg · 14d</div>`;
@@ -1893,34 +1895,34 @@ function renderProgress(){
       +`<div class="pval">${curBw||'—'}<span>kg</span></div>${st}${chartHtml}</div>`);
   }
   // volumen
-  if(totalSessions){ const cur=w.vols[w.vols.length-1]||0, prev=w.vols[w.vols.length-2]||0; const pct=prev>0?Math.round((cur-prev)/prev*100):null;
+  if(totalSessions && cfg.volume){ const cur=w.vols[w.vols.length-1]||0, prev=w.vols[w.vols.length-2]||0; const pct=prev>0?Math.round((cur-prev)/prev*100):null;
     const cls=pct==null?'flat':pct>0?'good':pct<0?'bad':'flat'; const arr=pct==null?'·':pct>0?'▲':pct<0?'▼':'=';
     tiles.push(`<div class="ptile tap" data-act="volumedetail"><div class="ptlh"><div class="plbl">volumen · sem</div><span class="ptchev">›</span></div>`
       +`<div class="pval">${kFmt(cur)}<span>vol</span></div>`
       +`<div class="pst ${cls}">${arr}${pct!=null?' '+(pct>0?'+':'')+pct+'%':' —'}</div>${lineChart(w.vols,{h:32,zero:true})}</div>`);
   }
   // fuerza (top lift)
-  if(e1.length){ const t=e1[0]; const d=t.prev!=null?t.cur-t.prev:null; const pct=t.prev>0?Math.round((t.cur-t.prev)/t.prev*100):null;
+  if(e1.length && cfg.e1rm){ const t=e1[0]; const d=t.prev!=null?t.cur-t.prev:null; const pct=t.prev>0?Math.round((t.cur-t.prev)/t.prev*100):null;
     const cls=d==null?'flat':d>0?'good':d<0?'bad':'flat'; const arr=d==null?'·':d>0?'▲':d<0?'▼':'=';
     tiles.push(`<div class="ptile tap" data-act="liftdetail" data-ex="${escTxt(t.name)}"><div class="ptlh"><div class="plbl">e1rm · ${escTxt(t.name)}</div><span class="ptchev">›</span></div>`
       +`<div class="pval">${Math.round(t.cur)}<span>kg</span></div>`
       +`<div class="pst ${cls}">${arr}${pct!=null?' '+(pct>0?'+':'')+pct+'%':''}</div>${lineChart(t.prev!=null?[t.prev,t.cur]:[t.cur],{h:32})}</div>`);
   }
   // pasos
-  if(_stepsLog.length){ const _t=_stepsArr[_stepsArr.length-1], _a=Math.round(avgPos(_stepsArr));
+  if(_stepsLog.length && cfg.steps){ const _t=_stepsArr[_stepsArr.length-1], _a=Math.round(avgPos(_stepsArr));
     tiles.push(`<div class="ptile tap" data-act="metricdetail" data-m="steps"><div class="ptlh"><div class="plbl">pasos</div><span class="ptchev">›</span></div>`
       +`<div class="pval">${_t?_t.toLocaleString():'—'}<span>hoy</span></div>`
       +`<div class="pst flat">prom ${kFmt(_a)}/d · 14d</div>${lineChart(_stepsArr,{h:40,zero:true,dates:_shd})}</div>`);
   }
   // agua
-  if(_waterLog.length){ const _g=db.settings.goals.water||0, _a=Math.round(avgPos(_waterArr)*10)/10;
+  if(_waterLog.length && cfg.water){ const _g=db.settings.goals.water||0, _a=Math.round(avgPos(_waterArr)*10)/10;
     const cls=_g&&_a>=_g?'good':'flat';
     tiles.push(`<div class="ptile tap" data-act="metricdetail" data-m="water"><div class="ptlh"><div class="plbl">agua</div><span class="ptchev">›</span></div>`
       +`<div class="pval">${_a}<span>L prom</span></div>`
       +`<div class="pst ${cls}">${_g?(_a>=_g?'▲ en meta · 14d':'meta '+_g+'L · 14d'):'14d'}</div>${lineChart(_waterArr,{h:32,zero:true})}</div>`);
   }
   // sueño
-  { const _slArr=_hd.map(d=>sleepHours(db.sleep&&db.sleep[d])); const _slLog=_slArr.filter(x=>x>0);
+  if(cfg.sleep){ const _slArr=_hd.map(d=>sleepHours(db.sleep&&db.sleep[d])); const _slLog=_slArr.filter(x=>x>0);
     if(_slLog.length){ const _g=db.settings.goals.sleep||0, _a=Math.round(avgPos(_slArr)*10)/10, _ln=sleepHours(db.sleep&&db.sleep[todayISO()]);
       const cls=_g&&_a>=_g?'good':'flat';
       tiles.push(`<div class="ptile tap" data-act="metricdetail" data-m="sleep"><div class="ptlh"><div class="plbl">sueño</div><span class="ptchev">›</span></div>`
@@ -1929,7 +1931,7 @@ function renderProgress(){
     }
   }
   // kcal
-  { const ak=avgKcal7(), gk=db.settings.goals.kcal||0; const kcalArr=lastDays(7).map(d=>Math.round((db.meals[d]||[]).reduce((a,m)=>a+(+m.kcal||0),0)));
+  if(cfg.kcal){ const ak=avgKcal7(), gk=db.settings.goals.kcal||0; const kcalArr=lastDays(7).map(d=>Math.round((db.meals[d]||[]).reduce((a,m)=>a+(+m.kcal||0),0)));
     let cls='flat', txt='—';
     if(ak&&gk){ const diff=ak-gk; if(Math.abs(diff)<=gk*0.1){txt='= en meta';} else if(diff>0){txt='↑ +'+diff+' / meta';cls='bad';} else {txt='↓ '+Math.abs(diff)+' / meta';} }
     else if(ak){ txt=''; }
@@ -1938,7 +1940,7 @@ function renderProgress(){
       +`<div class="pst ${cls}">${txt}</div>${kcalArr.some(x=>x>0)?lineChart(kcalArr,{h:32,zero:true}):''}</div>`);
   }
   // ánimo (mood)
-  { const _moArr=_hd.map(d=>{const o=moodVal(db.mood&&db.mood[d]);return o?o.y:0;}); const _moLog=_moArr.filter(x=>x>0);
+  if(cfg.mood){ const _moArr=_hd.map(d=>{const o=moodVal(db.mood&&db.mood[d]);return o?o.y:0;}); const _moLog=_moArr.filter(x=>x>0);
     if(_moLog.length){ const _a=Math.round(avgPos(_moArr)*10)/10, _to=moodVal(db.mood&&db.mood[todayISO()]); const _lbl=_to?(_to.label||(_to.y+'/10')):'—';
       tiles.push(`<div class="ptile tap" data-act="metricdetail" data-m="mood"><div class="ptlh"><div class="plbl">ánimo</div><span class="ptchev">›</span></div>`
         +`<div class="pval" style="font-size:18px">${escTxt(_lbl)}<span> hoy</span></div>`
@@ -1947,12 +1949,16 @@ function renderProgress(){
   }
   out+=`<div class="pgrid">${tiles.join('')}</div>`;
   // fuerza detalle (lista completa) — preserva el detalle del fork de Progreso/Gym
-  if(e1.length>1){ out+=`<hr class="rule"/><div class="grp-label">FUERZA · e1RM Epley (vs semana previa)</div>`;
+  if(e1.length>1 && cfg.e1rm){ out+=`<hr class="rule"/><div class="grp-label">FUERZA · e1RM Epley (vs semana previa)</div>`;
     e1.forEach(x=>{ const d=x.prev!=null?Math.round(x.cur-x.prev):null; const arr=d==null?'·':(d>0?'▲':d<0?'▼':'='); const col=d>0?'var(--good)':d<0?'var(--bad)':'var(--o40)';
       out+=`<div class="line" data-act="liftdetail" data-ex="${escTxt(x.name)}" style="cursor:pointer"><span class="k">${escTxt(x.name)}</span><span class="dots"></span><span class="v">${Math.round(x.cur)} <span style="color:${col};font-size:10px">${arr}${d?Math.abs(d):''}</span> <span class="ptchev" style="font-size:12px">›</span></span></div>`; }); }
   try{ const _wp=prevMonthYm().split('-'); if(wrapMonthData(+_wp[0],+_wp[1]-1).hasData) out+='<div style="text-align:center;margin:18px 0 2px"><a data-act="wrapview" style="font-size:11px;color:var(--o60);cursor:pointer">▸ ver tu wrap · '+escTxt(MONFULL[+_wp[1]-1])+'</a></div>'; }catch(_){}
   out+='<div style="text-align:center;margin:16px 0 2px"><a data-act="healthsync" style="font-size:11px;color:var(--o60);cursor:pointer">↻ sync de Salud (pasos/peso)</a></div>';
   return out;
+}
+function openProgConfig(){ const c=progMetrics(); const M=[['weight','peso'],['volume','volumen'],['e1rm','fuerza · e1rm'],['steps','pasos'],['water','agua'],['sleep','sueño'],['kcal','kcal'],['mood','ánimo'],['consistency','consistencia']];
+  const rows=M.map(([k,l])=>`<div class="line" data-act="progmtog" data-m="${k}" style="cursor:pointer"><span class="k">${l}</span><span class="dots"></span><span class="v" style="color:${c[k]?'var(--good)':'var(--o40)'}">${c[k]?'on':'off'}</span></div>`).join('');
+  openModal(`<h3>métricas visibles</h3><div class="submeta" style="margin-bottom:8px">elige qué tiles ves en progreso</div>${rows}<div class="sheetbtns" style="margin-top:12px"><button class="cancel" data-act="closemodal">listo</button></div>`);
 }
 // ---------- stack: supplements / skincare / meds ----------
 // item shape: { id, name, category:'supp'|'skin'|'meds', dose, unit?, when:[], periodization:{type,value}, notes,
@@ -1994,11 +2000,14 @@ function stackToggleTick(id, iso){
   it.ticks=it.ticks||{};
   const order=[null,'taken','late','skipped']; const next=order[(order.indexOf(tickState(it.ticks[iso]))+1)%order.length];
   if(next) it.ticks[iso]=next; else delete it.ticks[iso];
+  it.tickTimes=it.tickTimes||{}; if(next==='taken'||next==='late') it.tickTimes[iso]=nowHM(); else delete it.tickTimes[iso]; // hora del check para posicionar en la agenda
   save(); render();
 }
 // ---------- render: agenda (día 24h) ----------
 function curAgendaDate(){ return state.agendaDate||todayISO(); }
 function agendaFilters(){ try{ const v=JSON.parse(localStorage.getItem('gymtrk_agenda_filters')); if(v&&typeof v==='object') return Object.assign({meals:true,train:true,supps:true,sleep:true},v); }catch(_){} return {meals:true,train:true,supps:true,sleep:true}; }
+// selector de métricas visibles en Progress (espejo de agendaFilters)
+function progMetrics(){ const D={weight:true,volume:true,e1rm:true,steps:true,water:true,sleep:true,kcal:true,mood:true,consistency:true}; try{ const v=JSON.parse(localStorage.getItem('gymtrk_progress_metrics_config')); if(v&&typeof v==='object') return Object.assign(D,v); }catch(_){} return D; }
 function minToHM(min){ min=((Math.round(min)%1440)+1440)%1440; return pad(Math.floor(min/60))+':'+pad(min%60); }
 function renderAgenda(){
   const ISO=curAgendaDate(), f=agendaFilters(), PXMIN=1.2, top=m=>Math.round(m*PXMIN), CANVAS=top(1440);
@@ -2014,17 +2023,25 @@ function renderAgenda(){
   if(f.train)(db.sessions||[]).filter(s=>s.date===ISO&&s.type!=='rest').forEach(s=>{ const mn=hm2min(s.startTime); if(isFinite(mn)) evs.push({mn,kind:'sess',s,durM:Math.max(20,Math.round((s.durSec||0)/60))}); else chips+=`<span class="ag-chip">${escTxt(s.dayName||'sesión')}${s.durSec?' · '+Math.round(s.durSec/60)+'m':''}</span>`; });
   const sleepEvs=[]; const sv=db.sleep&&db.sleep[ISO];
   if(f.sleep&&sv) sleepBlocks(sv).forEach(b=>{ if(b&&b.start&&b.end&&isFinite(hm2min(b.end))) sleepEvs.push(b); else if(b){ const hh=Math.round((+(b&&b.hours)||0)*10)/10; chips+=`<span class="ag-chip">${(b&&b.start&&!isNocturnal(b.start))?'siesta':'sueño'} · ${hh}h</span>`; } });
-  if(f.supps)(db.stack||[]).filter(x=>isDueToday(x,ISO)&&!x.archived).forEach(x=>{ const s=tickState(x.ticks&&x.ticks[ISO]); const mk=s==='taken'?' <b class="agm g">✓</b>':s==='late'?' <b class="agm w">tarde</b>':s==='skipped'?' <b class="agm b">✕</b>':''; chips+=`<span class="ag-chip supp" data-act="agsupptick" data-id="${escTxt(x.id||'')}">${escTxt(x.name||'supp')}${mk}</span>`; });
+  if(f.supps)(db.stack||[]).filter(x=>isDueToday(x,ISO)&&!x.archived).forEach(x=>{ const s=tickState(x.ticks&&x.ticks[ISO]); const mk=s==='taken'?' <b class="agm g">✓</b>':s==='late'?' <b class="agm w">tarde</b>':s==='skipped'?' <b class="agm b">✕</b>':''; const tt=x.tickTimes&&x.tickTimes[ISO]; const mn=hm2min(tt);
+    if((s==='taken'||s==='late')&&isFinite(mn)) evs.push({mn,kind:'supp',id:x.id,name:x.name||'supp',mk,time:tt}); // checado con hora → bloque en timeline
+    else chips+=`<span class="ag-chip supp" data-act="agsupptick" data-id="${escTxt(x.id||'')}">${escTxt(x.name||'supp')}${mk}</span>`; });
   if(chips) body+=`<div class="ag-nohr"><div class="gl">SIN HORA</div><div class="ag-chips">${chips}</div></div>`;
   const hasAxis=evs.length||sleepEvs.length;
   if(hasAxis){ let ax=`<div class="ag-axis" style="height:${CANVAS}px">`;
     for(let H=0;H<24;H++) ax+=`<div class="ag-hr" style="top:${top(H*60)}px"><span class="ag-hl">${pad(H)}</span><i></i></div>`;
     if(ISO===todayISO()){ const nm=hm2min(nowHM()); if(isFinite(nm)) ax+=`<div class="ag-now" style="top:${top(nm)}px"></div>`; }
-    sleepEvs.forEach(sleep=>{ const e=hm2min(sleep.end); let s0,h; if(isNocturnal(sleep.start)){ s0=0; h=top(e); } else { const sM=hm2min(sleep.start); s0=isFinite(sM)?top(sM):0; h=top(e)-s0; } h=Math.max(22,h); const nap=!isNocturnal(sleep.start); const bh=Math.round((+sleep.hours||sleepDur(sleep.start,sleep.end))*10)/10;
-      ax+=`<div class="ag-blk slp" style="top:${s0}px;height:${h}px"><div class="bt">${nap?'siesta':'sueño'}</div><div class="bs">${escTxt(sleep.start||'?')}–${escTxt(sleep.end)} · ${bh}h</div></div>`; });
+    sleepEvs.forEach(sleep=>{ const sM=hm2min(sleep.start), eM=hm2min(sleep.end); const nap=!isNocturnal(sleep.start); const bh=Math.round((+sleep.hours||sleepDur(sleep.start,sleep.end))*10)/10;
+      const lbl=`<div class="bt">${nap?'siesta':'sueño'}</div><div class="bs">${escTxt(sleep.start||'?')}–${escTxt(sleep.end)} · ${bh}h</div>`;
+      if(isFinite(sM)&&isFinite(eM)&&eM<=sM){ // cruza medianoche → bloque partido: noche-tarde abajo + mañana arriba
+        ax+=`<div class="ag-blk slp" style="top:${top(sM)}px;height:${Math.max(16,CANVAS-top(sM))}px">${lbl}</div>`;
+        ax+=`<div class="ag-blk slp" style="top:0px;height:${Math.max(16,top(eM))}px">${lbl}</div>`;
+      } else { const s0=isFinite(sM)?top(sM):0; const h=Math.max(22,(isFinite(eM)?top(eM):0)-s0); ax+=`<div class="ag-blk slp" style="top:${s0}px;height:${h}px">${lbl}</div>`; } });
     evs.filter(x=>x.kind==='sess').forEach(x=>{ const _eRaw=hm2min(x.s.endTime); const eM=isFinite(_eRaw)?(_eRaw<x.mn?_eRaw+1440:_eRaw):x.mn+x.durM; const dM=Math.max(20,eM-x.mn); const h=Math.max(36,top(dM)); ax+=`<div class="ag-blk gym" style="top:${top(x.mn)}px;height:${h}px"><div class="bt">${escTxt(x.s.dayName||'sesión')}</div><div class="bs">${escTxt(x.s.startTime)}–${minToHM(eM)} · ${durTxt(dM)}</div></div>`; });
     const ml=evs.filter(x=>x.kind==='meal').sort((a,b)=>a.mn-b.mn); let prev=-99;
     ml.forEach(x=>{ let t=top(x.mn); if(t-prev<40)t=prev+40; prev=t; ax+=`<div class="ag-blk meal" style="top:${t}px"><div class="bt">${escTxt(x.tag||'comida')}<span class="bk">${Math.round(x.kcal)||0}</span></div><div class="bs">${escTxt(x.time)}</div></div>`; });
+    const sp=evs.filter(x=>x.kind==='supp').sort((a,b)=>a.mn-b.mn); let sprev=-99;
+    sp.forEach(x=>{ let t=top(x.mn); if(t-sprev<40)t=sprev+40; sprev=t; ax+=`<div class="ag-blk supp" style="top:${t}px" data-act="agsupptick" data-id="${escTxt(x.id||'')}"><div class="bt">${escTxt(x.name)}${x.mk}</div><div class="bs">${escTxt(x.time)}</div></div>`; });
     ax+=`</div>`; body+=ax; }
   if(!hasAxis && !chips) body+=`<div class="empty">sin registros este día<br/><span class="ehint">tus comidas, entrenos y sueño con hora aparecen en el calendario</span></div>`;
   return body;
@@ -2618,6 +2635,8 @@ document.getElementById('app').addEventListener('click',e=>{
   else if(a==='agnext'){ state.agendaDate=shiftDate(curAgendaDate(),1); render(); }
   else if(a==='agenfilter'){ const k=el.dataset.f; if(k){ const fl=agendaFilters(); fl[k]=!fl[k]; try{localStorage.setItem('gymtrk_agenda_filters',JSON.stringify(fl));}catch(_){} render(); } }
   else if(a==='agsupptick'){ if(el.dataset.id) stackToggleTick(el.dataset.id, curAgendaDate()); }
+  else if(a==='progconfig'){ openProgConfig(); }
+  else if(a==='progmtog'){ const k=el.dataset.m; if(k){ const c=progMetrics(); c[k]=!c[k]; try{localStorage.setItem('gymtrk_progress_metrics_config',JSON.stringify(c));}catch(_){} render(); openProgConfig(); } }
   else if(a==='addfood'||a==='addnext'||a==='addmeal'){ closeAddPop(); openFoodAdd(nextMealTag()); }
   else if(a==='addapprox'){ closeAddPop(); openApproxMeal(); }
   else if(a==='addmealnext'){ openFoodAdd(nextAfterCurrent()); }
