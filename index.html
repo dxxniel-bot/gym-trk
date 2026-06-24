@@ -85,6 +85,7 @@
   .section{display:flex; align-items:baseline; justify-content:space-between; margin-bottom:var(--sp-section);}
   .section .h{font-size:var(--t-section); font-weight:800;} .section .h .s{color:var(--o50);}
   .section .meta{font-size:11px; color:var(--o50); cursor:pointer; padding:6px 4px;}
+  .section .meta[data-act]{border:1px solid var(--o15); border-radius:var(--r-ctl); padding:2px 8px;}
 
   /* CTA buttons */
   .cta{margin-top:18px;}
@@ -877,7 +878,7 @@ function renderHome(){
   if(isCurrent){
     cta = `<div class="cta"><button class="start" data-act="${inprog?'resume':'start'}">▶ ${inprog?'resume workout':'start workout'}</button>`
       +`<div class="secondary"><button class="b" data-act="rest">rest day</button><button class="b" data-act="skip">skip day</button></div>`
-      +`<div style="text-align:center;margin-top:12px"><a data-act="loglater" style="font-size:10px;color:var(--o50);cursor:pointer">[+ log past session]</a></div></div>`;
+      +`<div style="text-align:center;margin-top:12px"><a data-act="loglater" style="font-size:10px;color:var(--o50);cursor:pointer;border:1px solid var(--o20);border-radius:4px;padding:2px 6px;">[+ log past session]</a></div></div>`;
   } else if(isPast){
     cta = dayPast
       ? `<div class="cta"><button class="start" data-act="vieweditsession" data-id="${dayPast.id}">ver sesión pasada · ${fmtShort(dayPast.date)}</button></div>`
@@ -893,11 +894,11 @@ function renderHome(){
     +`<div class="ctrls"><a data-act="changesplit">[change split]</a><a data-act="changegym">[change gym]</a><a data-act="history">[history]</a></div>`
     +`<div class="whdr"><div class="l1"><span class="s">//</span>${l1}</div><div class="wname">${escTxt(day.name)}</div><div class="l2">WORKOUT</div><div class="wmeta">${escTxt(db.split.name)} · ${escTxt(day.tag)}</div></div>`
     +`<div class="wgym">${db.activeGym} · ${day.exercises.length} exercises</div>`
-    +`<div style="text-align:center;margin:9px 0 2px"><a data-act="togglepreview" style="font-size:10px;color:var(--o50);cursor:pointer;letter-spacing:.04em">${state.previewDay?'[ ocultar rutina ▴ ]':'[ ver rutina ▾ ]'}</a></div>`
+    +`<div style="text-align:center;margin:9px 0 2px"><a data-act="togglepreview" style="font-size:10px;color:var(--o50);cursor:pointer;letter-spacing:.04em;border:1px solid var(--o20);border-radius:4px;padding:2px 6px;">${state.previewDay?'[ ocultar rutina ▴ ]':'[ ver rutina ▾ ]'}</a></div>`
     +(state.previewDay?dayPreviewHTML(day):'')
     +cta
     +volumeSection()
-    +`<hr class="rule"/><div class="section" style="margin-bottom:10px"><div class="h"><span class="s">//</span>STATS</div><div class="meta" data-act="settings">[settings]</div></div>`
+    +`<hr class="rule"/><div class="section" style="margin-bottom:10px"><div class="h"><span class="s">//</span>STATS</div><div class="meta" data-act="settings">[settings]</div></div><div style="font-size:10px;color:var(--o40);margin:-4px 0 6px">mi día · hoy</div>`
     +`<div class="line stat"><span class="k">sessions · 7d</span><span class="dots"></span><span class="v">${s7.count}</span></div>`
     +`<div class="line stat"><span class="k">uptime</span><span class="dots"></span><span class="v">${uptimeDays()}d</span></div>`
     +`<div class="line stat"><span class="k">steps · today</span><span class="dots"></span><span class="v" data-act="editsteps" style="cursor:pointer">${(db.steps&&db.steps[todayISO()])?db.steps[todayISO()].toLocaleString():'— tap'}</span></div>`
@@ -1413,12 +1414,13 @@ function renderOnboard(){
     <div class="field"><label>SEXO</label><div class="toggles" id="ob_sex"><button class="t on" data-act="optpick" data-v="M">hombre</button><button class="t" data-act="optpick" data-v="F">mujer</button></div></div>
     <div class="field row2"><div><label>EDAD</label><input id="ob_age" type="number" inputmode="numeric" placeholder="24"/></div><div><label>PESO (kg)</label><input id="ob_w" type="number" inputmode="decimal" placeholder="70"/></div></div>
     <div class="field"><label>ESTATURA (cm)</label><input id="ob_h" type="number" inputmode="numeric" placeholder="175"/></div>
-    <div class="field"><label>ACTIVIDAD <span style="color:var(--o30);font-weight:400">· qué tanto te mueves al día</span></label><div class="toggles wrap" id="ob_act"><button class="t" data-act="optpick" data-v="1.2">sedentario</button><button class="t on" data-act="optpick" data-v="1.375">ligero</button><button class="t" data-act="optpick" data-v="1.55">moderado</button><button class="t" data-act="optpick" data-v="1.725">alto</button></div></div>
+    <div class="field"><label>ACTIVIDAD <span style="color:var(--o30);font-weight:400">· qué tanto te mueves al día</span></label><div class="toggles wrap" id="ob_act"><button class="t" data-act="optpick" data-v="1.2">sedentario<span style="font-size:9px;display:block;opacity:.5">oficina/carro</span></button><button class="t on" data-act="optpick" data-v="1.375">ligero</button><button class="t" data-act="optpick" data-v="1.55">moderado<span style="font-size:9px;display:block;opacity:.5">gym 4-5×/sem</span></button><button class="t" data-act="optpick" data-v="1.725">alto</button></div></div>
     <div class="field"><label>OBJETIVO</label><div class="toggles" id="ob_goal"><button class="t" data-act="optpick" data-v="cut">déficit</button><button class="t on" data-act="optpick" data-v="maintain">mantener</button><button class="t" data-act="optpick" data-v="bulk">volumen</button></div></div>
+    <div class="submeta" style="margin-top:-8px;margin-bottom:8px;font-size:10px">déficit = perder grasa · mantener = composición · volumen = masa + grasa</div>
     <div class="field"><label>GIMNASIO</label><input id="ob_gym" placeholder="mi gym" autocomplete="off"/></div>
     <div class="field"><label>UNIDADES (pesas)</label><div class="toggles" id="ob_unit"><button class="t on" data-act="optpick" data-v="lbs">lbs</button><button class="t" data-act="optpick" data-v="kg">kg</button></div></div>
     <button class="start" data-act="onboardgo" style="margin-top:14px">▶ crear cuenta</button>
-    <div class="submeta" style="margin:14px 0 10px">con esto calculamos tus metas de kcal y macros; las puedes ajustar cuando quieras.</div>
+    <div class="submeta" style="margin:14px 0 10px">con esto calculamos tus metas de kcal y macros; las puedes ajustar cuando quieras. proteína ≈ tu peso en kg × 2g · carbos y grasas llenan el resto.</div>
   </div>`;
 }
 
@@ -2054,7 +2056,7 @@ function renderProgress(){
     e1.forEach(x=>{ const d=x.prev!=null?Math.round(x.cur-x.prev):null; const arr=d==null?'·':(d>0?'▲':d<0?'▼':'='); const col=d>0?'var(--good)':d<0?'var(--bad)':'var(--o40)';
       out+=`<div class="line" data-act="liftdetail" data-ex="${escTxt(x.name)}" style="cursor:pointer"><span class="k">${escTxt(x.name)}</span><span class="dots"></span><span class="v">${Math.round(x.cur)} <span style="color:${col};font-size:10px">${arr}${d?Math.abs(d):''}</span> <span class="ptchev" style="font-size:12px">›</span></span></div>`; }); }
   if(cfg.e1rm){ const _pr=prRecords(); if(_pr.length){
-    out+=`<hr class="rule"/><div class="grp-label">//RECORDS · mejor e1RM histórico</div>`;
+    out+=`<hr class="rule"/><div class="grp-label">//RECORDS · mejor e1RM histórico</div><div style="font-size:10px;color:var(--o40);margin:-4px 0 6px">tu mejor levantada histórica por ejercicio</div>`;
     _pr.slice(0,10).forEach(x=>{ const _tw=Math.round(x.tw*10)/10;
       out+=`<div class="line"><span class="k">${escTxt(x.name)}</span><span class="dots"></span><span class="v">${Math.round(x.e1)}${escTxt(x.eu||'')} <span style="color:var(--o40);font-size:10px">· top ${_tw}${escTxt(x.twu||'')}×${x.twr||0}</span></span></div>`; });
   } }
