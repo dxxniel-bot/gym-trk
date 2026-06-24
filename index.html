@@ -2261,7 +2261,7 @@ function openSessionEdit(id){
    <div style="display:flex;gap:8px"><div class="field" style="flex:1"><label>INICIO</label><input id="ss_start" type="time" value="${s.startTime||''}"/></div><div class="field" style="flex:1"><label>FIN</label><input id="ss_end" type="time" value="${s.endTime||''}"/></div></div>
    <div class="submeta gap">${nEx} ejercicios · ▲▼ reordena · edita sets directo</div>
    ${exHtml||'<div class="submeta">sin ejercicios</div>'}
-   <div class="sheetbtns"><button class="ok" data-act="ss_save">guardar</button><button class="cancel" data-act="sharesession" data-id="${s.id}">compartir</button><button class="cancel danger" data-act="ss_del">borrar</button><button class="cancel" data-act="closemodal">close</button></div>`);
+   <div class="sheetbtns">${(s.savedMs && Date.now()-s.savedMs<=1800000)?`<button class="ok" data-act="resumesession">▶ continuar</button>`:''}<button class="ok" data-act="ss_save">guardar</button><button class="cancel" data-act="sharesession" data-id="${s.id}">compartir</button><button class="cancel danger" data-act="ss_del">borrar</button><button class="cancel" data-act="closemodal">close</button></div>`);
 }
 
 // ---------- render: settings ----------
@@ -2580,6 +2580,20 @@ document.getElementById('app').addEventListener('click',e=>{
   else if(a==='okexedit'){ saveExEdit(); }
   else if(a==='ss_save'){ const s=db.sessions.find(x=>x.id===window._sessId); if(s){ const dt=document.getElementById('ss_date'); if(dt)s.date=dt.value; const sst=document.getElementById('ss_start'); if(sst)s.startTime=sst.value||null; const set=document.getElementById('ss_end'); if(set)s.endTime=set.value||null; if(s.startTime&&s.endTime){let d=hm2min(s.endTime)-hm2min(s.startTime);if(d<0)d+=1440;s.durSec=d*60;} save(); closeModal(); render(); } }
   else if(a==='ss_del'){ if(confirm('¿Borrar esta sesión?')){ db.sessions=db.sessions.filter(x=>x.id!==window._sessId); save(); closeModal(); render(); } }
+  else if(a==='resumesession'){
+    if(db.activeWork){ alert('Ya tienes una sesión activa. Finalízala o descártala primero.'); return; }
+    const s=db.sessions.find(x=>x.id===window._sessId); if(!s)return;
+    if(!s.savedMs || Date.now()-s.savedMs>1800000){ alert('Pasaron más de 30 min — ya no se puede continuar.'); return; }
+    db.sessions=db.sessions.filter(x=>x.id!==s.id);
+    const idx=db.split.days.findIndex(d=>d.id===s.dayId); if(idx>=0) db.rotIdx=idx;
+    const w={ id:s.id, date:s.date, dayId:s.dayId, dayName:s.dayName, gym:s.gym,
+      startTs:s.startTime||nowHM(),
+      startMs:s.loggedAfter?null:(s.savedMs-(s.durSec||0)*1000),
+      loggedAfter:!!s.loggedAfter,
+      exercises:s.exercises.map(e=>({name:e.name,muscle:e.muscle,muscles:Array.isArray(e.muscles)?e.muscles.slice():undefined,type:e.type,machine:e.machine,unilateral:e.unilateral,note:e.note||'',sets:(e.sets||[]).map(st=>Object.assign({},st))})) };
+    if(s.loggedAfter){ w.manualDur=Math.round((s.durSec||0)/60); w.startTime=s.startTime||null; w.endTime=s.endTime||null; }
+    db.activeWork=w; closeModal(); save(); go('workout');
+  }
   else if(a==='ss_exup'){ const s=db.sessions.find(x=>x.id===window._sessId); const i=+el.dataset.ei; if(s&&i>0){ const a=s.exercises; const t=a[i-1]; a[i-1]=a[i]; a[i]=t; save(); openSessionEdit(window._sessId); } }
   else if(a==='ss_exdn'){ const s=db.sessions.find(x=>x.id===window._sessId); const i=+el.dataset.ei; if(s&&i<s.exercises.length-1){ const a=s.exercises; const t=a[i+1]; a[i+1]=a[i]; a[i]=t; save(); openSessionEdit(window._sessId); } }
   else if(a==='done'){ const w=db.activeWork; const ex=w.exercises[exi]; let nowDone; if(ex.unilateral){ const v=!(ex.sets[si]&&ex.sets[si].done); nowDone=v; if(ex.sets[si]){ex.sets[si].done=v;ex.sets[si]._pf=false;} if(ex.sets[si+1]){ex.sets[si+1].done=v;ex.sets[si+1]._pf=false;} } else { ex.sets[si].done=!ex.sets[si].done; ex.sets[si]._pf=false; nowDone=ex.sets[si].done; } if(nowDone&&!w.loggedAfter){ restAudioInit(); w.restEnd=Date.now()+((db.settings.restSec||90)*1000); _restFinT=0; } if(nowDone)state._autoScroll=true; save(); render(); }
@@ -2914,9 +2928,12 @@ function openExName(exi){ const w=db.activeWork; if(!w)return; const ex=w.exerci
 }
 function saveSession(){
   const w=db.activeWork; if(!w){go('home');return;}
-  const has=w.exercises.some(e=>e.sets.some(s=>(s.w||s.r)&&!s._pf));
-  if(!has && !confirm('No registraste sets. ¿Guardar de todos modos?')){return;}
-  const sess={id:w.id,date:w.date,dayId:w.dayId,dayName:w.dayName,gym:w.gym,type:'training',loggedAfter:!!w.loggedAfter,durSec:w.loggedAfter?((parseInt(w.manualDur,10)||0)*60):(w.startMs?Math.round((Date.now()-w.startMs)/1000):0),startTime:w.loggedAfter?(w.startTime||null):(w.startTs||null),endTime:w.loggedAfter?(w.endTime||null):nowHM(),
+  const savable=s=>(s.w||s.r)&&!s._pf;
+  const has=w.exercises.some(e=>e.sets.some(savable));
+  if(!has){ if(!confirm('No registraste sets. ¿Guardar de todos modos?'))return; }
+  else { const n=w.exercises.reduce((a,e)=>a+e.sets.filter(s=>savable(s)&&(s.rir===''||s.rir==null)).length,0);
+         if(!confirm(n>0?`Tienes ${n} set${n>1?'s':''} sin RIR. ¿Finalizar de todos modos?`:'¿Finalizar sesión?'))return; }
+  const sess={id:w.id,date:w.date,dayId:w.dayId,dayName:w.dayName,gym:w.gym,type:'training',savedMs:Date.now(),loggedAfter:!!w.loggedAfter,durSec:w.loggedAfter?((parseInt(w.manualDur,10)||0)*60):(w.startMs?Math.round((Date.now()-w.startMs)/1000):0),startTime:w.loggedAfter?(w.startTime||null):(w.startTs||null),endTime:w.loggedAfter?(w.endTime||null):nowHM(),
     exercises:w.exercises.map(e=>{const r=machineRec(w.gym,e); return {name:e.name,muscle:e.muscle,muscles:Array.isArray(e.muscles)?e.muscles.slice():undefined,machine:r.na?'':r.brand,setup:r.na?'':r.setup,sets:e.sets.filter(s=>(s.w||s.r)&&!s._pf)};})};
   if(!(w.loggedAfter&&w.noAdvance)){ const idx=db.split.days.findIndex(d=>d.id===w.dayId); db.rotIdx=(idx>=0?idx:db.rotIdx)+1; } db.activeWork=null; state.selDay=null; db.sessions.push(sess); save(); go('home');
 }
