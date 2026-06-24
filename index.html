@@ -790,9 +790,13 @@ function exMuscles(e){
 }
 function fmtMuscles(e){ const m=exMuscles(e); if(!m.length)return ''; return m.map((x,i)=> i===0?x.name : x.name+' ('+x.weight+')').join(' · '); }
 function weeklySets(days){ days=days||7; const now=new Date(); const cut=new Date(now); cut.setDate(now.getDate()-days); const c=todayISO(cut);
-  const byM={}; const freq={}; const effM={};
+  const byM={}; const freq={}; const effM={}; const directM={}, indirectM={};
+  // current split = source of truth for muscle→weight mapping (so split edits reflect retroactively);
+  // session snapshot = source of truth for performance. Build the name→muscles lookup once.
+  const curMap={};
+  (db.split.days||[]).forEach(d=>(d.exercises||[]).forEach(ex=>{ if(Array.isArray(ex.muscles)&&ex.muscles.length){ const k=String(ex.name||'').toLowerCase().trim(); if(k&&!curMap[k])curMap[k]=exMuscles(ex); } }));
   db.sessions.forEach(s=>{ if(s.type==='rest'||s.date<=c)return; const seen={};
-    (s.exercises||[]).forEach(e=>{ const muscles=exMuscles(e); if(!muscles.length)return;
+    (s.exercises||[]).forEach(e=>{ const muscles=(Array.isArray(e.muscles)&&e.muscles.length)?exMuscles(e):(curMap[String(e.name||'').toLowerCase().trim()]||exMuscles(e)); if(!muscles.length)return;
       // hard sets (RIR<=4): uni R+L pair = 1 (max across sides), drop = 0.5
       // EFFECTIVE sets = hard AND en zona de tensión real (productive/heavy, no 'light'/junk)
       let plain=0, effPlain=0; const bySide={}, effBySide={};
@@ -801,10 +805,10 @@ function weeklySets(days){ days=days||7; const now=new Date(); const cut=new Dat
         const z=setZone(st); if(z==='productive'||z==='heavy'){ if(st.side)effBySide[st.side]=(effBySide[st.side]||0)+v; else effPlain+=v; } });
       const sides=Object.keys(bySide); const hard=plain+(sides.length?Math.max.apply(null,sides.map(k=>bySide[k])):0);
       const es=Object.keys(effBySide); const eff=effPlain+(es.length?Math.max.apply(null,es.map(k=>effBySide[k])):0);
-      if(hard>0){ muscles.forEach(m=>{ byM[m.name]=(byM[m.name]||0)+hard*m.weight; if(eff>0)effM[m.name]=(effM[m.name]||0)+eff*m.weight; seen[m.name]=1; }); } });
+      if(hard>0){ muscles.forEach(m=>{ byM[m.name]=(byM[m.name]||0)+hard*m.weight; if(eff>0){ effM[m.name]=(effM[m.name]||0)+eff*m.weight; if(m.weight>=1) directM[m.name]=(directM[m.name]||0)+eff*m.weight; else indirectM[m.name]=(indirectM[m.name]||0)+eff*m.weight; } seen[m.name]=1; }); } });
     Object.keys(seen).forEach(m=>{ freq[m]=(freq[m]||0)+1; });
   });
-  return {byM,freq,effM};
+  return {byM,freq,effM,directM,indirectM};
 }
 function volStatus(m,sets){ const L=VOL_LANDMARKS[canonM(m)]; if(!L)return ''; if(sets<L[0])return 'under'; if(sets<=L[1])return 'optimal'; if(sets<=L[2])return 'high'; return 'over'; }
 function e1rmTrend(){ // best Epley e1RM per exercise, this week vs prior week
@@ -932,7 +936,7 @@ function plannedVolumeSection(){
 }
 function volumeSection(){
   // EFFECTIVE VOLUME (volumen efectivo, no crudo): serie EFECTIVA = dura (RIR≤4) en zona productiva. Progreso = tensión (Σ e1RM × factor de zona).
-  const {byM,freq,effM}=weeklySets(7);
+  const {byM,freq,effM,directM,indirectM}=weeklySets(7);
   const muscles=Object.keys(byM).sort((a,b)=>(effM[b]||0)-(effM[a]||0));
   let rows='';
   if(!muscles.length){ rows=`<div class="submeta" style="padding:6px 0">aún sin series duras esta semana</div>`; }
@@ -941,8 +945,9 @@ function volumeSection(){
     const mp=muscleProgress(m); const mpBadge=mp?progBadgeFromProg(mp,'progreso de tensión del músculo · 7d vs 7d previos (Σ e1RM × factor de zona productiva)'):'';
     const pct=Math.min(100,Math.round(eff/CEIL*100));
     const junk=r1(hard-eff); const jn=junk>0?` <span style="color:var(--o30)" title="series duras pero de baja tensión (zona ligera) — sube carga / acércate al fallo">+${junk} lig.</span>`:'';
+    const ind=r1(indirectM[m]||0), dir=r1(directM[m]||0); const brk=ind>0?`<div class="submeta" style="font-size:11px;opacity:.5;margin-top:2px" title="directas = músculo primario (1×) · indirectas = secundario (peso parcial)">↳ ${dir} directas · ${ind} indirectas</div>`:'';
     rows+=`<div class="vrow"><div class="vtop"><span class="vm">${escTxt(m)}${mpBadge}</span><span class="vn">${eff} ef.${jn} · ${freq[m]||0}×/wk</span></div>`
-      +`<div class="vbar"><i style="width:${pct}%"></i><span class="mev" style="left:${drPct}%"></span></div></div>`;
+      +`<div class="vbar"><i style="width:${pct}%"></i><span class="mev" style="left:${drPct}%"></span></div>${brk}</div>`;
   });
   return `<hr class="rule"/><div class="section" style="margin-bottom:12px"><div class="h"><span class="s">//</span>EFFECTIVE VOLUME</div><div class="meta">series efectivas/músculo · 7d</div></div>`+rows
     +`<div class="submeta" style="margin-top:8px">ef. = series duras (RIR≤4) en zona productiva (tensión real) · marca ~10 = rendimientos decrecientes · ▲▼ = progreso de tensión (e1RM)</div>`;
@@ -1923,6 +1928,29 @@ function throwbackBlock(){
     return `<div class="pthrow"><div class="pthl">tu yo de hace 3 meses <span>· ${fmtShort(tgtISO)}</span></div>${rows}</div>`;
   }catch(_){ return ''; }
 }
+// PR records: mejor e1RM Epley + mejor peso por ejercicio (nombre EXACTO, nunca renombrar).
+// ponytail: e1RM en la unidad logueada (sin normalizar a kg) para coincidir con e1rmOf/e1rmTrend; un lift logueado en kg Y lbs no se normaliza — upgrade: normalizar si pasa.
+function prRecords(){ const best={};
+  (db.sessions||[]).forEach(s=>{ if(s.type==='rest')return; (s.exercises||[]).forEach(e=>{ const nm=e.name; if(!nm)return;
+    (e.sets||[]).forEach(st=>{ if(!((st.w||st.r)&&!st._pf))return; const e1=e1rmOf(st); const w=parseFloat(st.w)||0, r=parseFloat(st.r)||0;
+      const b=best[nm]||(best[nm]={e1:0,edate:'',eu:'',tw:0,twr:0,twu:''});
+      if(e1>b.e1){ b.e1=e1; b.edate=s.date; b.eu=st.unit||''; }
+      if(w>b.tw){ b.tw=w; b.twr=r; b.twu=st.unit||''; } }); }); });
+  return Object.keys(best).map(nm=>Object.assign({name:nm},best[nm])).filter(x=>x.e1>0).sort((a,b)=>b.e1-a.e1); }
+// Mantenimiento real (TDEE adaptativo): intake promedio − balance implícito por cambio de peso. 7700 kcal/kg.
+// ponytail: avg sobre días logueados (asume no-logueado ≈ típico); guard: >=10 días de meals + >=2 pesos en la ventana, si no null.
+function estimateTDEE(days){ days=days||90; const cut=lastDays(days)[0];
+  const M=db.meals||{}; const md=Object.keys(M).filter(d=>d>=cut&&(M[d]||[]).length);
+  const kc=md.map(d=>(M[d]||[]).reduce((a,m)=>a+(+m.kcal||0),0)).filter(x=>x>0);
+  if(kc.length<10) return null;
+  const avgK=kc.reduce((a,b)=>a+b,0)/kc.length;
+  const bw=db.bodyweight||{}; const bk=Object.keys(bw).filter(d=>d>=cut).sort();
+  if(bk.length<2) return null;
+  const span=Math.max(1,(new Date(bk[bk.length-1])-new Date(bk[0]))/86400000);
+  const dWk=bw[bk[bk.length-1]]-bw[bk[0]];
+  const tdee=Math.round(avgK - dWk*7700/span);
+  const conf=kc.length>=21?'alta':kc.length>=14?'media':'baja';
+  return {tdee,avgK:Math.round(avgK),loggedDays:kc.length,spanDays:Math.round(span),dWk:Math.round(dWk*10)/10,conf}; }
 function renderProgress(){
   const cfg=progMetrics();
   const totalSessions=(db.sessions||[]).filter(s=>s.type!=='rest').length;
@@ -2014,11 +2042,22 @@ function renderProgress(){
         +`<div class="pst flat">prom ${_a} · 14d</div>${lineChart(_moArr,{h:32})}</div>`);
     }
   }
+  // mantenimiento real (TDEE adaptativo) — informativo, NO reescribe goals
+  if(cfg.kcal){ const _td=estimateTDEE(90); if(_td){ const _gk=(db.settings.goals&&db.settings.goals.kcal)||0; const _diff=_gk?_td.tdee-_gk:null;
+    tiles.push(`<div class="ptile"><div class="ptlh"><div class="plbl">mantenimiento real</div></div>`
+      +`<div class="pval">${_td.tdee.toLocaleString()}<span>kcal/d</span></div>`
+      +`<div class="pst flat">intake ${_td.avgK} · peso ${_td.dWk>0?'+':''}${_td.dWk}kg/${_td.spanDays}d</div>`
+      +`<div class="pst flat" style="opacity:.65">${_td.loggedDays} días · conf ${_td.conf}${_diff!=null?' · vs meta '+(_diff>0?'+':'')+_diff:''}</div></div>`); } }
   out+=`<div class="pgrid">${tiles.join('')}</div>`;
   // fuerza detalle (lista completa) — preserva el detalle del fork de Progreso/Gym
   if(e1.length>1 && cfg.e1rm){ out+=`<hr class="rule"/><div class="grp-label">FUERZA · e1RM Epley (vs semana previa)</div>`;
     e1.forEach(x=>{ const d=x.prev!=null?Math.round(x.cur-x.prev):null; const arr=d==null?'·':(d>0?'▲':d<0?'▼':'='); const col=d>0?'var(--good)':d<0?'var(--bad)':'var(--o40)';
       out+=`<div class="line" data-act="liftdetail" data-ex="${escTxt(x.name)}" style="cursor:pointer"><span class="k">${escTxt(x.name)}</span><span class="dots"></span><span class="v">${Math.round(x.cur)} <span style="color:${col};font-size:10px">${arr}${d?Math.abs(d):''}</span> <span class="ptchev" style="font-size:12px">›</span></span></div>`; }); }
+  if(cfg.e1rm){ const _pr=prRecords(); if(_pr.length){
+    out+=`<hr class="rule"/><div class="grp-label">//RECORDS · mejor e1RM histórico</div>`;
+    _pr.slice(0,10).forEach(x=>{ const _tw=Math.round(x.tw*10)/10;
+      out+=`<div class="line"><span class="k">${escTxt(x.name)}</span><span class="dots"></span><span class="v">${Math.round(x.e1)}${escTxt(x.eu||'')} <span style="color:var(--o40);font-size:10px">· top ${_tw}${escTxt(x.twu||'')}×${x.twr||0}</span></span></div>`; });
+  } }
   try{ const _wp=prevMonthYm().split('-'); if(wrapMonthData(+_wp[0],+_wp[1]-1).hasData) out+='<div style="text-align:center;margin:18px 0 2px"><a data-act="wrapview" style="font-size:11px;color:var(--o60);cursor:pointer">▸ ver tu wrap · '+escTxt(MONFULL[+_wp[1]-1])+'</a></div>'; }catch(_){}
   out+='<div style="text-align:center;margin:16px 0 2px"><a data-act="healthsync" style="font-size:11px;color:var(--o60);cursor:pointer">↻ sync de Salud (pasos/peso)</a></div>';
   return out;
