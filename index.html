@@ -803,7 +803,7 @@ function weeklySets(days){ days=days||7; const now=new Date(); const cut=new Dat
 function volStatus(m,sets){ const L=VOL_LANDMARKS[canonM(m)]; if(!L)return ''; if(sets<L[0])return 'under'; if(sets<=L[1])return 'optimal'; if(sets<=L[2])return 'high'; return 'over'; }
 function e1rmTrend(){ // best Epley e1RM per exercise, this week vs prior week
   const wk=(off)=>{ const now=new Date(); const a=new Date(now); a.setDate(now.getDate()-7*off-7); const b=new Date(now); b.setDate(now.getDate()-7*off); const ai=todayISO(a),bi=todayISO(b); const best={};
-    db.sessions.forEach(s=>{ if(s.type==='rest'||s.date<ai||s.date>=bi)return; (s.exercises||[]).forEach(e=>{ (e.sets||[]).forEach(st=>{ const w=parseFloat(st.w)||0,r=parseFloat(st.r)||0; if(w&&r){ const e1=w*(1+repsToFailure(r,st.rir)/30); if(!best[e.name]||e1>best[e.name])best[e.name]=e1; } }); }); }); return best; };
+    db.sessions.forEach(s=>{ if(s.type==='rest'||s.date<ai||s.date>=bi)return; (s.exercises||[]).forEach(e=>{ (e.sets||[]).forEach(st=>{ const w=parseFloat(st.w)||0,r=parseFloat(st.r)||0; if(w&&r){ const e1=w*(1+effRepsForE1RM(st)/30); if(!best[e.name]||e1>best[e.name])best[e.name]=e1; } }); }); }); return best; };
   const cur=wk(0),prev=wk(1); const out=[];
   Object.keys(cur).forEach(k=>{ out.push({name:k,cur:cur[k],prev:prev[k]||null}); });
   return out.sort((a,b)=>b.cur-a.cur).slice(0,3);
@@ -965,8 +965,19 @@ function renderSetRow(exi,si,set,ex,allowF){
 //     <55% 1RM (>32 reps to failure)  → 0    descartado (carga floja, sin estímulo útil)
 //     55-65% (15-32 reps to failure)  → ramp 0→1
 //     ≥65% 1RM (≤15 reps to failure)  → 1.0  zona productiva
-// F (failure) ≠ RIR 0: you attempted past your last successful rep and failed → reps_to_failure = r + 0.5
-// (slight bump over RIR 0 = r reps to failure). Refalo 2024 says F ≈ RIR 1-2 for hypertrophy outcome.
+// ── failure semantics (canonical) ───────────────────────────────────────────
+// r = reps COMPLETED; rir='F' = failure (attempted the NEXT rep, missed it). 5@RIR0 ({r:5,rir:'0'}) and
+// 6F ({r:5,rir:'F'}) are DISTINCT events. Strength/e1RM treats them equal (5 clean reps, reserve 0);
+// the stimulus score (setScore) ranks F > RIR0 > RIR>0 via proximityMult. failType optional, additive.
+function setReps(s){ const r=parseFloat(s&&s.r); return r>0?r:0; }                 // reps COMPLETED
+function isFailure(s){ return String(s&&s.rir==null?'':s.rir).trim().toUpperCase()==='F'; }
+function setRIR(s){ const t=String(s&&s.rir==null?'':s.rir).trim().toUpperCase(); if(t===''||t==='F')return 0; const n=parseFloat(t); return isNaN(n)?0:Math.max(0,Math.min(6,n)); }
+function failRep(s){ return isFailure(s)? setReps(s)+1 : null; }                    // derived (= reps+1)
+function setFailType(s){ return (s&&s.failType)||null; }                            // 'concentrico'|'parcial'|'asistido'|null
+function effRepsForE1RM(s){ return setReps(s)+setRIR(s); }   // Epley input = completed reps + reserve (F→0, ''→0)
+function e1rmOf(s){ const w=parseFloat(s&&s.w)||0, er=effRepsForE1RM(s); return (w>0&&er>0)? w*(1+er/30):0; }
+// F (failure) ≠ RIR 0: attempted past your last successful rep and failed → reps_to_failure = r + 0.5.
+// repsToFailure kept for impliedIntensity/setZone (stimulus-INTENSITY axis); NO longer used for e1RM (see effRepsForE1RM).
 function repsToFailure(reps,rir){ if(!(reps>0))return 0; const t=String(rir==null?'':rir).trim().toUpperCase(); if(t==='F')return reps+0.5; if(t==='')return reps; const rv=parseFloat(t); if(isNaN(rv))return reps; return reps+Math.max(0,Math.min(6,rv)); }
 function impliedIntensity(reps,rir){ const tr=repsToFailure(reps,rir); return tr>0 ? 1/(1+tr/30) : 0; }
 function intensityFactor(i){ if(i<0.55)return 0; if(i<0.65)return (i-0.55)/0.10; return 1; }
@@ -975,9 +986,51 @@ function intensityFactor(i){ if(i<0.55)return 0; if(i<0.65)return (i-0.55)/0.10;
 //   'productive' — in the productive zone (target for hypertrophy) 65-92% 1RM (3-15 reps to failure)
 //   'heavy'      — too heavy / too few reps for hypertrophy volume >92% 1RM (1-3 reps to failure)
 function setZone(s){ const r=parseFloat(s&&s.r)||0; if(!(r>0))return null; const i=impliedIntensity(r,s&&s.rir); if(i<0.65)return 'light'; if(i>0.92)return 'heavy'; return 'productive'; }
-function setScore(s){ const w=parseFloat(s&&s.w)||0, r=parseFloat(s&&s.r)||0; if(!(w>0&&r>0))return 0; const tr=repsToFailure(r,s&&s.rir); const i=1/(1+tr/30); const f=intensityFactor(i); if(f===0)return 0; return w*(1+tr/30)*f; }
+const PROX_MULT={far:1.00,rir0:1.08,fail:1.15}; // proximity-to-failure axis (calibration knob): F > RIR0 > RIR>0
+function proximityMult(s){ if(isFailure(s))return PROX_MULT.fail; return setRIR(s)===0?PROX_MULT.rir0:PROX_MULT.far; }
+// stimulus = strength base (completed reps + reserve; 6F == 5@RIR0) × productive-zone gate × proximity bonus.
+function setScore(s){ const w=parseFloat(s&&s.w)||0, r=setReps(s); if(!(w>0&&r>0))return 0; const er=effRepsForE1RM(s); const i=impliedIntensity(r,isFailure(s)?'0':s.rir); const f=intensityFactor(i); if(f===0)return 0; return w*(1+er/30)*f*proximityMult(s); }
 function bestScore(sets,confirmedOnly){ let b=0; (sets||[]).forEach(s=>{ if(confirmedOnly&&s._pf)return; const v=setScore(s); if(v>b)b=v; }); return b; }
 function totalScore(sets,confirmedOnly){ let sum=0,n=0; (sets||[]).forEach(s=>{ if(confirmedOnly&&s._pf)return; const v=setScore(s); if(v>0){sum+=v;n++;} }); return {sum,n}; }
+// ── PART 2: fatigue-aware analysis (pure functions; exposed for Progress charts, not wired to UI yet) ──
+// Two sets with equal weight×reps but different fatigue context yield different corrected-e1RM + effort.
+// rest-between-sets is NOT stored (no per-set doneAt) → omitted in v1; unlock = stamp doneAt in the `done` handler.
+function sessionFatigueContext(session){
+  const exs=(session&&session.exercises)||[]; const ctx=[];
+  let priorHardSets=0, priorScore=0; const muscleSetsSoFar={};
+  exs.forEach((e,ei)=>{ const muscles=exMuscles(e); const rowOut=[];
+    (e.sets||[]).forEach((st)=>{
+      const pm=muscles.reduce((mx,m)=>Math.max(mx,muscleSetsSoFar[m.name]||0),0);
+      rowOut.push({orderIdx:ei,priorHardSets,priorScore,priorMuscleSets:pm}); // snapshot BEFORE this set
+      if(st._pf)return;
+      const counts=(st.w||st.r)&&isHardSet(st); const v=st.isDrop?0.5:1;
+      if(counts){ priorHardSets+=v; muscles.forEach(m=>{ muscleSetsSoFar[m.name]=(muscleSetsSoFar[m.name]||0)+v*m.weight; }); }
+      priorScore+=setScore(st);
+    });
+    ctx.push(rowOut);
+  });
+  return ctx;
+}
+function muscleWeeklyFreq(n){ try{ return (weeklySets(7).freq||{})[String(n||'').toLowerCase().trim()]||0; }catch(_){ return 0; } }
+const FAT_E1RM={perPriorHardSet:0.010,perOrderStep:0.015,perMuscleSet:0.020,maxDiscount:0.35};   // calibration knobs
+function fatigueDiscount(ctx){ if(!ctx)return 0; const d=FAT_E1RM.perPriorHardSet*(ctx.priorHardSets||0)+FAT_E1RM.perOrderStep*(ctx.orderIdx||0)+FAT_E1RM.perMuscleSet*(ctx.priorMuscleSets||0); return Math.max(0,Math.min(FAT_E1RM.maxDiscount,d)); }
+function correctedE1RM(s,ctx){ const raw=e1rmOf(s); if(!(raw>0))return 0; return raw/(1-fatigueDiscount(ctx)); } // fresh-equivalent
+const FAT_EFFORT={perPriorHardSet:0.015,perOrderStep:0.02,perMuscleSet:0.03,perWeeklyFreq:0.01,maxBoost:0.60}; // calibration knobs
+function fatigueBoost(ctx){ if(!ctx)return 0; const b=FAT_EFFORT.perPriorHardSet*(ctx.priorHardSets||0)+FAT_EFFORT.perOrderStep*(ctx.orderIdx||0)+FAT_EFFORT.perMuscleSet*(ctx.priorMuscleSets||0)+FAT_EFFORT.perWeeklyFreq*(ctx.weeklyFreq||0); return Math.max(0,Math.min(FAT_EFFORT.maxBoost,b)); }
+function fatigueWeightedEffort(s,ctx){ const base=setScore(s); if(!(base>0))return 0; return base*(1+fatigueBoost(ctx)); }
+// self-check (math proof) — runs only with ?selftest=1; all fns above are hoisted/defined.
+function _failureMathSelfCheck(){
+  const A=(n,g,e,eps=0.05)=>{ if(Math.abs(g-e)>eps) throw new Error('SELFCHECK '+n+': got '+g+' exp '+e); };
+  const S=(w,r,rir)=>({w:String(w),r:String(r),rir});
+  A('e1rm 5@RIR0',e1rmOf(S(100,5,'0')),116.667); A('e1rm 6F',e1rmOf(S(100,5,'F')),116.667); A('e1rm 6@RIR1',e1rmOf(S(100,6,'1')),123.333);
+  if(!(setScore(S(100,5,'F'))>setScore(S(100,5,'0')))) throw new Error('stim 6F>5@RIR0');
+  A('stim 5@RIR0',setScore(S(100,5,'0')),126.0); A('stim 6F',setScore(S(100,5,'F')),134.17);
+  const fresh={orderIdx:0,priorHardSets:0,priorMuscleSets:0,weeklyFreq:0}, tired={orderIdx:4,priorHardSets:12,priorMuscleSets:6,weeklyFreq:2}, A2=S(100,10,'2');
+  if(!(fatigueWeightedEffort(A2,tired)>fatigueWeightedEffort(A2,fresh))) throw new Error('fatigue effort');
+  if(!(correctedE1RM(A2,tired)>correctedE1RM(A2,fresh))) throw new Error('fatigue e1RM');
+  console.log('failure+fatigue self-check OK');
+}
+try{ if(typeof location!=='undefined' && /[?&]selftest=1/.test(location.search)) _failureMathSelfCheck(); }catch(e){ console.error(e); }
 // Best observed Epley+RIR e1RM across SAVED sessions — kept as a reference helper (e.g. for future PR badges).
 // No longer used inside the per-set score — that signal is now self-contained from reps + RIR alone.
 function bestE1RM(name,uni){ const key=(name||'').toLowerCase().trim(); let best=0; (db.sessions||[]).forEach(s=>{ if(s.type==='rest')return; (s.exercises||[]).forEach(e=>{ if((e.name||'').toLowerCase().trim()!==key||!e.sets||!e.sets.length)return; const eUni=e.sets.some(x=>x.side); if(!!uni!==eUni)return; (e.sets||[]).forEach(st=>{ const w=parseFloat(st.w)||0, r=parseFloat(st.r)||0; if(!(w>0&&r>0))return; const t=String(st.rir==null?'':st.rir).trim().toUpperCase(); let rv=(t===''||t==='F')?0:parseFloat(t); if(isNaN(rv))rv=0; rv=Math.max(0,Math.min(6,rv)); const e1=w*(1+(r+rv)/30); if(e1>best)best=e1; }); }); }); return best; }
@@ -1798,7 +1851,7 @@ function openVolumeDetail(){
 function liftE1Series(name, days){
   const cutoff=lastDays(days)[0]; const out=[];
   (db.sessions||[]).forEach(s=>{ if(s.type==='rest'||!s.date||s.date<cutoff)return;
-    let best=0; (s.exercises||[]).forEach(e=>{ if(e.name!==name)return; (e.sets||[]).forEach(st=>{ const wv=parseFloat(st.w)||0,r=parseFloat(st.r)||0; if(wv&&r){ const e1=wv*(1+repsToFailure(r,st.rir)/30); if(e1>best)best=e1; } }); });
+    let best=0; (s.exercises||[]).forEach(e=>{ if(e.name!==name)return; (e.sets||[]).forEach(st=>{ const wv=parseFloat(st.w)||0,r=parseFloat(st.r)||0; if(wv&&r){ const e1=wv*(1+effRepsForE1RM(st)/30); if(e1>best)best=e1; } }); });
     if(best>0)out.push({date:s.date,e1:Math.round(best)});
   });
   out.sort((a,b)=>String(a.date).localeCompare(String(b.date)));
@@ -1853,7 +1906,7 @@ function throwbackBlock(){
         rows+=`<div class="tbrow"><span class="tbk">peso</span><span class="tbv">${bwThen} <span class="tba">→</span> ${bwNow} <i>kg</i> <b style="color:${col}">${d>0?'+':''}${d}</b></span></div>`;
       }
     }
-    const e1In=(a,b)=>{ const best={}; (db.sessions||[]).forEach(s=>{ if(s.type==='rest'||!s.date||s.date<a||s.date>b)return; (s.exercises||[]).forEach(e=>(e.sets||[]).forEach(st=>{ const wv=parseFloat(st.w)||0,r=parseFloat(st.r)||0; if(wv&&r){ const v=wv*(1+repsToFailure(r,st.rir)/30); if(!best[e.name]||v>best[e.name])best[e.name]=v; } })); }); return best; };
+    const e1In=(a,b)=>{ const best={}; (db.sessions||[]).forEach(s=>{ if(s.type==='rest'||!s.date||s.date<a||s.date>b)return; (s.exercises||[]).forEach(e=>(e.sets||[]).forEach(st=>{ const wv=parseFloat(st.w)||0,r=parseFloat(st.r)||0; if(wv&&r){ const v=wv*(1+effRepsForE1RM(st)/30); if(!best[e.name]||v>best[e.name])best[e.name]=v; } })); }); return best; };
     const thenW=e1In(todayISO(new Date(tgt.getTime()-18*86400000)), todayISO(new Date(tgt.getTime()+18*86400000)));
     const nowW=e1In(todayISO(new Date(now.getTime()-28*86400000)), todayISO(now));
     let pick=null,pgain=-1e9; Object.keys(nowW).forEach(k=>{ if(thenW[k]!=null){ const g=nowW[k]-thenW[k]; if(g>pgain){pgain=g;pick=k;} } });
@@ -2417,7 +2470,7 @@ function wrapMonthData(y,m){
   const dim=new Date(y,m+1,0).getDate(); const mdays=[]; for(let d=1;d<=dim;d++)mdays.push(pre+'-'+pad(d));
   let bestWeek=0; for(let i=0;i<mdays.length;i++){ let s=0; for(let j=i;j<i+7&&j<mdays.length;j++)s+=dayVol[mdays[j]]||0; if(s>bestWeek)bestWeek=s; }
   let topLift=null, topE1=0;
-  sess.forEach(s=>(s.exercises||[]).forEach(e=>(e.sets||[]).forEach(st=>{ const w=parseFloat(st.w)||0,r=parseFloat(st.r)||0; if(w&&r){ const e1=w*(1+repsToFailure(r,st.rir)/30); if(e1>topE1){topE1=e1;topLift=e.name;} } })));
+  sess.forEach(s=>(s.exercises||[]).forEach(e=>(e.sets||[]).forEach(st=>{ const w=parseFloat(st.w)||0,r=parseFloat(st.r)||0; if(w&&r){ const e1=w*(1+effRepsForE1RM(st)/30); if(e1>topE1){topE1=e1;topLift=e.name;} } })));
   let kSum=0,kDays=0; Object.keys(db.meals||{}).forEach(d=>{ if(!inMonth(d))return; const arr=db.meals[d]; if(arr&&arr.length){ const kk=arr.reduce((a,mm)=>a+(+mm.kcal||0),0); if(kk>0){kSum+=kk;kDays++;} } });
   const avgKcal=kDays?Math.round(kSum/kDays):0;
   const bwk=Object.keys(db.bodyweight||{}).filter(inMonth).sort();
