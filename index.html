@@ -529,13 +529,21 @@
   .ag-hr i{display:block; margin-left:30px; border-top:1px solid var(--line);}
   .ag-now{position:absolute; left:30px; right:0; height:0; border-top:1px solid var(--good); z-index:5;}
   .ag-now::before{content:''; position:absolute; left:-3px; top:-3px; width:5px; height:5px; border-radius:50%; background:var(--good);}
-  .ag-blk{position:absolute; left:30px; right:4px; background:var(--card2); border:1px solid var(--border); border-radius:8px; padding:4px 9px; overflow:hidden; z-index:3;}
+  .ag-blk{position:absolute; background:var(--card2); border:1px solid var(--border); border-radius:8px; padding:4px 9px; overflow:hidden; z-index:3;}
   .ag-blk .bt{font-size:var(--t-meta); color:var(--fg); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; line-height:1.35;}
   .ag-blk .bt .bk{float:right; color:var(--o40); font-weight:400; margin-left:8px;}
   .ag-blk .bs{font-size:var(--t-caption); color:var(--o50); line-height:1.3;}
   .ag-blk.gym{border-left:2px solid var(--o50);}
   .ag-blk.supp{border-left:2px solid var(--o40); cursor:pointer;}
   .ag-blk.slp{background:rgba(243,243,244,.035); border-color:var(--o12); z-index:1;}
+  /* marcadores puntuales (comida/supp): tick sin caja — contraste con bloques de duración */
+  .ag-mk{position:absolute; display:flex; align-items:center; gap:5px; height:18px; overflow:hidden; white-space:nowrap; font-size:var(--t-meta); z-index:4;}
+  .ag-mk .mg{flex:0 0 auto; font-size:10px; line-height:1;}
+  .ag-mk .mt{color:var(--o40); font-variant-numeric:tabular-nums;}
+  .ag-mk .ml{color:var(--fg); overflow:hidden; text-overflow:ellipsis;}
+  .ag-mk .mkk{margin-left:auto; padding-left:6px; color:var(--o40);}
+  .ag-mk.meal .mg{color:var(--o60);}
+  .ag-mk.supp{cursor:pointer;} .ag-mk.supp .mg{color:var(--o50);} .ag-mk.supp:active{opacity:.6;}
 </style>
 </head>
 <body>
@@ -2012,8 +2020,8 @@ function minToHM(min){ min=((Math.round(min)%1440)+1440)%1440; return pad(Math.f
 function renderAgenda(){
   const ISO=curAgendaDate(), f=agendaFilters(), PXMIN=1.2, top=m=>Math.round(m*PXMIN), CANVAS=top(1440);
   const durTxt=m=>{ const h=Math.floor(m/60),mm=Math.round(m%60); return h?(h+'h'+(mm?' '+mm+'m':'')):(mm+'m'); };
-  let body=statusBar(false)
-    +`<div class="ag-head"><hr class="rule"/>`
+  let body=`<div class="ag-head">`+statusBar(false)
+    +`<hr class="rule"/>`
     +`<div class="section"><div class="h dnavh"><a data-act="agprev" class="dnav">‹</a><span class="dnlbl-wrap"><span class="dnlbl">${dayLabel(ISO)}</span><input type="date" class="dcal" data-act="agcal" value="${ISO}"/></span><a data-act="agnext" class="dnav">›</a></div></div>`;
   const fb=(k,l)=>`<button class="${f[k]?'on':''}" data-act="agenfilter" data-f="${k}">${l}</button>`;
   body+=`<div class="toggles agf">${fb('meals','comidas')}${fb('train','entreno')}${fb('supps','supps')}${fb('sleep','sueño')}</div></div>`;
@@ -2031,17 +2039,23 @@ function renderAgenda(){
   if(hasAxis){ let ax=`<div class="ag-axis" style="height:${CANVAS}px">`;
     for(let H=0;H<24;H++) ax+=`<div class="ag-hr" style="top:${top(H*60)}px"><span class="ag-hl">${pad(H)}</span><i></i></div>`;
     if(ISO===todayISO()){ const nm=hm2min(nowHM()); if(isFinite(nm)) ax+=`<div class="ag-now" style="top:${top(nm)}px"></div>`; }
-    sleepEvs.forEach(sleep=>{ const sM=hm2min(sleep.start), eM=hm2min(sleep.end); const nap=!isNocturnal(sleep.start); const bh=Math.round((+sleep.hours||sleepDur(sleep.start,sleep.end))*10)/10;
-      const lbl=`<div class="bt">${nap?'siesta':'sueño'}</div><div class="bs">${escTxt(sleep.start||'?')}–${escTxt(sleep.end)} · ${bh}h</div>`;
-      if(isFinite(sM)&&isFinite(eM)&&eM<=sM){ // cruza medianoche → bloque partido: noche-tarde abajo + mañana arriba
-        ax+=`<div class="ag-blk slp" style="top:${top(sM)}px;height:${Math.max(16,CANVAS-top(sM))}px">${lbl}</div>`;
-        ax+=`<div class="ag-blk slp" style="top:0px;height:${Math.max(16,top(eM))}px">${lbl}</div>`;
-      } else { const s0=isFinite(sM)?top(sM):0; const h=Math.max(22,(isFinite(eM)?top(eM):0)-s0); ax+=`<div class="ag-blk slp" style="top:${s0}px;height:${h}px">${lbl}</div>`; } });
-    evs.filter(x=>x.kind==='sess').forEach(x=>{ const _eRaw=hm2min(x.s.endTime); const eM=isFinite(_eRaw)?(_eRaw<x.mn?_eRaw+1440:_eRaw):x.mn+x.durM; const dM=Math.max(20,eM-x.mn); const h=Math.max(36,top(dM)); ax+=`<div class="ag-blk gym" style="top:${top(x.mn)}px;height:${h}px"><div class="bt">${escTxt(x.s.dayName||'sesión')}</div><div class="bs">${escTxt(x.s.startTime)}–${minToHM(eM)} · ${durTxt(dM)}</div></div>`; });
-    const ml=evs.filter(x=>x.kind==='meal').sort((a,b)=>a.mn-b.mn); let prev=-99;
-    ml.forEach(x=>{ let t=top(x.mn); if(t-prev<40)t=prev+40; prev=t; ax+=`<div class="ag-blk meal" style="top:${t}px"><div class="bt">${escTxt(x.tag||'comida')}<span class="bk">${Math.round(x.kcal)||0}</span></div><div class="bs">${escTxt(x.time)}</div></div>`; });
-    const sp=evs.filter(x=>x.kind==='supp').sort((a,b)=>a.mn-b.mn); let sprev=-99;
-    sp.forEach(x=>{ let t=top(x.mn); if(t-sprev<40)t=sprev+40; sprev=t; ax+=`<div class="ag-blk supp" style="top:${t}px" data-act="agsupptick" data-id="${escTxt(x.id||'')}"><div class="bt">${escTxt(x.name)}${x.mk}</div><div class="bs">${escTxt(x.time)}</div></div>`; });
+    // unificar eventos con hora en intervalos [a,b] (min) → carriles estilo Google-cal (partición de intervalos)
+    const EV=[];
+    evs.filter(x=>x.kind==='meal').forEach(x=>EV.push({a:x.mn,b:x.mn+15,type:'mk',cat:'meal',glyph:'◆',time:x.time,label:escTxt(x.tag||'comida'),val:Math.round(x.kcal)||0}));
+    evs.filter(x=>x.kind==='supp').forEach(x=>EV.push({a:x.mn,b:x.mn+15,type:'mk',cat:'supp',glyph:'●',time:x.time,label:escTxt(x.name),mk:x.mk,id:x.id}));
+    evs.filter(x=>x.kind==='sess').forEach(x=>{ const _e=hm2min(x.s.endTime); const eM=isFinite(_e)?(_e<x.mn?_e+1440:_e):x.mn+x.durM; const dM=Math.max(20,eM-x.mn); EV.push({a:x.mn,b:Math.max(x.mn+20,eM),type:'blk',cat:'gym',y0:x.mn,y1:eM,label:escTxt(x.s.dayName||'sesión'),sub:escTxt(x.s.startTime)+'–'+minToHM(eM)+' · '+durTxt(dM)}); });
+    sleepEvs.forEach(sl=>{ const sM=hm2min(sl.start), eM=hm2min(sl.end); const nap=!isNocturnal(sl.start); const bh=Math.round((+sl.hours||sleepDur(sl.start,sl.end))*10)/10; const ttl=nap?'siesta':'sueño'; const sub=escTxt(sl.start||'?')+'–'+escTxt(sl.end)+' · '+bh+'h';
+      if(isFinite(sM)&&isFinite(eM)&&eM<=sM){ EV.push({a:sM,b:1440,type:'blk',cat:'slp',y0:sM,y1:1440,label:ttl,sub}); EV.push({a:0,b:eM,type:'blk',cat:'slp',y0:0,y1:eM,label:ttl,sub}); } // cruza medianoche → partido
+      else { const s0=isFinite(sM)?sM:0, e0=isFinite(eM)?eM:s0; EV.push({a:s0,b:Math.max(s0+18,e0),type:'blk',cat:'slp',y0:s0,y1:e0,label:ttl,sub}); } });
+    // carriles: clusters de solape encadenado → primera columna libre; cols = pico de concurrencia del cluster
+    EV.sort((p,q)=>p.a-q.a||p.b-q.b);
+    for(let i=0;i<EV.length;){ let j=i,end=EV[i].b; const colEnd=[];
+      while(j<EV.length&&EV[j].a<end){ let c=0; while(c<colEnd.length&&colEnd[c]>EV[j].a)c++; colEnd[c]=EV[j].b; EV[j].col=c; if(EV[j].b>end)end=EV[j].b; j++; }
+      const n=colEnd.length||1; for(let k=i;k<j;k++)EV[k].cols=n; i=j; }
+    // ponytail: sin cap de columnas — si 4+ se solapan apretará; capar a 3 + "+N" si molesta en uso real
+    EV.forEach(e=>{ const pos=`left:calc(30px + (100% - 34px)*${e.col}/${e.cols});width:calc((100% - 34px)/${e.cols} - 3px)`;
+      if(e.type==='mk'){ const tail=e.cat==='meal'?`<span class="mkk">${e.val}</span>`:(e.mk||''); const tap=e.cat==='supp'?` data-act="agsupptick" data-id="${escTxt(e.id||'')}"`:''; ax+=`<div class="ag-mk ${e.cat}" style="top:${top(e.a)}px;${pos}"${tap}><span class="mg">${e.glyph}</span><span class="mt">${escTxt(e.time)}</span> <span class="ml">${e.label}</span>${tail}</div>`; }
+      else { const h=Math.max(e.cat==='slp'?18:36, top(e.y1)-top(e.y0)); ax+=`<div class="ag-blk ${e.cat}" style="top:${top(e.y0)}px;height:${h}px;${pos}"><div class="bt">${e.label}</div><div class="bs">${e.sub}</div></div>`; } });
     ax+=`</div>`; body+=ax; }
   if(!hasAxis && !chips) body+=`<div class="empty">sin registros este día<br/><span class="ehint">tus comidas, entrenos y sueño con hora aparecen en el calendario</span></div>`;
   return body;
@@ -2645,10 +2659,10 @@ document.getElementById('app').addEventListener('click',e=>{
   else if(a==='dayprev'){ state.macroDate=shiftDate(curDate(),-1); render(); }
   else if(a==='daynext'){ state.macroDate=shiftDate(curDate(),1); render(); }
   else if(a==='daytoday'){ state.macroDate=todayISO(); render(); }
-  else if(a==='agprev'){ state.agendaDate=shiftDate(curAgendaDate(),-1); render(); }
-  else if(a==='agnext'){ state.agendaDate=shiftDate(curAgendaDate(),1); render(); }
-  else if(a==='agenfilter'){ const k=el.dataset.f; if(k){ const fl=agendaFilters(); fl[k]=!fl[k]; try{localStorage.setItem('gymtrk_agenda_filters',JSON.stringify(fl));}catch(_){} render(); } }
-  else if(a==='agsupptick'){ if(el.dataset.id) stackToggleTick(el.dataset.id, curAgendaDate()); }
+  else if(a==='agprev'){ state._scroll=(document.getElementById('view')||{}).scrollTop||0; state.agendaDate=shiftDate(curAgendaDate(),-1); render(); }
+  else if(a==='agnext'){ state._scroll=(document.getElementById('view')||{}).scrollTop||0; state.agendaDate=shiftDate(curAgendaDate(),1); render(); }
+  else if(a==='agenfilter'){ const k=el.dataset.f; if(k){ const fl=agendaFilters(); fl[k]=!fl[k]; try{localStorage.setItem('gymtrk_agenda_filters',JSON.stringify(fl));}catch(_){} state._scroll=(document.getElementById('view')||{}).scrollTop||0; render(); } }
+  else if(a==='agsupptick'){ if(el.dataset.id){ state._scroll=(document.getElementById('view')||{}).scrollTop||0; stackToggleTick(el.dataset.id, curAgendaDate()); } }
   else if(a==='progconfig'){ openProgConfig(); }
   else if(a==='progmtog'){ const k=el.dataset.m; if(k){ const c=progMetrics(); c[k]=!c[k]; try{localStorage.setItem('gymtrk_progress_metrics_config',JSON.stringify(c));}catch(_){} render(); openProgConfig(); } }
   else if(a==='addfood'||a==='addnext'||a==='addmeal'){ closeAddPop(); openFoodAdd(nextMealTag()); }
@@ -2749,7 +2763,7 @@ document.getElementById('app').addEventListener('change',e=>{
   const stt=e.target.closest('[data-act="setstarttime"]'); if(stt){ if(db.activeWork){db.activeWork.startTime=stt.value||null;save();} return; }
   const ett=e.target.closest('[data-act="setendtime"]'); if(ett){ if(db.activeWork){db.activeWork.endTime=ett.value||null;save();} return; }
   const dc=e.target.closest('[data-act="daycal"]'); if(dc){ if(dc.value){ state.macroDate=dc.value; render(); } return; }
-  const agc=e.target.closest('[data-act="agcal"]'); if(agc){ if(agc.value){ state.agendaDate=agc.value; render(); } return; }
+  const agc=e.target.closest('[data-act="agcal"]'); if(agc){ if(agc.value){ state._scroll=(document.getElementById('view')||{}).scrollTop||0; state.agendaDate=agc.value; render(); } return; }
   const el=e.target.closest('[data-act="setf"]'); if(!el)return;
   setField(+el.dataset.exi,+el.dataset.si,el.dataset.f,el.value);
 });
