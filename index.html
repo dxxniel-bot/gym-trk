@@ -1009,14 +1009,16 @@ function totalScore(sets,confirmedOnly){ let sum=0,n=0; (sets||[]).forEach(s=>{ 
 function avgE1RM(sets,confirmedOnly){ let sum=0,n=0; (sets||[]).forEach(s=>{ if(confirmedOnly&&s._pf)return; const v=e1rmOf(s); if(v>0){sum+=v;n++;} }); return n?sum/n:0; }
 // ── PART 2: fatigue-aware analysis (pure functions; exposed for Progress charts, not wired to UI yet) ──
 // Two sets with equal weight×reps but different fatigue context yield different corrected-e1RM + effort.
-// rest-between-sets is NOT stored (no per-set doneAt) → omitted in v1; unlock = stamp doneAt in the `done` handler.
+// restSec per set = doneAt[i] - doneAt[i-1] approx (includes time entering next set). Available in ctx.restSec.
 function sessionFatigueContext(session){
   const exs=(session&&session.exercises)||[]; const ctx=[];
   let priorHardSets=0, priorScore=0; const muscleSetsSoFar={};
-  exs.forEach((e,ei)=>{ const muscles=exMuscles(e); const rowOut=[];
+  exs.forEach((e,ei)=>{ const muscles=exMuscles(e); const rowOut=[]; let prevDoneAt=null;
     (e.sets||[]).forEach((st)=>{
       const pm=muscles.reduce((mx,m)=>Math.max(mx,muscleSetsSoFar[m.name]||0),0);
-      rowOut.push({orderIdx:ei,priorHardSets,priorScore,priorMuscleSets:pm}); // snapshot BEFORE this set
+      const restSec=(st.doneAt&&prevDoneAt)?(st.doneAt-prevDoneAt)/1000:null;
+      rowOut.push({orderIdx:ei,priorHardSets,priorScore,priorMuscleSets:pm,restSec}); // snapshot BEFORE this set
+      if(st.doneAt)prevDoneAt=st.doneAt;
       if(st._pf)return;
       const counts=(st.w||st.r)&&isHardSet(st); const v=st.isDrop?0.5:1;
       if(counts){ priorHardSets+=v; muscles.forEach(m=>{ muscleSetsSoFar[m.name]=(muscleSetsSoFar[m.name]||0)+v*m.weight; }); }
@@ -2387,13 +2389,15 @@ function renderHistory(){
 function openSessionEdit(id){
   const s=(db.sessions||[]).find(x=>x.id===id); if(!s)return; window._sessId=id;
   const nEx=(s.exercises||[]).length;
+  const fatCtx=sessionFatigueContext(s);
   const exHtml=(s.exercises||[]).map((e,ei)=>{
     const rows=(e.sets||[]).map((st,si)=>`<div class="srowm"><span class="sn">#${si+1}</span><input class="sm" data-act="ss_f" data-ei="${ei}" data-si="${si}" data-f="w" type="number" inputmode="decimal" value="${st.w!=null?st.w:''}" placeholder="w"/><input class="sm" data-act="ss_f" data-ei="${ei}" data-si="${si}" data-f="r" type="number" inputmode="numeric" value="${st.r!=null?st.r:''}" placeholder="reps"/><input class="sm" data-act="ss_f" data-ei="${ei}" data-si="${si}" data-f="rir" value="${st.rir!=null?st.rir:''}" placeholder="rir"/></div>`).join('');
     const badge=progBadgeFromProg(histProgress(e,s.id),'vs sesión previa de este ejercicio');
+    const exCtx=fatCtx[ei]||[]; const rawAvg=avgE1RM(e.sets,false); let cSum=0,cN=0; e.sets.forEach((st,si)=>{ const v=correctedE1RM(st,exCtx[si]); if(v>0){cSum+=v;cN++;} }); const corrAvg=cN?cSum/cN:0; const fatDiff=rawAvg>0&&corrAvg>rawAvg?Math.round((corrAvg/rawAvg-1)*100):0; const prior=Math.round((exCtx[0]||{}).priorHardSets||0); const restSecs=exCtx.slice(1).map(c=>c.restSec).filter(v=>v!=null&&v>0&&v<600); const avgRest=restSecs.length?Math.round(restSecs.reduce((a,b)=>a+b,0)/restSecs.length):null; const fatNote=fatDiff>=5?`<div class="submeta" style="margin-top:2px">↑ e1RM equiv. fresca +${fatDiff}%${prior?' · '+prior+' sets previos':''}${avgRest?' · ~'+Math.round(avgRest/60)+'min descanso':''}</div>`:'';
     // reorder arrows so legacy sessions (logged before the addex-position fix) can be corrected
     const up=ei>0?`<span data-act="ss_exup" data-ei="${ei}">▲</span>`:`<span class="off">▲</span>`;
     const dn=ei<nEx-1?`<span data-act="ss_exdn" data-ei="${ei}">▼</span>`:`<span class="off">▼</span>`;
-    return `<div class="card"><div class="sess-exh"><span class="sess-exn">${escTxt(e.name)} <span class="muted">${escTxt(e.muscle||'')}</span>${badge}</span><span class="semv">${up}${dn}</span></div>${rows||'<div class="submeta">sin sets</div>'}</div>`;
+    return `<div class="card"><div class="sess-exh"><span class="sess-exn">${escTxt(e.name)} <span class="muted">${escTxt(e.muscle||'')}</span>${badge}</span><span class="semv">${up}${dn}</span></div>${fatNote}${rows||'<div class="submeta">sin sets</div>'}</div>`;
   }).join('');
   openModal(`<h3>${escTxt(s.dayName||'sesión')}</h3>
    <div class="field"><label>FECHA</label><input id="ss_date" type="date" value="${s.date||''}"/></div>
@@ -2736,7 +2740,7 @@ document.getElementById('app').addEventListener('click',e=>{
   }
   else if(a==='ss_exup'){ const s=db.sessions.find(x=>x.id===window._sessId); const i=+el.dataset.ei; if(s&&i>0){ const a=s.exercises; const t=a[i-1]; a[i-1]=a[i]; a[i]=t; save(); openSessionEdit(window._sessId); } }
   else if(a==='ss_exdn'){ const s=db.sessions.find(x=>x.id===window._sessId); const i=+el.dataset.ei; if(s&&i<s.exercises.length-1){ const a=s.exercises; const t=a[i+1]; a[i+1]=a[i]; a[i]=t; save(); openSessionEdit(window._sessId); } }
-  else if(a==='done'){ const w=db.activeWork; const ex=w.exercises[exi]; let nowDone; if(ex.unilateral){ const v=!(ex.sets[si]&&ex.sets[si].done); nowDone=v; if(ex.sets[si]){ex.sets[si].done=v;ex.sets[si]._pf=false;} if(ex.sets[si+1]){ex.sets[si+1].done=v;ex.sets[si+1]._pf=false;} } else { ex.sets[si].done=!ex.sets[si].done; ex.sets[si]._pf=false; nowDone=ex.sets[si].done; } if(nowDone&&!w.loggedAfter){ restAudioInit(); w.restEnd=Date.now()+((db.settings.restSec||90)*1000); _restFinT=0; } if(nowDone)state._autoScroll=true; save(); render(); }
+  else if(a==='done'){ const w=db.activeWork; const ex=w.exercises[exi]; let nowDone; if(ex.unilateral){ const v=!(ex.sets[si]&&ex.sets[si].done); nowDone=v; if(ex.sets[si]){ex.sets[si].done=v;ex.sets[si]._pf=false;} if(ex.sets[si+1]){ex.sets[si+1].done=v;ex.sets[si+1]._pf=false;} } else { ex.sets[si].done=!ex.sets[si].done; ex.sets[si]._pf=false; nowDone=ex.sets[si].done; } if(nowDone&&!w.loggedAfter){ restAudioInit(); w.restEnd=Date.now()+((db.settings.restSec||90)*1000); _restFinT=0; } if(nowDone){ const ts=Date.now(); if(ex.unilateral){if(ex.sets[si])ex.sets[si].doneAt=ts;if(ex.sets[si+1])ex.sets[si+1].doneAt=ts;}else ex.sets[si].doneAt=ts; } if(nowDone)state._autoScroll=true; save(); render(); }
   else if(a==='fs'){ const s=db.activeWork.exercises[exi].sets[si]; s.fsOn=!s.fsOn; save(); render(); }
   else if(a==='addset'){ const ex=db.activeWork.exercises[exi]; if(ex.unilateral){ const [s1,s2]=uniSides(ex); const lr=ex.sets[ex.sets.length-2]||null, ll=ex.sets[ex.sets.length-1]||null; ex.sets.push(emptySet(ex,s1,false,lr)); ex.sets.push(emptySet(ex,s2,false,ll)); } else { const lt=ex.sets[ex.sets.length-1]||null; ex.sets.push(emptySet(ex,null,false,lt)); } save(); state._scroll=document.getElementById('view').scrollTop; render(); }
   else if(a==='dropset'){ const ex=db.activeWork.exercises[exi]; ex.sets.push(Object.assign(emptySet(ex),{isDrop:true,fsOn:true})); save(); state._scroll=document.getElementById('view').scrollTop; render(); }
