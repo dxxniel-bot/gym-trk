@@ -595,7 +595,8 @@ function seed(){
     foods:[],
     sleep:{},
     mood:{},
-    selfcheck:{}
+    selfcheck:{},
+    adhoc:{}
   };
 }
 // demo split the user can load on demand from the empty gym screen
@@ -699,7 +700,7 @@ function load(){
   if(!d)return seed();
   return migrate(d);
 }
-function migrate(d){ if(!d.version){d.version=1;} if(!d.meals||typeof d.meals!=='object'||Array.isArray(d.meals))d.meals={}; if(!Array.isArray(d.foods))d.foods=[]; d.foods=d.foods.map(f=>(f&&f.per100)?f:asCanonical(f)); if(!Array.isArray(d.sessions))d.sessions=[]; if(!d.split||typeof d.split!=='object')d.split={name:'',days:[]}; if(!Array.isArray(d.split.days))d.split.days=[]; if(!d.steps||typeof d.steps!=='object')d.steps={}; if(!d.machines||typeof d.machines!=='object')d.machines={}; if(!d.bodyweight||typeof d.bodyweight!=='object')d.bodyweight={}; if(!d.sleep||typeof d.sleep!=='object')d.sleep={}; if(!d.mood||typeof d.mood!=='object')d.mood={}; if(!d.selfcheck||typeof d.selfcheck!=='object')d.selfcheck={}; if(!Array.isArray(d.mealTags))d.mealTags=['breakfast','lunch','snack','dinner']; if(!Array.isArray(d.stack))d.stack=[]; if(!d.lastUsed||typeof d.lastUsed!=='object')d.lastUsed={}; if(!d.settings||typeof d.settings!=='object')d.settings={goals:seed().settings.goals}; if(d.settings&&d.settings.goals&&d.settings.goals.alcohol==null)d.settings.goals.alcohol=(d.profile&&d.profile.sex==='F')?14:28; if(d.settings&&d.settings.restSec==null)d.settings.restSec=90; if(d.settings&&d.settings.restBeep==null)d.settings.restBeep=true; if(d.settings&&d.settings.goals&&d.settings.goals.sleep==null)d.settings.goals.sleep=8; if(d.profile&&!d.profile.since){ try{ const _cd=[]; (d.sessions||[]).forEach(s=>{if(s.date)_cd.push(s.date);}); Object.keys(d.meals||{}).forEach(k=>_cd.push(k)); Object.keys(d.bodyweight||{}).forEach(k=>_cd.push(k)); if(_cd.length)d.profile.since=_cd.sort()[0]; }catch(_){} }
+function migrate(d){ if(!d.version){d.version=1;} if(!d.meals||typeof d.meals!=='object'||Array.isArray(d.meals))d.meals={}; if(!Array.isArray(d.foods))d.foods=[]; d.foods=d.foods.map(f=>(f&&f.per100)?f:asCanonical(f)); if(!Array.isArray(d.sessions))d.sessions=[]; if(!d.split||typeof d.split!=='object')d.split={name:'',days:[]}; if(!Array.isArray(d.split.days))d.split.days=[]; if(!d.steps||typeof d.steps!=='object')d.steps={}; if(!d.machines||typeof d.machines!=='object')d.machines={}; if(!d.bodyweight||typeof d.bodyweight!=='object')d.bodyweight={}; if(!d.sleep||typeof d.sleep!=='object')d.sleep={}; if(!d.mood||typeof d.mood!=='object')d.mood={}; if(!d.selfcheck||typeof d.selfcheck!=='object')d.selfcheck={}; if(!d.adhoc||typeof d.adhoc!=='object')d.adhoc={}; if(!Array.isArray(d.mealTags))d.mealTags=['breakfast','lunch','snack','dinner']; if(!Array.isArray(d.stack))d.stack=[]; if(!d.lastUsed||typeof d.lastUsed!=='object')d.lastUsed={}; if(!d.settings||typeof d.settings!=='object')d.settings={goals:seed().settings.goals}; if(d.settings&&d.settings.goals&&d.settings.goals.alcohol==null)d.settings.goals.alcohol=(d.profile&&d.profile.sex==='F')?14:28; if(d.settings&&d.settings.restSec==null)d.settings.restSec=90; if(d.settings&&d.settings.restBeep==null)d.settings.restBeep=true; if(d.settings&&d.settings.goals&&d.settings.goals.sleep==null)d.settings.goals.sleep=8; if(d.profile&&!d.profile.since){ try{ const _cd=[]; (d.sessions||[]).forEach(s=>{if(s.date)_cd.push(s.date);}); Object.keys(d.meals||{}).forEach(k=>_cd.push(k)); Object.keys(d.bodyweight||{}).forEach(k=>_cd.push(k)); if(_cd.length)d.profile.since=_cd.sort()[0]; }catch(_){} }
   // recompute alcohol for old meal items logged before alcohol was in MACROKEYS
   try{ Object.values(d.meals||{}).forEach(arr=>arr.forEach(m=>{ if(m.alcohol==null){ if(m._food&&m._food.per100&&m._food.per100.alcohol&&m._unit){ m.alcohol=computeNutrients(m._food,m._unit,m.qty||1).alcohol; } else m.alcohol=0; } })); }catch(e){}
   // goalHist: snapshot of intake goals at the moment of first logging that day (history is FROZEN — past days never re-read the current goal)
@@ -1180,7 +1181,7 @@ function dayLabel(iso){ const t=todayISO(); if(iso===t)return 'HOY'; if(iso===sh
 function macroTotals(){
   const today=curDate(); const items=db.meals[today]||[]; const t={kcal:0,protein:0,carbs:0,fat:0,sodium:0,potassium:0,sugar:0,fiber:0,water:0,caffeine:0,alcohol:0};
   items.forEach(m=>{ for(const k in t){ t[k]+=parseFloat(m[k])||0; } });
-  const micros={}; (db.stack||[]).forEach(x=>{ const _n=(x.nutr&&Object.keys(x.nutr).length?x.nutr:null)||(identifySubstance(x.name)||{}).nutr; if(_n&&isDueToday(x,today)&&tickDone(x.ticks&&x.ticks[today])){ for(const k in t){ t[k]+=parseFloat(_n[k])||0; } MICROS.forEach(mi=>{ const v=parseFloat(_n[mi.k]); if(!isNaN(v)) micros[mi.k]=(micros[mi.k]||0)+v; }); } }); return {items,t,micros};
+  const micros={}; (db.stack||[]).forEach(x=>{ const _n=(x.nutr&&Object.keys(x.nutr).length?x.nutr:null)||(identifySubstance(x.name)||{}).nutr; if(_n&&tickDone(x.ticks&&x.ticks[today])){ for(const k in t){ t[k]+=parseFloat(_n[k])||0; } MICROS.forEach(mi=>{ const v=parseFloat(_n[mi.k]); if(!isNaN(v)) micros[mi.k]=(micros[mi.k]||0)+v; }); } }); (db.adhoc&&db.adhoc[today]||[]).forEach(a=>{ const _n=a.nutr; if(_n){ for(const k in t) t[k]+=parseFloat(_n[k])||0; MICROS.forEach(mi=>{const v=parseFloat(_n[mi.k]); if(!isNaN(v))micros[mi.k]=(micros[mi.k]||0)+v;}); } }); return {items,t,micros};
 }
 function bloating(t,g){
   // Subcutaneous (extracellular) water-retention tendency — acute, same-day heuristic.
@@ -2132,6 +2133,7 @@ function isDueToday(item, iso){
   const days=Math.round((new Date(iso+'T12:00:00').getTime()-base)/86400000);
   if(p.type==='everyN'){ const n=Math.max(1,+p.value||1); return days>=0 && days%n===0; }
   if(p.type==='cycle'){ const on=Math.max(0,+(p.value&&p.value.on)||0), off=Math.max(0,+(p.value&&p.value.off)||0); if(on+off===0) return true; return days>=0 && (days%(on+off))<on; }
+  if(p.type==='occasional') return false;
   return true;
 }
 function stackPeriodLabel(item){
@@ -2141,6 +2143,7 @@ function stackPeriodLabel(item){
   if(p.type==='everyN') return 'cada '+(p.value||2)+' días';
   if(p.type==='cycle') return 'ciclo '+(p.value?p.value.on:21)+'on/'+(p.value?p.value.off:7)+'off';
   if(p.type==='range') return 'rango'+(item.endDate?(' → '+item.endDate.slice(5)):'');
+  if(p.type==='occasional') return 'ocasional';
   return '';
 }
 function stackPct(iso){
@@ -2193,6 +2196,7 @@ function renderAgenda(){
   if(f.supps)(db.stack||[]).filter(x=>isDueToday(x,ISO)&&!x.archived).forEach(x=>{ const s=tickState(x.ticks&&x.ticks[ISO]); const mk=s==='taken'?' <b class="agm g">✓</b>':s==='late'?' <b class="agm w">tarde</b>':s==='skipped'?' <b class="agm b">✕</b>':''; const tt=x.tickTimes&&x.tickTimes[ISO]; const mn=hm2min(tt);
     if((s==='taken'||s==='late')&&isFinite(mn)) evs.push({mn,kind:'supp',id:x.id,name:x.name||'supp',mk,time:tt}); // checado con hora → bloque en timeline
     else chips+=`<span class="ag-chip supp" data-act="agsupptick" data-id="${escTxt(x.id||'')}">${escTxt(x.name||'supp')}${mk}</span>`; });
+  if(f.supps)(db.adhoc&&db.adhoc[ISO]||[]).forEach((a,i)=>{ const mn=hm2min(a.time); if(isFinite(mn)) evs.push({mn,kind:'supp',id:'ad_'+i,name:a.name||'toma',mk:' <b class="agm g">✓</b>',time:a.time}); else chips+=`<span class="ag-chip">${escTxt(a.name||'toma')} ✓</span>`; });
   if(chips) body+=`<div class="ag-nohr"><div class="gl">SIN HORA</div><div class="ag-chips">${chips}</div></div>`;
   const hasAxis=evs.length||sleepEvs.length;
   if(hasAxis){ let ax=`<div class="ag-axis" style="height:${CANVAS}px">`;
@@ -2247,6 +2251,7 @@ function renderStack(){
     const li=it=>{
       const st=it.ticks && tickState(it.ticks[iso]);
       const isDue=isDueToday(it,iso);
+      const canTick=isDue||(it.periodization&&it.periodization.type==='occasional');
       const dose=it.dose?(' · '+escTxt(it.dose)+(it.unit?' '+escTxt(it.unit):'')):'';
       const when=it.when&&it.when.length?(' · '+escTxt(it.when.join('/'))):'';
       const _tt=it.tickTimes&&it.tickTimes[iso]; const timeChip=tickDone(it.ticks&&it.ticks[iso])?` · <span data-act="supptime" data-id="${it.id}" data-d="${iso}" style="cursor:pointer;text-decoration:underline;color:var(--o50)">${_tt?escTxt(_tt):'+hora'}</span>`:'';
@@ -2254,7 +2259,7 @@ function renderStack(){
       const cat=` <span style="color:var(--o30);font-size:9px">[${escTxt(it.category||'supp')}]</span>`;
       const _subs=(()=>{ var r=identifyAllSubstances(it.name); if(it.subId&&!r.find(s=>s.id===it.subId)){ var fb=SUBSTANCE_DB.find(s=>s.id===it.subId); if(fb)r.push(fb); } return r; })();
       let idMark=_subs.map(function(_sub){ if(_sub.kind==='active'){ return ` <span data-act="suppinfo" data-id="${it.id}" data-sub="${_sub.id}" style="cursor:pointer;color:var(--o40);font-size:9px" title="ver ficha de ${escTxt(_sub.name)}">ⓘ</span>`; } else { const _hasN=it.nutr&&Object.keys(it.nutr).length; return _hasN?` <span style="color:var(--good);font-size:9px" title="aporta nutrición${it.nutrSrc==='db'?' · auto':''}">✓</span>`:` <span data-act="suppfill" data-id="${it.id}" data-sub="${_sub.id}" style="cursor:pointer;color:var(--o40);font-size:9px" title="rellenar nutrición de ${escTxt(_sub.name)}">+ nutr</span>`; } }).join('');
-      const tickDisp=isDue
+      const tickDisp=canTick
         ?`<span data-act="stacktick" data-id="${it.id}" title="tap: tomado → tarde → saltado" style="cursor:pointer;font-family:'JetBrains Mono',monospace;color:${st?(st==='skipped'?'var(--bad)':'var(--fill)'):'var(--o40)'};padding-right:4px">[${st?TICK_SYM[st]:' '}]</span>`
         :`<span style="color:var(--o20);padding-right:4px">[—]</span>`;
       return `<div class="line" style="padding:6px 0;align-items:flex-start">`
@@ -2280,12 +2285,23 @@ function renderStack(){
     if(!anyShown){
       out+=`<div class="empty" style="margin:24px 0 18px">${view==='today'?'no toca nada hoy ✓<br/>cambia a TODOS para ver tu lista completa':'sin items activos'}</div>`;
     }
+    const ocasional=all.filter(x=>!x.archived&&x.periodization&&x.periodization.type==='occasional');
+    if(ocasional.length){
+      const doneN=ocasional.filter(x=>tickDone(x.ticks&&x.ticks[iso])).length;
+      out+=`<details class="stk-blk"><summary>OCASIONAL · sin horario <span style="color:var(--o30)">· ${doneN}/${ocasional.length}</span></summary>${ocasional.map(li).join('')}</details>`;
+    }
+    const adhocHoy=(db.adhoc&&db.adhoc[iso])||[];
+    if(adhocHoy.length){
+      const rows=adhocHoy.map((a,i)=>`<div class="line" style="padding:6px 0;align-items:flex-start"><span class="k">${escTxt(a.name)}${a.compoundMg?' · '+a.compoundMg+' mg':''}${a.form?' ('+escTxt(a.form)+')':''}${a.time?' · '+escTxt(a.time):''}</span><span class="dots"></span><span class="v"><span data-act="deladhoc" data-i="${i}" style="cursor:pointer;color:var(--bad)">✕</span></span></div>`).join('');
+      out+=`<details class="stk-blk" open><summary>TOMAS PUNTUALES · hoy</summary>${rows}</details>`;
+    }
   }
   out+=`<hr class="rule"/><div style="display:flex;gap:8px;margin-top:14px">`
     +`<button class="b" data-act="stackadd" data-c="supp" style="flex:1">+ supp</button>`
     +`<button class="b" data-act="stackadd" data-c="skin" style="flex:1">+ skin</button>`
     +`<button class="b" data-act="stackadd" data-c="meds" style="flex:1">+ meds</button>`
-    +`</div>`;
+    +`</div>`
+    +`<div style="margin-top:8px"><button class="b" data-act="adhoclog" style="width:100%">[+ toma puntual]</button></div>`;
   return out;
 }
 function openStackEdit(id, presetCat){
@@ -2315,7 +2331,7 @@ function openStackEdit(id, presetCat){
     <div class="field"><label>INICIO</label><input id="se_start" type="date" value="${it.startDate||todayISO()}"/></div>
     <div class="field"><label>CUÁNDO</label><div class="toggles wrap" id="se_when">${whenOpts.map(whenBtn).join('')}</div></div>
     <div class="field"><label>PERIODIZACIÓN</label>
-      <div class="toggles wrap" id="se_pt">${ptBtn('daily','diario')}${ptBtn('weekly','días sem')}${ptBtn('everyN','cada N')}${ptBtn('cycle','ciclo')}${ptBtn('range','rango')}</div>
+      <div class="toggles wrap" id="se_pt">${ptBtn('daily','diario')}${ptBtn('weekly','días sem')}${ptBtn('everyN','cada N')}${ptBtn('cycle','ciclo')}${ptBtn('range','rango')}${ptBtn('occasional','ocasional')}</div>
       <div id="se_pwk" style="display:${p.type==='weekly'?'block':'none'};margin-top:6px"><div class="toggles" id="se_dayrow">${[1,2,3,4,5,6,0].map(dayBtn).join('')}</div></div>
       <div id="se_pn" style="display:${p.type==='everyN'?'flex':'none'};margin-top:6px;gap:6px;align-items:center"><span style="color:var(--o50);font-size:10px">cada</span><input id="se_pnv" type="number" inputmode="numeric" style="width:60px" value="${p.type==='everyN'?(p.value||2):2}"/><span style="color:var(--o50);font-size:10px">días</span></div>
       <div id="se_pcy" style="display:${p.type==='cycle'?'flex':'none'};margin-top:6px;gap:6px;align-items:center;flex-wrap:wrap"><span style="color:var(--o50);font-size:10px">on</span><input id="se_pcon" type="number" inputmode="numeric" style="width:60px" value="${p.type==='cycle'&&p.value?(p.value.on||21):21}"/><span style="color:var(--o50);font-size:10px">/ off</span><input id="se_pcoff" type="number" inputmode="numeric" style="width:60px" value="${p.type==='cycle'&&p.value?(p.value.off||7):7}"/><span style="color:var(--o50);font-size:10px">días</span></div>
@@ -2384,6 +2400,7 @@ function openStackEdit(id, presetCat){
     else if(pt==='everyN') { it.periodization={type:'everyN', value:Math.max(1,parseInt(val('se_pnv'),10)||2)}; delete it.endDate; }
     else if(pt==='cycle') { it.periodization={type:'cycle', value:{on:Math.max(0,parseInt(val('se_pcon'),10)||21), off:Math.max(0,parseInt(val('se_pcoff'),10)||7)}}; delete it.endDate; }
     else if(pt==='range') { it.periodization={type:'range'}; const end=val('se_pend'); if(end) it.endDate=end; else delete it.endDate; }
+    else if(pt==='occasional') { it.periodization={type:'occasional'}; delete it.endDate; }
     if(it.category==='meds'){
       const doc=val('se_doc'), dur=val('se_dur');
       if(doc||dur) it.med={doctor:doc, duration:dur}; else delete it.med;
@@ -2402,6 +2419,45 @@ function openStackEdit(id, presetCat){
       save(); closeModal(); render();
     };
   }
+}
+
+function openAdhocLog(){
+  const today=todayISO();
+  openModal(`<h3>toma puntual</h3>
+    <div class="submeta" style="margin-bottom:10px">registra algo que tomaste ahora sin añadirlo al stack</div>
+    <div class="field"><label>NOMBRE</label><input id="ad_name" placeholder="ej. melatonina 3mg, vitamina C" autocomplete="off"/></div>
+    <div class="field" style="margin-top:-2px"><div id="ad_idstrip" style="min-height:14px"></div><div id="ad_formbox"></div></div>
+    <div class="field"><label>FECHA</label><input id="ad_date" type="date" value="${today}" max="${today}"/></div>
+    <div class="field"><label>HORA</label><input id="ad_time" type="time" value="${nowHM()}"/></div>
+    <div class="sheetbtns"><button class="ok" id="ad_save">guardar</button><button class="cancel" data-act="closemodal">cancel</button></div>`);
+  const root=document.getElementById('modal'); if(!root) return;
+  var _adSe=null;
+  function _adRender(){
+    var nm=val('ad_name'); var s=identifySubstance(nm); var strip=document.getElementById('ad_idstrip'); var fb=document.getElementById('ad_formbox');
+    if(strip) strip.innerHTML=''; if(fb) fb.innerHTML=''; _adSe=s;
+    if(!s||!nm||nm.trim().length<2) return;
+    if(strip) strip.innerHTML='<span style="color:var(--good);font-size:10px">✓ '+escTxt(s.name)+'</span>';
+    if(s.forms&&fb){
+      var _df=detectForm(nm,s);
+      var _opts=Object.keys(s.forms).map(function(fk){ return '<option value="'+fk+'"'+(fk===_df?' selected':'')+'>'+escTxt(fk)+' · '+Math.round(s.forms[fk]*100)+'% elem</option>'; }).join('');
+      fb.innerHTML='<div class="field" style="margin-top:6px"><label>FORMA QUÍMICA</label><select id="ad_form">'+_opts+'</select></div><div class="field" style="margin-top:-2px"><label>MG DEL COMPUESTO</label><input id="ad_dose" type="number" inputmode="decimal" placeholder="ej. 500"/></div><div class="submeta" id="ad_elem" style="color:var(--o50)"></div>';
+      var _recalc=function(){ var f=val('ad_form')||_df; var comp=parseFloat(val('ad_dose'))||0; var em=elementalMg(comp,s,f); var bv=(s.bioav&&s.bioav[f])?' · '+escTxt(s.bioav[f]):''; var el=document.getElementById('ad_elem'); if(el) el.innerHTML=comp>0?('≈ <b style="color:var(--good)">'+em+' mg</b> elementales'+bv):''; };
+      var fsel=document.getElementById('ad_form'); if(fsel)fsel.onchange=_recalc; var dsel=document.getElementById('ad_dose'); if(dsel)dsel.addEventListener('input',_recalc);
+    }
+  }
+  var nameEl=document.getElementById('ad_name'); if(nameEl) nameEl.addEventListener('input',_adRender);
+  root.querySelector('#ad_save').onclick=function(){
+    var name=val('ad_name'); if(!name||!name.trim()){ alert('pon un nombre.'); return; }
+    var d=val('ad_date')||today; var time=val('ad_time')||nowHM();
+    var s=_adSe; var form=null,compoundMg=null,elemMg=null,elem=null; var nutr={};
+    if(s&&s.forms){ form=val('ad_form'); compoundMg=parseFloat(val('ad_dose'))||null; if(compoundMg){ elemMg=elementalMg(compoundMg,s,form); elem=s.elem; if(elem) nutr[elem]=elemMg; } }
+    else if(s&&s.nutr){ nutr=Object.assign({},s.nutr); }
+    var entry={id:'ad_'+Date.now()+Math.random().toString(36).slice(2,5),name:name.trim(),time:time,ts:Date.now()};
+    if(elem){ entry.elem=elem; entry.form=form; entry.compoundMg=compoundMg; entry.elementalMg=elemMg; }
+    if(Object.keys(nutr).length) entry.nutr=nutr;
+    db.adhoc=db.adhoc||{}; db.adhoc[d]=db.adhoc[d]||[]; db.adhoc[d].push(entry);
+    save(); closeModal(); render();
+  };
 }
 
 // ---------- render: split editor ----------
@@ -2751,6 +2807,8 @@ document.getElementById('app').addEventListener('click',e=>{
   else if(a==='suppinfo'){ const it=(db.stack||[]).find(x=>x.id===el.dataset.id); const sid=el.dataset.sub; const s=it&&(sid?SUBSTANCE_DB.find(z=>z.id===sid):(identifySubstance(it.name)||(it.subId?SUBSTANCE_DB.find(z=>z.id===it.subId):null))); if(s) openModal(`<h3>${escTxt(s.name)}</h3>`+suppInfoCard(s)+`<div class="sheetbtns"><button class="cancel" data-act="closemodal">cerrar</button></div>`); }
   else if(a==='suppfill'){ const it=(db.stack||[]).find(x=>x.id===el.dataset.id); const sid=el.dataset.sub; const s=it&&(sid?SUBSTANCE_DB.find(z=>z.id===sid):identifySubstance(it.name)); if(s&&s.nutr&&Object.keys(s.nutr).length){ it.nutr=Object.assign({},it.nutr||{},s.nutr); it.nutrSrc='db'; it.subId=s.id; save(); render(); if(window.toast)toast(s.name+': nutrición aplicada · ajústala en el item'); } }
   else if(a==='stackadd'){ openStackEdit(null, el.dataset.c||'supp'); }
+  else if(a==='adhoclog'){ openAdhocLog(); }
+  else if(a==='deladhoc'){ const d=todayISO(),i=+el.dataset.i; if(db.adhoc&&db.adhoc[d]){db.adhoc[d].splice(i,1); if(!db.adhoc[d].length)delete db.adhoc[d]; save(); render();} }
   else if(a==='stackview'){ window._stackView=el.dataset.v||'today'; render(); }
   else if(a==='chartpt'){ try{ const pts=JSON.parse(el.dataset.pts||'[]'); if(pts.length){ const r=el.getBoundingClientRect(); const x=(e.clientX-r.left)/(r.width||1); let best=pts[0],bd=9; pts.forEach(p=>{ const d=Math.abs(p.f-x); if(d<bd){bd=d;best=p;} }); if(best&&best.l)toast(best.l); } }catch(_){} }
   else if(a==='editbw'){ const d=el.dataset.d; const dt=document.getElementById('bw_date'), kg=document.getElementById('bw_kg'); if(dt)dt.value=d; if(kg){ kg.value=(db.bodyweight&&db.bodyweight[d])||''; kg.focus(); } }
