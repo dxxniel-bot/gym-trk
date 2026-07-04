@@ -594,7 +594,8 @@ function seed(){
     meals:{},
     foods:[],
     sleep:{},
-    mood:{}
+    mood:{},
+    selfcheck:{}
   };
 }
 // demo split the user can load on demand from the empty gym screen
@@ -698,7 +699,7 @@ function load(){
   if(!d)return seed();
   return migrate(d);
 }
-function migrate(d){ if(!d.version){d.version=1;} if(!d.meals||typeof d.meals!=='object'||Array.isArray(d.meals))d.meals={}; if(!Array.isArray(d.foods))d.foods=[]; d.foods=d.foods.map(f=>(f&&f.per100)?f:asCanonical(f)); if(!Array.isArray(d.sessions))d.sessions=[]; if(!d.split||typeof d.split!=='object')d.split={name:'',days:[]}; if(!Array.isArray(d.split.days))d.split.days=[]; if(!d.steps||typeof d.steps!=='object')d.steps={}; if(!d.machines||typeof d.machines!=='object')d.machines={}; if(!d.bodyweight||typeof d.bodyweight!=='object')d.bodyweight={}; if(!d.sleep||typeof d.sleep!=='object')d.sleep={}; if(!d.mood||typeof d.mood!=='object')d.mood={}; if(!Array.isArray(d.mealTags))d.mealTags=['breakfast','lunch','snack','dinner']; if(!Array.isArray(d.stack))d.stack=[]; if(!d.lastUsed||typeof d.lastUsed!=='object')d.lastUsed={}; if(!d.settings||typeof d.settings!=='object')d.settings={goals:seed().settings.goals}; if(d.settings&&d.settings.goals&&d.settings.goals.alcohol==null)d.settings.goals.alcohol=(d.profile&&d.profile.sex==='F')?14:28; if(d.settings&&d.settings.restSec==null)d.settings.restSec=90; if(d.settings&&d.settings.restBeep==null)d.settings.restBeep=true; if(d.settings&&d.settings.goals&&d.settings.goals.sleep==null)d.settings.goals.sleep=8; if(d.profile&&!d.profile.since){ try{ const _cd=[]; (d.sessions||[]).forEach(s=>{if(s.date)_cd.push(s.date);}); Object.keys(d.meals||{}).forEach(k=>_cd.push(k)); Object.keys(d.bodyweight||{}).forEach(k=>_cd.push(k)); if(_cd.length)d.profile.since=_cd.sort()[0]; }catch(_){} }
+function migrate(d){ if(!d.version){d.version=1;} if(!d.meals||typeof d.meals!=='object'||Array.isArray(d.meals))d.meals={}; if(!Array.isArray(d.foods))d.foods=[]; d.foods=d.foods.map(f=>(f&&f.per100)?f:asCanonical(f)); if(!Array.isArray(d.sessions))d.sessions=[]; if(!d.split||typeof d.split!=='object')d.split={name:'',days:[]}; if(!Array.isArray(d.split.days))d.split.days=[]; if(!d.steps||typeof d.steps!=='object')d.steps={}; if(!d.machines||typeof d.machines!=='object')d.machines={}; if(!d.bodyweight||typeof d.bodyweight!=='object')d.bodyweight={}; if(!d.sleep||typeof d.sleep!=='object')d.sleep={}; if(!d.mood||typeof d.mood!=='object')d.mood={}; if(!d.selfcheck||typeof d.selfcheck!=='object')d.selfcheck={}; if(!Array.isArray(d.mealTags))d.mealTags=['breakfast','lunch','snack','dinner']; if(!Array.isArray(d.stack))d.stack=[]; if(!d.lastUsed||typeof d.lastUsed!=='object')d.lastUsed={}; if(!d.settings||typeof d.settings!=='object')d.settings={goals:seed().settings.goals}; if(d.settings&&d.settings.goals&&d.settings.goals.alcohol==null)d.settings.goals.alcohol=(d.profile&&d.profile.sex==='F')?14:28; if(d.settings&&d.settings.restSec==null)d.settings.restSec=90; if(d.settings&&d.settings.restBeep==null)d.settings.restBeep=true; if(d.settings&&d.settings.goals&&d.settings.goals.sleep==null)d.settings.goals.sleep=8; if(d.profile&&!d.profile.since){ try{ const _cd=[]; (d.sessions||[]).forEach(s=>{if(s.date)_cd.push(s.date);}); Object.keys(d.meals||{}).forEach(k=>_cd.push(k)); Object.keys(d.bodyweight||{}).forEach(k=>_cd.push(k)); if(_cd.length)d.profile.since=_cd.sort()[0]; }catch(_){} }
   // recompute alcohol for old meal items logged before alcohol was in MACROKEYS
   try{ Object.values(d.meals||{}).forEach(arr=>arr.forEach(m=>{ if(m.alcohol==null){ if(m._food&&m._food.per100&&m._food.per100.alcohol&&m._unit){ m.alcohol=computeNutrients(m._food,m._unit,m.qty||1).alcohol; } else m.alcohol=0; } })); }catch(e){}
   // goalHist: snapshot of intake goals at the moment of first logging that day (history is FROZEN — past days never re-read the current goal)
@@ -903,7 +904,8 @@ function renderHome(){
     +`<div class="line stat"><span class="k">uptime</span><span class="dots"></span><span class="v">${uptimeDays()}d</span></div>`
     +`<div class="line stat"><span class="k">steps · today</span><span class="dots"></span><span class="v" data-act="editsteps" style="cursor:pointer">${(db.steps&&db.steps[todayISO()])?db.steps[todayISO()].toLocaleString():'— tap'}</span></div>`
     +`<div class="line stat"><span class="k">sleep · last night</span><span class="dots"></span><span class="v" data-act="logsleep" style="cursor:pointer">${(db.sleep&&db.sleep[todayISO()])?sleepHours(db.sleep[todayISO()])+' h':'— tap'}</span></div>`
-    +`<div class="line stat"><span class="k">mood · today</span><span class="dots"></span><span class="v" data-act="logmood" style="cursor:pointer">${(function(){var o=moodVal(db.mood&&db.mood[todayISO()]);return o?escTxt(o.label||(o.y+' / 10')):'— tap';})()}</span></div>`;
+    +`<div class="line stat"><span class="k">mood · today</span><span class="dots"></span><span class="v" data-act="logmood" style="cursor:pointer">${(function(){var o=moodVal(db.mood&&db.mood[todayISO()]);return o?escTxt(o.label||(o.y+' / 10')):'— tap';})()}</span></div>`
+    +`<div class="line stat"><span class="k">percepción · today</span><span class="dots"></span><span class="v" data-act="logselfcheck" style="cursor:pointer">${(function(){var o=db.selfcheck&&db.selfcheck[todayISO()];return o?(o.apariencia!=null?o.apariencia+' / 10':'✓'):'— tap';})()}</span></div>`;
 }
 // read-only preview of a planned day's exercises (without starting the workout)
 function dayPreviewHTML(day){
@@ -1710,7 +1712,39 @@ function metricSeries(key, days){
       max: vals.length?Math.max.apply(null,vals):0,
       change:null, fmt:n=>n+'/10', zero:false, canLog:true, logAct:'logmood'};
   }
+  if(key==='sc_bloat') return scSeries(days,'bloat','hinchazón');
+  if(key==='sc_definicion') return scSeries(days,'definicion','definición');
+  if(key==='sc_facial') return scSeries(days,'facial','cara');
+  if(key==='sc_apariencia') return scSeries(days,'apariencia','apariencia');
   return null;
+}
+// auto-percepción estética (subjetiva) — serie por campo de db.selfcheck; avg sobre días con dato (incluye 0 real). NO es el bloating() calculado.
+function scSeries(days,field,title){ const hd=lastDays(days); const raw=hd.map(d=>{const o=db.selfcheck&&db.selfcheck[d]; return (o&&o[field]!=null)?o[field]:null;}); const vals=raw.map(v=>v==null?0:v); const pos=raw.filter(v=>v!=null);
+  return {key:'sc_'+field, title, unit:'/10', dates:hd, vals, current:(raw[raw.length-1]!=null?raw[raw.length-1]:0), currentISO:hd[hd.length-1],
+    avg:pos.length?Math.round(pos.reduce((a,b)=>a+b,0)/pos.length*10)/10:0, min:pos.length?Math.min.apply(null,pos):0, max:pos.length?Math.max.apply(null,pos):0,
+    change:null, fmt:n=>n+'/10', zero:false, canLog:true, logAct:'logselfcheck'};
+}
+function scTileHTML(field,label){ const hd=lastDays(14); const raw=hd.map(d=>{const o=db.selfcheck&&db.selfcheck[d]; return (o&&o[field]!=null)?o[field]:null;}); const log=raw.filter(v=>v!=null); if(!log.length)return '';
+  const arr=raw.map(v=>v==null?0:v); const _a=Math.round(log.reduce((a,b)=>a+b,0)/log.length*10)/10; const _t=db.selfcheck&&db.selfcheck[todayISO()]; const cur=(_t&&_t[field]!=null)?_t[field]:'—';
+  return `<div class="ptile tap" data-act="metricdetail" data-m="sc_${field}"><div class="ptlh"><div class="plbl">${label}</div><span class="ptchev">›</span></div><div class="pval" style="font-size:18px">${cur}<span> hoy</span></div><div class="pst flat">prom ${_a} · 14d</div>${lineChart(arr,{h:32})}</div>`;
+}
+// modal de auto-percepción — 4 campos 0-10, todos opcionales (vacío = sin dato)
+function openSelfcheckLog(){ const SF=[['bloat','¿qué tan hinchado te ves?'],['definicion','¿qué tan definido?'],['facial','¿cómo se ve tu cara?'],['apariencia','¿qué tan bien te ves en general?']];
+  const ks=Object.keys(db.selfcheck||{}).sort(); const recent=ks.slice(-8).reverse();
+  const rows=recent.map(d=>{ const o=db.selfcheck[d]||{}; const disp=SF.map(([f],i)=>o[f]!=null?'BDFA'[i]+o[f]:'').filter(Boolean).join(' ')||'—';
+    return `<div class="line" style="padding:5px 0"><span class="k" data-act="editselfcheck" data-d="${d}" style="cursor:pointer;text-decoration:underline">${d}</span><span class="dots"></span><span class="v">${escTxt(disp)} <span data-act="delselfcheck" data-d="${d}" style="color:var(--o40);cursor:pointer;margin-left:8px">✕</span></span></div>`; }).join('');
+  const fields=SF.map(([f,q])=>`<div class="field"><label>${escTxt(q)}</label><input id="sc_${f}" type="number" inputmode="numeric" min="0" max="10" placeholder="—"/></div>`).join('');
+  openModal(`<h3>cómo me veo</h3>
+   <div class="submeta" style="margin-bottom:10px">0 = nada · 10 = mucho · opcional</div>
+   <div class="field"><label>FECHA</label><input id="sc_date" type="date" value="${todayISO()}" max="${todayISO()}"/></div>
+   ${fields}
+   <div class="sheetbtns" style="margin-bottom:6px"><button class="ok" id="sc_save">guardar</button><button class="cancel" data-act="closemodal">cerrar</button></div>
+   ${recent.length?`<div class="grp-label" style="margin:12px 0 4px">REGISTROS RECIENTES</div>`+rows+`<div class="submeta">toca una fecha para editarla · ✕ para borrar</div>`:''}`);
+  const load=d=>{ const o=(db.selfcheck&&db.selfcheck[d])||{}; SF.forEach(([f])=>{ const el=document.getElementById('sc_'+f); if(el)el.value=(o[f]!=null?o[f]:''); }); };
+  const dt=document.getElementById('sc_date'); if(dt)dt.onchange=()=>load(dt.value);
+  document.getElementById('sc_save').onclick=()=>{ const d=val('sc_date')||todayISO(); const o={}; SF.forEach(([f])=>{ const v=parseInt(val('sc_'+f),10); if(isFinite(v)&&v>=0&&v<=10)o[f]=v; });
+    db.selfcheck=db.selfcheck||{}; if(Object.keys(o).length){ o.ts=Date.now(); db.selfcheck[d]=o; } else { delete db.selfcheck[d]; } save(); closeModal(); render(); };
+  load(todayISO());
 }
 // total hard sets in [aISO,bISO] inclusive — RP counting (uni pair=max side, drop=0.5). mirror of setsWeek for arbitrary span.
 function spanHardSets(aISO,bISO){
@@ -2048,6 +2082,11 @@ function renderProgress(){
         +`<div class="pst flat">prom ${_a} · 14d</div>${lineChart(_moArr,{h:32})}</div>`);
     }
   }
+  // auto-percepción estética (4 tiles; solo renderizan con datos)
+  if(cfg.sc_bloat){ const _h=scTileHTML('bloat','hinchazón'); if(_h)tiles.push(_h); }
+  if(cfg.sc_definicion){ const _h=scTileHTML('definicion','definición'); if(_h)tiles.push(_h); }
+  if(cfg.sc_facial){ const _h=scTileHTML('facial','cara'); if(_h)tiles.push(_h); }
+  if(cfg.sc_apariencia){ const _h=scTileHTML('apariencia','apariencia'); if(_h)tiles.push(_h); }
   // mantenimiento real (TDEE adaptativo) — informativo, NO reescribe goals
   if(cfg.kcal){ const _td=estimateTDEE(90); if(_td){ const _gk=(db.settings.goals&&db.settings.goals.kcal)||0; const _diff=_gk?_td.tdee-_gk:null;
     tiles.push(`<div class="ptile"><div class="ptlh"><div class="plbl">mantenimiento real</div></div>`
@@ -2068,7 +2107,7 @@ function renderProgress(){
   out+='<div style="text-align:center;margin:16px 0 2px"><a data-act="healthsync" style="font-size:11px;color:var(--o60);cursor:pointer">↻ sync de Salud (pasos/peso)</a></div>';
   return out;
 }
-function openProgConfig(){ const c=progMetrics(); const M=[['weight','peso'],['volume','volumen'],['e1rm','fuerza · e1rm'],['steps','pasos'],['water','agua'],['sleep','sueño'],['kcal','kcal'],['mood','ánimo'],['consistency','consistencia']];
+function openProgConfig(){ const c=progMetrics(); const M=[['weight','peso'],['volume','volumen'],['e1rm','fuerza · e1rm'],['steps','pasos'],['water','agua'],['sleep','sueño'],['kcal','kcal'],['mood','ánimo'],['consistency','consistencia'],['sc_bloat','hinchazón'],['sc_definicion','definición'],['sc_facial','cara'],['sc_apariencia','apariencia']];
   const rows=M.map(([k,l])=>`<div class="line" data-act="progmtog" data-m="${k}" style="cursor:pointer"><span class="k">${l}</span><span class="dots"></span><span class="v" style="color:${c[k]?'var(--good)':'var(--o40)'}">${c[k]?'on':'off'}</span></div>`).join('');
   openModal(`<h3>métricas visibles</h3><div class="submeta" style="margin-bottom:8px">elige qué tiles ves en progreso</div>${rows}<div class="sheetbtns" style="margin-top:12px"><button class="cancel" data-act="closemodal">listo</button></div>`);
 }
@@ -2132,7 +2171,7 @@ function openSuppTime(id, iso){ iso=iso||todayISO(); const it=(db.stack||[]).fin
 function curAgendaDate(){ return state.agendaDate||todayISO(); }
 function agendaFilters(){ try{ const v=JSON.parse(localStorage.getItem('gymtrk_agenda_filters')); if(v&&typeof v==='object') return Object.assign({meals:true,train:true,supps:true,sleep:true},v); }catch(_){} return {meals:true,train:true,supps:true,sleep:true}; }
 // selector de métricas visibles en Progress (espejo de agendaFilters)
-function progMetrics(){ const D={weight:true,volume:true,e1rm:true,steps:true,water:true,sleep:true,kcal:true,mood:true,consistency:true}; try{ const v=JSON.parse(localStorage.getItem('gymtrk_progress_metrics_config')); if(v&&typeof v==='object') return Object.assign(D,v); }catch(_){} return D; }
+function progMetrics(){ const D={weight:true,volume:true,e1rm:true,steps:true,water:true,sleep:true,kcal:true,mood:true,consistency:true,sc_bloat:true,sc_definicion:true,sc_facial:true,sc_apariencia:true}; try{ const v=JSON.parse(localStorage.getItem('gymtrk_progress_metrics_config')); if(v&&typeof v==='object') return Object.assign(D,v); }catch(_){} return D; }
 function minToHM(min){ min=((Math.round(min)%1440)+1440)%1440; return pad(Math.floor(min/60))+':'+pad(min%60); }
 function renderAgenda(){
   const ISO=curAgendaDate(), f=agendaFilters(), PXMIN=1.2, top=m=>Math.round(m*PXMIN), CANVAS=top(1440);
@@ -2677,6 +2716,9 @@ document.getElementById('app').addEventListener('click',e=>{
   else if(a==='editsleep'){ const d=el.dataset.d; const dt=document.getElementById('sl_date'); if(dt){ dt.value=d; dt.dispatchEvent(new Event('change')); } }
   else if(a==='delsleep'){ const d=el.dataset.d; if(confirm('¿Borrar el sueño de '+d+'?')){ if(db.sleep)delete db.sleep[d]; save(); openSleepLog(); } }
   else if(a==='logmood'){ openMoodLog(); }
+  else if(a==='logselfcheck'){ openSelfcheckLog(); }
+  else if(a==='editselfcheck'){ const d=el.dataset.d; const dt=document.getElementById('sc_date'); if(dt){ dt.value=d; dt.dispatchEvent(new Event('change')); } }
+  else if(a==='delselfcheck'){ const d=el.dataset.d; if(confirm('¿Borrar la percepción de '+d+'?')){ if(db.selfcheck)delete db.selfcheck[d]; save(); openSelfcheckLog(); } }
   else if(a==='editmood'){ const d=el.dataset.d; const dt=document.getElementById('mo_date'); if(dt){ dt.value=d; dt.dispatchEvent(new Event('change')); } }
   else if(a==='delmood'){ const d=el.dataset.d; if(confirm('¿Borrar el ánimo de '+d+'?')){ if(db.mood)delete db.mood[d]; save(); openMoodLog(); } }
   else if(a==='healthimport'){ openHealthImport(); }
