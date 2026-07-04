@@ -2352,6 +2352,12 @@ function openStackEdit(id, presetCat){
     if(s.kind==='nutrient'){
       strip.innerHTML='<span style="color:var(--good);font-size:10px">✓ '+escTxt(s.name)+aprox+'</span> <button class="t" type="button" id="se_idfill" style="font-size:10px;padding:2px 8px;margin-left:6px">rellenar nutrición</button>';
       var bf=document.getElementById('se_idfill'); if(bf) bf.onclick=function(){ _fillNutr(s); _idSel=s.id; _nutrFromDb=true; if(window.toast)toast(s.name+' · valores típicos, edítalos si tu etiqueta difiere'); };
+      if(s.forms&&card){ _idSel=s.id; var _df=detectForm(nm,s);
+        var _opts=Object.keys(s.forms).map(function(fk){ return '<option value="'+fk+'"'+(fk===_df?' selected':'')+'>'+escTxt(fk)+' · '+Math.round(s.forms[fk]*100)+'% elem</option>'; }).join('');
+        card.innerHTML='<div class="field" style="margin-top:6px"><label>FORMA QUÍMICA</label><select id="se_form">'+_opts+'</select></div><div class="submeta" id="se_elem" style="margin-top:-2px;color:var(--o50)">ingresa los mg del compuesto en DOSIS ↑</div>';
+        var _recalc=function(){ var f=val('se_form')||_df; var comp=parseFloat(val('se_dose'))||0; var em=elementalMg(comp,s,f); var eEl=document.getElementById('se_n_'+s.elem); if(eEl&&comp>0){ eEl.value=em; _nutrFromDb=true; } var bv=(s.bioav&&s.bioav[f])?' · '+escTxt(s.bioav[f]):''; var out=document.getElementById('se_elem'); if(out) out.innerHTML=comp>0?('≈ <b style="color:var(--good)">'+em+' mg</b> elementales de '+escTxt(s.elem)+bv):('ingresa los mg del compuesto en DOSIS ↑'+bv); };
+        var fsel=document.getElementById('se_form'); if(fsel)fsel.onchange=_recalc; var dsel=document.getElementById('se_dose'); if(dsel)dsel.addEventListener('input',_recalc); _recalc();
+      }
     } else {
       _idSel=s.id;
       strip.innerHTML='<span style="color:var(--good);font-size:10px">✓ '+escTxt(s.name)+aprox+' <span style="color:var(--o40)">· activo</span></span> <button class="t" type="button" id="se_idficha" style="font-size:10px;padding:2px 8px;margin-left:6px">ver ficha</button>';
@@ -2380,6 +2386,9 @@ function openStackEdit(id, presetCat){
       if(doc||dur) it.med={doctor:doc, duration:dur}; else delete it.med;
     } else { delete it.med; }
     const _NK=['kcal','protein','carbs','fat','sugar','fiber','sodium','potassium','caffeine','alcohol']; const _nutr={}; let _hasN=false; _NK.forEach(k=>{ const v=parseFloat(val('se_n_'+k)); if(!isNaN(v)&&v!==0){ _nutr[k]=v; _hasN=true; } }); MICROS.forEach(mi=>{ const v=parseFloat(val('se_n_'+mi.k)); if(!isNaN(v)&&v!==0){ _nutr[mi.k]=v; _hasN=true; } }); if(_hasN){ it.nutr=_nutr; it.nutrSrc=_nutrFromDb?"db":"user"; } else { delete it.nutr; delete it.nutrSrc; } if(_idSel){ it.subId=_idSel; } else { delete it.subId; }
+    var _fEl=document.getElementById('se_form'); var _se=_fEl?identifySubstance(it.name):null;   // forma química: guardar compuesto + elemental
+    if(_fEl&&_se&&_se.forms){ it.elem=_se.elem; it.form=_fEl.value; it.compoundMg=parseFloat(val('se_dose'))||null; it.elementalMg=elementalMg(it.compoundMg,_se,it.form); }
+    else { delete it.elem; delete it.form; delete it.compoundMg; delete it.elementalMg; }
     if(isNew){ db.stack=db.stack||[]; db.stack.push(it); }
     save(); closeModal(); render();
   };
@@ -3332,12 +3341,12 @@ const MACROKEYS=['kcal','protein','carbs','fat','sugar','fiber','sodium','potass
    Reusa searchScore()/bfNorm() (matcher de alimentos). NUNCA renombra it.name:
    identificar = lookup interno -> llena it.nutr (nutricional) o muestra ficha (activo). */
 const SUBSTANCE_DB=(function(){ const L=[];
-  const N=(id,name,alt,nutr,o)=>{ o=o||{}; L.push({id:'sb_'+id,name:name,alt:alt||'',brand:o.br||'',cat:o.cat||'supp',kind:'nutrient',dose:o.dose||'',unit:o.unit||'',nutr:nutr||{},conf:o.conf||'típico'}); };
+  const N=(id,name,alt,nutr,o)=>{ o=o||{}; L.push({id:'sb_'+id,name:name,alt:alt||'',brand:o.br||'',cat:o.cat||'supp',kind:'nutrient',dose:o.dose||'',unit:o.unit||'',nutr:nutr||{},conf:o.conf||'típico',elem:o.elem||null,forms:o.forms||null,formDefault:o.formDefault||null,bioav:o.bioav||null}); };
   const A=(id,name,alt,ref,o)=>{ o=o||{}; L.push({id:'sb_'+id,name:name,alt:alt||'',brand:o.br||'',cat:o.cat||'skin',kind:'active',dose:o.dose||'',unit:o.unit||'',ref:ref,conf:o.conf||'típico'}); };
   // nutricionales (aportan al día; valores TÍPICOS por dosis)
-  N('potasio','Potasio','potassium cloruro gluconato citrato de potasio k',{potassium:99},{dose:'99',unit:'mg'});
-  N('magnesio','Magnesio','magnesium glicinato citrato oxido malato mg',{magnesium:200},{dose:'200',unit:'mg'});
-  N('zinc','Zinc','zinc cinc gluconato picolinato',{zinc:15},{dose:'15',unit:'mg'});
+  N('potasio','Potasio','potassium cloruro gluconato citrato de potasio k',{potassium:99},{elem:'potassium',forms:{citrato:.38,cloruro:.52,gluconato:.17,bicarbonato:.39,aspartato:.17},formDefault:'citrato',dose:'99',unit:'mg'});
+  N('magnesio','Magnesio','magnesium glicinato citrato oxido malato treonato mg',{magnesium:200},{elem:'magnesium',forms:{glicinato:.14,citrato:.16,oxido:.60,malato:.155,treonato:.08,cloruro:.12},formDefault:'glicinato',bioav:{oxido:'alta % elemental · baja absorción'},dose:'200',unit:'mg'});
+  N('zinc','Zinc','zinc cinc gluconato picolinato citrato oxido bisglicinato',{zinc:15},{elem:'zinc',forms:{gluconato:.13,picolinato:.20,citrato:.31,oxido:.80,bisglicinato:.24},formDefault:'picolinato',dose:'15',unit:'mg'});
   N('calcio','Calcio','calcium carbonato citrato de calcio ca',{calcium:500},{dose:'500',unit:'mg'});
   N('hierro','Hierro','iron sulfato ferroso bisglicinato fe',{iron:18},{dose:'18',unit:'mg'});
   N('vitd','Vitamina D','vitamin d d3 colecalciferol vit d',{vitD:50},{dose:'2000',unit:'UI'});
@@ -3373,8 +3382,18 @@ const SUBSTANCE_DB=(function(){ const L=[];
   A('omeprazol','Omeprazol','omeprazole prilosec losec',{class:'Inhibidor de bomba de protones (IBP)',use:'Reflujo/ERGE, úlcera, acidez.',dose:'20 mg/día antes del desayuno.',caution:'Uso prolongado: baja B12/magnesio/calcio y riesgo de fracturas. Efecto rebote al suspender. Interacciones (p. ej. clopidogrel).'},{cat:'meds'});
   return L;
 })();
-function identifySubstance(name){ var q=(name||'').trim(); if(!q) return null; var best=null,bs=0; for(var ii=0;ii<SUBSTANCE_DB.length;ii++){ var sc=searchScore(q,SUBSTANCE_DB[ii]); if(sc>bs){ bs=sc; best=SUBSTANCE_DB[ii]; } } return (best && bs>=500) ? best : null; }
+function identifySubstance(name){ var q0=(name||'').trim(); if(!q0) return null;
+  var q=bfNorm(q0).replace(/\b\d+([.,]\d+)?\s*(mg|g|mcg|µg|ug|ui|iu|ml|caps?|tabs?|comp|softgel)\b/g,' ').replace(/\b(de|la|el|los|las|con|en|para|del|x)\b/g,' ').replace(/\s+/g,' ').trim();
+  var scoreOf=function(s){ var best=null,bs=0; for(var ii=0;ii<SUBSTANCE_DB.length;ii++){ var sc=searchScore(s,SUBSTANCE_DB[ii]); if(sc>bs){ bs=sc; best=SUBSTANCE_DB[ii]; } } return {best:best,bs:bs}; };
+  var r=scoreOf(q||q0); if(r.best&&r.bs>=300) return r.best;   // umbral bajado de 500 → 300 (acepta token-search); antes fallaban nombres con ruido
+  var toks=(q||q0).split(' ').filter(Boolean), fb=null,fbs=0;   // fallback: una palabra/bigrama que sea nombre de sustancia (score>=700 = palabra-en-nombre)
+  for(var i=0;i<toks.length;i++){ var rr=scoreOf(toks[i]); if(rr.bs>fbs&&rr.bs>=700){ fbs=rr.bs; fb=rr.best; } if(i+1<toks.length){ var r2=scoreOf(toks[i]+' '+toks[i+1]); if(r2.bs>fbs&&r2.bs>=700){ fbs=r2.bs; fb=r2.best; } } }
+  return fb||null;
+}
 function identifyAllSubstances(text){ var tokens=(text||'').trim().split(/\s+/).filter(Boolean),seen={},out=[]; var add=function(q){ var s=identifySubstance(q); if(s&&!seen[s.id]){seen[s.id]=true;out.push(s);} }; for(var i=0;i<tokens.length;i++){ if(i+2<tokens.length)add(tokens.slice(i,i+3).join(' ')); if(i+1<tokens.length)add(tokens.slice(i,i+2).join(' ')); add(tokens[i]); } return out; }
+// forma química → fracción elemental. detectForm escanea la forma en el nombre del producto; elementalMg = mg compuesto × fracción.
+function detectForm(name, entry){ if(!entry||!entry.forms)return null; var nn=bfNorm(name||''); var ks=Object.keys(entry.forms); for(var i=0;i<ks.length;i++){ if(nn.indexOf(bfNorm(ks[i]))>=0)return ks[i]; } return entry.formDefault||ks[0]||null; }
+function elementalMg(compoundMg, entry, form){ if(!entry||!entry.forms)return null; var fr=entry.forms[form]||entry.forms[entry.formDefault]||1; return Math.round((parseFloat(compoundMg)||0)*fr); }
 function suppInfoCard(s){ if(!s||!s.ref) return ''; var r=s.ref; var row=function(l,v){ return v?'<div style="margin:4px 0"><span style="color:var(--o50);font-size:9px;letter-spacing:.5px">'+l+'</span><br/><span style="font-size:11px">'+escTxt(v)+'</span></div>':''; };
   return '<div style="border:1px solid var(--o20);border-radius:8px;padding:10px;margin-top:6px">'
     +'<div style="font-size:11px;color:var(--o40);margin-bottom:4px">'+escTxt(s.name)+' · ficha</div>'
