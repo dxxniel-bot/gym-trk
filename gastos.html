@@ -249,9 +249,32 @@ function blankPerson(){ return {id:uid(), name:'', payments:[]}; }
 function blankExpense(){ return {id:uid(), label:'', currency:state.lastCur, total:0, mode:'equal', includeMe:true, payer:'__me', mineManual:0, minePuso:0, minePusoCur:state.lastCur, participants:[], manual:{}, puso:{}, pusoCur:{}, extras:[], paid:{}}; }
 function fresh(){ state.title=''; state.me='Daniel'; state.rollup='mxn'; state.rate=22; state.lastCur='mxn'; state.people=[blankPerson(),blankPerson(),blankPerson(),blankPerson()]; state.expenses=[]; }
 
+function migrateOld(){   // recupera data de versiones viejas (dividir_gastos_v1..v5); aditivo, NO borra el original
+  for(let v=5; v>=1; v--){
+    const raw=localStorage.getItem('dividir_gastos_v'+v);
+    if(!raw) continue;
+    try{
+      const d=JSON.parse(raw);
+      const cur=d.lastCur||d.currency||'mxn';
+      (d.people||[]).forEach(p=>{               // esquema viejo: persona con `paid` (su aporte) en vez de payments[]
+        if(!Array.isArray(p.payments)){
+          p.payments = (typeof p.paid==='number' && p.paid>0)
+            ? [{id:'mig'+v+(p.id||''), label:'aporte', amount:p.paid, currency:cur, dir:'they'}]
+            : [];
+        }
+        delete p.paid; delete p.travels;
+      });
+      return JSON.stringify(d);                  // load() lo parsea; al primer save() queda bajo v6. El original vN queda intacto.
+    }catch(e){ /* probar versión anterior */ }
+  }
+  return null;
+}
 function load(){
   try{
-    const raw=localStorage.getItem(KEY);
+    let raw=localStorage.getItem(KEY);
+    let cur=null; try{ cur=raw&&JSON.parse(raw); }catch(_){}
+    const empty=!cur||(!cur.title && !(cur.people&&cur.people.length) && !(cur.expenses&&cur.expenses.length));
+    if(empty){ const m=migrateOld(); if(m){ raw=m; localStorage.setItem(KEY,m); } }   // v6 vacío → adopta v1..v5 y lo fija; el original NO se borra
     if(raw){ const d=JSON.parse(raw); Object.assign(state,{title:d.title||'',me:d.me||'',rollup:d.rollup||'mxn',rate:d.rate||22,lastCur:d.lastCur||'mxn',people:d.people||[],expenses:d.expenses||[]}); }
     else fresh();
   }catch(e){ fresh(); }
@@ -287,13 +310,14 @@ const pusoOf    = (e,pid)=> convert(e.puso[pid]||0, pusoCurOf(e,pid), e.currency
 const minePusoVal= e => convert(e.minePuso||0, e.minePusoCur||e.currency, e.currency);
 function manualAsignado(e){ let s=e.participants.reduce((a,p)=>a+(e.manual[p]||0),0); if(e.includeMe)s+=e.mineManual||0; return s; }
 function costoTotal(e){ if(e.mode==='manual'){ const base=(e.total>0?e.total:manualAsignado(e)); return base+extrasTotal(e); } return splitBase(e); }
-const faltaP  = (e,pid)=> e.paid[pid] ? 0 : (shareOf(e,pid)-pusoOf(e,pid));   // + falta / - de más
+const faltaP  = (e,pid)=> e.paid[pid] ? 0 : (shareOf(e,pid)-pusoOf(e,pid));   // + falta / - de más (vista del GASTO/fondeo)
+const debeMe  = (e,pid)=> Math.max(0, faltaP(e,pid));   // lo que X le debe a Daniel por gasto (los sobrepagos NO se acreditan contra Daniel)
 const mineFalta= e => e.includeMe ? (mineShare(e)-minePusoVal(e)) : 0;
 function aportado(e){ let s=e.participants.reduce((a,p)=>a+pusoOf(e,p),0); if(e.includeMe)s+=minePusoVal(e); return s; }
 const faltaCubrir = e => costoTotal(e)-aportado(e);
 // rollup cents
 function personSaldo(pid){
-  let s=0; state.expenses.forEach(e=>{ if(e.participants.includes(pid)) s+=convert(faltaP(e,pid), e.currency, state.rollup); });
+  let s=0; state.expenses.forEach(e=>{ if(e.participants.includes(pid)) s+=convert(debeMe(e,pid), e.currency, state.rollup); });
   (state.pById[pid].payments||[]).forEach(x=>{ const v=convert(x.amount||0, x.currency||'mxn', state.rollup); s += (x.dir==='me'? v : -v); });
   return s;
 }
@@ -418,22 +442,22 @@ function payRowHTML(p,pay){
     `<span class="apv"><span class="apcur" data-f="apcur" data-id="${p.id}" data-pay="${pay.id}">${SYM[pay.currency||'mxn']}</span><input inputmode="decimal" data-f="apamt" data-id="${p.id}" data-pay="${pay.id}" value="${amtVal(pay.amount)}" placeholder="0"/></span></div>`;
 }
 function personSubtotals(p){
-  let g=0; state.expenses.forEach(e=>{ if(e.participants.includes(p.id)) g+=convert(faltaP(e,p.id),e.currency,state.rollup); });
+  let g=0; state.expenses.forEach(e=>{ if(e.participants.includes(p.id)) g+=convert(debeMe(e,p.id),e.currency,state.rollup); });
   let t=0,i=0; (p.payments||[]).forEach(x=>{ const v=convert(x.amount||0,x.currency||'mxn',state.rollup); if(x.dir==='me') i+=v; else t+=v; });
   return {g,t,i};
 }
 function mathLine(p){
-  const s=personSubtotals(p), net=s.g + s.i - s.t;
+  const s=personSubtotals(p), mine=s.g+s.i, net=mine - s.t;
   const r = net>0?`te debe ${fmtR(net)}` : net<0?`a favor ${fmtR(-net)}` : 'a mano';
-  let lhs = `gastos ${fmtR(s.g)}`;
-  if(s.i) lhs += ` <span class="op">+</span> yo ${fmtR(s.i)}`;
-  if(s.t) lhs += ` <span class="op">−</span> pagó ${fmtR(s.t)}`;
+  let lhs = `mis aportes ${fmtR(mine)}`;
+  if(s.t) lhs += ` <span class="op">−</span> sus aportes ${fmtR(s.t)}`;
   return `${lhs} <span class="op">=</span> <b>${r}</b>`;
 }
 function byPersonHTML(p){
   const cargos=state.expenses.filter(e=>e.participants.includes(p.id)).map(e=>{
-    const pd=!!e.paid[p.id], f=faltaP(e,p.id);
-    const v = pd? '✓ saldado' : faltaTxt(f,e.currency);
+    const pd=!!e.paid[p.id], f=debeMe(e,p.id);
+    if(!pd && Math.round(f)===0) return '';   // no mostrar gastos donde no debe nada ($0.00)
+    const v = pd? '✓ saldado' : fmt(f,e.currency);
     return `<div class="bd ${pd?'pd':''}"><span class="bchk ${pd?'on':''}" data-f="cpaid" data-exp="${e.id}" data-pid="${p.id}">${pd?'✓':'☐'}</span>`+
       `<span class="bl">${escapeHtml(e.label||'(sin nombre)')}</span><span class="bv">${v}</span></div>`;
   }).join('');
@@ -445,13 +469,14 @@ function byPersonHTML(p){
   return `<div class="pacc" data-id="${p.id}">`+
     `<div class="pah"><span class="pn">${nm}</span><span class="pbadge ${b.cls}" data-id="${p.id}">${b.html}</span></div>`+
     `<div class="bds">`+
-      `<div class="bsec first"><span>GASTOS · le toca</span><span class="bsub g" data-id="${p.id}">${fmtR(sub.g)}</span></div>`+
-      (cargos||'<div class="bnone">no entra en ningún gasto</div>')+
-      `<div class="bsec"><span>YO LE PAGUÉ · mis aportes</span><span class="bsub i" data-id="${p.id}">+${fmtR(sub.i)}</span></div>`+
+      `<div class="bsec first"><span>MIS APORTES</span><span class="bsub mine" data-id="${p.id}">${fmtR(sub.g+sub.i)}</span></div>`+
+      (cargos||'')+
       iPaid+
+      ((cargos||iPaid)?'':'<div class="bnone">aún no le has aportado nada</div>')+
       `<div class="addap" data-f="addme" data-id="${p.id}">[+ agregar]</div>`+
-      `<div class="bsec"><span>PAGÓ · sus aportes</span><span class="bsub t" data-id="${p.id}">−${fmtR(sub.t)}</span></div>`+
+      `<div class="bsec"><span>SUS APORTES</span><span class="bsub t" data-id="${p.id}">${fmtR(sub.t)}</span></div>`+
       theyPaid+
+      (theyPaid?'':'<div class="bnone">aún no aporta</div>')+
       `<div class="addap" data-f="addthey" data-id="${p.id}">[+ agregar]</div>`+
       `<div class="bmath" data-id="${p.id}">${mathLine(p)}</div>`+
     `</div>`+
@@ -480,9 +505,8 @@ function refreshBadges(){ state.people.forEach(p=>{
   const acc=document.querySelector(`.pacc[data-id="${esc(p.id)}"]`); if(!acc) return;
   const bg=acc.querySelector('.pbadge'); if(bg) setBadge(bg, personSaldo(p.id));
   const sub=personSubtotals(p);
-  const sg=acc.querySelector('.bsub.g'); if(sg) sg.textContent=fmtR(sub.g);
-  const si=acc.querySelector('.bsub.i'); if(si) si.textContent='+'+fmtR(sub.i);
-  const st=acc.querySelector('.bsub.t'); if(st) st.textContent='−'+fmtR(sub.t);
+  const sm=acc.querySelector('.bsub.mine'); if(sm) sm.textContent=fmtR(sub.g+sub.i);
+  const st=acc.querySelector('.bsub.t'); if(st) st.textContent=fmtR(sub.t);
   const bm=acc.querySelector('.bmath'); if(bm) bm.innerHTML=mathLine(p);
 }); }
 function updateResumen(){
