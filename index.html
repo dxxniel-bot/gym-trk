@@ -580,7 +580,7 @@ let _c=0; function nid(){return 'n'+(Date.now? '' : '')+(_c++).toString(36)+Math
 
 // ---------- seed ----------
 function seed(){
-  const mk=(name,muscle,o={})=>Object.assign({name,muscle,type:'free',machine:'',unilateral:false,sets:2},o);
+  const mk=(name,muscle,o={})=>Object.assign({id:'e'+uid(),name,muscle,type:'free',machine:'',unilateral:false,sets:2},o);
   return {
     version:1,
     profile:{username:''},
@@ -601,7 +601,7 @@ function seed(){
 }
 // demo split the user can load on demand from the empty gym screen
 function demoSplit(){
-  const mk=(name,muscle,o={})=>Object.assign({name,muscle,type:'free',machine:'',unilateral:false,sets:2},o);
+  const mk=(name,muscle,o={})=>Object.assign({id:'e'+uid(),name,muscle,type:'free',machine:'',unilateral:false,sets:2},o);
   return {name:'push/pull/legs', days:[
     {id:'d1',name:'push A',tag:'@ RIR · F',metric:'rir',allowFailure:true,exercises:[
       mk('bb bench','chest',{machine:'barbell',sets:3}),
@@ -626,7 +626,7 @@ function demoSplit(){
 }
 // dxxniel's split (reconstructed from the Figma design — 6-day push/pull/legs A+B)
 function myStarterSplit(){
-  const mk=(name,muscle,o={})=>Object.assign({name,muscle,type:'free',machine:'',unilateral:false,sets:2},o);
+  const mk=(name,muscle,o={})=>Object.assign({id:'e'+uid(),name,muscle,type:'free',machine:'',unilateral:false,sets:2},o);
   return {name:'push/pull A/B', days:[
     {id:'d1',name:'chest/push A',tag:'@ RIR · F',metric:'rir',allowFailure:true,exercises:[
       mk('cable pushdown','tricep',{type:'machine',machine:'cable',sets:2}),
@@ -700,7 +700,7 @@ function load(){
   if(!d)return seed();
   return migrate(d);
 }
-function migrate(d){ if(!d.version){d.version=1;} if(!d.meals||typeof d.meals!=='object'||Array.isArray(d.meals))d.meals={}; if(!Array.isArray(d.foods))d.foods=[]; d.foods=d.foods.map(f=>(f&&f.per100)?f:asCanonical(f)); if(!Array.isArray(d.sessions))d.sessions=[]; if(!d.split||typeof d.split!=='object')d.split={name:'',days:[]}; if(!Array.isArray(d.split.days))d.split.days=[]; if(!d.steps||typeof d.steps!=='object')d.steps={}; if(!d.machines||typeof d.machines!=='object')d.machines={}; if(!d.bodyweight||typeof d.bodyweight!=='object')d.bodyweight={}; if(!d.sleep||typeof d.sleep!=='object')d.sleep={}; if(!d.mood||typeof d.mood!=='object')d.mood={}; if(!d.selfcheck||typeof d.selfcheck!=='object')d.selfcheck={}; if(!d.adhoc||typeof d.adhoc!=='object')d.adhoc={}; if(!Array.isArray(d.mealTags))d.mealTags=['breakfast','lunch','snack','dinner']; if(!Array.isArray(d.stack))d.stack=[]; if(!d.lastUsed||typeof d.lastUsed!=='object')d.lastUsed={}; if(!d.settings||typeof d.settings!=='object')d.settings={goals:seed().settings.goals}; if(d.settings&&d.settings.goals&&d.settings.goals.alcohol==null)d.settings.goals.alcohol=(d.profile&&d.profile.sex==='F')?14:28; if(d.settings&&d.settings.restSec==null)d.settings.restSec=90; if(d.settings&&d.settings.restBeep==null)d.settings.restBeep=true; if(d.settings&&d.settings.goals&&d.settings.goals.sleep==null)d.settings.goals.sleep=8; if(d.profile&&!d.profile.since){ try{ const _cd=[]; (d.sessions||[]).forEach(s=>{if(s.date)_cd.push(s.date);}); Object.keys(d.meals||{}).forEach(k=>_cd.push(k)); Object.keys(d.bodyweight||{}).forEach(k=>_cd.push(k)); if(_cd.length)d.profile.since=_cd.sort()[0]; }catch(_){} }
+function migrate(d){ if(!d.version){d.version=1;} if(!d.meals||typeof d.meals!=='object'||Array.isArray(d.meals))d.meals={}; if(!Array.isArray(d.foods))d.foods=[]; d.foods=d.foods.map(f=>(f&&f.per100)?f:asCanonical(f)); if(!Array.isArray(d.sessions))d.sessions=[]; if(!d.split||typeof d.split!=='object')d.split={name:'',days:[]}; if(!Array.isArray(d.split.days))d.split.days=[]; d.split.days.forEach(day=>{ if(!Array.isArray(day.exercises))day.exercises=[]; day.exercises.forEach(e=>{ if(e&&!e.id)e.id='e'+uid(); }); }); if(!d.steps||typeof d.steps!=='object')d.steps={}; if(!d.machines||typeof d.machines!=='object')d.machines={}; if(!d.bodyweight||typeof d.bodyweight!=='object')d.bodyweight={}; if(!d.sleep||typeof d.sleep!=='object')d.sleep={}; if(!d.mood||typeof d.mood!=='object')d.mood={}; if(!d.selfcheck||typeof d.selfcheck!=='object')d.selfcheck={}; if(!d.adhoc||typeof d.adhoc!=='object')d.adhoc={}; if(!Array.isArray(d.mealTags))d.mealTags=['breakfast','lunch','snack','dinner']; if(!Array.isArray(d.stack))d.stack=[]; if(!d.lastUsed||typeof d.lastUsed!=='object')d.lastUsed={}; if(!d.settings||typeof d.settings!=='object')d.settings={goals:seed().settings.goals}; if(d.settings&&d.settings.goals&&d.settings.goals.alcohol==null)d.settings.goals.alcohol=(d.profile&&d.profile.sex==='F')?14:28; if(d.settings&&d.settings.restSec==null)d.settings.restSec=90; if(d.settings&&d.settings.restBeep==null)d.settings.restBeep=true; if(d.settings&&d.settings.goals&&d.settings.goals.sleep==null)d.settings.goals.sleep=8; if(d.profile&&!d.profile.since){ try{ const _cd=[]; (d.sessions||[]).forEach(s=>{if(s.date)_cd.push(s.date);}); Object.keys(d.meals||{}).forEach(k=>_cd.push(k)); Object.keys(d.bodyweight||{}).forEach(k=>_cd.push(k)); if(_cd.length)d.profile.since=_cd.sort()[0]; }catch(_){} }
   // recompute alcohol for old meal items logged before alcohol was in MACROKEYS
   try{ Object.values(d.meals||{}).forEach(arr=>arr.forEach(m=>{ if(m.alcohol==null){ if(m._food&&m._food.per100&&m._food.per100.alcohol&&m._unit){ m.alcohol=computeNutrients(m._food,m._unit,m.qty||1).alcohol; } else m.alcohol=0; } })); }catch(e){}
   // goalHist: snapshot of intake goals at the moment of first logging that day (history is FROZEN — past days never re-read the current goal)
@@ -747,7 +747,7 @@ function seedSets(ex,fallbackN){
 function newWorkSession(){
   const day=db.split.days[selIdx()];
   const exs=day.exercises.map(e=>{
-    const ex={name:e.name,muscle:e.muscle,type:e.type,machine:e.machine,unilateral:e.unilateral,note:e.note||'',sets:[]};
+    const ex={exId:e.id||null,name:e.name,muscle:e.muscle,muscles:Array.isArray(e.muscles)?e.muscles.slice():undefined,type:e.type,machine:e.machine,unilateral:e.unilateral,startSide:e.startSide,unit:e.unit,useFS:e.useFS,note:e.note||'',sets:[]};
     ex.sets=seedSets(ex,e.sets||1);
     return ex;
   });
@@ -792,14 +792,68 @@ function exMuscles(e){
   return [];
 }
 function fmtMuscles(e){ const m=exMuscles(e); if(!m.length)return ''; return m.map((x,i)=> i===0?x.name : x.name+' ('+x.weight+')').join(' · '); }
+// ---- exercise IDENTITY: a same-name exercise in a different type/laterality is a DIFFERENT exercise ----
+// type synonyms → canonical form, ONLY for variant matching/lookup (never rewrites the user's stored value,
+// same spirit as MUSCLE_ALIAS/canonM above — internal comparison only).
+const EX_TYPE_ALIAS={pulley:'cable'};
+function canonType(t){ t=String(t||'free').toLowerCase().trim()||'free'; return EX_TYPE_ALIAS[t]||t; }
+function uniOf(e){ return e&&e.unilateral!=null ? !!e.unilateral : !!((e&&e.sets||[]).some(x=>x&&x.side)); }
+// canonical variant key: type + laterality. Two exercises with the same name but different variantKey
+// have independent history/prefill/progress — they are not the same lift.
+function variantKey(e){ return canonType(e&&e.type)+'|'+(uniOf(e)?1:0); }
+// nth (0-based) occurrence of exercises[ei]'s name+variant earlier in the SAME exercises[] array —
+// distinguishes e.g. a fresh top-set "pulldown" from an extra/finisher "pulldown" later in the same session.
+function exOccurrence(list,ei){ const e=(list||[])[ei]; if(!e)return 0; const n=String(e.name||'').toLowerCase().trim(), v=variantKey(e);
+  let c=0; for(let i=0;i<ei;i++){ const x=list[i]; if(x&&String(x.name||'').toLowerCase().trim()===n&&variantKey(x)===v) c++; } return c; }
+// how many exercises in `list` share this exact name+variant (uniqueness check for the baseline ladder)
+function exNameCount(list,name,variant){ return (list||[]).reduce((n,x)=>n+((x&&String(x.name||'').toLowerCase().trim()===name&&variantKey(x)===variant)?1:0),0); }
+// full identity of exercises[ei] inside a session or db.activeWork — used to link it to its split definition
+// and to its own historical instances WITHOUT ever matching by bare name alone.
+function exIdentity(sessOrWork,ei){
+  const list=(sessOrWork&&sessOrWork.exercises)||[]; const e=list[ei]||{};
+  const name=String(e.name||'').toLowerCase().trim(); const variant=variantKey(e);
+  const occ=exOccurrence(list,ei); const nSame=exNameCount(list,name,variant);
+  const dayId=(sessOrWork&&sessOrWork.dayId)||null;
+  if(e.exId) return {level:'id', exId:e.exId, dayId, name, variant, occ, nSame, ei};
+  return {level: dayId?'day':'name', exId:null, dayId, name, variant, occ, nSame, ei};
+}
+// resolve the split-exercise DEFINITION backing exercises[ei] of a session/activeWork: by exId first
+// (survives rename/reorder), else by day+name+variant if unique, else by day+name alone if unique
+// (sessions saved before v206 never recorded type/unilateral, so a variant-exact match would always
+// miss them — falling back to name-only within the day keeps retroactive muscle correction working for
+// old history too), else the same two passes split-wide as a last resort (day since renamed/deleted).
+// Used ONLY to look up live metadata (muscles) — never renames or mutates anything.
+function splitExFor(sessOrWork,ei){
+  const list=(sessOrWork&&sessOrWork.exercises)||[]; const e=list[ei]; if(!e)return null;
+  const days=(db.split&&db.split.days)||[];
+  if(e.exId){ for(let i=0;i<days.length;i++){ const hit=(days[i].exercises||[]).find(x=>x.id===e.exId); if(hit)return hit; } }
+  const name=String(e.name||'').toLowerCase().trim(); const variant=variantKey(e);
+  const byName=x=>String(x.name||'').toLowerCase().trim()===name;
+  const byNameVariant=x=>byName(x)&&variantKey(x)===variant;
+  const dayId=sessOrWork&&sessOrWork.dayId; const day=dayId?days.find(d=>d.id===dayId):null;
+  if(day){
+    const exact=(day.exercises||[]).filter(byNameVariant); if(exact.length===1)return exact[0];
+    const loose=(day.exercises||[]).filter(byName); if(loose.length===1)return loose[0];
+  }
+  const allExact=[]; days.forEach(d=>(d.exercises||[]).forEach(x=>{ if(byNameVariant(x))allExact.push(x); }));
+  if(allExact.length===1)return allExact[0];
+  const allLoose=[]; days.forEach(d=>(d.exercises||[]).forEach(x=>{ if(byName(x))allLoose.push(x); }));
+  return allLoose.length===1?allLoose[0]:null;
+}
+// muscles[] for exercises[ei], resolved LIVE from the current split definition when one can be linked
+// (so editing secondary muscles later counts retroactively for volume/fatigue) — falls back to whatever
+// the exercise entry itself carries (ad-hoc exercises not in the split, or split days since deleted).
+function musclesOf(sessOrWork,ei){
+  const list=(sessOrWork&&sessOrWork.exercises)||[]; const e=list[ei]; if(!e)return [];
+  const sx=splitExFor(sessOrWork,ei);
+  return sx?exMuscles(sx):exMuscles(e);
+}
 function weeklySets(days){ days=days||7; const now=new Date(); const cut=new Date(now); cut.setDate(now.getDate()-days); const c=todayISO(cut);
   const byM={}; const freq={}; const effM={}; const directM={}, indirectM={};
-  // current split = source of truth for muscle→weight mapping (so split edits reflect retroactively);
-  // session snapshot = source of truth for performance. Build the name→muscles lookup once.
-  const curMap={};
-  (db.split.days||[]).forEach(d=>(d.exercises||[]).forEach(ex=>{ if(Array.isArray(ex.muscles)&&ex.muscles.length){ const k=String(ex.name||'').toLowerCase().trim(); if(k&&!curMap[k])curMap[k]=exMuscles(ex); } }));
+  // current split = source of truth for muscle→weight mapping (so split edits reflect retroactively,
+  // resolved per-instance via musclesOf/splitExFor — exId first, falls back to day+name+variant).
   db.sessions.forEach(s=>{ if(s.type==='rest'||s.date<=c)return; const seen={};
-    (s.exercises||[]).forEach(e=>{ const muscles=(Array.isArray(e.muscles)&&e.muscles.length)?exMuscles(e):(curMap[String(e.name||'').toLowerCase().trim()]||exMuscles(e)); if(!muscles.length)return;
+    (s.exercises||[]).forEach((e,ei)=>{ const muscles=musclesOf(s,ei); if(!muscles.length)return;
       // hard sets (RIR<=4): uni R+L pair = 1 (max across sides), drop = 0.5
       // EFFECTIVE sets = hard AND en zona de tensión real (productive/heavy, no 'light'/junk)
       let plain=0, effPlain=0; const bySide={}, effBySide={};
@@ -1016,7 +1070,7 @@ function avgE1RM(sets,confirmedOnly){ let sum=0,n=0; (sets||[]).forEach(s=>{ if(
 function sessionFatigueContext(session){
   const exs=(session&&session.exercises)||[]; const ctx=[];
   let priorHardSets=0, priorScore=0; const muscleSetsSoFar={};
-  exs.forEach((e,ei)=>{ const muscles=exMuscles(e); const rowOut=[]; let prevDoneAt=null;
+  exs.forEach((e,ei)=>{ const muscles=musclesOf(session,ei); const rowOut=[]; let prevDoneAt=null;
     (e.sets||[]).forEach((st)=>{
       const pm=muscles.reduce((mx,m)=>Math.max(mx,muscleSetsSoFar[m.name]||0),0);
       const restSec=(st.doneAt&&prevDoneAt)?(st.doneAt-prevDoneAt)/1000:null;
@@ -1049,6 +1103,33 @@ function _failureMathSelfCheck(){
   if(!(fatigueWeightedEffort(A2,tired)>fatigueWeightedEffort(A2,fresh))) throw new Error('fatigue effort');
   if(!(correctedE1RM(A2,tired)>correctedE1RM(A2,fresh))) throw new Error('fatigue e1RM');
   console.log('failure+fatigue self-check OK');
+}
+// identity/variant self-check — runs only with ?selftest=1, AFTER db is loaded (needs db.split.days).
+// Swaps db.split.days for fixtures and restores it in `finally`, so it never touches real user data.
+function _identitySelfCheck(){
+  const origDays=db.split.days;
+  try{
+    db.split.days=[
+      {id:'d1',name:'push',exercises:[{id:'e1',name:'chest press',muscle:'chest',muscles:[{name:'chest',weight:1},{name:'triceps',weight:0.5}],type:'machine',unilateral:false,sets:3}]},
+      {id:'d2',name:'push2',exercises:[{id:'e2',name:'chest press',muscle:'chest',muscles:[{name:'chest',weight:1},{name:'shoulders',weight:0.3}],type:'free',unilateral:false,sets:4}]}
+    ];
+    const A=(n,cond)=>{ if(!cond) throw new Error('SELFCHECK identity: '+n); };
+    // legacy session: no exId (saved before v206), no type recorded — must still resolve via day+name
+    const legacySess={dayId:'d1',exercises:[{name:'chest press',muscle:'chest',sets:[{w:'90',r:'8'}]}]};
+    A('retroactive secondary muscle resolves for a legacy (no-exId) session', musclesOf(legacySess,0).length===2);
+    // two days share an exercise NAME with different secondary muscles — editing one must never leak into the other
+    const sessA={dayId:'d1',exercises:[{exId:'e1',name:'chest press'}]}, sessB={dayId:'d2',exercises:[{exId:'e2',name:'chest press'}]};
+    A('day A resolves its own instance (triceps secondary)', musclesOf(sessA,0)[1]&&musclesOf(sessA,0)[1].name==='triceps');
+    A('day B resolves its own instance (shoulders secondary) — no leak from day A', musclesOf(sessB,0)[1]&&musclesOf(sessB,0)[1].name==='shoulders');
+    A('variantKey separates machine from free', variantKey({type:'machine'})!==variantKey({type:'free'}));
+    A('variantKey separates unilateral from bilateral', variantKey({type:'free',unilateral:true})!==variantKey({type:'free',unilateral:false}));
+    A('pulley canonicalizes to cable for matching only (never rewrites stored data)', variantKey({type:'pulley'})===variantKey({type:'cable'}));
+    // the reported bug: a fresh top-set pulldown must be a DIFFERENT occurrence than an extra/finisher later in the same session
+    const yestSess={dayId:'d1',exercises:[{name:'pulldown',type:'machine',sets:[{w:'80',r:'10'}]},{name:'row',type:'machine',sets:[{w:'70',r:'10'}]},{name:'pulldown',type:'machine',sets:[{w:'60',r:'8',isDrop:true}]}]};
+    A('fresh pulldown is occurrence 0', exIdentity(yestSess,0).occ===0);
+    A('extra/finisher pulldown later in the same session is occurrence 1, not 0', exIdentity(yestSess,2).occ===1);
+    console.log('identity/variant self-check OK');
+  } finally { db.split.days=origDays; }
 }
 try{ if(typeof location!=='undefined' && /[?&]selftest=1/.test(location.search)) _failureMathSelfCheck(); }catch(e){ console.error(e); }
 // Best observed Epley+RIR e1RM across SAVED sessions — kept as a reference helper (e.g. for future PR badges).
@@ -2846,7 +2927,7 @@ document.getElementById('app').addEventListener('click',e=>{
       startTs:s.startTime||nowHM(),
       startMs:s.loggedAfter?null:(s.savedMs-(s.durSec||0)*1000),
       loggedAfter:!!s.loggedAfter,
-      exercises:s.exercises.map(e=>({name:e.name,muscle:e.muscle,muscles:Array.isArray(e.muscles)?e.muscles.slice():undefined,type:e.type,machine:e.machine,unilateral:e.unilateral,note:e.note||'',sets:(e.sets||[]).map(st=>Object.assign({},st))})) };
+      exercises:s.exercises.map(e=>({exId:e.exId||null,name:e.name,muscle:e.muscle,muscles:Array.isArray(e.muscles)?e.muscles.slice():undefined,type:e.type,machine:e.machine,unilateral:e.unilateral,startSide:e.startSide,unit:e.unit,useFS:e.useFS,note:e.note||'',sets:(e.sets||[]).map(st=>Object.assign({},st))})) };
     if(s.loggedAfter){ w.manualDur=Math.round((s.durSec||0)/60); w.startTime=s.startTime||null; w.endTime=s.endTime||null; }
     db.activeWork=w; closeModal(); save(); go('workout');
   }
@@ -3048,7 +3129,7 @@ function openExEdit(di,ei,liveExi){
    <div class="field row2"><div><label>SETS</label><input id="ee_sets" type="number" value="${Array.isArray(e.sets)?e.sets.length:(e.sets||2)}"/></div><div><label>MACHINE/NOTE</label><input id="ee_machine" value="${(e.machine||'').replace(/"/g,'&quot;')}" placeholder="opcional"/></div></div>
    <label style="font-size:9px;color:var(--o50);display:block;margin-bottom:10px"><input type="checkbox" id="ee_uni" ${e.unilateral?'checked':''} style="width:auto;vertical-align:middle"/> unilateral (R/L)</label>
    <div class="field" id="ee_startwrap" style="display:${e.unilateral?'block':'none'}"><label>UNILATERAL · EMPEZAR POR</label><div class="toggles" id="ee_start"><button class="t ${e.startSide!=='L'?'on':''}" data-act="optpick" data-v="R">R primero</button><button class="t ${e.startSide==='L'?'on':''}" data-act="optpick" data-v="L">L primero</button></div></div>
-   ${isNew?'':'<div class="submeta" style="margin:8px 0 4px;color:var(--o40)">marca para propagar estos detalles a tus sesiones pasadas del mismo nombre + gym actual</div><label style="font-size:10px;color:var(--o60);display:block;margin-bottom:10px"><input type="checkbox" id="ee_propagate" style="width:auto;vertical-align:middle"/> actualizar sesiones pasadas</label>'}
+   ${(!isNew&&live)?'<div class="submeta" style="margin:8px 0 4px;color:var(--o40)">por defecto este cambio solo afecta la sesión de hoy</div><label style="font-size:10px;color:var(--o60);display:block;margin-bottom:10px"><input type="checkbox" id="ee_tosplit" style="width:auto;vertical-align:middle"/> guardar también en el split de este día</label>':''}
    <div class="sheetbtns"><button class="ok" data-act="okexedit">save</button><button class="cancel" data-act="closemodal">cancel</button></div>`);
   // muscle dropdowns: picking "+ nuevo músculo…" reveals a free-text input that feeds a hidden canonical field
   function wireMuscleSelect(selId,newId,hidId){ const sel=document.getElementById(selId),nw=document.getElementById(newId),hid=document.getElementById(hidId); if(!sel||!nw||!hid)return;
@@ -3063,9 +3144,14 @@ function openExEdit(di,ei,liveExi){
   const m2On=document.querySelector('[data-act="ee_mus2_on"]'); const m2Off=document.querySelector('[data-act="ee_mus2_off"]');
   if(m2On)m2On.onclick=(ev)=>{ ev.preventDefault(); const w=document.getElementById('ee_mus2wrap'); const a=document.getElementById('ee_mus2_addwrap'); if(w)w.style.display='block'; if(a)a.style.display='none'; const s=document.getElementById('ee_mus2sel'); if(s)s.focus(); };
   if(m2Off)m2Off.onclick=(ev)=>{ ev.preventDefault(); const w=document.getElementById('ee_mus2wrap'); const a=document.getElementById('ee_mus2_addwrap'); if(w)w.style.display='none'; if(a)a.style.display='block'; const s=document.getElementById('ee_mus2sel'); if(s)s.value=''; const n=document.getElementById('ee_mus2_new'); if(n){n.style.display='none';n.value='';} const h=document.getElementById('ee_mus2'); if(h)h.value=''; };
-  // memory: typing OR picking a known name → autofill ALL remembered variables (input + change + blur for cross-browser reliability)
+  // memory: typing OR picking a known name → autofill remembered variables, but ONLY for a brand-new
+  // exercise or when the name actually changed to a different known one. Editing an EXISTING exercise
+  // without renaming it must never silently pull type/uni/sets from global memory (that was the bug —
+  // one day's edit leaking into every other day that happens to share this exercise's name).
   const nm=document.getElementById('ee_name'); if(nm){
+    const origNameNorm=String((window._exEdit&&window._exEdit.origName)||'').toLowerCase().trim();
     const autofill=()=>{
+      if(!isNew){ const cur=String(nm.value||'').toLowerCase().trim(); if(!cur||cur===origNameNorm)return; }
       const hit=lookupKnownExercise(nm.value); if(!hit)return;
       const setIf=(id,v)=>{ const el=document.getElementById(id); if(el&&!el.value&&v!=null&&v!=='')el.value=v; };
       const mList=Array.isArray(hit.muscles)&&hit.muscles.length?hit.muscles:(hit.muscle?[{name:hit.muscle,weight:1}]:[]);
@@ -3074,7 +3160,8 @@ function openExEdit(di,ei,liveExi){
       setIf('ee_machine',hit.machine);
       // reveal + fill secondary if exercise has one
       if(mList[1]){ const wrap=document.getElementById('ee_mus2wrap'); const add=document.getElementById('ee_mus2_addwrap'); if(wrap){wrap.style.display='block'; if(add)add.style.display='none';} setMuscleSel('ee_mus2sel','ee_mus2_new','ee_mus2',mList[1].name); const sw=document.getElementById('ee_mus2w'); if(sw)sw.value=mList[1].weight; }
-      if(hit.sets!=null){ const sN=document.getElementById('ee_sets'); if(sN&&(sN.value==='2'||sN.value===''))sN.value=hit.sets; }
+      // set COUNT is only ever suggested for a brand-new exercise — never silently changed on an existing one
+      if(isNew&&hit.sets!=null){ const sN=document.getElementById('ee_sets'); if(sN)sN.value=hit.sets; }
       if(hit.type){ const tg=document.querySelector('#ee_type [data-v="'+hit.type+'"]'); if(tg&&!tg.classList.contains('on')){ document.querySelectorAll('#ee_type .t').forEach(x=>x.classList.remove('on')); tg.classList.add('on'); } }
       if(hit.unilateral){ const u=document.getElementById('ee_uni'); if(u&&!u.checked){ u.checked=true; const w=document.getElementById('ee_startwrap'); if(w)w.style.display='block'; } }
       if(hit.startSide){ const sb=document.querySelector('#ee_start [data-v="'+hit.startSide+'"]'); if(sb&&!sb.classList.contains('on')){ document.querySelectorAll('#ee_start .t').forEach(x=>x.classList.remove('on')); sb.classList.add('on'); } }
@@ -3098,28 +3185,24 @@ function saveExEdit(){
   const {liveExi,origName}=window._exEdit||{};
   if(liveExi!=null && db.activeWork && db.activeWork.exercises[liveExi]){
     const w=db.activeWork; const lx=w.exercises[liveExi];
-    // update metadata IN PLACE — keep logged sets + the unilateral structure of the live session intact
+    // update metadata IN PLACE — keep logged sets + the unilateral structure of the live session intact.
+    // by default this change lives ONLY in today's session; the split stays untouched unless opted in below.
     lx.name=ex.name; lx.muscle=ex.muscle; lx.muscles=ex.muscles; lx.type=ex.type; lx.machine=ex.machine;
-    // mirror the change into the split definition so it persists for future sessions
-    const di2=(db.split.days||[]).findIndex(d=>d.id===w.dayId);
-    if(di2>=0){ const arr=db.split.days[di2].exercises||[]; let j=arr.findIndex(x=>(x.name||'').toLowerCase().trim()===String(origName||'').toLowerCase().trim()); if(j<0)j=arr.findIndex(x=>(x.name||'').toLowerCase().trim()===ex.name.toLowerCase().trim()); if(j>=0)arr[j]=Object.assign({},arr[j],{name:ex.name,muscle:ex.muscle,muscles:ex.muscles,type:ex.type,machine:ex.machine,unilateral:ex.unilateral,startSide:ex.startSide}); }
+    const toSplit=document.getElementById('ee_tosplit');
+    if(toSplit && toSplit.checked){
+      const di2=(db.split.days||[]).findIndex(d=>d.id===w.dayId);
+      if(di2>=0){ const arr=db.split.days[di2].exercises||[];
+        let j=lx.exId!=null?arr.findIndex(x=>x.id===lx.exId):-1;
+        if(j<0){ const on=String(origName||'').toLowerCase().trim(); j=arr.findIndex(x=>(x.name||'').toLowerCase().trim()===on); }
+        if(j>=0) arr[j]=Object.assign({},arr[j],{name:ex.name,muscle:ex.muscle,muscles:ex.muscles,type:ex.type,machine:ex.machine,unilateral:ex.unilateral,startSide:ex.startSide});
+      }
+    }
     save(); closeModal(); render(); return;
   }
-  if(ei<0)db.split.days[di].exercises.push(ex); else db.split.days[di].exercises[ei]=ex;
-  // optional: propagate the new metadata to past SESSIONS that logged this same exercise NAME at the current gym
-  const propBox=document.getElementById('ee_propagate');
-  if(propBox && propBox.checked){
-    const gym=db.activeGym||''; const key=ex.name.toLowerCase().trim(); let touched=0;
-    (db.sessions||[]).forEach(s=>{ if(s.type==='rest')return; if(gym && (s.gym||'')!==gym)return;
-      (s.exercises||[]).forEach(se=>{ if((se.name||'').toLowerCase().trim()!==key)return;
-        if(ex.muscle && ex.muscle!=='other')se.muscle=ex.muscle;
-        if(ex.machine)se.machine=ex.machine;
-        // keep saved sets untouched; only enrich metadata
-        touched++;
-      });
-    });
-    if(touched)alert('Actualizadas '+touched+' ocurrencias en sesiones pasadas en '+(gym||'(sin gym)')+'.');
-  }
+  // merge (never replace) so fields this form doesn't manage (note/unit/useFS from ironLOG import) survive,
+  // and the instance id is preserved across edits — this only ever writes to THIS day's exercise, never others.
+  if(ei<0){ db.split.days[di].exercises.push(Object.assign({id:'e'+uid()},ex)); }
+  else { const prev=db.split.days[di].exercises[ei]||{}; db.split.days[di].exercises[ei]=Object.assign({},prev,ex,{id:prev.id||('e'+uid())}); }
   save(); closeModal(); render();
 }
 
@@ -3131,6 +3214,7 @@ function importIronlogSplit(d){
     tag:'@ '+(dy.metric||'RIR')+(dy.allowFailure!==false?' · F':''),
     focus:dy.focus||'', metric:(dy.metric||'rir').toLowerCase(), allowFailure:dy.allowFailure!==false,
     exercises:(dy.exercises||[]).map(e=>({
+      id:'e'+uid(),
       name:(e.name||'').trim(),
       muscle:(e.muscleTag||e.muscle||'other').replace(/^#/,'').toLowerCase(),
       type:e.type==='machine'?'machine':'free',
@@ -3152,7 +3236,7 @@ function openImportSplit(){
     }catch(e){ if(m)m.textContent='no se pudo importar: '+(e.message||'JSON inválido'); } };
 }
 function SPLIT_TEMPLATES(){
-  const mk=(name,muscle,o={})=>Object.assign({name,muscle,type:'free',machine:'',unilateral:false,sets:3},o);
+  const mk=(name,muscle,o={})=>Object.assign({id:'e'+uid(),name,muscle,type:'free',machine:'',unilateral:false,sets:3},o);
   return [
     {key:'ppl', name:'push/pull/legs', desc:'3 días · clásico hipertrofia', build:demoSplit},
     {key:'ul', name:'upper/lower', desc:'4 días · frecuencia 2×', build:()=>({name:'upper/lower', days:[
@@ -3191,7 +3275,7 @@ function saveSession(){
   else { const n=w.exercises.reduce((a,e)=>a+e.sets.filter(s=>savable(s)&&(s.rir===''||s.rir==null)).length,0);
          if(!confirm(n>0?`Tienes ${n} set${n>1?'s':''} sin RIR. ¿Finalizar de todos modos?`:'¿Finalizar sesión?'))return; }
   const sess={id:w.id,date:w.date,dayId:w.dayId,dayName:w.dayName,gym:w.gym,type:'training',savedMs:Date.now(),loggedAfter:!!w.loggedAfter,durSec:w.loggedAfter?((parseInt(w.manualDur,10)||0)*60):(w.startMs?Math.round((Date.now()-w.startMs)/1000):0),startTime:w.loggedAfter?(w.startTime||null):(w.startTs||null),endTime:w.loggedAfter?(w.endTime||null):nowHM(),
-    exercises:w.exercises.map(e=>{const r=machineRec(w.gym,e); return {name:e.name,muscle:e.muscle,muscles:Array.isArray(e.muscles)?e.muscles.slice():undefined,machine:r.na?'':r.brand,setup:r.na?'':r.setup,sets:e.sets.filter(s=>(s.w||s.r)&&!s._pf)};})};
+    exercises:w.exercises.map(e=>{const r=machineRec(w.gym,e); return {exId:e.exId||null,name:e.name,muscle:e.muscle,muscles:Array.isArray(e.muscles)?e.muscles.slice():undefined,type:e.type,unilateral:e.unilateral,startSide:e.startSide,unit:e.unit,note:e.note||'',machine:r.na?'':r.brand,setup:r.na?'':r.setup,sets:e.sets.filter(s=>(s.w||s.r)&&!s._pf)};})};
   if(!(w.loggedAfter&&w.noAdvance)){ const idx=db.split.days.findIndex(d=>d.id===w.dayId); db.rotIdx=(idx>=0?idx:db.rotIdx)+1; } db.activeWork=null; state.selDay=null; db.sessions.push(sess); save(); go('home');
 }
 
@@ -3323,7 +3407,7 @@ function openAddExStep2(afterExi,muscle,replaceExi){
 // add a known exercise straight into the live session (with its remembered props + prefilled sets)
 function addExFromKnown(afterExi,x){
   const w=db.activeWork; if(!w||!x)return;
-  const newEx={name:x.name,muscle:x.muscle||((x.muscles&&x.muscles[0]&&x.muscles[0].name)||'other'),muscles:x.muscles,type:x.type||'free',machine:x.machine||'',unilateral:!!x.unilateral,startSide:x.startSide||'R',note:'',sets:[]};
+  const newEx={exId:null,name:x.name,muscle:x.muscle||((x.muscles&&x.muscles[0]&&x.muscles[0].name)||'other'),muscles:x.muscles,type:x.type||'free',machine:x.machine||'',unilateral:!!x.unilateral,startSide:x.startSide||'R',note:'',sets:[]};
   let insertAt; if(afterExi!=null&&afterExi>=0&&afterExi<w.exercises.length){ insertAt=afterExi+1; w.exercises.splice(insertAt,0,newEx); } else { w.exercises.push(newEx); insertAt=w.exercises.length-1; }
   const ex=w.exercises[insertAt]; ex.sets=seedSets(ex,(typeof x.sets==='number'?x.sets:2));
   save(); closeModal(); render();
@@ -3332,7 +3416,7 @@ function addExFromKnown(afterExi,x){
 function replaceExFromKnown(exi,x){
   const w=db.activeWork; if(!w||!w.exercises[exi]||!x)return; const ex=w.exercises[exi];
   if((ex.sets||[]).some(s=>s&&!s._pf&&(s.done||(+s.w>0)||(+s.r>0)))&&!confirm('Ya registraste series en "'+(ex.name||'este ejercicio')+'". Cambiar de ejercicio descarta lo registrado. ¿Continuar?'))return;
-  ex.name=x.name; ex.muscle=x.muscle||((x.muscles&&x.muscles[0]&&x.muscles[0].name)||'other'); ex.muscles=x.muscles; ex.type=x.type||'free'; ex.machine=x.machine||''; ex.unilateral=!!x.unilateral; ex.startSide=x.startSide||'R'; ex.note='';
+  ex.exId=null; ex.name=x.name; ex.muscle=x.muscle||((x.muscles&&x.muscles[0]&&x.muscles[0].name)||'other'); ex.muscles=x.muscles; ex.type=x.type||'free'; ex.machine=x.machine||''; ex.unilateral=!!x.unilateral; ex.startSide=x.startSide||'R'; ex.note='';
   ex.sets=seedSets(ex,(typeof x.sets==='number'?x.sets:2));
   save(); closeModal(); render();
 }
@@ -3359,7 +3443,7 @@ function openAddExForm(afterExi,muscle,replaceExi){
       const k=(nm.value||'').toLowerCase().trim(); const hit=exs.find(x=>x.name.toLowerCase().trim()===k); if(!hit)return;
       const setIf=(id,v)=>{ const el=document.getElementById(id); if(el&&!el.value&&v!=null&&v!=='')el.value=v; };
       setIf('fx_muscle',hit.muscle); setIf('fx_machine',hit.machine);
-      if(hit.sets!=null){ const sN=document.getElementById('fx_sets'); if(sN&&(sN.value==='2'||sN.value===''))sN.value=hit.sets; }
+      if(hit.sets!=null){ const sN=document.getElementById('fx_sets'); if(sN)sN.value=hit.sets; }
       if(hit.type){ const tg=document.querySelector('#fx_type [data-v="'+hit.type+'"]'); if(tg&&!tg.classList.contains('on')){ document.querySelectorAll('#fx_type .t').forEach(x=>x.classList.remove('on')); tg.classList.add('on'); } }
       if(hit.unilateral){ const u=document.getElementById('fx_uni'); if(u&&!u.checked){ u.checked=true; const w=document.getElementById('fx_startwrap'); if(w)w.style.display='block'; } }
       if(hit.startSide){ const sb=document.querySelector('#fx_start [data-v="'+hit.startSide+'"]'); if(sb&&!sb.classList.contains('on')){ document.querySelectorAll('#fx_start .t').forEach(x=>x.classList.remove('on')); sb.classList.add('on'); } }
@@ -3370,7 +3454,7 @@ function openAddExForm(afterExi,muscle,replaceExi){
     const name=val('fx_name'); if(!name)return; const w=db.activeWork;
     const startSide=(((document.querySelector('#fx_start .t.on')||{}).dataset||{}).v==='L')?'L':'R';
     const typeOn=(document.querySelector('#fx_type .t.on')||{}).dataset; const validT=['machine','pulley','free','bodyweight'].indexOf(typeOn&&typeOn.v)>=0?typeOn.v:'free';
-    const meta={name,muscle:val('fx_muscle')||'other',type:validT,machine:val('fx_machine'),unilateral:document.getElementById('fx_uni').checked,startSide,note:''};
+    const meta={exId:null,name,muscle:val('fx_muscle')||'other',type:validT,machine:val('fx_machine'),unilateral:document.getElementById('fx_uni').checked,startSide,note:''};
     // REPLACE mode (entró por "cambiar ejercicio"): sobreescribe el ejercicio actual en su lugar + re-siembra series
     if(replaceExi!=null && w && w.exercises[replaceExi]){ const ex=w.exercises[replaceExi];
       if((ex.sets||[]).some(s=>s&&!s._pf&&(s.done||(+s.w>0)||(+s.r>0)))&&!confirm('Ya registraste series en "'+(ex.name||'este ejercicio')+'". Cambiar descarta lo registrado. ¿Continuar?'))return;
@@ -4763,7 +4847,7 @@ async function aiPhoto(file,barcode){ if(!file)return; window._faTag=window._faT
 // Pick AI when the proxy is configured, else on-device OCR.
 function labelPhoto(file,barcode){ if(AI_PROXY_URL) return aiPhoto(file,barcode); return ocrPhoto(file,barcode); }
 requestPersist();
-db=load(); try{ const _sp=new URLSearchParams(location.search); const _hasHistorical=_sp.has('stepsh')||_sp.has('weighth')||_sp.has('stepsq')||_sp.has('sleeph'); if(_hasHistorical){ const _hsp=_sp; if(history.replaceState)history.replaceState(null,'',location.pathname); setTimeout(()=>{ if(confirm('Este link quiere importar datos históricos (pasos/peso/sueño de varios días) a tu cuenta. ¿Aplicar? — solo dile que SÍ si vienes de tu propio Atajo de iOS.')){ try{ const _imp=importHealth(_hsp); if(_imp.length){ save(); render(); toast('✓ '+_imp.join(' · ')); } }catch(_){} } },400); } else { const _imp=importHealth(_sp); if(_imp.length){ window._healthImported=_imp; if(history.replaceState)history.replaceState(null,'',location.pathname); } } }catch(_){} save(); render(); if(window._healthImported)setTimeout(()=>toast('✓ '+window._healthImported.join(' · ')),250); if(window._recoveredFromBackup)setTimeout(()=>{try{alert('Se recuperó un respaldo local: revisa tus datos, podrían faltar cambios muy recientes.');}catch(_){}},600);
+db=load(); try{ if(typeof location!=='undefined' && /[?&]selftest=1/.test(location.search)) _identitySelfCheck(); }catch(e){ console.error(e); } try{ const _sp=new URLSearchParams(location.search); const _hasHistorical=_sp.has('stepsh')||_sp.has('weighth')||_sp.has('stepsq')||_sp.has('sleeph'); if(_hasHistorical){ const _hsp=_sp; if(history.replaceState)history.replaceState(null,'',location.pathname); setTimeout(()=>{ if(confirm('Este link quiere importar datos históricos (pasos/peso/sueño de varios días) a tu cuenta. ¿Aplicar? — solo dile que SÍ si vienes de tu propio Atajo de iOS.')){ try{ const _imp=importHealth(_hsp); if(_imp.length){ save(); render(); toast('✓ '+_imp.join(' · ')); } }catch(_){} } },400); } else { const _imp=importHealth(_sp); if(_imp.length){ window._healthImported=_imp; if(history.replaceState)history.replaceState(null,'',location.pathname); } } }catch(_){} save(); render(); if(window._healthImported)setTimeout(()=>toast('✓ '+window._healthImported.join(' · ')),250); if(window._recoveredFromBackup)setTimeout(()=>{try{alert('Se recuperó un respaldo local: revisa tus datos, podrían faltar cambios muy recientes.');}catch(_){}},600);
 applyDesign(); try{ if(/[?&]design\b/.test(location.search))localStorage.setItem('gymtrk_designmode','1'); if(localStorage.getItem('gymtrk_designmode')==='1')openDesignPanel(); }catch(_){}
 try{ bootScreen(()=>{ try{
   if(/[?&]wrap=1\b/.test(location.search)){ monthlyWrap(prevMonthYm(), true); return; }
