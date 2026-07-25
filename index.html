@@ -233,9 +233,13 @@
   .ex.dropbefore, .mgroup.dropbefore{position:relative;} .ex.dropbefore::before, .mgroup.dropbefore::before{content:''; position:absolute; left:0; right:0; top:-6px; height:2px; background:var(--fill); border-radius:2px;}
   .ex.dropafter, .mgroup.dropafter{position:relative;} .ex.dropafter::after, .mgroup.dropafter::after{content:''; position:absolute; left:0; right:0; bottom:-6px; height:2px; background:var(--fill); border-radius:2px;}
   .thead,.srow{display:grid; gap:4px; align-items:center;} .thead{margin-bottom:6px;} .thead .cl{font-size:9px; color:var(--o40); text-align:center; letter-spacing:.5px;} .thead .cl.w{text-align:left; padding-left:2px;}
-  .gc-free{grid-template-columns:22px 1fr 38px 44px 40px 18px;} .gc-mach{grid-template-columns:22px 26px 1fr 38px 44px 40px 18px;} .gc-uni{grid-template-columns:20px 1fr 38px 44px 40px 18px;}
-  .gc-mach-fs{grid-template-columns:22px 26px 1fr 1fr 38px 44px 40px 18px;}
+  .gc-free{grid-template-columns:22px 1fr 38px 44px 40px 36px;} .gc-mach{grid-template-columns:22px 26px 1fr 38px 44px 40px 36px;} .gc-uni{grid-template-columns:20px 1fr 38px 44px 40px 18px;}
+  .gc-mach-fs{grid-template-columns:22px 26px 1fr 1fr 38px 44px 40px 36px;}
   .srow{margin-bottom:5px;} .setn{font-size:11px; color:var(--o50); text-align:center; cursor:pointer;} .setn.done{color:var(--fill); font-weight:700;}
+  .srow.isdrop{opacity:.82;} .pair.isdrop{opacity:.82;}
+  .setend{display:flex;} .setend .del{width:18px;flex:0 0 18px;}
+  .dropadd{width:18px;flex:0 0 18px;font-size:11px; color:var(--o35); text-align:center; cursor:pointer; height:36px; line-height:36px;}
+  .pair>.dropadd{margin:0 2px 0 -2px;}
   .side{font-size:10px; font-weight:700; color:var(--o50); text-align:center;}
   .inp{height:36px; border:.5px solid var(--o20); background:transparent; color:var(--fg); text-align:center; font-size:12px; width:100%;} .inp.weight{text-align:left; padding-left:8px;}
   .pick{height:36px; border:.5px solid var(--o20); background:transparent; color:var(--fg); font-size:12px; text-align:center; text-align-last:center; appearance:none; -webkit-appearance:none; width:100%; cursor:pointer;}
@@ -730,7 +734,10 @@ function lastSession(dayId){ const s=db.sessions.filter(x=>x.dayId===dayId&&x.ty
 function setsList(ex){ return ex.sets||[]; }
 function emptySet(ex,side,isDrop,src){ const s={w:'',r:'',rir:'',unit:(ex&&ex.unit)||db.settings.unit||'lbs',side:side||null,fsOn:!!(ex&&ex.useFS),extraW:'',isDrop:!!isDrop,done:false};
   if(ex&&ex.type==='bodyweight'){ s.bw=true; s.unit='kg'; const bwk=Object.keys(db.bodyweight||{}).sort(); if(bwk.length)s.w=String(db.bodyweight[bwk[bwk.length-1]]); }
-  if(src){ s.w=src.w||s.w||''; s.r=src.r||''; if(src.unit)s.unit=src.unit; if(src.bw)s.bw=true; if(src.isDrop)s.isDrop=true; if(src.fsOn)s.fsOn=true; s._pf=true; } return s; }
+  // isDrop is copied from src UNLESS the caller explicitly forced isDrop:false (addset does this on
+  // purpose — a newly added set is ALWAYS a plain working set, never inheriting drop-ness from its
+  // value template; seedSets passes the real historical isDrop, so this guard is a no-op there).
+  if(src){ s.w=src.w||s.w||''; s.r=src.r||''; if(src.unit)s.unit=src.unit; if(src.bw)s.bw=true; if(src.isDrop&&isDrop!==false)s.isDrop=true; if(src.fsOn)s.fsOn=true; s._pf=true; } return s; }
 // sets from the most recent prior session with this exercise — used to prefill a new workout (suggestions, flagged _pf until confirmed)
 function uniSides(ex){ return (ex&&ex.startSide==='L')?['L','R']:['R','L']; }
 // last logged sets for an exercise. A same-name UNILATERAL variant is a DIFFERENT exercise: match by name + uni-ness (detected via per-set side).
@@ -743,6 +750,27 @@ function seedSets(ex,fallbackN){
   const n=Math.max(1,fallbackN||(typeof ex.sets==='number'?ex.sets:2)); const [s1,s2]=uniSides(ex); const out=[];
   for(let i=0;i<n;i++){ if(ex.unilateral){ out.push(emptySet(ex,s1,false,null)); out.push(emptySet(ex,s2,false,null)); } else out.push(emptySet(ex,null,false,null)); }
   return out;
+}
+// ---- drop sets are SUBSERIES of their parent working set, not independent entries ----
+// resolve the insertion index for a NEW drop hung off the set at `triggerIdx`: walks back to the
+// nearest working (non-drop) set at/before triggerIdx (so tapping ↓ on an existing drop CHAINS another
+// drop onto the SAME parent), then forward past any drops that parent already has, in steps of `step`
+// (1 for bilateral/machine sets, 2 for unilateral R/L pairs — each pair moves together).
+function dropInsertIdx(sets,triggerIdx,step){
+  step=step||1; let parent=triggerIdx; while(parent>0 && sets[parent] && sets[parent].isDrop) parent-=step;
+  let idx=parent+step; while(idx<sets.length && sets[idx] && sets[idx].isDrop) idx+=step;
+  return idx;
+}
+// human-facing set numbers: a working set increments the counter (1,2,3…); a drop shows parent.5,
+// and CHAINS a second/third drop on the same parent as parent.6/.7… — never renumbers later sets.
+// step=2 labels a unilateral R/L pair together (both indices of the pair share one label).
+function setLabels(sets,step){
+  step=step||1; const labels=[]; let n=0, dropSeq=0;
+  for(let i=0;i<(sets||[]).length;i+=step){ const s=sets[i]; let lbl;
+    if(s&&s.isDrop){ lbl=n+'.'+(5+dropSeq); dropSeq++; } else { n++; dropSeq=0; lbl=String(n); }
+    for(let k=0;k<step;k++) labels[i+k]=lbl;
+  }
+  return labels;
 }
 function newWorkSession(){
   const day=db.split.days[selIdx()];
@@ -1131,6 +1159,28 @@ function _identitySelfCheck(){
     console.log('identity/variant self-check OK');
   } finally { db.split.days=origDays; }
 }
+// drop-set-as-subserie self-check — runs only with ?selftest=1, AFTER db is loaded (emptySet reads
+// db.settings.unit). Pure array manipulation, touches no real state.
+function _dropsetSelfCheck(){
+  const A=(n,cond)=>{ if(!cond) throw new Error('SELFCHECK dropset: '+n); };
+  const mkEx=()=>({type:'machine',sets:[]});
+  const addWork=ex=>{ const lt=ex.sets[ex.sets.length-1]||null; ex.sets.push(emptySet(ex,null,false,lt)); };
+  const addDrop=(ex,si)=>{ const idx=dropInsertIdx(ex.sets,si,1); ex.sets.splice(idx,0,Object.assign(emptySet(ex),{isDrop:true,fsOn:true})); };
+  // "1, 1.5, 2, 3" — drop hung on serie 1, later series keep their numbers
+  { const ex=mkEx(); addWork(ex);addWork(ex);addWork(ex); addDrop(ex,0);
+    A('pattern 1,1.5,2,3', JSON.stringify(setLabels(ex.sets,1))===JSON.stringify(['1','1.5','2','3'])); }
+  // the reported bug: serie 2 already has a drop must NOT block adding one to serie 1
+  { const ex=mkEx(); addWork(ex);addWork(ex); addDrop(ex,1); addDrop(ex,0);
+    A('drop on serie 2 does not block a drop on serie 1', JSON.stringify(setLabels(ex.sets,1))===JSON.stringify(['1','1.5','2','2.5'])); }
+  // the reported herencia bug: a plain [+ set] added right after a drop must NOT come out as a drop
+  { const ex=mkEx(); addWork(ex); addDrop(ex,0); addWork(ex);
+    A('a set added after a drop is never itself a drop', ex.sets[ex.sets.length-1].isDrop===false);
+    A('resulting numbering "1,1.5,2" (not another drop)', JSON.stringify(setLabels(ex.sets,1))===JSON.stringify(['1','1.5','2'])); }
+  // chaining: a second drop on the SAME parent reads as parent.6, not a new top-level series
+  { const ex=mkEx(); addWork(ex); addDrop(ex,0); addDrop(ex,1);
+    A('chained double-drop reads as 1,1.5,1.6', JSON.stringify(setLabels(ex.sets,1))===JSON.stringify(['1','1.5','1.6'])); }
+  console.log('drop-set self-check OK');
+}
 try{ if(typeof location!=='undefined' && /[?&]selftest=1/.test(location.search)) _failureMathSelfCheck(); }catch(e){ console.error(e); }
 // Best observed Epley+RIR e1RM across SAVED sessions — kept as a reference helper (e.g. for future PR badges).
 // No longer used inside the per-set score — that signal is now self-contained from reps + RIR alone.
@@ -1190,6 +1240,7 @@ function renderExercise(exi,ex,allowF,canReorder){
   if(isU){
     let thead=`<div class="thead" style="grid-template-columns:22px 20px 1fr 38px 44px 40px 18px;"><div class="cl"></div><div class="cl">L/R</div><div class="cl w">weight</div><div class="cl">unit</div><div class="cl">reps</div><div class="cl">rir</div><div class="cl"></div></div>`;
     let body='';
+    const labels=setLabels(sets,2);
     for(let p=0;p<sets.length;p+=2){
       const a=sets[p],b=sets[p+1]; const ca=renderSetRow(exi,p,a,ex,allowF); const cb=b?renderSetRow(exi,p+1,b,ex,allowF):null;
       const done=a&&a.done&&b&&b.done;
@@ -1199,7 +1250,8 @@ function renderExercise(exi,ex,allowF,canReorder){
       const prevB=prevSets?prevSets[Math.min(p+1,prevSets.length-1)]:null;
       const pBadge=pairBadgeHTML(a,b,prevA,prevB);
       const progLine=pBadge?`<div class="setprogline" data-exi="${exi}" data-si="${p}" style="text-align:right;padding:0 8px;margin:-1px 0 3px;height:11px;line-height:11px">${pBadge}</div>`:`<div class="setprogline" data-exi="${exi}" data-si="${p}" style="height:0"></div>`;
-      body+=`<div class="pair"><div class="setn ${done?'done':''}" style="${zSty}" data-act="done" data-exi="${exi}" data-si="${p}">#${p/2+1}</div><div class="prows">`
+      const dropbtn=`<span class="dropadd" data-act="dropset" data-exi="${exi}" data-si="${p}" title="colgar drop set aquí">↓</span>`;
+      body+=`<div class="pair ${a&&a.isDrop?'isdrop':''}"><div class="setn ${done?'done':''}" style="${zSty}" data-act="done" data-exi="${exi}" data-si="${p}">${labels[p]}</div>${dropbtn}<div class="prows">`
         +`<div class="srow gc-uni"><div class="side">${escTxt(a.side||'R')}</div>${ca.w}${ca.u}${ca.r}${ca.rr}${ca.del}</div>`
         +(cb?`<div class="srow gc-uni"><div class="side">${escTxt(b.side||'L')}</div>${cb.w}${cb.u}${cb.r}${cb.rr}<span class="del" style="visibility:hidden">×</span></div>`:'')
         +`</div></div>${progLine}`;
@@ -1210,16 +1262,17 @@ function renderExercise(exi,ex,allowF,canReorder){
     const gc=isM?'gc-mach':'gc-free';
     let thead=`<div class="thead ${gc}"><div class="cl"></div>${isM?'<div class="cl"></div>':''}<div class="cl w">weight</div><div class="cl">unit</div><div class="cl">reps</div><div class="cl">rir</div><div class="cl"></div></div>`;
     let body='';
+    const labels=setLabels(sets,1);
     sets.forEach((s,si)=>{ const c=renderSetRow(exi,si,s,ex,allowF); const fsOn=isM&&s.fsOn&&!s.isDrop;
       const fs=isM?`<button class="fs ${s.fsOn?'on':''}" data-act="fs" data-exi="${exi}" data-si="${si}">${s.isDrop?'DS':'FS'}</button>`:'';
       const z=!s.done?setZone(s):null; const zSty=z==='light'?'color:var(--warn);':z==='heavy'?'color:var(--bad);':'';
       const prevS=prevSets?prevSets[Math.min(si,prevSets.length-1)]:null;
       const sBadge=setBadgeHTML(s,prevS);
       const progLine=sBadge?`<div class="setprogline" data-exi="${exi}" data-si="${si}" style="text-align:right;padding:0 8px;margin:-1px 0 3px;height:11px;line-height:11px">${sBadge}</div>`:`<div class="setprogline" data-exi="${exi}" data-si="${si}" style="height:0"></div>`;
-      body+=`<div class="srow ${fsOn?'gc-mach-fs':gc}"><div class="setn ${s.done?'done':''}" style="${zSty}" data-act="done" data-exi="${exi}" data-si="${si}">${s.isDrop?'↓':'#'+(si+1)}</div>${fs}${c.w}${fsOn?c.we:''}${c.u}${c.r}${c.rr}${c.del}</div>${progLine}`;
+      const dropbtn=`<span class="dropadd" data-act="dropset" data-exi="${exi}" data-si="${si}" title="colgar drop set aquí">↓</span>`;
+      body+=`<div class="srow ${fsOn?'gc-mach-fs':gc} ${s.isDrop?'isdrop':''}"><div class="setn ${s.done?'done':''}" style="${zSty}" data-act="done" data-exi="${exi}" data-si="${si}">${labels[si]}</div>${fs}${c.w}${fsOn?c.we:''}${c.u}${c.r}${c.rr}<div class="setend">${c.del}${dropbtn}</div></div>${progLine}`;
     });
-    const drop=isM?`<button class="addbtn" data-act="dropset" data-exi="${exi}">[↓ drop set]</button>`:'';
-    const add=`<div class="addrow ${isM?'amach':'afree'}"><span class="aleft"><button class="addbtn" data-act="addset" data-exi="${exi}">[+ set]</button>${drop}</span><button class="addbtn aex" data-act="addex" data-exi="${exi}">[+ exercise]</button></div>`;
+    const add=`<div class="addrow ${isM?'amach':'afree'}"><span class="aleft"><button class="addbtn" data-act="addset" data-exi="${exi}">[+ set]</button></span><button class="addbtn aex" data-act="addex" data-exi="${exi}">[+ exercise]</button></div>`;
     rows=thead+body+add;
   }
   return `<div class="ex" data-exi="${exi}">${head}${rows}</div>`;
@@ -2936,8 +2989,26 @@ document.getElementById('app').addEventListener('click',e=>{
   else if(a==='done'){ const w=db.activeWork; const ex=w.exercises[exi]; let nowDone; if(ex.unilateral){ const v=!(ex.sets[si]&&ex.sets[si].done); nowDone=v; if(ex.sets[si]){ex.sets[si].done=v;ex.sets[si]._pf=false;} if(ex.sets[si+1]){ex.sets[si+1].done=v;ex.sets[si+1]._pf=false;} } else { ex.sets[si].done=!ex.sets[si].done; ex.sets[si]._pf=false; nowDone=ex.sets[si].done; } if(nowDone&&!w.loggedAfter){ restAudioInit(); w.restEnd=Date.now()+((db.settings.restSec||90)*1000); _restFinT=0; } if(nowDone){ const ts=Date.now(); if(ex.unilateral){if(ex.sets[si])ex.sets[si].doneAt=ts;if(ex.sets[si+1])ex.sets[si+1].doneAt=ts;}else ex.sets[si].doneAt=ts; } if(nowDone)state._autoScroll=true; save(); render(); }
   else if(a==='fs'){ const s=db.activeWork.exercises[exi].sets[si]; s.fsOn=!s.fsOn; save(); render(); }
   else if(a==='addset'){ const ex=db.activeWork.exercises[exi]; if(ex.unilateral){ const [s1,s2]=uniSides(ex); const lr=ex.sets[ex.sets.length-2]||null, ll=ex.sets[ex.sets.length-1]||null; ex.sets.push(emptySet(ex,s1,false,lr)); ex.sets.push(emptySet(ex,s2,false,ll)); } else { const lt=ex.sets[ex.sets.length-1]||null; ex.sets.push(emptySet(ex,null,false,lt)); } save(); state._scroll=document.getElementById('view').scrollTop; render(); }
-  else if(a==='dropset'){ const ex=db.activeWork.exercises[exi]; ex.sets.push(Object.assign(emptySet(ex),{isDrop:true,fsOn:true})); save(); state._scroll=document.getElementById('view').scrollTop; render(); }
-  else if(a==='delset'){ const ex=db.activeWork.exercises[exi]; if(ex.unilateral){const p=Math.floor(si/2)*2; ex.sets.splice(p,2);} else ex.sets.splice(si,1); save(); state._scroll=document.getElementById('view').scrollTop; render(); }
+  else if(a==='dropset'){ const ex=db.activeWork.exercises[exi];
+    // a drop is a SUBSERIE hung right after its parent (+ any drops the parent already has) — never
+    // appended at the end of the exercise. Tapping ↓ on an existing drop chains another onto the same parent.
+    if(ex.unilateral){ const p=Math.floor(si/2)*2; const idx=dropInsertIdx(ex.sets,p,2); const [s1,s2]=uniSides(ex);
+      ex.sets.splice(idx,0, Object.assign(emptySet(ex,s1),{isDrop:true,fsOn:true}), Object.assign(emptySet(ex,s2),{isDrop:true,fsOn:true}));
+    } else { const idx=dropInsertIdx(ex.sets,si,1);
+      ex.sets.splice(idx,0, Object.assign(emptySet(ex),{isDrop:true,fsOn:true}));
+    }
+    save(); state._scroll=document.getElementById('view').scrollTop; render(); }
+  else if(a==='delset'){ const ex=db.activeWork.exercises[exi]; const step=ex.unilateral?2:1; const p=Math.floor(si/step)*step; const s=ex.sets[p];
+    if(s&&s.isDrop){ ex.sets.splice(p,step); }
+    else {
+      // deleting a WORKING set also removes the drops hanging off it (confirm only if they carry real data)
+      let end=p+step; while(end<ex.sets.length&&ex.sets[end]&&ex.sets[end].isDrop)end+=step;
+      const trailing=ex.sets.slice(p+step,end);
+      const hasData=trailing.some(x=>x&&!x._pf&&(x.done||(+x.w>0)||(+x.r>0)));
+      if(trailing.length&&hasData&&!confirm('Esta serie tiene '+(trailing.length/step)+' drop set(s) con datos. ¿Borrar todo junto?'))return;
+      ex.sets.splice(p,end-p);
+    }
+    save(); state._scroll=document.getElementById('view').scrollTop; render(); }
   else if(a==='delex'){ const w=db.activeWork; if(w&&w.exercises[exi]&&confirm('¿Quitar "'+((w.exercises[exi].name)||'este ejercicio')+'" de la sesión? (no toca tu split)')){ w.exercises.splice(exi,1); save(); state._scroll=(document.getElementById('view')||{}).scrollTop||0; render(); } }
   else if(a==='addex'){ openAddExercise(exi); }
   else if(a==='axmus'){ const c=window._axCtx||{}; openAddExStep2(c.afterExi, el.dataset.v, c.replaceExi); }
@@ -4847,7 +4918,7 @@ async function aiPhoto(file,barcode){ if(!file)return; window._faTag=window._faT
 // Pick AI when the proxy is configured, else on-device OCR.
 function labelPhoto(file,barcode){ if(AI_PROXY_URL) return aiPhoto(file,barcode); return ocrPhoto(file,barcode); }
 requestPersist();
-db=load(); try{ if(typeof location!=='undefined' && /[?&]selftest=1/.test(location.search)) _identitySelfCheck(); }catch(e){ console.error(e); } try{ const _sp=new URLSearchParams(location.search); const _hasHistorical=_sp.has('stepsh')||_sp.has('weighth')||_sp.has('stepsq')||_sp.has('sleeph'); if(_hasHistorical){ const _hsp=_sp; if(history.replaceState)history.replaceState(null,'',location.pathname); setTimeout(()=>{ if(confirm('Este link quiere importar datos históricos (pasos/peso/sueño de varios días) a tu cuenta. ¿Aplicar? — solo dile que SÍ si vienes de tu propio Atajo de iOS.')){ try{ const _imp=importHealth(_hsp); if(_imp.length){ save(); render(); toast('✓ '+_imp.join(' · ')); } }catch(_){} } },400); } else { const _imp=importHealth(_sp); if(_imp.length){ window._healthImported=_imp; if(history.replaceState)history.replaceState(null,'',location.pathname); } } }catch(_){} save(); render(); if(window._healthImported)setTimeout(()=>toast('✓ '+window._healthImported.join(' · ')),250); if(window._recoveredFromBackup)setTimeout(()=>{try{alert('Se recuperó un respaldo local: revisa tus datos, podrían faltar cambios muy recientes.');}catch(_){}},600);
+db=load(); try{ if(typeof location!=='undefined' && /[?&]selftest=1/.test(location.search)){ _identitySelfCheck(); _dropsetSelfCheck(); } }catch(e){ console.error(e); } try{ const _sp=new URLSearchParams(location.search); const _hasHistorical=_sp.has('stepsh')||_sp.has('weighth')||_sp.has('stepsq')||_sp.has('sleeph'); if(_hasHistorical){ const _hsp=_sp; if(history.replaceState)history.replaceState(null,'',location.pathname); setTimeout(()=>{ if(confirm('Este link quiere importar datos históricos (pasos/peso/sueño de varios días) a tu cuenta. ¿Aplicar? — solo dile que SÍ si vienes de tu propio Atajo de iOS.')){ try{ const _imp=importHealth(_hsp); if(_imp.length){ save(); render(); toast('✓ '+_imp.join(' · ')); } }catch(_){} } },400); } else { const _imp=importHealth(_sp); if(_imp.length){ window._healthImported=_imp; if(history.replaceState)history.replaceState(null,'',location.pathname); } } }catch(_){} save(); render(); if(window._healthImported)setTimeout(()=>toast('✓ '+window._healthImported.join(' · ')),250); if(window._recoveredFromBackup)setTimeout(()=>{try{alert('Se recuperó un respaldo local: revisa tus datos, podrían faltar cambios muy recientes.');}catch(_){}},600);
 applyDesign(); try{ if(/[?&]design\b/.test(location.search))localStorage.setItem('gymtrk_designmode','1'); if(localStorage.getItem('gymtrk_designmode')==='1')openDesignPanel(); }catch(_){}
 try{ bootScreen(()=>{ try{
   if(/[?&]wrap=1\b/.test(location.search)){ monthlyWrap(prevMonthYm(), true); return; }
