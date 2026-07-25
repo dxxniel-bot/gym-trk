@@ -716,7 +716,7 @@ function goalsFor(date){ const h=db.goalHist&&db.goalHist[date]; if(h)return h; 
 // take a snapshot of today's goal the FIRST time something is logged that day (so editing the goal later never rewrites the past)
 function snapshotGoal(date){ db.goalHist=db.goalHist||{}; if(!db.goalHist[date]){ db.goalHist[date]=Object.assign({}, (typeof effectiveGoals==='function')?effectiveGoals():(db.settings&&db.settings.goals)||{}); } }
 let _saveBakT=0;
-function save(){ try{ const s=JSON.stringify(db); localStorage.setItem(LS_KEY,s);
+function save(){ bumpIdx(); try{ const s=JSON.stringify(db); localStorage.setItem(LS_KEY,s);
   // redundant backup, throttled to once every ~4s (cheap safety net if primary key gets corrupted)
   const now=performance.now(); if(now-_saveBakT>4000){ _saveBakT=now; try{localStorage.setItem(LS_BACKUP,s);}catch(e){} }
   }catch(e){ console.warn('save failed',e); if(!window._saveQuotaWarned){ window._saveQuotaWarned=true; try{ setTimeout(()=>{ try{toast('⚠ sin espacio: exporta y borra datos viejos para liberar');}catch(_){} },500); }catch(_){} } } }
@@ -742,10 +742,15 @@ function emptySet(ex,side,isDrop,src){ const s={w:'',r:'',rir:'',unit:(ex&&ex.un
 function uniSides(ex){ return (ex&&ex.startSide==='L')?['L','R']:['R','L']; }
 // last logged sets for an exercise. A same-name UNILATERAL variant is a DIFFERENT exercise: match by name + uni-ness (detected via per-set side).
 function lastLoggedSets(name,uni){ const key=(name||'').toLowerCase().trim(); let best=null,bd=''; (db.sessions||[]).forEach(s=>{ if(s.type==='rest')return; (s.exercises||[]).forEach(e=>{ if((e.name||'').toLowerCase().trim()!==key||!e.sets||!e.sets.length)return; const eUni=e.sets.some(x=>x.side); if(!!uni!==eUni)return; if(s.date>=bd){ bd=s.date; best=e.sets; } }); }); return best; }
-// prefilled sets for a new/changed exercise: mirror the LAST logged session's structure
-// (set count + drop-set flags + L/R sides) so drop sets carry over; else a plain count from the split.
-function seedSets(ex,fallbackN){
-  const last=lastLoggedSets(ex.name,ex.unilateral);
+// prefilled sets for a new/changed exercise: mirror the EQUIVALENT prior occurrence's structure
+// (set count + drop-set flags + L/R sides) via the baseline ladder (exId → day+name+variant+occurrence
+// → unique name+variant nearby) — never "any session that ever logged this name"; else a plain count
+// from the split. `ctx` (optional): {dayId, occ, nSame, orderIdx} — richer identity when available
+// (newWorkSession has it; ad-hoc adds pass what they can, the ladder degrades gracefully without it).
+function seedSets(ex,fallbackN,ctx){
+  ctx=ctx||{};
+  const base=baselineSetsFor({exId:ex.exId||null,dayId:ctx.dayId||null,name:String(ex.name||'').toLowerCase().trim(),variant:variantKey(ex),occ:ctx.occ||0,nSame:ctx.nSame||1,orderIdx:ctx.orderIdx||0});
+  const last=base.sets;
   if(last&&last.length) return last.map(s=>emptySet(ex,s.side||null,!!s.isDrop,s));
   const n=Math.max(1,fallbackN||(typeof ex.sets==='number'?ex.sets:2)); const [s1,s2]=uniSides(ex); const out=[];
   for(let i=0;i<n;i++){ if(ex.unilateral){ out.push(emptySet(ex,s1,false,null)); out.push(emptySet(ex,s2,false,null)); } else out.push(emptySet(ex,null,false,null)); }
@@ -774,9 +779,10 @@ function setLabels(sets,step){
 }
 function newWorkSession(){
   const day=db.split.days[selIdx()];
-  const exs=day.exercises.map(e=>{
+  const exs=day.exercises.map((e,ei)=>{
     const ex={exId:e.id||null,name:e.name,muscle:e.muscle,muscles:Array.isArray(e.muscles)?e.muscles.slice():undefined,type:e.type,machine:e.machine,unilateral:e.unilateral,startSide:e.startSide,unit:e.unit,useFS:e.useFS,note:e.note||'',sets:[]};
-    ex.sets=seedSets(ex,e.sets||1);
+    const name=String(e.name||'').toLowerCase().trim(), variant=variantKey(e);
+    ex.sets=seedSets(ex,e.sets||1,{dayId:day.id,occ:exOccurrence(day.exercises,ei),nSame:exNameCount(day.exercises,name,variant),orderIdx:ei});
     return ex;
   });
   return {id:uid(),date:todayISO(),dayId:day.id,dayName:day.name,gym:db.activeGym,startTs:nowHM(),startMs:Date.now(),loggedAfter:false,exercises:exs};
@@ -875,6 +881,58 @@ function musclesOf(sessOrWork,ei){
   const list=(sessOrWork&&sessOrWork.exercises)||[]; const e=list[ei]; if(!e)return [];
   const sx=splitExFor(sessOrWork,ei);
   return sx?exMuscles(sx):exMuscles(e);
+}
+// ---- baseline engine: find the EQUIVALENT prior occurrence of an exercise-instance, never "any occurrence of this name" ----
+let _exIdxCache=null;
+// call after any mutation that could change db.sessions (save() does this) so exIndex() rebuilds once, lazily.
+function bumpIdx(){ _exIdxCache=null; }
+// flat, memoized list of every REAL (non-_pf, non-empty) exercise-occurrence across all saved sessions,
+// most-recent-first. Base for baselineSetsFor() — rebuilt only when bumpIdx() invalidates it.
+function exIndex(){
+  if(_exIdxCache) return _exIdxCache;
+  const rows=[];
+  (db.sessions||[]).forEach((s,sIdx)=>{ if(s.type==='rest')return;
+    (s.exercises||[]).forEach((e,ei)=>{
+      // keep the ORIGINAL sets array (not a filtered copy) so its indices stay aligned with
+      // sessionFatigueContext(sess)[ei] — saveSession already guarantees every persisted set has
+      // real data and no _pf, so this is just a has-anything-at-all check, not a real filter.
+      const sets=e.sets||[];
+      if(!sets.some(x=>x&&!x._pf&&(x.w||x.r)))return;
+      const name=String(e.name||'').toLowerCase().trim(); const variant=variantKey(e); const list=s.exercises;
+      rows.push({sid:s.id,date:String(s.date||''),sIdx,ei,orderIdx:ei,sess:s,ex:e,sets,
+        exId:e.exId||null,dayId:s.dayId||null,name,variant,
+        occ:exOccurrence(list,ei),nSame:exNameCount(list,name,variant)});
+    });
+  });
+  rows.sort((a,b)=> b.date.localeCompare(a.date) || b.sIdx-a.sIdx);
+  return (_exIdxCache=rows);
+}
+// baseline ladder for `target` (see exIdentity()'s shape, plus optional excludeSessionId/beforeDate/beforeSIdx
+// to only look at STRICTLY earlier sessions — used when viewing/editing history). Returns the best-equivalent
+// occurrence found, or {sets:null,...,why:'sin baseline'} — NEVER falls back to "any occurrence of this name":
+// a false % is worse than no %. confidence 'exact' when identity/day+occurrence pin it down uniquely,
+// 'weak' when only name+variant uniqueness + nearby position support the match.
+function baselineSetsFor(target){
+  target=target||{};
+  const idx=exIndex();
+  const inWindow=r=> r.sid!==target.excludeSessionId
+    && (target.beforeDate==null || r.date<target.beforeDate || (r.date===target.beforeDate && r.sIdx<target.beforeSIdx));
+  const pick=(fn,level,confidence,why)=>{ const r=idx.find(x=>inWindow(x)&&fn(x)); return r?{sets:r.sets,sess:r.sess,ei:r.ei,level,confidence,date:r.date,why}:null; };
+  if(target.exId){ const h=pick(r=>r.exId===target.exId,'id','exact','misma instancia'); if(h)return h; }
+  if(target.dayId){ const h=pick(r=>r.dayId===target.dayId&&r.name===target.name&&r.variant===target.variant&&r.occ===target.occ,'day','exact','mismo día · misma posición'); if(h)return h; }
+  if(target.dayId && target.nSame===1){ const h=pick(r=>r.dayId===target.dayId&&r.name===target.name&&r.variant===target.variant&&r.nSame===1,'day','exact','mismo día'); if(h)return h; }
+  { const h=pick(r=>r.name===target.name&&r.variant===target.variant&&r.nSame===1&&Math.abs(r.orderIdx-(target.orderIdx||0))<=1,'name','weak','otro día · posición similar'); if(h)return h; }
+  return {sets:null,sess:null,ei:-1,level:null,confidence:null,date:null,why:'sin baseline'};
+}
+// aligns each entry of curSets to its like-for-like counterpart in baseSets — same isDrop-ness AND side,
+// matched in ORDER within that group (1st working set vs 1st working set, 1st drop vs 1st drop…), so an
+// extra 4th set compared against a baseline of 3 gets null (no badge) instead of silently reusing the 3rd,
+// and a drop never gets compared against a working set (or vice versa).
+function alignSetIdx(curSets,baseSets){
+  const kind=s=>(s&&s.isDrop?'d':'w')+((s&&s.side)||'');
+  const buckets={}; (baseSets||[]).forEach((s,i)=>{ const k=kind(s); (buckets[k]=buckets[k]||[]).push(i); });
+  const seen={};
+  return (curSets||[]).map(s=>{ const k=kind(s); const n=(seen[k]=(seen[k]||0)+1); const b=buckets[k]||[]; return n<=b.length?b[n-1]:null; });
 }
 function weeklySets(days){ days=days||7; const now=new Date(); const cut=new Date(now); cut.setDate(now.getDate()-days); const c=todayISO(cut);
   const byM={}; const freq={}; const effM={}; const directM={}, indirectM={};
@@ -1181,6 +1239,47 @@ function _dropsetSelfCheck(){
     A('chained double-drop reads as 1,1.5,1.6', JSON.stringify(setLabels(ex.sets,1))===JSON.stringify(['1','1.5','1.6'])); }
   console.log('drop-set self-check OK');
 }
+// baseline-ladder self-check — runs only with ?selftest=1, AFTER db is loaded. Swaps BOTH db.sessions
+// and db.split.days for fixtures and restores both in `finally`, so it never touches real user data.
+function _baselineSelfCheck(){
+  const origSessions=db.sessions, origDays=db.split.days;
+  try{
+    const S=(w,r,rir,o)=>Object.assign({w:String(w),r:String(r),rir:String(rir),isDrop:false,done:true,doneAt:Date.now()},o||{});
+    const A=(n,cond)=>{ if(!cond) throw new Error('SELFCHECK baseline: '+n); };
+    // the reported bug: yesterday's fresh pulldown (occ 0) vs. an extra/finisher pulldown (occ 1) —
+    // today's fresh pulldown must baseline against the FRESH one, never the fatigued extra.
+    db.split.days=[]; bumpIdx();
+    db.sessions=[{id:'s1',date:'2026-07-20',dayId:'d1',type:'training',exercises:[
+      {name:'pulldown',type:'machine',sets:[S(80,10,'2')]},
+      {name:'row',type:'machine',sets:[S(70,10,'2')]},
+      {name:'pulldown',type:'machine',sets:[S(60,8,'1',{isDrop:true})]}
+    ]}];
+    bumpIdx();
+    const todaySess={dayId:'d1',exercises:[{name:'pulldown',type:'machine',sets:[]}]};
+    const base=baselineSetsFor(Object.assign(exIdentity(todaySess,0),{orderIdx:0}));
+    A('fresh pulldown baselines against the FRESH prior one (w=80), not the extra (w=60)', base.sets&&base.sets[0].w==='80');
+    // extra sets beyond the baseline count get NO alignment (never silently reuse the last prior set)
+    db.sessions=[{id:'s2',date:'2026-07-20',dayId:'d1',type:'training',exercises:[{name:'bench',type:'free',sets:[S(100,8,'2'),S(100,8,'2'),S(100,7,'2')]}]}];
+    bumpIdx();
+    const curSets=[S(105,8,'2'),S(105,8,'2'),S(105,7,'2'),S(105,6,'2')];
+    const bench={dayId:'d1',exercises:[{name:'bench',type:'free',sets:curSets}]};
+    const base2=baselineSetsFor(Object.assign(exIdentity(bench,0),{orderIdx:0}));
+    const align=alignSetIdx(curSets,base2.sets);
+    A('set 4 (beyond the 3-set baseline) gets null alignment, not the clamped 3rd set', align[3]===null);
+    // variant separation: machine vs free with the same name never cross-baseline
+    db.sessions=[{id:'s3',date:'2026-07-20',dayId:'d1',type:'training',exercises:[{name:'curl',type:'machine',sets:[S(40,10,'2')]}]}];
+    bumpIdx();
+    const curlFree={dayId:'d1',exercises:[{name:'curl',type:'free',sets:[]}]};
+    const base3=baselineSetsFor(Object.assign(exIdentity(curlFree,0),{orderIdx:0}));
+    A('free curl does not baseline against machine curl (different variant)', base3.sets===null && base3.why==='sin baseline');
+    // honesty tiers: wildly different fatigue contexts suppress the percentage, showing direction only
+    const cur=S(100,8,'2'), prev=S(90,8,'2');
+    const farCtx1={priorHardSets:0,orderIdx:0,restSec:null}, farCtx2={priorHardSets:15,orderIdx:6,restSec:null};
+    const html=setBadgeHTML(cur,prev,farCtx1,farCtx2,'id');
+    A('wildly different context -> no percentage, direction only', !/\d+%/.test(html));
+    console.log('baseline self-check OK');
+  } finally { db.sessions=origSessions; db.split.days=origDays; }
+}
 try{ if(typeof location!=='undefined' && /[?&]selftest=1/.test(location.search)) _failureMathSelfCheck(); }catch(e){ console.error(e); }
 // Best observed Epley+RIR e1RM across SAVED sessions — kept as a reference helper (e.g. for future PR badges).
 // No longer used inside the per-set score — that signal is now self-contained from reps + RIR alone.
@@ -1193,20 +1292,54 @@ function exerciseProgress(ex){
 }
 // previous occurrence of an exercise (by date, then insertion order) BEFORE a given saved session — for history
 function prevSetsForHist(name,uni,curId){ const key=(name||'').toLowerCase().trim(); const occ=[]; (db.sessions||[]).forEach((s,idx)=>{ if(s.type==='rest')return; (s.exercises||[]).forEach(e=>{ if((e.name||'').toLowerCase().trim()!==key||!e.sets||!e.sets.length)return; const eUni=e.sets.some(x=>x.side); if(!!uni!==eUni)return; occ.push({id:s.id,date:String(s.date||''),idx,sets:e.sets}); }); }); occ.sort((a,b)=> a.date.localeCompare(b.date) || a.idx-b.idx); const pos=occ.findIndex(o=>o.id===curId); if(pos<=0)return null; return occ[pos-1].sets; }
-function histProgress(e,sessId){ const cur=avgE1RM(e.sets,false), prev=avgE1RM(prevSetsForHist(e.name,(e.sets||[]).some(x=>x.side),sessId),false); return progFromScores(cur,prev); }
+// progress for exercises[ei] of a SAVED session `sess`, vs. the equivalent occurrence STRICTLY
+// before it (baseline ladder, excluding `sess` itself and anything from the same date logged later).
+function histProgress(sess,ei){ const e=(sess&&sess.exercises||[])[ei]; if(!e)return null;
+  const cur=avgE1RM(e.sets,false);
+  const id=exIdentity(sess,ei);
+  const sIdx=(db.sessions||[]).indexOf(sess);
+  const base=baselineSetsFor(Object.assign(id,{orderIdx:ei,excludeSessionId:sess.id,beforeDate:sess.date,beforeSIdx:sIdx}));
+  return progFromScores(cur,avgE1RM(base.sets,false));
+}
 // Count sets by zone — surfaced as a coaching hint next to the progress badge.
 function exerciseZones(ex){ const z={light:0,productive:0,heavy:0}; (ex.sets||[]).forEach(s=>{ if(s._pf)return; const zn=setZone(s); if(zn&&z[zn]!=null)z[zn]++; }); return z; }
-function sessionProgAgg(s){ let up=0,down=0; (s.exercises||[]).forEach(e=>{ const pr=histProgress(e,s.id); if(pr){ if(pr.dir==='up')up++; else if(pr.dir==='down')down++; } }); return {up,down}; }
+function sessionProgAgg(s){ let up=0,down=0; (s.exercises||[]).forEach((e,ei)=>{ const pr=histProgress(s,ei); if(pr){ if(pr.dir==='up')up++; else if(pr.dir==='down')down++; } }); return {up,down}; }
 function progBadgeFromProg(pr,title){ if(!pr)return ''; const col=pr.dir==='up'?'var(--good)':pr.dir==='down'?'var(--bad)':'var(--o40)'; const ar=pr.dir==='up'?'▲':pr.dir==='down'?'▼':'='; const pc=pr.pct?((pr.pct>0?'+':'')+pr.pct+'%'):''; return `<span class="exprog" style="font-size:12px;font-weight:800;margin-left:7px;color:${col}" title="${title||'progreso de fuerza · e1RM vs sesión previa'}">${ar}${pc}</span>`; }
 // progBadgeHTML in the WORKOUT view: only the zone counter (the % moved to per-set badges below each row).
 function progBadgeHTML(ex){ const z=exerciseZones(ex); const total=z.light+z.productive+z.heavy; if(!total)return ''; const parts=[]; if(z.productive)parts.push(`<span style="color:var(--good)">${z.productive}✓</span>`); if(z.light)parts.push(`<span style="color:var(--warn)" title="series flojas — sube peso o llega más cerca al fallo">${z.light}↑</span>`); if(z.heavy)parts.push(`<span style="color:var(--warn)" title="series demasiado pesadas — baja peso o sube reps">${z.heavy}↓</span>`); return `<span class="exzones" style="font-size:10px;font-weight:700;margin-left:6px;letter-spacing:.06em">${parts.join(' ')}</span>`; }
-// per-SET progress: compare current set's score vs the same-position set from the previous session.
-function setProgress(curS,prevS){ if(!curS||!prevS)return null; return progFromScores(e1rmOf(curS), e1rmOf(prevS)); }
+// fresh-equivalent e1RM when a fatigue-context row is available (from sessionFatigueContext), else raw.
+function effE1RM(s,ctx){ return ctx?correctedE1RM(s,ctx):e1rmOf(s); }
+// per-SET progress: compare current set's FRESH-EQUIVALENT score vs the equivalent prior set's —
+// so a fresh top set today is never penalized/flattered by comparing against a fatigued prior set.
+function setProgress(curS,prevS,curCtx,prevCtx){ if(!curS||!prevS)return null; return progFromScores(effE1RM(curS,curCtx), effE1RM(prevS,prevCtx)); }
 // a set "counts" for progress only when fully entered: weight + reps + RIR, and no longer a prefill suggestion.
 function setComplete(s){ if(!s||s._pf)return false; return s.w!==''&&s.w!=null&&+s.w>0 && s.r!==''&&s.r!=null&&+s.r>0 && s.rir!==''&&s.rir!=null; }
-function setBadgeHTML(curS,prevS){ if(!setComplete(curS))return ''; const pr=setProgress(curS,prevS); if(!pr)return ''; const col=pr.dir==='up'?'var(--good)':pr.dir==='down'?'var(--bad)':'var(--o40)'; const ar=pr.dir==='up'?'▲':pr.dir==='down'?'▼':'='; const pc=pr.pct?((pr.pct>0?'+':'')+pr.pct+'%'):''; const ptxt=(prevS&&prevS.w?`${numTxt(prevS.w)}×${prevS.r||'—'}${prevS.rir!=null&&prevS.rir!==''?'@'+prevS.rir:''}`:''); return `<span class="setprog" style="font-size:9px;font-weight:700;color:${col}" title="vs ant ${ptxt}">${ar}${pc}</span>`; }
-// pair progress: for unilateral, sum L+R scores and compare against the same-position pair from the previous session.
-function pairBadgeHTML(curA,curB,prevA,prevB){ if(!setComplete(curA)||!setComplete(curB))return ''; const cur=e1rmOf(curA)+(curB?e1rmOf(curB):0); const prev=(prevA?e1rmOf(prevA):0)+(prevB?e1rmOf(prevB):0); const pr=progFromScores(cur,prev); if(!pr)return ''; const col=pr.dir==='up'?'var(--good)':pr.dir==='down'?'var(--bad)':'var(--o40)'; const ar=pr.dir==='up'?'▲':pr.dir==='down'?'▼':'='; const pc=pr.pct?((pr.pct>0?'+':'')+pr.pct+'%'):''; return `<span class="setprog" style="font-size:9px;font-weight:700;color:${col}">${ar}${pc}</span>`; }
+// refines the baseline ladder's level into a display tier: even an 'exact' identity match can be a poor
+// comparison if the two sets came at wildly different points in their sessions (e.g. an ad-hoc extra
+// add vs. a planned top set) — 'dir' shows only ▲▼=, never a number, rather than a falsely precise %.
+function progConfidence(level,curCtx,prevCtx){
+  if(!curCtx||!prevCtx) return (level==='id'||level==='day')?'exact':'coarse';
+  const dHard=Math.abs((curCtx.priorHardSets||0)-(prevCtx.priorHardSets||0));
+  const dOrder=Math.abs((curCtx.orderIdx||0)-(prevCtx.orderIdx||0));
+  const noRest=!curCtx.restSec&&!prevCtx.restSec;
+  if(dHard>8 || (dOrder>2 && noRest)) return 'dir';
+  return (level==='id'||level==='day')?'exact':'coarse';
+}
+// tier 'coarse' (weak identity match) rounds to the nearest 5% and prefixes '~'; 'dir' drops the % entirely.
+function progBadgeParts(pr,tier){ if(!pr)return null;
+  const col=pr.dir==='up'?'var(--good)':pr.dir==='down'?'var(--bad)':'var(--o40)';
+  const ar=pr.dir==='up'?'▲':pr.dir==='down'?'▼':'=';
+  if(tier==='dir') return {col,ar,pc:''};
+  const weak=tier==='coarse'; const pct=weak?Math.round(pr.pct/5)*5:pr.pct;
+  const pc=pct?((weak?'~':'')+(pct>0?'+':'')+pct+'%'):(weak?'~':'');
+  return {col,ar,pc};
+}
+function setBadgeHTML(curS,prevS,curCtx,prevCtx,level){ if(!setComplete(curS))return ''; const pr=setProgress(curS,prevS,curCtx,prevCtx); if(!pr)return ''; const tier=progConfidence(level,curCtx,prevCtx); const parts=progBadgeParts(pr,tier); if(!parts)return '';
+  const ptxt=(prevS&&prevS.w?`${numTxt(prevS.w)}×${prevS.r||'—'}${prevS.rir!=null&&prevS.rir!==''?'@'+prevS.rir:''}`:'');
+  const ttl=tier==='dir'?'contexto muy distinto — solo dirección, sin %':('vs ant '+ptxt);
+  return `<span class="setprog" style="font-size:9px;font-weight:700;color:${parts.col}" title="${ttl}">${parts.ar}${parts.pc}</span>`; }
+// pair progress: for unilateral, sum L+R FRESH-EQUIVALENT scores and compare against the equivalent prior pair.
+function pairBadgeHTML(curA,curB,prevA,prevB,curCtxA,curCtxB,prevCtxA,prevCtxB,level){ if(!setComplete(curA)||!setComplete(curB))return ''; const cur=effE1RM(curA,curCtxA)+(curB?effE1RM(curB,curCtxB):0); const prev=(prevA?effE1RM(prevA,prevCtxA):0)+(prevB?effE1RM(prevB,prevCtxB):0); const pr=progFromScores(cur,prev); if(!pr)return ''; const tier=progConfidence(level,curCtxA,prevCtxA); const parts=progBadgeParts(pr,tier); if(!parts)return ''; return `<span class="setprog" style="font-size:9px;font-weight:700;color:${parts.col}">${parts.ar}${parts.pc}</span>`; }
 // MUSCLE-LEVEL weekly score: aggregate setScore over all exercises tagged with this muscle, within a date window.
 function muscleWindowScore(muscle,startISO,endISO){ const m=(muscle||'').toLowerCase(); let total=0; (db.sessions||[]).forEach(s=>{ if(s.type==='rest')return; if(s.date<startISO||s.date>=endISO)return; (s.exercises||[]).forEach(e=>{ const hit=exMuscles(e).find(x=>x.name===m); if(!hit)return; (e.sets||[]).forEach(set=>{ total+=setScore(set)*hit.weight; }); }); }); return total; }
 function muscleProgress(muscle){ const now=new Date(); const c7=new Date(now); c7.setDate(now.getDate()-6); const c14=new Date(now); c14.setDate(now.getDate()-13); const tomorrow=new Date(now); tomorrow.setDate(now.getDate()+1); const cur=muscleWindowScore(muscle,todayISO(c7),todayISO(tomorrow)); const prev=muscleWindowScore(muscle,todayISO(c14),todayISO(c7)); return progFromScores(cur,prev); }
@@ -1215,9 +1348,14 @@ function updateProgBadge(exi){ const w=db.activeWork; if(!w||!w.exercises[exi])r
 // also update per-set zone color in-place (called from setField after a weight/reps/RIR change)
 function updateSetZone(exi,si){ const w=db.activeWork; if(!w||!w.exercises[exi])return; const s=w.exercises[exi].sets[si]; if(!s)return; const z=setZone(s); const el=document.querySelector('.setn[data-exi="'+exi+'"][data-si="'+si+'"]'); if(!el)return; el.style.color = (!s.done && z==='light') ? 'var(--warn)' : (!s.done && z==='heavy') ? 'var(--bad)' : ''; }
 // live update of the per-set ▲/▼% badge line (uni: anchored on the EVEN index of each pair).
-function updateSetProgress(exi,si){ const w=db.activeWork; if(!w||!w.exercises[exi])return; const ex=w.exercises[exi]; const s=ex.sets[si]; if(!s)return; const prevSets=lastLoggedSets(ex.name,ex.unilateral); let html; let anchorSi;
-  if(ex.unilateral){ anchorSi = (si%2===0)?si:si-1; const a=ex.sets[anchorSi], b=ex.sets[anchorSi+1]; const prevA=prevSets?prevSets[Math.min(anchorSi,prevSets.length-1)]:null; const prevB=prevSets?prevSets[Math.min(anchorSi+1,prevSets.length-1)]:null; html=pairBadgeHTML(a,b,prevA,prevB); }
-  else { anchorSi = si; const prevS=prevSets?prevSets[Math.min(si,prevSets.length-1)]:null; html=setBadgeHTML(s,prevS); }
+function updateSetProgress(exi,si){ const w=db.activeWork; if(!w||!w.exercises[exi])return; const ex=w.exercises[exi]; const s=ex.sets[si]; if(!s)return;
+  // reuse the baseline+alignment+fatigue-context computed at the last full render (state._align)
+  // instead of recomputing the ladder on every keystroke; falls back to a fresh lookup if missing.
+  const cache=(state._align&&state._align[exi])||(()=>{ const bl=baselineSetsFor(Object.assign(exIdentity(w,exi),{orderIdx:exi})); return {prevSets:bl.sets,align:alignSetIdx(ex.sets,bl.sets),curFatCtx:[],baseFatCtx:[],level:bl.level}; })();
+  const prevSets=cache.prevSets, align=cache.align||[], curFatCtx=cache.curFatCtx||[], baseFatCtx=cache.baseFatCtx||[], level=cache.level;
+  let html; let anchorSi;
+  if(ex.unilateral){ anchorSi = (si%2===0)?si:si-1; const a=ex.sets[anchorSi], b=ex.sets[anchorSi+1]; const prevA=(prevSets&&align[anchorSi]!=null)?prevSets[align[anchorSi]]:null; const prevB=(prevSets&&align[anchorSi+1]!=null)?prevSets[align[anchorSi+1]]:null; html=pairBadgeHTML(a,b,prevA,prevB,curFatCtx[anchorSi],curFatCtx[anchorSi+1],align[anchorSi]!=null?baseFatCtx[align[anchorSi]]:null,align[anchorSi+1]!=null?baseFatCtx[align[anchorSi+1]]:null,level); }
+  else { anchorSi = si; const prevS=(prevSets&&align[si]!=null)?prevSets[align[si]]:null; html=setBadgeHTML(s,prevS,curFatCtx[si],align[si]!=null?baseFatCtx[align[si]]:null,level); }
   const el=document.querySelector('.setprogline[data-exi="'+exi+'"][data-si="'+anchorSi+'"]'); if(!el)return;
   el.innerHTML=html||''; el.style.height=html?'11px':'0'; el.style.lineHeight='11px';
 }
@@ -1233,10 +1371,23 @@ function renderExercise(exi,ex,allowF,canReorder){
     mhtml=p; }
   const prBadge=progBadgeHTML(ex);
   const gripE=canReorder?`<span class="dgrip" data-drage="${exi}" title="mantén y arrastra · reordena dentro del músculo">⠿</span>`:'';
-  let head=`<div class="exhead">${gripE}<span class="n" data-act="editexname" data-exi="${exi}" style="cursor:pointer">${escTxt(ex.name)}</span>${prBadge}${mhtml}<span class="note" data-act="editexnote" data-exi="${exi}" style="cursor:pointer${ex.note?'':';color:var(--o30)'}" title="${ex.note?'editar nota':'agregar nota'}">${ex.note?escTxt(ex.note):'+ nota'}</span>${isU?'<span class="note">[uni]</span>':''}<span class="exdel" data-act="delex" data-exi="${exi}" title="quitar de la sesión" style="margin-left:auto;align-self:center;color:var(--o35);cursor:pointer;font-size:13px;padding:2px 6px">✕</span></div>`;
   let rows='';
-  // PREV-session sets for position-based per-set comparison
-  const prevSets=lastLoggedSets(ex.name,ex.unilateral);
+  // EQUIVALENT prior occurrence (baseline ladder: exId → day+name+variant+occurrence → unique nearby)
+  // + like-for-like alignment (same isDrop-ness/side, same ordinal within that group) — an extra set
+  // beyond what the baseline had gets no comparison, rather than silently reusing the last prior set.
+  const _bl=baselineSetsFor(Object.assign(exIdentity(db.activeWork,exi),{orderIdx:exi}));
+  const prevSets=_bl.sets;
+  const align=alignSetIdx(sets,prevSets);
+  // fatigue context for THIS session (fresh every render — cheap) and for the baseline session
+  // (cached by session id, since a saved session's data never changes during a live workout).
+  const curFatCtx=(sessionFatigueContext(db.activeWork)[exi])||[];
+  state._fatCache=state._fatCache||{};
+  let baseFatCtx=[];
+  if(_bl.sess){ if(!state._fatCache[_bl.sess.id])state._fatCache[_bl.sess.id]=sessionFatigueContext(_bl.sess); baseFatCtx=(state._fatCache[_bl.sess.id][_bl.ei])||[]; }
+  state._align=state._align||{}; state._align[exi]={prevSets,align,curFatCtx,baseFatCtx,level:_bl.level};
+  // honest about missing history: no equivalent prior occurrence found for this exact instance/variant
+  const noBaseline=!prevSets?`<span class="exprog" style="color:var(--o30);font-size:9px;margin-left:6px" title="sin sesión previa equivalente para comparar">sin baseline</span>`:'';
+  const head=`<div class="exhead">${gripE}<span class="n" data-act="editexname" data-exi="${exi}" style="cursor:pointer">${escTxt(ex.name)}</span>${prBadge}${noBaseline}${mhtml}<span class="note" data-act="editexnote" data-exi="${exi}" style="cursor:pointer${ex.note?'':';color:var(--o30)'}" title="${ex.note?'editar nota':'agregar nota'}">${ex.note?escTxt(ex.note):'+ nota'}</span>${isU?'<span class="note">[uni]</span>':''}<span class="exdel" data-act="delex" data-exi="${exi}" title="quitar de la sesión" style="margin-left:auto;align-self:center;color:var(--o35);cursor:pointer;font-size:13px;padding:2px 6px">✕</span></div>`;
   if(isU){
     let thead=`<div class="thead" style="grid-template-columns:22px 20px 1fr 38px 44px 40px 18px;"><div class="cl"></div><div class="cl">L/R</div><div class="cl w">weight</div><div class="cl">unit</div><div class="cl">reps</div><div class="cl">rir</div><div class="cl"></div></div>`;
     let body='';
@@ -1246,9 +1397,9 @@ function renderExercise(exi,ex,allowF,canReorder){
       const done=a&&a.done&&b&&b.done;
       const z=!done && a ? setZone(a) : null;
       const zSty=z==='light'?'color:var(--warn);':z==='heavy'?'color:var(--bad);':'';
-      const prevA=prevSets?prevSets[Math.min(p,prevSets.length-1)]:null;
-      const prevB=prevSets?prevSets[Math.min(p+1,prevSets.length-1)]:null;
-      const pBadge=pairBadgeHTML(a,b,prevA,prevB);
+      const prevA=(prevSets&&align[p]!=null)?prevSets[align[p]]:null;
+      const prevB=(prevSets&&align[p+1]!=null)?prevSets[align[p+1]]:null;
+      const pBadge=pairBadgeHTML(a,b,prevA,prevB,curFatCtx[p],curFatCtx[p+1],align[p]!=null?baseFatCtx[align[p]]:null,align[p+1]!=null?baseFatCtx[align[p+1]]:null,_bl.level);
       const progLine=pBadge?`<div class="setprogline" data-exi="${exi}" data-si="${p}" style="text-align:right;padding:0 8px;margin:-1px 0 3px;height:11px;line-height:11px">${pBadge}</div>`:`<div class="setprogline" data-exi="${exi}" data-si="${p}" style="height:0"></div>`;
       const dropbtn=`<span class="dropadd" data-act="dropset" data-exi="${exi}" data-si="${p}" title="colgar drop set aquí">↓</span>`;
       body+=`<div class="pair ${a&&a.isDrop?'isdrop':''}"><div class="setn ${done?'done':''}" style="${zSty}" data-act="done" data-exi="${exi}" data-si="${p}">${labels[p]}</div>${dropbtn}<div class="prows">`
@@ -1266,8 +1417,8 @@ function renderExercise(exi,ex,allowF,canReorder){
     sets.forEach((s,si)=>{ const c=renderSetRow(exi,si,s,ex,allowF); const fsOn=isM&&s.fsOn&&!s.isDrop;
       const fs=isM?`<button class="fs ${s.fsOn?'on':''}" data-act="fs" data-exi="${exi}" data-si="${si}">${s.isDrop?'DS':'FS'}</button>`:'';
       const z=!s.done?setZone(s):null; const zSty=z==='light'?'color:var(--warn);':z==='heavy'?'color:var(--bad);':'';
-      const prevS=prevSets?prevSets[Math.min(si,prevSets.length-1)]:null;
-      const sBadge=setBadgeHTML(s,prevS);
+      const prevS=(prevSets&&align[si]!=null)?prevSets[align[si]]:null;
+      const sBadge=setBadgeHTML(s,prevS,curFatCtx[si],align[si]!=null?baseFatCtx[align[si]]:null,_bl.level);
       const progLine=sBadge?`<div class="setprogline" data-exi="${exi}" data-si="${si}" style="text-align:right;padding:0 8px;margin:-1px 0 3px;height:11px;line-height:11px">${sBadge}</div>`:`<div class="setprogline" data-exi="${exi}" data-si="${si}" style="height:0"></div>`;
       const dropbtn=`<span class="dropadd" data-act="dropset" data-exi="${exi}" data-si="${si}" title="colgar drop set aquí">↓</span>`;
       body+=`<div class="srow ${fsOn?'gc-mach-fs':gc} ${s.isDrop?'isdrop':''}"><div class="setn ${s.done?'done':''}" style="${zSty}" data-act="done" data-exi="${exi}" data-si="${si}">${labels[si]}</div>${fs}${c.w}${fsOn?c.we:''}${c.u}${c.r}${c.rr}<div class="setend">${c.del}${dropbtn}</div></div>${progLine}`;
@@ -1276,6 +1427,21 @@ function renderExercise(exi,ex,allowF,canReorder){
     rows=thead+body+add;
   }
   return `<div class="ex" data-exi="${exi}">${head}${rows}</div>`;
+}
+// sobering context line (sleep / kcal logged before the session started / latest bodyweight) —
+// informational only, shown once per session. NEVER feeds setScore/e1RM/the %ladder above.
+function sessionContextNote(w){
+  const date=w.date||todayISO(); const parts=[];
+  const sl=db.sleep&&db.sleep[date]; if(sl!=null){ const h=sleepHours(sl); if(h>0)parts.push('dormiste '+h+'h'); }
+  const startMin=hm2min(w.loggedAfter?w.startTime:w.startTs);
+  if(isFinite(startMin)){
+    const items=(db.meals&&db.meals[date])||[]; let kcal=0;
+    items.forEach(m=>{ const t=hm2min(m.time); if(isFinite(t)&&t<startMin) kcal+=parseFloat(m.kcal)||0; });
+    if(kcal>0) parts.push(Math.round(kcal)+' kcal antes');
+  }
+  const bwk=Object.keys(db.bodyweight||{}).sort(); if(bwk.length){ const bw=db.bodyweight[bwk[bwk.length-1]]; if(bw) parts.push(numTxt(bw)+'kg'); }
+  if(!parts.length)return '';
+  return `<div class="submeta" style="margin:4px 0 0;color:var(--o40)">${escTxt(parts.join(' · '))}</div>`;
 }
 function renderWorkout(){
   const w=state.work; if(!w)return renderHome();
@@ -1301,6 +1467,7 @@ function renderWorkout(){
     +`<div class="wprog"><i style="width:${total?Math.round(done/total*100):0}%"></i></div>`
     +`<div class="whdr top"><div class="l1"><span class="s">//</span>NOW</div><div class="wname">${escTxt(w.dayName)}</div><div class="l2"></div><div class="wmeta">${escTxt(db.split.name)} · ${escTxt(day.tag)}</div></div>`
     +`<div class="wgym">${w.gym}</div>`
+    +sessionContextNote(w)
     +body;
 }
 
@@ -2633,7 +2800,7 @@ function openSessionEdit(id){
   const fatCtx=sessionFatigueContext(s);
   const exHtml=(s.exercises||[]).map((e,ei)=>{
     const rows=(e.sets||[]).map((st,si)=>`<div class="srowm"><span class="sn">#${si+1}</span><input class="sm" data-act="ss_f" data-ei="${ei}" data-si="${si}" data-f="w" type="number" inputmode="decimal" value="${st.w!=null?st.w:''}" placeholder="w"/><input class="sm" data-act="ss_f" data-ei="${ei}" data-si="${si}" data-f="r" type="number" inputmode="numeric" value="${st.r!=null?st.r:''}" placeholder="reps"/><input class="sm" data-act="ss_f" data-ei="${ei}" data-si="${si}" data-f="rir" value="${st.rir!=null?st.rir:''}" placeholder="rir"/></div>`).join('');
-    const badge=progBadgeFromProg(histProgress(e,s.id),'vs sesión previa de este ejercicio');
+    const badge=progBadgeFromProg(histProgress(s,ei),'vs sesión previa de este ejercicio');
     const exCtx=fatCtx[ei]||[]; const rawAvg=avgE1RM(e.sets,false); let cSum=0,cN=0; e.sets.forEach((st,si)=>{ const v=correctedE1RM(st,exCtx[si]); if(v>0){cSum+=v;cN++;} }); const corrAvg=cN?cSum/cN:0; const fatDiff=rawAvg>0&&corrAvg>rawAvg?Math.round((corrAvg/rawAvg-1)*100):0; const prior=Math.round((exCtx[0]||{}).priorHardSets||0); const restSecs=exCtx.slice(1).map(c=>c.restSec).filter(v=>v!=null&&v>0&&v<600); const avgRest=restSecs.length?Math.round(restSecs.reduce((a,b)=>a+b,0)/restSecs.length):null; const fatNote=fatDiff>=5?`<div class="submeta" style="margin-top:2px">↑ e1RM equiv. fresca +${fatDiff}%${prior?' · '+prior+' sets previos':''}${avgRest?' · ~'+Math.round(avgRest/60)+'min descanso':''}</div>`:'';
     // reorder arrows so legacy sessions (logged before the addex-position fix) can be corrected
     const up=ei>0?`<span data-act="ss_exup" data-ei="${ei}">▲</span>`:`<span class="off">▲</span>`;
@@ -3480,7 +3647,7 @@ function addExFromKnown(afterExi,x){
   const w=db.activeWork; if(!w||!x)return;
   const newEx={exId:null,name:x.name,muscle:x.muscle||((x.muscles&&x.muscles[0]&&x.muscles[0].name)||'other'),muscles:x.muscles,type:x.type||'free',machine:x.machine||'',unilateral:!!x.unilateral,startSide:x.startSide||'R',note:'',sets:[]};
   let insertAt; if(afterExi!=null&&afterExi>=0&&afterExi<w.exercises.length){ insertAt=afterExi+1; w.exercises.splice(insertAt,0,newEx); } else { w.exercises.push(newEx); insertAt=w.exercises.length-1; }
-  const ex=w.exercises[insertAt]; ex.sets=seedSets(ex,(typeof x.sets==='number'?x.sets:2));
+  const ex=w.exercises[insertAt]; ex.sets=seedSets(ex,(typeof x.sets==='number'?x.sets:2),{dayId:w.dayId,orderIdx:insertAt});
   save(); closeModal(); render();
 }
 // REPLACE the live exercise at exi with a REGISTERED one: registry metadata + re-seeded sets, position kept (#4/#6/#7)
@@ -3488,7 +3655,7 @@ function replaceExFromKnown(exi,x){
   const w=db.activeWork; if(!w||!w.exercises[exi]||!x)return; const ex=w.exercises[exi];
   if((ex.sets||[]).some(s=>s&&!s._pf&&(s.done||(+s.w>0)||(+s.r>0)))&&!confirm('Ya registraste series en "'+(ex.name||'este ejercicio')+'". Cambiar de ejercicio descarta lo registrado. ¿Continuar?'))return;
   ex.exId=null; ex.name=x.name; ex.muscle=x.muscle||((x.muscles&&x.muscles[0]&&x.muscles[0].name)||'other'); ex.muscles=x.muscles; ex.type=x.type||'free'; ex.machine=x.machine||''; ex.unilateral=!!x.unilateral; ex.startSide=x.startSide||'R'; ex.note='';
-  ex.sets=seedSets(ex,(typeof x.sets==='number'?x.sets:2));
+  ex.sets=seedSets(ex,(typeof x.sets==='number'?x.sets:2),{dayId:w.dayId,orderIdx:exi});
   save(); closeModal(); render();
 }
 // FORM: new exercise (muscle pre-filled from step 1)
@@ -3529,12 +3696,12 @@ function openAddExForm(afterExi,muscle,replaceExi){
     // REPLACE mode (entró por "cambiar ejercicio"): sobreescribe el ejercicio actual en su lugar + re-siembra series
     if(replaceExi!=null && w && w.exercises[replaceExi]){ const ex=w.exercises[replaceExi];
       if((ex.sets||[]).some(s=>s&&!s._pf&&(s.done||(+s.w>0)||(+s.r>0)))&&!confirm('Ya registraste series en "'+(ex.name||'este ejercicio')+'". Cambiar descarta lo registrado. ¿Continuar?'))return;
-      Object.assign(ex,meta); delete ex.muscles; ex.sets=seedSets(ex,+val('fx_sets')||1); save(); closeModal(); render(); return; }
+      Object.assign(ex,meta); delete ex.muscles; ex.sets=seedSets(ex,+val('fx_sets')||1,{dayId:w.dayId,orderIdx:replaceExi}); save(); closeModal(); render(); return; }
     // INSERT mode: agrega DESPUÉS del ejercicio ancla (o al final)
     const newEx=Object.assign({},meta,{sets:[]}); let insertAt;
     if(afterExi!=null && afterExi>=0 && afterExi<w.exercises.length){ insertAt=afterExi+1; w.exercises.splice(insertAt,0,newEx); }
     else { w.exercises.push(newEx); insertAt=w.exercises.length-1; }
-    const ex=w.exercises[insertAt]; ex.sets=seedSets(ex,+val('fx_sets')||1);
+    const ex=w.exercises[insertAt]; ex.sets=seedSets(ex,+val('fx_sets')||1,{dayId:w.dayId,orderIdx:insertAt});
     save(); closeModal(); render();
   };
 }
@@ -4918,7 +5085,7 @@ async function aiPhoto(file,barcode){ if(!file)return; window._faTag=window._faT
 // Pick AI when the proxy is configured, else on-device OCR.
 function labelPhoto(file,barcode){ if(AI_PROXY_URL) return aiPhoto(file,barcode); return ocrPhoto(file,barcode); }
 requestPersist();
-db=load(); try{ if(typeof location!=='undefined' && /[?&]selftest=1/.test(location.search)){ _identitySelfCheck(); _dropsetSelfCheck(); } }catch(e){ console.error(e); } try{ const _sp=new URLSearchParams(location.search); const _hasHistorical=_sp.has('stepsh')||_sp.has('weighth')||_sp.has('stepsq')||_sp.has('sleeph'); if(_hasHistorical){ const _hsp=_sp; if(history.replaceState)history.replaceState(null,'',location.pathname); setTimeout(()=>{ if(confirm('Este link quiere importar datos históricos (pasos/peso/sueño de varios días) a tu cuenta. ¿Aplicar? — solo dile que SÍ si vienes de tu propio Atajo de iOS.')){ try{ const _imp=importHealth(_hsp); if(_imp.length){ save(); render(); toast('✓ '+_imp.join(' · ')); } }catch(_){} } },400); } else { const _imp=importHealth(_sp); if(_imp.length){ window._healthImported=_imp; if(history.replaceState)history.replaceState(null,'',location.pathname); } } }catch(_){} save(); render(); if(window._healthImported)setTimeout(()=>toast('✓ '+window._healthImported.join(' · ')),250); if(window._recoveredFromBackup)setTimeout(()=>{try{alert('Se recuperó un respaldo local: revisa tus datos, podrían faltar cambios muy recientes.');}catch(_){}},600);
+db=load(); try{ if(typeof location!=='undefined' && /[?&]selftest=1/.test(location.search)){ _identitySelfCheck(); _dropsetSelfCheck(); _baselineSelfCheck(); } }catch(e){ console.error(e); } try{ const _sp=new URLSearchParams(location.search); const _hasHistorical=_sp.has('stepsh')||_sp.has('weighth')||_sp.has('stepsq')||_sp.has('sleeph'); if(_hasHistorical){ const _hsp=_sp; if(history.replaceState)history.replaceState(null,'',location.pathname); setTimeout(()=>{ if(confirm('Este link quiere importar datos históricos (pasos/peso/sueño de varios días) a tu cuenta. ¿Aplicar? — solo dile que SÍ si vienes de tu propio Atajo de iOS.')){ try{ const _imp=importHealth(_hsp); if(_imp.length){ save(); render(); toast('✓ '+_imp.join(' · ')); } }catch(_){} } },400); } else { const _imp=importHealth(_sp); if(_imp.length){ window._healthImported=_imp; if(history.replaceState)history.replaceState(null,'',location.pathname); } } }catch(_){} save(); render(); if(window._healthImported)setTimeout(()=>toast('✓ '+window._healthImported.join(' · ')),250); if(window._recoveredFromBackup)setTimeout(()=>{try{alert('Se recuperó un respaldo local: revisa tus datos, podrían faltar cambios muy recientes.');}catch(_){}},600);
 applyDesign(); try{ if(/[?&]design\b/.test(location.search))localStorage.setItem('gymtrk_designmode','1'); if(localStorage.getItem('gymtrk_designmode')==='1')openDesignPanel(); }catch(_){}
 try{ bootScreen(()=>{ try{
   if(/[?&]wrap=1\b/.test(location.search)){ monthlyWrap(prevMonthYm(), true); return; }
