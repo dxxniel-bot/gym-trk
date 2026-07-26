@@ -17,9 +17,10 @@
 | **macros** | `#000` + `.card` | `.section .h` (`//FUEL`) | anillos P/C/F (SVG) · `.mrow` intake · `.grp/.item` food log | `--fg` `--good/--bad/--warn/--info` `--o50/--o40` | **sí** |
 | **progress** | `#000` + `.ptile` | `.section .h` | `.pfeat`/`.ptile` · lineChart SVG | `--fg` good/bad `--o50/--o40` | **sí** |
 | **stack** | `#000` | `.section .h` | tabs · `.grp-label`/`.line` | `--fg` `--o60/--o50/--o40/--o20` | **sí** |
-| **history** | `#000` + `.card` | `.section .h` (`//HISTORY`) | `.hmon` mes · `.grp`+`.hrow` | `--fg` `--o50/--o40/--o30` · good/bad (agg) | no (footer) |
+| **history** | `#000` + `.card` | `.section .h` (`//HISTORY`) | `.hmon` mes · `.grp`+`.hrow`; el modal de sesión (`openSessionEdit`) ya no edita sets — solo fecha/hora/resumen + botón hacia `histedit` | `--fg` `--o50/--o40/--o30` · good/bad (agg) | no (footer) |
+| **histedit** (v210, sub-vista de history) | `#000` | `.whdr.top` (`//HISTORY`) | **reutiliza literal la tabla de `workout`** (`.thead/.srow/.pair/.inp/.gc-*`, badges, chips BW) envuelta en `.hist-compact` (más denso) + `.hist-editbar` (cerrar/compartir/borrar) | `--fg` `--o60..--o20` · good/bad | no (footer) |
 | **settings** | `#000` + `.card`/`.grp` | `.section .h` | `.line` (data) · `.field` · `.start`/`.secondary` | `--fg` `--o60..--o30` | no (footer) |
-| **splitedit** | `#000` + `.seday` | `.senm` (editable) | `.seex`/`.srowm` | `--fg` `--o60..--o30` | no (footer) |
+| **splitedit** | `#000` + `.seday` | `.senm` (editable) | `.seex` | `--fg` `--o60..--o30` | no (footer) |
 | **share** ⭐ | `#000` | `.shbanner` | `.sgrp/.sgh/.sitem/.shfoot` | `--fg` · good/bad | no |
 
 ⭐ **`renderShare` = BENCHMARK de cohesión** (cero inline, todo en clases). NO tocar. Imitar su estilo.
@@ -100,6 +101,13 @@ Existen en `<style>`; reemplazan los patrones inline más repetidos. Antes de es
 
 > Si un patrón inline se repite ≥3×, conviene clase nueva (no utility-soup). El benchmark de cero-inline es `renderShare`.
 
+**Tabla de workout — clases nuevas (motor v206–v210, gym-only, JAMÁS glass):**
+- `.gc-free-bw` / `.gc-uni-bw` — misma `grid-template-columns` que `.gc-free`/`.gc-uni` (no cambia la forma de la fila); la columna central pasa de `unit`(select) a `+lastre`(input) para ejercicios `type:'bodyweight'`.
+- `.bwchip` (36px, borde `--o20`, texto `--o70`, tappable → `logweight`) = chip `BW <peso vivo>`; `.bwchip.warn` (borde/texto `--warn`) = "BW sin peso" cuando no hay registro. Sustituye al `<select>` de unidad en filas bodyweight.
+- `.dropadd` (18px, `--o35`, tap → colgar drop set en ESA fila) · `.setend` (envuelve `.del`+`.dropadd` al final de la fila) · `.srow.isdrop`/`.pair.isdrop` (opacity .82 — atenúa visualmente la subserie de drop respecto a su serie madre).
+- `.hist-compact` (envoltorio del editor de historial: mismos `.mgroup/.mhead/.ex/.srow/.pair` de `workout`, márgenes recortados) · `.hist-editbar` (flex row de botones `cerrar/compartir/borrar` arriba de la tabla, reusa `.cancel`/`.cancel.danger`).
+- El picker `uni`/`type` del editor de ejercicio (antes checkbox 8-9px) ahora usa **`.toggles`** — el mismo componente de `onboard`, no una clase nueva; mata otra instancia de tap-target <44px.
+
 ## 8. Tooling de diseño — qué skills/MCP usar (y cuáles NO)
 > Criba 2026-06-16, calibrada al alma terminal/mono + JetBrains Mono, offline single-file. Objetivo: evitar "design slop" (fuentes nuevas, gradientes, glass colorido, "premium SaaS") que rompería el sello.
 
@@ -125,3 +133,4 @@ Existen en `<style>`; reemplazan los patrones inline más repetidos. Antes de es
 
 ---
 *Actualizado 2026-06-16 — §8 tooling/skills criba + loop Playwright QA. (v171 base: glass landed; deuda inline 361, disciplina compartida.)*
+*Addendum 2026-07-25 (gym-only, no toca el estado v171 del sello compartido) — §1/§7: motor de entrenamiento v206–v210 (`histedit` como sub-vista de history reutilizando la tabla de `workout`; `.bwchip`/`.dropadd`/`.gc-*-bw`/`.hist-compact`/`.hist-editbar`). Ver `repo/CLAUDE.md` → "Identity/variant engine" para el detalle funcional.*
