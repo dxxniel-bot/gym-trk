@@ -586,7 +586,13 @@ function todayISO(d){d=d||new Date();return d.getFullYear()+'-'+pad(d.getMonth()
 function fmtDate(iso){const[y,m,dd]=iso.split('-');return dd+' '+MON[(+m)-1]+' '+y;}
 function fmtShort(iso){const[y,m,dd]=iso.split('-');return dd+' '+MON[(+m)-1];}
 function nowHM(){const d=new Date();return pad(d.getHours())+':'+pad(d.getMinutes());}
-function uid(){return 'x'+Math.floor(performance.now()*1000).toString(36)+Math.floor(performance.now()%1*1e6).toString(36);}
+// counter+random, NEVER performance.now()-fraction based: iOS/Safari clamps performance.now() to 1ms
+// resolution (Spectre mitigation), so `%1` was always 0 — a tight sync loop (migrate() backfilling
+// ids, SPLIT_TEMPLATES, importIronlogSplit) minted the SAME id for every item. That single collision
+// was the root cause of the entire 2026-08-03 bug batch (see plan). _uidN guarantees uniqueness within
+// one tick even if Date.now() also doesn't advance; Math.random() guards across reloads/devices.
+let _uidN=0;
+function uid(){ return 'x'+Date.now().toString(36)+(_uidN=(_uidN+1)&0xfff).toString(36)+Math.floor(Math.random()*46656).toString(36); }
 let _c=0; function nid(){return 'n'+(Date.now? '' : '')+(_c++).toString(36)+Math.floor(performance.now()).toString(36);}
 
 // ---------- seed ----------
@@ -711,7 +717,61 @@ function load(){
   if(!d)return seed();
   return migrate(d);
 }
-function migrate(d){ if(!d.version){d.version=1;} if(!d.meals||typeof d.meals!=='object'||Array.isArray(d.meals))d.meals={}; if(!Array.isArray(d.foods))d.foods=[]; d.foods=d.foods.map(f=>(f&&f.per100)?f:asCanonical(f)); if(!Array.isArray(d.sessions))d.sessions=[]; if(!d.split||typeof d.split!=='object')d.split={name:'',days:[]}; if(!Array.isArray(d.split.days))d.split.days=[]; d.split.days.forEach(day=>{ if(!Array.isArray(day.exercises))day.exercises=[]; day.exercises.forEach(e=>{ if(e&&!e.id)e.id='e'+uid(); }); }); if(!d.steps||typeof d.steps!=='object')d.steps={}; if(!d.machines||typeof d.machines!=='object')d.machines={}; if(!d.bodyweight||typeof d.bodyweight!=='object')d.bodyweight={}; if(!d.sleep||typeof d.sleep!=='object')d.sleep={}; if(!d.mood||typeof d.mood!=='object')d.mood={}; if(!d.selfcheck||typeof d.selfcheck!=='object')d.selfcheck={}; if(!d.adhoc||typeof d.adhoc!=='object')d.adhoc={}; if(!Array.isArray(d.mealTags))d.mealTags=['breakfast','lunch','snack','dinner']; if(!Array.isArray(d.stack))d.stack=[]; if(!d.lastUsed||typeof d.lastUsed!=='object')d.lastUsed={}; if(!d.settings||typeof d.settings!=='object')d.settings={goals:seed().settings.goals}; if(d.settings&&d.settings.goals&&d.settings.goals.alcohol==null)d.settings.goals.alcohol=(d.profile&&d.profile.sex==='F')?14:28; if(d.settings&&d.settings.restSec==null)d.settings.restSec=90; if(d.settings&&d.settings.restBeep==null)d.settings.restBeep=true; if(d.settings&&d.settings.goals&&d.settings.goals.sleep==null)d.settings.goals.sleep=8; if(d.profile&&!d.profile.since){ try{ const _cd=[]; (d.sessions||[]).forEach(s=>{if(s.date)_cd.push(s.date);}); Object.keys(d.meals||{}).forEach(k=>_cd.push(k)); Object.keys(d.bodyweight||{}).forEach(k=>_cd.push(k)); if(_cd.length)d.profile.since=_cd.sort()[0]; }catch(_){} }
+// one-time repair for the 2026-08 uid() collision (see uid() comment above): iOS clamped
+// performance.now() to 1ms resolution, so a tight sync loop (migrate()'s own id backfill,
+// SPLIT_TEMPLATES, importIronlogSplit) minted the SAME id for every exercise created in one tick —
+// confirmed against the owner's real backup: 39 exercises across 6 split days all shared one id.
+// None of the colliding exercises individually "owns" the id more validly than another, so ALL
+// duplicates are re-minted (never just skip the first one). Every session's exId that pointed at a
+// poisoned id is then re-linked by (dayId + exercise name) — but ONLY when that match is unique;
+// ambiguous or missing → exId:null, which baselineSetsFor's day+name+variant ladder still resolves
+// correctly without guessing. Strictly additive (never touches weights/reps/dates/order). Gated by
+// d._idfix so it scans exactly once per db, not on every load.
+function fixDuplicateExIds(d){
+  if(d._idfix) return;
+  const counts={};
+  (d.split&&d.split.days||[]).forEach(day=>(day.exercises||[]).forEach(e=>{ if(e&&e.id) counts[e.id]=(counts[e.id]||0)+1; }));
+  const dupIds=new Set(Object.keys(counts).filter(k=>counts[k]>1));
+  if(dupIds.size){
+    try{ const s=JSON.stringify(d); localStorage.setItem(LS_BACKUP,s); }catch(_){}
+    (d.split.days||[]).forEach(day=>{ (day.exercises||[]).forEach(e=>{ if(e&&e.id&&dupIds.has(e.id)) e.id='e'+uid(); }); });
+    (d.sessions||[]).forEach(s=>{ (s.exercises||[]).forEach(e=>{
+      if(e && e.exId!=null && dupIds.has(e.exId)){
+        const name=String(e.name||'').toLowerCase().trim();
+        const day=(d.split.days||[]).find(dd=>dd.id===s.dayId);
+        const cands=day?(day.exercises||[]).filter(x=>String(x.name||'').toLowerCase().trim()===name):[];
+        e.exId = cands.length===1 ? cands[0].id : null;
+      }
+    }); });
+  }
+  d._idfix=true;
+}
+// ids self-check — the 2026-08 root cause. Operates on a standalone fixture (fixDuplicateExIds takes
+// its target as a plain param, no db swap needed): duplicate id across TWO different days (mirrors
+// the real bug, which crossed day boundaries) + an ambiguous same-name pair within one day (must fall
+// back to null, never guess which of the two it was).
+function _idSelfCheck(){
+  const A=(n,cond)=>{ if(!cond) throw new Error('SELFCHECK id: '+n); };
+  const fx={ _idfix:false,
+    split:{name:'s',days:[
+      {id:'d1',name:'day1',exercises:[{id:'DUP',name:'incline press'},{id:'DUP',name:'pushdown'}]},
+      {id:'d2',name:'day2',exercises:[{id:'e2',name:'row a'},{id:'e2',name:'row a'}]}
+    ]},
+    sessions:[
+      {id:'s1',dayId:'d1',exercises:[{exId:'DUP',name:'incline press'}]},
+      {id:'s2',dayId:'d2',exercises:[{exId:'e2',name:'row a'}]}
+    ]
+  };
+  fixDuplicateExIds(fx);
+  const ids=fx.split.days.flatMap(d=>d.exercises.map(e=>e.id));
+  A('no duplicate ids survive the repair (even across different days)', new Set(ids).size===ids.length);
+  A('unique day+name match re-links exId to the correct NEW id', fx.sessions[0].exercises[0].exId===fx.split.days[0].exercises[0].id);
+  A('ambiguous day+name match (2 same-named exercises) falls back to null, never guesses', fx.sessions[1].exercises[0].exId===null);
+  const before=JSON.stringify(fx); fixDuplicateExIds(fx);
+  A('gated: a second call is a no-op once _idfix is set', JSON.stringify(fx)===before);
+  console.log('id self-check OK');
+}
+function migrate(d){ if(!d.version){d.version=1;} if(!d.meals||typeof d.meals!=='object'||Array.isArray(d.meals))d.meals={}; if(!Array.isArray(d.foods))d.foods=[]; d.foods=d.foods.map(f=>(f&&f.per100)?f:asCanonical(f)); if(!Array.isArray(d.sessions))d.sessions=[]; if(!d.split||typeof d.split!=='object')d.split={name:'',days:[]}; if(!Array.isArray(d.split.days))d.split.days=[]; d.split.days.forEach(day=>{ if(!Array.isArray(day.exercises))day.exercises=[]; day.exercises.forEach(e=>{ if(e&&!e.id)e.id='e'+uid(); }); }); fixDuplicateExIds(d); if(!d.steps||typeof d.steps!=='object')d.steps={}; if(!d.machines||typeof d.machines!=='object')d.machines={}; if(!d.bodyweight||typeof d.bodyweight!=='object')d.bodyweight={}; if(!d.sleep||typeof d.sleep!=='object')d.sleep={}; if(!d.mood||typeof d.mood!=='object')d.mood={}; if(!d.selfcheck||typeof d.selfcheck!=='object')d.selfcheck={}; if(!d.adhoc||typeof d.adhoc!=='object')d.adhoc={}; if(!Array.isArray(d.mealTags))d.mealTags=['breakfast','lunch','snack','dinner']; if(!Array.isArray(d.stack))d.stack=[]; if(!d.lastUsed||typeof d.lastUsed!=='object')d.lastUsed={}; if(!d.settings||typeof d.settings!=='object')d.settings={goals:seed().settings.goals}; if(d.settings&&d.settings.goals&&d.settings.goals.alcohol==null)d.settings.goals.alcohol=(d.profile&&d.profile.sex==='F')?14:28; if(d.settings&&d.settings.restSec==null)d.settings.restSec=90; if(d.settings&&d.settings.restBeep==null)d.settings.restBeep=true; if(d.settings&&d.settings.goals&&d.settings.goals.sleep==null)d.settings.goals.sleep=8; if(d.profile&&!d.profile.since){ try{ const _cd=[]; (d.sessions||[]).forEach(s=>{if(s.date)_cd.push(s.date);}); Object.keys(d.meals||{}).forEach(k=>_cd.push(k)); Object.keys(d.bodyweight||{}).forEach(k=>_cd.push(k)); if(_cd.length)d.profile.since=_cd.sort()[0]; }catch(_){} }
   // recompute alcohol for old meal items logged before alcohol was in MACROKEYS
   try{ Object.values(d.meals||{}).forEach(arr=>arr.forEach(m=>{ if(m.alcohol==null){ if(m._food&&m._food.per100&&m._food.per100.alcohol&&m._unit){ m.alcohol=computeNutrients(m._food,m._unit,m.qty||1).alcohol; } else m.alcohol=0; } })); }catch(e){}
   // goalHist: snapshot of intake goals at the moment of first logging that day (history is FROZEN — past days never re-read the current goal)
@@ -797,10 +857,13 @@ function newWorkSession(){
 // ---- per-gym machine/brand/setup linking ----
 function escTxt(s){ return (s||'').replace(/[<>&"']/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;',"'":'&#39;'}[c])); }
 function exKey(ex){ return ((ex&&ex.name)||'').toLowerCase().trim(); }
-// instance key: exId scopes machine/brand/setup to THIS split-day's exercise (e.g. bench press on
-// day A can differ from bench press on day B); ad-hoc exercises with no exId fall back to the legacy
-// name-only key, same as before v209.
-function machKey(ex){ return (ex&&ex.exId)?('#'+ex.exId):exKey(ex); }
+// instance key: scopes machine/brand/setup to THIS split-day's exercise (e.g. bench press on day A
+// can differ from bench press on day B); ad-hoc exercises with no id at all fall back to the legacy
+// name-only key, same as before v209. Reads BOTH ex.exId (session/live-work shape) and ex.id (split
+// exercise shape) — v210 only read exId, so the split editor (whose exercises carry .id, never
+// .exId) always fell through to the name-only key regardless of identity; harmless on its own, but
+// it's what silently absorbed the 2026-08 id collision instead of surfacing it there too.
+function machKey(ex){ const id=ex&&(ex.exId||ex.id); return id?('#'+id):exKey(ex); }
 // resolved record {brand,setup,na} for an exercise at a given gym (falls back to split default)
 function machineRec(gym,ex){
   const m=gym&&db.machines&&db.machines[gym];
@@ -5343,7 +5406,7 @@ async function aiPhoto(file,barcode){ if(!file)return; window._faTag=window._faT
 // Pick AI when the proxy is configured, else on-device OCR.
 function labelPhoto(file,barcode){ if(AI_PROXY_URL) return aiPhoto(file,barcode); return ocrPhoto(file,barcode); }
 requestPersist();
-db=load(); try{ autoFinalizeIfIdle(); }catch(_){} try{ if(typeof location!=='undefined' && /[?&]selftest=1/.test(location.search)){ _identitySelfCheck(); _dropsetSelfCheck(); _baselineSelfCheck(); _variantSelfCheck(); _historyEditSelfCheck(); } }catch(e){ console.error(e); } try{ const _sp=new URLSearchParams(location.search); const _hasHistorical=_sp.has('stepsh')||_sp.has('weighth')||_sp.has('stepsq')||_sp.has('sleeph'); if(_hasHistorical){ const _hsp=_sp; if(history.replaceState)history.replaceState(null,'',location.pathname); setTimeout(()=>{ if(confirm('Este link quiere importar datos históricos (pasos/peso/sueño de varios días) a tu cuenta. ¿Aplicar? — solo dile que SÍ si vienes de tu propio Atajo de iOS.')){ try{ const _imp=importHealth(_hsp); if(_imp.length){ save(); render(); toast('✓ '+_imp.join(' · ')); } }catch(_){} } },400); } else { const _imp=importHealth(_sp); if(_imp.length){ window._healthImported=_imp; if(history.replaceState)history.replaceState(null,'',location.pathname); } } }catch(_){} save(); render(); if(window._healthImported)setTimeout(()=>toast('✓ '+window._healthImported.join(' · ')),250); if(window._recoveredFromBackup)setTimeout(()=>{try{alert('Se recuperó un respaldo local: revisa tus datos, podrían faltar cambios muy recientes.');}catch(_){}},600);
+db=load(); try{ autoFinalizeIfIdle(); }catch(_){} try{ if(typeof location!=='undefined' && /[?&]selftest=1/.test(location.search)){ _identitySelfCheck(); _dropsetSelfCheck(); _baselineSelfCheck(); _variantSelfCheck(); _historyEditSelfCheck(); _idSelfCheck(); } }catch(e){ console.error(e); } try{ const _sp=new URLSearchParams(location.search); const _hasHistorical=_sp.has('stepsh')||_sp.has('weighth')||_sp.has('stepsq')||_sp.has('sleeph'); if(_hasHistorical){ const _hsp=_sp; if(history.replaceState)history.replaceState(null,'',location.pathname); setTimeout(()=>{ if(confirm('Este link quiere importar datos históricos (pasos/peso/sueño de varios días) a tu cuenta. ¿Aplicar? — solo dile que SÍ si vienes de tu propio Atajo de iOS.')){ try{ const _imp=importHealth(_hsp); if(_imp.length){ save(); render(); toast('✓ '+_imp.join(' · ')); } }catch(_){} } },400); } else { const _imp=importHealth(_sp); if(_imp.length){ window._healthImported=_imp; if(history.replaceState)history.replaceState(null,'',location.pathname); } } }catch(_){} save(); render(); if(window._healthImported)setTimeout(()=>toast('✓ '+window._healthImported.join(' · ')),250); if(window._recoveredFromBackup)setTimeout(()=>{try{alert('Se recuperó un respaldo local: revisa tus datos, podrían faltar cambios muy recientes.');}catch(_){}},600);
 applyDesign(); try{ if(/[?&]design\b/.test(location.search))localStorage.setItem('gymtrk_designmode','1'); if(localStorage.getItem('gymtrk_designmode')==='1')openDesignPanel(); }catch(_){}
 try{ bootScreen(()=>{ try{
   if(/[?&]wrap=1\b/.test(location.search)){ monthlyWrap(prevMonthYm(), true); return; }
