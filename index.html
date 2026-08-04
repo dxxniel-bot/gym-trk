@@ -251,6 +251,11 @@
   .inp{height:36px; border:.5px solid var(--o20); background:transparent; color:var(--fg); text-align:center; font-size:12px; width:100%;} .inp.weight{text-align:left; padding-left:8px;}
   .pick{height:36px; border:.5px solid var(--o20); background:transparent; color:var(--fg); font-size:12px; text-align:center; text-align-last:center; appearance:none; -webkit-appearance:none; width:100%; cursor:pointer;}
   .pick option{background:var(--card); color:var(--fg);}
+  /* prefill suggestion (weight/reps/rir seeded from the equivalent prior occurrence, _pf until
+     touched) — sutil, no un warning: solo referencia de intensidad hasta que confirmes tocando el
+     campo (setField ya limpia _pf ahí; elegir el MISMO valor en un <select> no dispara 'change',
+     por eso hay un click listener aparte — ver el dispatcher de 'click' cerca de 'setf'/'h_setf'). */
+  .inp.pf, .pick.pf{opacity:.45;}
   .fs{height:36px; border:.5px solid var(--o20); background:transparent; color:var(--o50); font-size:9px; cursor:pointer;} .fs.on{background:var(--o12); color:var(--fg);}
   .del{font-size:14px; color:var(--o40); text-align:center; cursor:pointer; background:none; border:0; height:36px; line-height:36px; padding:0;}
   .pair{display:flex; align-items:center; gap:4px; margin-bottom:5px;} .pair .setn{width:22px; flex:0 0 22px;} .pair .prows{flex:1;}
@@ -804,7 +809,9 @@ function emptySet(ex,side,isDrop,src){ const s={w:'',r:'',rir:'',unit:(ex&&ex.un
   // isDrop is copied from src UNLESS the caller explicitly forced isDrop:false (addset does this on
   // purpose — a newly added set is ALWAYS a plain working set, never inheriting drop-ness from its
   // value template; seedSets passes the real historical isDrop, so this guard is a no-op there).
-  if(src){ s.w=src.w||s.w||''; s.r=src.r||''; if(src.unit)s.unit=src.unit; if(src.bw)s.bw=true; if(src.isDrop&&isDrop!==false)s.isDrop=true; if(src.fsOn)s.fsOn=true; s._pf=true; } return s; }
+  // rir IS copied now (Bloque 3.3, 2026-08-03 — previously withheld on purpose): shown as an
+  // intensity-reference suggestion, same _pf-gated confirm-before-it-counts rule as weight/reps below.
+  if(src){ s.w=src.w||s.w||''; s.r=src.r||''; s.rir=src.rir||''; if(src.unit)s.unit=src.unit; if(src.bw)s.bw=true; if(src.isDrop&&isDrop!==false)s.isDrop=true; if(src.fsOn)s.fsOn=true; s._pf=true; } return s; }
 // sets from the most recent prior session with this exercise — used to prefill a new workout (suggestions, flagged _pf until confirmed)
 function uniSides(ex){ return (ex&&ex.startSide==='L')?['L','R']:['R','L']; }
 // last logged sets for an exercise. A same-name UNILATERAL variant is a DIFFERENT exercise: match by name + uni-ness (detected via per-set side).
@@ -844,12 +851,32 @@ function setLabels(sets,step){
   }
   return labels;
 }
+// "siempre al repetir un día tiene que salir como se entrenó la última vez" (feedback del dueño,
+// 2026-08-03): the exercise LIST + order a day uses comes from its most recent real (non-rest)
+// session when one exists — an improvised swap or a skipped exercise carries forward exactly as
+// executed, never silently reverting to the split. The split is the source only the first time a day
+// is run. Shared by newWorkSession() (below) AND the //NEXT preview on home (dayPreviewHTML) so the
+// preview can never promise something different from what starting the day would actually produce.
+function daySource(day){
+  const prior=day?lastSession(day.id):null;
+  const fromPrior=!!(prior&&prior.exercises&&prior.exercises.length);
+  return {prior,fromPrior,list:fromPrior?prior.exercises:((day&&day.exercises)||[])};
+}
+// Per-exercise variant fields (type/unilateral/assisted/weighted/muscle/machine) still re-resolve
+// LIVE from the current split entry via exId when it still exists there — "lo que hiciste es
+// inmutable, cómo se clasifica se resuelve en vivo" (Bloque A) — so a split edit (new secondary
+// muscle, machine→smith) is picked up the next time this day runs even when seeded from the prior
+// session; ad-hoc exercises (or ones since removed from the split) keep whatever they last recorded.
 function newWorkSession(){
   const day=db.split.days[selIdx()];
-  const exs=day.exercises.map((e,ei)=>{
-    const ex={exId:e.id||null,name:e.name,muscle:e.muscle,muscles:Array.isArray(e.muscles)?e.muscles.slice():undefined,type:e.type,machine:e.machine,unilateral:e.unilateral,startSide:e.startSide,assisted:e.assisted,weighted:e.weighted,unit:e.unit,useFS:e.useFS,note:e.note||'',sets:[]};
-    const name=String(e.name||'').toLowerCase().trim(), variant=variantKey(e);
-    ex.sets=seedSets(ex,e.sets||1,{dayId:day.id,occ:exOccurrence(day.exercises,ei),nSame:exNameCount(day.exercises,name,variant),orderIdx:ei});
+  const {prior,fromPrior,list}=daySource(day);
+  const exs=list.map((pe,ei)=>{
+    const sp=fromPrior?splitExFor(prior,ei):pe;
+    const base=sp||pe;
+    const ex={exId:(sp&&sp.id)||pe.exId||pe.id||null,name:base.name,muscle:base.muscle,muscles:Array.isArray(base.muscles)?base.muscles.slice():undefined,type:base.type,machine:base.machine,unilateral:base.unilateral,startSide:base.startSide,assisted:base.assisted,weighted:base.weighted,unit:base.unit,useFS:base.useFS,note:base.note||'',sets:[]};
+    const name=String(ex.name||'').toLowerCase().trim(), variant=variantKey(ex);
+    const fallbackN=(sp&&typeof sp.sets==='number')?sp.sets:((pe.sets&&pe.sets.length)||1);
+    ex.sets=seedSets(ex,fallbackN,{dayId:day.id,occ:exOccurrence(list,ei),nSame:exNameCount(list,name,variant),orderIdx:ei});
     return ex;
   });
   return {id:uid(),date:todayISO(),dayId:day.id,dayName:day.name,gym:db.activeGym,startTs:nowHM(),startMs:Date.now(),loggedAfter:false,exercises:exs};
@@ -1128,19 +1155,24 @@ function renderHome(){
     +`<div class="line stat"><span class="k">mood · today</span><span class="dots"></span><span class="v" data-act="logmood" style="cursor:pointer">${(function(){var o=moodVal(db.mood&&db.mood[todayISO()]);return o?escTxt(o.label||(o.y+' / 10')):'— tap';})()}</span></div>`
     +`<div class="line stat"><span class="k">percepción · today</span><span class="dots"></span><span class="v" data-act="logselfcheck" style="cursor:pointer">${(function(){var o=db.selfcheck&&db.selfcheck[todayISO()];return o?(o.apariencia!=null?o.apariencia+' / 10':'✓'):'— tap';})()}</span></div>`;
 }
-// read-only preview of a planned day's exercises (without starting the workout)
+// read-only preview of what starting this day would actually produce (without starting the workout)
+// — uses daySource(), the SAME source newWorkSession() seeds from, so this preview can never promise
+// a different list/order than what tapping "start" gives you (R4 del plan del 2026-08-03).
 function dayPreviewHTML(day){
-  const exs=(day&&day.exercises)||[];
+  const {prior,fromPrior,list:exs}=daySource(day);
   if(!exs.length)return `<div class="submeta" style="text-align:center;padding:8px 0">día sin ejercicios — <a data-act="changesplit" style="cursor:pointer;color:var(--o60)">editar split</a></div>`;
   let body=''; let curM=null;
-  exs.forEach(ex=>{ const m=ex.muscle||'other';
+  exs.forEach((pe,ei)=>{
+    const sp=fromPrior?splitExFor(prior,ei):pe; const base=sp||pe;
+    const m=base.muscle||'other';
     if(m!==curM){ body+=`<div style="font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--o50);margin:9px 0 2px">${escTxt(m)}</div>`; curM=m; }
-    const rec=machineRec(db.activeGym,ex); const tg=[];
-    if(ex.unilateral)tg.push('uni');
-    if(['machine','pulley','smith','cable'].indexOf(ex.type)>=0)tg.push(rec&&rec.brand?escTxt(rec.brand):'máquina');
-    if(ex.useFS)tg.push('FS');
+    const rec=machineRec(db.activeGym,base); const tg=[];
+    if(base.unilateral)tg.push('uni');
+    if(['machine','pulley','smith','cable'].indexOf(base.type)>=0)tg.push(rec&&rec.brand?escTxt(rec.brand):'máquina');
+    if(base.useFS)tg.push('FS');
     const tags=tg.length?` <span style="color:var(--o40)">· ${tg.join(' · ')}</span>`:'';
-    body+=`<div style="display:flex;justify-content:space-between;gap:8px;padding:3px 0;border-bottom:.5px solid var(--o10)"><span style="font-size:12px">${escTxt(ex.name)}${tags}</span><span style="font-size:10px;color:var(--o50);white-space:nowrap">${ex.sets||1} sets</span></div>`;
+    const nSets=fromPrior?((pe.sets&&pe.sets.length)||1):(pe.sets||1);
+    body+=`<div style="display:flex;justify-content:space-between;gap:8px;padding:3px 0;border-bottom:.5px solid var(--o10)"><span style="font-size:12px">${escTxt(base.name)}${tags}</span><span style="font-size:10px;color:var(--o50);white-space:nowrap">${nSets} sets</span></div>`;
   });
   return `<div style="margin:2px 0 4px">${body}</div>`;
 }
@@ -1196,11 +1228,11 @@ function renderSetRow(exi,si,set,ex,allowF,actPrefix){
       ? `<span class="bwchip" data-act="logweight" title="peso corporal — toca para registrar uno nuevo">BW ${numTxt(bwv)}</span>`
       : `<span class="bwchip warn" data-act="logweight" title="no hay peso corporal registrado — toca para registrarlo">BW sin peso</span>`;
   } else {
-    w=`<input class="inp weight" data-act="${actPrefix}setf" data-exi="${exi}" data-si="${si}" data-f="w" value="${set.w}" placeholder="—" inputmode="decimal" ${ro} ${lk}/>`;
+    w=`<input class="inp weight${set._pf?' pf':''}" data-act="${actPrefix}setf" data-exi="${exi}" data-si="${si}" data-f="w" value="${set.w}" placeholder="—" inputmode="decimal" ${ro} ${lk}/>`;
   }
   const u=`<select class="pick" data-act="${actPrefix}setf" data-exi="${exi}" data-si="${si}" data-f="unit" ${lk}>${unitOpts(set.unit)}</select>`;
-  const r=`<input class="inp" data-act="${actPrefix}setf" data-exi="${exi}" data-si="${si}" data-f="r" value="${set.r}" placeholder="—" inputmode="numeric" ${ro} ${lk}/>`;
-  const rr=`<select class="pick" data-act="${actPrefix}setf" data-exi="${exi}" data-si="${si}" data-f="rir" ${lk}>${rirOpts(set.rir)}</select>`;
+  const r=`<input class="inp${set._pf?' pf':''}" data-act="${actPrefix}setf" data-exi="${exi}" data-si="${si}" data-f="r" value="${set.r}" placeholder="—" inputmode="numeric" ${ro} ${lk}/>`;
+  const rr=`<select class="pick${set._pf?' pf':''}" data-act="${actPrefix}setf" data-exi="${exi}" data-si="${si}" data-f="rir" ${lk}>${rirOpts(set.rir)}</select>`;
   const del=`<button class="del" data-act="${actPrefix}delset" data-exi="${exi}" data-si="${si}">×</button>`;
   const we=`<input class="inp weight" data-act="${actPrefix}setf" data-exi="${exi}" data-si="${si}" data-f="extraW" value="${set.extraW||''}" placeholder="${_bw?'+lastre':'+extra'}" inputmode="decimal" ${ro} ${lk}/>`;
   return {w,u,r,rr,del,we};
@@ -3285,6 +3317,17 @@ document.getElementById('app').addEventListener('click',e=>{
   const exi=el.dataset.exi!=null?+el.dataset.exi:null, si=el.dataset.si!=null?+el.dataset.si:null;
   if(a==='setf'&&el.dataset.locked){ e.preventDefault(); if(!confirm('¿Editar set completado?'))return; document.querySelectorAll('[data-act="setf"][data-exi="'+el.dataset.exi+'"][data-si="'+el.dataset.si+'"]').forEach(f=>{f.removeAttribute('data-locked');f.removeAttribute('readonly');}); el.focus&&el.focus(); return; }
   if(a==='h_setf'&&el.dataset.locked){ e.preventDefault(); if(!confirm('¿Editar set completado?'))return; document.querySelectorAll('[data-act="h_setf"][data-exi="'+el.dataset.exi+'"][data-si="'+el.dataset.si+'"]').forEach(f=>{f.removeAttribute('data-locked');f.removeAttribute('readonly');}); el.focus&&el.focus(); return; }
+  // selecting the SAME option in a <select> (rir/unit) never fires 'change' — so a tap on it IS the
+  // confirm gesture for a grayed-out prefill suggestion (Bloque 3.4, feedback del dueño: "para
+  // confirmar es volver a dar click y seleccionar"). Locked/completed selects are handled by the two
+  // guards above (which already return), so this only ever runs on an editable, still-_pf set.
+  if(el.tagName==='SELECT'&&(a==='setf'||a==='h_setf')){
+    let s=null;
+    if(a==='setf'){ const w=db.activeWork; s=w&&w.exercises[exi]&&w.exercises[exi].sets[si]; }
+    else { const hs=(db.sessions||[]).find(x=>x.id===state._histSessId); s=hs&&hs.exercises[exi]&&hs.exercises[exi].sets[si]; }
+    if(s&&s._pf){ if(a==='setf')setField(exi,si,el.dataset.f,el.value); else setHistField(exi,si,el.dataset.f,el.value); render(); }
+    return;
+  }
   if(a==='nav'){ go(el.dataset.screen); }
   else if(a==='start'){ db.activeWork=newWorkSession(); save(); state._autoScroll=true; go('workout'); }
   else if(a==='togglepreview'){ state.previewDay=!state.previewDay; render(); }
@@ -3994,9 +4037,14 @@ function openAddExStep2(afterExi,muscle,replaceExi){
    <div class="sheetbtns" style="margin-top:10px"><button class="cancel" data-act="axback">← músculo</button><button class="cancel" data-act="closemodal">cancel</button></div>`);
 }
 // add a known exercise straight into the live session (with its remembered props + prefilled sets)
+// exId:'e'+uid() — NOT null (Bloque 3.2, 2026-08-03): an ad-hoc addition still gets its OWN stable
+// per-instance identity, so it builds its own baseline/%/machine history across future sessions of
+// this day (carried forward by daySource()/newWorkSession() reading prior.exercises) — it just never
+// links back to any split entry (splitExFor/musclesOf naturally miss it, same as exId:null did, since
+// this freshly-minted id matches nothing in db.split; they still resolve by name+variant as a fallback).
 function addExFromKnown(afterExi,x){
   const w=db.activeWork; if(!w||!x)return;
-  const newEx={exId:null,name:x.name,muscle:x.muscle||((x.muscles&&x.muscles[0]&&x.muscles[0].name)||'other'),muscles:x.muscles,type:x.type||'free',machine:x.machine||'',unilateral:!!x.unilateral,startSide:x.startSide||'R',assisted:!!x.assisted,weighted:!!x.weighted,note:'',sets:[]};
+  const newEx={exId:'e'+uid(),name:x.name,muscle:x.muscle||((x.muscles&&x.muscles[0]&&x.muscles[0].name)||'other'),muscles:x.muscles,type:x.type||'free',machine:x.machine||'',unilateral:!!x.unilateral,startSide:x.startSide||'R',assisted:!!x.assisted,weighted:!!x.weighted,note:'',sets:[]};
   let insertAt; if(afterExi!=null&&afterExi>=0&&afterExi<w.exercises.length){ insertAt=afterExi+1; w.exercises.splice(insertAt,0,newEx); } else { w.exercises.push(newEx); insertAt=w.exercises.length-1; }
   const ex=w.exercises[insertAt]; ex.sets=seedSets(ex,(typeof x.sets==='number'?x.sets:2),{dayId:w.dayId,orderIdx:insertAt});
   save(); closeModal(); render();
@@ -4005,7 +4053,9 @@ function addExFromKnown(afterExi,x){
 function replaceExFromKnown(exi,x){
   const w=db.activeWork; if(!w||!w.exercises[exi]||!x)return; const ex=w.exercises[exi];
   if((ex.sets||[]).some(s=>s&&!s._pf&&(s.done||(+s.w>0)||(+s.r>0)))&&!confirm('Ya registraste series en "'+(ex.name||'este ejercicio')+'". Cambiar de ejercicio descarta lo registrado. ¿Continuar?'))return;
-  ex.exId=null; ex.name=x.name; ex.muscle=x.muscle||((x.muscles&&x.muscles[0]&&x.muscles[0].name)||'other'); ex.muscles=x.muscles; ex.type=x.type||'free'; ex.machine=x.machine||''; ex.unilateral=!!x.unilateral; ex.startSide=x.startSide||'R'; ex.assisted=!!x.assisted; ex.weighted=!!x.weighted; ex.note='';
+  // fresh exId, never the old one or null (Bloque 3.2) — a replacement is a genuinely different
+  // exercise: it must not inherit the old one's history, but it still gets ITS OWN going forward.
+  ex.exId='e'+uid(); ex.name=x.name; ex.muscle=x.muscle||((x.muscles&&x.muscles[0]&&x.muscles[0].name)||'other'); ex.muscles=x.muscles; ex.type=x.type||'free'; ex.machine=x.machine||''; ex.unilateral=!!x.unilateral; ex.startSide=x.startSide||'R'; ex.assisted=!!x.assisted; ex.weighted=!!x.weighted; ex.note='';
   ex.sets=seedSets(ex,(typeof x.sets==='number'?x.sets:2),{dayId:w.dayId,orderIdx:exi});
   save(); closeModal(); render();
 }
@@ -4044,7 +4094,10 @@ function openAddExForm(afterExi,muscle,replaceExi){
     const startSide=(((document.querySelector('#fx_start .t.on')||{}).dataset||{}).v==='L')?'L':'R';
     const typeOn=(document.querySelector('#fx_type .t.on')||{}).dataset; const validT=['machine','smith','cable','bodyweight','free'].indexOf(typeOn&&typeOn.v)>=0?typeOn.v:'free';
     const fxUniOn=(document.querySelector('#fx_uni .t.on')||{}).dataset;
-    const meta={exId:null,name,muscle:val('fx_muscle')||'other',type:validT,machine:val('fx_machine'),unilateral:(fxUniOn&&fxUniOn.v)==='1',startSide,note:''};
+    // fresh exId (Bloque 3.2) — both the REPLACE and INSERT branches below build a genuinely NEW
+    // exercise instance; it gets its own stable identity to build history/baseline/machine across
+    // future sessions, never null and never the id of whatever it's replacing.
+    const meta={exId:'e'+uid(),name,muscle:val('fx_muscle')||'other',type:validT,machine:val('fx_machine'),unilateral:(fxUniOn&&fxUniOn.v)==='1',startSide,note:''};
     // REPLACE mode (entró por "cambiar ejercicio"): sobreescribe el ejercicio actual en su lugar + re-siembra series
     if(replaceExi!=null && w && w.exercises[replaceExi]){ const ex=w.exercises[replaceExi];
       if((ex.sets||[]).some(s=>s&&!s._pf&&(s.done||(+s.w>0)||(+s.r>0)))&&!confirm('Ya registraste series en "'+(ex.name||'este ejercicio')+'". Cambiar descarta lo registrado. ¿Continuar?'))return;
