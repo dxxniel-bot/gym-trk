@@ -104,7 +104,8 @@ Existen en `<style>`; reemplazan los patrones inline más repetidos. Antes de es
 **Tabla de workout — clases nuevas (motor v206–v210, gym-only, JAMÁS glass):**
 - `.gc-free-bw` / `.gc-uni-bw` — misma `grid-template-columns` que `.gc-free`/`.gc-uni` (no cambia la forma de la fila); la columna central pasa de `unit`(select) a `+lastre`(input) para ejercicios `type:'bodyweight'`.
 - `.bwchip` (36px, borde `--o20`, texto `--o70`, tappable → `logweight`) = chip `BW <peso vivo>`; `.bwchip.warn` (borde/texto `--warn`) = "BW sin peso" cuando no hay registro. Sustituye al `<select>` de unidad en filas bodyweight.
-- `.dropadd` (18px, `--o35`, tap → colgar drop set en ESA fila) · `.setend` (envuelve `.del`+`.dropadd` al final de la fila) · `.srow.isdrop`/`.pair.isdrop` (opacity .82 — atenúa visualmente la subserie de drop respecto a su serie madre).
+- `.dropadd` (24px, `--o60` — subido desde 18px/`--o35` en v214, era casi invisible — tap → colgar drop set en ESA fila; además vuelve `[↓ drop set]` con texto en la barra inferior, ver §1) · `.setend` (envuelve `.del`+`.dropadd` al final de la fila) · `.srow.isdrop`/`.pair.isdrop` (opacity .82 — atenúa visualmente la subserie de drop respecto a su serie madre).
+- `.pf` (v213, aplica sobre `.inp`/`.pick`): `opacity:.45` — fila de prefill (`_pf`) sin confirmar; peso/reps/rir. Se quita al tocar el campo (setField) o con un tap en un `<select>` aunque no cambie el valor (elegir la MISMA opción no dispara `change`).
 - `.hist-compact` (envoltorio del editor de historial: mismos `.mgroup/.mhead/.ex/.srow/.pair` de `workout`, márgenes recortados) · `.hist-editbar` (flex row de botones `cerrar/compartir/borrar` arriba de la tabla, reusa `.cancel`/`.cancel.danger`).
 - El picker `uni`/`type` del editor de ejercicio (antes checkbox 8-9px) ahora usa **`.toggles`** — el mismo componente de `onboard`, no una clase nueva; mata otra instancia de tap-target <44px.
 
@@ -134,3 +135,4 @@ Existen en `<style>`; reemplazan los patrones inline más repetidos. Antes de es
 ---
 *Actualizado 2026-06-16 — §8 tooling/skills criba + loop Playwright QA. (v171 base: glass landed; deuda inline 361, disciplina compartida.)*
 *Addendum 2026-07-25 (gym-only, no toca el estado v171 del sello compartido) — §1/§7: motor de entrenamiento v206–v210 (`histedit` como sub-vista de history reutilizando la tabla de `workout`; `.bwchip`/`.dropadd`/`.gc-*-bw`/`.hist-compact`/`.hist-editbar`). Ver `repo/CLAUDE.md` → "Identity/variant engine" para el detalle funcional.*
+*Addendum 2026-08-04 (gym-only, corrección crítica v211–v214, no toca v171) — §7: `.dropadd` sube contraste/tap-area (18px/`--o35` → 24px/`--o60`) y vuelve `[↓ drop set]` como botón con texto; `.pf` nuevo (prefill sin confirmar, `opacity:.45`). Ver `repo/CLAUDE.md` → "⚠️ CORRECCIÓN CRÍTICA" para el porqué (colisión de `uid()`) y el detalle funcional completo.*
