@@ -240,7 +240,7 @@
   .srow{margin-bottom:5px;} .setn{font-size:11px; color:var(--o50); text-align:center; cursor:pointer;} .setn.done{color:var(--fill); font-weight:700;}
   .srow.isdrop{opacity:.82;} .pair.isdrop{opacity:.82;}
   .setend{display:flex;} .setend .del{width:18px;flex:0 0 18px;}
-  .dropadd{width:18px;flex:0 0 18px;font-size:11px; color:var(--o35); text-align:center; cursor:pointer; height:36px; line-height:36px;}
+  .dropadd{width:24px;flex:0 0 24px;font-size:13px; color:var(--o60); text-align:center; cursor:pointer; height:36px; line-height:36px;}
   .bwchip{height:36px;display:flex;align-items:center;justify-content:flex-start;padding:0 8px;border:.5px solid var(--o20);font-size:12px;color:var(--o70);cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .bwchip.warn{color:var(--warn);border-color:var(--warn);}
   .pair>.dropadd{margin:0 2px 0 -2px;}
@@ -1611,7 +1611,11 @@ function renderExercise(exi,ex,allowF,canReorder){
         +(cb?`<div class="srow ${gcU}"><div class="side">${escTxt(b.side||'L')}</div>${cb.w}${midB}${cb.r}${cb.rr}<span class="del" style="visibility:hidden">×</span></div>`:'')
         +`</div></div>${progLine}`;
     }
-    const add=`<div class="addrow auni"><span class="aleft"><button class="addbtn" data-act="addset" data-exi="${exi}">[+ set]</button></span><button class="addbtn aex" data-act="addex" data-exi="${exi}">[+ exercise]</button></div>`;
+    // [↓ drop set] in the bottom bar (Bloque 4.1, restaurado — v205 lo tenía como botón con texto,
+    // v210 lo dejó solo como el ↓ por fila): cuelga de la ÚLTIMA serie de trabajo (dropInsertIdx ya
+    // camina hacia atrás saltando drops existentes, así que encadena bien aunque esa serie ya tenga uno).
+    const lastPairSi=Math.max(0,sets.length-2);
+    const add=`<div class="addrow auni"><span class="aleft"><button class="addbtn" data-act="addset" data-exi="${exi}">[+ set]</button><button class="addbtn" data-act="dropset" data-exi="${exi}" data-si="${lastPairSi}">[↓ drop set]</button></span><button class="addbtn aex" data-act="addex" data-exi="${exi}">[+ exercise]</button></div>`;
     rows=thead+body+add;
   } else {
     const gc=isBwEx?'gc-free-bw':(isM?'gc-mach':'gc-free');
@@ -1629,7 +1633,8 @@ function renderExercise(exi,ex,allowF,canReorder){
       const mid=isBwEx?c.we:(fsOn?c.we:c.u);
       body+=`<div class="srow ${gcRow} ${s.isDrop?'isdrop':''}"><div class="setn ${s.done?'done':''}" style="${zSty}" data-act="done" data-exi="${exi}" data-si="${si}">${labels[si]}</div>${fs}${c.w}${mid}${c.r}${c.rr}<div class="setend">${c.del}${dropbtn}</div></div>${progLine}`;
     });
-    const add=`<div class="addrow ${isM?'amach':'afree'}"><span class="aleft"><button class="addbtn" data-act="addset" data-exi="${exi}">[+ set]</button></span><button class="addbtn aex" data-act="addex" data-exi="${exi}">[+ exercise]</button></div>`;
+    const lastSi=Math.max(0,sets.length-1);
+    const add=`<div class="addrow ${isM?'amach':'afree'}"><span class="aleft"><button class="addbtn" data-act="addset" data-exi="${exi}">[+ set]</button><button class="addbtn" data-act="dropset" data-exi="${exi}" data-si="${lastSi}">[↓ drop set]</button></span><button class="addbtn aex" data-act="addex" data-exi="${exi}">[+ exercise]</button></div>`;
     rows=thead+body+add;
   }
   return `<div class="ex" data-exi="${exi}">${head}${rows}</div>`;
@@ -3953,10 +3958,13 @@ function exerciseDirectory(){
     (db.sessions||[]).forEach(s=>{ if(s.type==='rest')return; (s.exercises||[]).forEach(se=>{ if((se.name||'').toLowerCase().trim()===key){ if(s.gym)gyms.add(s.gym); sess++; } }); });
     e._gyms=[...gyms]; e._sess=sess;
   });
-  // multi-muscle: exercise appears under EACH muscle it hits (with its weight noted as secondary)
+  // grouped by PRIMARY muscle ONLY (Bloque 4.2, feedback del dueño 2026-08-03: "los ejercicios
+  // sugerencia por grupo muscular son únicamente los loggeados como los principales, NO secundarios")
+  // — secundarios siguen contando para fatiga y //VOLUME (musclesOf/sessionFatigueContext), que es su
+  // único trabajo; aquí antes aparecía el mismo ejercicio repetido bajo cada músculo que tocaba.
   const byM={};
-  list.forEach(e=>{ const muscles=exMuscles(e); if(!muscles.length){ (byM['sin músculo']=byM['sin músculo']||[]).push({...e,_w:1}); return; }
-    muscles.forEach(m=>{ (byM[m.name]=byM[m.name]||[]).push({...e,_w:m.weight}); });
+  list.forEach(e=>{ const primary=exMuscles(e)[0]; const key=primary?primary.name:'sin músculo';
+    (byM[key]=byM[key]||[]).push({...e,_w:1});
   });
   return byM;
 }
