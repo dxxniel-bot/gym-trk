@@ -1421,14 +1421,17 @@ function _historyEditSelfCheck(){
     A('setHistField corrects session A only', db.sessions[0].exercises[0].sets[0].w==='55');
     A('session B is untouched', db.sessions[1].exercises[0].sets[0].w==='52');
     A('the concurrent live db.activeWork is completely untouched', db.activeWork.exercises[0].sets[0].w==='999');
-    // sessionIdleEnd / autoFinalizeIfIdle: an idle live session closes with endTime = last activity + 10min,
-    // never wall-clock "now", and respects noAdvance exactly like a manual save would.
+    // sessionIdleEnd / isSessionIdle / finalizeIdleSession: idle detection never closes anything by
+    // itself (promptIdleSession asks first) — but the EXPLICIT finalize path (what "cerrar" calls)
+    // still derives endTime from last activity + 10min, never wall-clock "now", and still respects
+    // noAdvance exactly like a manual save would.
     db.sessions=[]; db.split=db.split||{}; db.split.days=[{id:'d1',name:'push',exercises:[]}]; db.rotIdx=0;
     const lastDoneAt=Date.now()-25*60000, startMs=Date.now()-40*60000;
     db.activeWork={id:'w1',date:'2026-07-25',dayId:'d1',dayName:'push',gym:'g',loggedAfter:false,startMs,noAdvance:false,
       exercises:[{name:'bench',type:'free',unilateral:false,sets:[{w:'100',r:'10',rir:'2',doneAt:lastDoneAt}]}]};
-    const did=autoFinalizeIfIdle();
-    A('idle >10min live session auto-finalizes', did===true && db.activeWork===null);
+    A('idle >10min is detected (would prompt), not silently true a moment earlier', isSessionIdle(db.activeWork));
+    const did=finalizeIdleSession();
+    A('explicit finalize (the "cerrar" path) closes the session', did===true && db.activeWork===null);
     A('exactly one session persisted', db.sessions.length===1);
     A('endTime derives from last activity + 10min, not wall-clock now', db.sessions[0].durSec===Math.round((lastDoneAt+10*60000-startMs)/1000));
     A('rotation advanced, same as a manual save', db.rotIdx===1);
@@ -3054,7 +3057,7 @@ function openSessionEdit(id){
    <div style="display:flex;gap:8px"><div class="field" style="flex:1"><label>INICIO</label><input id="ss_start" type="time" value="${s.startTime||''}"/></div><div class="field" style="flex:1"><label>FIN</label><input id="ss_end" type="time" value="${s.endTime||''}"/></div></div>
    <div class="submeta gap">${nEx} ejercicios · ▲▼ reordena</div>
    ${exHtml||'<div class="submeta">sin ejercicios</div>'}
-   <div class="sheetbtns">${(s.savedMs && Date.now()-s.savedMs<=1800000)?`<button class="ok" data-act="resumesession">▶ continuar</button>`:''}<button class="ok" data-act="openhistedit" data-id="${s.id}">✎ editar sets</button></div>
+   <div class="sheetbtns">${db.activeWork?'':`<button class="ok" data-act="resumesession">▶ continuar</button>`}<button class="ok" data-act="openhistedit" data-id="${s.id}">✎ editar sets</button></div>
    <div class="sheetbtns" style="margin-top:6px"><button class="ok" data-act="ss_save">guardar fecha/hora</button><button class="cancel" data-act="sharesession" data-id="${s.id}">compartir</button><button class="cancel danger" data-act="ss_del">borrar</button><button class="cancel" data-act="closemodal">close</button></div>`);
 }
 
@@ -3410,19 +3413,25 @@ document.getElementById('app').addEventListener('click',e=>{
   else if(a==='ss_save'){ const s=db.sessions.find(x=>x.id===window._sessId); if(s){ const dt=document.getElementById('ss_date'); if(dt)s.date=dt.value; const sst=document.getElementById('ss_start'); if(sst)s.startTime=sst.value||null; const set=document.getElementById('ss_end'); if(set)s.endTime=set.value||null; if(s.startTime&&s.endTime){let d=hm2min(s.endTime)-hm2min(s.startTime);if(d<0)d+=1440;s.durSec=d*60;} save(); closeModal(); render(); } }
   else if(a==='ss_del'){ if(confirm('¿Borrar esta sesión?')){ db.sessions=db.sessions.filter(x=>x.id!==window._sessId); save(); closeModal(); render(); } }
   else if(a==='resumesession'){
+    // "jamás perder una sesión" (feedback del dueño, 2026-08-03) — ANY past session is resumable, not
+    // just ones saved in the last 30min. The only real constraint is not clobbering a session already
+    // in progress elsewhere.
     if(db.activeWork){ alert('Ya tienes una sesión activa. Finalízala o descártala primero.'); return; }
     const s=db.sessions.find(x=>x.id===window._sessId); if(!s)return;
-    if(!s.savedMs || Date.now()-s.savedMs>1800000){ alert('Pasaron más de 30 min — ya no se puede continuar.'); return; }
     db.sessions=db.sessions.filter(x=>x.id!==s.id);
     const idx=db.split.days.findIndex(d=>d.id===s.dayId); if(idx>=0) db.rotIdx=idx;
     const w={ id:s.id, date:s.date, dayId:s.dayId, dayName:s.dayName, gym:s.gym,
       startTs:s.startTime||nowHM(),
       startMs:s.loggedAfter?null:(s.savedMs-(s.durSec||0)*1000),
+      resumedAt:Date.now(), // idle clock restarts from now — see sessionIdleEnd
       loggedAfter:!!s.loggedAfter,
       exercises:s.exercises.map(e=>({exId:e.exId||null,name:e.name,muscle:e.muscle,muscles:Array.isArray(e.muscles)?e.muscles.slice():undefined,type:e.type,machine:e.machine,unilateral:e.unilateral,startSide:e.startSide,assisted:e.assisted,weighted:e.weighted,unit:e.unit,useFS:e.useFS,note:e.note||'',sets:(e.sets||[]).map(st=>Object.assign({},st))})) };
     if(s.loggedAfter){ w.manualDur=Math.round((s.durSec||0)/60); w.startTime=s.startTime||null; w.endTime=s.endTime||null; }
     db.activeWork=w; closeModal(); save(); go('workout');
   }
+  // promptIdleSession's modal — see its definition for why this exists instead of a silent timer.
+  else if(a==='idle_continue'){ if(db.activeWork)db.activeWork.resumedAt=Date.now(); closeModal(); save(); render(); }
+  else if(a==='idle_close'){ const wasWorkout=state.screen==='workout'; finalizeIdleSession(); closeModal(); if(wasWorkout)state.screen='home'; render(); toast('sesión cerrada · '+((db.sessions[db.sessions.length-1]||{}).endTime||'')); }
   else if(a==='ss_exup'){ const s=db.sessions.find(x=>x.id===window._sessId); const i=+el.dataset.ei; if(s&&i>0){ const a=s.exercises; const t=a[i-1]; a[i-1]=a[i]; a[i]=t; save(); openSessionEdit(window._sessId); } }
   else if(a==='ss_exdn'){ const s=db.sessions.find(x=>x.id===window._sessId); const i=+el.dataset.ei; if(s&&i<s.exercises.length-1){ const a=s.exercises; const t=a[i+1]; a[i+1]=a[i]; a[i]=t; save(); openSessionEdit(window._sessId); } }
   else if(a==='done'){ const w=db.activeWork; const ex=w.exercises[exi]; let nowDone; if(ex.unilateral){ const v=!(ex.sets[si]&&ex.sets[si].done); nowDone=v; if(ex.sets[si]){ex.sets[si].done=v;ex.sets[si]._pf=false;} if(ex.sets[si+1]){ex.sets[si+1].done=v;ex.sets[si+1]._pf=false;} } else { ex.sets[si].done=!ex.sets[si].done; ex.sets[si]._pf=false; nowDone=ex.sets[si].done; } if(nowDone&&!w.loggedAfter){ restAudioInit(); w.restEnd=Date.now()+((db.settings.restSec||90)*1000); _restFinT=0; } if(nowDone){ const ts=Date.now(); if(ex.unilateral){if(ex.sets[si])ex.sets[si].doneAt=ts;if(ex.sets[si+1])ex.sets[si+1].doneAt=ts;}else ex.sets[si].doneAt=ts; } if(nowDone)state._autoScroll=true; save(); render(); }
@@ -3802,23 +3811,26 @@ function saveSession(){
     exercises:mapWorkExercises(w)};
   if(!(w.loggedAfter&&w.noAdvance)){ const idx=db.split.days.findIndex(d=>d.id===w.dayId); db.rotIdx=(idx>=0?idx:db.rotIdx)+1; } db.activeWork=null; state.selDay=null; db.sessions.push(sess); save(); go('home');
 }
-// last REAL activity in a live session: the most recent doneAt stamp (existing since v201), else the
-// session's own start (a session where nothing has been marked done yet still "started" at startMs).
-// loggedAfter (backdated) sessions have no live clock to go idle against — never auto-finalized.
+// last REAL activity in a live session: the most recent doneAt stamp (existing since v201), or
+// resumedAt (set the moment you answer "continuar" on the idle prompt below — without this, a
+// resumed session would still measure idleness from its old, now-stale doneAt and the prompt would
+// fire again on the very next check), else the session's own start (nothing marked done yet still
+// "started" at startMs). loggedAfter (backdated) sessions have no live clock to go idle against.
 function sessionIdleEnd(w){
   if(!w||w.loggedAfter)return null;
   let last=0; (w.exercises||[]).forEach(e=>(e.sets||[]).forEach(s=>{ if(s&&s.doneAt&&s.doneAt>last)last=s.doneAt; }));
+  if(w.resumedAt&&w.resumedAt>last) last=w.resumedAt;
   if(last)return last;
   return w.startMs||null;
 }
 const AUTO_END_IDLE_MS=10*60*1000;
-// if the live session has been idle >10 min since its last real set, finalize it automatically —
-// endTime = last activity + 10 min, NOT wall-clock "now" (the app may have sat open/backgrounded for
-// hours; durSec must reflect the workout, not however long the phone happened to stay unlocked).
-function autoFinalizeIfIdle(){
+// "nunca finalizar automáticamente. jamás perder una sesión" (feedback del dueño, 2026-08-03): this
+// no longer runs silently on a timer. It's the EXPLICIT finalize used when you answer "cerrar" on
+// promptIdleSession's modal below — endTime = last activity + 10 min, NOT wall-clock "now" (the app
+// may have sat backgrounded for hours; durSec must reflect the workout, not the phone's screen time).
+function finalizeIdleSession(){
   const w=db.activeWork; if(!w)return false;
   const last=sessionIdleEnd(w); if(!last)return false;
-  if(Date.now()-last<AUTO_END_IDLE_MS)return false;
   const endMs=last+AUTO_END_IDLE_MS; const endD=new Date(endMs);
   const sess={id:w.id,date:w.date,dayId:w.dayId,dayName:w.dayName,gym:w.gym,type:'training',savedMs:endMs,loggedAfter:false,autoEnded:true,
     durSec:w.startMs?Math.max(0,Math.round((endMs-w.startMs)/1000)):0,
@@ -3827,6 +3839,22 @@ function autoFinalizeIfIdle(){
   if(!w.noAdvance){ const idx=db.split.days.findIndex(d=>d.id===w.dayId); db.rotIdx=(idx>=0?idx:db.rotIdx)+1; }
   db.activeWork=null; db.sessions.push(sess); save();
   return true;
+}
+// true once a live session has been idle ≥10min since its last real activity — used ONLY to decide
+// whether to ASK (promptIdleSession), never to close anything by itself.
+function isSessionIdle(w){ const last=sessionIdleEnd(w); return !!(last && Date.now()-last>=AUTO_END_IDLE_MS); }
+// ask, never decide: if the live session is idle, show a non-dismissible modal — [continuar] keeps it
+// open (stamps resumedAt so the idle clock restarts from now), [cerrar] finalizes explicitly via
+// finalizeIdleSession(). Never auto-closes on its own. Guarded against re-opening on top of itself
+// (fires from visibilitychange + boot, not the render-heavy 500ms heartbeat) and against clobbering
+// an unrelated modal the user is mid-interaction with.
+function promptIdleSession(){
+  const w=db.activeWork; if(!w||!isSessionIdle(w))return;
+  if(document.getElementById('modal'))return;
+  const last=sessionIdleEnd(w); const lastD=new Date(last); const endD=new Date(last+AUTO_END_IDLE_MS);
+  openModal(`<h3>${escTxt(w.dayName||'sesión')}</h3>
+   <div class="submeta gap">sin actividad desde las ${pad(lastD.getHours())}:${pad(lastD.getMinutes())}</div>
+   <div class="sheetbtns"><button class="ok" data-act="idle_continue">▶ continuar</button><button class="cancel danger" data-act="idle_close">■ cerrar a las ${pad(endD.getHours())}:${pad(endD.getMinutes())}</button></div>`,'nodismiss idlesheet');
 }
 // mirrors setField() but writes into a PAST db.sessions[] entry — deliberately does NOT mirror to a
 // unilateral partner or propagate forward to later sets (those live-logging shortcuts speed up FRESH
@@ -3838,7 +3866,10 @@ function setHistField(exi,si,f,val){
 }
 
 // ---------- modals ----------
-function openModal(html,cls){ closeModal(); const m=document.createElement('div'); m.className='modal'; m.id='modal'; m.innerHTML=`<div class="sheet ${cls||''}">${html}</div>`; m.addEventListener('click',ev=>{if(ev.target===m){ closeModal(); render(); }}); document.getElementById('app').appendChild(m); }
+// cls may include 'nodismiss' — for the rare modal where tapping the backdrop away must NOT silently
+// discard the decision (currently only promptIdleSession's idle-session prompt: continuing or closing
+// must be an explicit tap, never an accidental tap-outside).
+function openModal(html,cls){ closeModal(); const m=document.createElement('div'); m.className='modal'; m.id='modal'; m.innerHTML=`<div class="sheet ${cls||''}">${html}</div>`; if(!/\bnodismiss\b/.test(cls||''))m.addEventListener('click',ev=>{if(ev.target===m){ closeModal(); render(); }}); document.getElementById('app').appendChild(m); }
 function closeModal(){ const s=window._scanner; if(s){ try{ if(s.timer)clearTimeout(s.timer); }catch(_){} try{ if(s._q&&typeof Quagga!=='undefined'){ if(s._fn)Quagga.offDetected(s._fn); Quagga.stop(); } }catch(_){} try{ if(s.stream)s.stream.getTracks().forEach(t=>t.stop()); }catch(_){} window._scanner=null; } window._linkBarcode=''; const m=document.getElementById('modal'); if(m)m.remove(); }
 function val(id){ const e=document.getElementById(id); return e?e.value.trim():''; }
 function openGymPicker(){
@@ -5406,19 +5437,21 @@ async function aiPhoto(file,barcode){ if(!file)return; window._faTag=window._faT
 // Pick AI when the proxy is configured, else on-device OCR.
 function labelPhoto(file,barcode){ if(AI_PROXY_URL) return aiPhoto(file,barcode); return ocrPhoto(file,barcode); }
 requestPersist();
-db=load(); try{ autoFinalizeIfIdle(); }catch(_){} try{ if(typeof location!=='undefined' && /[?&]selftest=1/.test(location.search)){ _identitySelfCheck(); _dropsetSelfCheck(); _baselineSelfCheck(); _variantSelfCheck(); _historyEditSelfCheck(); _idSelfCheck(); } }catch(e){ console.error(e); } try{ const _sp=new URLSearchParams(location.search); const _hasHistorical=_sp.has('stepsh')||_sp.has('weighth')||_sp.has('stepsq')||_sp.has('sleeph'); if(_hasHistorical){ const _hsp=_sp; if(history.replaceState)history.replaceState(null,'',location.pathname); setTimeout(()=>{ if(confirm('Este link quiere importar datos históricos (pasos/peso/sueño de varios días) a tu cuenta. ¿Aplicar? — solo dile que SÍ si vienes de tu propio Atajo de iOS.')){ try{ const _imp=importHealth(_hsp); if(_imp.length){ save(); render(); toast('✓ '+_imp.join(' · ')); } }catch(_){} } },400); } else { const _imp=importHealth(_sp); if(_imp.length){ window._healthImported=_imp; if(history.replaceState)history.replaceState(null,'',location.pathname); } } }catch(_){} save(); render(); if(window._healthImported)setTimeout(()=>toast('✓ '+window._healthImported.join(' · ')),250); if(window._recoveredFromBackup)setTimeout(()=>{try{alert('Se recuperó un respaldo local: revisa tus datos, podrían faltar cambios muy recientes.');}catch(_){}},600);
+db=load(); try{ promptIdleSession(); }catch(_){} try{ if(typeof location!=='undefined' && /[?&]selftest=1/.test(location.search)){ _identitySelfCheck(); _dropsetSelfCheck(); _baselineSelfCheck(); _variantSelfCheck(); _historyEditSelfCheck(); _idSelfCheck(); } }catch(e){ console.error(e); } try{ const _sp=new URLSearchParams(location.search); const _hasHistorical=_sp.has('stepsh')||_sp.has('weighth')||_sp.has('stepsq')||_sp.has('sleeph'); if(_hasHistorical){ const _hsp=_sp; if(history.replaceState)history.replaceState(null,'',location.pathname); setTimeout(()=>{ if(confirm('Este link quiere importar datos históricos (pasos/peso/sueño de varios días) a tu cuenta. ¿Aplicar? — solo dile que SÍ si vienes de tu propio Atajo de iOS.')){ try{ const _imp=importHealth(_hsp); if(_imp.length){ save(); render(); toast('✓ '+_imp.join(' · ')); } }catch(_){} } },400); } else { const _imp=importHealth(_sp); if(_imp.length){ window._healthImported=_imp; if(history.replaceState)history.replaceState(null,'',location.pathname); } } }catch(_){} save(); render(); if(window._healthImported)setTimeout(()=>toast('✓ '+window._healthImported.join(' · ')),250); if(window._recoveredFromBackup)setTimeout(()=>{try{alert('Se recuperó un respaldo local: revisa tus datos, podrían faltar cambios muy recientes.');}catch(_){}},600);
 applyDesign(); try{ if(/[?&]design\b/.test(location.search))localStorage.setItem('gymtrk_designmode','1'); if(localStorage.getItem('gymtrk_designmode')==='1')openDesignPanel(); }catch(_){}
 try{ bootScreen(()=>{ try{
   if(/[?&]wrap=1\b/.test(location.search)){ monthlyWrap(prevMonthYm(), true); return; }
   const _due=monthlyWrapDue(); if(_due){ monthlyWrap(_due, false); return; }
   snapRecap();
 }catch(_){ try{snapRecap();}catch(__){} } }); }catch(_){}
-// idle-session auto-finalize: checked on the same heartbeat as the rest timer + on returning from
-// background (iOS freezes timers, so a phone left backgrounded overnight is caught the moment it wakes).
-function checkAutoFinalize(){ try{ if(autoFinalizeIfIdle()){ if(state.screen==='workout')state.screen='home'; render(); toast('sesión finalizada sola (inactiva 10+ min)'); } }catch(_){} }
-// rest timer tick: writes textContent only (never re-renders); recompute on return from background (iOS freezes timers)
-setInterval(()=>{try{updateRestBar();}catch(_){} checkAutoFinalize();} ,500);
-document.addEventListener('visibilitychange',()=>{ if(!document.hidden){ try{updateRestBar();}catch(_){} checkAutoFinalize(); } });
+// rest timer tick: writes textContent only (never re-renders). Deliberately NOT wired to
+// promptIdleSession — that would re-check idleness (and risk a modal popping open) on every single
+// 500ms tick while the app sits in the foreground; the idle prompt only makes sense when returning
+// FROM somewhere (background, or a fresh load), handled below.
+setInterval(()=>{try{updateRestBar();}catch(_){}} ,500);
+// on returning from background (iOS freezes timers, so a phone backgrounded overnight is caught the
+// moment it wakes) — recompute the rest timer, and ask about an idle session instead of closing it.
+document.addEventListener('visibilitychange',()=>{ if(!document.hidden){ try{updateRestBar();}catch(_){} try{promptIdleSession();}catch(_){} } });
 // Service worker with AUTO-UPDATE: when a new version is found, activate it and reload once.
 // Fixes iOS PWA serving stale cached builds from the home-screen icon.
 if('serviceWorker' in navigator){
