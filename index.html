@@ -1476,6 +1476,14 @@ function _baselineSelfCheck(){
     const farCtx1={priorHardSets:0,orderIdx:0,restSec:null}, farCtx2={priorHardSets:15,orderIdx:6,restSec:null};
     const html=setBadgeHTML(cur,prev,farCtx1,farCtx2,'id');
     A('wildly different context -> no percentage, direction only', !/\d+%/.test(html));
+    // the reported bug (2026-08-13): same reps/RIR but MORE weight (100 vs 90) still showed ▼ because the
+    // baseline (farCtx2: fatigued deep into ITS session) got fatigue-corrected far above the fresh current
+    // set (farCtx1) — the correction inflated the wrong side and flipped a real raw improvement into a
+    // false decline. Direction must follow the RAW numbers whenever confidence is too low to trust %.
+    A('a raw improvement never shows ▼ just because the baseline was logged more fatigued', html.includes('▲') && !html.includes('▼'));
+    // and the inverse must still correctly show ▼ — the fix must not just force every 'dir' badge to ▲
+    const worse=S(80,8,'2'); const htmlDown=setBadgeHTML(worse,prev,farCtx1,farCtx2,'id');
+    A('a genuine raw decline still shows ▼ under low confidence', htmlDown.includes('▼') && !htmlDown.includes('▲'));
     // day-2 multi-exercise: EVERY exercise on a repeat day must resolve baseline (reported: only 1 of N did)
     db.sessions=[{id:'sDay2',date:'2026-08-01',dayId:'d2',type:'training',exercises:[
       {exId:'eA',name:'squat',type:'free',unilateral:false,sets:[S(100,5,'2')]},
@@ -1658,12 +1666,26 @@ function progBadgeParts(pr,tier){ if(!pr)return null;
   const pc=pct?((weak?'~':'')+(pct>0?'+':'')+pct+'%'):(weak?'~':'');
   return {col,ar,pc};
 }
-function setBadgeHTML(curS,prevS,curCtx,prevCtx,level){ if(!setComplete(curS))return ''; const pr=setProgress(curS,prevS,curCtx,prevCtx); if(!pr)return ''; const tier=progConfidence(level,curCtx,prevCtx); const parts=progBadgeParts(pr,tier); if(!parts)return '';
+// the reported bug (2026-08-13, screenshots): a set logged with equal/more weight, equal/more reps AND
+// equal/better RIR than its baseline still showed a red ▼. Root cause — tier 'dir' fires precisely when
+// curCtx/prevCtx (session-position fatigue context) are too different to trust the correction's MAGNITUDE
+// (that's why progBadgeParts already drops the % for it), but the arrow's SIGN still came from that same
+// untrusted correctedE1RM comparison: correctedE1RM=raw/(1-discount) can inflate whichever side was logged
+// later/more-fatigued in ITS OWN session by up to 1/(1-0.35)≈1.54×, comfortably swamping a real raw
+// improvement and flipping ▲ into ▼. Fix: at 'dir' confidence, trust the correction even less for sign
+// too — fall back to the RAW (uncorrected) e1RM comparison for the arrow. 'exact'/'coarse' tiers keep the
+// fatigue-corrected comparison unchanged (that's the whole point of fresh-equivalent scoring there).
+function dirSafePr(pr,tier,rawPr){ return (tier==='dir'&&rawPr) ? rawPr : pr; }
+function setBadgeHTML(curS,prevS,curCtx,prevCtx,level){ if(!setComplete(curS))return ''; const pr=setProgress(curS,prevS,curCtx,prevCtx); if(!pr)return ''; const tier=progConfidence(level,curCtx,prevCtx);
+  const rawPr=progFromScores(e1rmOf(curS),e1rmOf(prevS));
+  const parts=progBadgeParts(dirSafePr(pr,tier,rawPr),tier); if(!parts)return '';
   const ptxt=(prevS&&prevS.w?`${numTxt(prevS.w)}×${prevS.r||'—'}${prevS.rir!=null&&prevS.rir!==''?'@'+prevS.rir:''}`:'');
-  const ttl=tier==='dir'?'contexto muy distinto — solo dirección, sin %':('vs ant '+ptxt);
+  const ttl=tier==='dir'?'contexto muy distinto — solo dirección (vs números crudos), sin %':('vs ant '+ptxt);
   return `<span class="setprog" style="font-size:9px;font-weight:700;color:${parts.col}" title="${ttl}">${parts.ar}${parts.pc}</span>`; }
 // pair progress: for unilateral, sum L+R FRESH-EQUIVALENT scores and compare against the equivalent prior pair.
-function pairBadgeHTML(curA,curB,prevA,prevB,curCtxA,curCtxB,prevCtxA,prevCtxB,level){ if(!setComplete(curA)||!setComplete(curB))return ''; const cur=effE1RM(curA,curCtxA)+(curB?effE1RM(curB,curCtxB):0); const prev=(prevA?effE1RM(prevA,prevCtxA):0)+(prevB?effE1RM(prevB,prevCtxB):0); const pr=progFromScores(cur,prev); if(!pr)return ''; const tier=progConfidence(level,curCtxA,prevCtxA); const parts=progBadgeParts(pr,tier); if(!parts)return ''; return `<span class="setprog" style="font-size:9px;font-weight:700;color:${parts.col}">${parts.ar}${parts.pc}</span>`; }
+function pairBadgeHTML(curA,curB,prevA,prevB,curCtxA,curCtxB,prevCtxA,prevCtxB,level){ if(!setComplete(curA)||!setComplete(curB))return ''; const cur=effE1RM(curA,curCtxA)+(curB?effE1RM(curB,curCtxB):0); const prev=(prevA?effE1RM(prevA,prevCtxA):0)+(prevB?effE1RM(prevB,prevCtxB):0); const pr=progFromScores(cur,prev); if(!pr)return ''; const tier=progConfidence(level,curCtxA,prevCtxA);
+  const rawCur=e1rmOf(curA)+(curB?e1rmOf(curB):0), rawPrev=(prevA?e1rmOf(prevA):0)+(prevB?e1rmOf(prevB):0);
+  const parts=progBadgeParts(dirSafePr(pr,tier,progFromScores(rawCur,rawPrev)),tier); if(!parts)return ''; return `<span class="setprog" style="font-size:9px;font-weight:700;color:${parts.col}">${parts.ar}${parts.pc}</span>`; }
 // MUSCLE-LEVEL weekly score: aggregate setScore over all exercises tagged with this muscle, within a date window.
 function muscleWindowScore(muscle,startISO,endISO){ const m=(muscle||'').toLowerCase(); let total=0; (db.sessions||[]).forEach(s=>{ if(s.type==='rest')return; if(s.date<startISO||s.date>=endISO)return; (s.exercises||[]).forEach(e=>{ if(isCardio(e))return; const hit=exMuscles(e).find(x=>x.name===m); if(!hit)return; (e.sets||[]).forEach(set=>{ total+=setScore(set)*hit.weight; }); }); }); return total; }
 function muscleProgress(muscle){ const now=new Date(); const c7=new Date(now); c7.setDate(now.getDate()-6); const c14=new Date(now); c14.setDate(now.getDate()-13); const tomorrow=new Date(now); tomorrow.setDate(now.getDate()+1); const cur=muscleWindowScore(muscle,todayISO(c7),todayISO(tomorrow)); const prev=muscleWindowScore(muscle,todayISO(c14),todayISO(c7)); return progFromScores(cur,prev); }
@@ -1683,6 +1705,13 @@ function updateSetProgress(exi,si){ const w=db.activeWork; if(!w||!w.exercises[e
   const el=document.querySelector('.setprogline[data-exi="'+exi+'"][data-si="'+anchorSi+'"]'); if(!el)return;
   el.innerHTML=html||''; el.style.height=html?'11px':'0'; el.style.lineHeight='11px';
 }
+// resolves the "at a glance" default unit for an exercise: its own default, else its last logged set,
+// else the global setting. Owner feedback (2026-08-13): unit was buried as a tiny per-set select; it
+// needs to be front-loaded and read in the SAME font/size as the exercise name, both in the exercise
+// picker ("cambiar ejercicio") and in the live-session header — skipped for cardio (no weight/unit at
+// all) and bodyweight (that column is repurposed as "lastre", not a unit choice).
+function exDisplayUnit(ex,sets){ return (ex&&ex.unit)||(sets&&sets[0]&&sets[0].unit)||(db.settings&&db.settings.unit)||'lbs'; }
+function exUnitTagHead(ex,sets){ if(!ex||isCardio(ex)||ex.type==='bodyweight')return ''; return `<span class="n" style="margin-right:1px">[${escTxt(exDisplayUnit(ex,sets))}]</span>`; }
 // variant chips shown in the exercise header — visible, never hidden in a submenu.
 // UNI/BI always shown for strength (identity-critical); free type itself is still the default (no type chip).
 function variantChips(ex){
@@ -1731,7 +1760,7 @@ function renderExercise(exi,ex,allowF,canReorder){
   state._align=state._align||{}; state._align[exi]={prevSets,align,curFatCtx,baseFatCtx,level:_bl.level};
   // honest about missing history: no equivalent prior occurrence found for this exact instance/variant
   const noBaseline=!prevSets?`<span class="exprog" style="color:var(--o30);font-size:9px;margin-left:6px" title="sin sesión previa equivalente para comparar">sin baseline</span>`:'';
-  const head=`<div class="exhead">${gripE}<span class="n" data-act="editexname" data-exi="${exi}" style="cursor:pointer">${escTxt(ex.name)}</span>${prBadge}${noBaseline}${mhtml}<span class="note" data-act="editexnote" data-exi="${exi}" style="cursor:pointer${ex.note?'':';color:var(--o30)'}" title="${ex.note?'editar nota':'agregar nota'}">${ex.note?escTxt(ex.note):'+ nota'}</span>${variantChips(ex)}<span class="exdel" data-act="delex" data-exi="${exi}" title="quitar de la sesión" style="margin-left:auto;align-self:center;color:var(--o35);cursor:pointer;font-size:13px;padding:2px 6px">✕</span></div>`;
+  const head=`<div class="exhead">${gripE}${exUnitTagHead(ex,sets)}<span class="n" data-act="editexname" data-exi="${exi}" style="cursor:pointer">${escTxt(ex.name)}</span>${prBadge}${noBaseline}${mhtml}<span class="note" data-act="editexnote" data-exi="${exi}" style="cursor:pointer${ex.note?'':';color:var(--o30)'}" title="${ex.note?'editar nota':'agregar nota'}">${ex.note?escTxt(ex.note):'+ nota'}</span>${variantChips(ex)}<span class="exdel" data-act="delex" data-exi="${exi}" title="quitar de la sesión" style="margin-left:auto;align-self:center;color:var(--o35);cursor:pointer;font-size:13px;padding:2px 6px">✕</span></div>`;
   // ---- cardio branch: field grid per subtype, no drop sets, no w/r/rir ----
   if(isCardioEx){
     const fields=cardioFields(ex);
@@ -4236,7 +4265,7 @@ function openAddExStep2(afterExi,muscle,replaceExi){
   const dir=exerciseDirectory(); const key=String(muscle).toLowerCase().trim(); const list=(dir[key]||dir[muscle]||[]).slice().sort((a,b)=>(b._sess||0)-(a._sess||0));
   window._axList=list; window._axCtx={afterExi,muscle:key,replaceExi};
   openModal(`<h3>${escTxt(muscle)} · ${replaceExi!=null?'cambiar ejercicio':'elige ejercicio'}</h3>
-   ${list.length?`<div class="submeta" style="margin-bottom:6px">ya los usas · toca para agregar</div><div>${list.map((x,i)=>`<div class="pickitem" data-act="axpick" data-i="${i}">${escTxt(x.name)}${x.machine?` <span style="color:var(--o40);font-size:10px">${escTxt(x.machine)}</span>`:''}${x.type&&x.type!=='free'?` <span style="color:var(--o35);font-size:9px">${escTxt(x.type)}</span>`:''}<span style="float:right;color:var(--o40);font-size:10px">${x._sess||0}×</span></div>`).join('')}</div><hr class="rule" style="margin:10px 0"/>`:`<div class="submeta" style="margin-bottom:10px">sin ejercicios registrados para "${escTxt(muscle)}" todavía</div>`}
+   ${list.length?`<div class="submeta" style="margin-bottom:6px">ya los usas · toca para agregar</div><div>${list.map((x,i)=>`<div class="pickitem" data-act="axpick" data-i="${i}">${(x.type!=='cardio'&&x.type!=='bodyweight')?`<span>[${escTxt(exDisplayUnit(x))}]</span> `:''}${escTxt(x.name)}${x.machine?` <span style="color:var(--o40);font-size:10px">${escTxt(x.machine)}</span>`:''}${x.type&&x.type!=='free'?` <span style="color:var(--o35);font-size:9px">${escTxt(x.type)}</span>`:''}<span style="float:right;color:var(--o40);font-size:10px">${x._sess||0}×</span></div>`).join('')}</div><hr class="rule" style="margin:10px 0"/>`:`<div class="submeta" style="margin-bottom:10px">sin ejercicios registrados para "${escTxt(muscle)}" todavía</div>`}
    <button class="b" data-act="axnewex" style="width:100%">+ ejercicio nuevo</button>${replaceExi!=null?'<button class="b" data-act="axdetails" style="width:100%;margin-top:8px">✎ editar detalles de este ejercicio</button>':''}
    <div class="sheetbtns" style="margin-top:10px"><button class="cancel" data-act="axback">← músculo</button><button class="cancel" data-act="closemodal">cancel</button></div>`);
 }
