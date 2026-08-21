@@ -837,7 +837,8 @@ function lastLoggedSets(name,uni){ const key=(name||'').toLowerCase().trim(); le
 // (newWorkSession has it; ad-hoc adds pass what they can, the ladder degrades gracefully without it).
 function seedSets(ex,fallbackN,ctx){
   ctx=ctx||{};
-  const base=baselineSetsFor({exId:ex.exId||null,dayId:ctx.dayId||null,name:String(ex.name||'').toLowerCase().trim(),variant:variantKey(ex),occ:ctx.occ||0,nSame:ctx.nSame||1,orderIdx:ctx.orderIdx||0});
+  const gym=ctx.gym||(db.activeWork&&db.activeWork.gym)||db.activeGym||null;
+  const base=baselineSetsFor({exId:ex.exId||null,dayId:ctx.dayId||null,gym,name:String(ex.name||'').toLowerCase().trim(),variant:variantKey(ex),occ:ctx.occ||0,nSame:ctx.nSame||1,orderIdx:ctx.orderIdx||0});
   const last=base.sets;
   if(last&&last.length) return last.map(s=>emptySet(ex,s.side||null,!!s.isDrop,s));
   const n=Math.max(1,fallbackN||(typeof ex.sets==='number'?ex.sets:2)); const out=[];
@@ -994,8 +995,9 @@ function exIdentity(sessOrWork,ei){
   const name=String(e.name||'').toLowerCase().trim(); const variant=variantKey(e);
   const occ=exOccurrence(list,ei); const nSame=exNameCount(list,name,variant);
   const dayId=(sessOrWork&&sessOrWork.dayId)||null;
-  if(e.exId) return {level:'id', exId:e.exId, dayId, name, variant, occ, nSame, ei};
-  return {level: dayId?'day':'name', exId:null, dayId, name, variant, occ, nSame, ei};
+  const gym=(sessOrWork&&sessOrWork.gym)||null;
+  if(e.exId) return {level:'id', exId:e.exId, dayId, gym, name, variant, occ, nSame, ei};
+  return {level: dayId?'day':'name', exId:null, dayId, gym, name, variant, occ, nSame, ei};
 }
 // resolve the split-exercise DEFINITION backing exercises[ei] of a session/activeWork: by exId first
 // (survives rename/reorder), else by day+name+variant if unique, else by day+name alone if unique
@@ -1047,7 +1049,7 @@ function exIndex(){
       if(!sets.some(setPersistable))return;
       const name=String(e.name||'').toLowerCase().trim(); const variant=variantKey(e); const list=s.exercises;
       rows.push({sid:s.id,date:String(s.date||''),sIdx,ei,orderIdx:ei,sess:s,ex:e,sets,
-        exId:e.exId||null,dayId:s.dayId||null,name,variant,
+        exId:e.exId||null,dayId:s.dayId||null,name,variant,gym:s.gym||null,
         occ:exOccurrence(list,ei),nSame:exNameCount(list,name,variant)});
     });
   });
@@ -1069,7 +1071,12 @@ function exIndex(){
 function baselineSetsFor(target){
   target=target||{};
   const idx=exIndex();
-  const inWindow=r=> r.sid!==target.excludeSessionId
+  // gym-scoped: distinto gym = distinta máquina/carga, no debe alimentar el ▲/▼ de este ejercicio
+  // (feedback del dueño 2026-08-21) — pero conservador con datos legacy/fixtures sin gym: solo bloquea
+  // cuando AMBOS lados declaran gym y difieren, nunca cuando alguno es desconocido.
+  const gymN=g=>String(g||'').toLowerCase().trim();
+  const gymOK=r=> !target.gym || !r.gym || gymN(r.gym)===gymN(target.gym);
+  const inWindow=r=> r.sid!==target.excludeSessionId && gymOK(r)
     && (target.beforeDate==null || r.date<target.beforeDate || (r.date===target.beforeDate && r.sIdx<target.beforeSIdx));
   const pick=(fn,level,confidence,why)=>{ const r=idx.find(x=>inWindow(x)&&fn(x)); return r?{sets:r.sets,sess:r.sess,ei:r.ei,level,confidence,date:r.date,why}:null; };
   if(target.exId){ const h=pick(r=>r.exId===target.exId,'id','exact','misma instancia'); if(h)return h; }
@@ -1326,6 +1333,9 @@ function latestBodyweight(){ const k=Object.keys(db.bodyweight||{}).sort(); retu
 // display only for those); everything else uses s.w as-is. + lastre/extraW on top either way — this
 // is also what makes a machine's FS second-weight field finally count toward anything.
 function effW(s){ if(!s)return 0; const base=s.bw?(latestBodyweight()||0):(parseFloat(s.w)||0); const ex=parseFloat(s.extraW); return base+(isFinite(ex)?ex:0); }
+// normalized unit string ('kg'|'lbs'|'pla'|'') for the cross-unit guard below — comparing magnitudes
+// across units (e.g. placas vs kg) is meaningless, never a real regression (feedback del dueño 2026-08-21).
+function unitN(s){ return String((s&&s.unit)||'').toLowerCase().trim(); }
 // a bodyweight set with no bodyweight registered anywhere can't be scored — surfaced in the UI as
 // "falta peso corporal" rather than silently computing against 0.
 function bwMissing(s,ex){ return !!((s&&s.bw)||(ex&&ex.type==='bodyweight')) && !(latestBodyweight()>0); }
@@ -1513,6 +1523,21 @@ function _baselineSelfCheck(){
       const b=baselineSetsFor(Object.assign(exIdentity(day2Re,ei),{orderIdx:ei}));
       A('day2 reordered '+ex.name+' still baselines', !!(b.sets&&b.sets.length));
     });
+    // cross-gym: same name+variant but a DIFFERENT gym never baselines against it — distinct gym = distinct
+    // machine (feedback del dueño 2026-08-21: "Club Campestre" wrongly cross-compared vs "AGON GYM")
+    db.sessions=[{id:'sGym1',date:'2026-08-19',dayId:'d1',gym:'AGON GYM',type:'training',exercises:[{name:'pushdown',type:'cable',sets:[S(35,7,'0',{unit:'kg'})]}]}];
+    bumpIdx();
+    const otherGym={dayId:'d1',gym:'Club Campestre',exercises:[{name:'pushdown',type:'cable',sets:[]}]};
+    const baseG=baselineSetsFor(Object.assign(exIdentity(otherGym,0),{orderIdx:0}));
+    A('a different gym never baselines against another gym\'s history for the same exercise', baseG.sets===null);
+    const sameGym={dayId:'d1',gym:'AGON GYM',exercises:[{name:'pushdown',type:'cable',sets:[]}]};
+    const baseG2=baselineSetsFor(Object.assign(exIdentity(sameGym,0),{orderIdx:0}));
+    A('the SAME gym still resolves its own baseline normally', baseG2.sets&&baseG2.sets[0].w==='35');
+    // cross-unit: a set logged in a different unit (e.g. placas vs kg) never scores a ▲/▼ against it —
+    // comparing raw magnitudes across units is meaningless (feedback del dueño 2026-08-21)
+    const kgSet=S(35,7,'0',{unit:'kg'}), plaSet=S(10,8,'0',{unit:'pla'});
+    A('cross-unit sets never produce a progress badge (setProgress)', setProgress(plaSet,kgSet,null,null)===null);
+    A('same-unit sets still compare normally (setProgress)', !!setProgress(S(36,7,'0',{unit:'kg'}),kgSet,null,null));
     console.log('baseline self-check OK');
   } finally { db.sessions=origSessions; db.split.days=origDays; }
 }
@@ -1528,8 +1553,8 @@ function _variantSelfCheck(){
     A('effW adds the lastre (extraW) on top', effW({bw:true,w:'999',extraW:'10'})===88.4);
     db.bodyweight={};
     A('no bodyweight registered anywhere -> bwMissing true, effW 0', bwMissing(stale) && effW(stale)===0);
-    A('variantChips: free still shows [BI] (laterality always visible)', variantChips({type:'free'}).indexOf('[BI]')>=0);
-    A('variantChips: unilateral shows [UNI]', variantChips({type:'free',unilateral:true}).indexOf('[UNI]')>=0);
+    A('exLatTagHead: free still shows [bi] (laterality always visible, front-loaded)', exLatTagHead({type:'free'}).indexOf('[bi]')>=0);
+    A('exLatTagHead: unilateral shows [uni]', exLatTagHead({type:'free',unilateral:true}).indexOf('[uni]')>=0);
     A('variantChips: pulley displays as [cable] (read alias, never rewrites storage)', variantChips({type:'pulley'}).indexOf('[cable]')>=0);
     A('variantKey: smith and cable are different variants', variantKey({type:'smith'})!==variantKey({type:'cable'}));
     // Pulldown UNI vs BI are fully isolated identities
@@ -1631,6 +1656,11 @@ function histProgress(sess,ei){ const e=(sess&&sess.exercises||[])[ei]; if(!e)re
   const id=exIdentity(sess,ei);
   const sIdx=(db.sessions||[]).indexOf(sess);
   const base=baselineSetsFor(Object.assign(id,{orderIdx:ei,excludeSessionId:sess.id,beforeDate:sess.date,beforeSIdx:sIdx}));
+  if(base.sets){ // distinta unidad de despliegue (kg/lbs/pla) entre esta sesión y la base = no comparable
+    const bex=base.sess&&(base.sess.exercises||[])[base.ei];
+    const cu=exDisplayUnit(e,e.sets), bu=bex?exDisplayUnit(bex,base.sets):'';
+    if(cu&&bu&&cu!==bu) return null;
+  }
   return progFromScores(cur,avgE1RM(base.sets,false));
 }
 // Count sets by zone — surfaced as a coaching hint next to the progress badge.
@@ -1643,7 +1673,9 @@ function progBadgeHTML(ex){ const z=exerciseZones(ex); const total=z.light+z.pro
 function effE1RM(s,ctx){ return ctx?correctedE1RM(s,ctx):e1rmOf(s); }
 // per-SET progress: compare current set's FRESH-EQUIVALENT score vs the equivalent prior set's —
 // so a fresh top set today is never penalized/flattered by comparing against a fatigued prior set.
-function setProgress(curS,prevS,curCtx,prevCtx){ if(!curS||!prevS)return null; return progFromScores(effE1RM(curS,curCtx), effE1RM(prevS,prevCtx)); }
+function setProgress(curS,prevS,curCtx,prevCtx){ if(!curS||!prevS)return null;
+  const cu=unitN(curS),pu=unitN(prevS); if(cu&&pu&&cu!==pu)return null; // distinta unidad = no comparable
+  return progFromScores(effE1RM(curS,curCtx), effE1RM(prevS,prevCtx)); }
 // a set "counts" for progress only when fully entered: weight + reps + RIR, and no longer a prefill suggestion.
 function setComplete(s){ if(!s||s._pf)return false; return s.w!==''&&s.w!=null&&+s.w>0 && s.r!==''&&s.r!=null&&+s.r>0 && s.rir!==''&&s.rir!=null; }
 // refines the baseline ladder's level into a display tier: even an 'exact' identity match can be a poor
@@ -1683,7 +1715,10 @@ function setBadgeHTML(curS,prevS,curCtx,prevCtx,level){ if(!setComplete(curS))re
   const ttl=tier==='dir'?'contexto muy distinto — solo dirección (vs números crudos), sin %':('vs ant '+ptxt);
   return `<span class="setprog" style="font-size:9px;font-weight:700;color:${parts.col}" title="${ttl}">${parts.ar}${parts.pc}</span>`; }
 // pair progress: for unilateral, sum L+R FRESH-EQUIVALENT scores and compare against the equivalent prior pair.
-function pairBadgeHTML(curA,curB,prevA,prevB,curCtxA,curCtxB,prevCtxA,prevCtxB,level){ if(!setComplete(curA)||!setComplete(curB))return ''; const cur=effE1RM(curA,curCtxA)+(curB?effE1RM(curB,curCtxB):0); const prev=(prevA?effE1RM(prevA,prevCtxA):0)+(prevB?effE1RM(prevB,prevCtxB):0); const pr=progFromScores(cur,prev); if(!pr)return ''; const tier=progConfidence(level,curCtxA,prevCtxA);
+function pairBadgeHTML(curA,curB,prevA,prevB,curCtxA,curCtxB,prevCtxA,prevCtxB,level){ if(!setComplete(curA)||!setComplete(curB))return '';
+  const uA=unitN(curA),uPA=unitN(prevA); if(prevA&&uA&&uPA&&uA!==uPA)return ''; // distinta unidad = no comparable
+  const uB=unitN(curB),uPB=unitN(prevB); if(prevB&&uB&&uPB&&uB!==uPB)return '';
+  const cur=effE1RM(curA,curCtxA)+(curB?effE1RM(curB,curCtxB):0); const prev=(prevA?effE1RM(prevA,prevCtxA):0)+(prevB?effE1RM(prevB,prevCtxB):0); const pr=progFromScores(cur,prev); if(!pr)return ''; const tier=progConfidence(level,curCtxA,prevCtxA);
   const rawCur=e1rmOf(curA)+(curB?e1rmOf(curB):0), rawPrev=(prevA?e1rmOf(prevA):0)+(prevB?e1rmOf(prevB):0);
   const parts=progBadgeParts(dirSafePr(pr,tier,progFromScores(rawCur,rawPrev)),tier); if(!parts)return ''; return `<span class="setprog" style="font-size:9px;font-weight:700;color:${parts.col}">${parts.ar}${parts.pc}</span>`; }
 // MUSCLE-LEVEL weekly score: aggregate setScore over all exercises tagged with this muscle, within a date window.
@@ -1706,12 +1741,18 @@ function updateSetProgress(exi,si){ const w=db.activeWork; if(!w||!w.exercises[e
   el.innerHTML=html||''; el.style.height=html?'11px':'0'; el.style.lineHeight='11px';
 }
 // resolves the "at a glance" default unit for an exercise: its own default, else its last logged set,
-// else the global setting. Owner feedback (2026-08-13): unit was buried as a tiny per-set select; it
-// needs to be front-loaded and read in the SAME font/size as the exercise name, both in the exercise
-// picker ("cambiar ejercicio") and in the live-session header — skipped for cardio (no weight/unit at
-// all) and bodyweight (that column is repurposed as "lastre", not a unit choice).
+// else the global setting. Used by the cross-unit progress guard (setProgress/pairBadgeHTML/histProgress) —
+// comparing magnitudes across kg/lbs/pla is meaningless, never a real regression (owner feedback 2026-08-21).
 function exDisplayUnit(ex,sets){ return (ex&&ex.unit)||(sets&&sets[0]&&sets[0].unit)||(db.settings&&db.settings.unit)||'lbs'; }
+// SUPERSEDED (2026-08-21, owner feedback): v216 front-loaded the UNIT here in the exercise name's own
+// font/size, but that bracket was meant for laterality [uni]/[bi] — see exLatTagHead below. The unit stays
+// where it always belonged, the per-set <select> (renderSetRow). Kept only so nothing dangles; no longer
+// wired into any header/picker.
 function exUnitTagHead(ex,sets){ if(!ex||isCardio(ex)||ex.type==='bodyweight')return ''; return `<span class="n" style="margin-right:1px">[${escTxt(exDisplayUnit(ex,sets))}]</span>`; }
+// laterality tag, front-loaded in the exercise name's own font/size (owner-required, 2026-08-21): [uni]/[bi]
+// at the very start, both in the live-session header and the exercise picker rows. No laterality for cardio;
+// bodyweight DOES have laterality (e.g. pistol squat), so it's shown there unlike the unit tag above.
+function exLatTagHead(ex){ return (!ex||isCardio(ex)) ? '' : `<span class="n" style="margin-right:2px">[${uniOf(ex)?'uni':'bi'}]</span>`; }
 // variant chips shown in the exercise header — visible, never hidden in a submenu.
 // UNI/BI always shown for strength (identity-critical); free type itself is still the default (no type chip).
 function variantChips(ex){
@@ -1724,8 +1765,8 @@ function variantChips(ex){
   }
   const lbl={machine:'machine',pulley:'cable',smith:'smith',cable:'cable',bodyweight:'bw'}[ex&&ex.type];
   if(lbl) h+=`<span class="note">[${lbl}]</span>`;
-  // always surface laterality — UNI and BI are different lifts for baseline/historial
-  h+='<span class="note">['+(uniOf(ex)?'UNI':'BI')+']</span>';
+  // laterality ([uni]/[bi]) moved to exLatTagHead — front-loaded in the name's own font/size, not a
+  // trailing muted chip (owner feedback 2026-08-21). Still identity-critical for baseline/historial.
   if(ex&&ex.assisted) h+='<span class="note">[assisted]</span>';
   if(ex&&ex.weighted) h+='<span class="note">[weighted]</span>';
   return h;
@@ -1760,7 +1801,7 @@ function renderExercise(exi,ex,allowF,canReorder){
   state._align=state._align||{}; state._align[exi]={prevSets,align,curFatCtx,baseFatCtx,level:_bl.level};
   // honest about missing history: no equivalent prior occurrence found for this exact instance/variant
   const noBaseline=!prevSets?`<span class="exprog" style="color:var(--o30);font-size:9px;margin-left:6px" title="sin sesión previa equivalente para comparar">sin baseline</span>`:'';
-  const head=`<div class="exhead">${gripE}${exUnitTagHead(ex,sets)}<span class="n" data-act="editexname" data-exi="${exi}" style="cursor:pointer">${escTxt(ex.name)}</span>${prBadge}${noBaseline}${mhtml}<span class="note" data-act="editexnote" data-exi="${exi}" style="cursor:pointer${ex.note?'':';color:var(--o30)'}" title="${ex.note?'editar nota':'agregar nota'}">${ex.note?escTxt(ex.note):'+ nota'}</span>${variantChips(ex)}<span class="exdel" data-act="delex" data-exi="${exi}" title="quitar de la sesión" style="margin-left:auto;align-self:center;color:var(--o35);cursor:pointer;font-size:13px;padding:2px 6px">✕</span></div>`;
+  const head=`<div class="exhead">${gripE}${exLatTagHead(ex)}<span class="n" data-act="editexname" data-exi="${exi}" style="cursor:pointer">${escTxt(ex.name)}</span>${prBadge}${noBaseline}${mhtml}<span class="note" data-act="editexnote" data-exi="${exi}" style="cursor:pointer${ex.note?'':';color:var(--o30)'}" title="${ex.note?'editar nota':'agregar nota'}">${ex.note?escTxt(ex.note):'+ nota'}</span>${variantChips(ex)}<span class="exdel" data-act="delex" data-exi="${exi}" title="quitar de la sesión" style="margin-left:auto;align-self:center;color:var(--o35);cursor:pointer;font-size:13px;padding:2px 6px">✕</span></div>`;
   // ---- cardio branch: field grid per subtype, no drop sets, no w/r/rir ----
   if(isCardioEx){
     const fields=cardioFields(ex);
@@ -1845,7 +1886,7 @@ function renderHistExercise(exi,ex,sess){
   const mparts=[]; if(ex.machine)mparts.push(escTxt(ex.machine)); if(ex.setup)mparts.push(escTxt(ex.setup));
   const mhtml=mparts.length?`<span class="mch none">${mparts.join(' · ')}</span>`:'';
   const badge=isCardioEx?'':progBadgeFromProg(histProgress(sess,exi),'vs sesión previa de este ejercicio');
-  const head=`<div class="exhead"><span class="n">${escTxt(ex.name)}</span>${badge}${mhtml}${variantChips(ex)}</div>`;
+  const head=`<div class="exhead">${exLatTagHead(ex)}<span class="n">${escTxt(ex.name)}</span>${badge}${mhtml}${variantChips(ex)}</div>`;
   let rows='';
   if(isCardioEx){
     const fields=cardioFields(ex);
@@ -4265,7 +4306,7 @@ function openAddExStep2(afterExi,muscle,replaceExi){
   const dir=exerciseDirectory(); const key=String(muscle).toLowerCase().trim(); const list=(dir[key]||dir[muscle]||[]).slice().sort((a,b)=>(b._sess||0)-(a._sess||0));
   window._axList=list; window._axCtx={afterExi,muscle:key,replaceExi};
   openModal(`<h3>${escTxt(muscle)} · ${replaceExi!=null?'cambiar ejercicio':'elige ejercicio'}</h3>
-   ${list.length?`<div class="submeta" style="margin-bottom:6px">ya los usas · toca para agregar</div><div>${list.map((x,i)=>`<div class="pickitem" data-act="axpick" data-i="${i}">${(x.type!=='cardio'&&x.type!=='bodyweight')?`<span>[${escTxt(exDisplayUnit(x))}]</span> `:''}${escTxt(x.name)}${x.machine?` <span style="color:var(--o40);font-size:10px">${escTxt(x.machine)}</span>`:''}${x.type&&x.type!=='free'?` <span style="color:var(--o35);font-size:9px">${escTxt(x.type)}</span>`:''}<span style="float:right;color:var(--o40);font-size:10px">${x._sess||0}×</span></div>`).join('')}</div><hr class="rule" style="margin:10px 0"/>`:`<div class="submeta" style="margin-bottom:10px">sin ejercicios registrados para "${escTxt(muscle)}" todavía</div>`}
+   ${list.length?`<div class="submeta" style="margin-bottom:6px">ya los usas · toca para agregar</div><div>${list.map((x,i)=>`<div class="pickitem" data-act="axpick" data-i="${i}">${!isCardio(x)?`<span>[${uniOf(x)?'uni':'bi'}]</span> `:''}${escTxt(x.name)}${x.machine?` <span style="color:var(--o40);font-size:10px">${escTxt(x.machine)}</span>`:''}${x.type&&x.type!=='free'?` <span style="color:var(--o35);font-size:9px">${escTxt(x.type)}</span>`:''}<span style="float:right;color:var(--o40);font-size:10px">${x._sess||0}×</span></div>`).join('')}</div><hr class="rule" style="margin:10px 0"/>`:`<div class="submeta" style="margin-bottom:10px">sin ejercicios registrados para "${escTxt(muscle)}" todavía</div>`}
    <button class="b" data-act="axnewex" style="width:100%">+ ejercicio nuevo</button>${replaceExi!=null?'<button class="b" data-act="axdetails" style="width:100%;margin-top:8px">✎ editar detalles de este ejercicio</button>':''}
    <div class="sheetbtns" style="margin-top:10px"><button class="cancel" data-act="axback">← músculo</button><button class="cancel" data-act="closemodal">cancel</button></div>`);
 }
