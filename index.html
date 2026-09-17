@@ -223,6 +223,24 @@
   .ex{margin-bottom:var(--sp-card);} .ex:last-child{margin-bottom:0;}
   /* v223: el ejercicio en curso (primera serie sin ✓) lleva una guía a la izquierda — "te pierdes en cuál vas" */
   .ex.current{position:relative;} .ex.current::before{content:''; position:absolute; left:-7px; top:0; bottom:0; width:2px; background:var(--o35); border-radius:2px;}
+  /* v224 (mockup del dueño): el encabezado va en DOS líneas —
+       [bi] pushdown
+       cable [+ nota]
+     Sin rellenos: "+ machine" ya no existe ("sale putas machine cuando ya se puso que es cable"), el TIPO
+     ocupa ese sitio y lleva al editor de marca/setup; el [+ nota] desaparece en cuanto hay nota. */
+  /* v224 · catálogo con selección para unir duplicados */
+  /* v224 · aviso de deriva entre el split escrito y lo que de verdad entrenas */
+  .sedrift{display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin:4px 0 6px; padding:6px 8px; border:.5px dashed var(--o20); font-size:10px; color:var(--o50);}
+  .sedrift b{color:var(--o70); font-weight:700;} .sedrift .b{background:none; border:0; color:var(--fg); font-size:10px; font-weight:800; cursor:pointer; padding:0; white-space:nowrap;}
+  .mgbar{display:flex; align-items:center; gap:8px; flex-wrap:wrap; padding:7px 9px; margin-bottom:8px; border:.5px solid var(--o20); font-size:11px; color:var(--o60);}
+  .mgbar .b{background:none; border:0; color:var(--fg); font-size:11px; font-weight:700; cursor:pointer; padding:0;}
+  .exrow{display:flex; align-items:center; gap:7px; padding:5px 0; border-bottom:.5px solid var(--o10); cursor:pointer;}
+  .exrow.on{background:var(--o10);} .exrow .mgbox{flex:0 0 auto; font-size:12px; color:var(--o35);} .exrow.on .mgbox{color:var(--fg);}
+  .exrow .exn{flex:1; font-size:12px;} .exrow .exc{font-size:10px; color:var(--o50); white-space:nowrap;}
+  .exsub{display:flex; align-items:baseline; flex-wrap:wrap; gap:7px; margin:-4px 0 9px;}
+  .exsub .note{font-size:11px; color:var(--o50);} .exsub .note.add{color:var(--o30);}
+  .exsub .mch{font-size:11px; color:var(--o60); cursor:pointer; border-bottom:.5px dashed var(--o20);}
+  .exsub .mch.none{color:var(--o40); border-bottom:none;} .exsub .mset{font-size:11px; color:var(--o40); cursor:pointer;}
   .exhead{display:flex; align-items:baseline; flex-wrap:wrap; gap:7px; margin-bottom:9px;} .exhead .n{font-size:16px; font-weight:800;} .exhead .mch{font-size:11px; color:var(--o50); cursor:pointer; border-bottom:.5px dashed var(--o20);} .exhead .mch.none{color:var(--o35); border-bottom:none;} .exhead .mch:active{color:var(--fg);} .exhead .mset{font-size:10px; color:var(--o40); cursor:pointer;} .exhead .note{font-size:10px; color:var(--o35);}
   /* hold & drag — reorder exercises within a muscle, and whole muscle blocks */
   .dgrip{display:inline-block; align-self:center; cursor:grab; color:var(--o30); font-size:13px; line-height:1; padding:3px 8px 3px 0; touch-action:none; -webkit-user-select:none; user-select:none; -webkit-touch-callout:none;}
@@ -798,7 +816,7 @@ function _idSelfCheck(){
   A('gated: a second call is a no-op once _idfix is set', JSON.stringify(fx)===before);
   console.log('id self-check OK');
 }
-function migrate(d){ if(!d.version){d.version=1;} if(!d.meals||typeof d.meals!=='object'||Array.isArray(d.meals))d.meals={}; if(!Array.isArray(d.foods))d.foods=[]; d.foods=d.foods.map(f=>(f&&f.per100)?f:asCanonical(f)); if(!Array.isArray(d.sessions))d.sessions=[]; if(!d.split||typeof d.split!=='object')d.split={name:'',days:[]}; if(!Array.isArray(d.split.days))d.split.days=[]; d.split.days.forEach(day=>{ if(!Array.isArray(day.exercises))day.exercises=[]; day.exercises.forEach(e=>{ if(e&&!e.id)e.id='e'+uid(); }); }); fixDuplicateExIds(d); fixLeakedFullStack(d); d.health=healthShape((d.health&&typeof d.health==='object'&&!Array.isArray(d.health))?d.health:{}); if(!d.steps||typeof d.steps!=='object')d.steps={}; if(!d.machines||typeof d.machines!=='object')d.machines={}; if(!d.bodyweight||typeof d.bodyweight!=='object')d.bodyweight={}; if(!d.sleep||typeof d.sleep!=='object')d.sleep={}; if(!d.mood||typeof d.mood!=='object')d.mood={}; if(!d.selfcheck||typeof d.selfcheck!=='object')d.selfcheck={}; if(!d.adhoc||typeof d.adhoc!=='object')d.adhoc={}; if(!Array.isArray(d.mealTags))d.mealTags=['breakfast','lunch','snack','dinner']; if(!Array.isArray(d.stack))d.stack=[]; if(!d.lastUsed||typeof d.lastUsed!=='object')d.lastUsed={}; if(!d.settings||typeof d.settings!=='object')d.settings={goals:seed().settings.goals}; if(d.settings&&d.settings.goals&&d.settings.goals.alcohol==null)d.settings.goals.alcohol=(d.profile&&d.profile.sex==='F')?14:28; if(d.settings&&d.settings.restSec==null)d.settings.restSec=90; if(d.settings&&d.settings.restBeep==null)d.settings.restBeep=true; if(d.settings&&d.settings.goals&&d.settings.goals.sleep==null)d.settings.goals.sleep=8; if(d.profile&&!d.profile.since){ try{ const _cd=[]; (d.sessions||[]).forEach(s=>{if(s.date)_cd.push(s.date);}); Object.keys(d.meals||{}).forEach(k=>_cd.push(k)); Object.keys(d.bodyweight||{}).forEach(k=>_cd.push(k)); if(_cd.length)d.profile.since=_cd.sort()[0]; }catch(_){} }
+function migrate(d){ if(!d.version){d.version=1;} if(!d.meals||typeof d.meals!=='object'||Array.isArray(d.meals))d.meals={}; if(!Array.isArray(d.foods))d.foods=[]; d.foods=d.foods.map(f=>(f&&f.per100)?f:asCanonical(f)); if(!Array.isArray(d.sessions))d.sessions=[]; if(!d.split||typeof d.split!=='object')d.split={name:'',days:[]}; if(!Array.isArray(d.split.days))d.split.days=[]; d.split.days.forEach(day=>{ if(!Array.isArray(day.exercises))day.exercises=[]; day.exercises.forEach(e=>{ if(e&&!e.id)e.id='e'+uid(); }); }); fixDuplicateExIds(d); fixLeakedFullStack(d); d.health=healthShape((d.health&&typeof d.health==='object'&&!Array.isArray(d.health))?d.health:{}); if(!d.steps||typeof d.steps!=='object')d.steps={}; if(!d.machines||typeof d.machines!=='object')d.machines={}; if(!d.exCat||typeof d.exCat!=='object')d.exCat={}; if(!d.bodyweight||typeof d.bodyweight!=='object')d.bodyweight={}; if(!d.sleep||typeof d.sleep!=='object')d.sleep={}; if(!d.mood||typeof d.mood!=='object')d.mood={}; if(!d.selfcheck||typeof d.selfcheck!=='object')d.selfcheck={}; if(!d.adhoc||typeof d.adhoc!=='object')d.adhoc={}; if(!Array.isArray(d.mealTags))d.mealTags=['breakfast','lunch','snack','dinner']; if(!Array.isArray(d.stack))d.stack=[]; if(!d.lastUsed||typeof d.lastUsed!=='object')d.lastUsed={}; if(!d.settings||typeof d.settings!=='object')d.settings={goals:seed().settings.goals}; if(d.settings&&d.settings.goals&&d.settings.goals.alcohol==null)d.settings.goals.alcohol=(d.profile&&d.profile.sex==='F')?14:28; if(d.settings&&d.settings.restSec==null)d.settings.restSec=90; if(d.settings&&d.settings.restBeep==null)d.settings.restBeep=true; if(d.settings&&d.settings.goals&&d.settings.goals.sleep==null)d.settings.goals.sleep=8; if(d.profile&&!d.profile.since){ try{ const _cd=[]; (d.sessions||[]).forEach(s=>{if(s.date)_cd.push(s.date);}); Object.keys(d.meals||{}).forEach(k=>_cd.push(k)); Object.keys(d.bodyweight||{}).forEach(k=>_cd.push(k)); if(_cd.length)d.profile.since=_cd.sort()[0]; }catch(_){} }
   // recompute alcohol for old meal items logged before alcohol was in MACROKEYS
   try{ Object.values(d.meals||{}).forEach(arr=>arr.forEach(m=>{ if(m.alcohol==null){ if(m._food&&m._food.per100&&m._food.per100.alcohol&&m._unit){ m.alcohol=computeNutrients(m._food,m._unit,m.qty||1).alcohol; } else m.alcohol=0; } })); }catch(e){}
   // goalHist: snapshot of intake goals at the moment of first logging that day (history is FROZEN — past days never re-read the current goal)
@@ -1275,9 +1293,9 @@ function weeklySets(days){ days=days||7; const now=new Date(); const cut=new Dat
 function volStatus(m,sets){ const L=VOL_LANDMARKS[canonM(m)]; if(!L)return ''; if(sets<L[0])return 'under'; if(sets<=L[1])return 'optimal'; if(sets<=L[2])return 'high'; return 'over'; }
 function e1rmTrend(){ // best Epley e1RM per exercise, this week vs prior week
   const wk=(off)=>{ const now=new Date(); const a=new Date(now); a.setDate(now.getDate()-7*off-7); const b=new Date(now); b.setDate(now.getDate()-7*off); const ai=todayISO(a),bi=todayISO(b); const best={};
-    db.sessions.forEach(s=>{ if(s.type==='rest'||s.date<ai||s.date>=bi)return; (s.exercises||[]).forEach(e=>{ if(isCardio(e))return; (e.sets||[]).forEach(st=>{ if(bwMissing(st))return; const w=effW(st),r=parseFloat(st.r)||0; if(w&&r){ const e1=w*(1+effRepsForE1RM(st)/30); if(!best[e.name]||e1>best[e.name])best[e.name]=e1; } }); }); }); return best; };
+    db.sessions.forEach(s=>{ if(s.type==='rest'||s.date<ai||s.date>=bi)return; (s.exercises||[]).forEach(e=>{ if(isCardio(e))return; (e.sets||[]).forEach(st=>{ if(bwMissing(st))return; const w=effW(st),r=parseFloat(st.r)||0; if(w&&r){ const e1=w*(1+effRepsForE1RM(st)/30); if(!best[e.name]||e1>best[e.name].v)best[e.name]={v:e1,uni:uniOf(e),type:e.type}; } }); }); }); return best; };
   const cur=wk(0),prev=wk(1); const out=[];
-  Object.keys(cur).forEach(k=>{ out.push({name:k,cur:cur[k],prev:prev[k]||null}); });
+  Object.keys(cur).forEach(k=>{ out.push({name:k,cur:cur[k].v,prev:prev[k]?prev[k].v:null,unilateral:cur[k].uni,type:cur[k].type}); });
   return out.sort((a,b)=>b.cur-a.cur).slice(0,3);
 }
 // weekly cardio aggregates (min/distance/kcal) — registered for recovery/fatigue hooks; motor de recuperación can consume later
@@ -1394,12 +1412,11 @@ function dayPreviewHTML(day){
     const m=base.muscle||'other';
     if(m!==curM){ body+=`<div style="font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--o50);margin:9px 0 2px">${escTxt(m)}</div>`; curM=m; }
     const rec=machineRec(db.activeGym,base); const tg=[];
-    if(base.unilateral)tg.push('uni');
     if(['machine','pulley','smith','cable'].indexOf(base.type)>=0)tg.push(rec&&rec.brand?escTxt(rec.brand):'máquina');
     if(base.useFS)tg.push('FS');
     const tags=tg.length?` <span style="color:var(--o40)">· ${tg.join(' · ')}</span>`:'';
     const nSets=fromPrior?((pe.sets&&pe.sets.length)||1):(pe.sets||1);
-    body+=`<div style="display:flex;justify-content:space-between;gap:8px;padding:3px 0;border-bottom:.5px solid var(--o10)"><span style="font-size:12px">${escTxt(base.name)}${tags}</span><span style="font-size:10px;color:var(--o50);white-space:nowrap">${nSets} sets</span></div>`;
+    body+=`<div style="display:flex;justify-content:space-between;gap:8px;padding:3px 0;border-bottom:.5px solid var(--o10)"><span style="font-size:12px">${latTxt(base)}${escTxt(base.name)}${tags}</span><span style="font-size:10px;color:var(--o50);white-space:nowrap">${nSets} sets</span></div>`;
   });
   return `<div style="margin:2px 0 4px">${body}</div>`;
 }
@@ -2056,6 +2073,46 @@ function _loggingSelfCheck(){
   A('una sesión recién tecleada no está idle', isSessionIdle({startMs:1,lastTouch:Date.now(),exercises:[]})===false);
   console.log('logging self-check OK');
 }
+// v224 — unir ejercicios duplicados. Corre el motor REAL sobre una db de juguete (db se cambia y se
+// restaura en finally, como _historyEditSelfCheck) y además protege el respaldo pre-merge de verdad:
+// si él acaba de unir algo, abrir ?selftest=1 no puede pisarle esa copia.
+function _mergeSelfCheck(){
+  const A=(nm,c)=>{ if(!c) throw new Error('SELFCHECK merge: '+nm); };
+  const real=db; let realPre=null; try{ realPre=localStorage.getItem(LS_PREMERGE); }catch(_){}
+  try{
+    db=migrate({ _idfix:true, _fsfix:true, gyms:['AGON','CAMPESTRE'], activeGym:'AGON', rotIdx:0,
+      profile:{username:'t'}, settings:{unit:'kg'},
+      split:{name:'t',days:[{id:'d1',name:'pull',exercises:[{id:'x1',name:'sldl',muscle:'hamstrings',type:'free',unilateral:false,sets:3}]}]},
+      machines:{AGON:{'sldl':{brand:'ROGUE',setup:'',na:false},'bb sldl':{brand:'ELEIKO',setup:'',na:false}},
+                CAMPESTRE:{'bb sldl':{brand:'TECNO',setup:'',na:false}}},
+      sessions:[
+        {id:'s1',date:'2026-09-01',dayId:'d1',gym:'AGON',type:'training',exercises:[{exId:'x1',name:'sldl',muscle:'hamstrings',type:'free',sets:[{w:'100',r:'8',rir:'2',unit:'kg'}]}]},
+        {id:'s2',date:'2026-09-08',dayId:'d1',gym:'CAMPESTRE',type:'training',exercises:[{exId:'zz',name:'bb sldl',muscle:'back',type:'machine',sets:[{w:'110',r:'8',rir:'1',unit:'kg'}]}]},
+        {id:'s3',date:'2026-09-10',dayId:'dX',gym:'AGON',type:'training',exercises:[{exId:null,name:'BB SLDL',type:'machine',sets:[{w:'105',r:'6',rir:'0',unit:'kg'}]}]}
+      ] });
+    const st=mergeExercises(['sldl','bb sldl'],{name:'SLDL',type:'free',unilateral:false,unit:'kg',
+      muscle:'hamstrings',gyms:['AGON','CAMPESTRE'],machineWinner:{AGON:'bb sldl'}});
+    A('los dos nombres quedan en uno', db.sessions.every(s=>s.exercises.every(e=>e.name==='SLDL')));
+    A('el split se normaliza SIN perder el id de la instancia', db.split.days[0].exercises[0].name==='SLDL'&&db.split.days[0].exercises[0].id==='x1');
+    A('el tipo mal puesto (máquina) se corrige a peso libre', db.sessions[1].exercises[0].type==='free');
+    A('la sesión del mismo día se re-vincula al id único', db.sessions[0].exercises[0].exId==='x1'&&db.sessions[1].exercises[0].exId==='x1');
+    A('si el día ya no existe, queda sin vincular en vez de adivinar', db.sessions[2].exercises[0].exId===null);
+    A('pesos, reps y fechas intactos', db.sessions[1].exercises[0].sets[0].w==='110'&&db.sessions[1].exercises[0].sets[0].r==='8'&&db.sessions[1].date==='2026-09-08');
+    A('en el gym con dos registros gana el que él eligió', db.machines.AGON.sldl.brand==='ELEIKO');
+    A('el otro gym conserva SU máquina', db.machines.CAMPESTRE.sldl.brand==='TECNO');
+    A('no sobreviven claves del nombre viejo', !db.machines.AGON['bb sldl']&&!db.machines.CAMPESTRE['bb sldl']);
+    A('el catálogo guarda gyms y de dónde salió', db.exCat.sldl&&db.exCat.sldl.gyms.length===2&&(db.exCat.sldl.mergedFrom||[]).indexOf('bb sldl')>=0);
+    A('el catálogo ya no los ve como dos ejercicios', knownExercises().filter(x=>nameKey(x.name)==='sldl').length===1);
+    A('resumen coherente', !!st&&st.ex===3&&st.split===1);
+    const pre=JSON.parse(localStorage.getItem(LS_PREMERGE));
+    A('el respaldo previo conserva los nombres de antes', pre.sessions[1].exercises[0].name==='bb sldl');
+  } finally {
+    db=real;
+    try{ if(realPre==null)localStorage.removeItem(LS_PREMERGE); else localStorage.setItem(LS_PREMERGE,realPre); }catch(_){}
+    try{ save(); }catch(_){}
+  }
+  console.log('merge self-check OK');
+}
 function _historyEditSelfCheck(){
   // the finalize step below saves and advances the rotation — split + rotIdx must come back too (they leaked before v221)
   const origSessions=db.sessions, origActive=db.activeWork, origHist=state._histSessId, origSplit=db.split, origRot=db.rotIdx;
@@ -2212,10 +2269,16 @@ function exUnitTagHead(ex,sets){ if(!ex||isCardio(ex)||ex.type==='bodyweight')re
 // laterality tag, front-loaded in the exercise name's own font/size (owner-required, 2026-08-21): [uni]/[bi]
 // at the very start, both in the live-session header and the exercise picker rows. No laterality for cardio;
 // bodyweight DOES have laterality (e.g. pistol squat), so it's shown there unlike the unit tag above.
+// v224: la misma etiqueta en TEXTO plano, para las listas donde no cabe un <span> con la fuente del
+// nombre (preview //NEXT, editor de split, catálogo, hoja de sesión, compartir, fuerza/records).
+// La lateralidad es identidad: uni y bi NUNCA son el mismo ejercicio, así que se ve en todos lados.
+function latTxt(ex){ return (!ex||isCardio(ex))?'':('['+(uniOf(ex)?'uni':'bi')+'] '); }
 function exLatTagHead(ex){ return (!ex||isCardio(ex)) ? '' : `<span class="n" style="margin-right:2px">[${uniOf(ex)?'uni':'bi'}]</span>`; }
 // variant chips shown in the exercise header — visible, never hidden in a submenu.
 // UNI/BI always shown for strength (identity-critical); free type itself is still the default (no type chip).
-function variantChips(ex){
+// tap = {act,exi} hace que el chip del TIPO (machine/cable/smith) abra el editor de marca+setup: desde
+// v224 es el único acceso, porque el placeholder "+ machine" se eliminó del encabezado.
+function variantChips(ex,tap){
   let h='';
   if(isCardio(ex)){
     h+='<span class="note">[cardio]</span>';
@@ -2224,7 +2287,9 @@ function variantChips(ex){
     return h;
   }
   const lbl={machine:'machine',pulley:'cable',smith:'smith',cable:'cable',bodyweight:'bw'}[ex&&ex.type];
-  if(lbl) h+=`<span class="note">[${lbl}]</span>`;
+  if(lbl){ const tappable=tap&&tap.act&&['machine','pulley','smith','cable'].indexOf(ex&&ex.type)>=0;
+    h+=tappable?`<span class="note" data-act="${tap.act}" data-exi="${tap.exi}" style="cursor:pointer;border-bottom:.5px dashed var(--o20)" title="marca y setup de la máquina">[${lbl}]</span>`
+               :`<span class="note">[${lbl}]</span>`; }
   // laterality ([uni]/[bi]) moved to exLatTagHead — front-loaded in the name's own font/size, not a
   // trailing muted chip (owner feedback 2026-08-21). Still identity-critical for baseline/historial.
   if(ex&&ex.assisted) h+='<span class="note">[assisted]</span>';
@@ -2246,11 +2311,11 @@ function renderExercise(exi,ex,allowF,canReorder){
   const rec=machineRec((db.activeWork||{}).gym,ex); const ed=`data-act="editmach" data-exi="${exi}"`;
   let mhtml='';
   if(!isCardioEx){
-    if(rec.na){ mhtml=`<span class="mch none" ${ed}>n/a</span>`; }
-    else { let p='';
+    // v224: la marca solo se muestra si EXISTE. Nada de "+ machine" de relleno (se añade desde el chip
+    // del tipo, que abre el mismo editor).
+    if(!rec.na){ let p='';
       if(rec.brand) p+=`<span class="mch" ${ed}>${escTxt(rec.brand)}</span>`;
       if(rec.setup) p+=`<span class="mset" ${ed}>${escTxt(rec.setup)}</span>`;
-      if(!rec.brand&&!rec.setup&&ex.type!=='free') p=`<span class="mch none" ${ed}>+ machine</span>`;
       mhtml=p; }
   }
   const _tn=isCardioEx?null:exTensionSets(db.activeWork,exi);
@@ -2273,7 +2338,10 @@ function renderExercise(exi,ex,allowF,canReorder){
   state._align=state._align||{}; state._align[exi]={prevSets,align,curFatCtx,baseFatCtx,level:_bl.level};
   // honest about missing history: no equivalent prior occurrence found for this exact instance/variant
   const noBaseline=!prevSets?`<span class="exprog" style="color:var(--o30);font-size:9px;margin-left:6px" title="sin sesión previa equivalente para comparar">sin baseline</span>`:'';
-  const head=`<div class="exhead">${gripE}${exLatTagHead(ex)}<span class="n" data-act="editexname" data-exi="${exi}" style="cursor:pointer">${escTxt(ex.name)}</span>${prBadge}${noBaseline}${mhtml}<span class="note" data-act="editexnote" data-exi="${exi}" style="cursor:pointer${ex.note?'':';color:var(--o30)'}" title="${ex.note?'editar nota':'agregar nota'}">${ex.note?escTxt(ex.note):'+ nota'}</span>${variantChips(ex)}<span class="exdel" data-act="delex" data-exi="${exi}" title="quitar de la sesión" style="margin-left:auto;align-self:center;color:var(--o35);cursor:pointer;font-size:13px;padding:2px 6px">✕</span></div>`;
+  // línea 1: [bi] nombre + badges · línea 2: tipo · marca · setup · nota (o [+ nota] si aún no hay)
+  const noteHTML=`<span class="note${ex.note?'':' add'}" data-act="editexnote" data-exi="${exi}" style="cursor:pointer" title="${ex.note?'editar nota':'agregar nota'}">${ex.note?escTxt(ex.note):'[+ nota]'}</span>`;
+  const head=`<div class="exhead">${gripE}${exLatTagHead(ex)}<span class="n" data-act="editexname" data-exi="${exi}" style="cursor:pointer">${escTxt(ex.name)}</span>${prBadge}${noBaseline}<span class="exdel" data-act="delex" data-exi="${exi}" title="quitar de la sesión" style="margin-left:auto;align-self:center;color:var(--o35);cursor:pointer;font-size:13px;padding:2px 6px">✕</span></div>`
+   +`<div class="exsub">${variantChips(ex,{act:'editmach',exi})}${mhtml}${noteHTML}</div>`;
   // ---- cardio branch: field grid per subtype, no drop sets, no w/r/rir ----
   if(isCardioEx){
     const fields=cardioFields(ex);
@@ -2363,7 +2431,8 @@ function renderHistExercise(exi,ex,sess){
   const _hhr=((H().sessHR[sess.id]||{}).sets)||{};
   const _hpr=isCardioEx?null:histProgress(sess,exi); const _hdn=downNoteFor(sess,exi,_hpr);
   const badge=isCardioEx?'':progBadgeFromProg(_hpr,'capacidad (e1RM) vs sesión equivalente'+(_hdn?' · '+_hdn:''))+exTensChip(_htn);
-  const head=`<div class="exhead">${exLatTagHead(ex)}<span class="n">${escTxt(ex.name)}</span>${badge}${mhtml}${variantChips(ex)}</div>`+(_hdn?`<div class="submeta" style="margin:-2px 0 6px;color:var(--o50)">${escTxt(_hdn)}</div>`:'');
+  const _hnote=ex.note?`<span class="note">${escTxt(ex.note)}</span>`:'';
+  const head=`<div class="exhead">${exLatTagHead(ex)}<span class="n">${escTxt(ex.name)}</span>${badge}</div><div class="exsub">${variantChips(ex)}${mhtml}${_hnote}</div>`+(_hdn?`<div class="submeta" style="margin:-2px 0 6px;color:var(--o50)">${escTxt(_hdn)}</div>`:'');
   let rows='';
   if(isCardioEx){
     const fields=cardioFields(ex);
@@ -2656,7 +2725,7 @@ function renderShareSession(id){
     +`<div class="shstat"><div class="shstat-n">${dur}</div><div class="shstat-l">duración</div></div></div>`;
   let log='<div class="shlog">';
   (s.exercises||[]).forEach(e=>{ const st=e.sets||[];
-    log+=`<div class="sgrp"><div class="sgh"><span class="sgn">${escTxt(e.name)}</span><span class="sgk">${escTxt(e.muscle||'')} · ${st.length} sets</span></div>`
+    log+=`<div class="sgrp"><div class="sgh"><span class="sgn">${latTxt(e)}${escTxt(e.name)}</span><span class="sgk">${escTxt(e.muscle||'')} · ${st.length} sets</span></div>`
       +`<div class="shsets">`+st.map(x=>`<span class="shset">${numTxt(+x.w||0)}<i>×${(x.r!=null&&x.r!=='')?x.r:'-'}</i></span>`).join('')+`</div></div>`;
   });
   log+='</div>';
@@ -3617,7 +3686,7 @@ function throwbackBlock(){
 function prRecords(){ const best={};
   (db.sessions||[]).forEach(s=>{ if(s.type==='rest')return; (s.exercises||[]).forEach(e=>{ const nm=e.name; if(!nm)return;
     (e.sets||[]).forEach(st=>{ if(!((st.w||st.r)&&!st._pf))return; const e1=e1rmOf(st); const w=effW(st), r=parseFloat(st.r)||0;
-      const b=best[nm]||(best[nm]={e1:0,edate:'',eu:'',tw:0,twr:0,twu:''});
+      const b=best[nm]||(best[nm]={e1:0,edate:'',eu:'',tw:0,twr:0,twu:'',unilateral:uniOf(e),type:e.type});
       if(e1>b.e1){ b.e1=e1; b.edate=s.date; b.eu=st.unit||''; }
       if(w>b.tw){ b.tw=w; b.twr=r; b.twu=st.unit||''; } }); }); });
   return Object.keys(best).map(nm=>Object.assign({name:nm},best[nm])).filter(x=>x.e1>0).sort((a,b)=>b.e1-a.e1); }
@@ -3754,11 +3823,11 @@ function renderProgress(){
   // fuerza detalle (lista completa) — preserva el detalle del fork de Progreso/Gym
   if(e1.length>1 && cfg.e1rm){ out+=`<hr class="rule"/><div class="grp-label">FUERZA · e1RM Epley (vs semana previa)</div>`;
     e1.forEach(x=>{ const d=x.prev!=null?Math.round(x.cur-x.prev):null; const arr=d==null?'·':(d>0?'▲':d<0?'▼':'='); const col=d>0?'var(--good)':d<0?'var(--bad)':'var(--o40)';
-      out+=`<div class="line" data-act="liftdetail" data-ex="${escTxt(x.name)}" style="cursor:pointer"><span class="k">${escTxt(x.name)}</span><span class="dots"></span><span class="v">${Math.round(x.cur)} <span style="color:${col};font-size:10px">${arr}${d?Math.abs(d):''}</span> <span class="ptchev" style="font-size:12px">›</span></span></div>`; }); }
+      out+=`<div class="line" data-act="liftdetail" data-ex="${escTxt(x.name)}" style="cursor:pointer"><span class="k">${latTxt(x)}${escTxt(x.name)}</span><span class="dots"></span><span class="v">${Math.round(x.cur)} <span style="color:${col};font-size:10px">${arr}${d?Math.abs(d):''}</span> <span class="ptchev" style="font-size:12px">›</span></span></div>`; }); }
   if(cfg.e1rm){ const _pr=prRecords(); if(_pr.length){
     out+=`<hr class="rule"/><div class="grp-label">//RECORDS · mejor e1RM histórico</div><div style="font-size:10px;color:var(--o40);margin:-4px 0 6px">tu mejor levantada histórica por ejercicio</div>`;
     _pr.slice(0,10).forEach(x=>{ const _tw=Math.round(x.tw*10)/10;
-      out+=`<div class="line"><span class="k">${escTxt(x.name)}</span><span class="dots"></span><span class="v">${Math.round(x.e1)}${escTxt(x.eu||'')} <span style="color:var(--o40);font-size:10px">· top ${_tw}${escTxt(x.twu||'')}×${x.twr||0}</span></span></div>`; });
+      out+=`<div class="line"><span class="k">${latTxt(x)}${escTxt(x.name)}</span><span class="dots"></span><span class="v">${Math.round(x.e1)}${escTxt(x.eu||'')} <span style="color:var(--o40);font-size:10px">· top ${_tw}${escTxt(x.twu||'')}×${x.twr||0}</span></span></div>`; });
   } }
   try{ const _wp=prevMonthYm().split('-'); if(wrapMonthData(+_wp[0],+_wp[1]-1).hasData) out+='<div style="text-align:center;margin:18px 0 2px"><a data-act="wrapview" style="font-size:11px;color:var(--o60);cursor:pointer">▸ ver tu wrap · '+escTxt(MONFULL[+_wp[1]-1])+'</a></div>'; }catch(_){}
   const _pins=performanceInsights(); if(_pins.length){ out+=`<hr class="rule"/><div class="grp-label">//RENDIMIENTO · correlaciones</div><div style="font-size:10px;color:var(--o40);margin:-4px 0 6px">qué coincide con sesiones de más o menos capacidad · correlación, no causa</div>`; _pins.forEach(function(x){ out+=`<div class="line"><span class="k">${escTxt(x.variable)}</span><span class="dots"></span><span class="v" style="color:${x.r>0?'var(--good)':'var(--bad)'}">${x.r>0?'▲':'▼'} capacidad<span style="color:var(--o40);font-size:10px"> · r=${Math.round(Math.abs(x.r)*100)/100} (${x.n} sesiones)</span></span></div>`; }); }
@@ -4116,6 +4185,42 @@ function openAdhocLog(){
 }
 
 // ---------- render: split editor ----------
+// v224: el editor mostraba db.split, pero desde v213 la sesión se siembra de la ÚLTIMA SESIÓN REAL del
+// día (daySource) y nada de lo que cambias en vivo vuelve al split — de ahí "estoy en Change Split y no
+// me sale mi split actualizado a como lo he ido modificando". Aquí se VE la diferencia y se adopta a
+// mano; nunca automático (el split es su plan, no un registro).
+function dayDrift(day){
+  const ds=daySource(day); if(!ds.fromPrior)return null;
+  const cur=(day.exercises||[]).map(e=>nameKey(e.name));
+  const real=(ds.list||[]).map(e=>nameKey(e.name));
+  if(cur.length===real.length&&cur.every((x,i)=>x===real[i]))return null;
+  return {cur,real,list:ds.list,prior:ds.prior};
+}
+function adoptDaySource(di){
+  const day=db.split&&db.split.days[di]; if(!day)return;
+  const d=dayDrift(day); if(!d){ toast('ese día ya coincide'); return; }
+  const names=d.list.map(e=>e.name).join(' · ');
+  if(!confirm('El día "'+(day.name||'')+'" pasa a ser lo que entrenaste el '+((d.prior&&d.prior.date)||'')+':\n\n'+names+'\n\n¿Adoptarlo en el split?'))return;
+  // cada instancia que ya existía CONSERVA su id (su historial y su máquina cuelgan de ahí); las nuevas
+  // acuñan el suyo. El conteo de series sale de las series de TRABAJO (los drops no son series del plan).
+  const old=(day.exercises||[]).slice(); const used={};
+  day.exercises=d.list.map(se=>{
+    const k=nameKey(se.name);
+    let prev=(se.exId?old.find(x=>x.id===se.exId):null)||old.find(x=>nameKey(x.name)===k&&!used[x.id])||null;
+    if(prev)used[prev.id]=1;
+    const base=prev?Object.assign({},prev):{id:'e'+uid()};
+    const work=(se.sets||[]).filter(s=>s&&!s.isDrop).length;
+    const nn=se.unilateral?Math.ceil(work/2):work;
+    return Object.assign(base,{
+      name:se.name, muscle:se.muscle||base.muscle,
+      muscles:Array.isArray(se.muscles)?se.muscles.slice():base.muscles,
+      type:se.type||base.type, unilateral:!!se.unilateral, startSide:se.startSide||base.startSide,
+      assisted:se.assisted, weighted:se.weighted, cardioSub:se.cardioSub, unit:se.unit||base.unit,
+      sets:Math.max(1,nn||base.sets||1)
+    });
+  });
+  save(); render(); toast('✓ split actualizado · '+day.exercises.length+' ejercicios');
+}
 function renderSplitEdit(){
   const sp=db.split||{name:'',days:[]};
   let body=statusBar(true)
@@ -4124,9 +4229,11 @@ function renderSplitEdit(){
    +plannedVolumeSection();
   (sp.days||[]).forEach((d,di)=>{
     body+=`<div class="seday"><div class="sehead"><input class="senm" data-act="sd_name" data-di="${di}" value="${(d.name||'').replace(/"/g,'&quot;')}"/><span class="semv"><span data-act="sd_dayup" data-di="${di}">▲</span><span data-act="sd_daydn" data-di="${di}">▼</span></span>${sp.days.length>1?`<span class="sedel" data-act="sd_deld" data-di="${di}">✕</span>`:''}</div>`;
+    const _drift=dayDrift(d);
+    if(_drift) body+=`<div class="sedrift"><span style="flex:1">lo que entrenas este día ya no es esto · <b>${escTxt(_drift.list.map(x=>x.name).join(' · '))}</b></span><button class="b" data-act="sd_adopt" data-di="${di}">[adoptar]</button></div>`;
     (d.exercises||[]).forEach((e,ei)=>{
       const tlbl={machine:' · mach',pulley:' · pulley',smith:' · smith',cable:' · cable',bodyweight:' · bw'}[e.type]||'';
-      body+=`<div class="seex"><span class="seexn" data-act="sd_ex" data-di="${di}" data-ei="${ei}">${escTxt(e.name)} <span class="seexm">${escTxt(fmtMuscles(e))}${e.unilateral?' · R/L':''}${tlbl}${e.assisted?' · assisted':''}${e.weighted?' · weighted':''} · ${e.sets||1}×</span></span><span class="semv"><span data-act="sd_exup" data-di="${di}" data-ei="${ei}">▲</span><span data-act="sd_exdn" data-di="${di}" data-ei="${ei}">▼</span></span><span class="sedel" data-act="sd_delex" data-di="${di}" data-ei="${ei}">✕</span></div>`;
+      body+=`<div class="seex"><span class="seexn" data-act="sd_ex" data-di="${di}" data-ei="${ei}">${latTxt(e)}${escTxt(e.name)} <span class="seexm">${escTxt(fmtMuscles(e))}${tlbl}${e.assisted?' · assisted':''}${e.weighted?' · weighted':''} · ${e.sets||1}×</span></span><span class="semv"><span data-act="sd_exup" data-di="${di}" data-ei="${ei}">▲</span><span data-act="sd_exdn" data-di="${di}" data-ei="${ei}">▼</span></span><span class="sedel" data-act="sd_delex" data-di="${di}" data-ei="${ei}">✕</span></div>`;
     });
     body+=`<div class="seadd" data-act="sd_addex" data-di="${di}">+ ejercicio</div></div>`;
   });
@@ -4163,7 +4270,7 @@ function openSessionEdit(id){
     const nsets=(e.sets||[]).length;
     const _sr=((H().sessHR[s.id]||{}).sets)||{}; const _pk=(e.sets||[]).map((st,si)=>_sr[ei+':'+si]).filter(x=>x&&x.peak!=null);
     const hrNote=_pk.length?`<div class="submeta" style="margin-top:2px">FC pico ${Math.min.apply(null,_pk.map(x=>x.peak))}–${Math.max.apply(null,_pk.map(x=>x.peak))}${_pk.some(x=>x.rec60!=null)?' · rec 60 s ~'+Math.round(median(_pk.filter(x=>x.rec60!=null).map(x=>x.rec60))):''}</div>`:'';
-    return `<div class="card"><div class="sess-exh"><span class="sess-exn">${escTxt(e.name)} <span class="muted">${escTxt(e.muscle||'')} · ${nsets} sets</span>${badge}</span><span class="semv">${up}${dn}</span></div>${fatNote}${hrNote}${_dn?`<div class="submeta" style="margin-top:2px;color:var(--o50)">${escTxt(_dn)}</div>`:''}</div>`;
+    return `<div class="card"><div class="sess-exh"><span class="sess-exn">${latTxt(e)}${escTxt(e.name)} <span class="muted">${escTxt(e.muscle||'')} · ${nsets} sets</span>${badge}</span><span class="semv">${up}${dn}</span></div>${fatNote}${hrNote}${_dn?`<div class="submeta" style="margin-top:2px;color:var(--o50)">${escTxt(_dn)}</div>`:''}</div>`;
   }).join('');
   // per-set editing lives in the full rich editor (renderHistoryEditor) — same interface as the live
   // workout, just more compact; this modal stays a quick summary: date/time, per-exercise overview, actions.
@@ -4598,8 +4705,13 @@ document.getElementById('app').addEventListener('click',e=>{
   else if(a==='sd_exup'){ const di=+el.dataset.di,ei=+el.dataset.ei, ex=db.split.days[di].exercises; if(ei>0){ const t=ex[ei-1];ex[ei-1]=ex[ei];ex[ei]=t; save(); render(); } }
   else if(a==='sd_exdn'){ const di=+el.dataset.di,ei=+el.dataset.ei, ex=db.split.days[di].exercises; if(ei<ex.length-1){ const t=ex[ei+1];ex[ei+1]=ex[ei];ex[ei]=t; save(); render(); } }
   else if(a==='sd_ex'){ openExEdit(+el.dataset.di,+el.dataset.ei); }
+  else if(a==='sd_adopt'){ adoptDaySource(+el.dataset.di); }
   else if(a==='sd_addday'){ db.split.days.push({id:'d'+uid(),name:'new day',tag:'@ RIR · F',metric:'rir',allowFailure:true,exercises:[]}); save(); render(); }
-  else if(a==='exdirectory'){ openExerciseDirectory(); }
+  else if(a==='exdirectory'){ window._mgSel=[]; openExerciseDirectory(); }
+  else if(a==='exsel'){ const k=el.dataset.k; window._mgSel=window._mgSel||[]; const i=window._mgSel.indexOf(k); if(i>=0)window._mgSel.splice(i,1); else window._mgSel.push(k); openExerciseDirectory(); }
+  else if(a==='exselclear'){ window._mgSel=[]; openExerciseDirectory(); }
+  else if(a==='openmerge'){ openMergeModal(); }
+  else if(a==='domerge'){ doMerge(); }
   else if(a==='okexedit'){ saveExEdit(); }
   else if(a==='ss_save'){ const s=db.sessions.find(x=>x.id===window._sessId); if(s){ const dt=document.getElementById('ss_date'); if(dt)s.date=dt.value; const sst=document.getElementById('ss_start'); if(sst)s.startTime=sst.value||null; const set=document.getElementById('ss_end'); if(set)s.endTime=set.value||null; if(s.startTime&&s.endTime){let d=hm2min(s.endTime)-hm2min(s.startTime);if(d<0)d+=1440;s.durSec=d*60;} save(); closeModal(); render(); } }
   else if(a==='ss_del'){ if(confirm('¿Borrar esta sesión?')){ db.sessions=db.sessions.filter(x=>x.id!==window._sessId); save(); closeModal(); render(); } }
@@ -5123,6 +5235,73 @@ function knownExercises(){
   });
   return Object.values(map);
 }
+// ---------- v224 · unir ejercicios duplicados + catálogo de identidad ----------
+// El dueño registró el mismo ejercicio con dos nombres ("sldl" y "bb sldl") y con tipos equivocados
+// (marcó como máquina algo que hace con peso libre). Un merge REESCRIBE etiquetas suyas, así que solo
+// ocurre cuando él lo pide en el catálogo y confirma el resumen — mismo caso legítimo que 'mealrename'.
+// Respaldo previo en SU PROPIA clave: LS_BACKUP la pisa save() cada pocos segundos y no serviría de nada.
+const LS_PREMERGE='gymtrk_db_v1_premerge';
+function nameKey(s){ return String(s||'').toLowerCase().trim(); }
+// db.exCat['<nombre>'] = {name,gyms[],type,unilateral,unit,muscle,muscles,mergedFrom[]} — aditivo y solo
+// informativo: ORDENA y ETIQUETA los pickers (los del gym activo primero), nunca esconde un ejercicio,
+// porque entrenar en otro gym no puede hacer desaparecer un ejercicio de la lista.
+function exCatRec(name){ const k=nameKey(name); return (db.exCat&&db.exCat[k])||null; }
+function setExCat(name,rec){ const k=nameKey(name); if(!k)return; db.exCat=db.exCat||{};
+  db.exCat[k]=Object.assign({},db.exCat[k]||{},rec,{name:(rec&&rec.name)||((db.exCat[k]||{}).name)||name}); }
+// gyms donde ese nombre se ha entrenado de verdad (histórico), unidos con los que él marcó a mano
+function exGymsFor(name){ const k=nameKey(name); const g=new Set();
+  (db.sessions||[]).forEach(s=>{ if(s.type==='rest'||!s.gym)return; (s.exercises||[]).forEach(e=>{ if(nameKey(e.name)===k)g.add(s.gym); }); });
+  ((exCatRec(name)||{}).gyms||[]).forEach(x=>g.add(x));
+  return [...g];
+}
+// Reescritura masiva, explícita y confirmada. sources = claves de nombre; target = configuración final.
+// Devuelve un resumen de lo tocado (para el toast) o null si no había nada que unir.
+function mergeExercises(sourceNames,target){
+  const src=new Set((sourceNames||[]).map(nameKey).filter(Boolean));
+  const tgtKey=nameKey(target&&target.name); if(!tgtKey||!src.size)return null;
+  try{ localStorage.setItem(LS_PREMERGE,JSON.stringify(db)); }catch(_){}
+  const stat={split:0,ex:0,sets:0,machines:0,relinked:0,unlinked:0};
+  const norm=e=>{ e.name=target.name;
+    if(target.type)e.type=target.type;
+    e.unilateral=!!target.unilateral;
+    if(target.unit)e.unit=target.unit;
+    if(target.muscle)e.muscle=target.muscle;
+    if(Array.isArray(target.muscles)&&target.muscles.length)e.muscles=target.muscles.slice();
+  };
+  // 1 · split — se normaliza la configuración pero cada instancia CONSERVA su id (es su identidad; el
+  // motor de baseline/máquinas cuelga de ahí). Nunca se borra un ejercicio del split: eso es su plan.
+  (db.split&&db.split.days||[]).forEach(d=>(d.exercises||[]).forEach(e=>{ if(e&&src.has(nameKey(e.name))){ norm(e); stat.split++; } }));
+  // 2 · sesiones guardadas + la sesión viva. El exId se re-vincula con la MISMA regla que
+  // fixDuplicateExIds: match único por día+nombre → ese id; ambiguo o inexistente → null, que la
+  // escalera de baselineSetsFor resuelve por nombre+variante sin adivinar.
+  const touch=s=>{ (s.exercises||[]).forEach(e=>{ if(!e||!src.has(nameKey(e.name)))return;
+      norm(e); stat.ex++; stat.sets+=(e.sets||[]).length;
+      const day=(db.split&&db.split.days||[]).find(dd=>dd.id===s.dayId);
+      const cands=day?(day.exercises||[]).filter(x=>nameKey(x.name)===tgtKey):[];
+      const nid=cands.length===1?cands[0].id:null;
+      if(e.exId!==nid){ if(nid)stat.relinked++; else stat.unlinked++; e.exId=nid; }
+    }); };
+  (db.sessions||[]).forEach(touch);
+  if(db.activeWork)touch(db.activeWork);
+  // 3 · máquinas: SOLO se re-clavan las entradas por NOMBRE (las '#id' siguen válidas, el id no cambió).
+  // Gym por gym y por separado: la polea de AGON no es la de Club Campestre aunque el ejercicio se llame
+  // igual. Si dos fuentes tienen registro en el MISMO gym, manda el que él eligió en el modal.
+  Object.keys(db.machines||{}).forEach(g=>{ const m=db.machines[g]||{}; const win=(target.machineWinner||{})[g];
+    [...src].forEach(k=>{ if(k===tgtKey)return; if(!Object.prototype.hasOwnProperty.call(m,k))return;
+      const rec=m[k]; delete m[k];
+      const taken=Object.prototype.hasOwnProperty.call(m,tgtKey);
+      if(!taken || win===k){ m[tgtKey]=rec; stat.machines++; }
+    });
+  });
+  // 4 · catálogo de identidad (dónde existe + configuración canónica)
+  const prev=exCatRec(target.name)||{};
+  setExCat(target.name,{name:target.name,gyms:(target.gyms||[]).slice(),type:target.type,unilateral:!!target.unilateral,
+    unit:target.unit,muscle:target.muscle,muscles:target.muscles,
+    mergedFrom:[...new Set([].concat(prev.mergedFrom||[],[...src].filter(k=>k!==tgtKey)))]});
+  [...src].forEach(k=>{ if(k!==tgtKey&&db.exCat&&db.exCat[k])delete db.exCat[k]; });
+  save();   // bumpIdx() invalida exIndex/baselines: todo se recalcula ya unido
+  return stat;
+}
 function lookupKnownExercise(name){ if(!name)return null; const k=name.toLowerCase().trim(); return knownExercises().find(x=>x.name.toLowerCase().trim()===k)||null; }
 // catalog: all knownExercises grouped by muscle, with gym tags + session counts gathered from sessions[].
 function exerciseDirectory(){
@@ -5141,23 +5320,81 @@ function exerciseDirectory(){
   });
   return byM;
 }
+// v224: el catálogo deja de ser solo lectura — cada fila se puede SELECCIONAR y dos o más se unen
+// en un solo ejercicio (el caso del dueño: "sldl" y "bb sldl" son el mismo peso muerto).
 function openExerciseDirectory(){
   const dir=exerciseDirectory(); const muscles=Object.keys(dir).sort(); const total=muscles.reduce((a,m)=>a+dir[m].length,0);
-  let html=`<h3>catálogo de ejercicios</h3><div class="submeta" style="margin-bottom:12px">${total} ejercicios · agrupados por músculo · etiquetas = gym(s) donde se han entrenado</div>`;
+  const sel=window._mgSel=window._mgSel||[];
+  let html=`<h3>catálogo de ejercicios</h3><div class="submeta" style="margin-bottom:10px">${total} ejercicios · toca los que sean EL MISMO para unirlos · las etiquetas son los gyms donde lo has entrenado</div>`;
+  if(sel.length){
+    html+=`<div class="mgbar"><span>${sel.length} seleccionado${sel.length>1?'s':''}</span><span style="flex:1"></span>`
+      +(sel.length>1?`<button class="b" data-act="openmerge">[unir]</button>`:`<span style="color:var(--o35)">elige otro</span>`)
+      +`<button class="b" style="color:var(--o50)" data-act="exselclear">[limpiar]</button></div>`;
+  }
   if(!total){ html+=`<div class="submeta">aún no hay ejercicios registrados</div>`; }
   muscles.forEach(m=>{
     html+=`<div style="font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--o50);margin:14px 0 4px">${escTxt(m)} <span style="color:var(--o30)">· ${dir[m].length}</span></div>`;
     dir[m].sort((a,b)=>(b._sess||0)-(a._sess||0)).forEach(e=>{
-      const tags=(e._gyms||[]).map(g=>`<span style="font-size:9px;color:var(--o60);border:.5px solid var(--o20);padding:1px 5px;margin-left:4px">${escTxt(g)}</span>`).join('');
-      const meta=[]; if(e.type)meta.push(e.type); if(e.unilateral)meta.push('uni');
+      const k=nameKey(e.name); const on=sel.indexOf(k)>=0;
+      const gl=[...new Set([].concat(e._gyms||[],((exCatRec(e.name)||{}).gyms)||[]))];
+      const tags=gl.map(g=>`<span style="font-size:9px;color:var(--o60);border:.5px solid var(--o20);padding:1px 5px;margin-left:4px">${escTxt(g)}</span>`).join('');
+      const meta=[]; if(e.type)meta.push(e.type);
       const sub=meta.length?` <span style="color:var(--o40)">· ${meta.join(' · ')}</span>`:'';
-      // mark contribution when this exercise hits the muscle as secondary (weight < 1)
       const contrib=e._w<1?` <span style="color:var(--warn);font-size:10px;font-weight:700">×${e._w}</span>`:'';
-      html+=`<div style="display:flex;justify-content:space-between;gap:8px;padding:5px 0;border-bottom:.5px solid var(--o10)"><span style="font-size:12px;flex:1">${escTxt(e.name)}${contrib}${sub}${tags}</span><span style="font-size:10px;color:var(--o50);white-space:nowrap">${e._sess||0} ${e._sess===1?'sesión':'sesiones'}</span></div>`;
+      html+=`<div class="exrow${on?' on':''}" data-act="exsel" data-k="${escTxt(k)}"><span class="mgbox">${on?'▣':'▢'}</span><span class="exn">${latTxt(e)}${escTxt(e.name)}${contrib}${sub}${tags}</span><span class="exc">${e._sess||0} ${e._sess===1?'sesión':'sesiones'}</span></div>`;
     });
   });
   html+=`<div class="sheetbtns" style="margin-top:14px"><button class="cancel" data-act="closemodal">close</button></div>`;
   openModal(html);
+}
+// paso 2 del merge: nombre final, configuración y en qué gyms existe. Todo sale precargado de la fuente
+// con MÁS sesiones (la que más historia tiene manda), pero él decide cada campo.
+function openMergeModal(){
+  const keys=(window._mgSel||[]).slice(); if(keys.length<2){ alert('Elige al menos dos ejercicios.'); return; }
+  const all=knownExercises();
+  const rows=keys.map(k=>{ const e=all.find(x=>nameKey(x.name)===k)||{name:k};
+    let sess=0,sets=0; (db.sessions||[]).forEach(s=>{ if(s.type==='rest')return; (s.exercises||[]).forEach(se=>{ if(nameKey(se.name)===k){ sess++; sets+=(se.sets||[]).length; } }); });
+    return Object.assign({},e,{_k:k,_sess:sess,_sets:sets,_gyms:exGymsFor(e.name||k)});
+  }).sort((a,b)=>(b._sess-a._sess)||(b._sets-a._sets));
+  const win=rows[0];
+  window._mgGyms=[...new Set([].concat(db.gyms||[],...rows.map(r=>r._gyms)))];
+  const pre=new Set([].concat(...rows.map(r=>r._gyms)));
+  // conflicto: dos fuentes con registro de máquina POR NOMBRE en el MISMO gym (son la misma máquina
+  // solo si él lo dice — por eso se pregunta en vez de adivinar)
+  window._mgConf=[]; Object.keys(db.machines||{}).forEach(g=>{ const m=db.machines[g]||{};
+    const hit=keys.filter(k=>Object.prototype.hasOwnProperty.call(m,k)); if(hit.length>1)window._mgConf.push({gym:g,keys:hit}); });
+  const types=[['free','freeweight'],['machine','machine'],['smith','smith'],['cable','cable'],['bodyweight','bodyweight'],['cardio','cardio']];
+  const muscles=muscleSuggest(); const curM=(exMuscles(win)[0]||{}).name||'';
+  const uOpts=['','kg','lbs','pla'].map(u=>`<option value="${u}"${(win.unit||'')===u?' selected':''}>${u||'—'}</option>`).join('');
+  openModal(`<h3>unir ejercicios</h3>
+   <div class="submeta" style="margin-bottom:8px">se convierten en UNO solo: mismo nombre, misma configuración y una sola historia</div>
+   <div style="margin-bottom:10px">${rows.map(r=>`<div style="display:flex;gap:8px;font-size:11px;padding:3px 0;border-bottom:.5px solid var(--o10)"><span style="flex:1">${latTxt(r)}${escTxt(r.name)}${r.type?` <span style="color:var(--o40)">· ${escTxt(r.type)}</span>`:''}</span><span style="color:var(--o50);white-space:nowrap">${r._sess} ses · ${r._sets} series</span></div>`).join('')}</div>
+   <div class="field"><label>NOMBRE FINAL</label><input id="mg_name" value="${(win.name||'').replace(/"/g,'&quot;')}" list="mg_namelist"/><datalist id="mg_namelist">${rows.map(r=>`<option value="${escTxt(r.name)}"></option>`).join('')}</datalist></div>
+   <div class="field"><label>MÚSCULO</label><select id="mg_muscle">${[...new Set([curM,...muscles].filter(Boolean))].map(m=>`<option value="${escTxt(m)}"${m===curM?' selected':''}>${escTxt(m)}</option>`).join('')}</select></div>
+   <div class="field"><label>TYPE</label><div class="toggles" id="mg_type" style="flex-wrap:wrap;gap:4px">${types.map(([v,lbl])=>`<button class="t ${canonType(win.type)===v||(v==='free'&&!win.type)?'on':''}" data-act="optpick" data-v="${v}" style="flex:1 1 calc(50% - 2px);min-width:0">${lbl}</button>`).join('')}</div></div>
+   <div class="field"><label>VARIANTE</label><div class="toggles" id="mg_uni"><button class="t ${!win.unilateral?'on':''}" data-act="optpick" data-v="0">bilateral</button><button class="t ${win.unilateral?'on':''}" data-act="optpick" data-v="1">unilateral (R/L)</button></div></div>
+   <div class="field"><label>UNIDAD POR DEFECTO</label><select id="mg_unit">${uOpts}</select></div>
+   <div class="field"><label>EN QUÉ GYMS EXISTE</label>${window._mgGyms.length?window._mgGyms.map((g,i)=>`<label style="font-size:10px;color:var(--o60);display:block;margin-bottom:4px"><input type="checkbox" id="mg_g_${i}" ${pre.has(g)?'checked':''} style="width:auto;vertical-align:middle"/> ${escTxt(g)}</label>`).join(''):'<div class="submeta">sin gyms registrados</div>'}
+     <div class="submeta" style="margin-top:2px;color:var(--o40)">solo etiqueta y ordena los pickers · nunca esconde el ejercicio si entrenas en otro lado</div></div>
+   ${window._mgConf.length?`<div class="field"><label>MARCA DE MÁQUINA · hay dos registros en el mismo gym</label>${window._mgConf.map((c,i)=>`<div style="margin-bottom:6px"><div style="font-size:10px;color:var(--o50)">${escTxt(c.gym)}</div><select id="mg_win_${i}">${c.keys.map(k=>{ const r=(db.machines[c.gym]||{})[k]||{}; const lb=(typeof r==='string')?r:[r.brand,r.setup].filter(Boolean).join(' · ')||'sin marca'; return '<option value="'+escTxt(k)+'">'+escTxt(k)+' → '+escTxt(lb)+'</option>'; }).join('')}</select></div>`).join('')}</div>`:''}
+   <div class="submeta" style="margin:8px 0 10px;color:var(--o50)">lo que ya quedó grabado en cada sesión (marca, setup, pesos, fechas) NO se toca · se guarda un respaldo antes de unir</div>
+   <div class="sheetbtns"><button class="ok" data-act="domerge">unir</button><button class="cancel" data-act="closemodal">cancel</button></div>`);
+}
+function doMerge(){
+  const keys=(window._mgSel||[]).slice(); if(keys.length<2)return;
+  const pv=id=>{ const e=document.querySelector('#'+id+' .t.on'); return e?e.dataset.v:''; };
+  const name=(val('mg_name')||'').trim(); if(!name){ alert('Pon el nombre final.'); return; }
+  const gyms=[]; (window._mgGyms||[]).forEach((g,i)=>{ const c=document.getElementById('mg_g_'+i); if(c&&c.checked)gyms.push(g); });
+  const machineWinner={}; (window._mgConf||[]).forEach((c,i)=>{ const s=document.getElementById('mg_win_'+i); if(s)machineWinner[c.gym]=s.value; });
+  const muscle=val('mg_muscle')||'';
+  // si cambia el músculo primario, los secundarios heredados dejarían de cuadrar → se sueltan
+  const src=knownExercises().find(x=>nameKey(x.name)===keys[0]);
+  const keepM=src&&((exMuscles(src)[0]||{}).name||'')===muscle&&Array.isArray(src.muscles)?src.muscles.slice():undefined;
+  const target={name,type:pv('mg_type')||'free',unilateral:pv('mg_uni')==='1',unit:val('mg_unit')||'',muscle,muscles:keepM,gyms,machineWinner};
+  if(!confirm('Unir '+keys.length+' ejercicios en "'+name+'". Se reescribe el nombre y la configuración en tu split, en TODAS las sesiones y en la sesión viva. Hay respaldo previo. ¿Continuar?'))return;
+  const st=mergeExercises(keys,target);
+  window._mgSel=[]; closeModal(); render();
+  if(st)toast('✓ unidos en '+name+' · '+st.ex+' ejercicios · '+st.sets+' series');
 }
 // schedule a future rotation day into the user's native calendar (iOS PWA opens .ics with "Add to Calendar")
 function openScheduleModal(di){
@@ -5210,10 +5447,16 @@ function openAddExercise(afterExi,replaceExi){
 }
 // STEP 2: pick a registered exercise of that muscle, or add a new one
 function openAddExStep2(afterExi,muscle,replaceExi){
-  const dir=exerciseDirectory(); const key=String(muscle).toLowerCase().trim(); const list=(dir[key]||dir[muscle]||[]).slice().sort((a,b)=>(b._sess||0)-(a._sess||0));
+  const dir=exerciseDirectory(); const key=String(muscle).toLowerCase().trim();
+  // v224: los que EXISTEN en el gym donde entrenas hoy salen primero (db.exCat + historial real). Solo
+  // ordena y etiqueta: nunca filtra, porque un ejercicio no puede desaparecer por entrenar en otro lado.
+  const _gym=(db.activeWork&&db.activeWork.gym)||db.activeGym||'';
+  const _here=e=>{ if(!_gym)return false; const g=[].concat(e._gyms||[],((exCatRec(e.name)||{}).gyms)||[]); return g.indexOf(_gym)>=0; };
+  const list=(dir[key]||dir[muscle]||[]).slice().map(e=>Object.assign({},e,{_here:_here(e)}))
+    .sort((a,b)=>(b._here-a._here)||((b._sess||0)-(a._sess||0)));
   window._axList=list; window._axCtx={afterExi,muscle:key,replaceExi};
   openModal(`<h3>${escTxt(muscle)} · ${replaceExi!=null?'cambiar ejercicio':'elige ejercicio'}</h3>
-   ${list.length?`<div class="submeta" style="margin-bottom:6px">ya los usas · toca para agregar</div><div>${list.map((x,i)=>`<div class="pickitem" data-act="axpick" data-i="${i}">${!isCardio(x)?`<span>[${uniOf(x)?'uni':'bi'}]</span> `:''}${escTxt(x.name)}${x.machine?` <span style="color:var(--o40);font-size:10px">${escTxt(x.machine)}</span>`:''}${x.type&&x.type!=='free'?` <span style="color:var(--o35);font-size:9px">${escTxt(x.type)}</span>`:''}<span style="float:right;color:var(--o40);font-size:10px">${x._sess||0}×</span></div>`).join('')}</div><hr class="rule" style="margin:10px 0"/>`:`<div class="submeta" style="margin-bottom:10px">sin ejercicios registrados para "${escTxt(muscle)}" todavía</div>`}
+   ${list.length?`<div class="submeta" style="margin-bottom:6px">ya los usas · toca para agregar</div><div>${list.map((x,i)=>`<div class="pickitem" data-act="axpick" data-i="${i}">${!isCardio(x)?`<span>[${uniOf(x)?'uni':'bi'}]</span> `:''}${escTxt(x.name)}${x.machine?` <span style="color:var(--o40);font-size:10px">${escTxt(x.machine)}</span>`:''}${x.type&&x.type!=='free'?` <span style="color:var(--o35);font-size:9px">${escTxt(x.type)}</span>`:''}<span style="float:right;color:var(--o40);font-size:10px">${x._here?'':'· otro gym '}${x._sess||0}×</span></div>`).join('')}</div><hr class="rule" style="margin:10px 0"/>`:`<div class="submeta" style="margin-bottom:10px">sin ejercicios registrados para "${escTxt(muscle)}" todavía</div>`}
    <button class="b" data-act="axnewex" style="width:100%">+ ejercicio nuevo</button>${replaceExi!=null?'<button class="b" data-act="axdetails" style="width:100%;margin-top:8px">✎ editar detalles de este ejercicio</button>':''}
    <div class="sheetbtns" style="margin-top:10px"><button class="cancel" data-act="axback">← músculo</button><button class="cancel" data-act="closemodal">cancel</button></div>`);
 }
@@ -6684,7 +6927,7 @@ async function aiPhoto(file,barcode){ if(!file)return; window._faTag=window._faT
 // Pick AI when the proxy is configured, else on-device OCR.
 function labelPhoto(file,barcode){ if(AI_PROXY_URL) return aiPhoto(file,barcode); return ocrPhoto(file,barcode); }
 requestPersist();
-db=load(); try{ promptIdleSession(); }catch(_){} try{ if(typeof location!=='undefined' && /[?&]selftest=1/.test(location.search)){ _identitySelfCheck(); _dropsetSelfCheck(); _baselineSelfCheck(); _variantSelfCheck(); _historyEditSelfCheck(); _idSelfCheck(); _cardioSelfCheck(); _tensionSelfCheck(); _healthSelfCheck(); _readinessSelfCheck(); _loggingSelfCheck(); } }catch(e){ console.error(e); } try{ const _sp=new URLSearchParams(location.search); const _hasHistorical=_sp.has('stepsh')||_sp.has('weighth')||_sp.has('stepsq')||_sp.has('sleeph'); if(_hasHistorical){ const _hsp=_sp; if(history.replaceState)history.replaceState(null,'',location.pathname); setTimeout(()=>{ if(confirm('Este link quiere importar datos históricos (pasos/peso/sueño de varios días) a tu cuenta. ¿Aplicar? — solo dile que SÍ si vienes de tu propio Atajo de iOS.')){ try{ const _imp=importHealth(_hsp); if(_imp.length){ save(); render(); toast('✓ '+_imp.join(' · ')); } }catch(_){} } },400); } else { const _imp=importHealth(_sp); if(_imp.length){ window._healthImported=_imp; if(history.replaceState)history.replaceState(null,'',location.pathname); } } }catch(_){} save(); render(); if(window._healthImported)setTimeout(()=>toast('✓ '+window._healthImported.join(' · ')),250); if(window._recoveredFromBackup)setTimeout(()=>{try{alert('Se recuperó un respaldo local: revisa tus datos, podrían faltar cambios muy recientes.');}catch(_){}},600);
+db=load(); try{ promptIdleSession(); }catch(_){} try{ if(typeof location!=='undefined' && /[?&]selftest=1/.test(location.search)){ _identitySelfCheck(); _dropsetSelfCheck(); _baselineSelfCheck(); _variantSelfCheck(); _historyEditSelfCheck(); _idSelfCheck(); _cardioSelfCheck(); _tensionSelfCheck(); _healthSelfCheck(); _readinessSelfCheck(); _loggingSelfCheck(); _mergeSelfCheck(); } }catch(e){ console.error(e); } try{ const _sp=new URLSearchParams(location.search); const _hasHistorical=_sp.has('stepsh')||_sp.has('weighth')||_sp.has('stepsq')||_sp.has('sleeph'); if(_hasHistorical){ const _hsp=_sp; if(history.replaceState)history.replaceState(null,'',location.pathname); setTimeout(()=>{ if(confirm('Este link quiere importar datos históricos (pasos/peso/sueño de varios días) a tu cuenta. ¿Aplicar? — solo dile que SÍ si vienes de tu propio Atajo de iOS.')){ try{ const _imp=importHealth(_hsp); if(_imp.length){ save(); render(); toast('✓ '+_imp.join(' · ')); } }catch(_){} } },400); } else { const _imp=importHealth(_sp); if(_imp.length){ window._healthImported=_imp; if(history.replaceState)history.replaceState(null,'',location.pathname); } } }catch(_){} save(); render(); if(window._healthImported)setTimeout(()=>toast('✓ '+window._healthImported.join(' · ')),250); if(window._recoveredFromBackup)setTimeout(()=>{try{alert('Se recuperó un respaldo local: revisa tus datos, podrían faltar cambios muy recientes.');}catch(_){}},600);
 applyDesign(); try{ if(/[?&]design\b/.test(location.search))localStorage.setItem('gymtrk_designmode','1'); if(localStorage.getItem('gymtrk_designmode')==='1')openDesignPanel(); }catch(_){}
 try{ bootScreen(()=>{ try{
   if(/[?&]wrap=1\b/.test(location.search)){ monthlyWrap(prevMonthYm(), true); return; }
