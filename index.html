@@ -16,7 +16,7 @@
 <style>
   :root{
     --bg:#000; --frame:#000; --fg:#f3f3f4;
-    --o60:rgba(243,243,244,.66); --o50:rgba(243,243,244,.56); --o40:rgba(243,243,244,.5);
+    --o70:rgba(243,243,244,.74); --o60:rgba(243,243,244,.66); --o50:rgba(243,243,244,.56); --o40:rgba(243,243,244,.5);
     --o35:rgba(243,243,244,.46); --o30:rgba(243,243,244,.4); --o20:rgba(243,243,244,.26);
     --o12:rgba(243,243,244,.1); --o10:rgba(243,243,244,.06);
     --faint:#3a3a3e; --line:rgba(243,243,244,.08); --track:#191920; --fill:#f3f3f4; --abort:rgba(190,110,110,.55);
@@ -221,6 +221,8 @@
   .mgroup{margin-top:26px;} .mhead{font-size:11px; color:var(--o50); margin-bottom:15px;}
   .mbody{border-left:1px solid var(--o12); padding-left:14px; margin-left:4px;}
   .ex{margin-bottom:var(--sp-card);} .ex:last-child{margin-bottom:0;}
+  /* v223: el ejercicio en curso (primera serie sin ✓) lleva una guía a la izquierda — "te pierdes en cuál vas" */
+  .ex.current{position:relative;} .ex.current::before{content:''; position:absolute; left:-7px; top:0; bottom:0; width:2px; background:var(--o35); border-radius:2px;}
   .exhead{display:flex; align-items:baseline; flex-wrap:wrap; gap:7px; margin-bottom:9px;} .exhead .n{font-size:16px; font-weight:800;} .exhead .mch{font-size:11px; color:var(--o50); cursor:pointer; border-bottom:.5px dashed var(--o20);} .exhead .mch.none{color:var(--o35); border-bottom:none;} .exhead .mch:active{color:var(--fg);} .exhead .mset{font-size:10px; color:var(--o40); cursor:pointer;} .exhead .note{font-size:10px; color:var(--o35);}
   /* hold & drag — reorder exercises within a muscle, and whole muscle blocks */
   .dgrip{display:inline-block; align-self:center; cursor:grab; color:var(--o30); font-size:13px; line-height:1; padding:3px 8px 3px 0; touch-action:none; -webkit-user-select:none; user-select:none; -webkit-touch-callout:none;}
@@ -239,7 +241,12 @@
   .gc-free-bw{grid-template-columns:22px 1fr 38px 44px 40px 22px;} .gc-uni-bw{grid-template-columns:20px 1fr 38px 44px 40px 18px;}
   /* cardio: set# + dynamic field cols + del — columns set inline from field count */
   .gc-cardio{align-items:center;}
-  .srow{margin-bottom:5px;} .setn{font-size:11px; color:var(--o50); text-align:center; cursor:pointer;} .setn.done{color:var(--fill); font-weight:700;}
+  .srow{margin-bottom:5px;}
+  /* v223: la celda del número ES el ✓ de la serie (un toque = confirmada). Antes solo cambiaba de color
+     y no se leía como un control; el glifo va apilado bajo el número para que quepa un "1.5". */
+  .setn{font-size:11px; color:var(--o50); text-align:center; cursor:pointer; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1px; line-height:1; -webkit-user-select:none; user-select:none;}
+  .setn .sk{font-size:10px; line-height:1; color:var(--o30);}
+  .setn.done{color:var(--fill); font-weight:700;} .setn.done .sk{color:var(--fill);}
   /* isdrop: visual only (opacity) — never changes grid/columns/width vs a normal row */
   .srow.isdrop{opacity:.82;} .pair.isdrop{opacity:.82;}
   .setend{display:flex;justify-content:center;} .setend .del{width:18px;flex:0 0 18px;}
@@ -280,6 +287,13 @@
   /* rest timer capsule — lives OUTSIDE #view so render() never destroys it */
   .restbar{flex:0 0 auto; display:none; align-items:center; gap:10px; padding:9px 16px; border-top:1px solid var(--o12); background:var(--frame); font-size:12px;}
   .restbar.on{display:flex;}
+  /* v223: barra AHORA — mismo sitio que el descanso (fuera de #view, sobrevive a render()): dice en qué
+     ejercicio y serie vas y un toque te lleva ahí. */
+  .nowbar{flex:0 0 auto; display:none; align-items:center; gap:8px; padding:7px 16px; border-top:1px solid var(--o12); background:var(--frame); font-size:11px; cursor:pointer;}
+  .nowbar.on{display:flex;}
+  .nowbar .nl{flex:0 0 auto; color:var(--o35); font-size:9px; letter-spacing:.14em;}
+  .nowbar .nt{color:var(--fg); font-weight:800; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .nowbar .nx{flex:0 0 auto; color:var(--o50); font-size:10px; font-variant-numeric:tabular-nums;}
   .restbar .rl{color:var(--o50); font-size:10px; letter-spacing:.5px;}
   .restbar .rt{font-weight:800; font-size:16px; font-variant-numeric:tabular-nums; min-width:52px;}
   .restbar a{color:var(--o60); border:1px solid var(--border); border-radius:9px; padding:8px 10px; cursor:pointer; font-size:11px; -webkit-user-select:none; user-select:none;}
@@ -579,6 +593,7 @@
 <body>
   <div class="frame" id="app">
     <div class="scroll" id="view"></div>
+    <div class="nowbar" id="nowbar" data-act="gonow"><span class="nl">AHORA</span><span class="nt" id="nowtxt"></span><span style="flex:1"></span><span class="nx" id="nowpos"></span></div>
     <div class="restbar" id="resttimer"><span class="rl">descanso</span><span class="rt" id="resttime">0:00</span><span style="flex:1"></span><a data-act="restminus">−15</a><a data-act="restplus">+15</a><a data-act="restskip">skip</a></div>
     <div class="footer" id="wfooter" style="display:none"><button class="abort" data-act="abort">abort</button><button class="abort" data-act="undo" style="min-width:0;padding:0 14px">↩</button><button class="save" data-act="save">save session</button></div>
     <nav class="nav" id="nav"></nav>
@@ -839,6 +854,23 @@ function selIdx(){ return state.selDay==null?curDayIdx():((state.selDay%dayCount
 function lastSession(dayId){ const s=db.sessions.filter(x=>x.dayId===dayId&&x.type!=='rest').sort((a,b)=>b.date<a.date?-1:1); return s[0]||null; }
 function setsList(ex){ return ex.sets||[]; }
 // a set "has real data" for index/save — strength uses w/r; cardio uses its own fields
+// ---- v223: "pendiente" por CAMPO -------------------------------------------------------------
+// _pf ("esta serie es una sugerencia") pasó a llevar el detalle en _pfF={w:1,r:1,rir:1}: confirmar el
+// RIR ya no confirma en silencio el peso y las reps que ni miraste (fix.md: "se autopone de que ya se
+// completó el set cuando apenas lo voy a escribir"). _pf se conserva como el agregado "queda algo
+// pendiente", así que setPersistable/setComplete/scoring/saveSession siguen leyendo UNA sola bandera.
+// Series viejas (o de cardio) traen _pf sin _pfF: se comportan exactamente como antes (todo o nada).
+function pfHas(s,f){ if(!s||!s._pf)return false; return s._pfF?!!s._pfF[f]:true; }
+function pfClearField(s,f){ if(!s||!s._pf)return; if(!s._pfF){ s._pf=false; return; } delete s._pfF[f]; if(!Object.keys(s._pfF).length)pfClearAll(s); }
+function pfClearAll(s){ if(!s)return; s._pf=false; if(s._pfF)delete s._pfF; if(s._pfN)delete s._pfN; }
+function pfAdd(s,f){ if(!s)return; if(!s._pfF){ s._pfF=s._pf?{w:1,r:1,rir:1}:{}; s._pfN=s._pf?3:0; } s._pfF[f]=1; s._pfN=Math.max(s._pfN||0,Object.keys(s._pfF).length); s._pf=true; }
+function pfMark(s,fields){ if(!s)return s; const pf={}; (fields||[]).forEach(f=>{ if(s[f]!==''&&s[f]!=null)pf[f]=1; }); if(Object.keys(pf).length){ s._pfF=pf; s._pfN=Object.keys(pf).length; s._pf=true; } else { pfClearAll(s); } return s; }
+// ¿ya tocaste ALGÚN campo de esta serie sugerida? (quedan menos pendientes de los que nacieron)
+function pfTouched(s){ if(!s||!s._pf||!s._pfF)return false; const born=s._pfN||(s.bw?2:3); return Object.keys(s._pfF).length<born; }
+// series que escribiste a mano pero que nunca confirmaste con su ✓. Hasta v222 tocar UN campo confirmaba
+// la serie entera, así que estas se guardaban; ahora se confirman explícitamente al cerrar la sesión en
+// vez de desaparecer en silencio (setPersistable sigue tirando las sugerencias que nunca tocaste).
+function touchedSets(w){ const out=[]; ((w&&w.exercises)||[]).forEach(e=>(e.sets||[]).forEach(s=>{ if(pfTouched(s)&&(s.bw||+s.w>0)&&+s.r>0)out.push(s); })); return out; }
 function setPersistable(s){ if(!s||s._pf)return false;
   if(s.w||s.r)return true;
   return !!(s.minutes||s.distance||s.speed||s.incline||s.resistance||s.rpm||s.level||s.floors||s.strokeRate||s.calories||s.hr);
@@ -864,7 +896,9 @@ function emptySet(ex,side,isDrop,src){
     const sameKind=!!src.isDrop===!!s.isDrop;
     if(s.isDrop) s.fsOn=false; else if(!src.isDrop) s.fsOn=!!src.fsOn;
     if(sameKind&&src.extraW&&((src.fsOn&&!s.isDrop)||src.bw)) s.extraW=src.extraW;
-    s._pf=true; } return s;
+    // v223: lo pendiente se marca por campo (cardio se queda con la semántica vieja de todo-o-nada:
+    // su "intensidad" siempre trae un valor por defecto y dejaría la serie pendiente para siempre).
+    pfMark(s,s.bw?['r','rir']:['w','r','rir']); } return s;
 }
 // sets from the most recent prior session with this exercise — used to prefill a new workout (suggestions, flagged _pf until confirmed)
 function uniSides(ex){ return (ex&&ex.startSide==='L')?['L','R']:['R','L']; }
@@ -1413,7 +1447,9 @@ function rirOpts(sel){ sel=(sel==null?'':String(sel)); const base=['F','0','1','
 function renderSetRow(exi,si,set,ex,allowF,actPrefix){
   actPrefix=actPrefix||'';
   const _bw=set.bw||(ex&&ex.type==='bodyweight');
-  const lk=setComplete(set)&&!set._pf?'data-locked="1"':''; const ro=lk?'readonly':'';
+  // v223: el candado (y su confirm "¿editar set completado?") vive SOLO en el editor de historial. En una
+  // sesión viva bloquear la serie que acabas de confirmar es justo lo que hacía ortopédico corregir un RIR.
+  const lk=actPrefix==='h_'&&setComplete(set)&&!set._pf?'data-locked="1"':''; const ro=lk?'readonly':'';
   let w;
   if(_bw){
     const bwv=latestBodyweight();
@@ -1421,11 +1457,11 @@ function renderSetRow(exi,si,set,ex,allowF,actPrefix){
       ? `<span class="bwchip" data-act="logweight" title="peso corporal — toca para registrar uno nuevo">BW ${numTxt(bwv)}</span>`
       : `<span class="bwchip warn" data-act="logweight" title="no hay peso corporal registrado — toca para registrarlo">BW sin peso</span>`;
   } else {
-    w=`<input class="inp weight${set._pf?' pf':''}" data-act="${actPrefix}setf" data-exi="${exi}" data-si="${si}" data-f="w" value="${set.w}" placeholder="—" inputmode="decimal" ${ro} ${lk}/>`;
+    w=`<input class="inp weight${pfHas(set,'w')?' pf':''}" data-act="${actPrefix}setf" data-exi="${exi}" data-si="${si}" data-f="w" value="${set.w}" placeholder="—" inputmode="decimal" ${ro} ${lk}/>`;
   }
   const u=`<select class="pick" data-act="${actPrefix}setf" data-exi="${exi}" data-si="${si}" data-f="unit" ${lk}>${unitOpts(set.unit)}</select>`;
-  const r=`<input class="inp${set._pf?' pf':''}" data-act="${actPrefix}setf" data-exi="${exi}" data-si="${si}" data-f="r" value="${set.r}" placeholder="—" inputmode="numeric" ${ro} ${lk}/>`;
-  const rr=`<select class="pick${set._pf?' pf':''}" data-act="${actPrefix}setf" data-exi="${exi}" data-si="${si}" data-f="rir" ${lk}>${rirOpts(set.rir)}</select>`;
+  const r=`<input class="inp${pfHas(set,'r')?' pf':''}" data-act="${actPrefix}setf" data-exi="${exi}" data-si="${si}" data-f="r" value="${set.r}" placeholder="—" inputmode="numeric" ${ro} ${lk}/>`;
+  const rr=`<select class="pick${pfHas(set,'rir')?' pf':''}" data-act="${actPrefix}setf" data-exi="${exi}" data-si="${si}" data-f="rir" ${lk}>${rirOpts(set.rir)}</select>`;
   const del=`<button class="del" data-act="${actPrefix}delset" data-exi="${exi}" data-si="${si}">×</button>`;
   const we=`<input class="inp weight" data-act="${actPrefix}setf" data-exi="${exi}" data-si="${si}" data-f="extraW" value="${set.extraW||''}" placeholder="${_bw?'+lastre':'+extra'}" inputmode="decimal" ${ro} ${lk}/>`;
   return {w,u,r,rr,del,we};
@@ -1962,6 +1998,64 @@ function _cardioSelfCheck(){
 }
 // history-edit + auto-finalize self-check — runs only with ?selftest=1, AFTER db is loaded. Swaps
 // db.sessions/db.activeWork/state._histSessId for fixtures and restores all three in `finally`.
+// v223 — el logueo en vivo: pendiente por campo, ✓ por serie, "dónde vas" e inactividad.
+// Corre los helpers y renderers REALES; solo toca db.activeWork y lo restaura (nunca llama a save()).
+function _loggingSelfCheck(){
+  const A=(nm,c)=>{ if(!c) throw new Error('SELFCHECK logging: '+nm); };
+  const ex={type:'machine',unilateral:false,sets:[]};
+  const src={w:'100',r:'8',rir:'2'};
+  // 1 · el prefill marca cada campo por separado
+  const s=emptySet(ex,null,false,src);
+  A('el prefill marca los 3 campos', s._pf===true&&!!s._pfF&&!!s._pfF.w&&!!s._pfF.r&&!!s._pfF.rir);
+  pfClearField(s,'rir');
+  A('confirmar el RIR no confirma peso ni reps', pfHas(s,'w')&&pfHas(s,'r')&&!pfHas(s,'rir')&&s._pf===true);
+  A('con algo pendiente la serie NO cuenta todavía', setComplete(s)===false&&setPersistable(s)===false);
+  pfClearField(s,'w'); pfClearField(s,'r');
+  A('sin pendientes la serie cuenta', s._pf===false&&s._pfF===undefined&&setComplete(s)===true&&setPersistable(s)===true);
+  // 2 · series viejas (con _pf y sin _pfF) conservan la semántica de todo-o-nada
+  const old={w:'80',r:'10',rir:'1',_pf:true};
+  A('legacy: todo pendiente', pfHas(old,'w')&&pfHas(old,'rir'));
+  pfClearField(old,'rir');
+  A('legacy: una edición confirma la serie entera', old._pf===false&&!pfHas(old,'w'));
+  // 3 · el ✓ confirma la serie completa de un toque
+  const s2=emptySet(ex,null,false,src); pfClearAll(s2);
+  A('el ✓ limpia todo lo pendiente', s2._pf===false&&s2._pfF===undefined&&setComplete(s2)===true);
+  // 4 · en sesión viva una serie confirmada NO se bloquea (el candado es solo del editor de historial)
+  const live=renderSetRow(0,0,s2,ex,true,''), hist=renderSetRow(0,0,s2,ex,true,'h_');
+  A('sesión viva sin candado', live.r.indexOf('data-locked')<0&&live.rr.indexOf('data-locked')<0&&live.w.indexOf('data-locked')<0);
+  A('historial con candado', hist.r.indexOf('data-locked')>=0);
+  A('un campo confirmado sale a opacidad plena', live.r.indexOf(' pf"')<0);
+  const s3=emptySet(ex,null,false,src); pfClearField(s3,'w');
+  const mix=renderSetRow(0,0,s3,ex,true,'');
+  A('solo el campo tocado pierde el gris', mix.w.indexOf(' pf"')<0&&mix.r.indexOf(' pf"')>=0&&mix.rr.indexOf(' pf"')>=0);
+  // 5 · dónde vas (barra AHORA / foco tras el ✓) e inactividad
+  const origAW=db.activeWork;
+  try{
+    db.activeWork={exercises:[{name:'a',sets:[{done:true},{done:true}]},{name:'b',unilateral:true,sets:[{done:false},{done:false},{},{}]}]};
+    const t=currentSetTarget();
+    A('AHORA apunta a la primera serie sin ✓', !!t&&t.exi===1&&t.si===0&&t.name==='b'&&t.tot===2);
+    const nx=nextSetTarget(1,0);
+    A('tras el ✓ el foco va al siguiente par del mismo ejercicio', !!nx&&nx.exi===1&&nx.si===2);
+    A('el ✓ de la última serie no deja foco pendiente', nextSetTarget(1,2)===null);
+    db.activeWork={exercises:[{name:'a',sets:[{done:true},{done:true}]}]};
+    A('con todo confirmado no hay barra AHORA', currentSetTarget()===null);
+  } finally { db.activeWork=origAW; }
+  // 6 · una serie escrita a mano sin su ✓ no se pierde al guardar
+  const half=emptySet(ex,null,false,src); half.w='120'; pfClearField(half,'w');
+  A('media serie tocada se detecta', pfTouched(half)===true&&setPersistable(half)===false);
+  const wk={exercises:[{sets:[half, emptySet(ex,null,false,src)]}]};
+  const resc=touchedSets(wk);
+  A('solo la tocada se rescata', resc.length===1&&resc[0]===half);
+  resc.forEach(pfClearAll);
+  A('tras rescatarla ya cuenta', setPersistable(half)===true&&half._pf===false&&half._pfF===undefined&&half._pfN===undefined);
+  A('la sugerencia intacta se sigue descartando', setPersistable(wk.exercises[0].sets[1])===false);
+  const w={startMs:1000,exercises:[{sets:[{doneAt:2000}]}]};
+  A('sin toques la última actividad es el doneAt', sessionIdleEnd(w)===2000);
+  w.lastTouch=9000;
+  A('teclear cuenta como actividad', sessionIdleEnd(w)===9000);
+  A('una sesión recién tecleada no está idle', isSessionIdle({startMs:1,lastTouch:Date.now(),exercises:[]})===false);
+  console.log('logging self-check OK');
+}
 function _historyEditSelfCheck(){
   // the finalize step below saves and advances the rotation — split + rotIdx must come back too (they leaked before v221)
   const origSessions=db.sessions, origActive=db.activeWork, origHist=state._histSessId, origSplit=db.split, origRot=db.rotIdx;
@@ -2142,6 +2236,11 @@ function fsCellHTML(s,exi,si,act){ return s.isDrop ? `<span class="fs on ds" tit
 // per-set line under a row: drop % of its parent (history of how the lift is dropped) on the left, progress badge on the right
 function progLineInner(badge,dpct,tens,hr){ return (dpct?`<span class="droppct">${dpct} de la serie</span>`:'')+(hr||'')+(badge||'')+(tens||''); }
 function histSetLine(sets,i,tens,hr){ const inner=progLineInner('',dropPctTxt(sets,i),tens,hr); return inner?`<div class="setprogline" style="text-align:right;padding:0 8px;margin:-1px 0 3px;height:11px;line-height:11px">${inner}</div>`:''; }
+// v223: un ✓ por serie (decisión del dueño). La celda del número ya era el toggle de 'done'; ahora
+// además MUESTRA el estado (○ pendiente · ✓ hecha) y ese toque confirma la serie entera.
+function setnHTML(label,done,act,exi,si,zSty){
+  return `<div class="setn ${done?'done':''}" style="${zSty||''}" data-act="${act}" data-exi="${exi}" data-si="${si}" title="${done?'serie confirmada · toca para deshacer':'toca para confirmar la serie'}"><span class="sl">${label}</span><span class="sk">${done?'✓':'○'}</span></div>`;
+}
 function renderExercise(exi,ex,allowF,canReorder){
   const sets=ex.sets||[]; const isCardioEx=isCardio(ex); const isM=!isCardioEx&&['machine','pulley','smith','cable'].indexOf(ex.type)>=0; const isU=!isCardioEx&&!!ex.unilateral;
   const rec=machineRec((db.activeWork||{}).gym,ex); const ed=`data-act="editmach" data-exi="${exi}"`;
@@ -2155,6 +2254,7 @@ function renderExercise(exi,ex,allowF,canReorder){
       mhtml=p; }
   }
   const _tn=isCardioEx?null:exTensionSets(db.activeWork,exi);
+  const _curCls=(state._nowT&&state._nowT.exi===exi)?' current':'';   // v223: guía del ejercicio en curso
   const prBadge=isCardioEx?'':progBadgeHTML(ex)+exTensChip(_tn);
   const gripE=canReorder?`<span class="dgrip" data-drage="${exi}" title="mantén y arrastra · reordena dentro del músculo">⠿</span>`:'';
   let rows='';
@@ -2192,11 +2292,11 @@ function renderExercise(exi,ex,allowF,canReorder){
       const prevS=(prevSets&&align[si]!=null)?prevSets[align[si]]:null;
       let hint='';
       if(prevS){ const bits=fields.filter(f=>f!=='intensity'&&prevS[f]).map(f=>(CARDIO_FL[f]||f)+' '+prevS[f]); if(bits.length) hint=`<div class="setprogline" style="text-align:right;padding:0 8px;margin:-1px 0 3px;height:11px;line-height:11px;font-size:9px;color:var(--o35)">${escTxt(bits.join(' · '))}</div>`; }
-      body+=`<div class="srow gc-cardio" style="grid-template-columns:${colTpl}"><div class="setn ${s.done?'done':''}" data-act="done" data-exi="${exi}" data-si="${si}">${labels[si]}</div>${cells}<div class="setend"><button class="del" data-act="delset" data-exi="${exi}" data-si="${si}">×</button></div></div>${hint}`;
+      body+=`<div class="srow gc-cardio" style="grid-template-columns:${colTpl}">${setnHTML(labels[si],s.done,'done',exi,si,'')}${cells}<div class="setend"><button class="del" data-act="delset" data-exi="${exi}" data-si="${si}">×</button></div></div>${hint}`;
     });
     const add=`<div class="addrow afree"><span class="aleft"><button class="addbtn" data-act="addset" data-exi="${exi}">[+ set]</button></span><button class="addbtn aex" data-act="addex" data-exi="${exi}">[+ exercise]</button></div>`;
     rows=thead+body+add;
-    return `<div class="ex" data-exi="${exi}">${head}${rows}</div>`;
+    return `<div class="ex${_curCls}" data-exi="${exi}">${head}${rows}</div>`;
   }
   const isBwEx=ex.type==='bodyweight';
   if(isU){
@@ -2216,7 +2316,7 @@ function renderExercise(exi,ex,allowF,canReorder){
       const pInner=progLineInner(pBadge,dropPctTxt(sets,p),tensTag(pairTension(_tn,p)));
       const progLine=pInner?`<div class="setprogline" data-exi="${exi}" data-si="${p}" style="text-align:right;padding:0 8px;margin:-1px 0 3px;height:11px;line-height:11px">${pInner}</div>`:`<div class="setprogline" data-exi="${exi}" data-si="${p}" style="height:0"></div>`;
       // drop set: ONLY via bottom bar [↓ drop set] — per-row ↓ removed (layout desalineaba tras insertar)
-      body+=`<div class="pair ${a&&a.isDrop?'isdrop':''}"><div class="setn ${done?'done':''}" style="${zSty}" data-act="done" data-exi="${exi}" data-si="${p}">${labels[p]}</div><div class="prows">`
+      body+=`<div class="pair ${a&&a.isDrop?'isdrop':''}">${setnHTML(labels[p],done,'done',exi,p,zSty)}<div class="prows">`
         +`<div class="srow ${gcU}"><div class="side">${escTxt(a.side||'R')}</div>${ca.w}${midA}${ca.r}${ca.rr}${ca.del}</div>`
         +(cb?`<div class="srow ${gcU}"><div class="side">${escTxt(b.side||'L')}</div>${cb.w}${midB}${cb.r}${cb.rr}<span class="del" style="visibility:hidden">×</span></div>`:'')
         +`</div></div>${progLine}`;
@@ -2240,13 +2340,13 @@ function renderExercise(exi,ex,allowF,canReorder){
       const gcRow=isBwEx?'gc-free-bw':(fsOn?'gc-mach-fs':gc);
       const mid=isBwEx?c.we:(fsOn?c.we:c.u);
       // setend: del only (per-row ↓ removed) — same column width for normal and isdrop rows
-      body+=`<div class="srow ${gcRow} ${s.isDrop?'isdrop':''}"><div class="setn ${s.done?'done':''}" style="${zSty}" data-act="done" data-exi="${exi}" data-si="${si}">${labels[si]}</div>${fs}${c.w}${mid}${c.r}${c.rr}<div class="setend">${c.del}</div></div>${progLine}`;
+      body+=`<div class="srow ${gcRow} ${s.isDrop?'isdrop':''}">${setnHTML(labels[si],s.done,'done',exi,si,zSty)}${fs}${c.w}${mid}${c.r}${c.rr}<div class="setend">${c.del}</div></div>${progLine}`;
     });
     const lastSi=Math.max(0,sets.length-1);
     const add=`<div class="addrow ${isM?'amach':'afree'}"><span class="aleft"><button class="addbtn" data-act="addset" data-exi="${exi}">[+ set]</button><button class="addbtn" data-act="dropset" data-exi="${exi}" data-si="${lastSi}">[↓ drop set]</button></span><button class="addbtn aex" data-act="addex" data-exi="${exi}">[+ exercise]</button></div>`;
     rows=thead+body+add;
   }
-  return `<div class="ex" data-exi="${exi}">${head}${rows}</div>`;
+  return `<div class="ex${_curCls}" data-exi="${exi}">${head}${rows}</div>`;
 }
 // simplified, mostly-read per-exercise renderer for the history editor: same per-set richness as the
 // live view (bodyweight chip/unit/reps/rir/side/drop/zone-color) so editing a past session is the
@@ -2278,7 +2378,7 @@ function renderHistExercise(exi,ex,sess){
         }
         return `<input class="inp${s._pf?' pf':''}" data-act="h_setf" data-exi="${exi}" data-si="${si}" data-f="${f}" value="${s[f]!=null?s[f]:''}" placeholder="—" inputmode="decimal"/>`;
       }).join('');
-      body+=`<div class="srow gc-cardio" style="grid-template-columns:${colTpl}"><div class="setn ${s.done?'done':''}" data-act="h_done" data-exi="${exi}" data-si="${si}">${labels[si]}</div>${cells}<div class="setend"><button class="del" data-act="h_delset" data-exi="${exi}" data-si="${si}">×</button></div></div>`;
+      body+=`<div class="srow gc-cardio" style="grid-template-columns:${colTpl}">${setnHTML(labels[si],s.done,'h_done',exi,si,'')}${cells}<div class="setend"><button class="del" data-act="h_delset" data-exi="${exi}" data-si="${si}">×</button></div></div>`;
     });
     const add=`<div class="addrow afree"><span class="aleft"><button class="addbtn" data-act="h_addset" data-exi="${exi}">[+ set]</button></span></div>`;
     rows=thead+body+add;
@@ -2290,7 +2390,7 @@ function renderHistExercise(exi,ex,sess){
       const midA=isBwEx?ca.we:ca.u, midB=isBwEx&&cb?cb.we:(cb?cb.u:'');
       const done=a&&a.done&&b&&b.done;
       const z=!done&&a?setZone(a):null; const zSty=z==='light'?'color:var(--warn);':z==='heavy'?'color:var(--bad);':'';
-      body+=`<div class="pair ${a&&a.isDrop?'isdrop':''}"><div class="setn ${done?'done':''}" style="${zSty}" data-act="h_done" data-exi="${exi}" data-si="${p}">${labels[p]}</div><div class="prows">`
+      body+=`<div class="pair ${a&&a.isDrop?'isdrop':''}">${setnHTML(labels[p],done,'h_done',exi,p,zSty)}<div class="prows">`
         +`<div class="srow ${gcU}"><div class="side">${escTxt(a.side||'R')}</div>${ca.w}${midA}${ca.r}${ca.rr}${ca.del}</div>`
         +(cb?`<div class="srow ${gcU}"><div class="side">${escTxt(b.side||'L')}</div>${cb.w}${midB}${cb.r}${cb.rr}<span class="del" style="visibility:hidden">×</span></div>`:'')
         +`</div></div>`+histSetLine(sets,p,tensTag(pairTension(_htn,p)),hrTag(_hhr[exi+':'+p]));
@@ -2306,7 +2406,7 @@ function renderHistExercise(exi,ex,sess){
       const z=!s.done?setZone(s):null; const zSty=z==='light'?'color:var(--warn);':z==='heavy'?'color:var(--bad);':'';
       const gcRow=isBwEx?'gc-free-bw':(fsOn?'gc-mach-fs':gc);
       const mid=isBwEx?c.we:(fsOn?c.we:c.u);
-      body+=`<div class="srow ${gcRow} ${s.isDrop?'isdrop':''}"><div class="setn ${s.done?'done':''}" style="${zSty}" data-act="h_done" data-exi="${exi}" data-si="${si}">${labels[si]}</div>${fs}${c.w}${mid}${c.r}${c.rr}<div class="setend">${c.del}</div></div>`+histSetLine(sets,si,tensTag(_htn&&_htn.per[si]),hrTag(_hhr[exi+':'+si]));
+      body+=`<div class="srow ${gcRow} ${s.isDrop?'isdrop':''}">${setnHTML(labels[si],s.done,'h_done',exi,si,zSty)}${fs}${c.w}${mid}${c.r}${c.rr}<div class="setend">${c.del}</div></div>`+histSetLine(sets,si,tensTag(_htn&&_htn.per[si]),hrTag(_hhr[exi+':'+si]));
     });
     const add=`<div class="addrow ${isM?'amach':'afree'}"><span class="aleft"><button class="addbtn" data-act="h_addset" data-exi="${exi}">[+ set]</button><button class="addbtn" data-act="h_dropset" data-exi="${exi}" data-si="${Math.max(0,sets.length-1)}">[↓ drop set]</button></span></div>`;
     rows=thead+body+add;
@@ -2352,6 +2452,7 @@ function sessionContextNote(w){
 }
 function renderWorkout(){
   const w=state.work; if(!w)return renderHome();
+  state._nowT=currentSetTarget();   // v223: dónde vas (guía del ejercicio + barra AHORA)
   const day=db.split.days.find(d=>d.id===w.dayId)||curDay();
   let total=0,done=0; w.exercises.forEach(e=>e.sets.forEach(s=>{total++; if(s.done)done++;}));
   // render in array order; a muscle header starts each contiguous run -> respects the order exercises were added/reordered
@@ -4100,11 +4201,39 @@ function render(){
   v.innerHTML = sc==='landing'?renderLanding() : sc==='login'?renderLogin() : sc==='onboard'?renderOnboard() : sc==='home'?renderHome() : sc==='workout'?renderWorkout() : sc==='macros'?renderMacros() : sc==='share'?renderShare() : sc==='progress'?renderProgress() : sc==='stack'?renderStack() : sc==='settings'?renderSettings() : sc==='splitedit'?renderSplitEdit() : sc==='history'?renderHistory() : sc==='agenda'?renderAgenda() : sc==='histedit'?renderHistoryEditor() : renderHome();
   document.getElementById('wfooter').style.display = sc==='workout'?'flex':'none';
   try{updateRestBar();}catch(_){}
+  try{updateNowBar();}catch(_){}
   renderNav();
   v.scrollTop = state._scroll||0; state._scroll=0;
   if(state._autoScroll&&sc==='workout'){ state._autoScroll=false; const fp=v.querySelector('[data-act="setf"][data-f="rir"]:not([data-locked])'); if(fp)fp.scrollIntoView({block:'center',behavior:'smooth'}); }
+  // v223: tras confirmar una serie, a la vista la SIGUIENTE de ese ejercicio (no la primera del documento)
+  if(state._focusSet&&sc==='workout'){ const f=state._focusSet; state._focusSet=null; const fe=v.querySelector('.setn[data-exi="'+f.exi+'"][data-si="'+f.si+'"]'); if(fe&&fe.scrollIntoView)fe.scrollIntoView({block:'center',behavior:'smooth'}); }
   // fade ONLY on screen changes via go() — never on same-screen re-renders (every keystroke re-renders)
   if(state._trans){ state._trans=false; v.classList.remove('fadein'); void v.offsetWidth; v.classList.add('fadein'); }
+}
+// v223: re-render CONSERVANDO el scroll. Todo lo que se toca dentro de una sesión (o del editor de
+// historial) tiene que pasar por aquí: un render() pelado devuelve #view al inicio, que es exactamente
+// lo que hacía insoportable loggear en vivo ("siempre se me scrollea hasta arriba", fix.md).
+function reRender(){ try{ const v=document.getElementById('view'); if(v)state._scroll=v.scrollTop; }catch(_){} render(); }
+// primera serie sin ✓, en orden de documento — alimenta la barra AHORA, la guía .ex.current y el foco.
+function currentSetTarget(){
+  const w=db&&db.activeWork; if(!w||!w.exercises)return null;
+  for(let i=0;i<w.exercises.length;i++){
+    const e=w.exercises[i]; const sets=e&&e.sets; if(!sets||!sets.length)continue;
+    const step=e.unilateral?2:1; const labels=setLabels(sets,step);
+    let tot=0; for(let j=0;j<sets.length;j+=step){ if(sets[j]&&!sets[j].isDrop)tot++; }
+    for(let j=0;j<sets.length;j+=step){ const s=sets[j]; if(s&&!s.done) return {exi:i,si:j,name:e.name||'',label:labels[j]||String(j+1),tot:tot||Math.ceil(sets.length/step)}; }
+  }
+  return null;
+}
+// la SIGUIENTE serie del mismo ejercicio (o la primera pendiente del siguiente) tras confirmar una.
+function nextSetTarget(exi,si){
+  const w=db&&db.activeWork; if(!w)return null; const ex=w.exercises[exi]; if(!ex)return null;
+  const step=ex.unilateral?2:1;
+  for(let j=si+step;j<ex.sets.length;j+=step){ if(ex.sets[j]&&!ex.sets[j].done)return {exi,si:j}; }
+  for(let k=exi+1;k<w.exercises.length;k++){ const e2=w.exercises[k]; const st2=e2&&e2.unilateral?2:1;
+    if(!e2||!e2.sets)continue;
+    for(let j=0;j<e2.sets.length;j+=st2){ if(e2.sets[j]&&!e2.sets[j].done)return {exi:k,si:j}; } }
+  return null;
 }
 function go(screen){ state._trans=(state.screen!==screen); state.screen=screen; if(screen==='macros') state.macroDate=todayISO(); render(); }
 
@@ -4117,6 +4246,16 @@ function restAudioInit(){ if(!db.settings.restBeep)return; try{ const AC=window.
 function restNotify(){ try{ if(navigator.vibrate)navigator.vibrate(200); }catch(_){}
   if(!db.settings.restBeep||!_restAC)return;
   try{ const t=_restAC.currentTime; [0,.18].forEach(off=>{ const o=_restAC.createOscillator(), g=_restAC.createGain(); o.type='sine'; o.frequency.value=880; g.gain.setValueAtTime(0.0001,t+off); g.gain.exponentialRampToValueAtTime(0.15,t+off+.02); g.gain.exponentialRampToValueAtTime(0.0001,t+off+.08); o.connect(g); g.connect(_restAC.destination); o.start(t+off); o.stop(t+off+.1); }); }catch(_){}
+}
+// v223: barra persistente "AHORA · ejercicio · serie N" (textContent, nunca re-render — igual que el descanso).
+function updateNowBar(){
+  const bar=document.getElementById('nowbar'); if(!bar)return;
+  let t=null; try{ t=(state.screen==='workout')?currentSetTarget():null; }catch(_){}
+  if(!t){ bar.classList.remove('on'); return; }
+  bar.classList.add('on');
+  const nt=document.getElementById('nowtxt'), np=document.getElementById('nowpos');
+  if(nt)nt.textContent=t.name||'ejercicio';
+  if(np)np.textContent='serie '+t.label+'/'+t.tot;
 }
 function updateRestBar(){
   const bar=document.getElementById('resttimer'), tEl=document.getElementById('resttime'); if(!bar||!tEl)return;
@@ -4278,11 +4417,16 @@ function monthlyWrap(ym, manual){
   }catch(_){ }
 }
 // ---------- events ----------
-function setField(exi,si,f,val,skipMirror){ const w=db.activeWork; if(!w)return; const ex=w.exercises[exi]; const s=ex.sets[si]; if(!s)return; s[f]=val; s._pf=false;
+function setField(exi,si,f,val,skipMirror){ const w=db.activeWork; if(!w)return; const ex=w.exercises[exi]; const s=ex.sets[si]; if(!s)return; s[f]=val; pfClearField(s,f);
+  w.lastTouch=Date.now();   // v223: escribir ES actividad — ver sessionIdleEnd (el modal de "¿cerraste?")
+  // el campo tocado pasa a opacidad plena en el acto, sin re-render ("para confirmarlo tiene que salir
+  // en full opacidad. y eso es lo que no pasa", fix.md)
+  try{ const me=document.querySelector('[data-act="setf"][data-exi="'+exi+'"][data-si="'+si+'"][data-f="'+f+'"]'); if(me)me.classList.remove('pf'); }catch(_){}
   if(f==='w'){
-    const writeDom=(j,v)=>{ const pe=document.querySelector('[data-act="setf"][data-exi="'+exi+'"][data-si="'+j+'"][data-f="w"]'); if(pe&&pe.value!==v)pe.value=v; };
-    // uni: partner of the CURRENT pair becomes confirmed (it's the same working set, other side)
-    if(!skipMirror&&ex.unilateral){ const pj=si^1; const ps=ex.sets[pj]; if(ps&&(ps.w===''||ps.w==null||ps._pf)){ ps.w=val; ps._pf=false; writeDom(pj,val); } }
+    const writeDom=(j,v,pend)=>{ const pe=document.querySelector('[data-act="setf"][data-exi="'+exi+'"][data-si="'+j+'"][data-f="w"]'); if(!pe)return; if(pe.value!==v)pe.value=v; if(pend!==undefined)pe.classList.toggle('pf',!!pend); };
+    // uni: el otro lado del par hereda el peso como SUGERENCIA (v223: ya no se auto-confirma — cada lado
+    // se confirma solo, con su propia edición o con el ✓ del par; "un ✓ por serie")
+    if(!skipMirror&&ex.unilateral){ const pj=si^1; const ps=ex.sets[pj]; if(ps&&(ps.w===''||ps.w==null||pfHas(ps,'w'))){ ps.w=val; pfAdd(ps,'w'); writeDom(pj,val,true); } }
     // propagate to all LATER sets that are still prefilled/empty — they stay marked _pf (suggestion),
     // so they're cleared from the saved session unless the user edits/confirms them
     // v218: only sets of the SAME kind inherit it — a drop's weight never leaks into a working set or vice versa
@@ -4291,16 +4435,16 @@ function setField(exi,si,f,val,skipMirror){ const w=db.activeWork; if(!w)return;
     for(let j=startProp; j<ex.sets.length; j++){
       const ps=ex.sets[j];
       if(!ps || !!ps.isDrop!==kindDrop) continue;
-      if(ps.w===''||ps.w==null||ps._pf){ ps.w=val; ps._pf=true; writeDom(j,val); }
+      if(ps.w===''||ps.w==null||pfHas(ps,'w')){ ps.w=val; pfAdd(ps,'w'); writeDom(j,val,true); }
     }
     // v218: a still-pending drop hanging off THIS working set re-derives its suggestion from the new parent weight
     if(!kindDrop){ const step=ex.unilateral?2:1; const p0=ex.unilateral?(si&~1):si; let tgt=null;
       for(let j=p0+step; j<ex.sets.length && ex.sets[j] && ex.sets[j].isDrop; j++){ const d=ex.sets[j];
-        if(!(d._pf||d.w===''||d.w==null))continue;
+        if(!(pfHas(d,'w')||d.w===''||d.w==null))continue;
         if(!tgt)tgt=Object.assign(exIdentity(w,exi),{orderIdx:exi});
         const par=dropParentIdx(ex.sets,j,step); if(par<0)continue;
         const src=dropSource(ex.sets,par,Math.round((j-par)/step)-1,j,d.side||null,tgt);
-        if(src&&src.w){ d.w=String(src.w); d._pf=true; writeDom(j,d.w); }
+        if(src&&src.w){ d.w=String(src.w); pfAdd(d,'w'); writeDom(j,d.w,true); }
       }
     }
   }
@@ -4311,24 +4455,30 @@ function setField(exi,si,f,val,skipMirror){ const w=db.activeWork; if(!w)return;
 document.getElementById('app').addEventListener('click',e=>{
   const el=e.target.closest('[data-act]'); if(!el)return; const a=el.dataset.act;
   const exi=el.dataset.exi!=null?+el.dataset.exi:null, si=el.dataset.si!=null?+el.dataset.si:null;
+  // v223: cualquier toque dentro de la sesión viva cuenta como actividad (ver sessionIdleEnd)
+  if(db&&db.activeWork&&state.screen==='workout')db.activeWork.lastTouch=Date.now();
   if(a==='setf'&&el.dataset.locked){ e.preventDefault(); if(!confirm('¿Editar set completado?'))return; document.querySelectorAll('[data-act="setf"][data-exi="'+el.dataset.exi+'"][data-si="'+el.dataset.si+'"]').forEach(f=>{f.removeAttribute('data-locked');f.removeAttribute('readonly');}); el.focus&&el.focus(); return; }
   if(a==='h_setf'&&el.dataset.locked){ e.preventDefault(); if(!confirm('¿Editar set completado?'))return; document.querySelectorAll('[data-act="h_setf"][data-exi="'+el.dataset.exi+'"][data-si="'+el.dataset.si+'"]').forEach(f=>{f.removeAttribute('data-locked');f.removeAttribute('readonly');}); el.focus&&el.focus(); return; }
-  // selecting the SAME option in a <select> (rir/unit) never fires 'change' — so a tap on it IS the
-  // confirm gesture for a grayed-out prefill suggestion (Bloque 3.4, feedback del dueño: "para
-  // confirmar es volver a dar click y seleccionar"). Locked/completed selects are handled by the two
-  // guards above (which already return), so this only ever runs on an editable, still-_pf set.
+  // elegir la MISMA opción de un <select> (rir/unit) no dispara 'change' — así que tocarlo ES el gesto de
+  // confirmar esa sugerencia gris. v223: confirma SOLO ese campo y parchea el DOM en sitio. El código
+  // viejo re-renderizaba con el selector nativo ABIERTO: el <select> original quedaba huérfano, su
+  // 'change' nunca llegaba a #app (perdías el RIR que acababas de elegir) y #view saltaba al inicio.
   if(el.tagName==='SELECT'&&(a==='setf'||a==='h_setf')){
     let s=null;
     if(a==='setf'){ const w=db.activeWork; s=w&&w.exercises[exi]&&w.exercises[exi].sets[si]; }
     else { const hs=(db.sessions||[]).find(x=>x.id===state._histSessId); s=hs&&hs.exercises[exi]&&hs.exercises[exi].sets[si]; }
-    if(s&&s._pf){ if(a==='setf')setField(exi,si,el.dataset.f,el.value); else setHistField(exi,si,el.dataset.f,el.value); render(); }
+    if(s&&pfHas(s,el.dataset.f)){
+      pfClearField(s,el.dataset.f); el.classList.remove('pf');
+      if(a==='setf'){ try{updateProgBadge(exi);}catch(_){} try{updateSetZone(exi,si); updateSetProgress(exi,si);}catch(_){} }
+      save();
+    }
     return;
   }
   if(a==='nav'){ go(el.dataset.screen); }
   else if(a==='start'){ db.activeWork=newWorkSession(); save(); state._autoScroll=true; go('workout'); }
   else if(a==='togglepreview'){ state.previewDay=!state.previewDay; render(); }
   else if(a==='loglater'){ const w=newWorkSession(); w.loggedAfter=true; w.startMs=null; const y=new Date(); y.setDate(y.getDate()-1); w.date=todayISO(y); db.activeWork=w; save(); go('workout'); }
-  else if(a==='togglenoadv'){ if(db.activeWork){ db.activeWork.noAdvance=!db.activeWork.noAdvance; render(); } }
+  else if(a==='togglenoadv'){ if(db.activeWork){ db.activeWork.noAdvance=!db.activeWork.noAdvance; reRender(); } }
   else if(a==='resume'){ go('workout'); }
   else if(a==='leave'){ go('home'); }
   else if(a==='abort'){ if(confirm('Abort workout? Lo registrado se descarta.')){ db.activeWork=null; save(); go('home'); } }
@@ -4338,7 +4488,7 @@ document.getElementById('app').addEventListener('click',e=>{
   else if(a==='rest'){ db.sessions.push({id:uid(),date:todayISO(),type:'rest',dayId:curDay().id}); db.rotIdx++; state.selDay=null; save(); go('home'); }
   else if(a==='skip'){ db.rotIdx++; state.selDay=null; save(); go('home'); }
   else if(a==='changegym'){ openGymPicker(); }
-  else if(a==='pickgym'){ db.activeGym=el.dataset.g; if(db.activeWork)db.activeWork.gym=el.dataset.g; save(); closeModal(); render(); }
+  else if(a==='pickgym'){ db.activeGym=el.dataset.g; if(db.activeWork)db.activeWork.gym=el.dataset.g; save(); closeModal(); reRender(); }
   else if(a==='lcreate'){ state.screen='onboard'; render(); }
   else if(a==='llogin'){ state.screen='login'; render(); }
   else if(a==='backlanding'){ state.screen='landing'; render(); }
@@ -4418,18 +4568,18 @@ document.getElementById('app').addEventListener('click',e=>{
   else if(a==='h_delsession'){ if(confirm('¿Borrar esta sesión?')){ db.sessions=db.sessions.filter(x=>x.id!==el.dataset.id); state._histSessId=null; save(); go('history'); } }
   // history-edit set actions — isolated from the live setf/done/etc. handlers above (never touch db.activeWork).
   else if(a==='h_done'){ const s=db.sessions.find(x=>x.id===state._histSessId); if(!s)return; const ex=s.exercises[exi]; if(!ex||!ex.sets[si])return;
-    if(ex.unilateral){ const v=!(ex.sets[si]&&ex.sets[si].done); if(ex.sets[si]){ex.sets[si].done=v;ex.sets[si]._pf=false;} if(ex.sets[si+1]){ex.sets[si+1].done=v;ex.sets[si+1]._pf=false;} }
-    else { ex.sets[si].done=!ex.sets[si].done; ex.sets[si]._pf=false; }
-    save(); render(); }
-  else if(a==='h_fs'){ const s=db.sessions.find(x=>x.id===state._histSessId); if(!s)return; const st=s.exercises[exi].sets[si]; if(!st||st.isDrop)return; st.fsOn=!st.fsOn; if(!st.fsOn&&!st.bw)st.extraW=''; save(); render(); }
+    if(ex.unilateral){ const v=!(ex.sets[si]&&ex.sets[si].done); [si,si+1].forEach(j=>{ const st=ex.sets[j]; if(!st)return; st.done=v; if(v)pfClearAll(st); }); }
+    else { ex.sets[si].done=!ex.sets[si].done; if(ex.sets[si].done)pfClearAll(ex.sets[si]); }
+    save(); reRender(); }
+  else if(a==='h_fs'){ const s=db.sessions.find(x=>x.id===state._histSessId); if(!s)return; const st=s.exercises[exi].sets[si]; if(!st||st.isDrop)return; st.fsOn=!st.fsOn; if(!st.fsOn&&!st.bw)st.extraW=''; save(); reRender(); }
   else if(a==='h_addset'){ const s=db.sessions.find(x=>x.id===state._histSessId); if(!s)return; const ex=s.exercises[exi];
     if(ex.unilateral){ const [s1,s2]=uniSides(ex); ex.sets.push(emptySet(ex,s1,false,null)); ex.sets.push(emptySet(ex,s2,false,null)); }
     else { ex.sets.push(emptySet(ex,null,false,null)); }
-    save(); render(); }
+    save(); reRender(); }
   else if(a==='h_dropset'){ const s=db.sessions.find(x=>x.id===state._histSessId); if(!s)return; const ex=s.exercises[exi]; if(isCardio(ex))return;
     const sIdx=db.sessions.indexOf(s);
     insertDrop(ex,si,Object.assign(exIdentity(s,exi),{orderIdx:exi,excludeSessionId:s.id,beforeDate:s.date,beforeSIdx:sIdx}));
-    save(); render(); }
+    save(); reRender(); }
   else if(a==='h_delset'){ const s=db.sessions.find(x=>x.id===state._histSessId); if(!s)return; const ex=s.exercises[exi]; const step=ex.unilateral?2:1; const p=Math.floor(si/step)*step; const st=ex.sets[p];
     if(st&&st.isDrop){ ex.sets.splice(p,step); }
     else { let end=p+step; while(end<ex.sets.length&&ex.sets[end]&&ex.sets[end].isDrop)end+=step;
@@ -4437,7 +4587,7 @@ document.getElementById('app').addEventListener('click',e=>{
       if(trailing.length&&hasData&&!confirm('Esta serie tiene '+(trailing.length/step)+' drop set(s) con datos. ¿Borrar todo junto?'))return;
       ex.sets.splice(p,end-p);
     }
-    save(); render(); }
+    save(); reRender(); }
   else if(a==='schedcal'){ openScheduleModal(+el.dataset.di); }
   else if(a==='dl_ics'){ downloadIcs(+el.dataset.di); }
   else if(a==='sd_deld'){ const di=+el.dataset.di; if(db.split.days.length>1&&confirm('¿Borrar este día?')){ db.split.days.splice(di,1); if(typeof db.rotIdx==='number'){ if(di<db.rotIdx)db.rotIdx--; if(db.rotIdx>=db.split.days.length)db.rotIdx=Math.max(0,db.split.days.length-1); } save(); render(); } }
@@ -4471,12 +4621,21 @@ document.getElementById('app').addEventListener('click',e=>{
     db.activeWork=w; closeModal(); save(); go('workout');
   }
   // promptIdleSession's modal — see its definition for why this exists instead of a silent timer.
-  else if(a==='idle_continue'){ if(db.activeWork)db.activeWork.resumedAt=Date.now(); closeModal(); save(); render(); }
+  else if(a==='idle_continue'){ if(db.activeWork){db.activeWork.resumedAt=Date.now(); db.activeWork.lastTouch=Date.now();} closeModal(); save(); reRender(); }
   else if(a==='idle_close'){ const wasWorkout=state.screen==='workout'; finalizeIdleSession(); closeModal(); if(wasWorkout)state.screen='home'; render(); toast('sesión cerrada · '+((db.sessions[db.sessions.length-1]||{}).endTime||'')); }
   else if(a==='ss_exup'){ const s=db.sessions.find(x=>x.id===window._sessId); const i=+el.dataset.ei; if(s&&i>0){ const a=s.exercises; const t=a[i-1]; a[i-1]=a[i]; a[i]=t; save(); openSessionEdit(window._sessId); } }
   else if(a==='ss_exdn'){ const s=db.sessions.find(x=>x.id===window._sessId); const i=+el.dataset.ei; if(s&&i<s.exercises.length-1){ const a=s.exercises; const t=a[i+1]; a[i+1]=a[i]; a[i]=t; save(); openSessionEdit(window._sessId); } }
-  else if(a==='done'){ const w=db.activeWork; const ex=w.exercises[exi]; let nowDone; if(ex.unilateral){ const v=!(ex.sets[si]&&ex.sets[si].done); nowDone=v; if(ex.sets[si]){ex.sets[si].done=v;ex.sets[si]._pf=false;} if(ex.sets[si+1]){ex.sets[si+1].done=v;ex.sets[si+1]._pf=false;} } else { ex.sets[si].done=!ex.sets[si].done; ex.sets[si]._pf=false; nowDone=ex.sets[si].done; } if(nowDone&&!w.loggedAfter){ restAudioInit(); w.restEnd=Date.now()+((db.settings.restSec||90)*1000); _restFinT=0; } if(nowDone){ const ts=Date.now(); if(ex.unilateral){if(ex.sets[si])ex.sets[si].doneAt=ts;if(ex.sets[si+1])ex.sets[si+1].doneAt=ts;}else ex.sets[si].doneAt=ts; } if(nowDone)state._autoScroll=true; save(); render(); }
-  else if(a==='fs'){ const s=db.activeWork.exercises[exi].sets[si]; if(!s||s.isDrop)return; s.fsOn=!s.fsOn; if(!s.fsOn&&!s.bw)s.extraW=''; save(); render(); }
+  // v223 · ✓ por serie: un toque confirma la serie COMPLETA (limpia todo lo pendiente), la sella con su
+  // hora y arranca el descanso; el foco se va a la SIGUIENTE serie de ese ejercicio.
+  else if(a==='done'){ const w=db.activeWork; const ex=w.exercises[exi]; let nowDone;
+    if(ex.unilateral){ const v=!(ex.sets[si]&&ex.sets[si].done); nowDone=v; [si,si+1].forEach(j=>{ const st=ex.sets[j]; if(!st)return; st.done=v; if(v)pfClearAll(st); }); }
+    else { const st=ex.sets[si]; if(!st)return; st.done=!st.done; nowDone=st.done; if(nowDone)pfClearAll(st); }
+    if(nowDone&&!w.loggedAfter){ restAudioInit(); w.restEnd=Date.now()+((db.settings.restSec||90)*1000); _restFinT=0; }
+    if(nowDone){ const ts=Date.now(); if(ex.unilateral){if(ex.sets[si])ex.sets[si].doneAt=ts;if(ex.sets[si+1])ex.sets[si+1].doneAt=ts;}else ex.sets[si].doneAt=ts; }
+    if(nowDone)state._focusSet=nextSetTarget(exi,si);
+    save(); reRender(); }
+  else if(a==='gonow'){ const t=currentSetTarget(); if(t){ const fe=document.querySelector('.setn[data-exi="'+t.exi+'"][data-si="'+t.si+'"]'); if(fe&&fe.scrollIntoView)fe.scrollIntoView({block:'center',behavior:'smooth'}); } }
+  else if(a==='fs'){ const s=db.activeWork.exercises[exi].sets[si]; if(!s||s.isDrop)return; s.fsOn=!s.fsOn; if(!s.fsOn&&!s.bw)s.extraW=''; save(); reRender(); }
   else if(a==='addset'){ const ex=db.activeWork.exercises[exi]; if(isCardio(ex)){ const lt=ex.sets[ex.sets.length-1]||null; ex.sets.push(emptySet(ex,null,false,lt)); } else if(ex.unilateral){ const [s1,s2]=uniSides(ex); const lr=workSource(ex,s1)||ex.sets[ex.sets.length-2]||null, ll=workSource(ex,s2)||ex.sets[ex.sets.length-1]||null; ex.sets.push(emptySet(ex,s1,false,lr)); ex.sets.push(emptySet(ex,s2,false,ll)); } else { ex.sets.push(emptySet(ex,null,false,workSource(ex,null))); } save(); state._scroll=document.getElementById('view').scrollTop; render(); }
   else if(a==='dropset'){ const ex=db.activeWork.exercises[exi]; if(isCardio(ex))return; // cardio has no drop sets
     // a drop is a SUBSERIE hung right after its parent (+ any drops the parent already has) — never
@@ -4645,7 +4804,7 @@ document.getElementById('app').addEventListener('change',e=>{
   const ett=e.target.closest('[data-act="setendtime"]'); if(ett){ if(db.activeWork){db.activeWork.endTime=ett.value||null;save();} return; }
   const dc=e.target.closest('[data-act="daycal"]'); if(dc){ if(dc.value){ state.macroDate=dc.value; render(); } return; }
   const agc=e.target.closest('[data-act="agcal"]'); if(agc){ if(agc.value){ state._scroll=(document.getElementById('view')||{}).scrollTop||0; state.agendaDate=agc.value; render(); } return; }
-  const hsel=e.target.closest('[data-act="h_setf"]'); if(hsel){ setHistField(+hsel.dataset.exi,+hsel.dataset.si,hsel.dataset.f,hsel.value); render(); return; }
+  const hsel=e.target.closest('[data-act="h_setf"]'); if(hsel){ setHistField(+hsel.dataset.exi,+hsel.dataset.si,hsel.dataset.f,hsel.value); reRender(); return; }
   const el=e.target.closest('[data-act="setf"]'); if(!el)return;
   setField(+el.dataset.exi,+el.dataset.si,el.dataset.f,el.value);
 });
@@ -4857,15 +5016,19 @@ function mapWorkExercises(w){
 function saveSession(){
   const w=db.activeWork; if(!w){go('home');return;}
   const savable=setPersistable;
-  const has=w.exercises.some(e=>e.sets.some(savable));
+  const touched=touchedSets(w);   // v223: escritas a mano, sin ✓ — se cuentan, no se tiran
+  const has=w.exercises.some(e=>e.sets.some(savable))||touched.length>0;
   if(!has){ if(!confirm('No registraste sets. ¿Guardar de todos modos?'))return; }
-  else { const n=w.exercises.reduce((a,e)=>a+e.sets.filter(s=>savable(s)&&(s.rir===''||s.rir==null)).length,0);
-         if(!confirm(n>0?`Tienes ${n} set${n>1?'s':''} sin RIR. ¿Finalizar de todos modos?`:'¿Finalizar sesión?'))return; }
+  else { const n=w.exercises.reduce((a,e)=>a+e.sets.filter(s=>(savable(s)||touched.indexOf(s)>=0)&&(s.rir===''||s.rir==null)).length,0);
+         const pl=touched.length>1?'s':'';
+         const extra=touched.length?`\n\n${touched.length} serie${pl} escrita${pl} sin ✓ se cuenta${touched.length>1?'n':''} como hecha${pl}.`:'';
+         if(!confirm((n>0?`Tienes ${n} set${n>1?'s':''} sin RIR. ¿Finalizar de todos modos?`:'¿Finalizar sesión?')+extra))return; }
+  touched.forEach(pfClearAll);
   const sess={id:w.id,date:w.date,dayId:w.dayId,dayName:w.dayName,gym:w.gym,type:'training',savedMs:Date.now(),loggedAfter:!!w.loggedAfter,durSec:w.loggedAfter?((parseInt(w.manualDur,10)||0)*60):(w.startMs?Math.round((Date.now()-w.startMs)/1000):0),startTime:w.loggedAfter?(w.startTime||null):(w.startTs||null),endTime:w.loggedAfter?(w.endTime||null):nowHM(),startMs:w.loggedAfter?null:(w.startMs||null),endMs:w.loggedAfter?null:Date.now(),
     exercises:mapWorkExercises(w)};
   if(!(w.loggedAfter&&w.noAdvance)){ const idx=db.split.days.findIndex(d=>d.id===w.dayId); db.rotIdx=(idx>=0?idx:db.rotIdx)+1; } db.activeWork=null; state.selDay=null; db.sessions.push(sess); save(); go('home');
 }
-// last REAL activity in a live session: the most recent doneAt stamp (existing since v201), or
+// last REAL activity in a live session: the most recent doneAt stamp (existing since v201), lastTouch, or
 // resumedAt (set the moment you answer "continuar" on the idle prompt below — without this, a
 // resumed session would still measure idleness from its old, now-stale doneAt and the prompt would
 // fire again on the very next check), else the session's own start (nothing marked done yet still
@@ -4874,6 +5037,9 @@ function sessionIdleEnd(w){
   if(!w||w.loggedAfter)return null;
   let last=0; (w.exercises||[]).forEach(e=>(e.sets||[]).forEach(s=>{ if(s&&s.doneAt&&s.doneAt>last)last=s.doneAt; }));
   if(w.resumedAt&&w.resumedAt>last) last=w.resumedAt;
+  // v223: teclear/tocar también es actividad. Sin esto el modal no-descartable "¿cerraste la sesión?"
+  // saltaba a los 10 min aunque llevaras todo ese rato escribiendo pesos y RIR (fix.md).
+  if(w.lastTouch&&w.lastTouch>last) last=w.lastTouch;
   if(last)return last;
   return w.startMs||null;
 }
@@ -4885,6 +5051,7 @@ const AUTO_END_IDLE_MS=10*60*1000;
 function finalizeIdleSession(){
   const w=db.activeWork; if(!w)return false;
   const last=sessionIdleEnd(w); if(!last)return false;
+  touchedSets(w).forEach(pfClearAll);   // v223: lo escrito sin ✓ también se conserva al cerrar por inactividad
   const endMs=last+AUTO_END_IDLE_MS; const endD=new Date(endMs);
   const sess={id:w.id,date:w.date,dayId:w.dayId,dayName:w.dayName,gym:w.gym,type:'training',savedMs:endMs,loggedAfter:false,autoEnded:true,
     durSec:w.startMs?Math.max(0,Math.round((endMs-w.startMs)/1000)):0,
@@ -4916,7 +5083,7 @@ function promptIdleSession(){
 // own). Never touches db.activeWork, so a live workout in progress elsewhere is unaffected.
 function setHistField(exi,si,f,val){
   const s=(db.sessions||[]).find(x=>x.id===state._histSessId); if(!s)return; const ex=s.exercises[exi]; const st=ex&&ex.sets[si]; if(!st)return;
-  st[f]=val; st._pf=false; save();
+  st[f]=val; pfClearField(st,f); save();
 }
 
 // ---------- modals ----------
@@ -6517,7 +6684,7 @@ async function aiPhoto(file,barcode){ if(!file)return; window._faTag=window._faT
 // Pick AI when the proxy is configured, else on-device OCR.
 function labelPhoto(file,barcode){ if(AI_PROXY_URL) return aiPhoto(file,barcode); return ocrPhoto(file,barcode); }
 requestPersist();
-db=load(); try{ promptIdleSession(); }catch(_){} try{ if(typeof location!=='undefined' && /[?&]selftest=1/.test(location.search)){ _identitySelfCheck(); _dropsetSelfCheck(); _baselineSelfCheck(); _variantSelfCheck(); _historyEditSelfCheck(); _idSelfCheck(); _cardioSelfCheck(); _tensionSelfCheck(); _healthSelfCheck(); _readinessSelfCheck(); } }catch(e){ console.error(e); } try{ const _sp=new URLSearchParams(location.search); const _hasHistorical=_sp.has('stepsh')||_sp.has('weighth')||_sp.has('stepsq')||_sp.has('sleeph'); if(_hasHistorical){ const _hsp=_sp; if(history.replaceState)history.replaceState(null,'',location.pathname); setTimeout(()=>{ if(confirm('Este link quiere importar datos históricos (pasos/peso/sueño de varios días) a tu cuenta. ¿Aplicar? — solo dile que SÍ si vienes de tu propio Atajo de iOS.')){ try{ const _imp=importHealth(_hsp); if(_imp.length){ save(); render(); toast('✓ '+_imp.join(' · ')); } }catch(_){} } },400); } else { const _imp=importHealth(_sp); if(_imp.length){ window._healthImported=_imp; if(history.replaceState)history.replaceState(null,'',location.pathname); } } }catch(_){} save(); render(); if(window._healthImported)setTimeout(()=>toast('✓ '+window._healthImported.join(' · ')),250); if(window._recoveredFromBackup)setTimeout(()=>{try{alert('Se recuperó un respaldo local: revisa tus datos, podrían faltar cambios muy recientes.');}catch(_){}},600);
+db=load(); try{ promptIdleSession(); }catch(_){} try{ if(typeof location!=='undefined' && /[?&]selftest=1/.test(location.search)){ _identitySelfCheck(); _dropsetSelfCheck(); _baselineSelfCheck(); _variantSelfCheck(); _historyEditSelfCheck(); _idSelfCheck(); _cardioSelfCheck(); _tensionSelfCheck(); _healthSelfCheck(); _readinessSelfCheck(); _loggingSelfCheck(); } }catch(e){ console.error(e); } try{ const _sp=new URLSearchParams(location.search); const _hasHistorical=_sp.has('stepsh')||_sp.has('weighth')||_sp.has('stepsq')||_sp.has('sleeph'); if(_hasHistorical){ const _hsp=_sp; if(history.replaceState)history.replaceState(null,'',location.pathname); setTimeout(()=>{ if(confirm('Este link quiere importar datos históricos (pasos/peso/sueño de varios días) a tu cuenta. ¿Aplicar? — solo dile que SÍ si vienes de tu propio Atajo de iOS.')){ try{ const _imp=importHealth(_hsp); if(_imp.length){ save(); render(); toast('✓ '+_imp.join(' · ')); } }catch(_){} } },400); } else { const _imp=importHealth(_sp); if(_imp.length){ window._healthImported=_imp; if(history.replaceState)history.replaceState(null,'',location.pathname); } } }catch(_){} save(); render(); if(window._healthImported)setTimeout(()=>toast('✓ '+window._healthImported.join(' · ')),250); if(window._recoveredFromBackup)setTimeout(()=>{try{alert('Se recuperó un respaldo local: revisa tus datos, podrían faltar cambios muy recientes.');}catch(_){}},600);
 applyDesign(); try{ if(/[?&]design\b/.test(location.search))localStorage.setItem('gymtrk_designmode','1'); if(localStorage.getItem('gymtrk_designmode')==='1')openDesignPanel(); }catch(_){}
 try{ bootScreen(()=>{ try{
   if(/[?&]wrap=1\b/.test(location.search)){ monthlyWrap(prevMonthYm(), true); return; }
