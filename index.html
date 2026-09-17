@@ -261,7 +261,8 @@
   .droppct{float:left; font-size:9px; font-weight:400; color:var(--o35);}
   .settens{font-size:9px; font-weight:400; color:var(--o40); margin-left:5px;}
   .sethr{float:left; font-size:9px; font-weight:400; color:var(--o40); margin-left:8px;}
-  .hrblk{margin:4px 0 10px;} .hrsvg{display:block; width:100%; height:56px; color:var(--o60); margin-bottom:4px;}
+  .hrblk{margin:4px 0 10px;}
+  .ready{text-align:center; font-size:10px; color:var(--o50); margin:6px 0 0; cursor:pointer; letter-spacing:.02em;} .ready b{color:var(--fg); font-weight:800;} .ready .rk{letter-spacing:.08em;} .ready .rl{color:var(--o35);} .hrsvg{display:block; width:100%; height:56px; color:var(--o60); margin-bottom:4px;}
   .exT{font-size:10px; font-weight:700; color:var(--o50); margin-left:6px; letter-spacing:.04em; white-space:nowrap;}
   .del{font-size:14px; color:var(--o40); text-align:center; cursor:pointer; background:none; border:0; height:36px; line-height:36px; padding:0;}
   .pair{display:flex; align-items:center; gap:4px; margin-bottom:5px;} .pair .setn{width:22px; flex:0 0 22px;} .pair .prows{flex:1;}
@@ -1123,8 +1124,8 @@ function musclesOf(sessOrWork,ei){
 // ---- baseline engine: find the EQUIVALENT prior occurrence of an exercise-instance, never "any occurrence of this name" ----
 let _exIdxCache=null;
 // call after any mutation that could change db.sessions (save() does this) so exIndex() rebuilds once, lazily.
-let _refCache={}, _sessTCache={}, _fatCtxCache={};
-function bumpIdx(){ _exIdxCache=null; _refCache={}; _sessTCache={}; _fatCtxCache={}; }
+let _refCache={}, _sessTCache={}, _fatCtxCache={}, _readyCache={};
+function bumpIdx(){ _exIdxCache=null; _refCache={}; _sessTCache={}; _fatCtxCache={}; _readyCache={}; }
 // flat, memoized list of every REAL (non-_pf, non-empty) exercise-occurrence across all saved sessions,
 // most-recent-first. Base for baselineSetsFor() — rebuilt only when bumpIdx() invalidates it.
 function exIndex(){
@@ -1307,6 +1308,7 @@ function renderHome(){
     +`<div class="ctrls"><a data-act="changesplit">[change split]</a><a data-act="changegym">[change gym]</a><a data-act="history">[history]</a></div>`
     +`<div class="whdr"><div class="l1"><span class="s">//</span>${l1}</div><div class="wname">${escTxt(day.name)}</div><div class="l2">WORKOUT</div><div class="wmeta">${escTxt(db.split.name)} · ${escTxt(day.tag)}</div></div>`
     +`<div class="wgym">${db.activeGym} · ${day.exercises.length} exercises</div>`
+    +(isCurrent?readinessLineHTML(todayISO()):'')
     +`<div style="text-align:center;margin:9px 0 2px"><a data-act="togglepreview" style="font-size:10px;color:var(--o50);cursor:pointer;letter-spacing:.04em;border:1px solid var(--o20);border-radius:4px;padding:2px 6px;">${state.previewDay?'[ ocultar rutina ▴ ]':'[ ver rutina ▾ ]'}</a></div>`
     +(state.previewDay?dayPreviewHTML(day):'')
     +cta
@@ -1846,6 +1848,28 @@ function _healthSelfCheck(){
     console.log('health self-check OK');
   } finally { db.sessions=keep.sessions; db.sleep=keep.sleep; db.steps=keep.steps; db.health=keep.health; bumpIdx(); }
 }
+// recovery self-check (v221) — swaps sleep/health/sessions/meals/mood and restores them in finally.
+function _readinessSelfCheck(){
+  const keep={sleep:db.sleep,health:db.health,sessions:db.sessions,meals:db.meals,mood:db.mood};
+  try{
+    const A=(n,c)=>{ if(!c)throw new Error('SELFCHECK readiness: '+n); };
+    const today=todayISO(); db.sessions=[]; db.meals={}; db.mood={}; db.sleep={}; db.health=healthShape({}); bumpIdx();
+    for(let i=1;i<=20;i++){ const d=shiftDate(today,-i); db.sleep[d]=[{date:d,type:'nocturno',hours:8}]; H().daily[d]={rhr:58}; }
+    A('a single signal is not enough', (()=>{ bumpIdx(); const x=readinessFor(shiftDate(today,-1)); return x===null||Object.keys(x.parts).length>=2; })());
+    db.sleep[today]=[{date:today,type:'nocturno',hours:5}]; H().daily[today]={rhr:64}; bumpIdx();
+    const r=readinessFor(today);
+    A('sleep + resting HR produce a score', r&&r.parts.sleep&&r.parts.rhr);
+    A('3 h short of an 8 h goal scores low', r.parts.sleep.score<=25);
+    A('resting HR 6 above a flat baseline is flagged', r.parts.rhr.z>1.5&&r.parts.rhr.score<50&&/\+6/.test(r.parts.rhr.txt));
+    A('no HRV source → HRV neither counted nor penalized', !r.parts.hrv&&r.conf>0.5&&r.conf<0.6);
+    A('weighted score', r.score===Math.round((r.parts.sleep.score*0.35+r.parts.rhr.score*0.25)/0.6));
+    db.sessions=[{id:'rs1',date:today,type:'training',exercises:[]}];
+    const causes=downContext(db.sessions[0],0,null);
+    A('a capacity drop lists its probable causes', causes.some(c=>/dormiste 5h/.test(c))&&causes.some(c=>/FC reposo \+6/.test(c)));
+    A('good day → nothing listed', (()=>{ db.sleep[today]=[{date:today,type:'nocturno',hours:8.2}]; H().daily[today]={rhr:57}; bumpIdx(); return downContext(db.sessions[0],0,null).length===0; })());
+    console.log('readiness self-check OK');
+  } finally { db.sleep=keep.sleep; db.health=keep.health; db.sessions=keep.sessions; db.meals=keep.meals; db.mood=keep.mood; bumpIdx(); }
+}
 // variant/bodyweight/machine-scoping self-check — runs only with ?selftest=1, AFTER db is loaded.
 // Swaps db.bodyweight and db.machines for fixtures and restores both in `finally`.
 function _variantSelfCheck(){
@@ -1912,7 +1936,8 @@ function _cardioSelfCheck(){
 // history-edit + auto-finalize self-check — runs only with ?selftest=1, AFTER db is loaded. Swaps
 // db.sessions/db.activeWork/state._histSessId for fixtures and restores all three in `finally`.
 function _historyEditSelfCheck(){
-  const origSessions=db.sessions, origActive=db.activeWork, origHist=state._histSessId;
+  // the finalize step below saves and advances the rotation — split + rotIdx must come back too (they leaked before v221)
+  const origSessions=db.sessions, origActive=db.activeWork, origHist=state._histSessId, origSplit=db.split, origRot=db.rotIdx;
   try{
     const A=(n,cond)=>{ if(!cond) throw new Error('SELFCHECK history: '+n); };
     // setHistField writes into the targeted PAST session only, never db.activeWork.
@@ -1930,7 +1955,7 @@ function _historyEditSelfCheck(){
     // itself (promptIdleSession asks first) — but the EXPLICIT finalize path (what "cerrar" calls)
     // still derives endTime from last activity + 10min, never wall-clock "now", and still respects
     // noAdvance exactly like a manual save would.
-    db.sessions=[]; db.split=db.split||{}; db.split.days=[{id:'d1',name:'push',exercises:[]}]; db.rotIdx=0;
+    db.sessions=[]; db.split=Object.assign({},db.split||{},{days:[{id:'d1',name:'push',exercises:[]}]}); db.rotIdx=0;
     const lastDoneAt=Date.now()-25*60000, startMs=Date.now()-40*60000;
     db.activeWork={id:'w1',date:'2026-07-25',dayId:'d1',dayName:'push',gym:'g',loggedAfter:false,startMs,noAdvance:false,
       exercises:[{name:'bench',type:'free',unilateral:false,sets:[{w:'100',r:'10',rir:'2',doneAt:lastDoneAt}]}]};
@@ -1941,7 +1966,7 @@ function _historyEditSelfCheck(){
     A('endTime derives from last activity + 10min, not wall-clock now', db.sessions[0].durSec===Math.round((lastDoneAt+10*60000-startMs)/1000));
     A('rotation advanced, same as a manual save', db.rotIdx===1);
     console.log('history-edit self-check OK');
-  } finally { db.sessions=origSessions; db.activeWork=origActive; state._histSessId=origHist; }
+  } finally { db.sessions=origSessions; db.activeWork=origActive; state._histSessId=origHist; db.split=origSplit; db.rotIdx=origRot; bumpIdx(); }
 }
 try{ if(typeof location!=='undefined' && /[?&]selftest=1/.test(location.search)) _failureMathSelfCheck(); }catch(e){ console.error(e); }
 // Best observed Epley+RIR e1RM across SAVED sessions — kept as a reference helper (e.g. for future PR badges).
@@ -1969,7 +1994,9 @@ function histProgress(sess,ei){ const e=(sess&&sess.exercises||[])[ei]; if(!e)re
     if(cu&&bu&&cu!==bu) return null;
   }
   // v219: aligned WORKING sets only (a drop or a set without RIR no longer drags the exercise %), fatigue-aware
-  return capacityProgress(e.sets||[],base.sets,fatCtxOf(sess)[ei]||[],base.sess?(fatCtxOf(base.sess)[base.ei]||[]):[]);
+  const pr=capacityProgress(e.sets||[],base.sets,fatCtxOf(sess)[ei]||[],base.sess?(fatCtxOf(base.sess)[base.ei]||[]):[]);
+  if(pr)Object.defineProperty(pr,'_base',{value:base,enumerable:false});
+  return pr;
 }
 // Count sets by zone — surfaced as a coaching hint next to the progress badge.
 function exerciseZones(ex){ const z={light:0,productive:0,heavy:0}; (ex.sets||[]).forEach(s=>{ if(s._pf)return; const zn=setZone(s); if(zn&&z[zn]!=null)z[zn]++; }); return z; }
@@ -2207,8 +2234,9 @@ function renderHistExercise(exi,ex,sess){
   const mhtml=mparts.length?`<span class="mch none">${mparts.join(' · ')}</span>`:'';
   const _htn=isCardioEx?null:sessionTension(sess)[exi];
   const _hhr=((H().sessHR[sess.id]||{}).sets)||{};
-  const badge=isCardioEx?'':progBadgeFromProg(histProgress(sess,exi),'capacidad (e1RM) vs sesión equivalente')+exTensChip(_htn);
-  const head=`<div class="exhead">${exLatTagHead(ex)}<span class="n">${escTxt(ex.name)}</span>${badge}${mhtml}${variantChips(ex)}</div>`;
+  const _hpr=isCardioEx?null:histProgress(sess,exi); const _hdn=downNoteFor(sess,exi,_hpr);
+  const badge=isCardioEx?'':progBadgeFromProg(_hpr,'capacidad (e1RM) vs sesión equivalente'+(_hdn?' · '+_hdn:''))+exTensChip(_htn);
+  const head=`<div class="exhead">${exLatTagHead(ex)}<span class="n">${escTxt(ex.name)}</span>${badge}${mhtml}${variantChips(ex)}</div>`+(_hdn?`<div class="submeta" style="margin:-2px 0 6px;color:var(--o50)">${escTxt(_hdn)}</div>`:'');
   let rows='';
   if(isCardioEx){
     const fields=cardioFields(ex);
@@ -2291,6 +2319,7 @@ function sessionContextNote(w){
     if(kcal>0) parts.push(Math.round(kcal)+' kcal antes');
   }
   const bwk=Object.keys(db.bodyweight||{}).sort(); if(bwk.length){ const bw=db.bodyweight[bwk[bwk.length-1]]; if(bw) parts.push(numTxt(bw)+'kg'); }
+  const rd=readinessFor(date); if(rd){ parts.unshift('recuperación '+rd.score); const rh=rd.parts.rhr; if(rh&&rh.z>1.5)parts.push(rh.txt); const ld=rd.parts.load; if(ld&&ld.ratio>1.4)parts.push(ld.txt); }
   if(!parts.length)return '';
   return `<div class="submeta" style="margin:4px 0 0;color:var(--o40)">${escTxt(parts.join(' · '))}</div>`;
 }
@@ -2683,6 +2712,102 @@ function parseSleepVal(raw, date){
   if(hours!=null&&isFinite(hours)&&hours>0&&hours<24) return Math.round(hours*10)/10;
   return null;
 }
+// ── RECUPERACIÓN (v221) ─────────────────────────────────────────────────────────────────────────────────────────────
+// "Preparación estimada" del día: resumen DESCRIPTIVO (nunca diagnóstico ni input de la matemática de capacidad/tensión).
+// Cada parte da 0-100 y solo cuenta si hay datos; el peso de las que faltan se redistribuye (el Fitbit Air no manda HRV a
+// Salud, así que HRV solo entra si alguna fuente la da). conf = fracción del peso posible que sí tuvo datos.
+const READY_W={sleep:0.35,rhr:0.25,hrv:0.20,load:0.25,food:0.15,mood:0.10};
+function clamp100(v){ return Math.max(0,Math.min(100,Math.round(v))); }
+function sleepOnDate(d){ return sleepHours(db.sleep&&db.sleep[d]); }
+function meanSd(a){ const n=a.length; if(!n)return {m:0,sd:0,n:0}; const m=a.reduce((x,y)=>x+y,0)/n; return {m,sd:Math.sqrt(a.reduce((x,y)=>x+(y-m)*(y-m),0)/Math.max(1,n-1)),n}; }
+function priorDays(d,days,get){ const out=[]; for(let i=1;i<=days;i++){ const v=get(shiftDate(d,-i)); if(v>0)out.push(v); } return out; }
+function loadOnDate(d){ let t=0; (db.sessions||[]).forEach(s=>{ if(s.type!=='rest'&&s.date===d)t+=sessionLoadTotal(s); }); return t; }
+function signed(v,dec){ const r=dec?Math.round(v*10)/10:Math.round(v); return (r>0?'+':r<0?'−':'±')+Math.abs(r); }
+function readinessFor(date){
+  date=date||todayISO(); const c=_readyCache[date]; if(c&&Date.now()-c.at<60000)return c.v;
+  const h=H(); const parts={}; const day=h.daily[date]||{};
+  const sh=sleepOnDate(date); const g=+((goalsFor(date)||{}).sleep||((db.settings||{}).goals||{}).sleep||8);
+  if(sh>0){ const b=meanSd(priorDays(date,14,sleepOnDate)); let sc=100-25*Math.max(0,g-sh); if(b.n>=5&&sh<b.m-1)sc-=10;
+    parts.sleep={score:clamp100(sc),v:sh,txt:'sueño '+sh+'h'+(sh<g?' ('+signed(sh-g,1)+')':'')}; }
+  const rh=+day.rhr;
+  if(rh>0){ const b=meanSd(priorDays(date,28,d=>+((h.daily[d]||{}).rhr)||0));
+    if(b.n>=7){ const z=(rh-b.m)/Math.max(b.sd,1.5); parts.rhr={score:clamp100(100-20*Math.max(0,z)),z,v:rh,txt:'FC reposo '+signed(rh-b.m)}; } }
+  const hv=day.hrv&&+day.hrv.v;
+  if(hv>0){ const b=meanSd(priorDays(date,28,d=>{ const x=(h.daily[d]||{}).hrv; return x&&x.v>1?Math.log(x.v):0; }));
+    if(b.n>=7){ const z=(Math.log(hv)-b.m)/Math.max(b.sd,0.05); parts.hrv={score:clamp100(100+20*Math.min(0,z)),z,v:hv,txt:'HRV '+signed(z,1)+'σ'}; } }
+  const acute=[1,2,3].reduce((a,i)=>a+loadOnDate(shiftDate(date,-i)),0);
+  // an acute:chronic ratio means nothing without a few weeks of history (≥4 training days in the previous 28)
+  let chronic=0, trainDays=0; for(let i=1;i<=28;i++){ const l=loadOnDate(shiftDate(date,-i)); chronic+=l; if(l>0)trainDays++; } chronic=chronic/28*3;
+  if(chronic>0&&trainDays>=4){ const r=acute/chronic; const sc=r<=1?100:(r<=1.5?100-(r-1)*80:60-(r-1.5)*80); parts.load={score:clamp100(Math.max(20,sc)),ratio:r,txt:'carga 72 h '+r.toFixed(1)+'×'}; }
+  const yd=shiftDate(date,-1), items=(db.meals&&db.meals[yd])||[];
+  if(items.length){ const gy=goalsFor(yd)||{}; const kc=items.reduce((a,m)=>a+(+m.kcal||0),0), pr=items.reduce((a,m)=>a+(+m.protein||0),0);
+    const kr=gy.kcal>0?kc/gy.kcal:null, prr=gy.protein>0?pr/gy.protein:null; let sc=100;
+    if(kr!=null&&Math.abs(kr-1)>0.15)sc-=Math.min(50,(Math.abs(kr-1)-0.15)*200);
+    if(prr!=null&&prr<0.8)sc-=Math.min(30,(0.8-prr)*100);
+    parts.food={score:clamp100(sc),kr,prr,txt:'ayer '+Math.round(kc)+' kcal'+(kr!=null?' ('+signed((kr-1)*100)+'%)':'')+(prr!=null&&prr<0.8?' · proteína baja':'')}; }
+  const mo=(typeof moodVal==='function')?moodVal(db.mood&&db.mood[date]):null;
+  if(mo&&mo.y!=null&&isFinite(+mo.y))parts.mood={score:clamp100(+mo.y*10),txt:'ánimo '+mo.y+'/10'};
+  const keys=Object.keys(parts); let res=null;
+  if(keys.length>=2){ let ws=0, s=0; keys.forEach(k=>{ ws+=READY_W[k]; s+=parts[k].score*READY_W[k]; });
+    const hrvSrc=Object.keys(h.daily).some(d=>h.daily[d]&&h.daily[d].hrv);
+    const possible=READY_W.sleep+READY_W.rhr+READY_W.load+READY_W.food+READY_W.mood+(hrvSrc?READY_W.hrv:0);
+    res={score:Math.round(s/ws),parts,conf:Math.round(ws/possible*100)/100}; }
+  _readyCache[date]={at:Date.now(),v:res}; return res;
+}
+const READY_ORDER=['sleep','rhr','hrv','load','food','mood'];
+function readinessLineHTML(date){ const r=readinessFor(date); if(!r)return '';
+  const bits=READY_ORDER.filter(k=>r.parts[k]&&r.parts[k].score<90).map(k=>r.parts[k].txt).slice(0,3);
+  return `<div class="ready" data-act="readiness" data-d="${date}"><span class="rk">recuperación</span> <b>${r.score}</b>${r.conf<0.6?'<span class="rl"> · pocos datos</span>':''}${bits.length?' · '+escTxt(bits.join(' · ')):' · todo en rango'} <span class="rl">›</span></div>`; }
+function openReadiness(date){ const r=readinessFor(date); if(!r)return;
+  const names={sleep:'sueño',rhr:'FC en reposo',hrv:'HRV',load:'carga de entreno',food:'comida (ayer)',mood:'ánimo'};
+  const rows=READY_ORDER.filter(k=>r.parts[k]).map(k=>`<div class="line"><span class="k">${names[k]}</span><span class="dots"></span><span class="v">${r.parts[k].score} · ${escTxt(r.parts[k].txt)}</span></div>`).join('');
+  const miss=READY_ORDER.filter(k=>!r.parts[k]).map(k=>names[k]);
+  openModal(`<h3>recuperación · ${fmtShort(date)}</h3><div class="mdval">${r.score}<span style="font-size:14px;color:var(--o40);font-weight:400"> / 100</span></div>
+    <div class="submeta" style="margin-bottom:10px">estimación descriptiva con lo que registraste · confianza ${Math.round(r.conf*100)}%</div>${rows}
+    ${miss.length?`<div class="submeta" style="margin-top:10px">sin datos: ${escTxt(miss.join(', '))}</div>`:''}
+    <div class="submeta" style="margin-top:10px">sueño vs tu meta · FC en reposo vs tus últimos 28 días · carga = últimas 72 h vs tu promedio de 4 semanas · comida del día anterior vs tu meta. No es un diagnóstico.</div>
+    <div class="sheetbtns" style="margin-top:12px"><button class="cancel" data-act="closemodal">cerrar</button></div>`); }
+// probable causes when an exercise's capacity dropped ("esa disminución tiene una causa" — owner, 2026-09-16).
+// Descriptive only: lists what was different, never changes any number.
+function downContext(sess,ei,base){ const out=[]; if(!sess||!sess.date)return out;
+  const r=readinessFor(sess.date);
+  if(r){ const P=r.parts;
+    if(P.sleep&&P.sleep.score<80)out.push('dormiste '+P.sleep.v+'h');
+    if(P.rhr&&P.rhr.z>1.5)out.push(P.rhr.txt);
+    if(P.hrv&&P.hrv.z<-1)out.push('HRV baja');
+    if(P.load&&P.load.ratio>1.4)out.push(P.load.txt);
+    if(P.food&&((P.food.kr!=null&&P.food.kr<0.8)||(P.food.prr!=null&&P.food.prr<0.8)))out.push(P.food.txt); }
+  const e=(sess.exercises||[])[ei];
+  if(e){ const ms=musclesOf(sess,ei).filter(m=>m.weight>=1).map(m=>m.name); const w=sessionWindow(sess); const t=w?w.startMs:new Date(sess.date+'T12:00:00').getTime(); let last=0;
+    (db.sessions||[]).forEach(s=>{ if(s===sess||s.type==='rest')return; const sw=sessionWindow(s); const te=sw?sw.endMs:new Date(s.date+'T12:00:00').getTime();
+      if(!(te<t&&t-te<48*3600000))return;
+      (s.exercises||[]).forEach((x,xi)=>{ if(musclesOf(s,xi).some(m=>m.weight>=1&&ms.includes(m.name))&&(x.sets||[]).some(st=>(st.w||st.r)&&isHardSet(st)))last=Math.max(last,te); }); });
+    if(last&&ms.length)out.push(ms[0]+' entrenado hace '+Math.round((t-last)/3600000)+' h'); }
+  if(base&&base.sess){ const c=(fatCtxOf(sess)[ei]||[])[0], b=(fatCtxOf(base.sess)[base.ei]||[])[0];
+    if(c&&b&&c.priorHardSets-b.priorHardSets>=4)out.push(Math.round(c.priorHardSets-b.priorHardSets)+' series duras más antes que la vez pasada');
+    const w1=sessionWindow(sess), w0=sessionWindow(base.sess);
+    if(w1&&w0){ const hr=x=>{ const d=new Date(x); return d.getHours()+d.getMinutes()/60; }; const dh=hr(w1.startMs)-hr(w0.startMs); if(Math.abs(dh)>=3)out.push('entrenaste '+Math.round(Math.abs(dh))+' h '+(dh>0?'más tarde':'más temprano')); } }
+  return out; }
+function downNoteFor(sess,ei,pr){ if(!pr||pr.dir!=='down')return ''; const c=downContext(sess,ei,pr._base); return c.length?'▼ posible: '+c.join(' · '):''; }
+// what tends to coincide with better/worse capacity days (correlation, not cause; needs ≥8 sessions per variable)
+function performanceInsights(){ const rows=[];
+  (db.sessions||[]).forEach(s=>{ if(s.type==='rest'||!s.date)return; const prs=(s.exercises||[]).map((e,ei)=>isCardio(e)?null:histProgress(s,ei)).filter(p=>p&&p.n); if(!prs.length)return;
+    rows.push({s,d:s.date,perf:prs.reduce((a,p)=>a+p.pct,0)/prs.length}); });
+  if(rows.length<8)return [];
+  const h=H(); const sumDay=(d,k)=>((db.meals&&db.meals[d])||[]).reduce((a,m)=>a+(+m[k]||0),0);
+  const vars=[
+    {label:'dormir más la noche previa', get:r=>sleepOnDate(r.d)||null},
+    {label:'FC en reposo más alta', get:r=>(+((h.daily[r.d]||{}).rhr))||null},
+    {label:'más kcal el día previo', get:r=>sumDay(shiftDate(r.d,-1),'kcal')||null},
+    {label:'más proteína el día previo', get:r=>sumDay(shiftDate(r.d,-1),'protein')||null},
+    {label:'más carga en las 72 h previas', get:r=>[1,2,3].reduce((a,i)=>a+loadOnDate(shiftDate(r.d,-i)),0)},
+    {label:'entrenar más tarde', get:r=>{ const w=sessionWindow(r.s); return w?new Date(w.startMs).getHours():null; }}
+  ];
+  (db.stack||[]).filter(it=>!it.archived&&it.category==='supp').forEach(it=>vars.push({label:'tomar '+it.name,bin:true,get:r=>tickDone(it.ticks&&it.ticks[r.d])?1:0}));
+  const out=[];
+  vars.forEach(v=>{ const xs=[],ys=[]; rows.forEach(r=>{ const x=v.get(r); if(x==null)return; xs.push(+x); ys.push(r.perf); });
+    if(xs.length<8||xs.every(x=>x===xs[0]))return; const rr=pearson(xs,ys); if(Math.abs(rr)<0.3)return; out.push({variable:v.label,r:rr,n:xs.length}); });
+  out.sort((a,b)=>Math.abs(b.r)-Math.abs(a.r)); return out.slice(0,5); }
 // ── SALUD (v220): capa de datos biométricos, independiente del transporte ──────────────────────────────────────────
 // Lo crudo que llega de Salud / Health Connect, lo normalizado (db.health.*) y lo derivado (sessHR, readiness) viven
 // SEPARADOS y nunca mutan db.sessions. Todo entra por ingestHealth(payload): el sync de la app nativa (iOS/Android) y el
@@ -3434,6 +3559,7 @@ function renderProgress(){
       out+=`<div class="line"><span class="k">${escTxt(x.name)}</span><span class="dots"></span><span class="v">${Math.round(x.e1)}${escTxt(x.eu||'')} <span style="color:var(--o40);font-size:10px">· top ${_tw}${escTxt(x.twu||'')}×${x.twr||0}</span></span></div>`; });
   } }
   try{ const _wp=prevMonthYm().split('-'); if(wrapMonthData(+_wp[0],+_wp[1]-1).hasData) out+='<div style="text-align:center;margin:18px 0 2px"><a data-act="wrapview" style="font-size:11px;color:var(--o60);cursor:pointer">▸ ver tu wrap · '+escTxt(MONFULL[+_wp[1]-1])+'</a></div>'; }catch(_){}
+  const _pins=performanceInsights(); if(_pins.length){ out+=`<hr class="rule"/><div class="grp-label">//RENDIMIENTO · correlaciones</div><div style="font-size:10px;color:var(--o40);margin:-4px 0 6px">qué coincide con sesiones de más o menos capacidad · correlación, no causa</div>`; _pins.forEach(function(x){ out+=`<div class="line"><span class="k">${escTxt(x.variable)}</span><span class="dots"></span><span class="v" style="color:${x.r>0?'var(--good)':'var(--bad)'}">${x.r>0?'▲':'▼'} capacidad<span style="color:var(--o40);font-size:10px"> · r=${Math.round(Math.abs(x.r)*100)/100} (${x.n} sesiones)</span></span></div>`; }); }
   const _ins=selfcheckInsights(); if(_ins.length){ out+=`<hr class="rule"/><div class="grp-label">//INSIGHTS · correlaciones</div><div style="font-size:10px;color:var(--o40);margin:-4px 0 6px">qué coincide con cómo te ves y sientes</div>`; _ins.forEach(function(x){ out+=`<div class="line"><span class="k">${escTxt(x.variable)}</span><span class="dots"></span><span class="v" style="color:${x.eff>0?'var(--good)':'var(--bad)'}">${x.eff>0?'▲':'▼'} ${escTxt(x.field)}<span style="color:var(--o40);font-size:10px"> · r=${Math.round(Math.abs(x.r)*100)/100} (${x.n}d${x.lag>0?' · D+'+x.lag:''})</span></span></div>`; }); }
   out+='<div style="text-align:center;margin:16px 0 2px"><a data-act="healthsync" style="font-size:11px;color:var(--o60);cursor:pointer">↻ sync de Salud (pasos/peso)</a></div>';
   return out;
@@ -3826,7 +3952,8 @@ function openSessionEdit(id){
   const nEx=(s.exercises||[]).length;
   const fatCtx=sessionFatigueContext(s);
   const exHtml=(s.exercises||[]).map((e,ei)=>{
-    const badge=progBadgeFromProg(histProgress(s,ei),'capacidad (e1RM) vs sesión equivalente')+exTensChip(sessionTension(s)[ei]);
+    const _pr=histProgress(s,ei); const _dn=downNoteFor(s,ei,_pr);
+    const badge=progBadgeFromProg(_pr,'capacidad (e1RM) vs sesión equivalente')+exTensChip(sessionTension(s)[ei]);
     const exCtx=fatCtx[ei]||[]; const rawAvg=avgE1RM(e.sets,false); let cSum=0,cN=0; e.sets.forEach((st,si)=>{ const v=correctedE1RM(st,exCtx[si]); if(v>0){cSum+=v;cN++;} }); const corrAvg=cN?cSum/cN:0; const fatDiff=rawAvg>0&&corrAvg>rawAvg?Math.round((corrAvg/rawAvg-1)*100):0; const prior=Math.round((exCtx[0]||{}).priorHardSets||0); const restSecs=exCtx.slice(1).map(c=>c.restSec).filter(v=>v!=null&&v>0&&v<600); const avgRest=restSecs.length?Math.round(restSecs.reduce((a,b)=>a+b,0)/restSecs.length):null; const fatNote=fatDiff>=5?`<div class="submeta" style="margin-top:2px">↑ e1RM equiv. fresca +${fatDiff}%${prior?' · '+prior+' sets previos':''}${avgRest?' · ~'+Math.round(avgRest/60)+'min descanso':''}</div>`:'';
     // reorder arrows so legacy sessions (logged before the addex-position fix) can be corrected
     const up=ei>0?`<span data-act="ss_exup" data-ei="${ei}">▲</span>`:`<span class="off">▲</span>`;
@@ -3834,7 +3961,7 @@ function openSessionEdit(id){
     const nsets=(e.sets||[]).length;
     const _sr=((H().sessHR[s.id]||{}).sets)||{}; const _pk=(e.sets||[]).map((st,si)=>_sr[ei+':'+si]).filter(x=>x&&x.peak!=null);
     const hrNote=_pk.length?`<div class="submeta" style="margin-top:2px">FC pico ${Math.min.apply(null,_pk.map(x=>x.peak))}–${Math.max.apply(null,_pk.map(x=>x.peak))}${_pk.some(x=>x.rec60!=null)?' · rec 60 s ~'+Math.round(median(_pk.filter(x=>x.rec60!=null).map(x=>x.rec60))):''}</div>`:'';
-    return `<div class="card"><div class="sess-exh"><span class="sess-exn">${escTxt(e.name)} <span class="muted">${escTxt(e.muscle||'')} · ${nsets} sets</span>${badge}</span><span class="semv">${up}${dn}</span></div>${fatNote}${hrNote}</div>`;
+    return `<div class="card"><div class="sess-exh"><span class="sess-exn">${escTxt(e.name)} <span class="muted">${escTxt(e.muscle||'')} · ${nsets} sets</span>${badge}</span><span class="semv">${up}${dn}</span></div>${fatNote}${hrNote}${_dn?`<div class="submeta" style="margin-top:2px;color:var(--o50)">${escTxt(_dn)}</div>`:''}</div>`;
   }).join('');
   // per-set editing lives in the full rich editor (renderHistoryEditor) — same interface as the live
   // workout, just more compact; this modal stays a quick summary: date/time, per-exercise overview, actions.
@@ -4151,6 +4278,7 @@ document.getElementById('app').addEventListener('click',e=>{
   else if(a==='healthimport'){ openHealthImport(); }
   else if(a==='healthsync'){ healthSync(); }
   else if(a==='healthjson'){ openHealthJsonImport(); }
+  else if(a==='readiness'){ openReadiness(el.dataset.d||todayISO()); }
   else if(a==='healthnative'){ if(typeof healthSyncNative==='function')healthSyncNative('manual'); }
   else if(a==='steprange'){ window._stepRange=+el.dataset.r||14; render(); }
   else if(a==='bwrange'){ window._bwRange=+el.dataset.r||14; render(); }
@@ -6284,7 +6412,7 @@ async function aiPhoto(file,barcode){ if(!file)return; window._faTag=window._faT
 // Pick AI when the proxy is configured, else on-device OCR.
 function labelPhoto(file,barcode){ if(AI_PROXY_URL) return aiPhoto(file,barcode); return ocrPhoto(file,barcode); }
 requestPersist();
-db=load(); try{ promptIdleSession(); }catch(_){} try{ if(typeof location!=='undefined' && /[?&]selftest=1/.test(location.search)){ _identitySelfCheck(); _dropsetSelfCheck(); _baselineSelfCheck(); _variantSelfCheck(); _historyEditSelfCheck(); _idSelfCheck(); _cardioSelfCheck(); _tensionSelfCheck(); _healthSelfCheck(); } }catch(e){ console.error(e); } try{ const _sp=new URLSearchParams(location.search); const _hasHistorical=_sp.has('stepsh')||_sp.has('weighth')||_sp.has('stepsq')||_sp.has('sleeph'); if(_hasHistorical){ const _hsp=_sp; if(history.replaceState)history.replaceState(null,'',location.pathname); setTimeout(()=>{ if(confirm('Este link quiere importar datos históricos (pasos/peso/sueño de varios días) a tu cuenta. ¿Aplicar? — solo dile que SÍ si vienes de tu propio Atajo de iOS.')){ try{ const _imp=importHealth(_hsp); if(_imp.length){ save(); render(); toast('✓ '+_imp.join(' · ')); } }catch(_){} } },400); } else { const _imp=importHealth(_sp); if(_imp.length){ window._healthImported=_imp; if(history.replaceState)history.replaceState(null,'',location.pathname); } } }catch(_){} save(); render(); if(window._healthImported)setTimeout(()=>toast('✓ '+window._healthImported.join(' · ')),250); if(window._recoveredFromBackup)setTimeout(()=>{try{alert('Se recuperó un respaldo local: revisa tus datos, podrían faltar cambios muy recientes.');}catch(_){}},600);
+db=load(); try{ promptIdleSession(); }catch(_){} try{ if(typeof location!=='undefined' && /[?&]selftest=1/.test(location.search)){ _identitySelfCheck(); _dropsetSelfCheck(); _baselineSelfCheck(); _variantSelfCheck(); _historyEditSelfCheck(); _idSelfCheck(); _cardioSelfCheck(); _tensionSelfCheck(); _healthSelfCheck(); _readinessSelfCheck(); } }catch(e){ console.error(e); } try{ const _sp=new URLSearchParams(location.search); const _hasHistorical=_sp.has('stepsh')||_sp.has('weighth')||_sp.has('stepsq')||_sp.has('sleeph'); if(_hasHistorical){ const _hsp=_sp; if(history.replaceState)history.replaceState(null,'',location.pathname); setTimeout(()=>{ if(confirm('Este link quiere importar datos históricos (pasos/peso/sueño de varios días) a tu cuenta. ¿Aplicar? — solo dile que SÍ si vienes de tu propio Atajo de iOS.')){ try{ const _imp=importHealth(_hsp); if(_imp.length){ save(); render(); toast('✓ '+_imp.join(' · ')); } }catch(_){} } },400); } else { const _imp=importHealth(_sp); if(_imp.length){ window._healthImported=_imp; if(history.replaceState)history.replaceState(null,'',location.pathname); } } }catch(_){} save(); render(); if(window._healthImported)setTimeout(()=>toast('✓ '+window._healthImported.join(' · ')),250); if(window._recoveredFromBackup)setTimeout(()=>{try{alert('Se recuperó un respaldo local: revisa tus datos, podrían faltar cambios muy recientes.');}catch(_){}},600);
 applyDesign(); try{ if(/[?&]design\b/.test(location.search))localStorage.setItem('gymtrk_designmode','1'); if(localStorage.getItem('gymtrk_designmode')==='1')openDesignPanel(); }catch(_){}
 try{ bootScreen(()=>{ try{
   if(/[?&]wrap=1\b/.test(location.search)){ monthlyWrap(prevMonthYm(), true); return; }
