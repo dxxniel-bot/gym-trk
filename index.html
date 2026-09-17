@@ -257,7 +257,8 @@
      campo (setField ya limpia _pf ahí; elegir el MISMO valor en un <select> no dispara 'change',
      por eso hay un click listener aparte — ver el dispatcher de 'click' cerca de 'setf'/'h_setf'). */
   .inp.pf, .pick.pf{opacity:.45;}
-  .fs{height:36px; border:.5px solid var(--o20); background:transparent; color:var(--o50); font-size:9px; cursor:pointer;} .fs.on{background:var(--o12); color:var(--fg);}
+  .fs{height:36px; border:.5px solid var(--o20); background:transparent; color:var(--o50); font-size:9px; cursor:pointer;} .fs.on{background:var(--o12); color:var(--fg);} .fs.ds{display:flex; align-items:center; justify-content:center; cursor:default;}
+  .droppct{float:left; font-size:9px; font-weight:400; color:var(--o35);}
   .del{font-size:14px; color:var(--o40); text-align:center; cursor:pointer; background:none; border:0; height:36px; line-height:36px; padding:0;}
   .pair{display:flex; align-items:center; gap:4px; margin-bottom:5px;} .pair .setn{width:22px; flex:0 0 22px;} .pair .prows{flex:1;}
   /* prev session full preview */
@@ -777,7 +778,7 @@ function _idSelfCheck(){
   A('gated: a second call is a no-op once _idfix is set', JSON.stringify(fx)===before);
   console.log('id self-check OK');
 }
-function migrate(d){ if(!d.version){d.version=1;} if(!d.meals||typeof d.meals!=='object'||Array.isArray(d.meals))d.meals={}; if(!Array.isArray(d.foods))d.foods=[]; d.foods=d.foods.map(f=>(f&&f.per100)?f:asCanonical(f)); if(!Array.isArray(d.sessions))d.sessions=[]; if(!d.split||typeof d.split!=='object')d.split={name:'',days:[]}; if(!Array.isArray(d.split.days))d.split.days=[]; d.split.days.forEach(day=>{ if(!Array.isArray(day.exercises))day.exercises=[]; day.exercises.forEach(e=>{ if(e&&!e.id)e.id='e'+uid(); }); }); fixDuplicateExIds(d); if(!d.steps||typeof d.steps!=='object')d.steps={}; if(!d.machines||typeof d.machines!=='object')d.machines={}; if(!d.bodyweight||typeof d.bodyweight!=='object')d.bodyweight={}; if(!d.sleep||typeof d.sleep!=='object')d.sleep={}; if(!d.mood||typeof d.mood!=='object')d.mood={}; if(!d.selfcheck||typeof d.selfcheck!=='object')d.selfcheck={}; if(!d.adhoc||typeof d.adhoc!=='object')d.adhoc={}; if(!Array.isArray(d.mealTags))d.mealTags=['breakfast','lunch','snack','dinner']; if(!Array.isArray(d.stack))d.stack=[]; if(!d.lastUsed||typeof d.lastUsed!=='object')d.lastUsed={}; if(!d.settings||typeof d.settings!=='object')d.settings={goals:seed().settings.goals}; if(d.settings&&d.settings.goals&&d.settings.goals.alcohol==null)d.settings.goals.alcohol=(d.profile&&d.profile.sex==='F')?14:28; if(d.settings&&d.settings.restSec==null)d.settings.restSec=90; if(d.settings&&d.settings.restBeep==null)d.settings.restBeep=true; if(d.settings&&d.settings.goals&&d.settings.goals.sleep==null)d.settings.goals.sleep=8; if(d.profile&&!d.profile.since){ try{ const _cd=[]; (d.sessions||[]).forEach(s=>{if(s.date)_cd.push(s.date);}); Object.keys(d.meals||{}).forEach(k=>_cd.push(k)); Object.keys(d.bodyweight||{}).forEach(k=>_cd.push(k)); if(_cd.length)d.profile.since=_cd.sort()[0]; }catch(_){} }
+function migrate(d){ if(!d.version){d.version=1;} if(!d.meals||typeof d.meals!=='object'||Array.isArray(d.meals))d.meals={}; if(!Array.isArray(d.foods))d.foods=[]; d.foods=d.foods.map(f=>(f&&f.per100)?f:asCanonical(f)); if(!Array.isArray(d.sessions))d.sessions=[]; if(!d.split||typeof d.split!=='object')d.split={name:'',days:[]}; if(!Array.isArray(d.split.days))d.split.days=[]; d.split.days.forEach(day=>{ if(!Array.isArray(day.exercises))day.exercises=[]; day.exercises.forEach(e=>{ if(e&&!e.id)e.id='e'+uid(); }); }); fixDuplicateExIds(d); fixLeakedFullStack(d); if(!d.steps||typeof d.steps!=='object')d.steps={}; if(!d.machines||typeof d.machines!=='object')d.machines={}; if(!d.bodyweight||typeof d.bodyweight!=='object')d.bodyweight={}; if(!d.sleep||typeof d.sleep!=='object')d.sleep={}; if(!d.mood||typeof d.mood!=='object')d.mood={}; if(!d.selfcheck||typeof d.selfcheck!=='object')d.selfcheck={}; if(!d.adhoc||typeof d.adhoc!=='object')d.adhoc={}; if(!Array.isArray(d.mealTags))d.mealTags=['breakfast','lunch','snack','dinner']; if(!Array.isArray(d.stack))d.stack=[]; if(!d.lastUsed||typeof d.lastUsed!=='object')d.lastUsed={}; if(!d.settings||typeof d.settings!=='object')d.settings={goals:seed().settings.goals}; if(d.settings&&d.settings.goals&&d.settings.goals.alcohol==null)d.settings.goals.alcohol=(d.profile&&d.profile.sex==='F')?14:28; if(d.settings&&d.settings.restSec==null)d.settings.restSec=90; if(d.settings&&d.settings.restBeep==null)d.settings.restBeep=true; if(d.settings&&d.settings.goals&&d.settings.goals.sleep==null)d.settings.goals.sleep=8; if(d.profile&&!d.profile.since){ try{ const _cd=[]; (d.sessions||[]).forEach(s=>{if(s.date)_cd.push(s.date);}); Object.keys(d.meals||{}).forEach(k=>_cd.push(k)); Object.keys(d.bodyweight||{}).forEach(k=>_cd.push(k)); if(_cd.length)d.profile.since=_cd.sort()[0]; }catch(_){} }
   // recompute alcohol for old meal items logged before alcohol was in MACROKEYS
   try{ Object.values(d.meals||{}).forEach(arr=>arr.forEach(m=>{ if(m.alcohol==null){ if(m._food&&m._food.per100&&m._food.per100.alcohol&&m._unit){ m.alcohol=computeNutrients(m._food,m._unit,m.qty||1).alcohol; } else m.alcohol=0; } })); }catch(e){}
   // goalHist: snapshot of intake goals at the moment of first logging that day (history is FROZEN — past days never re-read the current goal)
@@ -817,14 +818,21 @@ function emptySet(ex,side,isDrop,src){
     if(src){ ['minutes','distance','speed','incline','resistance','rpm','level','floors','strokeRate','calories','hr','intensity'].forEach(k=>{ if(src[k]!=null&&src[k]!=='')s[k]=src[k]; }); s._pf=true; }
     return s;
   }
-  const s={w:'',r:'',rir:'',unit:(ex&&ex.unit)||db.settings.unit||'lbs',side:side||null,fsOn:!!(ex&&ex.useFS),extraW:'',isDrop:!!isDrop,done:false};
+  const s={w:'',r:'',rir:'',unit:(ex&&ex.unit)||db.settings.unit||'lbs',side:side||null,fsOn:!!(ex&&ex.useFS)&&!isDrop,extraW:'',isDrop:!!isDrop,done:false};
   if(ex&&ex.type==='bodyweight'){ s.bw=true; s.unit='kg'; const bwk=Object.keys(db.bodyweight||{}).sort(); if(bwk.length)s.w=String(db.bodyweight[bwk[bwk.length-1]]); }
   // isDrop is copied from src UNLESS the caller explicitly forced isDrop:false (addset does this on
   // purpose — a newly added set is ALWAYS a plain working set, never inheriting drop-ness from its
   // value template; seedSets passes the real historical isDrop, so this guard is a no-op there).
   // rir IS copied now (Bloque 3.3, 2026-08-03 — previously withheld on purpose): shown as an
   // intensity-reference suggestion, same _pf-gated confirm-before-it-counts rule as weight/reps below.
-  if(src){ s.w=src.w||s.w||''; s.r=src.r||''; s.rir=src.rir||''; if(src.unit)s.unit=src.unit; if(src.bw)s.bw=true; if(src.isDrop&&isDrop!==false)s.isDrop=true; if(src.fsOn)s.fsOn=true; s._pf=true; } return s;
+  // full stack (fsOn + extraW) is a WORKING-set property (v218): copied working→working only, never into or out of a drop —
+  // [↓ drop set] used to force fsOn:true on every drop and [+ set] then inherited it (owner report 2026-09-16). A bodyweight
+  // set's extraW is its lastre, carried between sets of the same kind.
+  if(src){ s.w=src.w||s.w||''; s.r=src.r||''; s.rir=src.rir||''; if(src.unit)s.unit=src.unit; if(src.bw)s.bw=true; if(src.isDrop&&isDrop!==false)s.isDrop=true;
+    const sameKind=!!src.isDrop===!!s.isDrop;
+    if(s.isDrop) s.fsOn=false; else if(!src.isDrop) s.fsOn=!!src.fsOn;
+    if(sameKind&&src.extraW&&((src.fsOn&&!s.isDrop)||src.bw)) s.extraW=src.extraW;
+    s._pf=true; } return s;
 }
 // sets from the most recent prior session with this exercise — used to prefill a new workout (suggestions, flagged _pf until confirmed)
 function uniSides(ex){ return (ex&&ex.startSide==='L')?['L','R']:['R','L']; }
@@ -868,6 +876,84 @@ function setLabels(sets,step){
     for(let k=0;k<step;k++) labels[i+k]=lbl;
   }
   return labels;
+}
+// ---- v218: working sets and drops each follow their OWN weight (owner report 2026-09-16) ----
+// "las series convencionales tendrían que seguir con el mismo peso y los drop sets con el mismo peso" — drops usually run at
+// ~50-60 % of their parent, so a new working set copies the last WORKING set and a new drop copies the matching drop.
+function sameSide(s,side){ return !side || (s&&s.side)===side; }
+// last set of the requested kind (drop / working), optionally on one side, strictly before `beforeIdx`
+function lastOfKind(sets,wantDrop,side,beforeIdx){ const end=beforeIdx==null?(sets||[]).length:beforeIdx; for(let i=end-1;i>=0;i--){ const s=sets[i]; if(s&&!!s.isDrop===!!wantDrop&&sameSide(s,side))return i; } return -1; }
+// working (non-drop) parent of the set at i — same backwards walk as dropInsertIdx (step 2 keeps a unilateral side aligned)
+function dropParentIdx(sets,i,step){ step=step||1; let p=i; while(p>=0&&sets[p]&&sets[p].isDrop)p-=step; return (p>=0&&sets[p])?p:-1; }
+// suggestion rounding to the smallest plate/pin jump of each unit
+function roundLoad(v,unit){ const st={kg:2.5,lbs:5,pla:1}[String(unit||'').toLowerCase()]||1; return Math.max(st,Math.round(v/st)*st); }
+// template for [+ set]: the last WORKING set on that side (never a drop); positional fallback for legacy side-less data
+function workSource(ex,side){ const sets=ex.sets||[]; const i=lastOfKind(sets,false,side,null); if(i>=0)return sets[i]; for(let j=sets.length-1;j>=0;j--){ if(sameSide(sets[j],side))return sets[j]; } return null; }
+// every drop with its working parent and its position in that parent's chain (0 = the .5 drop, 1 = the .6 …)
+function dropPairs(sets){ const out=[]; (sets||[]).forEach((s,i)=>{ if(!s||!s.isDrop)return; const step=s.side?2:1; const p=dropParentIdx(sets,i,step); if(p<0)return; out.push({i,ord:Math.round((i-p)/step)-1,drop:s,parent:sets[p],side:s.side||null}); }); return out; }
+// drop weight / parent weight (raw, same unit; meaningless for bodyweight) — the "historial" of how this lift is dropped
+function pairRatio(dp){ if(!dp||!dp.drop||!dp.parent||dp.drop.bw||dp.parent.bw)return null; const w=parseFloat(dp.drop.w), pw=parseFloat(dp.parent.w); if(!(w>0&&pw>0))return null; const u1=unitN(dp.drop), u2=unitN(dp.parent); if(u1&&u2&&u1!==u2)return null; return w/pw; }
+function median(a){ if(!a||!a.length)return null; const b=a.slice().sort((x,y)=>x-y), m=b.length>>1; return b.length%2?b[m]:(b[m-1]+b[m])/2; }
+function dropPctTxt(sets,i){ const s=sets&&sets[i]; if(!s||!s.isDrop)return ''; const p=dropParentIdx(sets,i,s.side?2:1); if(p<0)return ''; const r=pairRatio({drop:s,parent:sets[p]}); return r==null?'':Math.round(r*100)+'%'; }
+// drop/parent ratios at chain position `ord` from the most recent equivalent sessions (same identity + gym, like the baseline ladder)
+function dropRatioHistory(target,ord,side,maxRows){ maxRows=maxRows||8; const out=[]; let rows=0;
+  for(const r of exIndex()){ if(rows>=maxRows)break;
+    if(r.sid===target.excludeSessionId)continue;
+    if(target.beforeDate!=null && !(r.date<target.beforeDate || (r.date===target.beforeDate && r.sIdx<target.beforeSIdx)))continue;
+    if(!gymMatch(r.gym,target.gym))continue;
+    if(!((target.exId&&r.exId===target.exId)||(r.name===target.name&&r.variant===target.variant)))continue;
+    const rs=dropPairs(r.sets).filter(dp=>dp.ord===ord&&sameSide(dp.drop,side)).map(pairRatio).filter(x=>x!=null);
+    if(rs.length){ out.push(...rs); rows++; }
+  }
+  return out;
+}
+// suggestion (template for emptySet, always _pf) for a NEW drop at chain position `ord` under sets[parentIdx]:
+//  1. an earlier drop of THIS session at the same chain position whose parent weighed the same → its numbers
+//  2. the equivalent baseline session's drop at that position, if its parent weighed the same
+//  3. drop/parent ratio (this session → baseline → median of the exercise's history) × parent weight, rounded per unit
+//  4. nothing (empty drop, as before)
+function dropSource(sets,parentIdx,ord,insertIdx,side,target){
+  const parent=parentIdx>=0?sets[parentIdx]:null; if(!parent)return null;
+  const pw=parseFloat(parent.w), pu=unitN(parent);
+  const pick=d=>({w:d.w,r:d.r,rir:d.rir,unit:d.unit,extraW:d.extraW,bw:d.bw,isDrop:true});
+  const hasData=dp=>!!(dp.drop.w||dp.drop.r);
+  const here=dropPairs(sets.slice(0,insertIdx)).filter(dp=>dp.ord===ord&&sameSide(dp.drop,side)&&hasData(dp)).reverse();
+  let d=here.find(dp=>String(dp.parent.w)===String(parent.w)); if(d)return pick(d.drop);
+  let bl=null;
+  if(target){ const b=baselineSetsFor(target); if(b.sets) bl=dropPairs(b.sets).filter(dp=>dp.ord===ord&&sameSide(dp.drop,side)&&hasData(dp)&&(!pu||!unitN(dp.drop)||unitN(dp.drop)===pu)); }
+  if(bl){ d=bl.find(dp=>String(dp.parent.w)===String(parent.w)); if(d)return pick(d.drop); }
+  if(!(pw>0)||parent.bw)return null;
+  let ratio=null, tpl=null;
+  if(here.length){ ratio=pairRatio(here[0]); tpl=here[0].drop; }
+  if(ratio==null&&bl&&bl.length){ ratio=median(bl.map(pairRatio).filter(x=>x!=null)); tpl=bl[0].drop; }
+  if(ratio==null&&target) ratio=median(dropRatioHistory(target,ord,side));
+  if(ratio==null||!(ratio>0&&ratio<1.2))return null;
+  return {w:String(roundLoad(pw*ratio,parent.unit)),r:tpl?tpl.r:'',rir:tpl?tpl.rir:'',unit:parent.unit,isDrop:true};
+}
+// inserts a drop (a L/R pair for unilateral) under the working set at/before `si`, prefilled via dropSource.
+// Shared by the live handler, the history editor and the self-check. Returns the insertion index.
+function insertDrop(ex,si,target){
+  if(ex.unilateral){ const p=Math.floor(si/2)*2; const idx=dropInsertIdx(ex.sets,p,2); const [s1,s2]=uniSides(ex);
+    const mk=k=>{ const ref=ex.sets[idx-2+k]; const side=(ref&&ref.side)||(k?s2:s1); const par=dropParentIdx(ex.sets,idx-2+k,2); const ord=par<0?0:Math.round((idx+k-par)/2)-1; return emptySet(ex,side,true,dropSource(ex.sets,par,ord,idx,side,target)); };
+    const a=mk(0), b=mk(1); ex.sets.splice(idx,0,a,b); return idx;
+  }
+  const idx=dropInsertIdx(ex.sets,si,1); const par=dropParentIdx(ex.sets,idx-1,1); const ord=par<0?0:(idx-par)-1;
+  ex.sets.splice(idx,0,emptySet(ex,null,true,dropSource(ex.sets,par,ord,idx,null,target))); return idx;
+}
+// one-time repair of the leaked full stack (v218). fsOn changes no math (effW only adds extraW), but seedSets kept re-seeding
+// it every session. Bug signature: a drop with fsOn, or a working set with fsOn + empty extraW right after a drop (same side).
+// Gated by d._fsfix; the first pre-repair snapshot is kept under its own key. Never touches weights/reps/dates.
+const LS_PRE218='gymtrk_db_v1_pre218';
+function fixLeakedFullStack(d,opts){
+  if(d._fsfix) return;
+  const leaked=(sets,i)=>{ const s=sets[i]; if(!s||!s.fsOn)return false; if(s.isDrop)return true; const prev=sets[i-(s.side?2:1)]; return (s.extraW===''||s.extraW==null)&&!!(prev&&prev.isDrop); };
+  const exs=[]; (d.sessions||[]).forEach(s=>(s.exercises||[]).forEach(e=>exs.push(e))); if(d.activeWork)(d.activeWork.exercises||[]).forEach(e=>exs.push(e));
+  const hits=[]; exs.forEach(e=>(e.sets||[]).forEach((s,i,a)=>{ if(leaked(a,i))hits.push(s); }));
+  if(hits.length){
+    if(!(opts&&opts.noBackup)){ try{ if(!localStorage.getItem(LS_PRE218))localStorage.setItem(LS_PRE218,JSON.stringify(d)); }catch(_){} }
+    hits.forEach(s=>{ s.fsOn=false; });
+  }
+  d._fsfix=true;
 }
 // "siempre al repetir un día tiene que salir como se entrenó la última vez" (feedback del dueño,
 // 2026-08-03): the exercise LIST + order a day uses comes from its most recent real (non-rest)
@@ -1068,15 +1154,15 @@ function exIndex(){
 //   7. name + variant most recent (even if historical session had multiple)
 // NEVER bare-name: UNI≠BI and free≠machine must stay isolated (false % is worse than no %).
 // confidence 'exact' when identity/day+occurrence pin it down uniquely, 'weak' otherwise.
+function gymN(g){ return String(g||'').toLowerCase().trim(); }
+function gymMatch(a,b){ return !a || !b || gymN(a)===gymN(b); }
 function baselineSetsFor(target){
   target=target||{};
   const idx=exIndex();
   // gym-scoped: distinto gym = distinta máquina/carga, no debe alimentar el ▲/▼ de este ejercicio
   // (feedback del dueño 2026-08-21) — pero conservador con datos legacy/fixtures sin gym: solo bloquea
   // cuando AMBOS lados declaran gym y difieren, nunca cuando alguno es desconocido.
-  const gymN=g=>String(g||'').toLowerCase().trim();
-  const gymOK=r=> !target.gym || !r.gym || gymN(r.gym)===gymN(target.gym);
-  const inWindow=r=> r.sid!==target.excludeSessionId && gymOK(r)
+  const inWindow=r=> r.sid!==target.excludeSessionId && gymMatch(r.gym,target.gym)
     && (target.beforeDate==null || r.date<target.beforeDate || (r.date===target.beforeDate && r.sIdx<target.beforeSIdx));
   const pick=(fn,level,confidence,why)=>{ const r=idx.find(x=>inWindow(x)&&fn(x)); return r?{sets:r.sets,sess:r.sess,ei:r.ei,level,confidence,date:r.date,why}:null; };
   if(target.exId){ const h=pick(r=>r.exId===target.exId,'id','exact','misma instancia'); if(h)return h; }
@@ -1431,8 +1517,10 @@ function _identitySelfCheck(){
 function _dropsetSelfCheck(){
   const A=(n,cond)=>{ if(!cond) throw new Error('SELFCHECK dropset: '+n); };
   const mkEx=()=>({type:'machine',sets:[]});
-  const addWork=ex=>{ const lt=ex.sets[ex.sets.length-1]||null; ex.sets.push(emptySet(ex,null,false,lt)); };
-  const addDrop=(ex,si)=>{ const idx=dropInsertIdx(ex.sets,si,1); ex.sets.splice(idx,0,Object.assign(emptySet(ex),{isDrop:true,fsOn:true})); };
+  // same code paths as the live [+ set] / [↓ drop set] handlers (v218)
+  const addWork=ex=>{ ex.sets.push(emptySet(ex,null,false,workSource(ex,null))); };
+  const addDrop=(ex,si)=>{ insertDrop(ex,si,null); };
+  const log=(s,v)=>Object.assign(s,v,{_pf:false,done:true});
   // "1, 1.5, 2, 3" — drop hung on serie 1, later series keep their numbers
   { const ex=mkEx(); addWork(ex);addWork(ex);addWork(ex); addDrop(ex,0);
     A('pattern 1,1.5,2,3', JSON.stringify(setLabels(ex.sets,1))===JSON.stringify(['1','1.5','2','3'])); }
@@ -1446,6 +1534,42 @@ function _dropsetSelfCheck(){
   // chaining: a second drop on the SAME parent reads as parent.6, not a new top-level series
   { const ex=mkEx(); addWork(ex); addDrop(ex,0); addDrop(ex,1);
     A('chained double-drop reads as 1,1.5,1.6', JSON.stringify(setLabels(ex.sets,1))===JSON.stringify(['1','1.5','1.6'])); }
+  // v218 — the reported bug: W1 100 → drop 60 → [+ set] must come out as 100, NOT full stack, NOT a drop
+  { const ex={type:'machine',unit:'lbs',sets:[]}; addWork(ex); log(ex.sets[0],{w:'100',r:'8',rir:'0'});
+    addDrop(ex,0); A('a new drop never starts in full stack', ex.sets[1].isDrop&&!ex.sets[1].fsOn);
+    log(ex.sets[1],{w:'60',r:'6',rir:'0'});
+    addWork(ex); const w2=ex.sets[2];
+    A('[+ set] after a drop copies the WORKING weight (100), not the drop (60)', w2.w==='100'&&!w2.isDrop);
+    A('[+ set] after a drop is not full stack', !w2.fsOn);
+    log(w2,{});
+    addDrop(ex,2); A('a drop under an equal-weight parent copies the previous drop (60, as a suggestion)', ex.sets[3].isDrop&&ex.sets[3].w==='60'&&ex.sets[3]._pf===true);
+    ex.sets.splice(3,1); w2.w='110'; addDrop(ex,2);
+    A('drop suggestion follows the drop/parent ratio (110 × 0.6 → 65 lbs)', ex.sets[3].w==='65');
+    A('drop % of its parent is available as history', dropPctTxt(ex.sets,1)==='60%'&&dropPctTxt(ex.sets,0)==='');
+  }
+  // chain position is respected: the 2nd drop of a parent follows 2nd drops, not the 1st
+  { const ex={type:'machine',unit:'lbs',sets:[]}; addWork(ex); log(ex.sets[0],{w:'100'}); addDrop(ex,0); log(ex.sets[1],{w:'60'}); addDrop(ex,1); log(ex.sets[2],{w:'40'});
+    addWork(ex); log(ex.sets[3],{}); addDrop(ex,3); addDrop(ex,4);
+    A('chained drops follow their own chain position (60 then 40)', ex.sets[4].w==='60'&&ex.sets[5].w==='40'&&JSON.stringify(setLabels(ex.sets,1))===JSON.stringify(['1','1.5','1.6','2','2.5','2.6'])); }
+  // unilateral: pairs stay together and each side follows its own side
+  { const ex={type:'cable',unit:'kg',unilateral:true,sets:[]}; const [s1,s2]=uniSides(ex);
+    ex.sets.push(emptySet(ex,s1,false,null),emptySet(ex,s2,false,null)); log(ex.sets[0],{w:'20'}); log(ex.sets[1],{w:'20'});
+    addDrop(ex,0); log(ex.sets[2],{w:'12.5'}); log(ex.sets[3],{w:'10'});
+    ex.sets.push(emptySet(ex,s1,false,workSource(ex,s1)),emptySet(ex,s2,false,workSource(ex,s2)));
+    A('unilateral [+ set] copies the working pair, not the drop pair', ex.sets[4].w==='20'&&ex.sets[5].w==='20'&&!ex.sets[4].isDrop);
+    log(ex.sets[4],{}); log(ex.sets[5],{}); addDrop(ex,4);
+    A('unilateral drop pair copies the previous drop of its own side', ex.sets[6].w==='12.5'&&ex.sets[7].w==='10'&&ex.sets[6].side===s1&&ex.sets[7].side===s2); }
+  // full stack + extra is a working-set property: carried working→working, never into a drop
+  { const ex={type:'machine',sets:[]}; addWork(ex); log(ex.sets[0],{w:'200',fsOn:true,extraW:'10'}); addWork(ex);
+    A('FS + extra carry over between working sets', ex.sets[1].fsOn===true&&ex.sets[1].extraW==='10');
+    addDrop(ex,1); A('…but never into a drop', ex.sets[2].isDrop&&!ex.sets[2].fsOn&&ex.sets[2].extraW===''); }
+  // one-time repair of data saved with the leak (fixture — never touches the real backup)
+  { const d={sessions:[{exercises:[{sets:[{w:'100',fsOn:false},{w:'60',isDrop:true,fsOn:true},{w:'60',fsOn:true,extraW:''},{w:'200',fsOn:true,extraW:'10'}]}]}]};
+    fixLeakedFullStack(d,{noBackup:true}); const ss=d.sessions[0].exercises[0].sets;
+    A('repair clears fsOn on drops', !ss[1].fsOn);
+    A('repair clears the leaked fsOn on the working set after a drop', !ss[2].fsOn);
+    A('repair keeps a genuine full stack (with extra)', ss[3].fsOn===true);
+    A('repair is gated and never changes weights', d._fsfix===true&&ss.map(s=>s.w).join()==='100,60,60,200'); }
   console.log('drop-set self-check OK');
 }
 // baseline-ladder self-check — runs only with ?selftest=1, AFTER db is loaded. Swaps BOTH db.sessions
@@ -1578,7 +1702,8 @@ function _cardioSelfCheck(){
     A('bike fields include rpm', cardioFields({type:'cardio',cardioSub:'bike'}).indexOf('rpm')>=0);
     A('emptySet cardio has minutes not w', emptySet({type:'cardio',cardioSub:'treadmill'}).minutes==='' && emptySet({type:'cardio'}).w===undefined);
     // log a session, next session baselines same subtype
-    db.sessions=[{id:'c1',date:'2026-08-01',dayId:'dC',type:'training',exercises:[
+    const cd=new Date(); cd.setDate(cd.getDate()-3);
+    db.sessions=[{id:'c1',date:todayISO(cd),dayId:'dC',type:'training',exercises:[
       {exId:'cT',name:'cardio am',type:'cardio',cardioSub:'treadmill',sets:[{minutes:'20',distance:'3.2',speed:'9.5',incline:'1',intensity:'moderada'}]},
       {exId:'cB',name:'cardio am',type:'cardio',cardioSub:'bike',sets:[{minutes:'15',resistance:'5',rpm:'80',intensity:'alta'}]}
     ]}];
@@ -1738,7 +1863,9 @@ function updateSetProgress(exi,si){ const w=db.activeWork; if(!w||!w.exercises[e
   if(ex.unilateral){ anchorSi = (si%2===0)?si:si-1; const a=ex.sets[anchorSi], b=ex.sets[anchorSi+1]; const prevA=(prevSets&&align[anchorSi]!=null)?prevSets[align[anchorSi]]:null; const prevB=(prevSets&&align[anchorSi+1]!=null)?prevSets[align[anchorSi+1]]:null; html=pairBadgeHTML(a,b,prevA,prevB,curFatCtx[anchorSi],curFatCtx[anchorSi+1],align[anchorSi]!=null?baseFatCtx[align[anchorSi]]:null,align[anchorSi+1]!=null?baseFatCtx[align[anchorSi+1]]:null,level); }
   else { anchorSi = si; const prevS=(prevSets&&align[si]!=null)?prevSets[align[si]]:null; html=setBadgeHTML(s,prevS,curFatCtx[si],align[si]!=null?baseFatCtx[align[si]]:null,level); }
   const el=document.querySelector('.setprogline[data-exi="'+exi+'"][data-si="'+anchorSi+'"]'); if(!el)return;
+  html=progLineInner(html,dropPctTxt(ex.sets,anchorSi));
   el.innerHTML=html||''; el.style.height=html?'11px':'0'; el.style.lineHeight='11px';
+  if(html){ el.style.textAlign='right'; el.style.padding='0 8px'; el.style.margin='-1px 0 3px'; }
 }
 // resolves the "at a glance" default unit for an exercise: its own default, else its last logged set,
 // else the global setting. Used by the cross-unit progress guard (setProgress/pairBadgeHTML/histProgress) —
@@ -1771,6 +1898,11 @@ function variantChips(ex){
   if(ex&&ex.weighted) h+='<span class="note">[weighted]</span>';
   return h;
 }
+// v218: FS toggle only on WORKING sets; a drop shows a fixed DS marker (drop-ness lives in isDrop, never in fsOn)
+function fsCellHTML(s,exi,si,act){ return s.isDrop ? `<span class="fs on ds" title="drop set">DS</span>` : `<button class="fs ${s.fsOn?'on':''}" data-act="${act}" data-exi="${exi}" data-si="${si}">FS</button>`; }
+// per-set line under a row: drop % of its parent (history of how the lift is dropped) on the left, progress badge on the right
+function progLineInner(badge,dpct){ return (dpct?`<span class="droppct">${dpct} de la serie</span>`:'')+(badge||''); }
+function histDropLine(sets,i){ const d=dropPctTxt(sets,i); return d?`<div class="setprogline" style="text-align:right;padding:0 8px;margin:-1px 0 3px;height:11px;line-height:11px"><span class="droppct">${d} de la serie</span></div>`:''; }
 function renderExercise(exi,ex,allowF,canReorder){
   const sets=ex.sets||[]; const isCardioEx=isCardio(ex); const isM=!isCardioEx&&['machine','pulley','smith','cable'].indexOf(ex.type)>=0; const isU=!isCardioEx&&!!ex.unilateral;
   const rec=machineRec((db.activeWork||{}).gym,ex); const ed=`data-act="editmach" data-exi="${exi}"`;
@@ -1841,7 +1973,8 @@ function renderExercise(exi,ex,allowF,canReorder){
       const prevA=(prevSets&&align[p]!=null)?prevSets[align[p]]:null;
       const prevB=(prevSets&&align[p+1]!=null)?prevSets[align[p+1]]:null;
       const pBadge=pairBadgeHTML(a,b,prevA,prevB,curFatCtx[p],curFatCtx[p+1],align[p]!=null?baseFatCtx[align[p]]:null,align[p+1]!=null?baseFatCtx[align[p+1]]:null,_bl.level);
-      const progLine=pBadge?`<div class="setprogline" data-exi="${exi}" data-si="${p}" style="text-align:right;padding:0 8px;margin:-1px 0 3px;height:11px;line-height:11px">${pBadge}</div>`:`<div class="setprogline" data-exi="${exi}" data-si="${p}" style="height:0"></div>`;
+      const pInner=progLineInner(pBadge,dropPctTxt(sets,p));
+      const progLine=pInner?`<div class="setprogline" data-exi="${exi}" data-si="${p}" style="text-align:right;padding:0 8px;margin:-1px 0 3px;height:11px;line-height:11px">${pInner}</div>`:`<div class="setprogline" data-exi="${exi}" data-si="${p}" style="height:0"></div>`;
       // drop set: ONLY via bottom bar [↓ drop set] — per-row ↓ removed (layout desalineaba tras insertar)
       body+=`<div class="pair ${a&&a.isDrop?'isdrop':''}"><div class="setn ${done?'done':''}" style="${zSty}" data-act="done" data-exi="${exi}" data-si="${p}">${labels[p]}</div><div class="prows">`
         +`<div class="srow ${gcU}"><div class="side">${escTxt(a.side||'R')}</div>${ca.w}${midA}${ca.r}${ca.rr}${ca.del}</div>`
@@ -1858,11 +1991,12 @@ function renderExercise(exi,ex,allowF,canReorder){
     let body='';
     const labels=setLabels(sets,1);
     sets.forEach((s,si)=>{ const c=renderSetRow(exi,si,s,ex,allowF); const fsOn=isM&&s.fsOn&&!s.isDrop;
-      const fs=isM?`<button class="fs ${s.fsOn?'on':''}" data-act="fs" data-exi="${exi}" data-si="${si}">${s.isDrop?'DS':'FS'}</button>`:'';
+      const fs=isM?fsCellHTML(s,exi,si,'fs'):'';
       const z=!s.done?setZone(s):null; const zSty=z==='light'?'color:var(--warn);':z==='heavy'?'color:var(--bad);':'';
       const prevS=(prevSets&&align[si]!=null)?prevSets[align[si]]:null;
       const sBadge=setBadgeHTML(s,prevS,curFatCtx[si],align[si]!=null?baseFatCtx[align[si]]:null,_bl.level);
-      const progLine=sBadge?`<div class="setprogline" data-exi="${exi}" data-si="${si}" style="text-align:right;padding:0 8px;margin:-1px 0 3px;height:11px;line-height:11px">${sBadge}</div>`:`<div class="setprogline" data-exi="${exi}" data-si="${si}" style="height:0"></div>`;
+      const sInner=progLineInner(sBadge,dropPctTxt(sets,si));
+      const progLine=sInner?`<div class="setprogline" data-exi="${exi}" data-si="${si}" style="text-align:right;padding:0 8px;margin:-1px 0 3px;height:11px;line-height:11px">${sInner}</div>`:`<div class="setprogline" data-exi="${exi}" data-si="${si}" style="height:0"></div>`;
       const gcRow=isBwEx?'gc-free-bw':(fsOn?'gc-mach-fs':gc);
       const mid=isBwEx?c.we:(fsOn?c.we:c.u);
       // setend: del only (per-row ↓ removed) — same column width for normal and isdrop rows
@@ -1916,7 +2050,7 @@ function renderHistExercise(exi,ex,sess){
       body+=`<div class="pair ${a&&a.isDrop?'isdrop':''}"><div class="setn ${done?'done':''}" style="${zSty}" data-act="h_done" data-exi="${exi}" data-si="${p}">${labels[p]}</div><div class="prows">`
         +`<div class="srow ${gcU}"><div class="side">${escTxt(a.side||'R')}</div>${ca.w}${midA}${ca.r}${ca.rr}${ca.del}</div>`
         +(cb?`<div class="srow ${gcU}"><div class="side">${escTxt(b.side||'L')}</div>${cb.w}${midB}${cb.r}${cb.rr}<span class="del" style="visibility:hidden">×</span></div>`:'')
-        +`</div></div>`;
+        +`</div></div>`+histDropLine(sets,p);
     }
     const add=`<div class="addrow auni"><span class="aleft"><button class="addbtn" data-act="h_addset" data-exi="${exi}">[+ set]</button><button class="addbtn" data-act="h_dropset" data-exi="${exi}" data-si="${Math.max(0,sets.length-2)}">[↓ drop set]</button></span></div>`;
     rows=thead+body+add;
@@ -1925,11 +2059,11 @@ function renderHistExercise(exi,ex,sess){
     let thead=`<div class="thead ${gc}"><div class="cl"></div>${isM?'<div class="cl"></div>':''}<div class="cl w">weight</div><div class="cl">${isBwEx?'lastre':'unit'}</div><div class="cl">reps</div><div class="cl">rir</div><div class="cl"></div></div>`;
     let body=''; const labels=setLabels(sets,1);
     sets.forEach((s,si)=>{ const c=renderSetRow(exi,si,s,ex,true,'h_'); const fsOn=isM&&s.fsOn&&!s.isDrop;
-      const fs=isM?`<button class="fs ${s.fsOn?'on':''}" data-act="h_fs" data-exi="${exi}" data-si="${si}">${s.isDrop?'DS':'FS'}</button>`:'';
+      const fs=isM?fsCellHTML(s,exi,si,'h_fs'):'';
       const z=!s.done?setZone(s):null; const zSty=z==='light'?'color:var(--warn);':z==='heavy'?'color:var(--bad);':'';
       const gcRow=isBwEx?'gc-free-bw':(fsOn?'gc-mach-fs':gc);
       const mid=isBwEx?c.we:(fsOn?c.we:c.u);
-      body+=`<div class="srow ${gcRow} ${s.isDrop?'isdrop':''}"><div class="setn ${s.done?'done':''}" style="${zSty}" data-act="h_done" data-exi="${exi}" data-si="${si}">${labels[si]}</div>${fs}${c.w}${mid}${c.r}${c.rr}<div class="setend">${c.del}</div></div>`;
+      body+=`<div class="srow ${gcRow} ${s.isDrop?'isdrop':''}"><div class="setn ${s.done?'done':''}" style="${zSty}" data-act="h_done" data-exi="${exi}" data-si="${si}">${labels[si]}</div>${fs}${c.w}${mid}${c.r}${c.rr}<div class="setend">${c.del}</div></div>`+histDropLine(sets,si);
     });
     const add=`<div class="addrow ${isM?'amach':'afree'}"><span class="aleft"><button class="addbtn" data-act="h_addset" data-exi="${exi}">[+ set]</button><button class="addbtn" data-act="h_dropset" data-exi="${exi}" data-si="${Math.max(0,sets.length-1)}">[↓ drop set]</button></span></div>`;
     rows=thead+body+add;
@@ -3557,10 +3691,23 @@ function setField(exi,si,f,val,skipMirror){ const w=db.activeWork; if(!w)return;
     if(!skipMirror&&ex.unilateral){ const pj=si^1; const ps=ex.sets[pj]; if(ps&&(ps.w===''||ps.w==null||ps._pf)){ ps.w=val; ps._pf=false; writeDom(pj,val); } }
     // propagate to all LATER sets that are still prefilled/empty — they stay marked _pf (suggestion),
     // so they're cleared from the saved session unless the user edits/confirms them
+    // v218: only sets of the SAME kind inherit it — a drop's weight never leaks into a working set or vice versa
     const startProp = ex.unilateral ? (Math.max(si, si^1) + 1) : (si + 1);
+    const kindDrop=!!s.isDrop;
     for(let j=startProp; j<ex.sets.length; j++){
       const ps=ex.sets[j];
-      if(ps && (ps.w===''||ps.w==null||ps._pf)){ ps.w=val; ps._pf=true; writeDom(j,val); }
+      if(!ps || !!ps.isDrop!==kindDrop) continue;
+      if(ps.w===''||ps.w==null||ps._pf){ ps.w=val; ps._pf=true; writeDom(j,val); }
+    }
+    // v218: a still-pending drop hanging off THIS working set re-derives its suggestion from the new parent weight
+    if(!kindDrop){ const step=ex.unilateral?2:1; const p0=ex.unilateral?(si&~1):si; let tgt=null;
+      for(let j=p0+step; j<ex.sets.length && ex.sets[j] && ex.sets[j].isDrop; j++){ const d=ex.sets[j];
+        if(!(d._pf||d.w===''||d.w==null))continue;
+        if(!tgt)tgt=Object.assign(exIdentity(w,exi),{orderIdx:exi});
+        const par=dropParentIdx(ex.sets,j,step); if(par<0)continue;
+        const src=dropSource(ex.sets,par,Math.round((j-par)/step)-1,j,d.side||null,tgt);
+        if(src&&src.w){ d.w=String(src.w); d._pf=true; writeDom(j,d.w); }
+      }
     }
   }
   try{updateProgBadge(exi);}catch(_){}
@@ -3675,17 +3822,14 @@ document.getElementById('app').addEventListener('click',e=>{
     if(ex.unilateral){ const v=!(ex.sets[si]&&ex.sets[si].done); if(ex.sets[si]){ex.sets[si].done=v;ex.sets[si]._pf=false;} if(ex.sets[si+1]){ex.sets[si+1].done=v;ex.sets[si+1]._pf=false;} }
     else { ex.sets[si].done=!ex.sets[si].done; ex.sets[si]._pf=false; }
     save(); render(); }
-  else if(a==='h_fs'){ const s=db.sessions.find(x=>x.id===state._histSessId); if(!s)return; const st=s.exercises[exi].sets[si]; st.fsOn=!st.fsOn; save(); render(); }
+  else if(a==='h_fs'){ const s=db.sessions.find(x=>x.id===state._histSessId); if(!s)return; const st=s.exercises[exi].sets[si]; if(!st||st.isDrop)return; st.fsOn=!st.fsOn; if(!st.fsOn&&!st.bw)st.extraW=''; save(); render(); }
   else if(a==='h_addset'){ const s=db.sessions.find(x=>x.id===state._histSessId); if(!s)return; const ex=s.exercises[exi];
     if(ex.unilateral){ const [s1,s2]=uniSides(ex); ex.sets.push(emptySet(ex,s1,false,null)); ex.sets.push(emptySet(ex,s2,false,null)); }
     else { ex.sets.push(emptySet(ex,null,false,null)); }
     save(); render(); }
   else if(a==='h_dropset'){ const s=db.sessions.find(x=>x.id===state._histSessId); if(!s)return; const ex=s.exercises[exi]; if(isCardio(ex))return;
-    if(ex.unilateral){ const p=Math.floor(si/2)*2; const idx=dropInsertIdx(ex.sets,p,2); const [s1,s2]=uniSides(ex);
-      ex.sets.splice(idx,0, Object.assign(emptySet(ex,s1),{isDrop:true,fsOn:true}), Object.assign(emptySet(ex,s2),{isDrop:true,fsOn:true}));
-    } else { const idx=dropInsertIdx(ex.sets,si,1);
-      ex.sets.splice(idx,0, Object.assign(emptySet(ex),{isDrop:true,fsOn:true}));
-    }
+    const sIdx=db.sessions.indexOf(s);
+    insertDrop(ex,si,Object.assign(exIdentity(s,exi),{orderIdx:exi,excludeSessionId:s.id,beforeDate:s.date,beforeSIdx:sIdx}));
     save(); render(); }
   else if(a==='h_delset'){ const s=db.sessions.find(x=>x.id===state._histSessId); if(!s)return; const ex=s.exercises[exi]; const step=ex.unilateral?2:1; const p=Math.floor(si/step)*step; const st=ex.sets[p];
     if(st&&st.isDrop){ ex.sets.splice(p,step); }
@@ -3733,16 +3877,13 @@ document.getElementById('app').addEventListener('click',e=>{
   else if(a==='ss_exup'){ const s=db.sessions.find(x=>x.id===window._sessId); const i=+el.dataset.ei; if(s&&i>0){ const a=s.exercises; const t=a[i-1]; a[i-1]=a[i]; a[i]=t; save(); openSessionEdit(window._sessId); } }
   else if(a==='ss_exdn'){ const s=db.sessions.find(x=>x.id===window._sessId); const i=+el.dataset.ei; if(s&&i<s.exercises.length-1){ const a=s.exercises; const t=a[i+1]; a[i+1]=a[i]; a[i]=t; save(); openSessionEdit(window._sessId); } }
   else if(a==='done'){ const w=db.activeWork; const ex=w.exercises[exi]; let nowDone; if(ex.unilateral){ const v=!(ex.sets[si]&&ex.sets[si].done); nowDone=v; if(ex.sets[si]){ex.sets[si].done=v;ex.sets[si]._pf=false;} if(ex.sets[si+1]){ex.sets[si+1].done=v;ex.sets[si+1]._pf=false;} } else { ex.sets[si].done=!ex.sets[si].done; ex.sets[si]._pf=false; nowDone=ex.sets[si].done; } if(nowDone&&!w.loggedAfter){ restAudioInit(); w.restEnd=Date.now()+((db.settings.restSec||90)*1000); _restFinT=0; } if(nowDone){ const ts=Date.now(); if(ex.unilateral){if(ex.sets[si])ex.sets[si].doneAt=ts;if(ex.sets[si+1])ex.sets[si+1].doneAt=ts;}else ex.sets[si].doneAt=ts; } if(nowDone)state._autoScroll=true; save(); render(); }
-  else if(a==='fs'){ const s=db.activeWork.exercises[exi].sets[si]; s.fsOn=!s.fsOn; save(); render(); }
-  else if(a==='addset'){ const ex=db.activeWork.exercises[exi]; if(isCardio(ex)){ const lt=ex.sets[ex.sets.length-1]||null; ex.sets.push(emptySet(ex,null,false,lt)); } else if(ex.unilateral){ const [s1,s2]=uniSides(ex); const lr=ex.sets[ex.sets.length-2]||null, ll=ex.sets[ex.sets.length-1]||null; ex.sets.push(emptySet(ex,s1,false,lr)); ex.sets.push(emptySet(ex,s2,false,ll)); } else { const lt=ex.sets[ex.sets.length-1]||null; ex.sets.push(emptySet(ex,null,false,lt)); } save(); state._scroll=document.getElementById('view').scrollTop; render(); }
+  else if(a==='fs'){ const s=db.activeWork.exercises[exi].sets[si]; if(!s||s.isDrop)return; s.fsOn=!s.fsOn; if(!s.fsOn&&!s.bw)s.extraW=''; save(); render(); }
+  else if(a==='addset'){ const ex=db.activeWork.exercises[exi]; if(isCardio(ex)){ const lt=ex.sets[ex.sets.length-1]||null; ex.sets.push(emptySet(ex,null,false,lt)); } else if(ex.unilateral){ const [s1,s2]=uniSides(ex); const lr=workSource(ex,s1)||ex.sets[ex.sets.length-2]||null, ll=workSource(ex,s2)||ex.sets[ex.sets.length-1]||null; ex.sets.push(emptySet(ex,s1,false,lr)); ex.sets.push(emptySet(ex,s2,false,ll)); } else { ex.sets.push(emptySet(ex,null,false,workSource(ex,null))); } save(); state._scroll=document.getElementById('view').scrollTop; render(); }
   else if(a==='dropset'){ const ex=db.activeWork.exercises[exi]; if(isCardio(ex))return; // cardio has no drop sets
     // a drop is a SUBSERIE hung right after its parent (+ any drops the parent already has) — never
     // appended at the end of the exercise. Tapping ↓ on an existing drop chains another onto the same parent.
-    if(ex.unilateral){ const p=Math.floor(si/2)*2; const idx=dropInsertIdx(ex.sets,p,2); const [s1,s2]=uniSides(ex);
-      ex.sets.splice(idx,0, Object.assign(emptySet(ex,s1),{isDrop:true,fsOn:true}), Object.assign(emptySet(ex,s2),{isDrop:true,fsOn:true}));
-    } else { const idx=dropInsertIdx(ex.sets,si,1);
-      ex.sets.splice(idx,0, Object.assign(emptySet(ex),{isDrop:true,fsOn:true}));
-    }
+    // v218: never full stack; prefilled from the matching drop (session → baseline → drop/parent ratio history)
+    insertDrop(ex,si,Object.assign(exIdentity(db.activeWork,exi),{orderIdx:exi}));
     save(); state._scroll=document.getElementById('view').scrollTop; render(); }
   else if(a==='delset'){ const ex=db.activeWork.exercises[exi]; const step=ex.unilateral?2:1; const p=Math.floor(si/step)*step; const s=ex.sets[p];
     if(s&&s.isDrop){ ex.sets.splice(p,step); }
