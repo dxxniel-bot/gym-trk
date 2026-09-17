@@ -259,6 +259,8 @@
   .inp.pf, .pick.pf{opacity:.45;}
   .fs{height:36px; border:.5px solid var(--o20); background:transparent; color:var(--o50); font-size:9px; cursor:pointer;} .fs.on{background:var(--o12); color:var(--fg);} .fs.ds{display:flex; align-items:center; justify-content:center; cursor:default;}
   .droppct{float:left; font-size:9px; font-weight:400; color:var(--o35);}
+  .settens{font-size:9px; font-weight:400; color:var(--o40); margin-left:5px;}
+  .exT{font-size:10px; font-weight:700; color:var(--o50); margin-left:6px; letter-spacing:.04em; white-space:nowrap;}
   .del{font-size:14px; color:var(--o40); text-align:center; cursor:pointer; background:none; border:0; height:36px; line-height:36px; padding:0;}
   .pair{display:flex; align-items:center; gap:4px; margin-bottom:5px;} .pair .setn{width:22px; flex:0 0 22px;} .pair .prows{flex:1;}
   /* prev session full preview */
@@ -1025,7 +1027,7 @@ const VOL_LANDMARKS={chest:[10,20,22],back:[10,22,25],quads:[8,18,20],hams:[6,16
 // NEVER renames or merges the user's muscle names: every row keeps exactly what the user typed.
 const MUSCLE_ALIAS={triceps:'tricep','tríceps':'tricep',calves:'calfs',calf:'calfs',pantorrilla:'calfs',pantorrillas:'calfs',gemelos:'calfs',shoulder:'delts',shoulders:'delts',hombro:'delts',hombros:'delts',deltoids:'delts',deltoide:'delts',deltoides:'delts',quad:'quads',quadriceps:'quads',cuadriceps:'quads','cuádriceps':'quads',hamstring:'hams',hamstrings:'hams',femoral:'hams',femorales:'hams',isquios:'hams',isquiotibiales:'hams',lat:'back',lats:'back',dorsal:'back',dorsales:'back',espalda:'back',pecho:'chest',pectoral:'chest',pectorales:'chest',bicep:'biceps','bíceps':'biceps',glute:'glutes',gluteo:'glutes',gluteos:'glutes','glúteo':'glutes','glúteos':'glutes',trap:'traps',trapecio:'traps',trapecios:'traps',cuello:'neck',abdominales:'abs',abdomen:'abs',core:'abs'};
 function canonM(n){ n=String(n||'').toLowerCase().trim(); return MUSCLE_ALIAS[n]||n; }
-function isHardSet(st){ const r=st.rir; if(r===''||r==null)return true; if(r==='F')return true; const n=parseFloat(r); return isNaN(n)?true:n<=4; }
+function isHardSet(st){ const r=String(st&&st.rir==null?'':st.rir).trim().toUpperCase(); if(r==='')return true; if(r==='F')return true; const n=parseFloat(r); return isNaN(n)?true:n<=4; }
 // canonical muscles per exercise: [{name, weight}], first is primary (weight=1), subsequent are secondary (custom decimal 0..1).
 // Reads e.muscles array if present; falls back to wrapping legacy e.muscle string as single primary so old data keeps working.
 function exMuscles(e){
@@ -1119,7 +1121,8 @@ function musclesOf(sessOrWork,ei){
 // ---- baseline engine: find the EQUIVALENT prior occurrence of an exercise-instance, never "any occurrence of this name" ----
 let _exIdxCache=null;
 // call after any mutation that could change db.sessions (save() does this) so exIndex() rebuilds once, lazily.
-function bumpIdx(){ _exIdxCache=null; }
+let _refCache={}, _sessTCache={}, _fatCtxCache={};
+function bumpIdx(){ _exIdxCache=null; _refCache={}; _sessTCache={}; _fatCtxCache={}; }
 // flat, memoized list of every REAL (non-_pf, non-empty) exercise-occurrence across all saved sessions,
 // most-recent-first. Base for baselineSetsFor() — rebuilt only when bumpIdx() invalidates it.
 function exIndex(){
@@ -1350,22 +1353,22 @@ function plannedVolumeSection(){
     +`<div class="submeta" style="margin-top:8px">cobertura del split por músculo · la tensión real se mide al loguear · marca ~10 = rendimientos decrecientes</div>`;
 }
 function volumeSection(){
-  // EFFECTIVE VOLUME (volumen efectivo, no crudo): serie EFECTIVA = dura (RIR≤4) en zona productiva. Progreso = tensión (Σ e1RM × factor de zona).
+  // EFFECTIVE VOLUME (volumen efectivo, no crudo): serie EFECTIVA = dura (RIR≤4) en zona productiva. T = tensión efectiva 7d (v219).
   const {byM,freq,effM,directM,indirectM}=weeklySets(7);
   const muscles=Object.keys(byM).sort((a,b)=>(effM[b]||0)-(effM[a]||0));
   let rows='';
   if(!muscles.length){ rows=`<div class="submeta" style="padding:6px 0">aún sin series duras esta semana</div>`; }
   const r1=n=>Math.round(n*10)/10; const CEIL=20, DR=10, drPct=Math.round(DR/CEIL*100);
   muscles.forEach(m=>{ const eff=r1(effM[m]||0), hard=r1(byM[m]);
-    const mp=muscleProgress(m); const mpBadge=mp?progBadgeFromProg(mp,'progreso de tensión del músculo · 7d vs 7d previos (Σ e1RM × factor de zona productiva)'):'';
+    const mp=muscleProgress(m); const mpBadge=(mp&&mp.dir)?progBadgeFromProg(mp,'tensión efectiva del músculo · 7d vs 7d previos'):''; const mT=(mp&&mp.cur>0)?` · T ${fmtT(mp.cur)}`:'';
     const pct=Math.min(100,Math.round(eff/CEIL*100));
     const junk=r1(hard-eff); const jn=junk>0?` <span style="color:var(--o30)" title="series duras pero de baja tensión (zona ligera) — sube carga / acércate al fallo">+${junk} lig.</span>`:'';
     const ind=r1(indirectM[m]||0), dir=r1(directM[m]||0); const brk=ind>0?`<div class="submeta" style="font-size:11px;opacity:.5;margin-top:2px" title="directas = músculo primario (1×) · indirectas = secundario (peso parcial)">↳ ${dir} directas · ${ind} indirectas</div>`:'';
-    rows+=`<div class="vrow"><div class="vtop"><span class="vm">${escTxt(m)}${mpBadge}</span><span class="vn">${eff} ef.${jn} · ${freq[m]||0}×/wk</span></div>`
+    rows+=`<div class="vrow"><div class="vtop"><span class="vm">${escTxt(m)}${mpBadge}</span><span class="vn">${eff} ef.${jn}${mT} · ${freq[m]||0}×/wk</span></div>`
       +`<div class="vbar"><i style="width:${pct}%"></i><span class="mev" style="left:${drPct}%"></span></div>${brk}</div>`;
   });
   return `<hr class="rule"/><div class="section" style="margin-bottom:12px"><div class="h"><span class="s">//</span>EFFECTIVE VOLUME</div><div class="meta">series efectivas/músculo · 7d</div></div>`+rows
-    +`<div class="submeta" style="margin-top:8px">ef. = series duras (RIR≤4) en zona productiva (tensión real) · marca ~10 = rendimientos decrecientes · ▲▼ = progreso de tensión (e1RM)</div>`;
+    +`<div class="submeta" style="margin-top:8px">ef. = series duras (RIR≤4) en zona productiva (tensión real) · marca ~10 = rendimientos decrecientes · T = tensión efectiva 7d (carga relativa × reps cerca del fallo) · ▲▼ = T vs 7d previos</div>`;
 }
 
 // ---------- render: workout ----------
@@ -1396,12 +1399,10 @@ function renderSetRow(exi,si,set,ex,allowF,actPrefix){
   const we=`<input class="inp weight" data-act="${actPrefix}setf" data-exi="${exi}" data-si="${si}" data-f="extraW" value="${set.extraW||''}" placeholder="${_bw?'+lastre':'+extra'}" inputmode="decimal" ${ro} ${lk}/>`;
   return {w,u,r,rr,del,we};
 }
-// Per-set score = Epley e1RM × intensityFactor — STRENGTH CAPACITY within the hypertrophy zone.
+// LEGACY per-set score (setScore — deprecated in v219, no UI consumer; the tension model further down replaced it):
+//   Epley e1RM × intensityFactor × flat proximity bonus.
 //   e1RM = w × (1 + reps_to_failure/30) — same weight/reps with LOWER RIR → lower e1RM (you got weaker / harder day).
-//   intensityFactor — filters out non-productive loads (light/junk volume) without dropping the score directionality:
-//     <55% 1RM (>32 reps to failure)  → 0    descartado (carga floja, sin estímulo útil)
-//     55-65% (15-32 reps to failure)  → ramp 0→1
-//     ≥65% 1RM (≤15 reps to failure)  → 1.0  zona productiva
+//   intensityFactor (i = 1/(1+rtf/30)): i<0.55 (>24.5 reps to failure) → 0 · 0.55-0.65 (16-24.5) → ramp 0→1 · ≥0.65 → 1
 // ── failure semantics (canonical) ───────────────────────────────────────────
 // r = reps COMPLETED; rir='F' = failure (attempted the NEXT rep, missed it). 5@RIR0 ({r:5,rir:'0'}) and
 // 6F ({r:5,rir:'F'}) are DISTINCT events. Strength/e1RM treats them equal (5 clean reps, reserve 0);
@@ -1432,9 +1433,9 @@ function repsToFailure(reps,rir){ if(!(reps>0))return 0; const t=String(rir==nul
 function impliedIntensity(reps,rir){ const tr=repsToFailure(reps,rir); return tr>0 ? 1/(1+tr/30) : 0; }
 function intensityFactor(i){ if(i<0.55)return 0; if(i<0.65)return (i-0.55)/0.10; return 1; }
 // setZone — quality flag used in UI to nudge the user:
-//   'light'      — push more weight (or fewer reps near failure)   <65% 1RM (>15 reps to failure)
-//   'productive' — in the productive zone (target for hypertrophy) 65-92% 1RM (3-15 reps to failure)
-//   'heavy'      — too heavy / too few reps for hypertrophy volume >92% 1RM (1-3 reps to failure)
+//   'light'      — push more weight (or fewer reps near failure)   <65% 1RM (>~16 reps to failure)
+//   'productive' — in the productive zone (target for hypertrophy) 65-92% 1RM (~2.6-16 reps to failure)
+//   'heavy'      — too heavy / too few reps for hypertrophy volume >92% 1RM (<~2.6 reps to failure)
 function setZone(s){ const r=parseFloat(s&&s.r)||0; if(!(r>0))return null; const i=impliedIntensity(r,s&&s.rir); if(i<0.65)return 'light'; if(i>0.92)return 'heavy'; return 'productive'; }
 const PROX_MULT={far:1.00,rir0:1.08,fail:1.15}; // proximity-to-failure axis (calibration knob): F > RIR0 > RIR>0
 function proximityMult(s){ if(isFailure(s))return PROX_MULT.fail; return setRIR(s)===0?PROX_MULT.rir0:PROX_MULT.far; }
@@ -1442,9 +1443,107 @@ function proximityMult(s){ if(isFailure(s))return PROX_MULT.fail; return setRIR(
 function setScore(s){ if(bwMissing(s))return 0; const w=effW(s), r=setReps(s); if(!(w>0&&r>0))return 0; const er=effRepsForE1RM(s); const i=impliedIntensity(r,isFailure(s)?'0':s.rir); const f=intensityFactor(i); if(f===0)return 0; return w*(1+er/30)*f*proximityMult(s); }
 function bestScore(sets,confirmedOnly){ let b=0; (sets||[]).forEach(s=>{ if(confirmedOnly&&s._pf)return; const v=setScore(s); if(v>b)b=v; }); return b; }
 function totalScore(sets,confirmedOnly){ let sum=0,n=0; (sets||[]).forEach(s=>{ if(confirmedOnly&&s._pf)return; const v=setScore(s); if(v>0){sum+=v;n++;} }); return {sum,n}; }
-// PROGRESS = strength CAPACITY (e1RM), not stimulus: same w×reps with MORE reserve (RIR1>RIR0) ⇒ stronger ⇒ ▲.
-// (setScore stays for stimulus/tension + fatigue.) Mean across working sets is set-count robust → no projection hack.
+// PROGRESS = strength CAPACITY (e1RM) = "tensión mecánica POTENCIAL": same w×reps with MORE reserve (RIR1>RIR0) ⇒ stronger ⇒ ▲;
+// the same w×reps with LESS reserve ⇒ lost capacity ⇒ ▼ (owner, 2026-09-16: "menor capacidad de ejercer fuerza = menos tensión").
 function avgE1RM(sets,confirmedOnly){ let sum=0,n=0; (sets||[]).forEach(s=>{ if(confirmedOnly&&s._pf)return; const v=e1rmOf(s); if(v>0){sum+=v;n++;} }); return n?sum/n:0; }
+// ── TENSIÓN EFECTIVA (v219) ─────────────────────────────────────────────────────────────────────────────────────────
+// Two readings on purpose: the ▲▼% is CAPACITY (above); T is the tension a set actually APPLIED near failure, relative to
+// YOUR 1RM of that exercise. Per-rep model: rep j of a set of r reps ending at RIR k had RIR_j = k + (r-j); its share grows
+// NON-linearly toward failure (involuntary velocity loss → more recruitment): P(x) = exp(-x/tau). F (real failure: the next
+// rep was attempted and stalled mid-concentric) = RIR0 + half a rep at maximal effort. Load: I = weight / reference 1RM,
+// with a floor (<25 % 1RM ≈ no stimulus, ramp to 40 %).
+//   ER(s) = sum_j P(k+r-j) + F·failRep·P(0)          T(s) = I · ER(s) · gate(I)
+// tau=3 → the last 5 reps carry 81-100 % of the credit. Per set to failure (1RM=100): 30RM 1.76 · 15RM 2.34 · 10RM 2.55 ·
+// 8RM 2.59 · 6RM 2.54 · 4RM 2.29 · 4F 2.73 → moderate loads peak, very light/heavy land a bit lower. Consistent with:
+// Robinson 2024 (hypertrophy ↑ closer to failure; strength ~indifferent) · Refalo 2023/2024 (failure vs RIR1-2: small gap,
+// more fatigue) · Lopez 2021 / Schoenfeld 2017 (hypertrophy ~load-independent at failure) · Lasevicius 2018 (20 % 1RM
+// suboptimal) · Pareja-Blanco 2017 (more velocity loss → more hypertrophy). An app index, not a validated measurement.
+const TENS={tau:3, failRep:0.5, rirAssumed:2, gateLo:0.25, gateHi:0.40, failFatigue:1.15, proxFatigue:0.5};   // calibration knobs
+function rirKnown(s){ return String(s&&s.rir==null?'':s.rir).trim()!==''; }
+function tensP(x){ return Math.exp(-Math.max(0,x)/TENS.tau); }
+// tension-weighted ("effective") reps; est=true when RIR was blank and TENS.rirAssumed stood in for it
+function setER(s){ const r=Math.round(setReps(s)); if(!(r>0))return {er:0,est:false};
+  const F=isFailure(s), est=!F&&!rirKnown(s), k=F?0:(est?TENS.rirAssumed:Math.round(setRIR(s)));
+  let er=0; for(let j=1;j<=r;j++) er+=tensP(k+r-j); if(F) er+=TENS.failRep*tensP(0);
+  return {er,est}; }
+function tensGate(I){ if(I>=TENS.gateHi)return 1; if(I<=TENS.gateLo)return 0; return (I-TENS.gateLo)/(TENS.gateHi-TENS.gateLo); }
+const NO_T={t:0,I:0,er:0,est:false};
+// tension of one set against a reference 1RM in the SAME unit → {t, I, er, est}
+function setTension(s,ref){ if(!s||s._pf||bwMissing(s))return NO_T; const w=effW(s); if(!(w>0&&ref>0&&setReps(s)>0))return NO_T;
+  const I=Math.min(1.2,w/ref); const x=setER(s); return {t:I*x.er*tensGate(I),I,er:x.er,est:x.est}; }
+// relative fatigue/load cost of a set (feeds recovery): more reps, heavier, closer to failure, and real failure cost more
+function setFatigueCost(s,ref){ if(!s||s._pf||bwMissing(s))return 0; const w=effW(s), r=setReps(s); if(!(w>0&&r>0&&ref>0))return 0;
+  const I=Math.min(1.2,w/ref), F=isFailure(s), k=F?0:(rirKnown(s)?setRIR(s):TENS.rirAssumed);
+  return I*(r+(F?TENS.failRep:0))*(1+TENS.proxFatigue*tensP(k))*(F?TENS.failFatigue:1); }
+// load in kg for tonnage totals: lbs converted, plates (no fixed weight) excluded
+function kgLoad(s){ const u=unitN(s); if(u==='pla')return 0; const w=effW(s); return u==='lbs'?w*0.45359237:w; }
+// reference 1RM of an exercise identity in one unit: best e1RM of WORKING sets with known RIR in the previous 90 days of that
+// same exercise (same gym + variant — the progress scoping rule), or of the given sets if stronger / no history yet.
+function refE1RMFor(target,unit,sets){
+  const key=[target.exId||'',target.name,target.variant,gymN(target.gym),unit||'',target.beforeDate||'',target.beforeSIdx==null?'':target.beforeSIdx,target.excludeSessionId||''].join('|');
+  let best=_refCache[key];
+  if(best==null){ best=0; const d0=new Date((target.beforeDate||todayISO())+'T00:00:00'); d0.setDate(d0.getDate()-90); const start=todayISO(d0);
+    for(const r of exIndex()){
+      if(r.date<start)break;   // exIndex is most-recent-first
+      if(r.sid===target.excludeSessionId)continue;
+      if(target.beforeDate!=null && !(r.date<target.beforeDate || (r.date===target.beforeDate && r.sIdx<target.beforeSIdx)))continue;
+      if(!gymMatch(r.gym,target.gym))continue;
+      if(!((target.exId&&r.exId===target.exId)||(r.name===target.name&&r.variant===target.variant)))continue;
+      r.sets.forEach(s=>{ if(!s||s.isDrop||!rirKnown(s))return; if(unit&&unitN(s)&&unitN(s)!==unit)return; const v=e1rmOf(s); if(v>best)best=v; });
+    }
+    _refCache[key]=best; }
+  const own=(sets||[]).filter(s=>s&&!s._pf&&!s.isDrop&&(!unit||!unitN(s)||unitN(s)===unit));
+  let fb=0; (own.some(rirKnown)?own.filter(rirKnown):own).forEach(s=>{ const v=e1rmOf(s); if(v>fb)fb=v; });
+  return Math.max(best,fb);
+}
+// per-set tension of exercises[ei] of a session / activeWork (+ totals). A unilateral L/R pair counts as the MEAN of its
+// sides (stimulus per limb — same rule as "a pair = 1 hard set"). Drops count with their own (lower) load.
+function exTensionSets(sessOrWork,ei,opts){
+  const e=((sessOrWork&&sessOrWork.exercises)||[])[ei]; if(!e||isCardio(e))return null;
+  const sets=e.sets||[]; const id=Object.assign(exIdentity(sessOrWork,ei),{orderIdx:ei},opts||{});
+  const refs={}; const refOf=u=>(refs[u]!=null?refs[u]:(refs[u]=refE1RMFor(id,u,sets)));
+  const per=sets.map(s=>{ if(!s||s._pf)return null; const x=setTension(s,refOf(unitN(s))); return x.t>0?x:null; });
+  const fat=sets.map(s=>(!s||s._pf)?0:setFatigueCost(s,refOf(unitN(s))));
+  const step=e.unilateral?2:1; let total=0, load=0, est=false;
+  for(let i=0;i<sets.length;i+=step){
+    const grp=per.slice(i,i+step).filter(Boolean); if(grp.length){ total+=grp.reduce((a,x)=>a+x.t,0)/grp.length; if(grp.some(x=>x.est))est=true; }
+    const fg=fat.slice(i,i+step).filter(v=>v>0); if(fg.length) load+=fg.reduce((a,v)=>a+v,0)/fg.length;
+  }
+  return {per,total,load,est,step};
+}
+function pairTension(tn,i){ if(!tn)return null; const grp=tn.per.slice(i,i+tn.step).filter(Boolean); if(!grp.length)return null; return {t:grp.reduce((a,x)=>a+x.t,0)/grp.length, est:grp.some(x=>x.est)}; }
+// every exercise of a SAVED session (cached until bumpIdx) or of the live workout (never cached)
+function sessionTension(s){ if(!s)return [];
+  const sIdx=(db.sessions||[]).indexOf(s), live=sIdx<0;
+  if(!live&&_sessTCache[s.id])return _sessTCache[s.id];
+  const opts=live?{}:{excludeSessionId:s.id,beforeDate:s.date,beforeSIdx:sIdx};
+  const out=(s.exercises||[]).map((e,ei)=>exTensionSets(s,ei,opts));
+  if(!live)_sessTCache[s.id]=out; return out; }
+function sessionTensionTotal(s){ return sessionTension(s).reduce((a,x)=>a+(x?x.total:0),0); }
+function sessionLoadTotal(s){ return sessionTension(s).reduce((a,x)=>a+(x?x.load:0),0); }
+// muscle-level tension in [startISO, endISO): sum of exercise T × that muscle's weight (resolved live via musclesOf, like //VOLUME)
+function muscleWindowTension(muscle,startISO,endISO){ const m=String(muscle||'').toLowerCase().trim(); let total=0;
+  (db.sessions||[]).forEach(s=>{ if(s.type==='rest'||s.date<startISO||s.date>=endISO)return;
+    const st=sessionTension(s);
+    (s.exercises||[]).forEach((e,ei)=>{ if(isCardio(e)||!st[ei])return; const hit=musclesOf(s,ei).find(x=>x.name===m); if(hit)total+=st[ei].total*hit.weight; }); });
+  return total; }
+function fmtT(v){ return (Math.round(v*10)/10).toFixed(1); }
+function tensTag(x){ return (x&&x.t>0)?`<span class="settens" title="tensión efectiva de la serie (carga relativa × reps cerca del fallo)${x.est?' · RIR estimado':''}">${x.est?'~':''}T${fmtT(x.t)}</span>`:''; }
+// cached fatigue context per saved session (history screens call it once per exercise)
+function fatCtxOf(s){ if(!s)return []; const sIdx=(db.sessions||[]).indexOf(s); if(sIdx<0)return sessionFatigueContext(s); return _fatCtxCache[s.id]||(_fatCtxCache[s.id]=sessionFatigueContext(s)); }
+// capacity change of a set list vs its baseline: mean per-set e1RM ratio over aligned, complete WORKING sets (drops and sets
+// without RIR never move it), fatigue-corrected like the live per-set badges (raw when the contexts are too different).
+function capacityProgress(curSets,baseSets,curCtx,baseCtx){
+  const align=alignSetIdx(curSets,baseSets); let sum=0,n=0;
+  (curSets||[]).forEach((s,i)=>{ const j=align[i]; if(j==null)return; const p=baseSets[j];
+    if(!s||!p||s.isDrop||p.isDrop||s._pf||p._pf||!rirKnown(s)||!rirKnown(p))return;
+    const cu=unitN(s), pu=unitN(p); if(cu&&pu&&cu!==pu)return;
+    const cc=(curCtx||[])[i], bc=(baseCtx||[])[j]; const tier=progConfidence('day',cc,bc);
+    const a=tier==='dir'?e1rmOf(s):effE1RM(s,cc), b=tier==='dir'?e1rmOf(p):effE1RM(p,bc);
+    if(a>0&&b>0){ sum+=a/b; n++; } });
+  if(!n)return null; const ratio=sum/n;
+  return {dir:ratio>1.02?'up':(ratio<0.98?'down':'flat'), pct:Math.round((ratio-1)*100), n};
+}
 // ── PART 2: fatigue-aware analysis (pure functions; exposed for Progress charts, not wired to UI yet) ──
 // Two sets with equal weight×reps but different fatigue context yield different corrected-e1RM + effort.
 // restSec per set = doneAt[i] - doneAt[i-1] approx (includes time entering next set). Available in ctx.restSec.
@@ -1665,6 +1764,42 @@ function _baselineSelfCheck(){
     console.log('baseline self-check OK');
   } finally { db.sessions=origSessions; db.split.days=origDays; }
 }
+// tension-model self-check (v219) — pure math + capacity alignment; runs only with ?selftest=1, after db is loaded.
+function _tensionSelfCheck(){
+  const A=(n,cond)=>{ if(!cond) throw new Error('SELFCHECK tension: '+n); };
+  const near=(a,b,e)=>Math.abs(a-b)<=(e==null?0.02:e);
+  const S=(w,r,rir,o)=>Object.assign({w:String(w),r:String(r),rir:String(rir),unit:'kg'},o||{});
+  A('ER 10@RIR0 = 3.40', near(setER(S(0,10,'0')).er,3.40));
+  A('ER 10@RIR1 = 2.44', near(setER(S(0,10,'1')).er,2.44));
+  A('ER 4F = 3.10 (RIR0 + half a rep at max effort)', near(setER(S(0,4,'F')).er,3.10));
+  A('proximity ordering F > RIR0 > RIR1 > RIR3 > RIR5', setER(S(0,8,'F')).er>setER(S(0,8,'0')).er && setER(S(0,8,'0')).er>setER(S(0,8,'1')).er && setER(S(0,8,'1')).er>setER(S(0,8,'3')).er && setER(S(0,8,'3')).er>setER(S(0,8,'5')).er);
+  A('rising steeply near failure (RIR1→0 gains more than RIR5→4)', (setER(S(0,8,'0')).er-setER(S(0,8,'1')).er) > (setER(S(0,8,'4')).er-setER(S(0,8,'5')).er));
+  A('last 5 reps carry most of a 30-rep set', (()=>{ let t=0,l=0; for(let j=1;j<=30;j++){ const p=tensP(30-j); t+=p; if(30-j<5)l+=p; } return l/t>0.8; })());
+  const epl=n=>100/(1+n/30);
+  const t4F=setTension(S(epl(4),4,'F'),100).t, t30=setTension(S(epl(30),30,'0'),100).t;
+  A('4F vs 30@RIR0 ≈ 1.55×', near(t4F/t30,1.55,0.03));
+  const curve=[4,6,8,10,12,15,20,30].map(n=>({n,t:setTension(S(epl(n),n,'0'),100).t}));
+  const peak=curve.reduce((a,b)=>b.t>a.t?b:a);
+  A('tension curve peaks in the 6-12RM band', peak.n>=6&&peak.n<=12);
+  A('load floor: 20% 1RM gives no tension, 50% full', tensGate(0.2)===0&&tensGate(0.5)===1&&setTension(S(20,40,'0'),100).t===0);
+  const blank=setER(S(0,10,''));
+  A('blank RIR is estimated as RIR2 and flagged', blank.est===true&&near(blank.er,setER(S(0,10,'2')).er,1e-9));
+  A('F is recognized in any case for hard sets', isHardSet({rir:'f'})&&isHardSet({rir:'F'})&&!isHardSet({rir:'5'}));
+  A('kgLoad: lbs converted, plates excluded', near(kgLoad({w:'100',unit:'lbs'}),45.36,0.01)&&kgLoad({w:'10',unit:'pla'})===0);
+  // owner's example: same 100×8 but at RIR0 where it used to be RIR2 → LESS capacity (▼), MORE applied tension
+  const was=[S(100,8,'2')], now=[S(100,8,'0')];
+  const cp=capacityProgress(now,was,[],[]);
+  A('same load/reps with less reserve = capacity ▼', cp&&cp.dir==='down');
+  A('…while the applied tension of that set is higher', setTension(now[0],120).t>setTension(was[0],120).t);
+  // a drop never drags the exercise-level capacity %
+  const cp2=capacityProgress([S(100,8,'2'),S(60,6,'0',{isDrop:true})],[S(100,8,'2')],[],[]);
+  A('a drop does not move the exercise capacity %', cp2&&cp2.dir==='flat'&&cp2.n===1);
+  A('sets without RIR do not move capacity', capacityProgress([S(90,8,'')],[S(100,8,'2')],[],[])===null);
+  // unilateral pair = mean of its sides, drops count with their own load
+  const w={dayId:'dT',gym:'',exercises:[{name:'tcheck',type:'free',unilateral:true,sets:[S(20,10,'0',{side:'R'}),S(20,10,'0',{side:'L'})]}]};
+  const tn=exTensionSets(w,0); A('unilateral pair counts once (mean of sides)', tn&&near(tn.total,tn.per[0].t,1e-9));
+  console.log('tension self-check OK');
+}
 // variant/bodyweight/machine-scoping self-check — runs only with ?selftest=1, AFTER db is loaded.
 // Swaps db.bodyweight and db.machines for fixtures and restores both in `finally`.
 function _variantSelfCheck(){
@@ -1781,12 +1916,14 @@ function histProgress(sess,ei){ const e=(sess&&sess.exercises||[])[ei]; if(!e)re
   const id=exIdentity(sess,ei);
   const sIdx=(db.sessions||[]).indexOf(sess);
   const base=baselineSetsFor(Object.assign(id,{orderIdx:ei,excludeSessionId:sess.id,beforeDate:sess.date,beforeSIdx:sIdx}));
-  if(base.sets){ // distinta unidad de despliegue (kg/lbs/pla) entre esta sesión y la base = no comparable
+  if(!base.sets)return null;
+  { // distinta unidad de despliegue (kg/lbs/pla) entre esta sesión y la base = no comparable
     const bex=base.sess&&(base.sess.exercises||[])[base.ei];
     const cu=exDisplayUnit(e,e.sets), bu=bex?exDisplayUnit(bex,base.sets):'';
     if(cu&&bu&&cu!==bu) return null;
   }
-  return progFromScores(cur,avgE1RM(base.sets,false));
+  // v219: aligned WORKING sets only (a drop or a set without RIR no longer drags the exercise %), fatigue-aware
+  return capacityProgress(e.sets||[],base.sets,fatCtxOf(sess)[ei]||[],base.sess?(fatCtxOf(base.sess)[base.ei]||[]):[]);
 }
 // Count sets by zone — surfaced as a coaching hint next to the progress badge.
 function exerciseZones(ex){ const z={light:0,productive:0,heavy:0}; (ex.sets||[]).forEach(s=>{ if(s._pf)return; const zn=setZone(s); if(zn&&z[zn]!=null)z[zn]++; }); return z; }
@@ -1847,10 +1984,11 @@ function pairBadgeHTML(curA,curB,prevA,prevB,curCtxA,curCtxB,prevCtxA,prevCtxB,l
   const rawCur=e1rmOf(curA)+(curB?e1rmOf(curB):0), rawPrev=(prevA?e1rmOf(prevA):0)+(prevB?e1rmOf(prevB):0);
   const parts=progBadgeParts(dirSafePr(pr,tier,progFromScores(rawCur,rawPrev)),tier); if(!parts)return ''; return `<span class="setprog" style="font-size:9px;font-weight:700;color:${parts.col}">${parts.ar}${parts.pc}</span>`; }
 // MUSCLE-LEVEL weekly score: aggregate setScore over all exercises tagged with this muscle, within a date window.
-function muscleWindowScore(muscle,startISO,endISO){ const m=(muscle||'').toLowerCase(); let total=0; (db.sessions||[]).forEach(s=>{ if(s.type==='rest')return; if(s.date<startISO||s.date>=endISO)return; (s.exercises||[]).forEach(e=>{ if(isCardio(e))return; const hit=exMuscles(e).find(x=>x.name===m); if(!hit)return; (e.sets||[]).forEach(set=>{ total+=setScore(set)*hit.weight; }); }); }); return total; }
-function muscleProgress(muscle){ const now=new Date(); const c7=new Date(now); c7.setDate(now.getDate()-6); const c14=new Date(now); c14.setDate(now.getDate()-13); const tomorrow=new Date(now); tomorrow.setDate(now.getDate()+1); const cur=muscleWindowScore(muscle,todayISO(c7),todayISO(tomorrow)); const prev=muscleWindowScore(muscle,todayISO(c14),todayISO(c7)); return progFromScores(cur,prev); }
+function muscleWindowScore(muscle,startISO,endISO){ return muscleWindowTension(muscle,startISO,endISO); }   // v219: effective tension, via musclesOf
+function muscleProgress(muscle){ const now=new Date(); const c7=new Date(now); c7.setDate(now.getDate()-6); const c14=new Date(now); c14.setDate(now.getDate()-13); const tomorrow=new Date(now); tomorrow.setDate(now.getDate()+1); const cur=muscleWindowScore(muscle,todayISO(c7),todayISO(tomorrow)); const prev=muscleWindowScore(muscle,todayISO(c14),todayISO(c7)); const pr=progFromScores(cur,prev); return pr?Object.assign(pr,{cur,prev}):{dir:null,pct:0,cur,prev}; }
 // live-update the badge while logging (setField avoids a full re-render to keep input focus)
-function updateProgBadge(exi){ const w=db.activeWork; if(!w||!w.exercises[exi])return; const nm=document.querySelector('.exhead .n[data-exi="'+exi+'"]'); if(!nm)return; const html=progBadgeHTML(w.exercises[exi]); ['exprog','exzones'].forEach(cls=>{ const el=nm.parentElement.querySelector('.'+cls); if(el)el.remove(); }); if(html)nm.insertAdjacentHTML('afterend',html); }
+function exTensChip(tn){ return (tn&&tn.total>0)?`<span class="exT" title="tensión efectiva del ejercicio en esta sesión (Σ T de sus series)${tn.est?' · incluye RIR estimado':''}">${tn.est?'~':''}T ${fmtT(tn.total)}</span>`:''; }
+function updateProgBadge(exi){ const w=db.activeWork; if(!w||!w.exercises[exi])return; const nm=document.querySelector('.exhead .n[data-exi="'+exi+'"]'); if(!nm)return; const ex=w.exercises[exi]; const html=progBadgeHTML(ex)+(isCardio(ex)?'':exTensChip(exTensionSets(w,exi))); ['exprog','exzones','exT'].forEach(cls=>{ const el=nm.parentElement.querySelector('.'+cls); if(el)el.remove(); }); if(html)nm.insertAdjacentHTML('afterend',html); }
 // also update per-set zone color in-place (called from setField after a weight/reps/RIR change)
 function updateSetZone(exi,si){ const w=db.activeWork; if(!w||!w.exercises[exi])return; const s=w.exercises[exi].sets[si]; if(!s)return; const z=setZone(s); const el=document.querySelector('.setn[data-exi="'+exi+'"][data-si="'+si+'"]'); if(!el)return; el.style.color = (!s.done && z==='light') ? 'var(--warn)' : (!s.done && z==='heavy') ? 'var(--bad)' : ''; }
 // live update of the per-set ▲/▼% badge line (uni: anchored on the EVEN index of each pair).
@@ -1863,7 +2001,8 @@ function updateSetProgress(exi,si){ const w=db.activeWork; if(!w||!w.exercises[e
   if(ex.unilateral){ anchorSi = (si%2===0)?si:si-1; const a=ex.sets[anchorSi], b=ex.sets[anchorSi+1]; const prevA=(prevSets&&align[anchorSi]!=null)?prevSets[align[anchorSi]]:null; const prevB=(prevSets&&align[anchorSi+1]!=null)?prevSets[align[anchorSi+1]]:null; html=pairBadgeHTML(a,b,prevA,prevB,curFatCtx[anchorSi],curFatCtx[anchorSi+1],align[anchorSi]!=null?baseFatCtx[align[anchorSi]]:null,align[anchorSi+1]!=null?baseFatCtx[align[anchorSi+1]]:null,level); }
   else { anchorSi = si; const prevS=(prevSets&&align[si]!=null)?prevSets[align[si]]:null; html=setBadgeHTML(s,prevS,curFatCtx[si],align[si]!=null?baseFatCtx[align[si]]:null,level); }
   const el=document.querySelector('.setprogline[data-exi="'+exi+'"][data-si="'+anchorSi+'"]'); if(!el)return;
-  html=progLineInner(html,dropPctTxt(ex.sets,anchorSi));
+  const _tn=isCardio(ex)?null:exTensionSets(w,exi);
+  html=progLineInner(html,dropPctTxt(ex.sets,anchorSi),tensTag(ex.unilateral?pairTension(_tn,anchorSi):(_tn&&_tn.per[anchorSi])));
   el.innerHTML=html||''; el.style.height=html?'11px':'0'; el.style.lineHeight='11px';
   if(html){ el.style.textAlign='right'; el.style.padding='0 8px'; el.style.margin='-1px 0 3px'; }
 }
@@ -1901,8 +2040,8 @@ function variantChips(ex){
 // v218: FS toggle only on WORKING sets; a drop shows a fixed DS marker (drop-ness lives in isDrop, never in fsOn)
 function fsCellHTML(s,exi,si,act){ return s.isDrop ? `<span class="fs on ds" title="drop set">DS</span>` : `<button class="fs ${s.fsOn?'on':''}" data-act="${act}" data-exi="${exi}" data-si="${si}">FS</button>`; }
 // per-set line under a row: drop % of its parent (history of how the lift is dropped) on the left, progress badge on the right
-function progLineInner(badge,dpct){ return (dpct?`<span class="droppct">${dpct} de la serie</span>`:'')+(badge||''); }
-function histDropLine(sets,i){ const d=dropPctTxt(sets,i); return d?`<div class="setprogline" style="text-align:right;padding:0 8px;margin:-1px 0 3px;height:11px;line-height:11px"><span class="droppct">${d} de la serie</span></div>`:''; }
+function progLineInner(badge,dpct,tens){ return (dpct?`<span class="droppct">${dpct} de la serie</span>`:'')+(badge||'')+(tens||''); }
+function histSetLine(sets,i,tens){ const inner=progLineInner('',dropPctTxt(sets,i),tens); return inner?`<div class="setprogline" style="text-align:right;padding:0 8px;margin:-1px 0 3px;height:11px;line-height:11px">${inner}</div>`:''; }
 function renderExercise(exi,ex,allowF,canReorder){
   const sets=ex.sets||[]; const isCardioEx=isCardio(ex); const isM=!isCardioEx&&['machine','pulley','smith','cable'].indexOf(ex.type)>=0; const isU=!isCardioEx&&!!ex.unilateral;
   const rec=machineRec((db.activeWork||{}).gym,ex); const ed=`data-act="editmach" data-exi="${exi}"`;
@@ -1915,7 +2054,8 @@ function renderExercise(exi,ex,allowF,canReorder){
       if(!rec.brand&&!rec.setup&&ex.type!=='free') p=`<span class="mch none" ${ed}>+ machine</span>`;
       mhtml=p; }
   }
-  const prBadge=isCardioEx?'':progBadgeHTML(ex);
+  const _tn=isCardioEx?null:exTensionSets(db.activeWork,exi);
+  const prBadge=isCardioEx?'':progBadgeHTML(ex)+exTensChip(_tn);
   const gripE=canReorder?`<span class="dgrip" data-drage="${exi}" title="mantén y arrastra · reordena dentro del músculo">⠿</span>`:'';
   let rows='';
   // EQUIVALENT prior occurrence (baseline ladder: exId → day+name+variant+occurrence → unique nearby)
@@ -1973,7 +2113,7 @@ function renderExercise(exi,ex,allowF,canReorder){
       const prevA=(prevSets&&align[p]!=null)?prevSets[align[p]]:null;
       const prevB=(prevSets&&align[p+1]!=null)?prevSets[align[p+1]]:null;
       const pBadge=pairBadgeHTML(a,b,prevA,prevB,curFatCtx[p],curFatCtx[p+1],align[p]!=null?baseFatCtx[align[p]]:null,align[p+1]!=null?baseFatCtx[align[p+1]]:null,_bl.level);
-      const pInner=progLineInner(pBadge,dropPctTxt(sets,p));
+      const pInner=progLineInner(pBadge,dropPctTxt(sets,p),tensTag(pairTension(_tn,p)));
       const progLine=pInner?`<div class="setprogline" data-exi="${exi}" data-si="${p}" style="text-align:right;padding:0 8px;margin:-1px 0 3px;height:11px;line-height:11px">${pInner}</div>`:`<div class="setprogline" data-exi="${exi}" data-si="${p}" style="height:0"></div>`;
       // drop set: ONLY via bottom bar [↓ drop set] — per-row ↓ removed (layout desalineaba tras insertar)
       body+=`<div class="pair ${a&&a.isDrop?'isdrop':''}"><div class="setn ${done?'done':''}" style="${zSty}" data-act="done" data-exi="${exi}" data-si="${p}">${labels[p]}</div><div class="prows">`
@@ -1995,7 +2135,7 @@ function renderExercise(exi,ex,allowF,canReorder){
       const z=!s.done?setZone(s):null; const zSty=z==='light'?'color:var(--warn);':z==='heavy'?'color:var(--bad);':'';
       const prevS=(prevSets&&align[si]!=null)?prevSets[align[si]]:null;
       const sBadge=setBadgeHTML(s,prevS,curFatCtx[si],align[si]!=null?baseFatCtx[align[si]]:null,_bl.level);
-      const sInner=progLineInner(sBadge,dropPctTxt(sets,si));
+      const sInner=progLineInner(sBadge,dropPctTxt(sets,si),tensTag(_tn&&_tn.per[si]));
       const progLine=sInner?`<div class="setprogline" data-exi="${exi}" data-si="${si}" style="text-align:right;padding:0 8px;margin:-1px 0 3px;height:11px;line-height:11px">${sInner}</div>`:`<div class="setprogline" data-exi="${exi}" data-si="${si}" style="height:0"></div>`;
       const gcRow=isBwEx?'gc-free-bw':(fsOn?'gc-mach-fs':gc);
       const mid=isBwEx?c.we:(fsOn?c.we:c.u);
@@ -2019,7 +2159,8 @@ function renderHistExercise(exi,ex,sess){
   const isBwEx=ex.type==='bodyweight';
   const mparts=[]; if(ex.machine)mparts.push(escTxt(ex.machine)); if(ex.setup)mparts.push(escTxt(ex.setup));
   const mhtml=mparts.length?`<span class="mch none">${mparts.join(' · ')}</span>`:'';
-  const badge=isCardioEx?'':progBadgeFromProg(histProgress(sess,exi),'vs sesión previa de este ejercicio');
+  const _htn=isCardioEx?null:sessionTension(sess)[exi];
+  const badge=isCardioEx?'':progBadgeFromProg(histProgress(sess,exi),'capacidad (e1RM) vs sesión equivalente')+exTensChip(_htn);
   const head=`<div class="exhead">${exLatTagHead(ex)}<span class="n">${escTxt(ex.name)}</span>${badge}${mhtml}${variantChips(ex)}</div>`;
   let rows='';
   if(isCardioEx){
@@ -2050,7 +2191,7 @@ function renderHistExercise(exi,ex,sess){
       body+=`<div class="pair ${a&&a.isDrop?'isdrop':''}"><div class="setn ${done?'done':''}" style="${zSty}" data-act="h_done" data-exi="${exi}" data-si="${p}">${labels[p]}</div><div class="prows">`
         +`<div class="srow ${gcU}"><div class="side">${escTxt(a.side||'R')}</div>${ca.w}${midA}${ca.r}${ca.rr}${ca.del}</div>`
         +(cb?`<div class="srow ${gcU}"><div class="side">${escTxt(b.side||'L')}</div>${cb.w}${midB}${cb.r}${cb.rr}<span class="del" style="visibility:hidden">×</span></div>`:'')
-        +`</div></div>`+histDropLine(sets,p);
+        +`</div></div>`+histSetLine(sets,p,tensTag(pairTension(_htn,p)));
     }
     const add=`<div class="addrow auni"><span class="aleft"><button class="addbtn" data-act="h_addset" data-exi="${exi}">[+ set]</button><button class="addbtn" data-act="h_dropset" data-exi="${exi}" data-si="${Math.max(0,sets.length-2)}">[↓ drop set]</button></span></div>`;
     rows=thead+body+add;
@@ -2063,7 +2204,7 @@ function renderHistExercise(exi,ex,sess){
       const z=!s.done?setZone(s):null; const zSty=z==='light'?'color:var(--warn);':z==='heavy'?'color:var(--bad);':'';
       const gcRow=isBwEx?'gc-free-bw':(fsOn?'gc-mach-fs':gc);
       const mid=isBwEx?c.we:(fsOn?c.we:c.u);
-      body+=`<div class="srow ${gcRow} ${s.isDrop?'isdrop':''}"><div class="setn ${s.done?'done':''}" style="${zSty}" data-act="h_done" data-exi="${exi}" data-si="${si}">${labels[si]}</div>${fs}${c.w}${mid}${c.r}${c.rr}<div class="setend">${c.del}</div></div>`+histDropLine(sets,si);
+      body+=`<div class="srow ${gcRow} ${s.isDrop?'isdrop':''}"><div class="setn ${s.done?'done':''}" style="${zSty}" data-act="h_done" data-exi="${exi}" data-si="${si}">${labels[si]}</div>${fs}${c.w}${mid}${c.r}${c.rr}<div class="setend">${c.del}</div></div>`+histSetLine(sets,si,tensTag(_htn&&_htn.per[si]));
     });
     const add=`<div class="addrow ${isM?'amach':'afree'}"><span class="aleft"><button class="addbtn" data-act="h_addset" data-exi="${exi}">[+ set]</button><button class="addbtn" data-act="h_dropset" data-exi="${exi}" data-si="${Math.max(0,sets.length-1)}">[↓ drop set]</button></span></div>`;
     rows=thead+body+add;
@@ -2468,9 +2609,9 @@ function dayRadar(t,g){ g=g||{};
 }
 
 function progWeekly(n){ const now=new Date(); const buckets=[]; for(let i=n-1;i>=0;i--){ const a=new Date(now); a.setDate(now.getDate()-7*i-6); const b=new Date(now); b.setDate(now.getDate()-7*i); buckets.push({a:todayISO(a),b:todayISO(b)}); }
-  const counts=buckets.map(()=>0), vols=buckets.map(()=>0);
-  (db.sessions||[]).forEach(s=>{ if(s.type==='rest')return; for(let i=0;i<buckets.length;i++){ if(s.date>=buckets[i].a&&s.date<=buckets[i].b){ counts[i]++; (s.exercises||[]).forEach(e=>(e.sets||[]).forEach(st=>{vols[i]+=effW(st)*(parseFloat(st.r)||0);})); break; } } });
-  return {counts,vols}; }
+  const counts=buckets.map(()=>0), vols=buckets.map(()=>0), tens=buckets.map(()=>0);
+  (db.sessions||[]).forEach(s=>{ if(s.type==='rest')return; for(let i=0;i<buckets.length;i++){ if(s.date>=buckets[i].a&&s.date<=buckets[i].b){ counts[i]++; (s.exercises||[]).forEach(e=>(e.sets||[]).forEach(st=>{vols[i]+=kgLoad(st)*(parseFloat(st.r)||0);})); tens[i]+=sessionTensionTotal(s); break; } } });
+  return {counts,vols,tens}; }
 function avgKcal7(){ const now=new Date(); let sum=0,days=0; for(let i=0;i<7;i++){ const d=new Date(now); d.setDate(now.getDate()-i); const arr=db.meals[todayISO(d)]; if(arr&&arr.length){ days++; sum+=arr.reduce((a,m)=>a+(+m.kcal||0),0); } } return days?Math.round(sum/days):0; }
 // ── import health history from URL (iOS Shortcut). steps=N (hoy) · stepsh=fecha:n,fecha:n (histórico) · weight=kg (hoy) · weighth=fecha:kg,... (histórico)
 function importPairs(str,fn){ let n=0; (str||'').split(',').slice(0,500).forEach(p=>{ const i=p.indexOf(':'); if(i<1)return; const k=p.slice(0,i).trim(), v=p.slice(i+1).trim(); if(!/^\d{4}-\d{2}-\d{2}$/.test(k))return; try{ if(fn(k,v))n++; }catch(_){} }); return n; }
@@ -2830,7 +2971,15 @@ function setsWeek(offsetWeeks){
   });
   return byM;
 }
-// volume drill-down: weekly total tonnage trend + per-muscle hard-sets this week vs last
+// per-muscle effective tension in the same 7-day windows as setsWeek (musclesOf weights, like //VOLUME)
+function tensWeek(offsetWeeks){
+  const now=new Date(); const b=new Date(now); b.setDate(now.getDate()-7*offsetWeeks); const a=new Date(b); a.setDate(b.getDate()-7);
+  const ai=todayISO(a), bi=todayISO(b); const byM={};
+  (db.sessions||[]).forEach(s=>{ if(s.type==='rest'||!s.date||s.date<=ai||s.date>bi)return; const st=sessionTension(s);
+    (s.exercises||[]).forEach((e,ei)=>{ if(!st[ei]||!(st[ei].total>0))return; musclesOf(s,ei).forEach(m=>{ byM[m.name]=(byM[m.name]||0)+st[ei].total*m.weight; }); }); });
+  return byM;
+}
+// volume drill-down: weekly total tonnage trend (kg) + per-muscle hard-sets and tension this week vs last
 function openVolumeDetail(){
   const nW=window._volWeeks||12; const w=progWeekly(nW); const vols=w.vols;
   const now=new Date(); const wkDates=[]; for(let i=nW-1;i>=0;i--){ const b=new Date(now); b.setDate(now.getDate()-7*i); wkDates.push(todayISO(b)); }
@@ -2843,18 +2992,22 @@ function openVolumeDetail(){
   const peak=has?Math.max.apply(null,vols):0; const peakI=vols.indexOf(peak);
   const posV=vols.filter(x=>x>0); const avg=posV.length?Math.round(posV.reduce((a,b)=>a+b,0)/posV.length):0;
   const tw=setsWeek(0), lw=setsWeek(1); const muscles=Object.keys(tw).sort((a,b)=>tw[b]-tw[a]);
+  const tt=tensWeek(0), lt=tensWeek(1); const tens=w.tens||[]; const tCur=tens[tens.length-1]||0, tPrev=tens[tens.length-2]||0;
   let mrows=''; muscles.forEach(m=>{ const c=Math.round(tw[m]*10)/10, p=lw[m]?Math.round(lw[m]*10)/10:0; const d=Math.round((c-p)*10)/10;
     const arr=d>0?'▲':d<0?'▼':'='; const col=d>0?'var(--good)':d<0?'var(--bad)':'var(--o40)';
-    mrows+=`<div class="mdline"><span class="mdk">${escTxt(m)}</span><span class="mddots"></span><span class="mdv">${c} sets <span class="mdsub" style="color:${col}">${d!==0?arr+Math.abs(d):'='}</span></span></div>`; });
+    const tm=tt[m]||0, tp=lt[m]||0; const tpc=tp>0?Math.round((tm-tp)/tp*100):null;
+    const tTxt=tm>0?` · T ${fmtT(tm)}${tpc!=null?` <span class="mdsub" style="color:${tpc>2?'var(--good)':tpc<-2?'var(--bad)':'var(--o40)'}">${tpc>0?'+':''}${tpc}%</span>`:''}`:'';
+    mrows+=`<div class="mdline"><span class="mdk">${escTxt(m)}</span><span class="mddots"></span><span class="mdv">${c} sets <span class="mdsub" style="color:${col}">${d!==0?arr+Math.abs(d):'='}</span>${tTxt}</span></div>`; });
   const body=has?`
       <div class="mdval">${kfmt(cur)}<span style="font-size:14px;color:var(--o40);font-weight:400"> vol · esta sem</span></div>
       <div class="mdmeta">${pct!=null?`<span class="${ch<0?'mdbad':ch>0?'mdgood':'mdflat'}">${ch>0?'+':''}${pct}% vs sem previa</span>`:'primera semana con datos'}</div>
       ${chart}
       <div class="mdstats">
         <div class="mdline"><span class="mdk">promedio semanal</span><span class="mddots"></span><span class="mdv">${kfmt(avg)} vol</span></div>
+        <div class="mdline"><span class="mdk">tensión efectiva · esta sem</span><span class="mddots"></span><span class="mdv">T ${fmtT(tCur)}${tPrev>0?` <span class="mdsub">${tCur>=tPrev?'+':''}${Math.round((tCur-tPrev)/tPrev*100)}%</span>`:''}</span></div>
         ${peak?`<div class="mdline"><span class="mdk">mejor semana</span><span class="mddots"></span><span class="mdv">${kfmt(peak)} <span class="mdsub">${fmtShort(wkDates[peakI])}</span></span></div>`:''}
       </div>
-      ${muscles.length?`<div class="grp-label" style="margin:16px 0 4px">POR MÚSCULO · sets duros · esta sem vs previa</div><div class="mdstats">${mrows}</div>`:''}
+      ${muscles.length?`<div class="grp-label" style="margin:16px 0 4px">POR MÚSCULO · sets duros · T · esta sem vs previa</div><div class="mdstats">${mrows}</div>`:''}
     `:`<div class="empty" style="padding:30px 0">sin volumen registrado en este rango</div>`;
   openModal(`<div class="mdetail">
     <div class="mdhd"><h3>volumen</h3></div>
@@ -3003,6 +3156,13 @@ function renderProgress(){
       +`<div class="pval">${kFmt(cur)}<span>vol</span></div>`
       +`<div class="pst ${cls}">${arr}${pct!=null?' '+(pct>0?'+':'')+pct+'%':' —'}</div>${lineChart(w.vols,{h:32,zero:true})}</div>`);
   }
+  // tensión efectiva semanal (v219)
+  if(totalSessions && cfg.tension){ const tv=w.tens||[]; const cur=tv[tv.length-1]||0, prev=tv[tv.length-2]||0; const pct=prev>0?Math.round((cur-prev)/prev*100):null;
+    const cls=pct==null?'flat':pct>0?'good':pct<0?'bad':'flat'; const arr=pct==null?'·':pct>0?'▲':pct<0?'▼':'=';
+    tiles.push(`<div class="ptile tap" data-act="volumedetail"><div class="ptlh"><div class="plbl">tensión · sem</div><span class="ptchev">›</span></div>`
+      +`<div class="pval">${fmtT(cur)}<span>T</span></div>`
+      +`<div class="pst ${cls}">${arr}${pct!=null?' '+(pct>0?'+':'')+pct+'%':' —'}</div>${lineChart(tv,{h:32,zero:true})}</div>`);
+  }
   // fuerza (top lift)
   if(e1.length && cfg.e1rm){ const t=e1[0]; const d=t.prev!=null?t.cur-t.prev:null; const pct=t.prev>0?Math.round((t.cur-t.prev)/t.prev*100):null;
     const cls=d==null?'flat':d>0?'good':d<0?'bad':'flat'; const arr=d==null?'·':d>0?'▲':d<0?'▼':'=';
@@ -3075,7 +3235,7 @@ function renderProgress(){
   out+='<div style="text-align:center;margin:16px 0 2px"><a data-act="healthsync" style="font-size:11px;color:var(--o60);cursor:pointer">↻ sync de Salud (pasos/peso)</a></div>';
   return out;
 }
-function openProgConfig(){ const c=progMetrics(); const M=[['weight','peso'],['volume','volumen'],['e1rm','fuerza · e1rm'],['steps','pasos'],['water','agua'],['sleep','sueño'],['kcal','kcal'],['mood','ánimo'],['consistency','consistencia'],['sc_bloat','hinchazón'],['sc_definicion','definición'],['sc_facial','cara'],['sc_apariencia','apariencia']];
+function openProgConfig(){ const c=progMetrics(); const M=[['weight','peso'],['volume','volumen'],['tension','tensión'],['e1rm','fuerza · e1rm'],['steps','pasos'],['water','agua'],['sleep','sueño'],['kcal','kcal'],['mood','ánimo'],['consistency','consistencia'],['sc_bloat','hinchazón'],['sc_definicion','definición'],['sc_facial','cara'],['sc_apariencia','apariencia']];
   const rows=M.map(([k,l])=>`<div class="line" data-act="progmtog" data-m="${k}" style="cursor:pointer"><span class="k">${l}</span><span class="dots"></span><span class="v" style="color:${c[k]?'var(--good)':'var(--o40)'}">${c[k]?'on':'off'}</span></div>`).join('');
   openModal(`<h3>métricas visibles</h3><div class="submeta" style="margin-bottom:8px">elige qué tiles ves en progreso</div>${rows}<div class="sheetbtns" style="margin-top:12px"><button class="cancel" data-act="closemodal">listo</button></div>`);
 }
@@ -3141,7 +3301,7 @@ function openSuppTime(id, iso){ iso=iso||todayISO(); const it=(db.stack||[]).fin
 function curAgendaDate(){ return state.agendaDate||todayISO(); }
 function agendaFilters(){ try{ const v=JSON.parse(localStorage.getItem('gymtrk_agenda_filters')); if(v&&typeof v==='object') return Object.assign({meals:true,train:true,supps:true,sleep:true},v); }catch(_){} return {meals:true,train:true,supps:true,sleep:true}; }
 // selector de métricas visibles en Progress (espejo de agendaFilters)
-function progMetrics(){ const D={weight:true,volume:true,e1rm:true,steps:true,water:true,sleep:true,kcal:true,mood:true,consistency:true,sc_bloat:true,sc_definicion:true,sc_facial:true,sc_apariencia:true}; try{ const v=JSON.parse(localStorage.getItem('gymtrk_progress_metrics_config')); if(v&&typeof v==='object') return Object.assign(D,v); }catch(_){} return D; }
+function progMetrics(){ const D={weight:true,volume:true,tension:true,e1rm:true,steps:true,water:true,sleep:true,kcal:true,mood:true,consistency:true,sc_bloat:true,sc_definicion:true,sc_facial:true,sc_apariencia:true}; try{ const v=JSON.parse(localStorage.getItem('gymtrk_progress_metrics_config')); if(v&&typeof v==='object') return Object.assign(D,v); }catch(_){} return D; }
 function minToHM(min){ min=((Math.round(min)%1440)+1440)%1440; return pad(Math.floor(min/60))+':'+pad(min%60); }
 function renderAgenda(){
   const ISO=curAgendaDate(), f=agendaFilters(), PXMIN=1.2, top=m=>Math.round(m*PXMIN), CANVAS=top(1440);
@@ -3453,7 +3613,7 @@ function renderHistory(){
     const p=String(s.date).split('-'), yy=p[0], mm=+p[1], dd=p[2], key=yy+'-'+p[1];
     if(key!==curKey){ if(curKey)body+='</div>'; body+=`<div class="hmon">${MON[mm-1]||'?'} ${yy}</div><div class="grp">`; curKey=key; }
     const dt=new Date(s.date+'T00:00'), dow=isNaN(dt)?'':DOW[dt.getDay()]+' ';
-    body+=`<div class="hrow" data-act="vieweditsession" data-id="${s.id}"><div class="hL"><div class="hnm">${escTxt(s.dayName||'sesión')}</div><div class="hmeta">${exn} ej · ${sets} sets</div></div><div class="hR"><span class="hday">${dow}${dd}</span>${agp?`<span class="hagg">${agp}</span>`:''}<span class="hchev">›</span></div></div>`;
+    body+=`<div class="hrow" data-act="vieweditsession" data-id="${s.id}"><div class="hL"><div class="hnm">${escTxt(s.dayName||'sesión')}</div><div class="hmeta">${exn} ej · ${sets} sets${(()=>{ const t=sessionTensionTotal(s); return t>0?' · T '+fmtT(t):''; })()}</div></div><div class="hR"><span class="hday">${dow}${dd}</span>${agp?`<span class="hagg">${agp}</span>`:''}<span class="hchev">›</span></div></div>`;
   });
   body+='</div>';
   return body;
@@ -3463,7 +3623,7 @@ function openSessionEdit(id){
   const nEx=(s.exercises||[]).length;
   const fatCtx=sessionFatigueContext(s);
   const exHtml=(s.exercises||[]).map((e,ei)=>{
-    const badge=progBadgeFromProg(histProgress(s,ei),'vs sesión previa de este ejercicio');
+    const badge=progBadgeFromProg(histProgress(s,ei),'capacidad (e1RM) vs sesión equivalente')+exTensChip(sessionTension(s)[ei]);
     const exCtx=fatCtx[ei]||[]; const rawAvg=avgE1RM(e.sets,false); let cSum=0,cN=0; e.sets.forEach((st,si)=>{ const v=correctedE1RM(st,exCtx[si]); if(v>0){cSum+=v;cN++;} }); const corrAvg=cN?cSum/cN:0; const fatDiff=rawAvg>0&&corrAvg>rawAvg?Math.round((corrAvg/rawAvg-1)*100):0; const prior=Math.round((exCtx[0]||{}).priorHardSets||0); const restSecs=exCtx.slice(1).map(c=>c.restSec).filter(v=>v!=null&&v>0&&v<600); const avgRest=restSecs.length?Math.round(restSecs.reduce((a,b)=>a+b,0)/restSecs.length):null; const fatNote=fatDiff>=5?`<div class="submeta" style="margin-top:2px">↑ e1RM equiv. fresca +${fatDiff}%${prior?' · '+prior+' sets previos':''}${avgRest?' · ~'+Math.round(avgRest/60)+'min descanso':''}</div>`:'';
     // reorder arrows so legacy sessions (logged before the addex-position fix) can be corrected
     const up=ei>0?`<span data-act="ss_exup" data-ei="${ei}">▲</span>`:`<span class="off">▲</span>`;
@@ -3476,7 +3636,7 @@ function openSessionEdit(id){
   openModal(`<h3>${escTxt(s.dayName||'sesión')}</h3>
    <div class="field"><label>FECHA</label><input id="ss_date" type="date" value="${s.date||''}"/></div>
    <div style="display:flex;gap:8px"><div class="field" style="flex:1"><label>INICIO</label><input id="ss_start" type="time" value="${s.startTime||''}"/></div><div class="field" style="flex:1"><label>FIN</label><input id="ss_end" type="time" value="${s.endTime||''}"/></div></div>
-   <div class="submeta gap">${nEx} ejercicios · ▲▼ reordena</div>
+   <div class="submeta gap">${nEx} ejercicios${(()=>{ const t=sessionTensionTotal(s); return t>0?' · T '+fmtT(t):''; })()} · ▲▼ reordena</div>
    ${exHtml||'<div class="submeta">sin ejercicios</div>'}
    <div class="sheetbtns">${db.activeWork?'':`<button class="ok" data-act="resumesession">▶ continuar</button>`}<button class="ok" data-act="openhistedit" data-id="${s.id}">✎ editar sets</button></div>
    <div class="sheetbtns" style="margin-top:6px"><button class="ok" data-act="ss_save">guardar fecha/hora</button><button class="cancel" data-act="sharesession" data-id="${s.id}">compartir</button><button class="cancel danger" data-act="ss_del">borrar</button><button class="cancel" data-act="closemodal">close</button></div>`);
@@ -3617,7 +3777,7 @@ function wrapMonthData(y,m){
   const sess=(db.sessions||[]).filter(s=>s.type!=='rest'&&inMonth(s.date));
   const activeDays=new Set(sess.map(s=>s.date)).size;
   let totalVol=0; const dayVol={};
-  sess.forEach(s=>{ let v=0; (s.exercises||[]).forEach(e=>(e.sets||[]).forEach(st=>{ v+=effW(st)*(parseFloat(st.r)||0); })); totalVol+=v; dayVol[s.date]=(dayVol[s.date]||0)+v; });
+  sess.forEach(s=>{ let v=0; (s.exercises||[]).forEach(e=>(e.sets||[]).forEach(st=>{ v+=kgLoad(st)*(parseFloat(st.r)||0); })); totalVol+=v; dayVol[s.date]=(dayVol[s.date]||0)+v; });
   const dim=new Date(y,m+1,0).getDate(); const mdays=[]; for(let d=1;d<=dim;d++)mdays.push(pre+'-'+pad(d));
   let bestWeek=0; for(let i=0;i<mdays.length;i++){ let s=0; for(let j=i;j<i+7&&j<mdays.length;j++)s+=dayVol[mdays[j]]||0; if(s>bestWeek)bestWeek=s; }
   let topLift=null, topE1=0;
@@ -5806,14 +5966,16 @@ function buildExportMd(db){
   L.push('## //GYM ('+sess.length+' sesiones)','');
   sess.forEach(s=>{
     L.push('### '+fd(s.date)+' · '+(s.dayName||'sesión')+(s.gym?' · '+s.gym:''));
-    let vol=0;
-    (s.exercises||[]).forEach(e=>{
+    let vol=0; const stT=sessionTension(s);
+    (s.exercises||[]).forEach((e,ei)=>{
       const sets=(e.sets||[]).filter(x=>(x.w||x.r)&&!x._pf); // mismo filtro real que saveSession
       if(!sets.length)return;
-      const parts=sets.map(x=>{ const w=effW(x),r=+x.r||0; if(w&&r)vol+=w*r; return n(w)+(x.unit||'')+'×'+(r||0)+(x.side?' '+x.side:'')+(x.isDrop?' ↓':'')+((x.rir!=null&&x.rir!=='')?' · RIR'+x.rir:''); });
-      L.push('- '+e.name+(e.muscle?' ('+e.muscle+')':'')+' — '+parts.join(' · '));
+      const parts=sets.map(x=>{ const w=effW(x),r=+x.r||0; if(w&&r)vol+=kgLoad(x)*r; const f=String(x.rir==null?'':x.rir).trim().toUpperCase(); return n(w)+(x.unit||'')+'×'+(r||0)+(x.side?' '+x.side:'')+(x.isDrop?' ↓':'')+(f==='F'?' · F':(f!==''?' · RIR'+f:'')); });
+      const tx=stT[ei]&&stT[ei].total>0?' · T '+fmtT(stT[ei].total):'';
+      L.push('- '+e.name+(e.muscle?' ('+e.muscle+')':'')+' — '+parts.join(' · ')+tx);
     });
-    if(vol>0)L.push('  · volumen: '+n(vol)+' (Σ peso×reps)');
+    if(vol>0)L.push('  · volumen: '+n(Math.round(vol))+' kg (Σ kg×reps; lbs→kg, placas excluidas)');
+    { const t=sessionTensionTotal(s); if(t>0)L.push('  · tensión efectiva: T '+fmtT(t)); }
     L.push('');
   });
   const meals=db.meals||{}; const mdates=Object.keys(meals).filter(d=>(meals[d]||[]).length).sort().reverse();
@@ -5914,7 +6076,7 @@ async function aiPhoto(file,barcode){ if(!file)return; window._faTag=window._faT
 // Pick AI when the proxy is configured, else on-device OCR.
 function labelPhoto(file,barcode){ if(AI_PROXY_URL) return aiPhoto(file,barcode); return ocrPhoto(file,barcode); }
 requestPersist();
-db=load(); try{ promptIdleSession(); }catch(_){} try{ if(typeof location!=='undefined' && /[?&]selftest=1/.test(location.search)){ _identitySelfCheck(); _dropsetSelfCheck(); _baselineSelfCheck(); _variantSelfCheck(); _historyEditSelfCheck(); _idSelfCheck(); _cardioSelfCheck(); } }catch(e){ console.error(e); } try{ const _sp=new URLSearchParams(location.search); const _hasHistorical=_sp.has('stepsh')||_sp.has('weighth')||_sp.has('stepsq')||_sp.has('sleeph'); if(_hasHistorical){ const _hsp=_sp; if(history.replaceState)history.replaceState(null,'',location.pathname); setTimeout(()=>{ if(confirm('Este link quiere importar datos históricos (pasos/peso/sueño de varios días) a tu cuenta. ¿Aplicar? — solo dile que SÍ si vienes de tu propio Atajo de iOS.')){ try{ const _imp=importHealth(_hsp); if(_imp.length){ save(); render(); toast('✓ '+_imp.join(' · ')); } }catch(_){} } },400); } else { const _imp=importHealth(_sp); if(_imp.length){ window._healthImported=_imp; if(history.replaceState)history.replaceState(null,'',location.pathname); } } }catch(_){} save(); render(); if(window._healthImported)setTimeout(()=>toast('✓ '+window._healthImported.join(' · ')),250); if(window._recoveredFromBackup)setTimeout(()=>{try{alert('Se recuperó un respaldo local: revisa tus datos, podrían faltar cambios muy recientes.');}catch(_){}},600);
+db=load(); try{ promptIdleSession(); }catch(_){} try{ if(typeof location!=='undefined' && /[?&]selftest=1/.test(location.search)){ _identitySelfCheck(); _dropsetSelfCheck(); _baselineSelfCheck(); _variantSelfCheck(); _historyEditSelfCheck(); _idSelfCheck(); _cardioSelfCheck(); _tensionSelfCheck(); } }catch(e){ console.error(e); } try{ const _sp=new URLSearchParams(location.search); const _hasHistorical=_sp.has('stepsh')||_sp.has('weighth')||_sp.has('stepsq')||_sp.has('sleeph'); if(_hasHistorical){ const _hsp=_sp; if(history.replaceState)history.replaceState(null,'',location.pathname); setTimeout(()=>{ if(confirm('Este link quiere importar datos históricos (pasos/peso/sueño de varios días) a tu cuenta. ¿Aplicar? — solo dile que SÍ si vienes de tu propio Atajo de iOS.')){ try{ const _imp=importHealth(_hsp); if(_imp.length){ save(); render(); toast('✓ '+_imp.join(' · ')); } }catch(_){} } },400); } else { const _imp=importHealth(_sp); if(_imp.length){ window._healthImported=_imp; if(history.replaceState)history.replaceState(null,'',location.pathname); } } }catch(_){} save(); render(); if(window._healthImported)setTimeout(()=>toast('✓ '+window._healthImported.join(' · ')),250); if(window._recoveredFromBackup)setTimeout(()=>{try{alert('Se recuperó un respaldo local: revisa tus datos, podrían faltar cambios muy recientes.');}catch(_){}},600);
 applyDesign(); try{ if(/[?&]design\b/.test(location.search))localStorage.setItem('gymtrk_designmode','1'); if(localStorage.getItem('gymtrk_designmode')==='1')openDesignPanel(); }catch(_){}
 try{ bootScreen(()=>{ try{
   if(/[?&]wrap=1\b/.test(location.search)){ monthlyWrap(prevMonthYm(), true); return; }
