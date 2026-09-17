@@ -1,0 +1,23 @@
+{
+  "name": "gymtrk-native",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Cascarón nativo (Capacitor 8) de gym//TRK para iOS y Android: la misma index.html + lectura de Salud / Health Connect.",
+  "scripts": {
+    "preinstall": "node scripts/guard-drive.cjs",
+    "copy-web": "node scripts/copy-web.cjs",
+    "copy-probe": "node scripts/copy-web.cjs --probe"
+  },
+  "dependencies": {
+    "@capacitor/android": "8.5.2",
+    "@capacitor/app": "8.1.1",
+    "@capacitor/core": "8.5.2",
+    "@capacitor/filesystem": "8.1.3",
+    "@capacitor/ios": "8.5.2",
+    "@capacitor/share": "8.0.2",
+    "@capgo/capacitor-health": "8.11.3"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "8.5.2"
+  }
+}

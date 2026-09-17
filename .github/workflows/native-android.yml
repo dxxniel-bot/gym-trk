@@ -1,0 +1,80 @@
+# APK firmado con UNA keystore permanente (secrets) — si cada build usara una llave distinta, instalar encima fallaría
+# y desinstalar borra los datos de la app. Solo corre a mano o con un tag app-v*.
+name: native-android
+
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: "probe = página de prueba de Health Connect · app = gym//TRK completa"
+        type: choice
+        options: [probe, app]
+        default: probe
+  push:
+    tags: ["app-v*"]
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      TARGET: ${{ github.event.inputs.target || 'app' }}
+    defaults:
+      run:
+        working-directory: native
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: native/package-lock.json
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - run: npm ci
+
+      - name: Web assets
+        run: node scripts/copy-web.cjs $([ "$TARGET" = "probe" ] && echo --probe)
+
+      - name: Generate Android project
+        run: |
+          npx cap add android
+          npx cap sync android
+
+      - name: Patch manifest / gradle
+        run: bash scripts/patch-android.sh
+        env:
+          BUILD_NUMBER: ${{ github.run_number }}
+
+      - name: Keystore
+        env:
+          KS_B64: ${{ secrets.ANDROID_KEYSTORE_B64 }}
+        run: |
+          if [ -z "$KS_B64" ]; then echo "::error::Falta el secret ANDROID_KEYSTORE_B64 (ver native/README.md)"; exit 1; fi
+          echo "$KS_B64" | base64 -d > "$RUNNER_TEMP/gymtrk.keystore"
+
+      - name: Build signed release APK
+        working-directory: native/android
+        env:
+          KS_PASS: ${{ secrets.ANDROID_KEYSTORE_PASS }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASS: ${{ secrets.ANDROID_KEY_PASS }}
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleRelease \
+            -Pandroid.injected.signing.store.file="$RUNNER_TEMP/gymtrk.keystore" \
+            -Pandroid.injected.signing.store.password="$KS_PASS" \
+            -Pandroid.injected.signing.key.alias="$KEY_ALIAS" \
+            -Pandroid.injected.signing.key.password="$KEY_PASS"
+          cp app/build/outputs/apk/release/*.apk "$GITHUB_WORKSPACE/gymtrk-$TARGET-${{ github.run_number }}.apk"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: gymtrk-android-${{ env.TARGET }}-${{ github.run_number }}
+          path: "*.apk"
+          retention-days: 14

@@ -1,0 +1,77 @@
+# IPA sin firmar (con firma ad-hoc que lleva el entitlement de HealthKit) para instalar con Sideloadly / Impactor
+# usando un Apple ID gratuito. Solo corre a mano o con un tag app-v* — los minutos de macOS cuestan en repos privados.
+name: native-ios
+
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: "probe = página de prueba de Salud · app = gym//TRK completa"
+        type: choice
+        options: [probe, app]
+        default: probe
+  push:
+    tags: ["app-v*"]
+
+jobs:
+  ipa:
+    runs-on: macos-26
+    timeout-minutes: 30
+    env:
+      TARGET: ${{ github.event.inputs.target || 'app' }}
+    defaults:
+      run:
+        working-directory: native
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: native/package-lock.json
+
+      - run: npm ci
+
+      - name: Web assets
+        run: node scripts/copy-web.cjs $([ "$TARGET" = "probe" ] && echo --probe)
+
+      - name: Generate iOS project
+        run: |
+          npx cap add ios --packagemanager SPM
+          npx cap sync ios
+
+      - name: Patch Info.plist
+        run: bash scripts/patch-ios.sh
+        env:
+          APP_VERSION: "0.1.0"
+          BUILD_NUMBER: ${{ github.run_number }}
+
+      - name: Build (unsigned, device)
+        run: |
+          xcodebuild -project ios/App/App.xcodeproj -scheme App -configuration Release -sdk iphoneos \
+            -derivedDataPath "$RUNNER_TEMP/dd" CONFIGURATION_BUILD_DIR="$RUNNER_TEMP/out" \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" DEVELOPMENT_TEAM="" \
+            build
+
+      # Sin firma el binario no lleva entitlements y el sideloader no activaría HealthKit: firma ad-hoc con ellos.
+      - name: Embed HealthKit entitlement + package IPA
+        run: |
+          APP="$RUNNER_TEMP/out/App.app"
+          [ -d "$APP" ] || APP=$(find "$RUNNER_TEMP/dd" -name App.app -path '*iphoneos*' | head -1)
+          echo "app: $APP"
+          if [ -d "$APP/Frameworks" ]; then
+            find "$APP/Frameworks" -maxdepth 1 \( -name '*.framework' -o -name '*.dylib' \) -exec codesign -f -s - --timestamp=none {} \;
+          fi
+          codesign -f -s - --timestamp=none --entitlements scripts/App.entitlements "$APP"
+          codesign -d --entitlements - "$APP" | tee "$RUNNER_TEMP/ent.txt"
+          grep -q com.apple.developer.healthkit "$RUNNER_TEMP/ent.txt"
+          mkdir -p "$RUNNER_TEMP/pkg/Payload"
+          cp -R "$APP" "$RUNNER_TEMP/pkg/Payload/"
+          (cd "$RUNNER_TEMP/pkg" && zip -qry "$GITHUB_WORKSPACE/gymtrk-$TARGET-${{ github.run_number }}.ipa" Payload)
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: gymtrk-ios-${{ env.TARGET }}-${{ github.run_number }}
+          path: "*.ipa"
+          retention-days: 14

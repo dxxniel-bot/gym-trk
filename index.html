@@ -794,8 +794,35 @@ function migrate(d){ if(!d.version){d.version=1;} if(!d.meals||typeof d.meals!==
 function goalsFor(date){ const h=db.goalHist&&db.goalHist[date]; if(h)return h; return (typeof effectiveGoals==='function')?effectiveGoals():(db.settings&&db.settings.goals)||{}; }
 // take a snapshot of today's goal the FIRST time something is logged that day (so editing the goal later never rewrites the past)
 function snapshotGoal(date){ db.goalHist=db.goalHist||{}; if(!db.goalHist[date]){ db.goalHist[date]=Object.assign({}, (typeof effectiveGoals==='function')?effectiveGoals():(db.settings&&db.settings.goals)||{}); } }
+// ── APP NATIVA (Capacitor 8, v222) ──────────────────────────────────────────────────────────────────────────────────
+// En la app iOS/Android el WebView puede desalojar localStorage bajo presión de espacio, así que el db se espeja además a
+// DOS archivos alternados (Library/db_A.json · db_B.json — la escritura del plugin no es atómica) y nativeBoot() adopta el
+// más nuevo si localStorage quedó vacío o con menos datos. Los plugins se llaman por el proxy que inyecta Capacitor
+// (Capacitor.Plugins.X) — no hay bundler. En la web (GitHub Pages) nada de esto corre.
+const NATIVE_APP=(function(){ try{ return !!(window.Capacitor&&Capacitor.isNativePlatform&&Capacitor.isNativePlatform()); }catch(_){ return false; } })();
+function capP(n){ try{ return (NATIVE_APP&&window.Capacitor&&Capacitor.Plugins&&Capacitor.Plugins[n])||null; }catch(_){ return null; } }
+function withTO(p,ms){ return Promise.race([p,new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),ms||20000))]); }
+let _mirrorT=null, _mirrorSeq=0, _mirrorBusy=false, _mirrorPending=null;
+function nativeMirrorSoon(s){ _mirrorPending=s; clearTimeout(_mirrorT); _mirrorT=setTimeout(nativeMirrorFlush,1500); }
+async function nativeMirrorFlush(){ const fs=capP('Filesystem'); if(!fs||_mirrorBusy||!_mirrorPending)return; _mirrorBusy=true; const s=_mirrorPending; _mirrorPending=null;
+  try{ _mirrorSeq++; const file=(_mirrorSeq%2)?'db_A.json':'db_B.json';
+    await withTO(fs.writeFile({path:file,data:'{"_seq":'+_mirrorSeq+',"_savedMs":'+Date.now()+',"db":'+s+'}',directory:'LIBRARY',encoding:'utf8'}),15000); }
+  catch(e){ try{ healthLog('espejo del db falló: '+(e&&e.message),'err'); }catch(_){} }
+  finally{ _mirrorBusy=false; if(_mirrorPending)nativeMirrorFlush(); } }
+async function nativeBoot(){ const fs=capP('Filesystem'); if(!fs)return;
+  const read=async f=>{ try{ const r=await withTO(fs.readFile({path:f,directory:'LIBRARY',encoding:'utf8'}),8000); return JSON.parse(r.data); }catch(_){ return null; } };
+  const a=await read('db_A.json'), b=await read('db_B.json');
+  const best=[a,b].filter(x=>x&&x.db&&x.db.profile).sort((x,y)=>(y._savedMs||0)-(x._savedMs||0))[0];
+  _mirrorSeq=Math.max((a&&a._seq)||0,(b&&b._seq)||0);
+  if(best&&dbMass(best.db)>dbMass(db)){ db=migrate(best.db); save(); render(); try{ toast('↺ datos recuperados del respaldo de la app'); }catch(_){} }
+  else if(dbMass(db)>0){ nativeMirrorSoon(JSON.stringify(db)); } }
+// files in the native app: write to Documents (visible in Archivos) and open the share sheet — <a download> doesn't work in a WebView
+async function nativeShareFile(name,text){ const fs=capP('Filesystem'), sh=capP('Share'); if(!fs){ alert('No pude acceder a archivos.'); return; }
+  try{ await fs.writeFile({path:name,data:text,directory:'DOCUMENTS',encoding:'utf8'}); const u=await fs.getUri({path:name,directory:'DOCUMENTS'});
+    if(sh) await sh.share({title:name,files:[u.uri]}); else toast('guardado en Archivos › gym//TRK › '+name); }
+  catch(e){ if(!/cancel/i.test(String(e&&e.message)))alert('No pude exportar: '+(e&&e.message)); } }
 let _saveBakT=0;
-function save(){ bumpIdx(); try{ const s=JSON.stringify(db); localStorage.setItem(LS_KEY,s);
+function save(){ bumpIdx(); try{ const s=JSON.stringify(db); localStorage.setItem(LS_KEY,s); if(NATIVE_APP)nativeMirrorSoon(s);
   // redundant backup, throttled to once every ~4s (cheap safety net if primary key gets corrupted)
   const now=performance.now(); if(now-_saveBakT>4000){ _saveBakT=now; try{localStorage.setItem(LS_BACKUP,s);}catch(e){} }
   }catch(e){ console.warn('save failed',e); if(!window._saveQuotaWarned){ window._saveQuotaWarned=true; try{ setTimeout(()=>{ try{toast('⚠ sin espacio: exporta y borra datos viejos para liberar');}catch(_){} },500); }catch(_){} } } }
@@ -2917,6 +2944,79 @@ function ingestHealth(p,opts){ opts=opts||{}; const h=H(); const out={daily:0,sl
   h.sync.lastRun=Date.now(); if(out.daily||out.sleep||out.workouts||out.sess)h.sync.lastOk=Date.now();
   if(!opts.silent)healthLog('ingest '+plat+' · '+out.daily+' días · '+out.sleep+' noches · '+out.workouts+' entrenos · FC en '+out.sess+' sesiones');
   return out; }
+// ── sync nativo: Salud (iOS HealthKit) / Health Connect (Android) vía @capgo/capacitor-health (jsName 'Health') ──
+// Lee ventanas solapadas (el plugin no tiene anclas) y escribe idempotente por ingestHealth. Totales diarios SIEMPRE por
+// agregado (sumar muestras crudas cuenta doble iPhone + pulsera). Nunca trata un error como "cero datos". En iOS un permiso de
+// lectura negado es indistinguible de "no hay datos" (diseño de Apple) → aviso heurístico en el log.
+const HEALTH_READ=['steps','calories','basalCalories','heartRate','restingHeartRate','heartRateVariability','sleep','workouts'];
+let _hsBusy=false;
+async function healthSyncNative(reason){ const Hp=capP('Health'); const h=H();
+  if(!Hp){ if(reason==='manual'||reason==='connect')alert('La lectura de Salud solo funciona en la app nativa.'); return; }
+  if(_hsBusy)return;
+  if(reason!=='manual'&&reason!=='connect'&&h.sync.lastTry&&Date.now()-h.sync.lastTry<5*60000)return;
+  _hsBusy=true; h.sync.lastTry=Date.now();
+  const plat=(window.Capacitor&&Capacitor.getPlatform&&Capacitor.getPlatform())||'native', tag=plat==='ios'?'hk':'hc';
+  try{
+    const av=await withTO(Hp.isAvailable(),8000);
+    if(!av||!av.available){ healthLog('salud no disponible: '+((av&&av.reason)||'?'),'err'); save(); if(reason!=='open'&&reason!=='resume')alert('Salud no está disponible en este teléfono.'); return; }
+    if(!h.enabled||reason==='connect'){ await withTO(Hp.requestAuthorization({read:HEALTH_READ,requestHistoryAccess:true}),180000); h.enabled=true; h.askedAt=Date.now(); }
+    h.platform=plat;
+    const now=new Date(), first=!h.sync.lastOk, days=first?(plat==='ios'?90:30):3;
+    const from=new Date(now); from.setHours(0,0,0,0); from.setDate(from.getDate()-days+1);
+    const iso=d=>new Date(d).toISOString();
+    const P={v:1,platform:tag,sources:[],daily:[],sleep:[],workouts:[],hr:[]}; const seen={};
+    const src=(name,id)=>{ const key=tag+':'+(id||name||'?'); if(!seen[key]){ seen[key]=1; P.sources.push({key,name:name||id||'?',bundle:id||''}); } return key; };
+    // 1) daily aggregates — bucket midpoint decides the local day (robust to UTC-aligned buckets)
+    const byDate={}; const dayOf=s=>todayISO(new Date((Date.parse(s.startDate)+Date.parse(s.endDate))/2));
+    const put=(d,k,v)=>{ if(!(v>0))return; (byDate[d]=byDate[d]||{date:d,src:tag})[k]=v; };
+    const agg=async(dataType,aggregation)=>{ try{ const r=await withTO(Hp.queryAggregated({dataType,startDate:iso(from),endDate:iso(now),bucket:'day',aggregation}),25000); return r.samples||[]; }catch(e){ healthLog('agregado '+dataType+': '+(e&&e.message),'err'); return []; } };
+    (await agg('steps','sum')).forEach(s=>put(dayOf(s),'steps',s.value));
+    (await agg('calories','sum')).forEach(s=>put(dayOf(s),'activeKcal',s.value));
+    (await agg('restingHeartRate','average')).forEach(s=>put(dayOf(s),'rhr',s.value));
+    (await agg('heartRate',['min','average','max'])).forEach(s=>{ const d=dayOf(s), v=s.values||{}; put(d,'hrMin',v.min); put(d,'hrAvg',v.average); put(d,'hrMax',v.max); });
+    try{ const r=await withTO(Hp.readSamples({dataType:'basalCalories',startDate:iso(from),endDate:iso(now),limit:5000,ascending:true}),25000);
+      const per={}; (r.samples||[]).forEach(s=>{ const d=dayOf(s); per[d]=(per[d]||0)+(+s.value||0); }); Object.keys(per).forEach(d=>put(d,'basalKcal',per[d])); }catch(e){ healthLog('basal: '+(e&&e.message),'err'); }
+    try{ const r=await withTO(Hp.readSamples({dataType:'heartRateVariability',startDate:iso(from),endDate:iso(now),limit:5000,ascending:true}),25000);
+      const per={}; (r.samples||[]).forEach(s=>{ const d=dayOf(s); (per[d]=per[d]||[]).push(+s.value); });
+      Object.keys(per).forEach(d=>{ put(d,'hrv',median(per[d])); if(byDate[d])byDate[d].hrvKind=plat==='ios'?'sdnn':'rmssd'; }); }catch(e){ healthLog('HRV: '+(e&&e.message),'err'); }
+    P.daily=Object.values(byDate);
+    // 2) sleep — iOS writes one sample per stage: cluster into blocks (gap > 60 min = new block), one source per night
+    try{ const sf=new Date(now); sf.setDate(sf.getDate()-(first?days:3)); sf.setHours(12,0,0,0);
+      const r=await withTO(Hp.readSamples({dataType:'sleep',startDate:iso(sf),endDate:iso(now),limit:5000,ascending:true}),30000);
+      const segs=[]; (r.samples||[]).forEach(s=>{ const st=Date.parse(s.startDate), en=Date.parse(s.endDate); if(!(en>st))return; const k=src(s.sourceName,s.sourceId);
+        const stages=(Array.isArray(s.stages)&&s.stages.length)?s.stages.map(x=>[Date.parse(x.startDate),Date.parse(x.endDate),x.stage]):[[st,en,s.sleepState||'asleep']];
+        segs.push({startMs:st,endMs:en,src:k,stages}); });
+      segs.sort((a,b)=>a.startMs-b.startMs); const blocks=[];
+      segs.forEach(g=>{ const l=blocks.slice().reverse().find(b=>b.src===g.src); if(l&&g.startMs-l.endMs<=60*60000){ l.endMs=Math.max(l.endMs,g.endMs); l.stages=l.stages.concat(g.stages); } else blocks.push({startMs:g.startMs,endMs:g.endMs,src:g.src,stages:g.stages.slice()}); });
+      blocks.forEach(b=>{ if(!b.stages.every(x=>x[2]==='inBed'))b.stages=b.stages.filter(x=>x[2]!=='inBed'); });
+      const byWake={}; blocks.forEach(b=>{ const k=todayISO(new Date(b.endMs)); (byWake[k]=byWake[k]||[]).push(b); });
+      Object.keys(byWake).forEach(k=>{ const bySrc={}; byWake[k].forEach(b=>{ (bySrc[b.src]=bySrc[b.src]||[]).push(b); });
+        const tot=s=>bySrc[s].reduce((a,b)=>a+asleepMin(b),0); const best=Object.keys(bySrc).sort((x,y)=>tot(y)-tot(x))[0]; P.sleep.push(...bySrc[best]); }); }
+    catch(e){ healthLog('sueño: '+(e&&e.message),'err'); }
+    // 3) workouts (last 14 days)
+    try{ const wf=new Date(now); wf.setDate(wf.getDate()-14); let anchor, guard=0;
+      do{ const r=await withTO(Hp.queryWorkouts({startDate:iso(wf),endDate:iso(now),limit:100,ascending:true,anchor}),25000);
+        (r.workouts||[]).forEach(w=>{ const k=src(w.sourceName,w.sourceId); P.workouts.push({id:tag+':'+(w.platformId||(w.startDate+'|'+w.workoutType)),type:w.workoutType,startMs:Date.parse(w.startDate),endMs:Date.parse(w.endDate),kcal:+w.totalEnergyBurned||0,dist:+w.totalDistance||0,src:k}); });
+        anchor=r.anchor; guard++; } while(anchor&&guard<10); }
+    catch(e){ healthLog('entrenos: '+(e&&e.message),'err'); }
+    // 4) HR only around gym sessions of the last 72 h that aren't final yet (30-min chunks, explicit limit)
+    let series=0; const cutoff=Date.now()-72*3600000;
+    for(const s of (db.sessions||[])){ if(s.type==='rest')continue; const win=sessionWindow(s); if(!win||win.endMs<cutoff)continue;
+      const prev=h.sessHR[s.id]; if(prev&&prev.final)continue;
+      const a=win.startMs-15*60000, b=Math.min(Date.now(),win.endMs+15*60000);
+      for(let t=a;t<b;t+=30*60000){ const e=Math.min(b,t+30*60000);
+        try{ const r=await withTO(Hp.readSamples({dataType:'heartRate',startDate:iso(t),endDate:iso(e),limit:5000,ascending:true}),25000);
+          (r.samples||[]).forEach(x=>{ const ts=Date.parse(x.startDate); if(!isFinite(ts)||!(x.value>0))return; if(Date.parse(x.endDate)-ts>30000)series++; P.hr.push([ts,Math.round(x.value),src(x.sourceName,x.sourceId)]); }); }
+        catch(e2){ healthLog('FC de sesión: '+(e2&&e2.message),'err'); } } }
+    if(series)healthLog('FC: '+series+' muestras agrupadas (series) — la FC por serie podría requerir el plugin propio');
+    const o=ingestHealth(P);
+    if(plat==='ios'){ const miss=[]; if(!P.daily.some(d=>d.steps))miss.push('pasos'); if(!P.sleep.length)miss.push('sueño'); if(!P.daily.some(d=>d.hrAvg))miss.push('frecuencia cardíaca');
+      if(miss.length&&(P.daily.length||P.sleep.length))healthLog('sin datos de '+miss.join(', ')+' — si deberían existir, revisa Salud › Perfil › Apps › gym//TRK'); }
+    else { try{ const st=await withTO(Hp.checkAuthorization({read:HEALTH_READ}),8000); if(st&&st.readDenied&&st.readDenied.length)healthLog('permisos negados: '+st.readDenied.join(', '),'err'); }catch(_){} }
+    save(); render(); if(reason==='manual'||reason==='connect')toast('✓ salud: '+ingestSummary(o));
+  }catch(e){ const msg=String((e&&e.message)||e); const locked=/inaccessible|locked|protected/i.test(msg);
+    healthLog((locked?'teléfono bloqueado, se reintenta al abrir: ':'sync falló: ')+msg,'err'); save(); if(reason==='manual'||reason==='connect')alert('No se pudo sincronizar con Salud: '+msg); }
+  finally{ _hsBusy=false; } }
 function ingestSummary(o){ const b=[]; if(o.daily)b.push(o.daily+' días'); if(o.sleep)b.push(o.sleep+' noches'); if(o.workouts)b.push(o.workouts+' entrenos'); if(o.sess)b.push('FC en '+o.sess+' sesiones'); return b.length?b.join(' · '):'sin datos nuevos'; }
 function openHealthJsonImport(){ const inp=document.createElement('input'); inp.type='file'; inp.accept='application/json,.json';
   inp.onchange=()=>{ const f=inp.files&&inp.files[0]; if(!f)return; const rd=new FileReader();
@@ -2933,7 +3033,7 @@ function healthSettingsHTML(){ const h=H(); const nat=isNative();
   s+=L('último sync', agoTxt(h.sync.lastRun));
   if(srcs)s+=L('fuentes', srcs);
   s+=L('datos', Object.keys(h.daily).length+' días · '+Object.keys(h.sleep).length+' noches · '+Object.keys(h.workouts).length+' entrenos · FC en '+Object.keys(h.sessHR).length+' sesiones');
-  s+=`<div class="cta"><div class="secondary">${nat?'<button class="b" data-act="healthnative">sincronizar ahora</button>':''}<button class="b" data-act="healthjson">importar JSON de salud</button><button class="b" data-act="healthsync">atajo (pasos/peso/sueño)</button></div></div>`;
+  s+=`<div class="cta"><div class="secondary">${nat?(h.enabled?'<button class="b" data-act="healthnative">sincronizar ahora</button>':'<button class="b" data-act="healthconnect">conectar Salud</button>')+(h.platform==='android'?'<button class="b" data-act="healthhc">Health Connect</button>':''):''}<button class="b" data-act="healthjson">importar JSON de salud</button><button class="b" data-act="healthsync">atajo (pasos/peso/sueño)</button></div></div>`;
   if(h.log.length)s+=`<div class="submeta" style="margin-top:8px;white-space:pre-line">${h.log.slice(-5).reverse().map(x=>escTxt(new Date(x.t).toLocaleString().slice(0,16)+' · '+(x.lvl==='err'?'⚠ ':'')+x.msg)).join('\n')}</div>`;
   return s; }
 // session sheet: HR over the session with a tick per set + summary
@@ -2960,6 +3060,7 @@ function importHealth(sp){ const msg=[];
   if(sp.has('sleeph')){ db.sleep=db.sleep||{}; const c=importPairs(sp.get('sleeph'),(k,val)=>{ const v=parseSleepVal(val,k); if(v==null)return false; db.sleep[k]=v; return true; }); if(c)msg.push(c+' días de sueño'); }
   return msg; }
 function healthSync(){
+  if(NATIVE_APP){ healthSyncNative('manual'); return; }
   function go(t){ t=(t||"").trim(); if(t.charAt(0)==="?")t=t.slice(1); var msg=[]; try{ if(/stepsh=|weighth=|stepsq=|sleeph=|(^|&)steps=|(^|&)weight=|(^|&)sleep=/.test(t)) msg=importHealth(new URLSearchParams(t)); }catch(_){} if(msg.length){ save(); render(); setTimeout(function(){ toast("\u2713 "+msg.join(" \u00b7 ")); },120); } else { openHealthImport(); } }
   try{ if(navigator.clipboard&&navigator.clipboard.readText){ navigator.clipboard.readText().then(go,function(){ openHealthImport(); }); } else { openHealthImport(); } }catch(_){ openHealthImport(); }
 }
@@ -4279,7 +4380,9 @@ document.getElementById('app').addEventListener('click',e=>{
   else if(a==='healthsync'){ healthSync(); }
   else if(a==='healthjson'){ openHealthJsonImport(); }
   else if(a==='readiness'){ openReadiness(el.dataset.d||todayISO()); }
-  else if(a==='healthnative'){ if(typeof healthSyncNative==='function')healthSyncNative('manual'); }
+  else if(a==='healthnative'){ healthSyncNative('manual'); }
+  else if(a==='healthconnect'){ healthSyncNative('connect'); }
+  else if(a==='healthhc'){ const hp=capP('Health'); if(hp&&hp.openHealthConnectSettings)hp.openHealthConnectSettings().catch(()=>{}); }
   else if(a==='steprange'){ window._stepRange=+el.dataset.r||14; render(); }
   else if(a==='bwrange'){ window._bwRange=+el.dataset.r||14; render(); }
   else if(a==='metricdetail'){ window._mdRange=window._mdRange||14; openMetricDetail(el.dataset.m); }
@@ -6279,6 +6382,7 @@ function openSync(){
   document.querySelector('[data-act="syimport"]').onclick=()=>{ try{const d=JSON.parse(ta.value); if(!d.split)throw 0; if(!confirmReplace(d))return; db=migrate(d); save(); closeModal(); go('home'); alert('Datos importados.'); }catch(e){ alert('Texto inválido.'); } };
 }
 function doExport(){
+  if(NATIVE_APP){ nativeShareFile('gymtrk-backup-'+todayISO()+'.json',JSON.stringify(db,null,2)); return; }
   const blob=new Blob([JSON.stringify(db,null,2)],{type:'application/json'});
   const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='gymtrk-backup-'+todayISO()+'.json'; a.click(); URL.revokeObjectURL(url);
 }
@@ -6341,6 +6445,7 @@ function buildExportMd(db){
   return L.join('\n');
 }
 function exportMarkdown(db){
+  if(NATIVE_APP){ nativeShareFile('gymtrk-export-'+todayISO()+'.md',buildExportMd(db)); return; }
   const blob=new Blob([buildExportMd(db)],{type:'text/markdown;charset=utf-8'});
   const url=URL.createObjectURL(blob); const a=document.createElement('a');
   a.href=url; a.download='gymtrk-export-'+todayISO()+'.md';
@@ -6429,7 +6534,11 @@ setInterval(()=>{try{updateRestBar();}catch(_){}} ,500);
 document.addEventListener('visibilitychange',()=>{ if(!document.hidden){ try{updateRestBar();}catch(_){} try{promptIdleSession();}catch(_){} } });
 // Service worker with AUTO-UPDATE: when a new version is found, activate it and reload once.
 // Fixes iOS PWA serving stale cached builds from the home-screen icon.
-if('serviceWorker' in navigator){
+if(NATIVE_APP){ (async()=>{ try{ await nativeBoot(); }catch(_){}
+  try{ const ap=capP('App'); if(ap&&ap.addListener)ap.addListener('resume',()=>{ healthSyncNative('resume'); }); }catch(_){}
+  try{ if(H().enabled)healthSyncNative('open'); }catch(_){} })(); }
+if(NATIVE_APP){ try{ if(navigator.serviceWorker&&navigator.serviceWorker.getRegistrations)navigator.serviceWorker.getRegistrations().then(rs=>rs.forEach(r=>r.unregister())); }catch(_){} }
+else if('serviceWorker' in navigator){
   window.addEventListener('load',()=>{
     navigator.serviceWorker.register('sw.js').then(reg=>{
       // check for updates on load and whenever the app regains focus

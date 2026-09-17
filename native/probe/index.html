@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="es"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>gym//TRK · probe</title>
+<style>
+  body{background:#0c0c0c;color:#eee;font:13px/1.45 ui-monospace,Menlo,monospace;margin:0;padding:calc(env(safe-area-inset-top) + 14px) 14px 40px}
+  h1{font-size:16px;margin:0 0 4px} .m{color:#888;font-size:11px}
+  button{background:#eee;color:#000;border:0;border-radius:8px;padding:12px;font:inherit;font-weight:700;width:100%;margin:6px 0}
+  pre{white-space:pre-wrap;background:#161616;border-radius:8px;padding:10px;font-size:11px}
+</style></head><body>
+<h1>gym//TRK · probe de Salud</h1>
+<div class="m">Instala esto ANTES de la app completa. Responde 3 preguntas: ¿HealthKit/Health Connect da permiso a esta app firmada así?, ¿cada cuánto llega tu FC? y ¿llega el sueño?</div>
+<button id="auth">1 · pedir permiso</button>
+<button id="hr">2 · FC de las últimas 6 h</button>
+<button id="gym">2b · FC de una ventana (tu último entreno)</button>
+<button id="sleep">3 · sueño de las últimas 2 noches</button>
+<button id="day">4 · pasos y FC reposo (7 días)</button>
+<pre id="out">—</pre>
+<script>
+const out=document.getElementById('out');
+const log=(...a)=>{ out.textContent=a.map(x=>typeof x==='string'?x:JSON.stringify(x,null,1)).join('\n')+'\n\n'+out.textContent; };
+const H=()=>window.Capacitor&&Capacitor.Plugins&&Capacitor.Plugins.Health;
+const iso=ms=>new Date(ms).toISOString();
+const READ=['steps','calories','heartRate','restingHeartRate','heartRateVariability','sleep','workouts'];
+function stats(samples){
+  const ts=samples.map(s=>Date.parse(s.startDate)).sort((a,b)=>a-b); const dts=[]; for(let i=1;i<ts.length;i++)dts.push((ts[i]-ts[i-1])/1000);
+  dts.sort((a,b)=>a-b); const med=dts.length?dts[dts.length>>1]:null;
+  const spans=samples.map(s=>(Date.parse(s.endDate)-Date.parse(s.startDate))/1000);
+  const src={}; samples.forEach(s=>{ const k=(s.sourceName||'?')+' · '+(s.sourceId||''); src[k]=(src[k]||0)+1; });
+  return {muestras:samples.length, intervalo_mediano_s:med, span_max_s:spans.length?Math.max(...spans):null, agrupadas_mas_30s:spans.filter(x=>x>30).length,
+    primera:ts.length?new Date(ts[0]).toLocaleString():null, ultima:ts.length?new Date(ts[ts.length-1]).toLocaleString():null, fuentes:src,
+    veredicto: med==null?'sin datos (¿permiso negado? en iOS se ve igual que "no hay datos")': med<=15?'✓ alcanza para FC por serie': med<=60?'~ solo resumen de sesión (FC cada '+Math.round(med)+' s)':'✗ muy espaciada'};
+}
+async function guard(fn){ try{ if(!H())throw new Error('no hay plugin Health — ¿esto corre dentro de la app?'); await fn(); }catch(e){ log('✗ '+(e&&e.message||e)); } }
+document.getElementById('auth').onclick=()=>guard(async()=>{ const av=await H().isAvailable(); log('disponible:',av); const r=await H().requestAuthorization({read:READ,requestHistoryAccess:true}); log('autorización (en iOS "authorized" solo significa que ya se preguntó):',r); });
+document.getElementById('hr').onclick=()=>guard(async()=>{ const now=Date.now(); const r=await H().readSamples({dataType:'heartRate',startDate:iso(now-6*3600000),endDate:iso(now),limit:5000,ascending:true}); log('FC 6 h:',stats(r.samples||[])); });
+document.getElementById('gym').onclick=()=>guard(async()=>{ const now=Date.now(); const w=await H().queryWorkouts({startDate:iso(now-7*86400000),endDate:iso(now),limit:20,ascending:false});
+  const last=(w.workouts||[])[0]; if(!last){ log('sin entrenos en 7 días — inicia uno en Google Health / Fitness y vuelve a probar'); return; }
+  const r=await H().readSamples({dataType:'heartRate',startDate:last.startDate,endDate:last.endDate,limit:5000,ascending:true});
+  log('entreno '+last.workoutType+' · '+new Date(last.startDate).toLocaleString()+' · '+Math.round(last.duration/60)+' min · '+(last.sourceName||''),stats(r.samples||[])); });
+document.getElementById('sleep').onclick=()=>guard(async()=>{ const now=Date.now(); const r=await H().readSamples({dataType:'sleep',startDate:iso(now-48*3600000),endDate:iso(now),limit:2000,ascending:true});
+  const s=r.samples||[]; const by={}; s.forEach(x=>{ const k=x.sleepState||'?'; by[k]=(by[k]||0)+(Date.parse(x.endDate)-Date.parse(x.startDate))/60000; });
+  log('sueño 48 h: '+s.length+' muestras · con fases: '+s.some(x=>x.stages&&x.stages.length),{minutos_por_estado:by,fuentes:[...new Set(s.map(x=>x.sourceName))]}); });
+document.getElementById('day').onclick=()=>guard(async()=>{ const now=Date.now(); const a=iso(now-7*86400000), b=iso(now);
+  const st=await H().queryAggregated({dataType:'steps',startDate:a,endDate:b,bucket:'day',aggregation:'sum'});
+  const rh=await H().queryAggregated({dataType:'restingHeartRate',startDate:a,endDate:b,bucket:'day',aggregation:'average'});
+  log('pasos/día:',(st.samples||[]).map(x=>x.startDate.slice(0,10)+' '+Math.round(x.value)),'FC reposo/día:',(rh.samples||[]).map(x=>x.startDate.slice(0,10)+' '+Math.round(x.value))); });
+</script>
+</body></html>
