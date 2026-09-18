@@ -594,10 +594,14 @@
   .ws-card .line{padding:6px 0; font-size:var(--t-body);}
   .ws-cardf{text-align:center; font-size:15px/*ds:exempt*/; font-weight:800; color:var(--o35); margin-top:var(--s5); letter-spacing:.5px/*ds:exempt*/;} .ws-cardf span{color:var(--o20);}
   .ws-share{font-size:11px/*ds:exempt*/; color:var(--o40); margin-top:var(--s5); letter-spacing:.3px/*ds:exempt*/;}
-  .toast{position:fixed; left:50%; bottom:84px; transform:translateX(-50%); color:var(--fg); padding:10px var(--s5); border-radius:var(--r-pill); font-size:var(--t-sm); font-weight:700; z-index:var(--z-toast); white-space:nowrap; animation:toastin var(--dur-3) var(--ease-out), toastout var(--dur-3) var(--ease-in) var(--toast-life) forwards;}   /* material: .glass-strong */
-  .toast.ok{border-color:var(--good);} .toast.err{border-color:var(--bad); animation:toastin var(--dur-3) var(--ease-out), toastout var(--dur-3) var(--ease-in) var(--toast-life-err) forwards;}
-  @keyframes toastin{from{opacity:0; transform:translate(-50%,10px)} to{opacity:1; transform:translate(-50%,0)}}
-  @keyframes toastout{to{opacity:0; transform:translate(-50%,8px)}}
+  /* R2 · TRKToast (§7.18): pila de hasta 3 sobre la nav; éxito/neutro se van a los --toast-life, un error espera a que
+     lo toques; una tarea ("… sincronizando") se queda hasta resolverse en el mismo toast */
+  .toasts{position:fixed; left:0; right:0; bottom:84px; z-index:var(--z-toast); display:flex; flex-direction:column; align-items:center; gap:6px; padding:0 var(--sp-px); pointer-events:none;}
+  .toast{max-width:100%; overflow:hidden; text-overflow:ellipsis; color:var(--fg); padding:10px var(--s5); border-radius:var(--r-pill); font-size:var(--t-sm); font-weight:700; white-space:nowrap; pointer-events:auto; animation:toastin var(--dur-3) var(--ease-out);}   /* material: .glass-strong */
+  .toast.out{animation:toastout var(--dur-3) var(--ease-in) forwards;}
+  .toast.ok{border-color:var(--good);} .toast.err{border-color:var(--bad); cursor:pointer;} .toast.err::after{content:' ✕'; color:var(--o40);} .toast.task{color:var(--o70);}
+  @keyframes toastin{from{opacity:0; transform:translateY(10px)}}
+  @keyframes toastout{to{opacity:0; transform:translateY(8px)}}
 
   /* ===== shared vocabulary (v156) — clases compartidas para homogeneizar; reemplazan style="" inline ===== */
   /* form: textarea unificada (.ta funciona con o sin .field; font-size:16 mata zoom iOS; altura por tier) */
@@ -634,7 +638,6 @@
   @media (prefers-reduced-transparency:reduce){ .glass,.glass-strong{ -webkit-backdrop-filter:none; backdrop-filter:none;} .glass{background:var(--card2);} .glass-strong{background:var(--sheet-bg);} }
   /* ajustes por pieza sobre el material: el sheet cuelga de arriba (solo borde inferior); el toast se centra con transform */
   .sheet.glass-strong{border-width:0 0 1px;}
-  .toast.glass-strong{transform:translateX(-50%);}
   /* ===== agenda del día (24h) estilo calendario rimu — bloques rellenos + chips; posiciones inline (data-driven) ===== */
   .ag-head{position:sticky;top:0;z-index:8;background:var(--bg);padding-bottom:var(--s3);}
   /* stack: bloques de timing colapsables (details nativo) */
@@ -677,6 +680,12 @@
   .ag-supp-pop .row .mg{flex:0 0 auto; font-size:var(--t-xs); color:var(--o50);}
   .ag-supp-pop .row:active{background:var(--card2);}
 
+  /* R2 · TRKAsk / TRKHold (§7.18): capa PROPIA encima del sheet actual — no lo reemplaza, así lo escrito abajo se conserva */
+  .modal.asklayer{z-index:var(--z-pop);}
+  .asklayer .sheet{max-height:60%;}
+  .hold{position:relative; overflow:hidden; width:100%; height:48px; margin-top:var(--s2); border:1px solid var(--bad); border-radius:var(--r-ctl); background:transparent; color:var(--bad); font:inherit; font-size:var(--t-body); font-weight:700; letter-spacing:var(--ls-ui); cursor:pointer; touch-action:none; -webkit-user-select:none; user-select:none; -webkit-touch-callout:none;}
+  .hold .hold-fill{position:absolute; inset:0; background:var(--bad); opacity:.22; transform:scaleX(0); transform-origin:left center; pointer-events:none;}
+  .hold .hold-lbl{position:relative; font-variant-numeric:tabular-nums;}
   /* DS-4 · componentes que vivían en style="" */
   .setprog{font-size:var(--t-caption); font-weight:700;} .exprog{font-size:var(--t-sm); font-weight:800; margin-left:var(--s3);}   /* R1: la forma fija en clase; en línea solo el color calculado */
   .setprogline{text-align:right; padding:0 var(--s3); margin:-1px 0 var(--s2); height:11px; line-height:11px;} .setprogline.nil{height:0; padding:0; margin:0;}
@@ -973,10 +982,10 @@ async function nativeBoot(){ const fs=capP('Filesystem'); if(!fs)return;
   if(best&&dbMass(best.db)>dbMass(db)){ db=migrate(best.db); save(); render(); try{ toast('↺ datos recuperados del respaldo de la app'); }catch(_){} }
   else if(dbMass(db)>0){ nativeMirrorSoon(JSON.stringify(db)); } }
 // files in the native app: write to Documents (visible in Archivos) and open the share sheet — <a download> doesn't work in a WebView
-async function nativeShareFile(name,text){ const fs=capP('Filesystem'), sh=capP('Share'); if(!fs){ alert('No pude acceder a archivos.'); return; }
+async function nativeShareFile(name,text){ const fs=capP('Filesystem'), sh=capP('Share'); if(!fs){ toast('⚠ no pude acceder a Archivos','err'); return; }
   try{ await fs.writeFile({path:name,data:text,directory:'DOCUMENTS',encoding:'utf8'}); const u=await fs.getUri({path:name,directory:'DOCUMENTS'});
     if(sh) await sh.share({title:name,files:[u.uri]}); else toast('guardado en Archivos › gym//TRK › '+name,'ok'); }
-  catch(e){ if(!/cancel/i.test(String(e&&e.message)))alert('No pude exportar: '+(e&&e.message)); } }
+  catch(e){ if(!/cancel/i.test(String(e&&e.message)))toast('⚠ no pude exportar · '+((e&&e.message)||''),'err'); } }
 let _saveBakT=0;
 function save(){ bumpIdx(); try{ const s=JSON.stringify(db); localStorage.setItem(LS_KEY,s); if(NATIVE_APP)nativeMirrorSoon(s);
   // redundant backup, throttled to once every ~4s (cheap safety net if primary key gets corrupted)
@@ -985,7 +994,9 @@ function save(){ bumpIdx(); try{ const s=JSON.stringify(db); localStorage.setIte
 // data-safety: count all data records so a restore can warn before any loss (meals + sessions + foods + bodyweight days + steps days)
 function dbMass(o){ try{ const m=Object.values((o&&o.meals)||{}).reduce((n,a)=>n+(a?a.length:0),0); return m+(((o&&o.sessions)||[]).length)+(((o&&o.foods)||[]).length)+Object.keys((o&&o.bodyweight)||{}).length+Object.keys((o&&o.steps)||{}).length+Object.keys((o&&o.sleep)||{}).length; }catch(_){ return 0; } }
 // ALWAYS ask before destructive replace (not just when shrinking) — silent imports on fresh accounts were a vector for malicious backups
-function confirmReplace(incoming){ const cur=dbMass(db), inc=dbMass(incoming); if(cur===0) return confirm('Esto reemplazará TODOS tus datos con el respaldo importado. ¿Continuar?'); if(inc<cur) return confirm('El respaldo a cargar tiene MENOS datos ('+inc+') que los actuales ('+cur+'). Reemplazará todo y no se puede deshacer. ¿Continuar?'); return confirm('Esto reemplazará todos tus datos actuales ('+cur+' registros) con el respaldo ('+inc+'). ¿Continuar?'); }
+function confirmReplace(incoming,onOk){ const cur=dbMass(db), inc=dbMass(incoming);   // R2: TRKHold (reemplazar todo es irreversible)
+  const detail=cur===0?'se reemplazan TODOS tus datos con el respaldo':inc<cur?'el respaldo tiene MENOS datos ('+inc+') que los actuales ('+cur+') · no se puede deshacer':'se reemplazan tus '+cur+' registros por los '+inc+' del respaldo';
+  holdConfirm({title:'cargar este respaldo',detail:detail,verb:'reemplazar'},onOk); }
 
 // ---------- helpers ----------
 const dayCount=()=>db.split.days.length;
@@ -1500,7 +1511,7 @@ function saveExProfile(){ const ctx=window._exProf; if(!ctx)return; const m=docu
     if(!prim){ const r=exCatRec(nm); if(r)delete r.targets; }
     else { const secs=[]; m.querySelectorAll('select[data-sec]').forEach(s=>{ const w=m.querySelector('input[data-secw="'+s.dataset.sec+'"]'); if(s.value&&s.value!==prim)secs.push({id:s.value,w:Math.max(0,Math.min(1,parseFloat(w&&w.value)||0.5))}); });
       setExCat(nm,{targets:[{id:prim,w:1}].concat(secs)}); } }
-  save(); closeProfileBack(ctx.back); }
+  save(); toast('✓ perfil del ejercicio guardado'); closeProfileBack(ctx.back); }
 function closeProfileBack(back){ window._exProf=null; if(back==='catalog')openExerciseDirectory(); else if(back==='muscles')openMuscleMap(); else { closeModal(); reRender(); } }
 // ---------- v230 · RECUPERACIÓN por músculo (estimada → observada) y tablero //MÚSCULOS ----------
 // PT2: "la recuperación debería ser individual, no un número fijo". Cada músculo canónico arranca con una
@@ -2927,6 +2938,31 @@ function _diagSelfCheck(){
   } finally { db=real; bumpIdx(); }
   console.log('diag self-check OK');
 }
+// R2 · TRKToast / TRKAsk / TRKHold (DESIGN_SYSTEM.md §7.18): contrato de comportamiento, en el DOM real y limpiando después
+function _uiSelfCheck(){
+  const A=(nm,c)=>{ if(!c) throw new Error('SELFCHECK ui: '+nm); };
+  const box=()=>document.getElementById('toasts'); const before=box()?[...box().children]:[]; let pending=false;
+  try{
+    ['a','b','c','d'].forEach(x=>toast('✓ prueba '+x));
+    A('la pila guarda como máximo 3 toasts', box().children.length===3&&/prueba b/.test(box().firstElementChild.textContent));
+    A('la vida del toast sale del token en segundos (2.3s → 2300 ms)', durMs('--toast-life',0)===2300&&durMs('--dur-3',0)===280);
+    const e=toast('⚠ error de prueba'); A('un error lleva role=alert y se queda (sin temporizador)', e.getAttribute('role')==='alert'&&e.classList.contains('err'));
+    const t=toastTask('probando'); A('una tarea arranca con "…" y sin tipo', /^…/.test(box().lastElementChild.textContent)&&box().lastElementChild.classList.contains('task'));
+    t.done('✓ lista'); A('la tarea se resuelve en el mismo toast', box().lastElementChild.classList.contains('ok')&&box().lastElementChild.textContent==='✓ lista');
+    let ran=0, canceled=0;
+    trkAsk({title:'prueba'},()=>ran++,()=>canceled++); const L=document.getElementById('asklayer');
+    A('TRKAsk va en su capa, no en #modal', !!L&&!L.contains(document.getElementById('modal')));
+    L.querySelector('[data-ask="no"]').click(); A('cancelar no ejecuta y avisa', ran===0&&canceled===1&&!document.getElementById('asklayer'));
+    trkAsk({title:'prueba'},()=>ran++); document.querySelector('#asklayer [data-ask="ok"]').click(); A('aceptar ejecuta una vez', ran===1);
+    let held=0; holdConfirm({title:'prueba',verb:'probar'},()=>held++); const hb=document.querySelector('#asklayer .hold');
+    hb.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true,pointerId:1})); hb.dispatchEvent(new PointerEvent('pointerup',{bubbles:true,pointerId:1}));
+    A('soltar antes no confirma', held===0&&/mantén/.test(hb.textContent));
+    hb.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true,pointerId:1})); hb.querySelector('.hold-fill').getAnimations()[0].finish();
+    // la confirmación llega en la microtarea siguiente (promesa finished)
+    pending=true; Promise.resolve().then(()=>Promise.resolve()).then(()=>{ try{ A('sostener hasta el final confirma', held===1&&!document.getElementById('asklayer')); console.log('ui self-check OK'); }
+      catch(err){ console.error(err); } finally{ closeAsk(true); } });
+  } finally { if(!pending)closeAsk(true); const b=box(); if(b)[...b.children].forEach(x=>{ if(before.indexOf(x)<0)x.remove(); }); }
+}
 function _historyEditSelfCheck(){
   // the finalize step below saves and advances the rotation — split + rotIdx must come back too (they leaked before v221)
   const origSessions=db.sessions, origActive=db.activeWork, origHist=state._histSessId, origSplit=db.split, origRot=db.rotIdx;
@@ -4174,14 +4210,14 @@ function ingestHealth(p,opts){ opts=opts||{}; const h=H(); const out={daily:0,sl
 const HEALTH_READ=['steps','calories','basalCalories','heartRate','restingHeartRate','heartRateVariability','sleep','workouts'];
 let _hsBusy=false;
 async function healthSyncNative(reason){ const Hp=capP('Health'); const h=H();
-  if(!Hp){ if(reason==='manual'||reason==='connect')alert('La lectura de Salud solo funciona en la app nativa.'); return; }
+  if(!Hp){ if(reason==='manual'||reason==='connect')toast('⚠ Salud solo se lee desde la app nativa','err'); return; }
   if(_hsBusy)return;
   if(reason!=='manual'&&reason!=='connect'&&h.sync.lastTry&&Date.now()-h.sync.lastTry<5*60000)return;
-  _hsBusy=true; h.sync.lastTry=Date.now();
+  _hsBusy=true; h.sync.lastTry=Date.now(); const _tt=(reason==='manual'||reason==='connect')?toastTask('sincronizando salud'):null;
   const plat=(window.Capacitor&&Capacitor.getPlatform&&Capacitor.getPlatform())||'native', tag=plat==='ios'?'hk':'hc';
   try{
     const av=await withTO(Hp.isAvailable(),8000);
-    if(!av||!av.available){ healthLog('salud no disponible: '+((av&&av.reason)||'?'),'err'); save(); if(reason!=='open'&&reason!=='resume')alert('Salud no está disponible en este teléfono.'); return; }
+    if(!av||!av.available){ healthLog('salud no disponible: '+((av&&av.reason)||'?'),'err'); save(); if(reason!=='open'&&reason!=='resume')toast('⚠ Salud no está disponible en este teléfono','err'); return; }
     if(!h.enabled||reason==='connect'){ await withTO(Hp.requestAuthorization({read:HEALTH_READ,requestHistoryAccess:true}),180000); h.enabled=true; h.askedAt=Date.now(); }
     h.platform=plat;
     const now=new Date(), first=!h.sync.lastOk, days=first?(plat==='ios'?90:30):3;
@@ -4236,14 +4272,14 @@ async function healthSyncNative(reason){ const Hp=capP('Health'); const h=H();
     if(plat==='ios'){ const miss=[]; if(!P.daily.some(d=>d.steps))miss.push('pasos'); if(!P.sleep.length)miss.push('sueño'); if(!P.daily.some(d=>d.hrAvg))miss.push('frecuencia cardíaca');
       if(miss.length&&(P.daily.length||P.sleep.length))healthLog('sin datos de '+miss.join(', ')+' — si deberían existir, revisa Salud › Perfil › Apps › gym//TRK'); }
     else { try{ const st=await withTO(Hp.checkAuthorization({read:HEALTH_READ}),8000); if(st&&st.readDenied&&st.readDenied.length)healthLog('permisos negados: '+st.readDenied.join(', '),'err'); }catch(_){} }
-    save(); render(); if(reason==='manual'||reason==='connect')toast('✓ salud: '+ingestSummary(o));
+    save(); render(); if(_tt)_tt.done('✓ salud sincronizada · '+ingestSummary(o));
   }catch(e){ const msg=String((e&&e.message)||e); const locked=/inaccessible|locked|protected/i.test(msg);
-    healthLog((locked?'teléfono bloqueado, se reintenta al abrir: ':'sync falló: ')+msg,'err'); save(); if(reason==='manual'||reason==='connect')alert('No se pudo sincronizar con Salud: '+msg); }
+    healthLog((locked?'teléfono bloqueado, se reintenta al abrir: ':'sync falló: ')+msg,'err'); save(); if(_tt)_tt.fail('⚠ no se pudo sincronizar con Salud · '+msg); }
   finally{ _hsBusy=false; } }
 function ingestSummary(o){ const b=[]; if(o.daily)b.push(o.daily+' días'); if(o.sleep)b.push(o.sleep+' noches'); if(o.workouts)b.push(o.workouts+' entrenos'); if(o.sess)b.push('FC en '+o.sess+' sesiones'); return b.length?b.join(' · '):'sin datos nuevos'; }
 function openHealthJsonImport(){ const inp=document.createElement('input'); inp.type='file'; inp.accept='application/json,.json';
   inp.onchange=()=>{ const f=inp.files&&inp.files[0]; if(!f)return; const rd=new FileReader();
-    rd.onload=()=>{ try{ const o=ingestHealth(JSON.parse(rd.result)); save(); render(); toast('✓ salud: '+ingestSummary(o)); }catch(e){ healthLog('import falló: '+e.message,'err'); save(); alert('No pude leer ese archivo de salud.'); } };
+    rd.onload=()=>{ try{ const o=ingestHealth(JSON.parse(rd.result)); save(); render(); toast('✓ salud: '+ingestSummary(o)); }catch(e){ healthLog('import falló: '+e.message,'err'); save(); toast('⚠ no pude leer ese archivo de salud','err'); } };
     rd.readAsText(f); };
   inp.click(); }
 window.gymtrkIngestHealth=p=>{ const o=ingestHealth(p); save(); render(); return o; };
@@ -4289,8 +4325,8 @@ function healthSync(){
 }
 function openHealthImport(){
   openModal('<h3>importar de Salud</h3><div class="submeta u-mb10">corre tu Atajo (copia los datos), regresa y pega abajo. acepta pasos, peso y/o sueño.</div><textarea id="hi_txt" class="ta md" placeholder="stepsh=2026-05-30:8200,...   weighth=2026-05-15:81.2,...   sleeph=2026-05-30:7.5@23:30-07:00,..."></textarea><button class="b u-w100 u-my8 u-mx0" id="hi_paste">pegar del portapapeles</button><div class="sheetbtns"><button class="ok" id="hi_go">importar</button><button class="cancel" data-act="closemodal">cancel</button></div>');
-  var p=document.getElementById("hi_paste"); if(p)p.onclick=function(){ try{ navigator.clipboard.readText().then(function(t){ var e=document.getElementById("hi_txt"); if(e)e.value=t; },function(){ alert("Pega a mano: manten presionado el cuadro y elige Pegar."); }); }catch(_){ alert("Pega a mano: manten presionado el cuadro y elige Pegar."); } };
-  var g=document.getElementById("hi_go"); if(g)g.onclick=function(){ var txt=(val("hi_txt")||"").trim(); if(txt.charAt(0)==="?")txt=txt.slice(1); var msg=[]; try{ msg=importHealth(new URLSearchParams(txt)); }catch(_){} if(msg.length){ save(); closeModal(); render(); setTimeout(function(){ toast("\u2713 "+msg.join(" \u00b7 ")); },120); } else { alert("No reconoci datos. Debe verse como  stepsh=fecha:valor,...  o  weighth=fecha:kg,..."); } };
+  var p=document.getElementById("hi_paste"); if(p)p.onclick=function(){ try{ navigator.clipboard.readText().then(function(t){ var e=document.getElementById("hi_txt"); if(e)e.value=t; },function(){ toast('pega a mano: mantén presionado el cuadro y elige Pegar'); }); }catch(_){ toast('pega a mano: mantén presionado el cuadro y elige Pegar'); } };
+  var g=document.getElementById("hi_go"); if(g)g.onclick=function(){ var txt=(val("hi_txt")||"").trim(); if(txt.charAt(0)==="?")txt=txt.slice(1); var msg=[]; try{ msg=importHealth(new URLSearchParams(txt)); }catch(_){} if(msg.length){ save(); closeModal(); render(); setTimeout(function(){ toast("\u2713 "+msg.join(" \u00b7 ")); },120); } else { toast('⚠ no reconocí datos · formato stepsh=fecha:valor o weighth=fecha:kg','err'); } };
 }
 function openWeightLog(){ const ks=Object.keys(db.bodyweight||{}).sort(); const last=ks.length?db.bodyweight[ks[ks.length-1]]:((db.profile&&db.profile.weightKg)||'');
   const recent=ks.slice(-8).reverse();
@@ -4299,7 +4335,7 @@ function openWeightLog(){ const ks=Object.keys(db.bodyweight||{}).sort(); const 
    <div class="field row2"><div><label>PESO (kg)</label><input id="bw_kg" type="number" inputmode="decimal" value="${last||''}" placeholder="ej. 72.5"/></div><div><label>FECHA</label><input id="bw_date" type="date" value="${todayISO()}" max="${todayISO()}"/></div></div>
    <div class="sheetbtns u-mb6"><button class="ok" id="bw_save">guardar</button><button class="cancel" data-act="closemodal">cerrar</button></div>
    ${recent.length?`<div class="grp-label sub">REGISTROS RECIENTES</div>`+rows+`<div class="submeta">toca una fecha para editarla · ✕ para borrar</div>`:''}`);
-  document.getElementById('bw_save').onclick=()=>{ const v=parseFloat(val('bw_kg')); const d=val('bw_date')||todayISO(); if(!v||v<=0){ alert('Pon un peso válido.'); return; } db.bodyweight=db.bodyweight||{}; db.bodyweight[d]=Math.round(v*10)/10; const allk=Object.keys(db.bodyweight).sort(); if(allk.length&&db.profile)db.profile.weightKg=db.bodyweight[allk[allk.length-1]]; save(); closeModal(); render(); };
+  document.getElementById('bw_save').onclick=()=>{ const v=parseFloat(val('bw_kg')); const d=val('bw_date')||todayISO(); if(!v||v<=0){ toast('⚠ pon un peso válido','err'); return; } db.bodyweight=db.bodyweight||{}; db.bodyweight[d]=Math.round(v*10)/10; const allk=Object.keys(db.bodyweight).sort(); if(allk.length&&db.profile)db.profile.weightKg=db.bodyweight[allk[allk.length-1]]; save(); toast('✓ peso guardado'); closeModal(); render(); };
 }
 // mood — circumplejo 2D: db.mood{'YYYY-MM-DD':{x:energía 0-10, y:valencia 0-10, label, ts}}. Legacy: número 1-10 = valencia.
 const MOOD_RING=['alerta','motivado','contento','tranquilo','aletargado','agotado','decaído','ansioso']; // 0=E,45=NE/Q1,90=N,135=NO/Q2,180=O,225=SO/Q3,270=S,315=SE/Q4
@@ -4374,8 +4410,8 @@ function openSleepLog(){
     blocks.forEach(b=>{ if(blkTimed(b)&&b.src&&b._o&&b.start===b._o.start&&b.end===b._o.end&&+b.hours>0){ const k=Object.assign({},b); delete k._o; out.push(k); return; }
       if(blkTimed(b)){ if(b.start&&b.end){ const h=sleepDur(b.start,b.end); if(h>0&&h<24)out.push({start:b.start,end:b.end,date:d,type:isNocturnal(b.start)?'nocturno':'siesta',hours:h}); } }
       else { const mh=Math.round((+b.hours)*10)/10; if(mh>0&&mh<24)out.push({date:d,type:'nocturno',hours:mh}); } });
-    if(!out.length){ alert('Agrega al menos un bloque válido: hora de dormir + despertar, o usa "horas".'); return; }
-    db.sleep=db.sleep||{}; db.sleep[d]=out; save(); closeModal(); render();
+    if(!out.length){ toast('⚠ agrega un bloque: dormir + despertar, o las horas','err'); return; }
+    db.sleep=db.sleep||{}; db.sleep[d]=out; save(); toast('✓ sueño guardado'); closeModal(); render();
   };
   load(todayISO());
 }
@@ -4497,7 +4533,7 @@ function openSelfcheckLog(){ const SF=[['bloat','¿qué tan hinchado te ves?'],[
   const load=d=>{ const o=(db.selfcheck&&db.selfcheck[d])||{}; SF.forEach(([f])=>{ const el=document.getElementById('sc_'+f); if(el)el.value=(o[f]!=null?o[f]:''); }); };
   const dt=document.getElementById('sc_date'); if(dt)dt.onchange=()=>load(dt.value);
   document.getElementById('sc_save').onclick=()=>{ const d=val('sc_date')||todayISO(); const o={}; SF.forEach(([f])=>{ const v=parseInt(val('sc_'+f),10); if(isFinite(v)&&v>=0&&v<=10)o[f]=v; });
-    db.selfcheck=db.selfcheck||{}; if(Object.keys(o).length){ o.ts=Date.now(); db.selfcheck[d]=o; } else { delete db.selfcheck[d]; } save(); closeModal(); render(); };
+    db.selfcheck=db.selfcheck||{}; if(Object.keys(o).length){ o.ts=Date.now(); db.selfcheck[d]=o; } else { delete db.selfcheck[d]; } save(); toast('✓ percepción guardada'); closeModal(); render(); };
   load(todayISO());
 }
 // total hard sets in [aISO,bISO] inclusive — RP counting (uni pair=max side, drop=0.5). mirror of setsWeek for arbitrary span.
@@ -4910,7 +4946,7 @@ function openSuppTime(id, iso){ iso=iso||todayISO(); const it=(db.stack||[]).fin
     if(v) it.tickTimes[iso]=v; else delete it.tickTimes[iso];
     if(!tickState(it.ticks&&it.ticks[iso])){ it.ticks=it.ticks||{}; it.ticks[iso]='taken'; } // fijar hora en día sin marcar = loguear taken
     it.tickEdited=it.tickEdited||{}; it.tickEdited[iso]=Date.now();
-    save(); closeModal(); render(); };
+    save(); toast('✓ hora de la toma guardada'); closeModal(); render(); };
 }
 // ---------- render: agenda (día 24h) ----------
 function curAgendaDate(){ return state.agendaDate||todayISO(); }
@@ -5127,7 +5163,7 @@ function openStackEdit(id, presetCat){
   root.querySelectorAll('[id^="se_n_"]').forEach(function(el){ el.addEventListener('input',function(){ _nutrFromDb=false; }); });
   _renderId();
   root.querySelector('#se_save').onclick=()=>{
-    const name=val('se_name'); if(!name){ alert('pon un nombre.'); return; }
+    const name=val('se_name'); if(!name){ toast('⚠ pon un nombre','err'); return; }
     it.name=name;
     it.category=root.querySelector('#se_cat .on').dataset.cat;
     it.dose=val('se_dose'); it.unit=val('se_unit');
@@ -5150,14 +5186,14 @@ function openStackEdit(id, presetCat){
     if(_fEl&&_se&&_se.forms){ it.elem=_se.elem; it.form=_fEl.value; it.compoundMg=parseFloat(val('se_dose'))||null; it.elementalMg=elementalMg(it.compoundMg,_se,it.form); }
     else { delete it.elem; delete it.form; delete it.compoundMg; delete it.elementalMg; }
     if(isNew){ db.stack=db.stack||[]; db.stack.push(it); }
-    save(); closeModal(); render();
+    save(); toast('✓ suplemento guardado'); closeModal(); render();
   };
   if(!isNew){
     root.querySelector('#se_del').onclick=()=>{
-      if(!confirm('¿Borrar '+it.name+'? Esto borra también su historial de ticks.')) return;
+      const _go2=()=>{
       db.stack=(db.stack||[]).filter(x=>x.id!==it.id);
       save(); closeModal(); render();
-    };
+    }; return holdConfirm({title:'borrar "'+it.name+'"',detail:'también su historial de tomas',verb:'borrar'},_go2);};
   }
 }
 
@@ -5187,7 +5223,7 @@ function openAdhocLog(){
   }
   var nameEl=document.getElementById('ad_name'); if(nameEl) nameEl.addEventListener('input',_adRender);
   root.querySelector('#ad_save').onclick=function(){
-    var name=val('ad_name'); if(!name||!name.trim()){ alert('pon un nombre.'); return; }
+    var name=val('ad_name'); if(!name||!name.trim()){ toast('⚠ pon un nombre','err'); return; }
     var d=val('ad_date')||today; var time=val('ad_time')||nowHM();
     var s=_adSe; var form=null,compoundMg=null,elemMg=null,elem=null; var nutr={};
     if(s&&s.forms){ form=val('ad_form'); compoundMg=parseFloat(val('ad_dose'))||null; if(compoundMg){ elemMg=elementalMg(compoundMg,s,form); elem=s.elem; if(elem) nutr[elem]=elemMg; } }
@@ -5196,7 +5232,7 @@ function openAdhocLog(){
     if(elem){ entry.elem=elem; entry.form=form; entry.compoundMg=compoundMg; entry.elementalMg=elemMg; }
     if(Object.keys(nutr).length) entry.nutr=nutr;
     db.adhoc=db.adhoc||{}; db.adhoc[d]=db.adhoc[d]||[]; db.adhoc[d].push(entry);
-    save(); closeModal(); render();
+    save(); toast('✓ toma registrada'); closeModal(); render();
   };
 }
 
@@ -5216,7 +5252,7 @@ function adoptDaySource(di){
   const day=db.split&&db.split.days[di]; if(!day)return;
   const d=dayDrift(day); if(!d){ toast('ese día ya coincide'); return; }
   const names=d.list.map(e=>e.name).join(' · ');
-  if(!confirm('El día "'+(day.name||'')+'" pasa a ser lo que entrenaste el '+((d.prior&&d.prior.date)||'')+':\n\n'+names+'\n\n¿Adoptarlo en el split?'))return;
+  const _go3=()=>{
   // cada instancia que ya existía CONSERVA su id (su historial y su máquina cuelgan de ahí); las nuevas
   // acuñan el suyo. El conteo de series sale de las series de TRABAJO (los drops no son series del plan).
   const old=(day.exercises||[]).slice(); const used={};
@@ -5236,7 +5272,7 @@ function adoptDaySource(di){
     });
   });
   save(); render(); toast('✓ split actualizado · '+day.exercises.length+' ejercicios');
-}
+}; return trkAsk({title:'adoptar "'+(day.name||'')+'" como lo entrenaste',detail:'el '+((d.prior&&d.prior.date)||'')+':\n'+names,ok:'adoptar'},_go3);}
 function renderSplitEdit(){
   const sp=db.split||{name:'',days:[]};
   let body=statusBar(true)
@@ -5349,7 +5385,8 @@ function render(){
 // indicador cuando el sheet se re-abre encima de sí mismo. Todo respeta prefers-reduced-motion.
 const _nk={}, _tabPos={};
 function reducedMotion(){ try{ return !!(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches); }catch(_){ return false; } }
-function durMs(tok,dflt){ try{ const v=getComputedStyle(document.documentElement).getPropertyValue(tok); return parseFloat(v)||dflt; }catch(_){ return dflt; } }
+// token de duración → ms, respetando la unidad ('280ms' → 280, '2.3s' → 2300; antes leía '2.3s' como 2.3 ms)
+function durMs(tok,dflt){ try{ const v=getComputedStyle(document.documentElement).getPropertyValue(tok).trim(), x=parseFloat(v); return isFinite(x)?(/ms$/.test(v)?x:/s$/.test(v)?x*1000:x):dflt; }catch(_){ return dflt; } }
 function animNums(root){ const red=reducedMotion();
   root.querySelectorAll('[data-nk]').forEach(el=>{ const k=el.dataset.nk, to=+el.dataset.nv; if(!isFinite(to))return; const from=_nk[k]; _nk[k]=to;
     if(red||from==null||from===to)return;
@@ -5620,9 +5657,9 @@ function delSetLive(exi,si){
     let end=p+step; while(end<ex.sets.length&&ex.sets[end]&&ex.sets[end].isDrop)end+=step;
     const trailing=ex.sets.slice(p+step,end);
     const hasData=trailing.some(x=>x&&!x._pf&&(x.done||(+x.w>0)||(+x.r>0)));
-    if(trailing.length&&hasData&&!confirm('Esta serie tiene '+(trailing.length/step)+' drop set(s) con datos. ¿Borrar todo junto?'))return false;
+    const _go4=()=>{
     ex.sets.splice(p,end-p);
-  }
+  }; if(trailing.length&&hasData) return trkAsk({title:'borrar la serie y sus drops',detail:'tiene '+(trailing.length/step)+' drop set(s) con datos',ok:'borrar todo',danger:true},_go4); return _go4();}
   save(); reRender(); return true;
 }
 function delSetHist(exi,si){
@@ -5632,9 +5669,9 @@ function delSetHist(exi,si){
   if(st.isDrop){ ex.sets.splice(p,step); }
   else { let end=p+step; while(end<ex.sets.length&&ex.sets[end]&&ex.sets[end].isDrop)end+=step;
     const trailing=ex.sets.slice(p+step,end); const hasData=trailing.some(x=>x&&(x.done||(+x.w>0)||(+x.r>0)));
-    if(trailing.length&&hasData&&!confirm('Esta serie tiene '+(trailing.length/step)+' drop set(s) con datos. ¿Borrar todo junto?'))return false;
+    const _go5=()=>{
     ex.sets.splice(p,end-p);
-  }
+  }; if(trailing.length&&hasData) return trkAsk({title:'borrar la serie y sus drops',detail:'tiene '+(trailing.length/step)+' drop set(s) con datos',ok:'borrar todo',danger:true},_go5); return _go5();}
   save(); reRender(); return true;
 }
 // Gesto: solo se engancha si el movimiento es CLARAMENTE horizontal (si no, manda el scroll vertical de
@@ -5691,8 +5728,8 @@ document.getElementById('app').addEventListener('click',e=>{
   const exi=el.dataset.exi!=null?+el.dataset.exi:null, si=el.dataset.si!=null?+el.dataset.si:null;
   // v223: cualquier toque dentro de la sesión viva cuenta como actividad (ver sessionIdleEnd)
   if(db&&db.activeWork&&state.screen==='workout')db.activeWork.lastTouch=Date.now();
-  if(a==='setf'&&el.dataset.locked){ e.preventDefault(); if(!confirm('¿Editar set completado?'))return; document.querySelectorAll('[data-act="setf"][data-exi="'+el.dataset.exi+'"][data-si="'+el.dataset.si+'"]').forEach(f=>{f.removeAttribute('data-locked');f.removeAttribute('readonly');}); el.focus&&el.focus(); return; }
-  if(a==='h_setf'&&el.dataset.locked){ e.preventDefault(); if(!confirm('¿Editar set completado?'))return; document.querySelectorAll('[data-act="h_setf"][data-exi="'+el.dataset.exi+'"][data-si="'+el.dataset.si+'"]').forEach(f=>{f.removeAttribute('data-locked');f.removeAttribute('readonly');}); el.focus&&el.focus(); return; }
+  if(a==='setf'&&el.dataset.locked){ e.preventDefault(); const _go6=()=>{ document.querySelectorAll('[data-act="setf"][data-exi="'+el.dataset.exi+'"][data-si="'+el.dataset.si+'"]').forEach(f=>{f.removeAttribute('data-locked');f.removeAttribute('readonly');}); el.focus&&el.focus(); return; }; return trkAsk({title:'editar una serie completada',detail:'ya está confirmada en el historial',ok:'editar'},_go6);}
+  if(a==='h_setf'&&el.dataset.locked){ e.preventDefault(); const _go7=()=>{ document.querySelectorAll('[data-act="h_setf"][data-exi="'+el.dataset.exi+'"][data-si="'+el.dataset.si+'"]').forEach(f=>{f.removeAttribute('data-locked');f.removeAttribute('readonly');}); el.focus&&el.focus(); return; }; return trkAsk({title:'editar una serie completada',detail:'ya está confirmada en el historial',ok:'editar'},_go7);}
   // elegir la MISMA opción de un <select> (rir/unit) no dispara 'change' — así que tocarlo ES el gesto de
   // confirmar esa sugerencia gris. v223: confirma SOLO ese campo y parchea el DOM en sitio. El código
   // viejo re-renderizaba con el selector nativo ABIERTO: el <select> original quedaba huérfano, su
@@ -5715,7 +5752,7 @@ document.getElementById('app').addEventListener('click',e=>{
   else if(a==='togglenoadv'){ if(db.activeWork){ db.activeWork.noAdvance=!db.activeWork.noAdvance; reRender(); } }
   else if(a==='resume'){ go('workout'); }
   else if(a==='leave'){ go('home'); }
-  else if(a==='abort'){ if(confirm('Abort workout? Lo registrado se descarta.')){ db.activeWork=null; save(); go('home'); } }
+  else if(a==='abort'){ holdConfirm({title:'abortar la sesión',detail:'lo registrado en esta sesión se descarta · no se guarda nada',verb:'abortar'},()=>{ db.activeWork=null; save(); go('home'); }); }
   else if(a==='selday'){ state.selDay=+el.dataset.i; render(); }
   else if(a==='prevday'){ state.selDay=selIdx()-1; render(); }
   else if(a==='nextday'){ state.selDay=selIdx()+1; render(); }
@@ -5727,10 +5764,10 @@ document.getElementById('app').addEventListener('click',e=>{
   else if(a==='llogin'){ state.screen='login'; render(); }
   else if(a==='backlanding'){ state.screen='landing'; render(); }
   else if(a==='loginfile'){ doImport(); }
-  else if(a==='dologin'){ try{ const d=JSON.parse(val('li_txt')); if(!d.split||!d.profile||!d.profile.username) throw 0; if(!confirmReplace(d))return; db=migrate(d); save(); state.screen='home'; render(); }catch(e){ const m=document.getElementById('li_msg'); if(m)m.textContent='texto inválido · revisa que sea el backup completo'; } }
+  else if(a==='dologin'){ try{ const d=JSON.parse(val('li_txt')); if(!d.split||!d.profile||!d.profile.username) throw 0; const _go16=()=>{ db=migrate(d); save(); state.screen='home'; render(); }; return confirmReplace(d,_go16);}catch(e){ const m=document.getElementById('li_msg'); if(m)m.textContent='texto inválido · revisa que sea el backup completo'; } }
   else if(a==='optpick'){ el.parentElement.querySelectorAll('.t').forEach(x=>x.classList.remove('on')); el.classList.add('on'); }
   else if(a==='onboardgo'){
-    const u=val('ob_user'); if(!u){ alert('Pon tu handle.'); return; }
+    const u=val('ob_user'); if(!u){ toast('⚠ pon tu nombre de usuario','err'); return; }
     const pv=id=>{ const e=document.querySelector('#'+id+' .t.on'); return e?e.dataset.v:''; };
     const sex=pv('ob_sex')||'M', goal=pv('ob_goal')||'maintain', unit=pv('ob_unit')||'lbs';
     const act=parseFloat(pv('ob_act'))||1.375;
@@ -5753,13 +5790,13 @@ document.getElementById('app').addEventListener('click',e=>{
   else if(a==='logweight'){ openWeightLog(); }
   else if(a==='logsleep'){ openSleepLog(); }
   else if(a==='editsleep'){ const d=el.dataset.d; const dt=document.getElementById('sl_date'); if(dt){ dt.value=d; dt.dispatchEvent(new Event('change')); } }
-  else if(a==='delsleep'){ const d=el.dataset.d; if(confirm('¿Borrar el sueño de '+d+'?')){ if(db.sleep)delete db.sleep[d]; save(); openSleepLog(); } }
+  else if(a==='delsleep'){ const d=el.dataset.d; trkAsk({title:'borrar el sueño del '+fmtShort(d),ok:'borrar',danger:true},()=>{ if(db.sleep)delete db.sleep[d]; save(); openSleepLog(); }); }
   else if(a==='logmood'){ openMoodLog(); }
   else if(a==='logselfcheck'){ openSelfcheckLog(); }
   else if(a==='editselfcheck'){ const d=el.dataset.d; const dt=document.getElementById('sc_date'); if(dt){ dt.value=d; dt.dispatchEvent(new Event('change')); } }
-  else if(a==='delselfcheck'){ const d=el.dataset.d; if(confirm('¿Borrar la percepción de '+d+'?')){ if(db.selfcheck)delete db.selfcheck[d]; save(); openSelfcheckLog(); } }
+  else if(a==='delselfcheck'){ const d=el.dataset.d; trkAsk({title:'borrar la percepción del '+fmtShort(d),ok:'borrar',danger:true},()=>{ if(db.selfcheck)delete db.selfcheck[d]; save(); openSelfcheckLog(); }); }
   else if(a==='editmood'){ const d=el.dataset.d; const dt=document.getElementById('mo_date'); if(dt){ dt.value=d; dt.dispatchEvent(new Event('change')); } }
-  else if(a==='delmood'){ const d=el.dataset.d; if(confirm('¿Borrar el ánimo de '+d+'?')){ if(db.mood)delete db.mood[d]; save(); openMoodLog(); } }
+  else if(a==='delmood'){ const d=el.dataset.d; trkAsk({title:'borrar el ánimo del '+fmtShort(d),ok:'borrar',danger:true},()=>{ if(db.mood)delete db.mood[d]; save(); openMoodLog(); }); }
   else if(a==='healthimport'){ openHealthImport(); }
   else if(a==='healthsync'){ healthSync(); }
   else if(a==='healthjson'){ openHealthJsonImport(); }
@@ -5791,7 +5828,7 @@ document.getElementById('app').addEventListener('click',e=>{
   else if(a==='stackview'){ window._stackView=el.dataset.v||'today'; render(); }
   else if(a==='chartpt'){ try{ const pts=JSON.parse(el.dataset.pts||'[]'); if(pts.length){ const r=el.getBoundingClientRect(); const x=(e.clientX-r.left)/(r.width||1); let best=pts[0],bd=9; pts.forEach(p=>{ const d=Math.abs(p.f-x); if(d<bd){bd=d;best=p;} }); if(best&&best.l)toast(best.l); } }catch(_){} }
   else if(a==='editbw'){ const d=el.dataset.d; const dt=document.getElementById('bw_date'), kg=document.getElementById('bw_kg'); if(dt)dt.value=d; if(kg){ kg.value=(db.bodyweight&&db.bodyweight[d])||''; kg.focus(); } }
-  else if(a==='delbw'){ const d=el.dataset.d; if(confirm('¿Borrar el peso de '+d+'?')){ if(db.bodyweight)delete db.bodyweight[d]; const allk=Object.keys(db.bodyweight||{}).sort(); if(db.profile)db.profile.weightKg=allk.length?db.bodyweight[allk[allk.length-1]]:db.profile.weightKg; save(); openWeightLog(); } }
+  else if(a==='delbw'){ const d=el.dataset.d; trkAsk({title:'borrar el peso del '+fmtShort(d),ok:'borrar',danger:true},()=>{ if(db.bodyweight)delete db.bodyweight[d]; const allk=Object.keys(db.bodyweight||{}).sort(); if(db.profile)db.profile.weightKg=allk.length?db.bodyweight[allk[allk.length-1]]:db.profile.weightKg; save(); openWeightLog(); }); }
   else if(a==='settings'){ go('settings'); }
   else if(a==='profile'){ go('settings'); }
   else if(a==='navmenu'){ openNavMenu(); }
@@ -5806,7 +5843,7 @@ document.getElementById('app').addEventListener('click',e=>{
   else if(a==='vieweditsession'){ openSessionEdit(el.dataset.id); }
   else if(a==='openhistedit'){ closeModal(); state._histSessId=el.dataset.id; state.screen='histedit'; render(); }
   else if(a==='h_close'){ state._histSessId=null; go('history'); }
-  else if(a==='h_delsession'){ if(confirm('¿Borrar esta sesión?')){ db.sessions=db.sessions.filter(x=>x.id!==el.dataset.id); state._histSessId=null; save(); go('history'); } }
+  else if(a==='h_delsession'){ holdConfirm({title:'borrar esta sesión',detail:'sale del historial y deja de contar para volumen, progreso y recuperación',verb:'borrar'},()=>{ db.sessions=db.sessions.filter(x=>x.id!==el.dataset.id); state._histSessId=null; save(); go('history'); }); }
   // history-edit set actions — isolated from the live setf/done/etc. handlers above (never touch db.activeWork).
   else if(a==='h_done'){ const s=db.sessions.find(x=>x.id===state._histSessId); if(!s)return; const ex=s.exercises[exi]; if(!ex||!ex.sets[si])return;
     if(ex.unilateral){ const v=!(ex.sets[si]&&ex.sets[si].done); [si,si+1].forEach(j=>{ const st=ex.sets[j]; if(!st)return; st.done=v; if(v)pfClearAll(st); }); }
@@ -5824,7 +5861,7 @@ document.getElementById('app').addEventListener('click',e=>{
   else if(a==='h_delset'){ delSetHist(exi,si); }
   else if(a==='schedcal'){ openScheduleModal(+el.dataset.di); }
   else if(a==='dl_ics'){ downloadIcs(+el.dataset.di); }
-  else if(a==='sd_deld'){ const di=+el.dataset.di; if(db.split.days.length>1&&confirm('¿Borrar este día?')){ db.split.days.splice(di,1); if(typeof db.rotIdx==='number'){ if(di<db.rotIdx)db.rotIdx--; if(db.rotIdx>=db.split.days.length)db.rotIdx=Math.max(0,db.split.days.length-1); } save(); render(); } }
+  else if(a==='sd_deld'){ const di=+el.dataset.di; if(db.split.days.length>1){ holdConfirm({title:'borrar este día del split',detail:'sus sesiones pasadas se quedan en el historial',verb:'borrar'},()=>{ db.split.days.splice(di,1); if(typeof db.rotIdx==='number'){ if(di<db.rotIdx)db.rotIdx--; if(db.rotIdx>=db.split.days.length)db.rotIdx=Math.max(0,db.split.days.length-1); } save(); render(); }); } }
   else if(a==='sd_delex'){ db.split.days[+el.dataset.di].exercises.splice(+el.dataset.ei,1); save(); render(); }
   else if(a==='sd_addex'){ openExEdit(+el.dataset.di,-1); }
   else if(a==='sd_dayup'){ const i=+el.dataset.di, d=db.split.days; if(i>0){ const t=d[i-1];d[i-1]=d[i];d[i]=t; if(db.rotIdx===i)db.rotIdx=i-1; else if(db.rotIdx===i-1)db.rotIdx=i; save(); render(); } }
@@ -5851,13 +5888,13 @@ document.getElementById('app').addEventListener('click',e=>{
   else if(a==='ss_save'){ const s=db.sessions.find(x=>x.id===window._sessId); if(s){ const dt=document.getElementById('ss_date'); if(dt)s.date=dt.value;
     // corregir el gym: save() → bumpIdx() recalcula baselines y ▲▼ contra el historial del gym correcto
     const gs=document.getElementById('ss_gym'); if(gs&&gs.value!==s.gym){ s.gym=gs.value||undefined; }
-    const sst=document.getElementById('ss_start'); if(sst)s.startTime=sst.value||null; const set=document.getElementById('ss_end'); if(set)s.endTime=set.value||null; if(s.startTime&&s.endTime){let d=hm2min(s.endTime)-hm2min(s.startTime);if(d<0)d+=1440;s.durSec=d*60;} save(); closeModal(); render(); } }
-  else if(a==='ss_del'){ if(confirm('¿Borrar esta sesión?')){ db.sessions=db.sessions.filter(x=>x.id!==window._sessId); save(); closeModal(); render(); } }
+    const sst=document.getElementById('ss_start'); if(sst)s.startTime=sst.value||null; const set=document.getElementById('ss_end'); if(set)s.endTime=set.value||null; if(s.startTime&&s.endTime){let d=hm2min(s.endTime)-hm2min(s.startTime);if(d<0)d+=1440;s.durSec=d*60;} save(); toast('✓ sesión actualizada'); closeModal(); render(); } }
+  else if(a==='ss_del'){ holdConfirm({title:'borrar esta sesión',detail:'sale del historial y deja de contar para volumen, progreso y recuperación',verb:'borrar'},()=>{ db.sessions=db.sessions.filter(x=>x.id!==window._sessId); save(); closeModal(); render(); }); }
   else if(a==='resumesession'){
     // "jamás perder una sesión" (feedback del dueño, 2026-08-03) — ANY past session is resumable, not
     // just ones saved in the last 30min. The only real constraint is not clobbering a session already
     // in progress elsewhere.
-    if(db.activeWork){ alert('Ya tienes una sesión activa. Finalízala o descártala primero.'); return; }
+    if(db.activeWork){ toast('⚠ ya hay una sesión en curso · termínala o descártala primero','err'); return; }
     const s=db.sessions.find(x=>x.id===window._sessId); if(!s)return;
     db.sessions=db.sessions.filter(x=>x.id!==s.id);
     const idx=db.split.days.findIndex(d=>d.id===s.dayId); if(idx>=0) db.rotIdx=idx;
@@ -5894,7 +5931,7 @@ document.getElementById('app').addEventListener('click',e=>{
     state._enter={exi,si:insertDrop(ex,si,Object.assign(exIdentity(db.activeWork,exi),{orderIdx:exi}))};
     save(); state._scroll=document.getElementById('view').scrollTop; render(); }
   else if(a==='delset'){ delSetLive(exi,si); }
-  else if(a==='delex'){ const w=db.activeWork; if(w&&w.exercises[exi]&&confirm('¿Quitar "'+((w.exercises[exi].name)||'este ejercicio')+'" de la sesión? (no toca tu split)')){ w.exercises.splice(exi,1); save(); state._scroll=(document.getElementById('view')||{}).scrollTop||0; render(); } }
+  else if(a==='delex'){ const w=db.activeWork; if(w&&w.exercises[exi]){ trkAsk({title:'quitar "'+((w.exercises[exi].name)||'este ejercicio')+'" de la sesión',detail:'lo registrado en ese ejercicio se descarta · tu split no cambia',ok:'quitar',danger:true},()=>{ w.exercises.splice(exi,1); save(); state._scroll=(document.getElementById('view')||{}).scrollTop||0; render(); }); } }
   else if(a==='addex'){ openAddExercise(exi); }
   else if(a==='axmus'){ const c=window._axCtx||{}; openAddExStep2(c.afterExi, el.dataset.v, c.replaceExi); }
   else if(a==='axpick'){ const c=window._axCtx||{}; const x=(window._axList||[])[+el.dataset.i]; if(x){ if(c.replaceExi!=null)replaceExFromKnown(c.replaceExi,x); else addExFromKnown(c.afterExi,x); } }
@@ -5903,7 +5940,7 @@ document.getElementById('app').addEventListener('click',e=>{
   else if(a==='axdetails'){ const c=window._axCtx||{}; if(c.replaceExi!=null)openExEdit(null,-1,c.replaceExi); }
   else if(a==='editmach'){ openMachineEdit(exi); }
   else if(a==='editexname'){ const w=db.activeWork; const ex=w&&w.exercises[exi]; if(ex&&ex.muscle){ openAddExStep2(exi, ex.muscle, exi); } else { openAddExercise(exi, exi); } }
-  else if(a==='editexnote'){ const w=db.activeWork; if(w&&w.exercises[exi]){ const cur=w.exercises[exi].note||''; const v=prompt('nota · '+((w.exercises[exi].name)||'ejercicio')+':',cur); if(v!=null){ w.exercises[exi].note=String(v).trim(); save(); state._scroll=(document.getElementById('view')||{}).scrollTop||0; render(); } } }
+  else if(a==='editexnote'){ const w=db.activeWork; if(w&&w.exercises[exi]){ const cur=w.exercises[exi].note||''; trkPrompt({title:'nota · '+((w.exercises[exi].name)||'ejercicio'),label:'NOTA',value:cur,placeholder:'agarre, asiento, sensación…'},v=>{ w.exercises[exi].note=String(v).trim(); save(); state._scroll=(document.getElementById('view')||{}).scrollTop||0; render(); toast('✓ nota guardada'); }); } }
   else if(a==='save'){ saveSession(); }
   else if(a==='togglemacros'){ state._scroll=document.getElementById('view').scrollTop; state.macroOpen=!state.macroOpen; render(); }
   else if(a==='toggleMacroUnit'){ state.macroPct=!state.macroPct; render(); }
@@ -5915,7 +5952,7 @@ document.getElementById('app').addEventListener('click',e=>{
       if(m._food){ openLog(m._food,{editId:m.id,qty:m.qty||1,unit:m._unit,tag:m.tag}); }
       else { const q=m.qty||1; const per={}; ['kcal','protein','carbs','fat','sugar','sodium','potassium','fiber','caffeine','alcohol','water'].forEach(k=>per[k]=(+m[k]||0)/q); openLog({name:(m.name||'').replace(/ ×[\d.]+$/,''),serving:m.serving||'1 serving',per},{editId:m.id,qty:q,tag:m.tag}); } } }
   else if(a==='delmealnow'){ state._scroll=document.getElementById('view').scrollTop; const t=curDate(); db.meals[t]=(db.meals[t]||[]).filter(m=>m.id!==window._mealId); save(); closeModal(); render(); }
-  else if(a==='delmealgroup'){ const tag=el.dataset.tag; if(!tag||!confirm('¿Borrar TODA la meal "'+tag+'" (todos sus alimentos)?'))return; state._scroll=document.getElementById('view').scrollTop; const t=curDate(); db.meals[t]=(db.meals[t]||[]).filter(m=>m.tag!==tag); save(); closeModal(); render(); }
+  else if(a==='delmealgroup'){ const tag=el.dataset.tag; const _go1=()=>{ state._scroll=document.getElementById('view').scrollTop; const t=curDate(); db.meals[t]=(db.meals[t]||[]).filter(m=>m.tag!==tag); save(); closeModal(); render(); }; if(!tag) return; return holdConfirm({title:'borrar la comida "'+tag+'"',detail:'todos sus alimentos de este día',verb:'borrar'},_go1);}
   else if(a==='editmealx'){ const id=el.dataset.id; const t=curDate(); const m=(db.meals[t]||[]).find(x=>x.id===id); if(m){ if(m._food){ openLog(m._food,{editId:m.id,qty:m.qty||1,unit:m._unit,tag:m.tag}); } else { const q=m.qty||1; const per={}; ['kcal','protein','carbs','fat','sugar','sodium','potassium','fiber','caffeine','alcohol','water'].forEach(k=>per[k]=(+m[k]||0)/q); openLog({name:(m.name||'').replace(/ ×[\d.]+$/,''),serving:m.serving||'1 serving',per},{editId:m.id,qty:q,tag:m.tag}); } } }
   else if(a==='delmealx'){ state._scroll=document.getElementById('view').scrollTop; const id=el.dataset.id; const t=curDate(); db.meals[t]=(db.meals[t]||[]).filter(m=>m.id!==id); if(state.expandedMeal===id)state.expandedMeal=null; save(); render(); }
   else if(a==='vfixkcal'){ const P=parseFloat(val('v_protein'))||0,C=parseFloat(val('v_carbs'))||0,F=parseFloat(val('v_fat'))||0; const e=document.getElementById('v_kcal'); if(e){ e.value=Math.round(P*4+C*4+F*9); e.dispatchEvent(new Event('input',{bubbles:true})); } }
@@ -5967,23 +6004,23 @@ document.getElementById('app').addEventListener('click',e=>{
   else if(a==='faback'){ const c=window._faCtx; window._faCtx=null; closeModal(); openFoodAdd(c&&c.tag, c&&c.lock); if(c&&c.q){ const q=document.getElementById('fa_q'); if(q){ q.value=c.q; q.dispatchEvent(new Event('input',{bubbles:true})); const term=(c.q||'').trim(); if(c.off && window._faLast===term){ renderOFFRows(term); } } } }
   else if(a==='ftext'){ openTextParse(); }
   else if(a==='fmanual'){ openVerify({name:'',base:'g',per100:{},sizes:{}},{isNew:true,tag:curTag()}); }
-  else if(a==='vcontinue'){ const f=readRegister(); if(!f.name){ alert('Pon nombre.'); return; } if(!f.barcode && !confirm('No pusiste código de barras. ¿Registrar sin código?')) return; const vv=window._verify||{}; openLog(f,{tag:vv.tag,barcode:f.barcode,fromId:vv.fromId,isNew:true}); }
+  else if(a==='vcontinue'){ const f=readRegister(); if(!f.name){ toast('⚠ pon un nombre','err'); return; } const _go8=()=>{ const vv=window._verify||{}; openLog(f,{tag:vv.tag,barcode:f.barcode,fromId:vv.fromId,isNew:true}); }; if(!f.barcode) return trkAsk({title:'registrar sin código de barras',detail:'puedes vincular un código después',ok:'registrar'},_go8); return _go8();}
   else if(a==='mealcode'){ openMealCode(); }
   else if(a==='logsave'){ commitLog(true); }
   else if(a==='logonly'){ commitLog(false); }
   else if(a==='delmeal'){ const t=curDate(); db.meals[t]=(db.meals[t]||[]).filter(m=>m.id!==el.dataset.id); save(); render(); }
   else if(a==='editgoals'){ openGoals(); }
   else if(a==='goalsechtog'){ const k=el.dataset.sec; db.settings=db.settings||{}; const arr=db.settings.hiddenGoalSections=db.settings.hiddenGoalSections||[]; const i=arr.indexOf(k); if(i>=0)arr.splice(i,1); else arr.push(k); save(); openGoals(); }
-  else if(a==='editsteps'){ const cur=(db.steps&&db.steps[todayISO()])||''; const v=prompt('pasos de hoy (de Apple Health):',cur); if(v!=null){ const n=parseInt(String(v).replace(/[^0-9]/g,''),10); if(!isNaN(n)){ db.steps=db.steps||{}; db.steps[todayISO()]=n; H().src.steps[todayISO()]='manual'; save(); render(); } } }
+  else if(a==='editsteps'){ const cur=(db.steps&&db.steps[todayISO()])||''; trkPrompt({title:'pasos de hoy',label:'PASOS',value:cur,type:'number',inputmode:'numeric',hint:'de Apple Health o tu reloj'},v=>{ const n=parseInt(String(v).replace(/[^0-9]/g,''),10); if(isNaN(n)){ toast('⚠ pon un número','err'); return false; } db.steps=db.steps||{}; db.steps[todayISO()]=n; H().src.steps[todayISO()]='manual'; save(); render(); toast('✓ pasos guardados'); }); }
   else if(a==='export'){ doExport(); }
   else if(a==='exportmd'){ exportMarkdown(db); }
   else if(a==='import'){ doImport(); }
   else if(a==='sync'){ openSync(); }
-  else if(a==='reset'){ if(confirm('¿Borrar TODOS los datos? (exporta primero)')){ localStorage.removeItem(LS_KEY); try{localStorage.removeItem(LS_BACKUP);}catch(_){} _saveBakT=0; db=seed(); save(); go('home'); } }
+  else if(a==='reset'){ holdConfirm({title:'borrar TODOS los datos',detail:'sesiones, comidas, split y ajustes de este dispositivo · exporta un respaldo antes',verb:'borrar todo'},()=>{ localStorage.removeItem(LS_KEY); try{localStorage.removeItem(LS_BACKUP);}catch(_){} _saveBakT=0; db=seed(); save(); go('home'); }); }
   else if(a==='restminus'){ const w=db.activeWork; if(w&&w.restEnd){ w.restEnd-=15000; save(); updateRestBar(); } }
   else if(a==='restplus'){ const w=db.activeWork; if(w&&w.restEnd){ w.restEnd+=15000; save(); updateRestBar(); } }
   else if(a==='restskip'){ const w=db.activeWork; if(w){ w.restEnd=null; _restFinT=0; save(); updateRestBar(); } }
-  else if(a==='editrest'){ const v=prompt('segundos de descanso entre sets:',db.settings.restSec||90); if(v!=null){ const n=parseInt(v,10); if(!isNaN(n)&&n>=10&&n<=600){ db.settings.restSec=n; save(); render(); } } }
+  else if(a==='editrest'){ trkPrompt({title:'descanso entre series',label:'SEGUNDOS',value:db.settings.restSec||90,type:'number',inputmode:'numeric',hint:'entre 10 y 600'},v=>{ const n=parseInt(v,10); if(isNaN(n)||n<10||n>600){ toast('⚠ entre 10 y 600 segundos','err'); return false; } db.settings.restSec=n; save(); render(); toast('✓ descanso guardado'); }); }
   else if(a==='togglebeep'){ db.settings.restBeep=!db.settings.restBeep; save(); render(); }
   else if(a==='undo'){ const w=db.activeWork; if(!w)return; let lExi=-1,lSi=-1; w.exercises.forEach((ex,ei)=>ex.sets.forEach((s,si)=>{ if(setComplete(s)&&!s._pf){lExi=ei;lSi=si;} })); if(lExi<0)return; const s=w.exercises[lExi].sets[lSi]; s.w='';s.r='';s.rir='';s.done=false;s._pf=false; if(w.exercises[lExi].unilateral){ const pj=lSi^1,ps=w.exercises[lExi].sets[pj]; if(ps&&setComplete(ps)){ps.w='';ps.r='';ps.rir='';ps.done=false;ps._pf=false;} } save(); state._scroll=document.getElementById('view').scrollTop; render(); }
   else if(a==='closemodal'){ closeModal(); render(); }
@@ -6145,7 +6182,7 @@ function openExEdit(di,ei,liveExi){
   }
 }
 function saveExEdit(){
-  const {di,ei}=window._exEdit||{}; const name=val('ee_name'); if(!name){alert('Pon nombre.');return;}
+  const {di,ei}=window._exEdit||{}; const name=val('ee_name'); if(!name){toast('⚠ pon un nombre','err');return;}
   const pv=id=>{const x=document.querySelector('#'+id+' .t.on');return x?x.dataset.v:'';};
   const t=pv('ee_type'); const validT=['machine','smith','cable','bodyweight','cardio','free'].indexOf(t)>=0?t:'free';
   // build canonical muscles array: primary (1.0) + optional secondary (custom decimal). Keep e.muscle = primary name for legacy code paths.
@@ -6184,7 +6221,7 @@ function saveExEdit(){
   // and the instance id is preserved across edits — this only ever writes to THIS day's exercise, never others.
   if(ei<0){ db.split.days[di].exercises.push(Object.assign({id:'e'+uid()},ex)); }
   else { const prev=db.split.days[di].exercises[ei]||{}; db.split.days[di].exercises[ei]=Object.assign({},prev,ex,{id:prev.id||('e'+uid())}); }
-  save(); closeModal(); render();
+  save(); toast('✓ ejercicio actualizado'); closeModal(); render();
 }
 
 function importIronlogSplit(d){
@@ -6213,7 +6250,7 @@ function openImportSplit(){
    <div class="sheetbtns u-mt10"><button class="ok" id="imp_go">importar</button><button class="cancel" data-act="closemodal">cancel</button></div>`);
   document.getElementById('imp_go').onclick=()=>{ const m=document.getElementById('imp_msg');
     try{ const d=JSON.parse(val('imp_txt')); const sp=importIronlogSplit(d); if(!sp.days.length)throw new Error('sin días');
-      db.split=sp; db.rotIdx=0; state.selDay=null; save(); closeModal(); go('splitedit'); alert('Split importado: '+sp.days.length+' días · '+sp.days.reduce((a,x)=>a+x.exercises.length,0)+' ejercicios.');
+      db.split=sp; db.rotIdx=0; state.selDay=null; save(); closeModal(); go('splitedit'); toast('✓ split importado · '+sp.days.length+' días · '+sp.days.reduce((a,x)=>a+x.exercises.length,0)+' ejercicios');
     }catch(e){ if(m)m.textContent='no se pudo importar: '+(e.message||'JSON inválido'); } };
 }
 function SPLIT_TEMPLATES(){
@@ -6246,7 +6283,7 @@ function openExName(exi){ const w=db.activeWork; if(!w)return; const ex=w.exerci
    <div class="field"><label>NOMBRE</label><input id="exn_in" value="${(ex.name||'').replace(/"/g,'&quot;')}" autocomplete="off"/></div>
    <div class="sheetbtns"><button class="ok" id="exn_save">guardar</button><button class="cancel" data-act="closemodal">cancel</button></div>`);
   const inp=document.getElementById('exn_in'); if(inp){inp.focus();}
-  document.getElementById('exn_save').onclick=()=>{ const v=val('exn_in'); if(v){ ex.name=v; save(); } closeModal(); render(); };
+  document.getElementById('exn_save').onclick=()=>{ const v=val('exn_in'); if(v){ ex.name=v; save(); toast('✓ nombre actualizado'); } closeModal(); render(); };
 }
 // shared exercise-mapping for a live work session → its persisted shape (used by both the manual
 // save and the idle auto-finalize, so the two paths can never drift apart).
@@ -6258,15 +6295,18 @@ function saveSession(){
   const savable=setPersistable;
   const touched=touchedSets(w);   // v223: escritas a mano, sin ✓ — se cuentan, no se tiran
   const has=w.exercises.some(e=>e.sets.some(savable))||touched.length>0;
-  if(!has){ if(!confirm('No registraste sets. ¿Guardar de todos modos?'))return; }
-  else { const n=w.exercises.reduce((a,e)=>a+e.sets.filter(s=>(savable(s)||touched.indexOf(s)>=0)&&(s.rir===''||s.rir==null)).length,0);
-         const pl=touched.length>1?'s':'';
-         const extra=touched.length?`\n\n${touched.length} serie${pl} escrita${pl} sin ✓ se cuenta${touched.length>1?'n':''} como hecha${pl}.`:'';
-         if(!confirm((n>0?`Tienes ${n} set${n>1?'s':''} sin RIR. ¿Finalizar de todos modos?`:'¿Finalizar sesión?')+extra))return; }
+  const commit=()=>{
   touched.forEach(pfClearAll);
   const sess={id:w.id,date:w.date,dayId:w.dayId,dayName:w.dayName,gym:w.gym,type:'training',savedMs:Date.now(),loggedAfter:!!w.loggedAfter,durSec:w.loggedAfter?((parseInt(w.manualDur,10)||0)*60):(w.startMs?Math.round((Date.now()-w.startMs)/1000):0),startTime:w.loggedAfter?(w.startTime||null):(w.startTs||null),endTime:w.loggedAfter?(w.endTime||null):nowHM(),startMs:w.loggedAfter?null:(w.startMs||null),endMs:w.loggedAfter?null:Date.now(),
     exercises:mapWorkExercises(w)};
   if(!(w.loggedAfter&&w.noAdvance)){ const idx=db.split.days.findIndex(d=>d.id===w.dayId); db.rotIdx=(idx>=0?idx:db.rotIdx)+1; } db.activeWork=null; state.selDay=null; db.sessions.push(sess); save(); go('home');
+    const _ns=sess.exercises.reduce((x,e)=>x+((e.sets||[]).length),0); toast('✓ sesión guardada · '+_ns+' serie'+(_ns===1?'':'s'));
+  };
+  if(!has) return trkAsk({title:'guardar sin series',detail:'no registraste ninguna serie en esta sesión',ok:'guardar igual'},commit);
+  const n=w.exercises.reduce((a,e)=>a+e.sets.filter(s=>(savable(s)||touched.indexOf(s)>=0)&&(s.rir===''||s.rir==null)).length,0);
+  const pl=touched.length>1?'s':'';
+  const bits=[n>0?n+' serie'+(n>1?'s':'')+' sin RIR':'', touched.length?touched.length+' serie'+pl+' escrita'+pl+' sin ✓ se cuenta'+(touched.length>1?'n':'')+' como hecha'+pl:''].filter(Boolean);
+  trkAsk({title:'finalizar la sesión',detail:bits.length?bits.join(' · '):'se guarda en tu historial',ok:'guardar sesión'},commit);
 }
 // last REAL activity in a live session: the most recent doneAt stamp (existing since v201), lastTouch, or
 // resumedAt (set the moment you answer "continuar" on the idle prompt below — without this, a
@@ -6493,7 +6533,7 @@ function openExerciseDirectory(){
 // paso 2 del merge: nombre final, configuración y en qué gyms existe. Todo sale precargado de la fuente
 // con MÁS sesiones (la que más historia tiene manda), pero él decide cada campo.
 function openMergeModal(){
-  const keys=(window._mgSel||[]).slice(); if(keys.length<2){ alert('Elige al menos dos ejercicios.'); return; }
+  const keys=(window._mgSel||[]).slice(); if(keys.length<2){ toast('⚠ elige al menos dos ejercicios','err'); return; }
   const all=knownExercises();
   const rows=keys.map(k=>{ const e=all.find(x=>nameKey(x.name)===k)||{name:k};
     let sess=0,sets=0; (db.sessions||[]).forEach(s=>{ if(s.type==='rest')return; (s.exercises||[]).forEach(se=>{ if(nameKey(se.name)===k){ sess++; sets+=(se.sets||[]).length; } }); });
@@ -6526,7 +6566,7 @@ function openMergeModal(){
 function doMerge(){
   const keys=(window._mgSel||[]).slice(); if(keys.length<2)return;
   const pv=id=>{ const e=document.querySelector('#'+id+' .t.on'); return e?e.dataset.v:''; };
-  const name=(val('mg_name')||'').trim(); if(!name){ alert('Pon el nombre final.'); return; }
+  const name=(val('mg_name')||'').trim(); if(!name){ toast('⚠ pon el nombre final','err'); return; }
   const gyms=[]; (window._mgGyms||[]).forEach((g,i)=>{ const c=document.getElementById('mg_g_'+i); if(c&&c.checked)gyms.push(g); });
   const machineWinner={}; (window._mgConf||[]).forEach((c,i)=>{ const s=document.getElementById('mg_win_'+i); if(s)machineWinner[c.gym]=s.value; });
   const muscle=val('mg_muscle')||'';
@@ -6534,11 +6574,11 @@ function doMerge(){
   const src=knownExercises().find(x=>nameKey(x.name)===keys[0]);
   const keepM=src&&((exMuscles(src)[0]||{}).name||'')===muscle&&Array.isArray(src.muscles)?src.muscles.slice():undefined;
   const target={name,type:pv('mg_type')||'free',unilateral:pv('mg_uni')==='1',unit:val('mg_unit')||'',muscle,muscles:keepM,gyms,machineWinner};
-  if(!confirm('Unir '+keys.length+' ejercicios en "'+name+'". Se reescribe el nombre y la configuración en tu split, en TODAS las sesiones y en la sesión viva. Hay respaldo previo. ¿Continuar?'))return;
+  const _go9=()=>{
   const st=mergeExercises(keys,target);
   window._mgSel=[]; closeModal(); render();
   if(st)toast('✓ unidos en '+name+' · '+st.ex+' ejercicios · '+st.sets+' series');
-}
+}; return trkAsk({title:'unir '+keys.length+' ejercicios en "'+name+'"',detail:'se reescribe el nombre y la configuración en tu split, en todas las sesiones y en la sesión en curso · hay respaldo previo',ok:'unir'},_go9);}
 // schedule a future rotation day into the user's native calendar (iOS PWA opens .ics with "Add to Calendar")
 function openScheduleModal(di){
   if(!db.split||!db.split.days[di])return; const day=db.split.days[di]; const cdi=curDayIdx(); const offset=Math.max(0,di-cdi);
@@ -6553,7 +6593,7 @@ function openScheduleModal(di){
 function downloadIcs(di){
   const day=db.split&&db.split.days[di]; if(!day)return;
   const date=val('sc_date'); const time=val('sc_time')||'08:00'; const dur=Math.max(15,+val('sc_dur')||60);
-  if(!date){ alert('Pon fecha.'); return; }
+  if(!date){ toast('⚠ pon una fecha','err'); return; }
   const fmt=d=>d.getFullYear()+String(d.getMonth()+1).padStart(2,'0')+String(d.getDate()).padStart(2,'0')+'T'+String(d.getHours()).padStart(2,'0')+String(d.getMinutes()).padStart(2,'0')+'00';
   const startDt=new Date(date+'T'+time); const endDt=new Date(startDt.getTime()+dur*60000);
   const exList=(day.exercises||[]).map(e=>`${e.name}${e.sets?' ('+e.sets+'x)':''}`).join('\\n');
@@ -6620,13 +6660,13 @@ function addExFromKnown(afterExi,x){
 // REPLACE the live exercise at exi with a REGISTERED one: registry metadata + re-seeded sets, position kept (#4/#6/#7)
 function replaceExFromKnown(exi,x){
   const w=db.activeWork; if(!w||!w.exercises[exi]||!x)return; const ex=w.exercises[exi];
-  if((ex.sets||[]).some(s=>s&&!s._pf&&(s.done||(+s.w>0)||(+s.r>0)))&&!confirm('Ya registraste series en "'+(ex.name||'este ejercicio')+'". Cambiar de ejercicio descarta lo registrado. ¿Continuar?'))return;
+  const _go10=()=>{
   // fresh exId, never the old one or null (Bloque 3.2) — a replacement is a genuinely different
   // exercise: it must not inherit the old one's history, but it still gets ITS OWN going forward.
   ex.exId='e'+uid(); ex.name=x.name; ex.muscle=x.muscle||((x.muscles&&x.muscles[0]&&x.muscles[0].name)||'other'); ex.muscles=x.muscles; ex.type=x.type||'free'; ex.machine=x.machine||''; ex.unilateral=!!x.unilateral; ex.startSide=x.startSide||'R'; ex.assisted=!!x.assisted; ex.weighted=!!x.weighted; ex.note='';
   ex.sets=seedSets(ex,(typeof x.sets==='number'?x.sets:2),{dayId:w.dayId,orderIdx:exi});
   save(); closeModal(); render();
-}
+}; if((ex.sets||[]).some(s=>s&&!s._pf&&(s.done||(+s.w>0)||(+s.r>0)))) return trkAsk({title:'cambiar "'+(ex.name||'este ejercicio')+'"',detail:'ya registraste series · cambiar de ejercicio las descarta',ok:'cambiar',danger:true},_go10); return _go10();}
 // FORM: new exercise (muscle pre-filled from step 1)
 function openAddExForm(afterExi,muscle,replaceExi){
   const exs=knownExercises(); const muscles=muscleSuggest();
@@ -6677,8 +6717,8 @@ function openAddExForm(afterExi,muscle,replaceExi){
     const meta={exId:'e'+uid(),name,muscle:val('fx_muscle')||(validT==='cardio'?'cardio':'other'),type:validT,machine:val('fx_machine'),unilateral:validT!=='cardio'&&(fxUniOn&&fxUniOn.v)==='1',startSide,cardioSub:validT==='cardio'?(fxCardioOn&&fxCardioOn.v)||'treadmill':undefined,note:''};
     // REPLACE mode (entró por "cambiar ejercicio"): sobreescribe el ejercicio actual en su lugar + re-siembra series
     if(replaceExi!=null && w && w.exercises[replaceExi]){ const ex=w.exercises[replaceExi];
-      if((ex.sets||[]).some(s=>s&&!s._pf&&(s.done||(+s.w>0)||(+s.r>0)))&&!confirm('Ya registraste series en "'+(ex.name||'este ejercicio')+'". Cambiar descarta lo registrado. ¿Continuar?'))return;
-      Object.assign(ex,meta); delete ex.muscles; ex.sets=seedSets(ex,+val('fx_sets')||1,{dayId:w.dayId,orderIdx:replaceExi}); save(); closeModal(); render(); return; }
+      const _go11=()=>{
+      Object.assign(ex,meta); delete ex.muscles; ex.sets=seedSets(ex,+val('fx_sets')||1,{dayId:w.dayId,orderIdx:replaceExi}); save(); closeModal(); render(); return; }; if((ex.sets||[]).some(s=>s&&!s._pf&&(s.done||(+s.w>0)||(+s.r>0)))) return trkAsk({title:'cambiar "'+(ex.name||'este ejercicio')+'"',detail:'ya registraste series · cambiar las descarta',ok:'cambiar',danger:true},_go11); return _go11();}
     // INSERT mode: agrega DESPUÉS del ejercicio ancla (o al final)
     const newEx=Object.assign({},meta,{sets:[]}); let insertAt;
     if(afterExi!=null && afterExi>=0 && afterExi<w.exercises.length){ insertAt=afterExi+1; w.exercises.splice(insertAt,0,newEx); }
@@ -6698,7 +6738,7 @@ function openMachineEdit(exi){
    <div class="sheetbtns"><button class="ok" id="mc_save">guardar</button><button class="cancel" id="mc_na">N/A</button><button class="cancel" data-act="closemodal">cancel</button></div>`);
   const _rpEl=document.getElementById('mc_rp'); if(_rpEl)_rpEl.addEventListener('click',()=>{ _rpEl.dataset.touched='1'; _rpEl.classList.remove('sug'); });
   document.getElementById('mc_save').onclick=()=>{ if(_rpEl&&_rpEl.dataset.touched){ const on=_rpEl.querySelector('.t.on'); setRpForGym(ex.name,w.gym,on?on.dataset.v:''); }
-    setMachine(w.gym,ex,{brand:val('mc_brand'),setup:val('mc_setup'),na:false}); closeModal(); reRender(); };
+    setMachine(w.gym,ex,{brand:val('mc_brand'),setup:val('mc_setup'),na:false}); toast('✓ máquina guardada'); closeModal(); reRender(); };
   document.getElementById('mc_na').onclick=()=>{ setMachine(w.gym,ex,{brand:'',setup:'',na:true}); closeModal(); render(); };
 }
 function foodPer(){ return {kcal:0,protein:0,carbs:0,fat:0,sugar:0,sodium:0,potassium:0,fiber:0,caffeine:0,alcohol:0,water:0}; }
@@ -6845,7 +6885,7 @@ function openApproxMeal(){
   document.querySelectorAll('#am_chips .chip').forEach(ch=>ch.onclick=()=>{ const e=document.getElementById('am_tag'); if(e)e.value=ch.dataset.v; });
   const go=document.getElementById('am_go'); if(go)go.onclick=()=>{
     const P=parseFloat(val('am_p'))||0,C=parseFloat(val('am_c'))||0,F=parseFloat(val('am_f'))||0;
-    if(P<=0&&C<=0&&F<=0){ alert('Pon al menos un macro (P, C o G).'); return; }
+    if(P<=0&&C<=0&&F<=0){ toast('⚠ pon al menos un macro (P, C o G)','err'); return; }
     const tag=((val('am_tag')||'comida').trim())||'comida';
     const food={ base:'g', name:'Comida aproximada', brand:'', per100:{kcal:P*4+C*4+F*9,protein:P,carbs:C,fat:F,sugar:0,fiber:0,sodium:0,potassium:0,caffeine:0,alcohol:0}, sizes:{serving:100}, servingLabel:'porción' };
     const nut=computeNutrients(food,'serving',1);            // grams=100 -> nut = los totales exactos
@@ -6853,11 +6893,11 @@ function openApproxMeal(){
     const item={id:uid(), tag:tag, name:'Comida aproximada', qty:1, serving:'porción'};
     MACROKEYS.forEach(k=>item[k]=nut[k]); item.water=0;
     item._food={base:'g',per100:food.per100,sizes:food.sizes,servingLabel:'porción',name:food.name,brand:''}; item._unit='serving';
-    db.meals[t].push(item); save(); closeModal(); render();
+    db.meals[t].push(item); save(); toast('✓ comida guardada'); closeModal(); render();
   };
 }
 function logWater(ml){ if(!(ml>0))return; const t=curDate(); db.meals[t]=db.meals[t]||[]; snapshotGoal(t);
-  db.meals[t].push({id:uid(),tag:'drink',name:'agua',qty:1,serving:numTxt(ml)+' ml',kcal:0,protein:0,carbs:0,fat:0,sugar:0,fiber:0,sodium:0,potassium:0,caffeine:0,water:Math.round(ml/1000*1000)/1000}); save(); }
+  db.meals[t].push({id:uid(),tag:'drink',name:'agua',qty:1,serving:numTxt(ml)+' ml',kcal:0,protein:0,carbs:0,fat:0,sugar:0,fiber:0,sodium:0,potassium:0,caffeine:0,water:Math.round(ml/1000*1000)/1000}); save(); toast('✓ agua registrada'); }
 function openDrink(){
   openModal(`<h3>add drink</h3>
    <div class="submeta u-mb10">agua y bebidas · suma a líquidos</div>
@@ -7360,7 +7400,7 @@ function openFoodAdd(preset, lockTag){
     }catch(_){ const oldh=document.getElementById('fa_offhint'); if(oldh)oldh.remove(); } }, 450); }
   q.oninput=renderList; renderList();
   // long-press a meal chip to delete it
-  const sg=document.getElementById('fa_sugg'); if(sg)sg.querySelectorAll('.chip').forEach(ch=>wireLongPress(ch,()=>{ const v=ch.dataset.v; if(!confirm('¿Borrar la comida "'+v+'" de la lista?'))return; db.mealTags=(db.mealTags||[]).filter(x=>x!==v); save(); ch.remove(); }));
+  const sg=document.getElementById('fa_sugg'); if(sg)sg.querySelectorAll('.chip').forEach(ch=>wireLongPress(ch,()=>{ const v=ch.dataset.v; const _go12=()=>{ db.mealTags=(db.mealTags||[]).filter(x=>x!==v); save(); ch.remove(); }; return trkAsk({title:'quitar "'+v+'" de la lista',ok:'quitar',danger:true},_go12);}));
 }
 // search OpenFoodFacts inline — same sheet, same input/list, no new screen
 async function inlineSearchOFF(){
@@ -7654,7 +7694,7 @@ function scanCodeToInput(inputId){
   inp.onchange=async()=>{ const f=inp.files&&inp.files[0]; if(!f)return; const t=document.getElementById(inputId); if(!t)return;
     const old=t.value; t.value='leyendo…'; t.disabled=true;
     const code=await decodeBarcodeImage(f); t.disabled=false; t.value=code||old;
-    if(!code) alert('No se leyó el código. Acércalo de frente que llene el cuadro, o escríbelo.');
+    if(!code) toast('⚠ no se leyó el código · acércalo de frente o escríbelo','err');
     else t.dispatchEvent(new Event('input',{bubbles:true})); };
   inp.click();
 }
@@ -7678,15 +7718,15 @@ function openMealCode(){
    <button class="b u-w100 u-mb10" id="mc_scan">escanear código (foto)</button>
    <div class="sheetbtns"><button class="ok" id="mc_add">+ añadir</button><button class="cancel" data-act="closemodal">close</button></div>`);
   document.getElementById('mc_scan').onclick=()=>scanCodeToInput('mc_code');
-  document.getElementById('mc_add').onclick=()=>{ const code=(val('mc_code')||'').trim(); if(!code){ alert('Escribe o escanea un código.'); return; }
+  document.getElementById('mc_add').onclick=()=>{ const code=(val('mc_code')||'').trim(); if(!code){ toast('⚠ escribe o escanea un código','err'); return; }
     if(fdb)addBarcodeToFood(fdb,code);
     m._food=m._food||{}; addBarcodeToFood(m._food,code); if(!m.barcode)m.barcode=code;
     save(); closeModal(); openMealDetail(m.id); };
-  document.querySelectorAll('[data-act="mc_rm"]').forEach(el=>el.onclick=()=>{ const c=el.dataset.c; if(!confirm('¿Quitar el código '+c+'?'))return;
+  document.querySelectorAll('[data-act="mc_rm"]').forEach(el=>el.onclick=()=>{ const c=el.dataset.c; const _go13=()=>{
     if(fdb){ if(fdb.barcode===c){ fdb.barcode=(fdb.barcodes||[]).shift()||''; } else { fdb.barcodes=(fdb.barcodes||[]).filter(x=>x!==c); } }
     if(m._food){ if(m._food.barcode===c){ m._food.barcode=(m._food.barcodes||[]).shift()||''; } else { m._food.barcodes=(m._food.barcodes||[]).filter(x=>x!==c); } }
     if(m.barcode===c)m.barcode=(fdb&&fdb.barcode)||'';
-    save(); closeModal(); openMealCode(); });
+    save(); closeModal(); openMealCode(); }; return trkAsk({title:'quitar el código '+c,ok:'quitar',danger:true},_go13);});
 }
 function openMealDetail(id){
   const t=curDate(); const m=(db.meals[t]||[]).find(x=>x.id===id); if(!m)return; window._mealId=id;
@@ -7701,7 +7741,7 @@ function openMealDetail(id){
 }
 function commitLog(saveToDb){
   window._faCtx=null;   // committed: drop the back-to-search context
-  const L=window._log||{}; const f=L.food; if(!f){ closeModal(); return; } if(!f.name){ alert('Pon nombre.'); return; }
+  const L=window._log||{}; const f=L.food; if(!f){ closeModal(); return; } if(!f.name){ toast('⚠ pon un nombre','err'); return; }
   const unit=(document.getElementById('l_unit')||{}).value; const qty=parseFloat(val('l_qty'))||1;
   const timeVal=val('l_time')||null;   // HORA opcional: '' (borrado) → null; nunca asume si el usuario lo vació
   const nut=computeNutrients(f,unit,qty); const unitLabel=(foodUnits(f).find(u=>u.key===unit)||{}).label||unit;
@@ -7717,7 +7757,7 @@ function commitLog(saveToDb){
   const apply=m=>{ m.tag=L.tag; m.name=f.name+(qty!==1?' ×'+numTxt(qty):''); m.qty=qty; m.serving=unitLabel; MACROKEYS.forEach(k=>m[k]=nut[k]); m.water=nut.water; m._food={id:foodId,base:f.base,per100:f.per100,sizes:f.sizes,servingLabel:f.servingLabel,name:f.name,brand:f.brand||'',barcode:bc}; m._unit=unit; };
   if(L.editId){ const m=(db.meals[t]||[]).find(x=>x.id===L.editId); if(m){ apply(m); save(); closeModal(); render(); return; } }
   const item={id:uid()}; apply(item); db.meals[t].push(item);
-  save(); closeModal(); render();
+  save(); toast('✓ comida guardada'); closeModal(); render();
 }
 // maintenance (TDEE) from profile via Mifflin-St Jeor × activity — same basis as onboarding
 // effective activity multiplier from REAL behavior (last 14d training freq + 7d avg steps); falls back to the profile choice
@@ -7836,24 +7876,63 @@ function openGoals(){
     ['sugar','fiber','caffeine','alcohol','sleep'].forEach(k=>{ const v=parseFloat(val('g_'+k)); if(!isNaN(v))g[k]=v; });   // Na/K/water are AUTO from derivedActivity()
     if(isPast){ db.goalHist=db.goalHist||{}; db.goalHist[day]=g; }            // past: only this day
     else { Object.assign(db.settings.goals, g); db.goalHist=db.goalHist||{}; db.goalHist[day]=Object.assign({},db.settings.goals); } // present/future: update current goal AND today/that-day's snapshot
-    save(); closeModal(); render(); };
-  const grc=document.getElementById('g_recalc'); if(grc)grc.onclick=()=>{ if(!db.profile||!db.profile.weightKg){ alert('Completa tu perfil primero (settings → perfil).'); return; } if(!confirm('¿Recalcular TODAS las metas desde tu perfil y nivel de actividad? Sobrescribe tus ajustes manuales.'+(isPast?' Solo aplica a este día.':'')))return;
+    save(); toast('✓ metas guardadas'); closeModal(); render(); };
+  const grc=document.getElementById('g_recalc'); if(grc)grc.onclick=()=>{ if(!db.profile||!db.profile.weightKg){ toast('⚠ completa tu perfil primero (ajustes › perfil)','err'); return; } const _go14=()=>{
     const fresh=recalcGoals(db.profile);
     if(isPast){ db.goalHist=db.goalHist||{}; db.goalHist[day]=fresh; }
     else { db.settings.goals=fresh; db.goalHist=db.goalHist||{}; db.goalHist[day]=Object.assign({},fresh); }
-    save(); closeModal(); openGoals(); };
+    save(); closeModal(); openGoals(); }; return trkAsk({title:'recalcular todas las metas',detail:'desde tu perfil y nivel de actividad · sobrescribe tus ajustes manuales'+(isPast?' · solo este día':''),ok:'recalcular'},_go14);};
   // "= mantenimiento": precarga el kcal objetivo = TDEE de mantenimiento (vivo del perfil); NO auto-guarda, el usuario revisa y da save
-  const gtm=document.getElementById('g_tomaint'); if(gtm)gtm.onclick=()=>{ const m=maintenanceKcal(); if(!m){ alert('Completa tu perfil primero (peso, altura, edad) para calcular tu mantenimiento.'); return; }
+  const gtm=document.getElementById('g_tomaint'); if(gtm)gtm.onclick=()=>{ const m=maintenanceKcal(); if(!m){ toast('⚠ completa peso, altura y edad para calcular tu mantenimiento','err'); return; }
     if(window._goalMode==='grams'){ const P=parseFloat(val('gg_protein'))||0,C=parseFloat(val('gg_carbs'))||0,F=parseFloat(val('gg_fat'))||0,cur=P*4+C*4+F*9; if(cur>0){ const sc=m/cur; setVal('gg_protein',Math.round(P*sc)); setVal('gg_carbs',Math.round(C*sc)); setVal('gg_fat',Math.round(F*sc)); } else { setVal('gg_carbs',Math.round(m/4)); } gkc(); }
     else { setVal('gp_kcal',m); onKcal(); } };
 }
 // brief non-blocking confirmation (used by step-import from the iOS Shortcut, etc.)
-// DESIGN_SYSTEM.md §7.12: el borde dice qué pasó. Antes era SIEMPRE verde, también en los errores.
+// ---- R2 · TRK* de feedback y confirmación (DESIGN_SYSTEM.md §7.18) ----
+// TRKToast: el borde dice qué pasó (✓ → ok, ⚠ → err, resto neutro). Pila de hasta 3; éxito/neutro se van solos, un
+// error se queda hasta tocarlo; 'task' = una tarea en curso que se resuelve en el mismo toast (toastTask).
 function toast(msg,type){ try{ const s=String(msg==null?'':msg);
     const ty=type||(/^\s*(✓|\u2713)/.test(s)?'ok':/^\s*⚠/.test(s)?'err':'');
+    let box=document.getElementById('toasts'); if(!box){ box=document.createElement('div'); box.id='toasts'; box.className='toasts'; box.setAttribute('aria-live','polite'); document.body.appendChild(box); }
     const t=document.createElement('div'); t.className='toast glass-strong'+(ty?' '+ty:''); t.setAttribute('role',ty==='err'?'alert':'status'); t.textContent=s;
-    if(ty==='err')t.addEventListener('click',()=>{ try{t.remove();}catch(_){} });
-    document.body.appendChild(t); setTimeout(()=>{ try{t.remove();}catch(_){} },ty==='err'?5200:2900); }catch(_){} }
+    t._kill=()=>{ if(!t.isConnected||t.classList.contains('out'))return; t.classList.add('out'); setTimeout(()=>{ try{t.remove();}catch(_){} },durMs('--dur-3',280)); };
+    t.addEventListener('click',()=>{ if(!t.classList.contains('task'))t._kill(); });
+    box.appendChild(t); while(box.children.length>3)box.firstElementChild.remove();
+    if(ty==='ok'||ty==='')setTimeout(t._kill,durMs('--toast-life',2300));
+    return t; }catch(_){ return null; } }
+function toastTask(msg){ const t=toast('… '+String(msg||'').replace(/^…\s*/,''),'task');
+  const fin=(m,ty)=>{ if(!t)return toast(m,ty); t.className='toast glass-strong '+ty; t.setAttribute('role',ty==='err'?'alert':'status'); t.textContent=m; if(ty==='ok')setTimeout(t._kill,durMs('--toast-life',2300)); };
+  return { done:m=>fin(m||'✓ listo','ok'), fail:m=>fin(m||'⚠ no se pudo','err') }; }
+// TRKAsk / TRKHold viven en una capa propia (#asklayer, --z-pop) encima del sheet: nunca lo reemplazan.
+function askLayer(html,onDismiss){ closeAsk(true); const m=document.createElement('div'); m.className='modal asklayer'+(reducedMotion()?'':' in'); m.id='asklayer';
+  m.innerHTML='<div class="sheet glass-strong">'+html+'</div>';
+  m.addEventListener('click',ev=>{ if(ev.target===m){ ev.stopPropagation(); closeAsk(); if(onDismiss)onDismiss(); } });
+  document.getElementById('app').appendChild(m); return m; }
+function closeAsk(now){ const m=document.getElementById('asklayer'); if(!m)return; m.removeAttribute('id');
+  if(now||reducedMotion()){ m.remove(); return; } m.classList.remove('in'); m.classList.add('out'); setTimeout(()=>{ try{m.remove();}catch(_){} },200); }
+// TRKAsk: decisión reversible o de flujo. o = {title, detail, ok, cancel, danger}
+function trkAsk(o,onOk,onCancel){ const danger=!!o.danger;
+  const btnOk=danger?'<button class="cancel danger" data-ask="ok">'+escTxt(o.ok||'borrar')+'</button>':'<button class="ok" data-ask="ok">'+escTxt(o.ok||'continuar')+'</button>';
+  const m=askLayer('<h3>'+escTxt(o.title||'¿seguro?')+'</h3>'+(o.detail?'<div class="submeta gap u-preline">'+escTxt(o.detail)+'</div>':'')+'<div class="sheetbtns">'+btnOk+'<button class="cancel" data-ask="no">'+escTxt(o.cancel||'cancelar')+'</button></div>',onCancel);
+  m.addEventListener('click',ev=>{ const b=ev.target.closest&&ev.target.closest('[data-ask]'); if(!b)return; ev.stopPropagation(); closeAsk();
+    if(b.dataset.ask==='ok'){ if(onOk)onOk(); } else if(onCancel)onCancel(); }); }
+// TRKHold: lo irreversible se arma sosteniendo 0.9 s ("armando 73 %"); soltar antes cancela. o = {title, detail, verb}
+function holdConfirm(o,onOk,onCancel){ const verb=o.verb||'confirmar', idle='mantén para '+verb, D=900;
+  const m=askLayer('<h3>'+escTxt(o.title||'¿seguro?')+'</h3>'+(o.detail?'<div class="submeta gap u-preline">'+escTxt(o.detail)+'</div>':'')+'<button type="button" class="hold" aria-label="'+escTxt(idle)+'"><span class="hold-fill"></span><span class="hold-lbl">'+escTxt(idle)+'</span></button><div class="sheetbtns"><button class="cancel" data-ask="no">cancelar</button></div>',onCancel);
+  const b=m.querySelector('.hold'), fill=b.querySelector('.hold-fill'), lbl=b.querySelector('.hold-lbl'); let an=null, raf=0;
+  const tick=()=>{ if(!an)return; const p=Math.min(1,(an.currentTime||0)/D); lbl.textContent='armando '+Math.round(p*100)+'%'; if(p<1)raf=requestAnimationFrame(tick); };
+  const stop=()=>{ cancelAnimationFrame(raf); if(an){ an.cancel(); an=null; lbl.textContent=idle; } };
+  b.addEventListener('pointerdown',e=>{ e.preventDefault(); if(an)return; try{ b.setPointerCapture(e.pointerId); }catch(_){}
+    const cur=an=fill.animate([{transform:'scaleX(0)'},{transform:'scaleX(1)'}],{duration:D,easing:'linear',fill:'forwards'});
+    // la promesa (no el evento): se resuelve al terminar y se rechaza si se canceló al soltar
+    cur.finished.then(()=>{ if(an!==cur)return; an=null; cancelAnimationFrame(raf); try{ navigator.vibrate&&navigator.vibrate(30); }catch(_){} closeAsk(); onOk(); }).catch(()=>{});
+    raf=requestAnimationFrame(tick); });
+  ['pointerup','pointercancel'].forEach(t=>b.addEventListener(t,stop));
+  m.querySelector('[data-ask="no"]').addEventListener('click',ev=>{ ev.stopPropagation(); stop(); closeAsk(); if(onCancel)onCancel(); }); }
+// TRKPrompt: un campo en un sheet (reemplaza al diálogo nativo de texto). onSave(valor) → false = no cerrar (el toast dice por qué)
+function trkPrompt(o,onSave){ openModal('<h3>'+escTxt(o.title||'')+'</h3><div class="field"><label>'+escTxt(o.label||'')+'</label><input id="tp_in" type="'+(o.type||'text')+'"'+(o.inputmode?' inputmode="'+o.inputmode+'"':'')+' value="'+escTxt(o.value==null?'':String(o.value))+'" placeholder="'+escTxt(o.placeholder||'')+'"/></div>'+(o.hint?'<div class="submeta gap">'+escTxt(o.hint)+'</div>':'')+'<div class="sheetbtns"><button class="ok" id="tp_ok">'+escTxt(o.ok||'guardar')+'</button><button class="cancel" data-act="closemodal">cancelar</button></div>');
+  const i=document.getElementById('tp_in'); const go=()=>{ if(onSave(i.value)!==false)closeModal(); };
+  document.getElementById('tp_ok').onclick=go; i.addEventListener('keydown',e=>{ if(e.key==='Enter')go(); }); }
 // ── DESIGN MODE: live spacing/radius editor (open with ?design=1). Pure overlay — overrides nothing until you move a slider. ──
 const DESIGN_KNOBS=[
   {k:'pageY',l:'página · arriba',d:22,min:6,max:56,css:s=>`:root{--sp-py:${s}px}`},
@@ -7877,8 +7956,8 @@ function openDesignPanel(){ if(document.getElementById('dz_panel'))return; const
   document.body.appendChild(wrap);
   const persist=()=>{ const cur={}; DESIGN_KNOBS.forEach(kn=>{ const r=document.getElementById('dz_'+kn.k); if(r&&!r.dataset.def)cur[kn.k]=+r.value; }); localStorage.setItem('gymtrk_design',JSON.stringify(cur)); applyDesign(); };
   DESIGN_KNOBS.forEach(kn=>{ const r=document.getElementById('dz_'+kn.k); if(r)r.addEventListener('input',()=>{ r.removeAttribute('data-def'); const b=document.getElementById('dzv_'+kn.k); if(b)b.textContent=r.value; persist(); }); });
-  document.getElementById('dz_reset').onclick=()=>{ if(!confirm('¿Quitar todos los ajustes de espaciado?'))return; localStorage.removeItem('gymtrk_design'); applyDesign(); wrap.remove(); openDesignPanel(); };
-  document.getElementById('dz_copy').onclick=()=>{ const st=document.getElementById('dz_style'); const css=(st&&st.textContent)||''; if(!css){ alert('Mueve algún slider primero.'); return; } if(navigator.clipboard)navigator.clipboard.writeText(css).then(()=>{},()=>{}); alert('CSS copiado (pásamelo para hornearlo):\n\n'+css); };
+  document.getElementById('dz_reset').onclick=()=>{ const _go15=()=>{ localStorage.removeItem('gymtrk_design'); applyDesign(); wrap.remove(); openDesignPanel(); }; return trkAsk({title:'quitar los ajustes de espaciado',ok:'quitar',danger:true},_go15);};
+  document.getElementById('dz_copy').onclick=()=>{ const st=document.getElementById('dz_style'); const css=(st&&st.textContent)||''; if(!css){ toast('⚠ mueve algún slider primero','err'); return; } if(navigator.clipboard)navigator.clipboard.writeText(css).then(()=>{},()=>{}); (console.log(css),toast('✓ CSS copiado · también está en la consola')); };
   document.getElementById('dz_x').onclick=()=>{ localStorage.removeItem('gymtrk_designmode'); wrap.remove(); };
   document.getElementById('dz_min').onclick=()=>wrap.classList.toggle('mini');
 }
@@ -7915,7 +7994,7 @@ function openDupMeal(tag){
     const nt=(val('dm_tag')||tag).trim()||tag; const nd=val('dm_date')||src;
     db.meals[nd]=db.meals[nd]||[]; snapshotGoal(nd);
     items.forEach((m,i)=>{ const cp=JSON.parse(JSON.stringify(m)); cp.id=uid()+'_'+i; cp.tag=nt; db.meals[nd].push(cp); });
-    save(); closeModal(); state.macroDate=nd; render();
+    save(); toast('✓ comida duplicada'); closeModal(); state.macroDate=nd; render();
   };
 }
 // move a single item to another meal (existing tag) or a new one
@@ -7933,7 +8012,7 @@ function openMoveItem(m){
   window._moveId=m.id;
   document.querySelectorAll('#mv_sugg .chip').forEach(c=>c.onclick=()=>{ document.getElementById('mv_new').value=c.dataset.v; });
   document.querySelectorAll('[data-act="movepick"]').forEach(el=>el.onclick=()=>{ moveItemTo(el.dataset.v); });
-  document.getElementById('mv_go').onclick=()=>{ const nt=(val('mv_new')||'').trim(); if(!nt){ alert('Pon un nombre de meal o elige una existente.'); return; } moveItemTo(nt); };
+  document.getElementById('mv_go').onclick=()=>{ const nt=(val('mv_new')||'').trim(); if(!nt){ toast('⚠ pon un nombre de comida o elige una','err'); return; } moveItemTo(nt); toast('✓ alimento movido'); };
 }
 function moveItemTo(newTag){ const t=curDate(); const arr=db.meals[t]||[]; const mm=arr.find(x=>x.id===window._moveId); if(mm){ mm.tag=newTag; save(); closeModal(); state.expandedMeal=null; render(); } }
 function openSync(){
@@ -7942,8 +8021,8 @@ function openSync(){
    <textarea id="sy_txt" class="ta xl"></textarea>
    <div class="sheetbtns"><button class="ok" data-act="sycopy">copy</button><button class="cancel" data-act="syimport">import from text</button><button class="cancel" data-act="closemodal">close</button></div>`);
   const ta=document.getElementById('sy_txt'); ta.value=JSON.stringify(db);
-  document.querySelector('[data-act="sycopy"]').onclick=()=>{ ta.select(); ta.setSelectionRange(0,ta.value.length); let ok=false; try{ok=document.execCommand('copy');}catch(e){} if(navigator.clipboard){navigator.clipboard.writeText(ta.value).then(()=>{},()=>{});} alert('Copiado al portapapeles.'); };
-  document.querySelector('[data-act="syimport"]').onclick=()=>{ try{const d=JSON.parse(ta.value); if(!d.split)throw 0; if(!confirmReplace(d))return; db=migrate(d); save(); closeModal(); go('home'); alert('Datos importados.'); }catch(e){ alert('Texto inválido.'); } };
+  document.querySelector('[data-act="sycopy"]').onclick=()=>{ ta.select(); ta.setSelectionRange(0,ta.value.length); let ok=false; try{ok=document.execCommand('copy');}catch(e){} if(navigator.clipboard){navigator.clipboard.writeText(ta.value).then(()=>{},()=>{});} toast('✓ copiado'); };
+  document.querySelector('[data-act="syimport"]').onclick=()=>{ try{const d=JSON.parse(ta.value); if(!d.split)throw 0; const _go17=()=>{ db=migrate(d); save(); closeModal(); go('home'); toast('✓ datos importados'); }; return confirmReplace(d,_go17);}catch(e){ toast('⚠ texto inválido','err'); } };
 }
 function doExport(){
   if(NATIVE_APP){ nativeShareFile('gymtrk-backup-'+todayISO()+'.json',JSON.stringify(db,null,2)); return; }
@@ -8018,7 +8097,7 @@ function exportMarkdown(db){
 }
 function doImport(){
   const inp=document.createElement('input'); inp.type='file'; inp.accept='.json,application/json';
-  inp.onchange=()=>{ const file=inp.files[0]; if(!file)return; const rd=new FileReader(); rd.onload=()=>{ try{ const d=JSON.parse(rd.result); if(!d.split)throw 0; if(!confirmReplace(d))return; db=migrate(d); save(); go('home'); alert('Backup importado.'); }catch(e){ alert('Archivo inválido.'); } }; rd.readAsText(file); };
+  inp.onchange=()=>{ const file=inp.files[0]; if(!file)return; const rd=new FileReader(); rd.onload=()=>{ try{ const d=JSON.parse(rd.result); if(!d.split)throw 0; const _go18=()=>{ db=migrate(d); save(); go('home'); toast('✓ respaldo importado'); }; return confirmReplace(d,_go18);}catch(e){ toast('⚠ archivo inválido','err'); } }; rd.readAsText(file); };
   inp.click();
 }
 
@@ -8081,7 +8160,7 @@ async function aiPhoto(file,barcode){ if(!file)return; window._faTag=window._faT
 // Pick AI when the proxy is configured, else on-device OCR.
 function labelPhoto(file,barcode){ if(AI_PROXY_URL) return aiPhoto(file,barcode); return ocrPhoto(file,barcode); }
 requestPersist();
-db=load(); try{ promptIdleSession(); }catch(_){} try{ if(typeof location!=='undefined' && /[?&]selftest=1/.test(location.search)){ _identitySelfCheck(); _dropsetSelfCheck(); _baselineSelfCheck(); _variantSelfCheck(); _historyEditSelfCheck(); _idSelfCheck(); _cardioSelfCheck(); _tensionSelfCheck(); _healthSelfCheck(); _readinessSelfCheck(); _loggingSelfCheck(); _mergeSelfCheck(); _streakSelfCheck(); _chartSelfCheck(); _muscleSelfCheck(); _exProfileSelfCheck(); _recoverySelfCheck(); _diagSelfCheck(); } }catch(e){ console.error(e); } try{ const _sp=new URLSearchParams(location.search); const _hasHistorical=_sp.has('stepsh')||_sp.has('weighth')||_sp.has('stepsq')||_sp.has('sleeph'); if(_hasHistorical){ const _hsp=_sp; if(history.replaceState)history.replaceState(null,'',location.pathname); setTimeout(()=>{ if(confirm('Este link quiere importar datos históricos (pasos/peso/sueño de varios días) a tu cuenta. ¿Aplicar? — solo dile que SÍ si vienes de tu propio Atajo de iOS.')){ try{ const _imp=importHealth(_hsp); if(_imp.length){ save(); render(); toast('✓ '+_imp.join(' · ')); } }catch(_){} } },400); } else { const _imp=importHealth(_sp); if(_imp.length){ window._healthImported=_imp; if(history.replaceState)history.replaceState(null,'',location.pathname); } } }catch(_){} save(); render(); if(window._healthImported)setTimeout(()=>toast('✓ '+window._healthImported.join(' · ')),250); if(window._recoveredFromBackup)setTimeout(()=>{try{alert('Se recuperó un respaldo local: revisa tus datos, podrían faltar cambios muy recientes.');}catch(_){}},600);
+db=load(); try{ promptIdleSession(); }catch(_){} try{ if(typeof location!=='undefined' && /[?&]selftest=1/.test(location.search)){ _identitySelfCheck(); _dropsetSelfCheck(); _baselineSelfCheck(); _variantSelfCheck(); _historyEditSelfCheck(); _idSelfCheck(); _cardioSelfCheck(); _tensionSelfCheck(); _healthSelfCheck(); _readinessSelfCheck(); _loggingSelfCheck(); _mergeSelfCheck(); _streakSelfCheck(); _chartSelfCheck(); _muscleSelfCheck(); _exProfileSelfCheck(); _recoverySelfCheck(); _diagSelfCheck(); _uiSelfCheck(); } }catch(e){ console.error(e); } try{ const _sp=new URLSearchParams(location.search); const _hasHistorical=_sp.has('stepsh')||_sp.has('weighth')||_sp.has('stepsq')||_sp.has('sleeph'); if(_hasHistorical){ const _hsp=_sp; if(history.replaceState)history.replaceState(null,'',location.pathname); setTimeout(()=>{ trkAsk({title:'importar datos históricos',detail:'este link trae pasos, peso o sueño de varios días · acepta solo si viene de tu propio Atajo de iOS',ok:'importar'},()=>{ try{ const _imp=importHealth(_hsp); if(_imp.length){ save(); render(); toast('✓ '+_imp.join(' · ')); } }catch(_){} }); },400); } else { const _imp=importHealth(_sp); if(_imp.length){ window._healthImported=_imp; if(history.replaceState)history.replaceState(null,'',location.pathname); } } }catch(_){} save(); render(); if(window._healthImported)setTimeout(()=>toast('✓ '+window._healthImported.join(' · ')),250); if(window._recoveredFromBackup)setTimeout(()=>{try{toast('⚠ se recuperó un respaldo local · revisa tus datos, podrían faltar cambios muy recientes','err');}catch(_){}},600);
 applyDesign(); try{ if(/[?&]design\b/.test(location.search))localStorage.setItem('gymtrk_designmode','1'); if(localStorage.getItem('gymtrk_designmode')==='1')openDesignPanel(); }catch(_){}
 try{ bootScreen(()=>{ try{
   if(/[?&]wrap=1\b/.test(location.search)){ monthlyWrap(prevMonthYm(), true); return; }
