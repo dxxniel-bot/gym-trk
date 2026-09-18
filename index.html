@@ -108,6 +108,12 @@
   .mmrow .mml{font-size:12px; flex:1; min-width:0;} .mmrow .mml i{font-style:normal; font-size:9px; color:var(--o40); margin-left:4px;}
   .mmrow select{flex:0 0 52%; max-width:52%; font-size:12px; height:32px; background:var(--card2); color:var(--fg); border:.5px solid var(--o20); border-radius:8px; padding:0 8px; -webkit-appearance:none; appearance:none;}
   .mmwarn{font-size:9px; color:var(--warn); margin:-2px 0 4px;}
+  .mmp{font-size:9px; color:var(--o60); cursor:pointer; margin-left:6px; white-space:nowrap;}
+  /* v229 · perfil del ejercicio: lo SUGERIDO se ve punteado hasta que lo tocas */
+  .pftog.sug .t.on{border-style:dashed; opacity:.75;}
+  .pfsec{display:flex; gap:6px; margin-bottom:6px;} .pfsec select{flex:1; min-width:0;} .pfw{flex:0 0 64px; width:64px;}
+  select.pfsel,#pf_gym{height:34px; font-size:12px; background:var(--card2); color:var(--fg); border:.5px solid var(--o20); border-radius:8px; padding:0 8px; -webkit-appearance:none; appearance:none; width:100%;}
+  .exrow .exn[data-act]{cursor:pointer;} .exrow .exp{font-size:10px; color:var(--o50); margin-left:2px;}
   .vbar{position:relative;height:3px;background:var(--track);} .vbar>i{display:block;height:100%;background:var(--fill);} .vbar .mev,.vbar .mav{position:absolute;top:-1px;width:1px;height:5px;background:var(--o40);}
   .submeta{font-size:10px; color:var(--o40); padding-top:4px;}
   .rowend{display:flex; justify-content:space-between; align-items:baseline; margin-top:12px; font-size:10px; color:var(--o50);} .rowend .view{color:var(--o60); cursor:pointer;}
@@ -1352,7 +1358,7 @@ function openMuscleMap(){
     const ov=(exCatRec(x.name)||{}).targets; if(!(c.group||(ov&&ov.length)))return;
     const members=(MUSCLE_GROUPS[c.group?c.id:(MUSCLES[p.id]&&MUSCLES[p.id].g)]||{}).members||Object.keys(MUSCLES);
     const src=p.src==='user'?'fijado':p.src==='inferred'?'~ por el nombre':'sin resolver';
-    exRows+=`<div class="mmrow"><span class="mml">${latTxt(x)}${escTxt(x.name)} <i>${src}</i></span><select data-mm="ex" data-n="${escTxt(x.name)}"><option value=""${p.id?'':' selected'}>${p.id?'auto':'— elige —'}</option>${members.map(id=>`<option value="${id}"${(p.src==='user'&&p.id===id)?' selected':''}>${escTxt(MUSCLES[id].n)}${p.src!=='user'&&p.id===id?' (~)':''}</option>`).join('')}</select></div>`; });
+    exRows+=`<div class="mmrow"><span class="mml">${latTxt(x)}${escTxt(x.name)} <i>${src}</i> <a class="mmp" data-act="exprof" data-n="${escTxt(x.name)}" data-back="muscles">perfil ›</a></span><select data-mm="ex" data-n="${escTxt(x.name)}"><option value=""${p.id?'':' selected'}>${p.id?'auto':'— elige —'}</option>${members.map(id=>`<option value="${id}"${(p.src==='user'&&p.id===id)?' selected':''}>${escTxt(MUSCLES[id].n)}${p.src!=='user'&&p.id===id?' (~)':''}</option>`).join('')}</select></div>`; });
   openModal(`<h3>músculos</h3>
    <div class="submeta" style="margin-bottom:10px">tus etiquetas se ven siempre como las escribiste · esto solo le dice al motor a qué músculo real corresponde cada una (volumen contra landmarks, recuperación, sugerencias) · aplica a todo tu historial</div>
    <div class="grp-label" style="margin:4px 0 6px">TUS ETIQUETAS</div>${rows||'<div class="submeta">aún no hay músculos</div>'}
@@ -1365,6 +1371,84 @@ function openMuscleMap(){
       else { const cur=targetsFor(x).filter((t,i)=>i>0&&t.id).map(t=>({id:t.id,w:t.w})); setExCat(nm,{targets:[{id:s.value,w:1}].concat(cur.filter(t=>t.id!==s.value))}); } }
     save(); openMuscleMap(); }));
 }
+// ---------- v229 · PERFIL del ejercicio: resistencia, longitud muscular y músculos del motor ----------
+// Perfil de resistencia (dónde del recorrido es más duro): asc = al final (músculo acortado) · desc = al inicio
+// (músculo estirado) · mid = a mitad · unk = "no sé". Longitud: long (estirado) · mid · short (acortado) · mixed
+// · unk. Son dos propiedades DISTINTAS (un ejercicio puede ser ascendente y a la vez entrenar el músculo largo).
+// Dónde vive (decisión del dueño): máquina/polea/smith → resistencia POR GYM (la leva o polea de cada gym es otra)
+// en db.exCat[name].rpGym[gym]; peso libre/corporal → una sola (exCat.rp). Longitud → exCat.len (es del movimiento).
+// Principio de PT2: "la app no debe pretender saber más de lo que sabe" — lo sugerido va marcado "~" y solo se
+// vuelve tuyo si lo tocas; "no sé" es una respuesta válida y apaga la sugerencia.
+const RP_OPTS=[['asc','⬆ ascendente','más duro al final (músculo acortado)'],['desc','⬇ descendente','más duro al inicio (músculo estirado)'],['mid','↔ media','más duro a mitad del recorrido'],['unk','? no sé','no se asume nada']];
+const LEN_OPTS=[['long','estirado'],['mid','media'],['short','acortado'],['mixed','mixto'],['unk','? no sé']];
+const RP_GLYPH={asc:'⬆',desc:'⬇',mid:'↔'}, LEN_TXT={long:'estirado',mid:'media',short:'acortado',mixed:'mixto'};
+// sugerencias SOLO donde la evidencia/biomecánica es sólida. types = solo aplica a esos tipos.
+const EX_HINTS=[
+  {re:/\b(rdl|sldl|romanian|rumano|stiff|straight ?leg)\b|piernas rectas/, rp:'desc', len:'long', types:['free'], why:'cadera flexionada al fondo: isquios en su máxima longitud; con barra lo más duro es abajo'},
+  {re:/seated (leg )?curl|curl (femoral )?sentado/, len:'long', why:'cadera flexionada: isquios más largos que acostado — más hipertrofia sentado (Maeo 2021)'},
+  {re:/(lying|laying|prone) (leg )?curl|curl (femoral )?acostado/, len:'short', why:'cadera extendida: isquios más cortos que sentado (Maeo 2021)'},
+  {re:/(overhead|o\/h|over ?head).*(tri|ext)|french press|katana/, len:'long', why:'brazo sobre la cabeza: cabeza larga del tríceps estirada — más crecimiento que el pushdown (Maeo 2023)'},
+  {re:/push ?down|pressdown/, len:'short', why:'hombro neutro y codo extendido al final: tríceps acortado (Maeo 2023)'},
+  {re:/incline (db |dumbbell )?curl|bayesian/, len:'long', why:'hombro extendido: cabeza larga del bíceps estirada'},
+  {re:/(lateral|side) (raise|rise)|elevacion lateral/, rp:'asc', len:'short', types:['free'], why:'con mancuerna el brazo pesa más al llegar arriba: más duro al final, deltoides acortado'},
+  {re:/(db|dumbbell) (fly|flye)|aperturas? con mancuerna/, rp:'desc', len:'long', types:['free'], why:'con mancuerna lo más duro es abajo, con el pecho estirado'},
+  {re:/standing calf|calf (raise|rise)s? de pie|pantorrilla de pie/, len:'long', why:'rodilla extendida: gastrocnemio más largo que sentado; el rango estirado es el más productivo (Kassiano 2023)'}
+];
+function exHint(name,type){ const n=mNorm(name), t=canonType(type||'free'); return EX_HINTS.find(hn=>hn.re.test(n)&&(!hn.types||hn.types.indexOf(t)>=0))||null; }
+function isMachType(type){ return ['machine','smith','cable'].indexOf(canonType(type||''))>=0; }
+// perfil efectivo de un ejercicio en un gym: lo tuyo › sugerencia › desconocido (con su procedencia)
+function profileFor(ex,gym){ if(!ex)return null; const cat=exCatRec(ex.name)||{}; const mach=isMachType(ex.type); const hint=exHint(ex.name,ex.type);
+  let rp='unk', rpSrc='unknown';
+  if(mach){ const v=cat.rpGym&&gym?cat.rpGym[gym]:null; if(v){ rp=v; rpSrc='user'; } }
+  else if(cat.rp){ rp=cat.rp; rpSrc='user'; }
+  if(rpSrc==='unknown'&&hint&&hint.rp){ rp=hint.rp; rpSrc='suggested'; }
+  let len='unk', lenSrc='unknown'; if(cat.len){ len=cat.len; lenSrc='user'; } else if(hint&&hint.len){ len=hint.len; lenSrc='suggested'; }
+  return {rp,rpSrc,len,lenSrc,mach,gym:gym||'',why:hint?hint.why:''}; }
+// en lectura para una sesión (usa el gym DE ESA sesión); nunca se copia a la sesión
+function exProfileOf(sw,ei){ const e=((sw&&sw.exercises)||[])[ei]; if(!e)return null; return profileFor(splitExFor(sw,ei)||e,(sw&&sw.gym)||db.activeGym); }
+function profileTag(p){ if(!p)return ''; const a=[]; if(p.rp!=='unk')a.push((RP_GLYPH[p.rp]||'')+(p.rpSrc==='suggested'?'~':'')); if(p.len!=='unk')a.push(LEN_TXT[p.len]+(p.lenSrc==='suggested'?'~':'')); return a.join(' '); }
+function setRpForGym(name,gym,v){ const cur=exCatRec(name)||{}; const g=Object.assign({},cur.rpGym||{}); if(v)g[gym]=v; else delete g[gym]; setExCat(name,{rpGym:g}); }
+// modal de perfil (desde el catálogo o la pantalla de músculos). back = a dónde volver al cerrar.
+function openExProfile(name,back,gymSel){
+  const ex=knownExercises().find(x=>nameKey(x.name)===nameKey(name))||{name};
+  const gyms=exGymsFor(ex.name); const gym=gymSel||(gyms.indexOf(db.activeGym)>=0?db.activeGym:(gyms[0]||db.activeGym||''));
+  const p=profileFor(ex,gym); const tg=targetsFor(ex);
+  window._exProf={name:ex.name,back:back||'',gym,ex};
+  const tog=(id,opts,cur,src)=>`<div class="toggles pftog${src==='suggested'?' sug':''}" id="${id}" style="flex-wrap:wrap;gap:4px">${opts.map(o=>`<button class="t ${o[0]===cur?'on':''}" data-act="optpick" data-v="${o[0]}" style="flex:1 1 calc(50% - 2px);min-width:0"${o[2]?` title="${escTxt(o[2])}"`:''}>${o[1]}${o[0]===cur&&src==='suggested'?' ~':''}</button>`).join('')}</div>`;
+  const srcTxt=s=>s==='user'?'tuyo':s==='suggested'?'~ sugerido · toca para confirmarlo':'sin definir';
+  const mOpt=sel=>Object.keys(MUSCLES).map(id=>`<option value="${id}"${sel===id?' selected':''}>${escTxt(MUSCLES[id].n)} · ${escTxt(MUSCLES[id].es)}</option>`).join('');
+  const sec=tg.slice(1).map((t,i)=>`<div class="pfsec"><select class="pfsel" data-sec="${i}"><option value="">— quitar —</option>${mOpt(t.id)}</select><input class="pfw" data-secw="${i}" type="number" inputmode="decimal" step="0.05" min="0" max="1" value="${t.w}"/></div>`).join('');
+  const tSrc=tg[0]?(tg[0].src==='user'?'fijado':tg[0].src==='inferred'?'~ deducido del nombre':tg[0].src==='auto'?'de tu etiqueta':'sin resolver'):'sin músculo';
+  openModal(`<h3>perfil · ${latTxt(ex)}${escTxt(ex.name)}</h3>
+   <div class="submeta" style="margin-bottom:8px">${escTxt(ex.type||'free')}${p.mach&&gym?` · en <b>${escTxt(gym)}</b>`:''}</div>
+   ${p.mach&&gyms.length>1?`<div class="field"><label>GYM (la máquina de cada gym puede ser distinta)</label><select id="pf_gym">${gyms.map(g=>`<option value="${escTxt(g)}"${g===gym?' selected':''}>${escTxt(g)}</option>`).join('')}</select></div>`:''}
+   <div class="grp-label" style="margin:6px 0 4px">MÚSCULOS DEL MOTOR <span style="color:var(--o35);font-weight:400">· ${tSrc}</span></div>
+   <div class="submeta" style="margin-bottom:6px">tus etiquetas no cambian · esto es a qué músculo real cuenta el volumen, la recuperación y las sugerencias</div>
+   <div class="field"><label>PRIMARIO</label><select id="pf_prim" class="pfsel"><option value="">— sin resolver —</option>${mOpt(tg[0]&&tg[0].id)}</select></div>
+   <div class="field"><label>SECUNDARIOS · cuánto cuenta la serie (0–1)</label><div id="pf_secs">${sec}</div><button class="addbtn" data-act="pf_addsec" style="margin-top:4px">[+ secundario]</button></div>
+   <div class="grp-label" style="margin:12px 0 4px">PERFIL DE RESISTENCIA <span style="color:var(--o35);font-weight:400">· ${p.mach?'de la máquina de '+escTxt(gym||'este gym'):'todos los gyms'} · ${srcTxt(p.rpSrc)}</span></div>
+   ${tog('pf_rp',RP_OPTS,p.rp,p.rpSrc)}
+   <div class="submeta" style="margin:4px 0 0">⬆ más duro al final (acortado) · ⬇ más duro al inicio (estirado) · ↔ a mitad</div>
+   <div class="grp-label" style="margin:12px 0 4px">LONGITUD MUSCULAR <span style="color:var(--o35);font-weight:400">· dónde trabaja el músculo · ${srcTxt(p.lenSrc)}</span></div>
+   ${tog('pf_len',LEN_OPTS,p.len,p.lenSrc)}
+   ${p.why&&(p.rpSrc==='suggested'||p.lenSrc==='suggested')?`<div class="submeta" style="margin-top:6px;color:var(--o50)">~ ${escTxt(p.why)}</div>`:''}
+   <div class="sheetbtns" style="margin-top:14px"><button class="ok" data-act="pf_save">guardar</button><button class="cancel" data-act="pf_close">cancel</button></div>`);
+  // una sugerencia solo se vuelve tuya si TOCAS esa fila (aunque elijas lo mismo)
+  ['pf_rp','pf_len'].forEach(id=>{ const el=document.getElementById(id); if(el)el.addEventListener('click',()=>{ el.dataset.touched='1'; el.classList.remove('sug'); }); });
+  const tw=document.getElementById('modal'); if(tw)tw.querySelectorAll('#pf_prim,.pfsel,.pfw').forEach(x=>x.addEventListener('change',()=>{ tw.dataset.tTouched='1'; }));
+  const gs=document.getElementById('pf_gym'); if(gs)gs.addEventListener('change',()=>openExProfile(ex.name,back,gs.value));
+}
+function saveExProfile(){ const ctx=window._exProf; if(!ctx)return; const m=document.getElementById('modal'); const nm=ctx.name;
+  const pv=id=>{ const e=document.querySelector('#'+id+' .t.on'); return e?e.dataset.v:''; };
+  const rpEl=document.getElementById('pf_rp'), lenEl=document.getElementById('pf_len');
+  if(rpEl&&rpEl.dataset.touched){ const v=pv('pf_rp'); if(isMachType(ctx.ex.type))setRpForGym(nm,ctx.gym,v); else setExCat(nm,{rp:v}); }
+  if(lenEl&&lenEl.dataset.touched)setExCat(nm,{len:pv('pf_len')});
+  if(m&&m.dataset.tTouched){ const prim=val('pf_prim');
+    if(!prim){ const r=exCatRec(nm); if(r)delete r.targets; }
+    else { const secs=[]; m.querySelectorAll('select[data-sec]').forEach(s=>{ const w=m.querySelector('input[data-secw="'+s.dataset.sec+'"]'); if(s.value&&s.value!==prim)secs.push({id:s.value,w:Math.max(0,Math.min(1,parseFloat(w&&w.value)||0.5))}); });
+      setExCat(nm,{targets:[{id:prim,w:1}].concat(secs)}); } }
+  save(); closeProfileBack(ctx.back); }
+function closeProfileBack(back){ window._exProf=null; if(back==='catalog')openExerciseDirectory(); else if(back==='muscles')openMuscleMap(); else { closeModal(); reRender(); } }
 // ---- exercise IDENTITY: a same-name exercise in a different type/laterality is a DIFFERENT exercise ----
 // type synonyms → canonical form, ONLY for variant matching/lookup (never rewrites the user's stored value,
 // same spirit as MUSCLE_ALIAS/canonM above — internal comparison only).
@@ -2454,6 +2538,31 @@ function _muscleSelfCheck(){
     A('las etiquetas NO se renombran', exMuscles(ex[3])[0].name==='calfs'&&ex[2].muscle==='mback');
   } finally { db=real; bumpIdx(); }
   console.log('muscle self-check OK');
+}
+// v229 — perfil del ejercicio: sugerencias solo donde hay evidencia, resistencia por gym en máquinas, "no sé"
+// como respuesta válida y lo del usuario por encima de lo sugerido. db de juguete restaurada.
+function _exProfileSelfCheck(){
+  const A=(nm,c)=>{ if(!c) throw new Error('SELFCHECK profile: '+nm); };
+  const real=db;
+  try{
+    db=migrate({_idfix:true,_fsfix:true,profile:{username:'t'},sessions:[],split:{name:'t',days:[]}});
+    const sldl={name:'sldl',type:'free'}, slc={name:'seated leg curl',type:'machine'}, clr={name:'cable lateral rises',type:'cable'}, dlr={name:'standing lateral rises',type:'free'}, pd={name:'pushdown',type:'pulley'};
+    let p=profileFor(sldl,'AGON');
+    A('SLDL libre: descendente y estirado, sugeridos', p.rp==='desc'&&p.rpSrc==='suggested'&&p.len==='long'&&p.lenSrc==='suggested');
+    p=profileFor(slc,'AGON');
+    A('curl sentado (máquina): longitud sugerida, resistencia desconocida', p.len==='long'&&p.rp==='unk'&&p.rpSrc==='unknown');
+    setRpForGym('seated leg curl','AGON','asc');
+    A('la resistencia de una máquina es POR GYM', profileFor(slc,'AGON').rp==='asc'&&profileFor(slc,'AGON').rpSrc==='user'&&profileFor(slc,'CAMPESTRE').rp==='unk');
+    A('una polea no hereda la sugerencia de la mancuerna', profileFor(clr,'AGON').rp==='unk'&&profileFor(clr,'AGON').len==='unk');
+    A('elevación lateral con mancuerna: ascendente y acortado sugeridos', profileFor(dlr,'AGON').rp==='asc'&&profileFor(dlr,'AGON').len==='short');
+    A('pushdown (alias pulley): acortado sugerido', profileFor(pd,'AGON').len==='short');
+    setExCat('sldl',{rp:'unk'});
+    A('"no sé" es una respuesta: apaga la sugerencia', profileFor(sldl,'AGON').rp==='unk'&&profileFor(sldl,'AGON').rpSrc==='user');
+    setExCat('sldl',{len:'mid'});
+    A('lo tuyo gana sobre lo sugerido', profileFor(sldl,'AGON').len==='mid'&&profileFor(sldl,'AGON').lenSrc==='user');
+    A('la etiqueta corta marca lo sugerido con ~', profileTag(profileFor(dlr,'AGON'))==='⬆~ acortado~');
+  } finally { db=real; bumpIdx(); }
+  console.log('profile self-check OK');
 }
 function _historyEditSelfCheck(){
   // the finalize step below saves and advances the rotation — split + rotIdx must come back too (they leaked before v221)
@@ -5336,6 +5445,12 @@ document.getElementById('app').addEventListener('click',e=>{
   else if(a==='sd_adopt'){ adoptDaySource(+el.dataset.di); }
   else if(a==='sd_addday'){ db.split.days.push({id:'d'+uid(),name:'new day',tag:'@ RIR · F',metric:'rir',allowFailure:true,exercises:[]}); save(); render(); }
   else if(a==='exdirectory'){ window._mgSel=[]; openExerciseDirectory(); }
+  else if(a==='exprof'){ openExProfile(el.dataset.n,el.dataset.back||''); }
+  else if(a==='pf_save'){ saveExProfile(); }
+  else if(a==='pf_close'){ closeProfileBack((window._exProf||{}).back); }
+  else if(a==='pf_addsec'){ const box=document.getElementById('pf_secs'); if(box){ const i=box.querySelectorAll('select[data-sec]').length; if(i<3){
+      box.insertAdjacentHTML('beforeend','<div class="pfsec"><select class="pfsel" data-sec="'+i+'"><option value="">— quitar —</option>'+Object.keys(MUSCLES).map(id=>'<option value="'+id+'">'+escTxt(MUSCLES[id].n)+' · '+escTxt(MUSCLES[id].es)+'</option>').join('')+'</select><input class="pfw" data-secw="'+i+'" type="number" inputmode="decimal" step="0.05" min="0" max="1" value="0.5"/></div>');
+      const m=document.getElementById('modal'); if(m)m.dataset.tTouched='1'; } } }
   else if(a==='exsel'){ const k=el.dataset.k; window._mgSel=window._mgSel||[]; const i=window._mgSel.indexOf(k); if(i>=0)window._mgSel.splice(i,1); else window._mgSel.push(k); openExerciseDirectory(); }
   else if(a==='exselclear'){ window._mgSel=[]; openExerciseDirectory(); }
   else if(a==='openmerge'){ openMergeModal(); }
@@ -5924,6 +6039,9 @@ function mergeExercises(sourceNames,target){
   setExCat(target.name,{name:target.name,gyms:(target.gyms||[]).slice(),type:target.type,unilateral:!!target.unilateral,
     unit:target.unit,muscle:target.muscle,muscles:target.muscles,targets:target.muscles?(prev.targets||srcT):prev.targets,
     mergedFrom:[...new Set([].concat(prev.mergedFrom||[],[...src].filter(k=>k!==tgtKey)))]});
+  // v229: el perfil (resistencia por gym, resistencia libre, longitud) de las fuentes viaja al ejercicio unido; lo del destino gana
+  { const sc=[...src].map(k=>(db.exCat&&db.exCat[k])||{}); const cur=exCatRec(target.name)||{};
+    setExCat(target.name,{rp:cur.rp||(sc.find(r=>r.rp)||{}).rp, len:cur.len||(sc.find(r=>r.len)||{}).len, rpGym:Object.assign({},...sc.map(r=>r.rpGym||{}),cur.rpGym||{})}); }
   [...src].forEach(k=>{ if(k!==tgtKey&&db.exCat&&db.exCat[k])delete db.exCat[k]; });
   save();   // bumpIdx() invalida exIndex/baselines: todo se recalcula ya unido
   return stat;
@@ -5951,7 +6069,7 @@ function exerciseDirectory(){
 function openExerciseDirectory(){
   const dir=exerciseDirectory(); const muscles=Object.keys(dir).sort(); const total=muscles.reduce((a,m)=>a+dir[m].length,0);
   const sel=window._mgSel=window._mgSel||[];
-  let html=`<h3>catálogo de ejercicios</h3><div class="submeta" style="margin-bottom:10px">${total} ejercicios · toca los que sean EL MISMO para unirlos · las etiquetas son los gyms donde lo has entrenado</div>`;
+  let html=`<h3>catálogo de ejercicios</h3><div class="submeta" style="margin-bottom:10px">${total} ejercicios · ▢ = elegir para unir duplicados · toca el nombre para su perfil (músculos, resistencia, longitud) · etiquetas = gyms donde lo has entrenado</div>`;
   if(sel.length){
     html+=`<div class="mgbar"><span>${sel.length} seleccionado${sel.length>1?'s':''}</span><span style="flex:1"></span>`
       +(sel.length>1?`<button class="b" data-act="openmerge">[unir]</button>`:`<span style="color:var(--o35)">elige otro</span>`)
@@ -5967,7 +6085,8 @@ function openExerciseDirectory(){
       const meta=[]; if(e.type)meta.push(e.type);
       const sub=meta.length?` <span style="color:var(--o40)">· ${meta.join(' · ')}</span>`:'';
       const contrib=e._w<1?` <span style="color:var(--warn);font-size:10px;font-weight:700">×${e._w}</span>`:'';
-      html+=`<div class="exrow${on?' on':''}" data-act="exsel" data-k="${escTxt(k)}"><span class="mgbox">${on?'▣':'▢'}</span><span class="exn">${latTxt(e)}${escTxt(e.name)}${contrib}${sub}${tags}</span><span class="exc">${e._sess||0} ${e._sess===1?'sesión':'sesiones'}</span></div>`;
+      const pt=profileTag(profileFor(e,db.activeGym));
+      html+=`<div class="exrow${on?' on':''}" data-act="exsel" data-k="${escTxt(k)}"><span class="mgbox">${on?'▣':'▢'}</span><span class="exn" data-act="exprof" data-n="${escTxt(e.name)}" data-back="catalog">${latTxt(e)}${escTxt(e.name)}${contrib}${sub}${pt?` <span class="exp">${escTxt(pt)}</span>`:''}${tags}</span><span class="exc">${e._sess||0} ${e._sess===1?'sesión':'sesiones'}</span></div>`;
     });
   });
   html+=`<div class="sheetbtns" style="margin-top:14px"><button class="cancel" data-act="closemodal">close</button></div>`;
@@ -6176,9 +6295,12 @@ function openMachineEdit(exi){
    <div class="submeta" style="margin-bottom:10px">${escTxt(ex.name)} · en <b>${escTxt(w.gym)}</b> · día <b>${escTxt(w.dayName||'')}</b></div>
    <div class="field"><label>MÁQUINA / MARCA</label><input id="mc_brand" value="${(rec.brand||'').replace(/"/g,'&quot;')}" placeholder="ej. Hammer Strength, Technogym" autocomplete="off"/></div>
    <div class="field"><label>SETUP (opcional)</label><textarea id="mc_setup" class="ta sm" placeholder="asiento 4 · respaldo 2 · pin 60kg">${escTxt(rec.setup||'')}</textarea></div>
+   ${(()=>{ const p=profileFor(ex,w.gym); return `<div class="field"><label>PERFIL DE RESISTENCIA · esta máquina en ${escTxt(w.gym)} · ${p.rpSrc==='user'?'tuyo':p.rpSrc==='suggested'?'~ sugerido':'sin definir'}</label><div class="toggles pftog${p.rpSrc==='suggested'?' sug':''}" id="mc_rp" style="flex-wrap:wrap;gap:4px">${RP_OPTS.map(o=>`<button class="t ${o[0]===p.rp?'on':''}" data-act="optpick" data-v="${o[0]}" style="flex:1 1 calc(50% - 2px);min-width:0" title="${escTxt(o[2])}">${o[1]}</button>`).join('')}</div><div class="submeta" style="margin-top:4px">⬆ más duro al final · ⬇ más duro al inicio (estirado) · ↔ a mitad</div></div>`; })()}
    <div class="submeta" style="margin:2px 0 10px">queda vinculado a <b>${escTxt(w.gym)}</b> · <b>${escTxt(w.dayName||'este día')}</b> · si el mismo ejercicio existe en otro día, tiene su propia máquina/setup</div>
    <div class="sheetbtns"><button class="ok" id="mc_save">guardar</button><button class="cancel" id="mc_na">N/A</button><button class="cancel" data-act="closemodal">cancel</button></div>`);
-  document.getElementById('mc_save').onclick=()=>{ setMachine(w.gym,ex,{brand:val('mc_brand'),setup:val('mc_setup'),na:false}); closeModal(); render(); };
+  const _rpEl=document.getElementById('mc_rp'); if(_rpEl)_rpEl.addEventListener('click',()=>{ _rpEl.dataset.touched='1'; _rpEl.classList.remove('sug'); });
+  document.getElementById('mc_save').onclick=()=>{ if(_rpEl&&_rpEl.dataset.touched){ const on=_rpEl.querySelector('.t.on'); setRpForGym(ex.name,w.gym,on?on.dataset.v:''); }
+    setMachine(w.gym,ex,{brand:val('mc_brand'),setup:val('mc_setup'),na:false}); closeModal(); reRender(); };
   document.getElementById('mc_na').onclick=()=>{ setMachine(w.gym,ex,{brand:'',setup:'',na:true}); closeModal(); render(); };
 }
 function foodPer(){ return {kcal:0,protein:0,carbs:0,fat:0,sugar:0,sodium:0,potassium:0,fiber:0,caffeine:0,alcohol:0,water:0}; }
@@ -7556,7 +7678,7 @@ async function aiPhoto(file,barcode){ if(!file)return; window._faTag=window._faT
 // Pick AI when the proxy is configured, else on-device OCR.
 function labelPhoto(file,barcode){ if(AI_PROXY_URL) return aiPhoto(file,barcode); return ocrPhoto(file,barcode); }
 requestPersist();
-db=load(); try{ promptIdleSession(); }catch(_){} try{ if(typeof location!=='undefined' && /[?&]selftest=1/.test(location.search)){ _identitySelfCheck(); _dropsetSelfCheck(); _baselineSelfCheck(); _variantSelfCheck(); _historyEditSelfCheck(); _idSelfCheck(); _cardioSelfCheck(); _tensionSelfCheck(); _healthSelfCheck(); _readinessSelfCheck(); _loggingSelfCheck(); _mergeSelfCheck(); _streakSelfCheck(); _chartSelfCheck(); _muscleSelfCheck(); } }catch(e){ console.error(e); } try{ const _sp=new URLSearchParams(location.search); const _hasHistorical=_sp.has('stepsh')||_sp.has('weighth')||_sp.has('stepsq')||_sp.has('sleeph'); if(_hasHistorical){ const _hsp=_sp; if(history.replaceState)history.replaceState(null,'',location.pathname); setTimeout(()=>{ if(confirm('Este link quiere importar datos históricos (pasos/peso/sueño de varios días) a tu cuenta. ¿Aplicar? — solo dile que SÍ si vienes de tu propio Atajo de iOS.')){ try{ const _imp=importHealth(_hsp); if(_imp.length){ save(); render(); toast('✓ '+_imp.join(' · ')); } }catch(_){} } },400); } else { const _imp=importHealth(_sp); if(_imp.length){ window._healthImported=_imp; if(history.replaceState)history.replaceState(null,'',location.pathname); } } }catch(_){} save(); render(); if(window._healthImported)setTimeout(()=>toast('✓ '+window._healthImported.join(' · ')),250); if(window._recoveredFromBackup)setTimeout(()=>{try{alert('Se recuperó un respaldo local: revisa tus datos, podrían faltar cambios muy recientes.');}catch(_){}},600);
+db=load(); try{ promptIdleSession(); }catch(_){} try{ if(typeof location!=='undefined' && /[?&]selftest=1/.test(location.search)){ _identitySelfCheck(); _dropsetSelfCheck(); _baselineSelfCheck(); _variantSelfCheck(); _historyEditSelfCheck(); _idSelfCheck(); _cardioSelfCheck(); _tensionSelfCheck(); _healthSelfCheck(); _readinessSelfCheck(); _loggingSelfCheck(); _mergeSelfCheck(); _streakSelfCheck(); _chartSelfCheck(); _muscleSelfCheck(); _exProfileSelfCheck(); } }catch(e){ console.error(e); } try{ const _sp=new URLSearchParams(location.search); const _hasHistorical=_sp.has('stepsh')||_sp.has('weighth')||_sp.has('stepsq')||_sp.has('sleeph'); if(_hasHistorical){ const _hsp=_sp; if(history.replaceState)history.replaceState(null,'',location.pathname); setTimeout(()=>{ if(confirm('Este link quiere importar datos históricos (pasos/peso/sueño de varios días) a tu cuenta. ¿Aplicar? — solo dile que SÍ si vienes de tu propio Atajo de iOS.')){ try{ const _imp=importHealth(_hsp); if(_imp.length){ save(); render(); toast('✓ '+_imp.join(' · ')); } }catch(_){} } },400); } else { const _imp=importHealth(_sp); if(_imp.length){ window._healthImported=_imp; if(history.replaceState)history.replaceState(null,'',location.pathname); } } }catch(_){} save(); render(); if(window._healthImported)setTimeout(()=>toast('✓ '+window._healthImported.join(' · ')),250); if(window._recoveredFromBackup)setTimeout(()=>{try{alert('Se recuperó un respaldo local: revisa tus datos, podrían faltar cambios muy recientes.');}catch(_){}},600);
 applyDesign(); try{ if(/[?&]design\b/.test(location.search))localStorage.setItem('gymtrk_designmode','1'); if(localStorage.getItem('gymtrk_designmode')==='1')openDesignPanel(); }catch(_){}
 try{ bootScreen(()=>{ try{
   if(/[?&]wrap=1\b/.test(location.search)){ monthlyWrap(prevMonthYm(), true); return; }
