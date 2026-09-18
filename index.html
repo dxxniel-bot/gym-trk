@@ -124,6 +124,28 @@
   .pfeat{background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:var(--sp-card); margin-top:14px;}
   .pfl{font-size:9px; color:var(--o40); letter-spacing:1.5px; text-transform:uppercase; margin-bottom:8px;}
   .pfv{font-size:14px; font-weight:700; line-height:1.35;} .pfv .up{color:var(--good);} .pfv .dn{color:var(--bad);}
+  /* v226 · //SUPPS dentro de macros: un chip por toma, un toque = tomado. Sin acordeones que perder. */
+  .supps{margin:0 0 16px;}
+  .supps .sph{display:flex; justify-content:space-between; align-items:baseline; margin-bottom:8px;}
+  .spg{display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-bottom:6px;}
+  .spl{flex:0 0 58px; font-size:9px; letter-spacing:.12em; color:var(--o35);}
+  .spc{font-size:11px; padding:5px 9px; border:.5px solid var(--o20); border-radius:14px; cursor:pointer; color:var(--fg); white-space:nowrap; -webkit-user-select:none; user-select:none;}
+  .spc .k{color:var(--o40); margin-right:3px;}
+  .spc.on{color:var(--o35); border-color:var(--o10);} .spc.on .k{color:var(--good);}
+  /* v226 · racha (comida O gym) + calendario de dos meses, estilo "last 30 days" de Bevel en monocromo */
+  .strk-top{display:flex; justify-content:space-between; align-items:flex-end; gap:10px; margin-top:4px;}
+  .strk-n{font-size:34px; font-weight:800; letter-spacing:-1px; line-height:1;} .strk-n span{font-size:13px; font-weight:400; color:var(--o50); letter-spacing:0; margin-left:4px;}
+  .strk-side{font-size:10px; color:var(--o50); text-align:right; line-height:1.6;} .strk-side b{color:var(--fg); font-weight:800;}
+  .strk-sub{font-size:10px; color:var(--o40); margin-top:8px; line-height:1.4;}
+  .cal2{display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-top:12px;}
+  .cm .cmh{font-size:9px; letter-spacing:.14em; text-transform:uppercase; color:var(--o50); margin-bottom:5px;}
+  .cm .cmw,.cm .cmg{display:grid; grid-template-columns:repeat(7,1fr); gap:3px;}
+  .cm .cmw{margin-bottom:3px;} .cm .cmw b{font-size:8px; font-weight:400; color:var(--o35); text-align:center;}
+  .cd{display:block; height:13px; border-radius:4px; background:var(--track); position:relative;}
+  .cm .cd{cursor:pointer;} .cm .cd.e{background:none; cursor:default;} .cm .cd.f{background:none; box-shadow:inset 0 0 0 .5px var(--o10); cursor:default;}
+  .cd.l1{background:var(--o60);} .cd.l2{background:var(--good);}
+  .cm .cd.t{box-shadow:0 0 0 1px var(--fg);} .cm .cd.t.l0::after{content:''; position:absolute; left:50%; top:50%; width:3px; height:3px; margin:-1.5px 0 0 -1.5px; border-radius:50%; background:var(--fg);}
+  .calleg{display:flex; gap:12px; flex-wrap:wrap; margin-top:10px; font-size:9px; color:var(--o40);} .calleg span{display:flex; align-items:center; gap:5px;} .calleg .cd{width:14px; height:9px; border-radius:3px;}
   .pwk{display:flex; gap:6px; margin-top:12px;} .pwd{flex:1; height:5px; border-radius:3px; background:var(--track);} .pwd.on{background:var(--good);}
   .pgrid{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:11px;}
   .ptile.tap{cursor:pointer; transition:transform .1s ease, opacity .1s ease;}
@@ -1119,7 +1141,57 @@ function stat7(){
   db.sessions.forEach(s=>{ if(s.type==='rest')return; if(s.date>c){count++; dates.add(s.date);} (s.exercises||[]).forEach(e=>(e.sets||[]).forEach(st=>{const w=effW(st),r=parseFloat(st.r)||0; if(s.date>c)vol+=w*r;}));});
   return {vol,count};
 }
-function streak(){ const ds=[...new Set(db.sessions.filter(s=>s.type!=='rest').map(s=>s.date))].sort().reverse(); if(!ds.length)return 0; let st=0; let d=new Date(); for(;;){const iso=todayISO(d); if(ds.includes(iso)){st++;d.setDate(d.getDate()-1);} else {if(iso===todayISO())d.setDate(d.getDate()-1); else break;}} return st; }
+// v226 — la racha cuenta REGISTRO MANUAL de comida O de gym (dueño: "cualquier registro manual… comida o
+// gimnasio"); pasos, peso y sueño llegan solos y no cuentan. Se corta solo el día sin NINGUNO de los dos;
+// hoy se perdona hasta medianoche. Un descanso registrado con el botón "rest" cuenta como registro de gym
+// (lo registraste a mano: es parte del plan). Bits por día: 1 = comida · 2 = gym.
+function activityDays(){ const a={};
+  Object.keys(db.meals||{}).forEach(d=>{ if((db.meals[d]||[]).length)a[d]=(a[d]||0)|1; });
+  (db.sessions||[]).forEach(s=>{ if(s&&s.date)a[s.date]=(a[s.date]||0)|2; });
+  return a; }
+function streak(){ const a=activityDays(); const today=todayISO(); let st=0; const d=new Date();
+  for(;;){ const iso=todayISO(d); if(a[iso]){ st++; d.setDate(d.getDate()-1); } else if(iso===today){ d.setDate(d.getDate()-1); } else break; }
+  return st; }
+function bestStreak(){ const ks=Object.keys(activityDays()).sort(); let best=0,run=0,prev=null;
+  ks.forEach(k=>{ const g=prev?Math.round((new Date(k+'T12:00:00')-new Date(prev+'T12:00:00'))/86400000):0; run=(prev&&g===1)?run+1:1; if(run>best)best=run; prev=k; });
+  return best; }
+// calendario de dos meses (anterior | actual): una pastilla por día — gris = sin registro, tenue = comida
+// o gym, acento = comida + gym; hoy con contorno (y punto si aún no registras nada). Toque = abre ese día.
+function streakCalendarHTML(){
+  const a=activityDays(); const today=todayISO(); const now=new Date();
+  const month=(y,m)=>{ const lead=new Date(y,m,1).getDay(), days=new Date(y,m+1,0).getDate(); let cells='';
+    for(let i=0;i<lead;i++)cells+='<i class="cd e"></i>';
+    for(let dd=1;dd<=days;dd++){ const iso=y+'-'+pad(m+1)+'-'+pad(dd); const v=a[iso]||0; const lv=(v&1?1:0)+(v&2?1:0);
+      if(iso>today){ cells+='<i class="cd f"></i>'; continue; }
+      const what=lv===2?'comida + gym':lv===1?((v&1)?'comida':'gym'):'sin registro';
+      cells+=`<i class="cd l${lv}${iso===today?' t':''}" data-act="calday" data-d="${iso}" title="${iso} · ${what}"></i>`; }
+    return `<div class="cm"><div class="cmh">${MONFULL[m]}</div><div class="cmw">${['D','L','M','M','J','V','S'].map(x=>'<b>'+x+'</b>').join('')}</div><div class="cmg">${cells}</div></div>`; };
+  const pm=new Date(now.getFullYear(),now.getMonth()-1,1);
+  return `<div class="cal2">${month(pm.getFullYear(),pm.getMonth())}${month(now.getFullYear(),now.getMonth())}</div>`;
+}
+function streakCardHTML(){
+  const a=activityDays(); if(!Object.keys(a).length)return '';
+  const st=streak(), best=bestStreak(), today=todayISO(), now=new Date();
+  let logged=0, both=0; const el=now.getDate();
+  for(let dd=1;dd<=el;dd++){ const v=a[now.getFullYear()+'-'+pad(now.getMonth()+1)+'-'+pad(dd)]||0; if(v)logged++; if(v===3)both++; }
+  const pct=el?Math.round(logged/el*100):0; const tv=a[today]||0;
+  const hoy=tv===3?'hoy: comida + gym ✓':tv?('hoy: '+((tv&1)?'comida':'gym')+' ✓'):'hoy: aún sin registro';
+  return `<div class="pfeat"><div class="pfl">racha · comida o gym</div>`
+    +`<div class="strk-top"><div class="strk-n">${st}<span>día${st===1?'':'s'}</span></div>`
+    +`<div class="strk-side"><div>mejor racha <b>${best}</b></div><div>este mes <b>${logged}/${el}</b> días registrados · <b>${pct}%</b></div><div>días completos (ambos) <b>${both}</b></div></div></div>`
+    +`<div class="strk-sub">${hoy} · solo se corta el día en que no registras ni comida ni gym</div>`
+    +streakCalendarHTML()
+    +`<div class="calleg"><span><i class="cd l1"></i>comida o gym</span><span><i class="cd l2"></i>comida + gym</span><span><i class="cd"></i>sin registro</span></div></div>`;
+}
+// toque en un día del calendario: si hubo las dos cosas pregunta cuál abrir; si no, abre la que hubo
+function openCalDay(iso){
+  const ss=(db.sessions||[]).filter(x=>x.date===iso&&x.type!=='rest'&&x.exercises&&x.exercises.length);
+  const food=((db.meals&&db.meals[iso])||[]).length>0;
+  const goFood=()=>{ state.screen='macros'; state.macroDate=iso; state._trans=true; render(); };
+  if(ss.length&&food){ openModal(`<h3>${escTxt(dayLabel(iso))}</h3><div class="sheetbtns"><button class="ok" data-act="calday_food" data-d="${iso}">comida</button>${ss.map(s=>`<button class="ok" data-act="calday_gym" data-id="${s.id}">${escTxt(s.dayName||'sesión')}</button>`).join('')}<button class="cancel" data-act="closemodal">cancel</button></div>`); return; }
+  if(ss.length){ openSessionEdit(ss[ss.length-1].id); return; }
+  goFood();
+}
 // weekly hard sets per muscle (RIR<=4 = hard) over last N days, with RP landmarks
 const VOL_LANDMARKS={chest:[10,20,22],back:[10,22,25],quads:[8,18,20],hams:[6,16,20],delts:[8,22,26],biceps:[8,20,26],tricep:[6,14,18],triceps:[6,14,18],calfs:[8,16,20],calves:[8,16,20],abs:[6,25,25],traps:[4,20,26],glutes:[4,16,16],neck:[4,12,16]};
 // common EN/ES synonyms → canonical VOL_LANDMARKS key. ONLY for landmark lookup (bar scale/status) —
@@ -1345,7 +1417,9 @@ function renderNav(){
   const n=document.getElementById('nav'); if(!n) return; const sc=state.screen;
   if(sc==='workout'||sc==='settings'||sc==='splitedit'||sc==='history'||sc==='share'||!db.profile.username){ n.style.display='none'; return; } n.style.display='flex';
   if(n.dataset.built!=='1'){ // construir UNA vez; luego solo toggle .active → la transición CSS anima (innerHTML cada render mataría la animación)
-    const tabs=[['progress','progress'],['home','gym'],['macros','macros'],['stack','stack'],['agenda','día']];
+    // v226: stack y agenda salen de la barra (el dueño no las usaba: "ni siquiera me incentiva meterme").
+    // Ningún dato se borra — db.stack/db.adhoc siguen, el check diario vive en macros y el ABM en el menú u/.
+    const tabs=[['progress','progress'],['home','gym'],['macros','macros']];
     n.innerHTML=tabs.map(t=>`<a data-act="nav" data-screen="${t[0]}" aria-label="${t[1]}"><span class="ic">${NAVIC[t[0]]||''}</span><span class="lbl"><span>${t[1]}</span></span></a>`).join('');
     n.dataset.built='1';
   }
@@ -1357,7 +1431,7 @@ function statusBar(back){
   const d=new Date();
   return `<div class="status"><div class="left"><div class="uname" data-act="navmenu" style="cursor:pointer">u/${escTxt(db.profile.username)} <span class="umcaret">▾</span></div>${back?'<span class="back" data-act="leave">← back</span>':''}</div>`
     +`<div class="center">${fmtDate(todayISO())}<br/>${nowHM()}</div>`
-    +`<div class="streak">streak: <b>${streak()}</b></div></div>`;
+    +`<div class="streak" data-act="nav" data-screen="progress" style="cursor:pointer" title="días seguidos registrando comida o gym">streak: <b>${streak()}</b></div></div>`;
 }
 function renderHome(){
   // empty state — no split yet (new account)
@@ -2130,6 +2204,29 @@ function _mergeSelfCheck(){
   }
   console.log('merge self-check OK');
 }
+// v226 — racha comida-o-gym. db de juguete con fechas RELATIVAS a hoy (no se pudre con el calendario);
+// no llama a save(), así que no toca localStorage.
+function _streakSelfCheck(){
+  const A=(nm,c)=>{ if(!c) throw new Error('SELFCHECK streak: '+nm); };
+  const D=k=>{ const d=new Date(); d.setDate(d.getDate()-k); return todayISO(d); };
+  const meal=()=>[{id:'m',kcal:100}];
+  const real=db;
+  try{
+    const mk=(meals,sessions)=>migrate({_idfix:true,_fsfix:true,profile:{username:'t'},meals,sessions});
+    db=mk({[D(0)]:meal(),[D(1)]:meal()},[]);
+    A('solo comida cuenta', streak()===2);
+    db=mk({},[{id:'a',date:D(1),type:'training',exercises:[]},{id:'b',date:D(2),type:'training',exercises:[]},{id:'c',date:D(3),type:'training',exercises:[]}]);
+    A('solo gym cuenta y hoy se perdona', streak()===3);
+    db=mk({[D(1)]:meal(),[D(3)]:meal()},[{id:'a',date:D(0),type:'training',exercises:[]}]);
+    A('un día sin ninguno de los dos corta la racha', streak()===2);
+    db=mk({[D(0)]:meal()},[{id:'r',date:D(1),type:'rest'}]);
+    A('un descanso registrado cuenta como gym', streak()===2);
+    db=mk({[D(9)]:meal(),[D(8)]:meal(),[D(7)]:meal(),[D(6)]:meal(),[D(1)]:meal()},[]);
+    A('la mejor racha recuerda el tramo más largo', bestStreak()===4&&streak()===1);
+    A('el calendario marca comida + gym', (()=>{ db=mk({[D(0)]:meal()},[{id:'a',date:D(0),type:'training',exercises:[]}]); return streakCalendarHTML().indexOf('cd l2 t')>=0; })());
+  } finally { db=real; }
+  console.log('streak self-check OK');
+}
 function _historyEditSelfCheck(){
   // the finalize step below saves and advances the rotation — split + rotIdx must come back too (they leaked before v221)
   const origSessions=db.sessions, origActive=db.activeWork, origHist=state._histSessId, origSplit=db.split, origRot=db.rotIdx;
@@ -2623,6 +2720,35 @@ function bloating(t,g){
   return {sc,label:sc<34?'low':sc<67?'mod':'high',tips};
 }
 function macroStatus(val,goal){ if(!goal)return ''; const r=val/goal; if(r>1.05)return 'over'; if(r>=0.9)return 'good'; return ''; }
+// v226 — el check diario de suplementos se muda a macros, la pantalla que sí abres todos los días. El
+// stack vivía en una pestaña que nunca abría y sus bloques <details> se abrían/cerraban solos al marcar
+// (se re-abría "el primer bloque con algo pendiente" en cada render). Aquí: un chip por toma pendiente,
+// agrupados por momento con una etiqueta; UN toque = tomado (y otro lo deshace). Lo tomado se va al final
+// en gris. Sus nutrientes siguen sumando a macros (macroTotals) — ahora se ven y se destildan aquí mismo.
+function suppStripHTML(iso){
+  const all=(db.stack||[]).filter(x=>x&&!x.archived&&isDueToday(x,iso));
+  if(!all.length)return '';
+  const ORDER=[['AM','AM'],['PM','PM'],['entreno','ENTRENO'],['otros','OTROS']];
+  const slot=it=>{ const w=it.when||[]; for(const [k] of ORDER){ if(k!=='otros'&&w.indexOf(k)>=0)return k; } return 'otros'; };  // un item con varios momentos sale en el primero (1 tick por día)
+  const done=it=>tickDone(it.ticks&&it.ticks[iso]);
+  const nDone=all.filter(done).length;
+  let rows='';
+  ORDER.forEach(([k,lbl])=>{ const items=all.filter(it=>slot(it)===k); if(!items.length)return;
+    items.sort((a,b)=>(done(a)-done(b)));
+    rows+=`<div class="spg"><span class="spl">${lbl}</span>`+items.map(it=>{ const on=done(it); const tt=on&&it.tickTimes&&it.tickTimes[iso];
+      return `<span class="spc${on?' on':''}" data-act="suppq" data-id="${escTxt(it.id)}" data-d="${iso}" title="${on?'tomado'+(tt?' a las '+escTxt(tt):'')+' · toca para deshacer':'toca = tomado'}"><span class="k">${on?'✓':'○'}</span>${escTxt(it.name||'supp')}</span>`; }).join('')+`</div>`;
+  });
+  return `<div class="supps"><div class="sph"><div class="h" style="font-size:11px;font-weight:800;letter-spacing:.02em"><span class="s" style="color:var(--o40)">//</span>SUPPS <span style="color:var(--o40);font-weight:400">· ${nDone}/${all.length}</span></div><a data-act="nav" data-screen="stack" style="font-size:10px;color:var(--o50);cursor:pointer">[administrar]</a></div>${rows}</div>`;
+}
+// un toque: pendiente → tomado (con su hora real, que nunca se pisa) · tomado/tarde → sin marcar
+function suppQuickTick(id,iso){
+  const it=(db.stack||[]).find(x=>x.id===id); if(!it)return;
+  it.ticks=it.ticks||{};
+  if(tickDone(it.ticks[iso])) delete it.ticks[iso];
+  else { it.ticks[iso]='taken'; it.tickTimes=it.tickTimes||{}; if(!it.tickTimes[iso]&&iso===todayISO())it.tickTimes[iso]=nowHM(); }
+  it.tickEdited=it.tickEdited||{}; it.tickEdited[iso]=Date.now();
+  save(); reRender();
+}
 function renderMacros(){
   const g=goalsFor(curDate()); const {items,t,micros}=macroTotals();
   const left=Math.round(g.kcal-t.kcal); const pct=g.kcal?t.kcal/g.kcal*100:0; const kStat=macroStatus(t.kcal,g.kcal);
@@ -2677,6 +2803,7 @@ function renderMacros(){
     +`<hr class="rule"/>`
     +`<div class="section"><div class="h dnavh"><a data-act="dayprev" class="dnav">‹</a><span class="dnlbl-wrap"><span class="dnlbl">${dayLabel(curDate())}</span><input type="date" class="dcal" data-act="daycal" value="${curDate()}"/></span><a data-act="daynext" class="dnav">›</a></div><div class="meta"><a data-act="share" style="cursor:pointer">[share]</a> <a data-act="editgoals" style="cursor:pointer;margin-left:8px">[goals]</a></div></div>`
     +`<div class="card" style="padding:18px 16px 16px"><button class="hero ${open?'open':''} ${kStat}" data-act="togglemacros">${ringHTML(pct,`<div class="num">${Math.round(t.kcal).toLocaleString()}</div><div class="of">/ ${g.kcal.toLocaleString()} kcal</div>`,'lg')}<div class="hero-meta"><span class="left ${left<0?'over':'under'}">${left>=0?left+' left':Math.abs(left)+' over'}</span> · ${Math.round(pct)}% <span class="chev">▾</span></div></button>${goalSecHidden('balance')?'':(function(){var b=balanceOf(g.kcal);return b?'<div class="hbal">'+(b.label==='mantenimiento'?'en mantenimiento':'<span style="color:'+b.col+';font-weight:700">'+b.label+'</span> '+Math.abs(b.delta)+' kcal')+' · mant. ≈ '+b.maint+'</div>':'';})()}${details}</div>`
+    +suppStripHTML(curDate())
     +`<div class="section" style="margin-bottom:10px"><div class="h"><span class="s">//</span>LOG&nbsp; today</div></div>`
     +log
     +`<button class="fab" data-act="addmenu" aria-label="agregar">+</button>`;
@@ -3774,13 +3901,8 @@ function renderProgress(){
   const kFmt=n=>n>=10000?(n/1000).toFixed(1)+'k':Math.round(n).toLocaleString();
   const goal=(db.profile&&db.profile.goal)||'maintain';
   // featured: esta semana (consistencia)
-  if(totalSessions && cfg.consistency){
-    const last7=lastDays(7), sessSet=new Set((db.sessions||[]).filter(s=>s.type!=='rest').map(s=>s.date));
-    const dots=last7.map(d=>`<i class="pwd${sessSet.has(d)?' on':''}"></i>`).join('');
-    out+=`<div class="pfeat"><div class="pfl">esta semana</div>`
-      +`<div class="pfv">${s7.count} ${s7.count===1?'sesión':'sesiones'} · racha ${str} día${str===1?'':'s'} ${str>0?'<span class="up">▲</span>':''}</div>`
-      +`<div class="pwk">${dots}</div></div>`;
-  }
+  // v226: la tira de 7 puntos (solo gym) se reemplaza por la racha de registro con su calendario
+  if(cfg.consistency){ out+=streakCardHTML(); void str; void s7; }
   out+=throwbackBlock();
   const tiles=[];
   // peso
@@ -3934,7 +4056,7 @@ function stackToggleTick(id, iso){
   if(next) it.ticks[iso]=next; else delete it.ticks[iso];
   it.tickTimes=it.tickTimes||{}; if((next==='taken'||next==='late') && !it.tickTimes[iso]) it.tickTimes[iso]=nowHM(); // hora REAL de ingesta: se fija al 1er check, nunca se pisa/borra sola (re-marcar conserva; editar con openSuppTime)
   it.tickEdited=it.tickEdited||{}; it.tickEdited[iso]=Date.now(); // metadato: última modificación del registro del día
-  save(); render();
+  save(); reRender();
 }
 // editor explícito de hora de ingesta — cancel seguro (no muta)
 function openSuppTime(id, iso){ iso=iso||todayISO(); const it=(db.stack||[]).find(x=>x.id===id); if(!it) return;
@@ -4052,8 +4174,9 @@ function renderStack(){
       const due=items.filter(x=>isDueToday(x,iso));
       const doneN=due.filter(x=>tickState(x.ticks&&x.ticks[iso])).length;
       const incomplete=due.some(x=>!tickState(x.ticks&&x.ticks[iso]));
-      // expandir SOLO el primer bloque con item due sin loguear
-      const openAttr=(!openedYet&&incomplete)?' open':''; if(openAttr) openedYet=true;
+      // v226: TODOS abiertos. Antes se abría "solo el primer bloque con algo pendiente" y en cada check el
+      // re-render cerraba ese bloque y abría el siguiente — el "se colapsan o se despliegan solos" del dueño.
+      const openAttr=' open'; void incomplete; void openedYet;
       const cnt=due.length?` <span style="color:var(--o30)">· ${doneN}/${due.length}</span>`:'';
       out+=`<details class="stk-blk"${openAttr}><summary>${b.lbl}${cnt}</summary>${items.map(li).join('')}</details>`;
     });
@@ -4796,6 +4919,10 @@ document.getElementById('app').addEventListener('click',e=>{
   else if(a==='settings'){ go('settings'); }
   else if(a==='profile'){ go('settings'); }
   else if(a==='navmenu'){ openNavMenu(); }
+  else if(a==='suppq'){ suppQuickTick(el.dataset.id,el.dataset.d); }
+  else if(a==='calday'){ openCalDay(el.dataset.d); }
+  else if(a==='calday_food'){ closeModal(); state.screen='macros'; state.macroDate=el.dataset.d; state._trans=true; render(); }
+  else if(a==='calday_gym'){ closeModal(); openSessionEdit(el.dataset.id); }
   else if(a==='editprofile'){ openProfileEdit(); }
   else if(a==='editsplit'){ go('splitedit'); }
   else if(a==='importsplit'){ openImportSplit(); }
@@ -6855,12 +6982,13 @@ function openNavMenu(){
      ${item('perfil / ajustes','settings')}
      ${item('historial de sesiones','history')}
      ${item('editar split','splitedit')}
+     ${item('suplementos · administrar','stack')}
      ${item('compartir el día','sharefood')}
      ${item('respaldo / exportar','sync')}
    </div>`);
   document.querySelectorAll('#modal .nvm').forEach(el=>el.onclick=()=>{ const a=el.dataset.nav;
     if(a==='sync'){ openSync(); return; } closeModal();
-    if(a==='settings')go('settings'); else if(a==='history')go('history'); else if(a==='splitedit')go('splitedit');
+    if(a==='settings')go('settings'); else if(a==='history')go('history'); else if(a==='splitedit')go('splitedit'); else if(a==='stack')go('stack');
     else if(a==='sharefood'){ state.shareType='food'; go('share'); } });
 }
 // duplicate a whole meal: clones every item with new ids, optional new tag/name, target date (default today)
@@ -7044,7 +7172,7 @@ async function aiPhoto(file,barcode){ if(!file)return; window._faTag=window._faT
 // Pick AI when the proxy is configured, else on-device OCR.
 function labelPhoto(file,barcode){ if(AI_PROXY_URL) return aiPhoto(file,barcode); return ocrPhoto(file,barcode); }
 requestPersist();
-db=load(); try{ promptIdleSession(); }catch(_){} try{ if(typeof location!=='undefined' && /[?&]selftest=1/.test(location.search)){ _identitySelfCheck(); _dropsetSelfCheck(); _baselineSelfCheck(); _variantSelfCheck(); _historyEditSelfCheck(); _idSelfCheck(); _cardioSelfCheck(); _tensionSelfCheck(); _healthSelfCheck(); _readinessSelfCheck(); _loggingSelfCheck(); _mergeSelfCheck(); } }catch(e){ console.error(e); } try{ const _sp=new URLSearchParams(location.search); const _hasHistorical=_sp.has('stepsh')||_sp.has('weighth')||_sp.has('stepsq')||_sp.has('sleeph'); if(_hasHistorical){ const _hsp=_sp; if(history.replaceState)history.replaceState(null,'',location.pathname); setTimeout(()=>{ if(confirm('Este link quiere importar datos históricos (pasos/peso/sueño de varios días) a tu cuenta. ¿Aplicar? — solo dile que SÍ si vienes de tu propio Atajo de iOS.')){ try{ const _imp=importHealth(_hsp); if(_imp.length){ save(); render(); toast('✓ '+_imp.join(' · ')); } }catch(_){} } },400); } else { const _imp=importHealth(_sp); if(_imp.length){ window._healthImported=_imp; if(history.replaceState)history.replaceState(null,'',location.pathname); } } }catch(_){} save(); render(); if(window._healthImported)setTimeout(()=>toast('✓ '+window._healthImported.join(' · ')),250); if(window._recoveredFromBackup)setTimeout(()=>{try{alert('Se recuperó un respaldo local: revisa tus datos, podrían faltar cambios muy recientes.');}catch(_){}},600);
+db=load(); try{ promptIdleSession(); }catch(_){} try{ if(typeof location!=='undefined' && /[?&]selftest=1/.test(location.search)){ _identitySelfCheck(); _dropsetSelfCheck(); _baselineSelfCheck(); _variantSelfCheck(); _historyEditSelfCheck(); _idSelfCheck(); _cardioSelfCheck(); _tensionSelfCheck(); _healthSelfCheck(); _readinessSelfCheck(); _loggingSelfCheck(); _mergeSelfCheck(); _streakSelfCheck(); } }catch(e){ console.error(e); } try{ const _sp=new URLSearchParams(location.search); const _hasHistorical=_sp.has('stepsh')||_sp.has('weighth')||_sp.has('stepsq')||_sp.has('sleeph'); if(_hasHistorical){ const _hsp=_sp; if(history.replaceState)history.replaceState(null,'',location.pathname); setTimeout(()=>{ if(confirm('Este link quiere importar datos históricos (pasos/peso/sueño de varios días) a tu cuenta. ¿Aplicar? — solo dile que SÍ si vienes de tu propio Atajo de iOS.')){ try{ const _imp=importHealth(_hsp); if(_imp.length){ save(); render(); toast('✓ '+_imp.join(' · ')); } }catch(_){} } },400); } else { const _imp=importHealth(_sp); if(_imp.length){ window._healthImported=_imp; if(history.replaceState)history.replaceState(null,'',location.pathname); } } }catch(_){} save(); render(); if(window._healthImported)setTimeout(()=>toast('✓ '+window._healthImported.join(' · ')),250); if(window._recoveredFromBackup)setTimeout(()=>{try{alert('Se recuperó un respaldo local: revisa tus datos, podrían faltar cambios muy recientes.');}catch(_){}},600);
 applyDesign(); try{ if(/[?&]design\b/.test(location.search))localStorage.setItem('gymtrk_designmode','1'); if(localStorage.getItem('gymtrk_designmode')==='1')openDesignPanel(); }catch(_){}
 try{ bootScreen(()=>{ try{
   if(/[?&]wrap=1\b/.test(location.search)){ monthlyWrap(prevMonthYm(), true); return; }
