@@ -89,6 +89,20 @@ const byFn = {};
 styleIdx.forEach(i => { let n = '(html estático)'; for (let k = fnDecl.length - 1; k >= 0; k--) { if (fnDecl[k].i < i) { n = fnDecl[k].n; break; } } byFn[n] = (byFn[n] || 0) + 1; });
 const topFn = Object.entries(byFn).sort((a, b) => b[1] - a[1]).slice(0, 12);
 
+// ---- 6b · comportamiento (§7.18): diálogos nativos y guardados sin feedback ----
+const nativeDialogs = countBy([...js.matchAll(/(?<![\w.$])(alert|confirm|prompt)\(/g)].map(m => m[1]));
+// cuerpo de un bloque a partir de la llave que abre (conteo simple de llaves)
+const blockAt = i => { let d = 0; for (let k = i; k < js.length; k++) { const c = js[k]; if (c === '{') d++; else if (c === '}') { d--; if (!d) return js.slice(i, k + 1); } } return ''; };
+const handlers = [];
+[...js.matchAll(/function\s+([A-Za-z_$][\w$]*)\s*\([^)]*\)\s*\{/g)].forEach(m => { if (/save|commit/i.test(m[1])) handlers.push({ n: m[1] + '()', b: blockAt(m.index + m[0].length - 1) }); });
+[...js.matchAll(/a===['"]([\w-]+)['"]\)\s*\{/g)].forEach(m => { if (/save|^ok/i.test(m[1])) handlers.push({ n: "a==='" + m[1] + "'", b: blockAt(m.index + m[0].length - 1) }); });
+[...js.matchAll(/getElementById\(['"]([\w-]+_save)['"]\)[^;{]*?\.onclick\s*=\s*(?:\([^)]*\)|\w+)\s*=>\s*\{/g)].forEach(m => handlers.push({ n: '#' + m[1], b: blockAt(m.index + m[0].length - 1) }));
+const silentSaves = handlers.filter(x => /\bsave\(\)/.test(x.b) && !/\btoast(Task)?\(/.test(x.b)).map(x => x.n);
+// espaciado del CSS escrito por token vs literal (6/10 medio paso y 1 óptico cuentan como válidos)
+const cssSpace = [...css.matchAll(/(?:padding|margin|gap)(?:-(?:top|right|bottom|left))?\s*:\s*([^;}]+)/g)].flatMap(m => m[1].trim().split(/\s+(?![^(]*\))/));
+const spTok = cssSpace.filter(p => /var\(--(s\d|sp-)/.test(p) || /^calc\(/.test(p)).length;
+const spLit = cssSpace.filter(p => /^-?[\d.]+px$/.test(p) && ![1, 6, 10].includes(Math.abs(parseFloat(p)))).length;
+
 // ---- 7 · movimiento ----
 const durs = [...css.matchAll(/(?:transition|animation)\s*:\s*([^;}]+)/g)].flatMap(m => [...m[1].matchAll(/([\d.]+)(ms|s)\b/g)].map(x => x[2] === 's' ? Math.round(+x[1] * 1000) : +x[1]));
 const distinctDur = [...new Set(durs)].sort((a, b) => a - b);
@@ -107,6 +121,7 @@ const report = {
   vars: { undefinedNoFallback: undefNoFallback, undefinedWithFallback: undefWithFallback, unusedTokens },
   duplicateSelectors: dupSel.length, duplicateList: dupSel.map(([s, n]) => s + ' ×' + n),
   motion: { distinctDurationsMs: distinctDur },
+  behavior: { nativeDialogs, silentSaves, spacingCss: { tokens: spTok, literalPx: spLit } },
   inlineByFunction: topFn
 };
 const p0 = [];
@@ -128,6 +143,9 @@ else {
   console.log('\nColor y variables'); L('hex / rgba literales en CSS', hexCSS.length + ' / ' + rgbaCSS.length); L('colores literales en línea', inlineColors.length);
   L('sin definir (con fallback)', Object.keys(undefWithFallback).map(k => '--' + k).join(', ') || '—'); L('tokens definidos sin uso', unusedTokens.map(k => '--' + k).join(', ') || '—');
   console.log('\nEstructura'); L('excepciones marcadas (ds:exempt)', exemptCount); L('style="" en total', styleIdx.length); L('selectores CSS repetidos', dupSel.length + (dupSel.length ? '  [' + report.duplicateList.join(', ') + ']' : '')); L('duraciones distintas (ms)', distinctDur.join(' '));
+  console.log('\nComportamiento (§7.18)'); L('diálogos nativos', ['alert', 'confirm', 'prompt'].map(k => k + ' ' + (nativeDialogs[k] || 0)).join(' · '));
+  L('guardados sin feedback', silentSaves.length + (silentSaves.length ? '  [' + silentSaves.join(', ') + ']' : ''));
+  L('espaciado CSS token / px literal', spTok + ' / ' + spLit);
   console.log('\nMás style="" por función'); topFn.forEach(([n, c]) => L(n, c));
   console.log('');
 }

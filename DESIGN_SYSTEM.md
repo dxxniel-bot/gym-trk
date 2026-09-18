@@ -438,6 +438,38 @@ conjunto de utilidades se repite como forma propia, se vuelve componente (así n
 - **No:** valores fuera de la escala (no existe `u-mt14`), utilidades de color literal, dos declaraciones de la misma
   propiedad en un elemento (una utilidad + un `style` que la pise), utilidades para lo que ya es componente.
 
+### 7.18 Componentes de comportamiento `TRK*` (registro)
+
+§7.1–§7.17 dicen **cómo se ve** cada pieza; este registro dice **cómo se comporta**. Cada interacción transversal
+(feedback, confirmación, pestañas, filas que cambian, barras que crecen, números que cuentan, popovers, tendencias,
+calendarios, selectores) tiene UN componente, con una API, sus tokens y su referencia concreta de 21st.dev (solo el
+comportamiento, §19). **Ninguna pantalla implementa su propia versión**: si falta algo, se agrega aquí primero.
+
+| Componente | Función | API | Tokens y anatomía | Referencia 21st · se toma / no se toma | Dónde |
+|---|---|---|---|---|---|
+| **TRKToast** | decir qué pasó después de una acción; una sola voz para todo el feedback | `toast(msg,type)` (`ok`/`err`/neutro; se infiere de `✓`/`⚠`) · `toastTask(msg)` → `{done(msg), fail(msg)}` para lo que tarda | píldora `.glass-strong` 12/700 sobre la nav · borde `--good`/`--bad`/`--glass-ring` · pila de hasta 3 (sale la más vieja) · éxito/neutro se van a los `--toast-life`, un error se queda hasta tocarlo (`✕`) · `aria-live` | [Save Changes Toast](https://21st.dev/@yadwinder/components/toast-save) (estados cargando → listo) + Sonner (pila) · **no**: iconos de color, sombras propias, barras de progreso | todo guardado (§7.18.1) y toda operación async |
+| **TRKAsk** | pedir una decisión reversible o de flujo | `trkAsk({title,detail,ok,cancel,danger},onOk,onCancel)` | sheet: `h3` + `.submeta` + `.sheetbtns` (primario/secundario; `.danger` si destruye) | — (reemplaza `confirm()` nativo) | ¿guardar sin RIR?, cambiar ejercicio con series, adoptar split, unir, borrar un registro del log |
+| **TRKHold** | confirmar lo **irreversible** sin que un toque accidental baste | `holdConfirm({title,detail,verb,back},onOk)` | sheet con botón 48 px borde `--bad`, relleno `--bad` .22 que avanza en 0.9 s mientras se sostiene ("armando 73 %"); soltar antes cancela; vibración corta al completar | patrón "Hold to Confirm" del catálogo (sin componente concreto verificado en el reporte) · **no**: círculos de progreso, color de éxito | abortar sesión, borrar sesión, borrar día del split, borrar una comida completa, borrar todos los datos |
+| **TRKTabs** | cambiar de periodo o de vista sin cambiar de pantalla | `<div class="trktabs" data-tk="clave">` con `<span class="on">`; el indicador lo pone `afterPaint` | etiquetas 11/700 `--o50`, activa `--fg`; **indicador 2 px `--fill`** bajo la activa que desliza posición y ancho (`--dur-2 --ease-out`); sin pista ni píldora | [Vercel Tabs](https://21st.dev/@yadwinder/components/vercel-tabs) (subrayado que viaja) · **no**: píldoras, escala, gradiente | periodos del detalle de métrica, volumen y e1RM; vista hoy/todos del stack |
+| **TRKRow** | que la lista cambie sin saltos: lo nuevo entra, lo borrado sale, el resto se reacomoda | `state._enter={exi,si}\|{ex,scroll}` antes de pintar · `flipRows(root)` (FLIP de las filas con `data-rk`) | entrada 4 px + opacidad `--dur-2` · salida hacia la derecha `--dur-2 --ease-in` · reacomodo `--dur-2 --ease-out` | [Animated Table Rows](https://21st.dev/@arunachalam/components/animated-table-rows) (entrada/salida/`layout`) · **no**: colores, hover, botón rojo, la tabla del demo | tabla de sesión, editor de historial, historial |
+| **TRKBar** | que una barra crezca desde su valor anterior cuando el dato cambia | `<i data-bk="clave" style="width:N%">` en `.bar/.vbar/.wprog` | `--track` + `--fill`, estado en semántico (`.over`); transición de ancho `--dur-2 --ease-out`, solo si cambió | [Animated Progress Bar](https://21st.dev/@educlopez/components/animated-progress-bar) · **no**: colores por barra, degradados, etiquetas dentro | //EFFECTIVE VOLUME, intake de macros, //MÚSCULOS, progreso de la sesión |
+| **TRKNum** | que un número que cambia cuente hasta su valor | `data-nk` (clave) `data-nv` (valor) `data-nd` (decimales) | 280 ms, mismo formato (`toLocaleString`), solo si la clave ya estaba en pantalla con otro valor | Number Flow (§10; propio, sin dependencia) | kcal, P/C/F, racha, e1RM de //FUERZA |
+| **TRKPop** | mostrar algo corto junto a lo que lo originó | `trkPop(anchor,html,{menu})` → popover anclado; en pantallas > 440 px igual, en móvil un **menú** pasa a sheet | tarjeta `--card2`, borde `--border`, `--r-ctl`, `--shadow-float`, 10 px `--o70`; cierra al tocar fuera o al hacer scroll | [Smart Popover](https://21st.dev/@efferd/components/smart-popover) (popover ↔ drawer) · **no**: flechas, glass en contenido | glosario (`data-gloss`), acciones de fila del catálogo |
+| **TRKTrend** | resumen de una serie antes de abrir su gráfica | `trendRowHTML({name,cur,delta,unit,series,act})` | nombre · valor (TRKNum) · Δ con ▲▼ en semántico · sparkline 30 d (trazo 1.4 `--o60`, punto final) · `›` | [Trend Card](https://21st.dev/@ravikatiyar162/components/trend-card) · **no**: la tarjeta, el índigo, la interacción de dashboard | //FUERZA, //RECORDS |
+| **TRKCal** | un mes como rejilla de días con intensidad; tocar un día lleva a ese día | `monthCalHTML(ym,marksFn,act)` | pastilla `--r-mark` por día: vacío `--track`, un registro `--o60`, ambos `--good`, hoy con contorno | [GitHub Calendar](https://21st.dev/community/components/aliimam/git-hub-calendar) (día → intensidad) · **no**: el verde de GitHub, escalas de 5 tonos | racha (Progreso), mes del historial |
+| **TRKSelect** | elegir un valor chico de un toque, con respuesta inmediata | `trkSelect(anchor,opts,cur,onPick)` | fila de opciones de 44 px en popover; la elegida con contraste; el `<select>` sigue de respaldo | [Interactive Selector](https://21st.dev/@minhxthanh/components/interactive-selector) · **no**: su estética ni animación | RIR de la tabla (fase B) |
+
+La navegación (§7.10) ya cumple el patrón de [Bottom menu](https://21st.dev/community/components/yadwinder/bottom-menu/default)
+(activo que se ensancha con su etiqueta, sobre glass): sin cambio.
+
+#### 7.18.1 Vocabulario de feedback (TRKToast)
+
+`✓ <objeto> <acción>` en español y minúscula, una línea, sin punto final. Guardar: `✓ sesión guardada · 9 series`,
+`✓ sesión actualizada`, `✓ split actualizado`, `✓ ejercicio actualizado`, `✓ perfil del ejercicio guardado`,
+`✓ comida guardada`, `✓ metas guardadas`, `✓ peso guardado`, `✓ sueño guardado`, `✓ ajustes guardados`. Tareas
+(`toastTask`): `… sincronizando salud` → `✓ salud sincronizada · 12 días`; `… buscando producto` → `✓ encontrado` /
+`⚠ no está en OpenFoodFacts`. Errores de validación: `⚠ <qué falta>` (`⚠ pon un nombre`), nunca `alert()`.
+
 ---
 
 ## 8. Gráficas (instrumentación, no infografía)
@@ -573,7 +605,12 @@ externas sin adaptar (§19).
 
 ## 17. Protocolo para features nuevas
 
+**Inventario primero.** Ninguna fase arranca editando: arranca midiendo (auditor + lectura de lo que toca) y escribe la
+tabla "actual → objetivo" con valores (§20). La implementación se hace contra esa tabla; si aparece algo no previsto,
+**se agrega a la tabla con su valor antes de corregirlo** — nada se arregla "de pasada" sin quedar registrado.
+
 Antes de escribir UI, responder por escrito (en el plan):
+0. **¿Qué componente `TRK*` (§7.18) resuelve el comportamiento?** Si ninguno, se agrega al registro primero.
 1. **Propósito** y jerarquía de información (qué se lee primero).
 2. **Acción primaria** y secundarias.
 3. **¿Existe un componente que lo haga?** → reutilizar. **¿Es variante?** → modificador. **¿Categoría nueva?** →
@@ -596,6 +633,12 @@ argumento audita ese (`node tools/ds-audit.cjs respaldo.html`), para comparar co
   (`.a,.b{…}` + `.a{…}`).
 - **Sombra fuera de token** = cualquier sombra con desenfoque que no sea `--glass-shadow`/`--shadow-float`; anillos
   `0 0 0 Npx` e `inset` son bordes (§4.7).
+- **Diálogos nativos** = `alert(`/`confirm(`/`prompt(` en el código (rompen el lenguaje visual; se usan TRKToast,
+  TRKAsk, TRKHold). Objetivo 0.
+- **Guardados sin feedback** = funciones/handlers que llaman `save()` después de una acción del usuario y no terminan
+  en `toast(` (lista por nombre). Objetivo 0 en las acciones de la lista §7.18.1.
+- **Espaciado por token** = proporción de espaciados de CSS escritos como `var(--s*)`/`var(--sp-*)` frente a px
+  literales; los medios pasos 6/10 y el 1 óptico cuentan como válidos.
 
 **`tools/ds-diff.html`** — para refactors de CSS o de marcado que no deberían cambiar lo que se ve. Copia la versión
 anterior a `repo/_pre.html` (en `.gitignore`), sirve `repo/`, abre `/tools/ds-diff.html` y en consola `go2()` →
@@ -624,20 +667,30 @@ puro con los tokens de TRK; nunca se pega un componente*. Componentes con licenc
 Dependencias permitidas: MIT, versión fijada, cacheadas por `sw.js` (offline). Hoy **ninguna**: `number-flow` era la
 única candidata (web component sin React) y el conteo se hizo propio en DS-5 (§10); sonner, cmdk y vaul son solo-React.
 
-| Prioridad | Patrón (ej. en 21st) | Dónde | Cómo |
-|---|---|---|---|
-| A | Números animados (Number Flow) | kcal y macros, racha (hecho en DS-5); después: totales de sesión, series de //MÚSCULOS | **propio**, sin dependencia (§10): `number-flow` anima un nodo que persiste, y aquí `render()` rehace el DOM, así que habría que conservar nodos entre renders; un conteo de 30 líneas sobre `data-nk` funciona offline, sin tocar la CSP ni `sw.js` |
-| A | Toast semántico (Sonner) | todo el feedback | propio: tipos, máx. 3, errores sin temporizador, `aria-live` |
-| A | Mantener para confirmar (Hold to Confirm) | abortar sesión, borrar sesión/día/comida, reset | pointer + `animate`, barra "armando %"; reemplaza `confirm()` en lo irreversible |
-| A | Filas que entran/salen (Animated List) | + serie, drop, borrar, + ejercicio, chips de supps | FLIP / `@starting-style`, 4 px + opacidad, `--dur-2` |
-| A | Indicador de pestañas deslizante (Animated Tabs) | periodos de gráficas, toggles de macros | un indicador que mueve posición y ancho |
-| A | Glosario al tocar (Tooltip → popover) | RIR, T, MEV/MRV, estimado/observado, ~ | atributo `popover` nativo; nunca hover |
-| B | Rail de historial (Timeline) | historial | `<ol>` + línea `::before` + fechas |
-| B | Filas expandibles (Data Grid) | historial: ver series sin abrir el sheet | `<details>` / toggle |
-| B | Transición de origen (Morphing Dialog) | fila del catálogo → perfil del ejercicio | View Transitions API |
-| B | Barras segmentadas (8-bit progress, solo la idea) | intake de macros, series vs MEV | N celdas de un color |
-| C | Paleta de comandos · text scramble en etiquetas | acceso rápido · boot | solo con ≥15 acciones; nunca en números |
-| No | shaders, aurora, sparkles, tarjetas 3D, glow, docks con lupa, gooey, carruseles, partículas, glass en tarjetas | — | rompen monocromo, táctil o batería |
+**Biblioteca de referencias concretas** (reporte `21stdev ghstgpt recomendacion implementacion.md`, 2026-09-18). Cada
+fila es un componente real de 21st.dev y el componente `TRK*` (§7.18) que lo reescribe; de 21st se toma
+**estructura + interacción + comportamiento + idea de motion**, y se reconstruye con `#000`, JetBrains Mono, tokens,
+líneas y opacidades de TRK.
+
+| Prio | Componente concreto | Módulo | Se toma | → TRK |
+|---|---|---|---|---|
+| A+ | [Animated Table rows](https://21st.dev/@arunachalam/components/animated-table-rows) (@arunachalam) | sesión, historial | entrada/salida y reflow de filas (`AnimatePresence` + `layout`) | TRKRow |
+| A+ | [Save Changes Toast](https://21st.dev/@yadwinder/components/toast-save) (@yadwinder) | global | estados cargando → listo; un patrón para todo guardado | TRKToast |
+| A | [Vercel Tabs](https://21st.dev/@yadwinder/components/vercel-tabs) (@yadwinder) | Progreso (periodos) | indicador lineal que viaja en posición y ancho | TRKTabs |
+| A | [Animated Tabs](https://21st.dev/@chetanverma16/components/animated-tabs) (@chetanverma16) | cambios de vista | transición entre vistas; se unifica con Vercel Tabs para no tener dos tipos de pestaña | TRKTabs |
+| A | [Animated Progress Bar](https://21st.dev/@educlopez/components/animated-progress-bar) (@educlopez) | gym, macros, progreso, músculos | la barra crece desde su valor anterior | TRKBar |
+| A | [Trend Card](https://21st.dev/@ravikatiyar162/components/trend-card) (@ravikatiyar162) | //FUERZA, //RECORDS | valor + Δ + mini tendencia como resumen antes del detalle | TRKTrend |
+| A | [Bottom menu](https://21st.dev/community/components/yadwinder/bottom-menu/default) (@yadwinder) | nav | activo que se ensancha con su etiqueta | ya cumple (§7.10) |
+| A | [Smart Popover](https://21st.dev/@efferd/components/smart-popover) (@efferd) | global | popover en pantalla ancha, sheet en móvil, misma API | TRKPop |
+| B | [GitHub Calendar](https://21st.dev/community/components/aliimam/git-hub-calendar) (@aliimam) | racha, historial | día → intensidad, tocar un día navega | TRKCal |
+| B | [Interactive Selector](https://21st.dev/@minhxthanh/components/interactive-selector) (@minhxthanh) | RIR de la tabla | respuesta inmediata al elegir | TRKSelect |
+| — | Number Flow | kcal, P/C/F, racha | conteo al cambiar | TRKNum (propio, §10) |
+| No | shining text · glow buttons · border beam · aurora/shader · tarjetas 3D · bento como estructura · glass cards · sparkles/partículas · carruseles de datos · docks con lupa | — | convierten dato en decoración o rompen monocromo/táctil | — |
+
+**Regla para cualquier agente que implemente:** *no integrar ningún componente de 21st.dev directamente. Identifica el
+componente concreto, documenta qué comportamiento se toma, elimina todo tratamiento visual incompatible, reemplaza sus
+valores por los tokens de este documento, implementa el patrón como componente `TRK*` reutilizable (§7.18) y después
+ejecuta `node tools/ds-audit.cjs`, `tools/ds-diff.html` y el loop de QA a 393×852.*
 
 ---
 
@@ -710,10 +763,37 @@ favor de un conteo propio. Verificado en preview: + serie/↓ drop/+ ejercicio c
 salta al inicio), ✓ con `chkpop` solo en esa serie, un re-render sin cambios no anima nada, kcal 0 → 1,234 contando,
 indicador 104 → 4 px al cambiar de periodo, deslizar borra tras salir.
 
-**Fases:** DS-0 documento y auditor · DS-1 P0 + tokens nuevos + capas + CSS muerto · DS-2 tipografía, tracking,
-gutters y espaciado · DS-3 componentes (radios, inputs, chips, botones, sombras, glass, sheets, íconos) · **PT2 v231
-(diagnóstico por músculo)** · DS-4 deuda en línea · DS-5 movimiento + números animados + filas + pestañas · DS-6 capa
-21st A/B. Cada fase es una versión desplegable con capturas antes/después y `ds-audit` sin regresiones.
+**Fases DS (cerradas):** DS-0 documento y auditor · DS-1 P0 + tokens + capas · DS-2 tipografía y ritmo · DS-3
+componentes · PT2 v234 diagnóstico · DS-4 deuda en línea · DS-5 movimiento. La "capa 21st A/B" (DS-6) se reemplaza por
+la ruta R, construida sobre el registro `TRK*` (§7.18).
+
+### 20.1 Inventario v236 → ruta R (2026-09-18)
+
+Medido sobre v236 antes de tocar nada (auditor + lectura del código). Lo que DS-5 dejó sin detectar (D1) entra aquí.
+
+| # | Área | Actual (medido en v236) | Objetivo (valor) | Fase |
+|---|---|---|---|---|
+| D1 | Selectores duplicados | 2 (`.mdtabs`, `.mdtabs span`) | 0 | R1 |
+| D2 | Espaciado del CSS por token | auditor: **107 por token / 260 px literales** (sin contar 1/6/10); fuera de escala 52 (`14`×17 · `18`×13 · `22`×6 · `30`×3 · `40`×2 · `5`×3 · `1.5`×2 · `3` `7` `9` `20` `28` `34`×1) | escala por token (`2 --s1` · `4 --s2` · `8 --s3` · `12 --s4` · `16 --s5` · `24 --s6` · `32 --s7` · `48 --s8`; 6/10 medio paso; 1 óptico); 14/18/22 → `--sp-*` solo si es ritmo de página, si no 12/16/24; fuera de escala 0 | R1 |
+| D3 | Rótulos | `FUERZA · e1RM…` sin `//`; `.grp-label` con 6 combinaciones de márgenes (`u-mt4/6/12/16` + `u-mb4/6`) | `//FUERZA`; solo `.grp-label.sub` (12/4) y `.grp-label.first` (4/4) | R1 |
+| D4 | Feedback de guardado | 18 toasts en formato libre; auditor: **10 guardados sin feedback** (`saveExProfile`, `saveExEdit`, `saveSession`, `commitLog`, `ss_save`, `bw/sl/sc/sut/exn_save`) + los que no detecta por nombre (`mc_save`, metas, `dm/mv/dr/am_go`) | 0 sin feedback; vocabulario §7.18.1; pila máx. 3 | R2 |
+| D5 | Tareas async | sync de Salud, OpenFoodFacts, IA de etiqueta, exportar: sin "cargando" | `toastTask` cargando → listo/error | R2 |
+| D6 | Diálogos nativos | `alert` 36 · `confirm` 31 · `prompt` 3 | 0 (TRKHold ×6 irreversibles · TRKAsk · toast `err`/`ok` · sheet de campo) | R2 |
+| D7 | Pestañas | píldora `--card` en pista `--o12` r16 (3 sheets) | TRKTabs: subrayado 2 px `--fill` que viaja; etiquetas `--o50` → activa `--fg` | R3 |
+| D8 | Glosario | 0 términos explicables | `data-gloss` + TRKPop: RIR, T, % de capacidad, MEV/MAV/MRV, estimado/observado, RIR medio, e1RM, `~` | R3 |
+| D9 | Catálogo → perfil | salto | View Transition del nombre al título (`--dur-3`) | R3 |
+| D10 | Acciones de fila | catálogo sin historial/unir desde la fila | `⋯` → TRKPop: perfil · historial · seleccionar para unir | R3 |
+| D11 | Reacomodo de filas | al borrar/abrir, el resto salta | TRKRow `flipRows` (`--dur-2`) | R4 |
+| D12 | Historial | lista por mes | rail + fila expandible (series en línea) + mes TRKCal arriba | R5 |
+| D13 | Barras | se redibujan sin transición | TRKBar (`--dur-2`, solo si cambió) | R6 |
+| D14 | //FUERZA | texto `172 ▲5 ›` | TRKTrend con sparkline 30 d | R6 |
+| D15 | Logros | //RECORDS estático | `PR` en los récords de los últimos 7 días | R6 |
+| D16 | //MÚSCULOS detalle | 4 lecturas solo en texto | 4 TRKBar (volumen vs MRV, estímulo, fatiga, recuperación) + estado en texto | R6 |
+| D17 | RIR en la tabla | `<select>` nativo | TRKSelect (0–5, F), `<select>` de respaldo | R7 (B) |
+
+**Ruta:** R0 guideline (este documento + auditor) · R1 v237 saneamiento · R2 v238 feedback y confirmación · R3 v239
+pestañas, glosario, acciones de fila, transición · R4 v240 filas · R5 v241 historial · R6 v242 progreso · R7 v243 RIR.
+Cada una cierra con `ds-audit` sin regresiones (duplicados 0), `ds-diff`, self-checks y QA 393×852.
 
 *Historial:* v33 "Luxury Terminal" · v139–v145 consolidación (48/44, `.field`, 140 ms, vacíos `//`) · v160 color ·
 v169–v176 glass en chrome · v171 headers tokenizados · v213 `.pf` · v224 encabezado de ejercicio en dos líneas ·
