@@ -67,7 +67,7 @@ grises? ¿La jerarquía funciona sin color? Si alguna es "no", depende de la dec
 ## 4. Tokens (valores cerrados)
 
 Todo valor visual recurrente es un token en `:root` y se usa con `var(--…)`. **Nunca** se escribe un valor literal si
-existe su token. Valores marcados **(DS-1)** se agregan en la fase de corrección 1 (§20).
+existe su token. Valores marcados se agregan en la fase de corrección 1 (§20).
 
 ### 4.1 Superficies
 
@@ -127,7 +127,7 @@ Familia única: **JetBrains Mono** (Google Fonts, pesos 300/400/500/700/800), fa
 | `--t-body` | 13 | cuerpo, botón primario | `.start`, `.ok`, `.pickitem` |
 | `--t-section` | 16 | `//SECCIÓN`, nombre de ejercicio, input de formulario (anti-zoom iOS) | `.section .h`, `.exhead .n`, `.field input` |
 | `--t-display` | 22 | nombre del día, valor de tile | `.wname`, `.pval` |
-| `--t-hero` **(DS-1)** | 34 | número protagonista de una vista | racha `.strk-n`, valor de detalle `.mdval` |
+| `--t-hero` | 34 | número protagonista de una vista | racha `.strk-n`, valor de detalle `.mdval` |
 
 - **Prohibidos:** 7, 7.5, 8, 9.5, 14, 15, 17–21, 23–26, 30, 36, 40. Se mapean según §20.
 - **Excepción de componente:** el número dentro de un anillo escala con el anillo (lg 26 · share 24 · banner 21).
@@ -139,7 +139,7 @@ Familia única: **JetBrains Mono** (Google Fonts, pesos 300/400/500/700/800), fa
 botones · **800** títulos, `//SECCIÓN`, `.whdr`, nombre del ejercicio, valores display. **600 prohibido** (no está
 cargado; el navegador lo pinta como 700).
 
-**Tracking (DS-1):** `--ls-caps .2em` mayúsculas de 9–11 px · `--ls-title .12em` `.whdr`/títulos en mayúsculas ·
+**Tracking:** `--ls-caps .2em` mayúsculas de 9–11 px · `--ls-title .12em` `.whdr`/títulos en mayúsculas ·
 `--ls-num -.03em` números ≥22 px · 0 por defecto. Un rol = un valor, siempre en `em`.
 
 **Números.** Son lecturas de instrumento: la unidad va separada y más tenue (`59.8` + `kg` en `--o40`, más chica);
@@ -159,8 +159,8 @@ minúsculas (nombres, meta). Sus etiquetas conservan exactamente cómo él las e
 | `--s4` | 12 | control, fila |
 | `--s5` | 16 | estándar entre bloques |
 | `--s6` | 24 | separación mayor |
-| `--s7` **(DS-1)** | 32 | entre secciones grandes |
-| `--s8` **(DS-1)** | 48 | nivel pantalla |
+| `--s7` | 32 | entre secciones grandes |
+| `--s8` | 48 | nivel pantalla |
 
 **Ritmo de página** (knobs afinados por el dueño en `?design=1`; no se cambian sin él): `--sp-py 22` · `--sp-px 18`
 (gutter horizontal) · `--sp-card 15` · `--sp-gap 12` · `--sp-section 14` · `--sp-field 12` · `--sp-row 12` ·
@@ -175,7 +175,7 @@ sheets); solo los overlays de pantalla completa se salen.
 | Token | px | Qué |
 |---|---|---|
 | `--r-sm` | 2 | datos densos: inputs de la tabla de sesión, celdas, indicadores |
-| `--r-mark` **(DS-1)** | 4 | marcas de gráfica: días del calendario, topes de barras |
+| `--r-mark` | 4 | marcas de gráfica: días del calendario, topes de barras |
 | `--r-ctl` | 12 | controles: botones, inputs y selects de formulario, toggles |
 | `--radius` | 16 | tarjetas, tiles, pestañas de periodo |
 | `--r-sheet` | 22 | sheets (esquinas inferiores; el sheet está anclado arriba) |
@@ -190,12 +190,12 @@ Tabla → casi cuadrada · control → poco redondeado · tarjeta → redondeada
 - **Dualidad de bordes (INTENCIONAL, no unificar):** 1px `--border` en formularios, tarjetas y controles · .5px `--o20`
   en datos densos (tabla de sesión) · .5px `--o10` como separador de lista · **2px** solo como indicador (ejercicio en
   curso, hoy en el calendario, posición de drop). Sin 1.5px. Punteado = sugerido/no confirmado (§9) o líder de `.line`.
-- **Sombras:** `--glass-shadow` (chrome glass) y `--shadow-float` **(DS-1)** `0 6px 22px rgba(0,0,0,.55)` para lo que
+- **Sombras:** `--glass-shadow` (chrome glass) y `--shadow-float` `0 6px 22px rgba(0,0,0,.55)` para lo que
   flota sobre contenido (FAB, popover, fantasma de arrastre, panel de diseño). Ninguna otra.
 - **Sin gradientes CSS.** El único gradiente es el relleno tenue bajo la línea de las tiles de gráfica (SVG, ≤.16 α).
 - **Sin glow**, salvo la excepción documentada del estado del anillo de macros (§15).
 
-### 4.8 Movimiento (DS-1)
+### 4.8 Movimiento
 
 | Token | Valor | Uso |
 |---|---|---|
@@ -206,7 +206,7 @@ Tabla → casi cuadrada · control → poco redondeado · tarjeta → redondeada
 | `--ease-out` | `cubic-bezier(.22,1,.36,1)` | entradas y transformaciones (sin overshoot) |
 | `--ease-in` | `cubic-bezier(.4,0,1,1)` | salidas |
 
-### 4.9 Capas (z-index, DS-1)
+### 4.9 Capas (z-index)
 
 `--z-float 20` (FAB, fantasma) · `--z-nav 30` · `--z-modal 40` (scrim + sheet: **tapa la nav**) · `--z-pop 50`
 (popovers, addpop) · `--z-overlay 60` (boot, wrap) · `--z-toast 80` · `--z-dev 90` (`?design=1`).
@@ -572,6 +572,10 @@ variantes de chip · 8 sombras · 25 duraciones · peso 600 ×10 · 3 variables 
 | 24 | P2 | emoji 🗑 🔒 📸 | glifo/texto | DS-3 |
 | 25 | P3 | CSS muerto (`.glass*`, utilidades v156, `.prow`, `.srowm`, `--warn-glow`) y reglas repetidas (`.nav`, `.fab`, `.grp`, `.sheet`×3, `.grp-label`, `.mdk`) | limpiar | DS-1 |
 | 26 | P3 | docs viejas: "Design language" de CLAUDE.md, comentario r13/r11, "`!important`" del modo diseño | apuntar aquí | DS-0 |
+
+**Hecho:** DS-0 (2026-09-18, documento + auditor) · **DS-1 (v231)**: #1–#6, #19, #20, tokens nuevos de §4
+(hero, tracking, `--s7/--s8`, `--r-mark`, `--shadow-float`, movimiento, capas), `--warn-glow` fuera. Auditor tras DS-1:
+**P0 detectables = 0** (antes `--o15` + peso 600 ×10).
 
 **Fases:** DS-0 documento y auditor · DS-1 P0 + tokens nuevos + capas + CSS muerto · DS-2 tipografía, tracking,
 gutters y espaciado · DS-3 componentes (radios, inputs, chips, botones, sombras, glass, sheets, íconos) · **PT2 v231
