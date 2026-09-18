@@ -23,7 +23,9 @@ const S2=[
 ['m:verify',W=>W.openVerify(food,{})],['m:log',(W,D)=>W.openLog((D.foods||[])[0]||food,{isNew:true})],['m:lognutri',(W,D)=>W.openLog(food,{isNew:true})],['m:navmenu',W=>{ const u=W.document.querySelector('[data-act="navmenu"]'); if(u)u.click(); }],
 ['m:mealsum',(W,D)=>{ W.go('macros'); const d=Object.keys(D.meals||{}).sort().pop(); const t=((D.meals||{})[d]||[])[0]; if(t)W.openMealSummary(t.tag); }],
 ['m:shareday',W=>{ W.go('macros'); const s=W.document.querySelector('[data-act="share"],[data-act="sharemacros"]'); if(s)s.click(); }],
-['m:histrow',W=>{ W.go('history'); const r=W.document.querySelector('.hrow'); if(r)r.click(); }],
+['m:histrow',W=>{ W.go('history'); const r=W.document.querySelector('.hrow'); if(r)r.click(); const b=W.document.querySelector('.hbody [data-act="vieweditsession"]'); if(b)b.click(); }],
+['share:session',(W,D)=>{ W.openSessionEdit(lastS(D).id); const b=W.document.querySelector('[data-act="sharesession"]'); if(b)b.click(); }],
+['hist:open',W=>{ W.go('history'); const r=W.document.querySelector('.hitem .hrow'); if(r)r.click(); }],
 // sesión en curso: toca "start" en gym (si ya hay una, la retoma) y se queda en la tabla; después, sus sheets
 ['live:workout',W=>{ W.go('home'); const b=W.document.querySelector('[data-act="start"],[data-act="resume"]'); if(b)b.click(); W.go('workout'); }],
 ['live:exedit',W=>{ W.go('workout'); W.openExEdit(0,0,0); }],

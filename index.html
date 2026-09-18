@@ -263,7 +263,23 @@
   .hrow .hR{display:flex; align-items:center; gap:var(--s3); flex:0 0 auto;}
   .hrow .hday{font-size:var(--t-meta); color:var(--o50); white-space:nowrap;}
   .hrow .hagg{font-size:var(--t-meta); white-space:nowrap;}
-  .hrow .hchev{color:var(--o30); font-size:var(--t-body); line-height:1;}
+  .hrow .hchev{color:var(--o30); font-size:var(--t-body); line-height:1; transition:transform var(--dur-2) var(--ease-out);}
+  /* R5 · historial (D12): rail por mes (línea --o12 + punto --o40 por sesión), la fila se abre con sus series, mini-calendario (TRKCal) */
+  .hitem.open .hchev{transform:rotate(90deg);}
+  .hist-rail{--hdot:20px;}
+  .hist-rail .hitem{position:relative; padding-left:var(--s5); border-bottom:.5px solid var(--o10); scroll-margin-top:var(--s6);}
+  .hist-rail .hitem:last-child{border-bottom:0;} .hist-rail .hitem .hrow{border-bottom:0;}
+  .hist-rail .hitem::before{content:''; position:absolute; left:3px; top:0; bottom:0; width:1px; background:var(--o12);}
+  .hist-rail .hitem:first-child::before{top:var(--hdot);} .hist-rail .hitem:last-child::before{bottom:auto; height:var(--hdot);} .hist-rail .hitem:only-child::before{display:none;}
+  .hist-rail .hitem::after{content:''; position:absolute; left:0; top:calc(var(--hdot) - 3.5px); width:7px; height:7px; border-radius:50%; background:var(--o40);}
+  .hist-rail .hitem.hit::after{background:var(--fg);}
+  .hbody{padding-bottom:var(--s4);} .hbody .hacts{display:flex; justify-content:flex-end;} .hbody .hacts a{padding:var(--s2) 0 var(--s2) var(--s5);}
+  .hcal{background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:var(--s2) var(--s4) var(--s4); margin-bottom:var(--sp-gap);}
+  .hcalh{display:flex; align-items:center; justify-content:space-between; margin-bottom:var(--s2);}
+  .hcalh .hct{font-size:var(--t-caption); letter-spacing:var(--ls-caps); text-transform:uppercase; color:var(--o50);} .hcalh .hct b{color:var(--fg); font-weight:700;}
+  .hcnav{position:relative; min-width:44px; height:32px; background:none; border:0; color:var(--o60); font:inherit; font-size:var(--t-section); cursor:pointer;} .hcnav::after{content:''; position:absolute; left:0; right:0; top:-6px; bottom:-6px;} .hcnav.off{visibility:hidden;}
+  .hcal .cd{height:24px; display:flex; align-items:center; justify-content:center; font-size:var(--t-caption); font-style:normal; color:var(--o35); cursor:default;}
+  .hcal .cd.l1{color:var(--bg); font-weight:700; cursor:pointer;} .hcal .cd.t.l0::after{display:none;}
   /* inline meal detail under a tapped log item */
   .mdmeal{padding:var(--s3) 10px 10px var(--s6); margin-bottom:var(--s1); border-left:2px solid var(--o20); animation:mdslide var(--dur-2) var(--ease-out);}
   /* DS-5 · §10: entra lo que se AGREGÓ (serie, drop, ejercicio) — nunca un re-render; el ✓ confirma con el único
@@ -1258,19 +1274,22 @@ function streak(){ const a=activityDays(); const today=todayISO(); let st=0; con
 function bestStreak(){ const ks=Object.keys(activityDays()).sort(); let best=0,run=0,prev=null;
   ks.forEach(k=>{ const g=prev?Math.round((new Date(k+'T12:00:00')-new Date(prev+'T12:00:00'))/86400000):0; run=(prev&&g===1)?run+1:1; if(run>best)best=run; prev=k; });
   return best; }
-// calendario de dos meses (anterior | actual): una pastilla por día — gris = sin registro, tenue = comida
-// o gym, acento = comida + gym; hoy con contorno (y punto si aún no registras nada). Toque = abre ese día.
+// TRKCal (§7.18): un mes en pastillas D L M M J V S. mark(iso) → {lv:0|1|2, act?, title?} (1 = tenue, 2 = acento);
+// futuro sin relleno, hoy con contorno. o.head:false quita el nombre del mes (quien lo usa pone su cabecera); o.num pinta el día.
+function monthCalHTML(y,m,mark,o){ o=o||{}; const today=todayISO(); const lead=new Date(y,m,1).getDay(), days=new Date(y,m+1,0).getDate(); let cells='';
+  for(let i=0;i<lead;i++)cells+='<i class="cd e"></i>';
+  for(let dd=1;dd<=days;dd++){ const iso=y+'-'+pad(m+1)+'-'+pad(dd);
+    if(iso>today){ cells+='<i class="cd f">'+(o.num?dd:'')+'</i>'; continue; }
+    const k=mark(iso)||{lv:0};
+    cells+=`<i class="cd l${k.lv||0}${iso===today?' t':''}"${k.act?` data-act="${k.act}" data-d="${iso}"`:''}${k.title?` title="${iso} · ${escTxt(k.title)}"`:''}>${o.num?dd:''}</i>`; }
+  return `<div class="cm">${o.head===false?'':`<div class="cmh">${MONFULL[m]}</div>`}<div class="cmw">${['D','L','M','M','J','V','S'].map(x=>'<b>'+x+'</b>').join('')}</div><div class="cmg">${cells}</div></div>`; }
+// calendario de dos meses (anterior | actual): gris = sin registro, tenue = comida o gym, acento = comida + gym;
+// hoy con contorno (y punto si aún no registras nada). Toque = abre ese día.
 function streakCalendarHTML(){
-  const a=activityDays(); const today=todayISO(); const now=new Date();
-  const month=(y,m)=>{ const lead=new Date(y,m,1).getDay(), days=new Date(y,m+1,0).getDate(); let cells='';
-    for(let i=0;i<lead;i++)cells+='<i class="cd e"></i>';
-    for(let dd=1;dd<=days;dd++){ const iso=y+'-'+pad(m+1)+'-'+pad(dd); const v=a[iso]||0; const lv=(v&1?1:0)+(v&2?1:0);
-      if(iso>today){ cells+='<i class="cd f"></i>'; continue; }
-      const what=lv===2?'comida + gym':lv===1?((v&1)?'comida':'gym'):'sin registro';
-      cells+=`<i class="cd l${lv}${iso===today?' t':''}" data-act="calday" data-d="${iso}" title="${iso} · ${what}"></i>`; }
-    return `<div class="cm"><div class="cmh">${MONFULL[m]}</div><div class="cmw">${['D','L','M','M','J','V','S'].map(x=>'<b>'+x+'</b>').join('')}</div><div class="cmg">${cells}</div></div>`; };
+  const a=activityDays(); const now=new Date();
+  const mark=iso=>{ const v=a[iso]||0; const lv=(v&1?1:0)+(v&2?1:0); return {lv, act:'calday', title:lv===2?'comida + gym':lv===1?((v&1)?'comida':'gym'):'sin registro'}; };
   const pm=new Date(now.getFullYear(),now.getMonth()-1,1);
-  return `<div class="cal2">${month(pm.getFullYear(),pm.getMonth())}${month(now.getFullYear(),now.getMonth())}</div>`;
+  return `<div class="cal2">${monthCalHTML(pm.getFullYear(),pm.getMonth(),mark)}${monthCalHTML(now.getFullYear(),now.getMonth(),mark)}</div>`;
 }
 function streakCardHTML(){
   const a=activityDays(); if(!Object.keys(a).length)return '';
@@ -2954,6 +2973,9 @@ function _uiSelfCheck(){
     ['a','b','c','d'].forEach(x=>toast('✓ prueba '+x));
     A('la pila guarda como máximo 3 toasts', box().children.length===3&&/prueba b/.test(box().firstElementChild.textContent));
     A('la vida del toast sale del token en segundos (2.3s → 2300 ms)', durMs('--toast-life',0)===2300&&durMs('--dur-3',0)===280);
+    const cal=monthCalHTML(2026,1,iso=>iso==='2026-02-03'?{lv:1,act:'x',title:'t'}:null,{head:false,num:true});
+    A('TRKCal: febrero 2026 = 28 días, empieza en domingo (sin relleno), sin cabecera', (cal.match(/class="cd /g)||[]).length===28&&!/cd e"/.test(cal)&&!/cmh/.test(cal));
+    A('TRKCal: solo el día marcado lleva acción y su número', (cal.match(/data-act=/g)||[]).length===1&&/cd l1" data-act="x" data-d="2026-02-03" title="2026-02-03 · t">3<\/i>/.test(cal));
     const e=toast('⚠ error de prueba'); A('un error lleva role=alert y se queda (sin temporizador)', e.getAttribute('role')==='alert'&&e.classList.contains('err'));
     const t=toastTask('probando'); A('una tarea arranca con "…" y sin tipo', /^…/.test(box().lastElementChild.textContent)&&box().lastElementChild.classList.contains('task'));
     t.done('✓ lista'); A('la tarea se resuelve en el mismo toast', box().lastElementChild.classList.contains('ok')&&box().lastElementChild.textContent==='✓ lista');
@@ -3632,6 +3654,8 @@ function shareExLines(e){
   }
   return {lines:out,unit:one,n:out.length};
 }
+// un ejercicio en el formato compacto de compartir: [bi] nombre · músculo · unidad · T (+ extra) y sus series en una línea
+function sessExBlockHTML(e,r,t,extra){ return `<div class="sxr"><div class="sxh"><span class="sxn">${latTxt(e)}${escTxt(e.name)}</span><span class="sxk">${escTxt(e.muscle||'')}${r.unit?' · '+escTxt(r.unit):''}${t||''}${extra||''}</span></div><div class="sxs">${r.lines.join(' · ')}</div></div>`; }
 function renderShareSession(id){
   const s=(db.sessions||[]).find(x=>x.id===id)||(db.sessions||[]).filter(x=>x.type!=='rest').slice(-1)[0];
   if(!s)return summaryShell('sesión',`<div class="empty">sin sesión para compartir</div>`,'');
@@ -3644,7 +3668,7 @@ function renderShareSession(id){
     exn++; sets+=r.n;
     (e.sets||[]).forEach(x=>{ if(x&&!x._pf){ const rr=+x.r||0; if(rr)vol+=kgLoad(x)*rr; } });
     const t=tn&&tn[ei]&&tn[ei].total>0?' · T '+fmtT(tn[ei].total):'';
-    body+=`<div class="sxr"><div class="sxh"><span class="sxn">${latTxt(e)}${escTxt(e.name)}</span><span class="sxk">${escTxt(e.muscle||'')}${r.unit?' · '+escTxt(r.unit):''}${t}</span></div><div class="sxs">${r.lines.join(' · ')}</div></div>`;
+    body+=sessExBlockHTML(e,r,t);
   });
   const tot=(function(){ try{ return sessionTensionTotal(s); }catch(_){ return 0; } })();
   const head=`<div class="shhead"><span><b>${sets}</b> sets</span><span><b>${exn}</b> ejercicios</span>`
@@ -5300,21 +5324,58 @@ function renderSplitEdit(){
   return body+`<div class="secondary u-mt6"><button class="b" data-act="sd_addday">+ agregar día</button><button class="b" data-act="exdirectory">catálogo</button></div>`;
 }
 // ---------- render: history ----------
+// R5 (D12): mini-calendario del mes arriba (TRKCal, ‹ › entre meses con sesiones; toque en un día → baja a esa sesión),
+// meses como rail (línea + punto por sesión) y cada sesión se abre en sitio con sus series (formato de compartir).
+// Lo abierto vive en state._histOpen (no se guarda); abrir/cerrar pasa por reRender → lo de abajo se reacomoda (TRKRow).
+function histCalHTML(sess){
+  const now=new Date(), curYM=now.getFullYear()*12+now.getMonth();
+  const fp=String(sess.length?sess[sess.length-1].date:todayISO()).split('-'), minYM=Math.min(curYM,(+fp[0])*12+(+fp[1]-1));
+  let ym=state._histYM; if(ym==null||!isFinite(ym)||ym>curYM)ym=curYM; if(ym<minYM)ym=minYM; state._histYM=ym;
+  const y=Math.floor(ym/12), m=ym%12, pre=y+'-'+pad(m+1)+'-';
+  const by={}; sess.forEach(s=>{ (by[s.date]=by[s.date]||[]).push(s); });
+  const nm=sess.filter(s=>String(s.date).startsWith(pre)).length;
+  const mark=iso=>{ const l=by[iso]; return l?{lv:1,act:'hcalday',title:l.map(s=>s.dayName||'sesión').join(' · ')}:{lv:0}; };
+  return `<div class="hcal"><div class="hcalh"><button class="hcnav${ym>minYM?'':' off'}" data-act="hcalm" data-d="-1" aria-label="mes anterior">‹</button>`
+    +`<span class="hct">${MONFULL[m]} ${y} · <b>${nm}</b> sesi${nm===1?'ón':'ones'}</span>`
+    +`<button class="hcnav${ym<curYM?'':' off'}" data-act="hcalm" data-d="1" aria-label="mes siguiente">›</button></div>${monthCalHTML(y,m,mark,{head:false,num:true})}</div>`;
+}
+function histBodyHTML(s){
+  const tn=(function(){ try{ return sessionTension(s); }catch(_){ return []; } })(); let b='';
+  (s.exercises||[]).forEach((e,ei)=>{ const r=shareExLines(e); if(!r.n)return;
+    const t=tn&&tn[ei]&&tn[ei].total>0?' · T '+fmtT(tn[ei].total):'';
+    let pb=''; try{ pb=progBadgeFromProg(histProgress(s,ei),'capacidad (e1RM) vs sesión equivalente'); }catch(_){}
+    b+=sessExBlockHTML(e,r,t,pb?' '+pb:''); });
+  return `<div class="hbody">${b||'<div class="ehint">sin series registradas</div>'}<div class="hacts"><a class="u-xs u-o50 u-tap" data-act="vieweditsession" data-id="${s.id}">[ver / editar]</a></div></div>`;
+}
 function renderHistory(){
   const sess=(db.sessions||[]).filter(s=>s.type!=='rest').slice().sort((a,b)=>String(b.date).localeCompare(String(a.date)));
   let body=statusBar(true)+`<hr class="rule"/><div class="section"><div class="h"><span class="s">//</span>HISTORY</div><div class="meta">${sess.length}</div></div>`;
   if(!sess.length) return body+`<div class="empty">sin sesiones registradas<br/><span class="ehint">termina un entreno para verlo aquí</span></div>`;
+  body+=histCalHTML(sess);
+  const open=state._histOpen||{};
   let curKey='';
   sess.slice(0,80).forEach(s=>{
     let sets=0; (s.exercises||[]).forEach(e=>sets+=(e.sets||[]).length); const exn=(s.exercises||[]).length;
     const ag=sessionProgAgg(s); let agp=''; if(ag.up)agp+=`<span class="u-good">▲${ag.up}</span>`; if(ag.down)agp+=`${ag.up?' ':''}<span class="u-bad">▼${ag.down}</span>`;
     const p=String(s.date).split('-'), yy=p[0], mm=+p[1], dd=p[2], key=yy+'-'+p[1];
-    if(key!==curKey){ if(curKey)body+='</div>'; body+=`<div class="hmon">${MON[mm-1]||'?'} ${yy}</div><div class="grp">`; curKey=key; }
-    const dt=new Date(s.date+'T00:00'), dow=isNaN(dt)?'':DOW[dt.getDay()]+' ';
-    body+=`<div class="hrow" data-act="vieweditsession" data-id="${s.id}"><div class="hL"><div class="hnm">${escTxt(s.dayName||'sesión')}</div><div class="hmeta">${exn} ej · ${sets} sets${(()=>{ const t=sessionTensionTotal(s); return t>0?' · T '+fmtT(t):''; })()}</div></div><div class="hR"><span class="hday">${dow}${dd}</span>${agp?`<span class="hagg">${agp}</span>`:''}<span class="hchev">›</span></div></div>`;
+    if(key!==curKey){ if(curKey)body+='</div>'; body+=`<div class="hmon" data-rk="hm:${key}">${MON[mm-1]||'?'} ${yy}</div><div class="grp hist-rail" data-rk="hg:${key}">`; curKey=key; }
+    const dt=new Date(s.date+'T00:00'), dow=isNaN(dt)?'':DOW[dt.getDay()]+' '; const op=!!open[s.id];
+    body+=`<div class="hitem${op?' open':''}${state._histHit===s.id?' hit':''}" data-rk="h:${s.id}" data-hid="${s.id}">`
+      +`<div class="hrow" data-act="hexp" data-id="${s.id}" role="button" aria-expanded="${op}"><div class="hL"><div class="hnm">${escTxt(s.dayName||'sesión')}</div><div class="hmeta">${exn} ej · ${sets} sets${(()=>{ const t=sessionTensionTotal(s); return t>0?' · T '+fmtT(t):''; })()}</div></div><div class="hR"><span class="hday">${dow}${dd}</span>${agp?`<span class="hagg">${agp}</span>`:''}<span class="hchev">›</span></div></div>`
+      +(op?histBodyHTML(s):'')+`</div>`;
   });
   body+='</div>';
   return body;
+}
+// toque en un día del mini-calendario: abre esa(s) sesión(es) y baja a la primera; si está fuera de la lista, abre su hoja
+function histGoDay(iso){
+  const ss=(db.sessions||[]).filter(s=>s.type!=='rest'&&s.date===iso); if(!ss.length)return;
+  const q=id=>'.hitem[data-hid="'+(window.CSS&&CSS.escape?CSS.escape(id):id)+'"]'; const v=document.getElementById('view');
+  if(!v||!v.querySelector(q(ss[0].id))){ openSessionEdit(ss[ss.length-1].id); return; }
+  const o=state._histOpen=state._histOpen||{}; const nw=ss.filter(s=>!o[s.id]); ss.forEach(s=>{ o[s.id]=1; }); state._histHit=ss[0].id;
+  if(nw.length)state._enter={sel:nw.map(s=>q(s.id)+' .hbody').join(',')};
+  reRender();
+  const el=document.getElementById('view').querySelector(q(ss[0].id)); if(el&&el.scrollIntoView)el.scrollIntoView({block:'start',behavior:reducedMotion()?'auto':'smooth'});
 }
 function openSessionEdit(id){
   const s=(db.sessions||[]).find(x=>x.id===id); if(!s)return; window._sessId=id;
@@ -5412,7 +5473,8 @@ function slideTabs(root,swap){ const red=reducedMotion();
     const put=(x,w)=>{ ind.style.transform='translateX('+x+'px)'; ind.style.width=w+'px'; };
     if(swap&&!red&&prev&&(prev.x!==x||prev.w!==w)){ ind.style.transition='none'; put(prev.x,prev.w); void ind.offsetWidth; ind.style.transition=''; put(x,w); } else put(x,w); }); }
 function applyEnter(root){ const e=state._enter, p=state._pop; state._enter=null; state._pop=null; if(reducedMotion())return;
-  if(e){ const el=root.querySelector(e.ex!=null?'.ex[data-exi="'+e.ex+'"]':'.srow[data-exi="'+e.exi+'"][data-si="'+e.si+'"],.pair[data-exi="'+e.exi+'"][data-si="'+e.si+'"]');
+  if(e&&e.sel){ root.querySelectorAll(e.sel).forEach(x=>x.classList.add('enter')); }
+  else if(e){ const el=root.querySelector(e.ex!=null?'.ex[data-exi="'+e.ex+'"]':'.srow[data-exi="'+e.exi+'"][data-si="'+e.si+'"],.pair[data-exi="'+e.exi+'"][data-si="'+e.si+'"]');
     if(el){ el.classList.add('enter'); if(e.scroll&&el.scrollIntoView)el.scrollIntoView({block:'center',behavior:'smooth'}); } }
   if(p){ const el=root.querySelector('.dchk[data-exi="'+p.exi+'"][data-si="'+p.si+'"],.pairdone[data-exi="'+p.exi+'"][data-si="'+p.si+'"]'); if(el)el.classList.add('pop'); } }
 function afterPaint(root,swap){ if(!root)return; try{ popClose(); }catch(_){} try{ animNums(root); }catch(_){} try{ slideTabs(root,swap); }catch(_){} try{ applyEnter(root); }catch(_){} }
@@ -5862,6 +5924,9 @@ document.getElementById('app').addEventListener('click',e=>{
   else if(a==='importsplit'){ openImportSplit(); }
   else if(a==='history'){ go('history'); }
   else if(a==='vieweditsession'){ openSessionEdit(el.dataset.id); }
+  else if(a==='hexp'){ const id=el.dataset.id, o=state._histOpen=state._histOpen||{}; if(o[id])delete o[id]; else { o[id]=1; state._enter={sel:'.hitem[data-hid="'+(window.CSS&&CSS.escape?CSS.escape(id):id)+'"] .hbody'}; } reRender(); }
+  else if(a==='hcalm'){ state._histYM=(state._histYM||0)+(+el.dataset.d||0); reRender(); }
+  else if(a==='hcalday'){ histGoDay(el.dataset.d); }
   else if(a==='openhistedit'){ closeModal(); state._histSessId=el.dataset.id; state.screen='histedit'; render(); }
   else if(a==='h_close'){ state._histSessId=null; go('history'); }
   else if(a==='h_delsession'){ holdConfirm({title:'borrar esta sesión',detail:'sale del historial y deja de contar para volumen, progreso y recuperación',verb:'borrar'},()=>{ db.sessions=db.sessions.filter(x=>x.id!==el.dataset.id); state._histSessId=null; save(); go('history'); }); }
