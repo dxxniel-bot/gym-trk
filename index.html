@@ -213,9 +213,10 @@
   .mdhd h3{margin:0;}
   .mdlog{font-size:var(--t-meta); color:var(--o60); cursor:pointer; text-decoration:none; padding:var(--s2) 0;}
   .mdlog:active{color:var(--fg);}
-  .mdtabs{position:relative; display:flex; gap:0; background:var(--o12); border-radius:var(--radius); padding:var(--s2); margin-bottom:var(--s5);}
-  .mdtabs span{position:relative; z-index:1; flex:1; text-align:center; padding:var(--s3) 0; font-size:var(--t-meta); color:var(--o50); cursor:pointer; border-radius:var(--r-ctl); letter-spacing:var(--ls-ui); font-weight:700;}
-  .mdtabs span.on{background:var(--card); color:var(--fg);}
+  /* R3 · TRKTabs (§7.18): etiquetas --o50, activa --fg, indicador de 2 px --fill que viaja en posición y ancho */
+  .mdtabs{position:relative; display:flex; gap:0; border-bottom:.5px solid var(--o10); margin-bottom:var(--s5);}
+  .mdtabs span{position:relative; z-index:1; flex:1; text-align:center; padding:var(--s3) 0 10px; font-size:var(--t-meta); color:var(--o50); cursor:pointer; letter-spacing:var(--ls-ui); font-weight:700;}
+  .mdtabs span.on{color:var(--fg);} .mdtabs span.on::after{content:''; position:absolute; left:25%; right:25%; bottom:-.5px; height:2px; background:var(--fill);}
   .mdval{font-size:var(--t-hero); font-weight:800; letter-spacing:var(--ls-num); margin-bottom:var(--s2); line-height:1.05;}
   .mdmeta{font-size:var(--t-meta); color:var(--o50); margin-bottom:6px;}
   .mdgood{color:var(--good);} .mdbad{color:var(--bad);} .mdflat{color:var(--o50);}
@@ -269,8 +270,8 @@
      overshoot permitido; las pestañas de periodo mueven un indicador en vez de saltar */
   @keyframes rowin{from{opacity:0; transform:translateY(-4px)}} .enter{animation:rowin var(--dur-2) var(--ease-out);}
   @keyframes chkpop{0%{transform:scale(.6)}60%{transform:scale(1.18)}100%{transform:scale(1)}} .dchk.pop,.pairdone.pop{animation:chkpop var(--dur-1) var(--ease-out);}
-  .mdtabs.has-ind span.on{background:transparent;}
-  .mdtabs .tabind{position:absolute; top:4px; bottom:4px; left:0; width:0; border-radius:var(--r-ctl); background:var(--card); pointer-events:none; transition:transform var(--dur-2) var(--ease-out), width var(--dur-2) var(--ease-out);}
+  .mdtabs.has-ind span.on::after{display:none;}   /* con JS, el subrayado lo pinta el indicador que viaja */
+  .mdtabs .tabind{position:absolute; bottom:-.5px; left:0; width:0; height:2px; border-radius:var(--r-sm); background:var(--fill); pointer-events:none; transition:transform var(--dur-2) var(--ease-out), width var(--dur-2) var(--ease-out);}
   @keyframes mdslide{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
   .mdtop{font-size:var(--t-xs); color:var(--o60); margin-bottom:var(--s3);}
   .mdgrid{display:grid; grid-template-columns:1fr 1fr; gap:var(--s2) var(--s5);}
@@ -680,6 +681,13 @@
   .ag-supp-pop .row .mg{flex:0 0 auto; font-size:var(--t-xs); color:var(--o50);}
   .ag-supp-pop .row:active{background:var(--card2);}
 
+  /* R3 · TRKPop / glosario (§7.18): lo que tiene definición va con subrayado punteado; la tarjeta flota junto al término */
+  [data-gloss]{border-bottom:.5px dashed var(--o20); cursor:help;}
+  .gloss{position:absolute; z-index:var(--z-pop); background:var(--card2); border:1px solid var(--border); border-radius:var(--r-ctl); box-shadow:var(--shadow-float); padding:var(--s3) var(--s4); font-size:var(--t-xs); font-weight:400; letter-spacing:0; text-transform:none; line-height:1.5; color:var(--o70); animation:rowin var(--dur-2) var(--ease-out);}
+  .exmore{flex:0 0 auto; color:var(--o40); font-size:var(--t-body); padding:var(--s3) var(--s2); margin:calc(-1 * var(--s3)) 0; cursor:pointer;}
+  /* R3 · transición de origen: el nombre del catálogo viaja al título del perfil */
+  ::view-transition-group(exname){animation-duration:var(--dur-3); animation-timing-function:var(--ease-out);}
+  ::view-transition-old(root),::view-transition-new(root){animation-duration:var(--dur-2);}
   /* R2 · TRKAsk / TRKHold (§7.18): capa PROPIA encima del sheet actual — no lo reemplaza, así lo escrito abajo se conserva */
   .modal.asklayer{z-index:var(--z-pop);}
   .asklayer .sheet{max-height:60%;}
@@ -1700,18 +1708,18 @@ function openMuscleDetail(id){ const M=MUSCLES[id]; if(!M)return; const t=todayI
     +line('series duras',r1m(c.sets),(dv?(dv>0?'▲ +':'▼ ')+r1m(dv)+' vs 7d previos':'igual que 7d previos'))
     +line('directas · indirectas',r1m(c.direct)+' · '+r1m(c.indirect))
     +line('sesiones',c.n)
-    +(L?line('guía RP · MEV/MAV/MRV',L[0]+' · '+L[1]+' · '+L[2],c.sets<L[0]?'estás bajo el mínimo efectivo':c.sets>L[2]?'sobre el máximo recuperable':c.sets>L[1]?'entre MAV y MRV':'en rango'):line('guía RP','sin guía para este músculo','no se inventa'))
+    +(L?line(glossWrap('guía RP · MEV/MAV/MRV','lm'),L[0]+' · '+L[1]+' · '+L[2],c.sets<L[0]?'estás bajo el mínimo efectivo':c.sets>L[2]?'sobre el máximo recuperable':c.sets>L[1]?'entre MAV y MRV':'en rango'):line(glossWrap('guía RP','lm'),'sin guía para este músculo','no se inventa'))
     +`<div class="grp-label sub">ESTÍMULO · 7 días</div>`
-    +line('tensión efectiva','T '+fmtT(c.T),p.T>0?(c.T>=p.T?'▲ ':'▼ ')+Math.round((c.T/p.T-1)*100)+'%':'')
-    +line('RIR medio',c.rir!=null?r1m(c.rir):'—',c.rn?Math.round(c.near/c.rn*100)+'% a RIR ≤1':'')
+    +line(glossWrap('tensión efectiva','t'),'T '+fmtT(c.T),p.T>0?(c.T>=p.T?'▲ ':'▼ ')+Math.round((c.T/p.T-1)*100)+'%':'')
+    +line(glossWrap('RIR medio','rirmed'),c.rir!=null?r1m(c.rir):'—',c.rn?Math.round(c.near/c.rn*100)+'% a RIR ≤1':'')
     +line('longitud',[['long','estirado'],['mid','media'],['short','acortado'],['mixed','mixto']].filter(k=>pctOf(c.len,k[0])).map(k=>k[1]+' '+pctOf(c.len,k[0])+'%').join(' · ')||'—',pctOf(c.len,'unk')?pctOf(c.len,'unk')+'% sin definir':'')
     +line('perfil',[['asc','⬆'],['desc','⬇'],['mid','↔']].filter(k=>pctOf(c.rp,k[0])).map(k=>k[1]+' '+pctOf(c.rp,k[0])+'%').join(' · ')||'—',pctOf(c.rp,'unk')?pctOf(c.rp,'unk')+'% sin definir':'')
     +`<div class="grp-label sub">FATIGA · 72 h</div>`
     +line('series en 72 h',r1m(acute),fr!=null?'vs '+r1m(chronic)+' de tu promedio · '+(fr>1.4?'alta':fr<0.6?'baja':'normal'):'sin historial de 4 semanas')
     +`<div class="grp-label sub">RECUPERACIÓN</div>`
     +(rec?line('última exposición','hace '+(rec.h<48?Math.round(rec.h)+' h':r1m(rec.h/24)+' d'),fmtShort(rec.last.date)):'')
-    +(est?line('ventana estimada',est.lo+'–'+est.hi+' h','base '+M.rec[0]+'–'+M.rec[1]+' h × dosis '+est.f):'')
-    +(obs&&obs.hours?line('ventana observada',obs.hours[0]+'–'+obs.hours[1]+' h','tu historial · '+obs.n+' pares'):line('ventana observada','aún no',(obs?obs.n:0)+' de 6 pares necesarios'))
+    +(est?line(glossWrap('ventana estimada','est'),est.lo+'–'+est.hi+' h','base '+M.rec[0]+'–'+M.rec[1]+' h × dosis '+est.f):'')
+    +(obs&&obs.hours?line(glossWrap('ventana observada','est'),obs.hours[0]+'–'+obs.hours[1]+' h','tu historial · '+obs.n+' pares'):line(glossWrap('ventana observada','est'),'aún no',(obs?obs.n:0)+' de 6 pares necesarios'))
     +(obs&&obs.n?`<div class="submeta u-mt4 u-mb0 u-mx0">capacidad según horas de descanso: ${obs.buckets.filter(b=>b.n).map(b=>(b.b>=1e9?'>'+b.a:b.a+'-'+b.b)+' h '+(b.med>=0?'+':'')+r1m(b.med)+'% (n'+b.n+')').join(' · ')}</div>`:'')
     +(rec?line('estado',`<span style="color:${recStateCol(rec)}">${escTxt(recStateTxt(rec))}</span>`,rec.win.src==='observed'?'con tu ventana observada':'con la ventana estimada'):'')
     +`<div class="grp-label sub">RENDIMIENTO · últimas exposiciones</div>`
@@ -2050,7 +2058,7 @@ function volumeSection(){
   muscles.forEach(m=>{ const eff=r1(effM[m]||0), hard=r1(byM[m]);
     // v228: marcas = MEV y MRV del músculo real (guía RP); sin guía, la marca ~10 de rendimientos decrecientes
     const L=landmarksForLabel(m); const CE=Math.max(CEIL,L?L[2]+2:CEIL); const drPct=Math.round(DR/CE*100);
-    const st=L?volStatus(m,eff):''; const stTag=st==='under'?` <span class="vst" title="por debajo del volumen mínimo efectivo estimado (guía RP)">bajo MEV ${L[0]}</span>`:st==='high'?` <span class="vst warn" title="entre el volumen máximo adaptativo y el máximo recuperable">cerca de MRV</span>`:st==='over'?` <span class="vst bad" title="por encima del volumen máximo recuperable estimado">sobre MRV ${L[2]}</span>`:'';
+    const st=L?volStatus(m,eff):''; const stTag=st==='under'?` <span class="vst" data-gloss="lm" title="por debajo del volumen mínimo efectivo estimado (guía RP)">bajo MEV ${L[0]}</span>`:st==='high'?` <span class="vst warn" title="entre el volumen máximo adaptativo y el máximo recuperable">cerca de MRV</span>`:st==='over'?` <span class="vst bad" title="por encima del volumen máximo recuperable estimado">sobre MRV ${L[2]}</span>`:'';
     const marks=L?`${L[0]>0?`<span class="mev" style="left:${Math.round(L[0]/CE*100)}%" title="MEV ${L[0]}"></span>`:''}<span class="mrv" style="left:${Math.round(L[2]/CE*100)}%" title="MRV ${L[2]}"></span>`:`<span class="mev" style="left:${drPct}%"></span>`;
     const mp=muscleProgress(m); const mpBadge=(mp&&mp.dir)?progBadgeFromProg(mp,'tensión efectiva del músculo · 7d vs 7d previos'):''; const mT=(mp&&mp.cur>0)?` · T ${fmtT(mp.cur)}`:'';
     const pct=Math.min(100,Math.round(eff/CE*100));
@@ -3029,7 +3037,7 @@ function histProgress(sess,ei){ const e=(sess&&sess.exercises||[])[ei]; if(!e)re
 // Count sets by zone — surfaced as a coaching hint next to the progress badge.
 function exerciseZones(ex){ const z={light:0,productive:0,heavy:0}; (ex.sets||[]).forEach(s=>{ if(s._pf)return; const zn=setZone(s); if(zn&&z[zn]!=null)z[zn]++; }); return z; }
 function sessionProgAgg(s){ let up=0,down=0; (s.exercises||[]).forEach((e,ei)=>{ const pr=histProgress(s,ei); if(pr){ if(pr.dir==='up')up++; else if(pr.dir==='down')down++; } }); return {up,down}; }
-function progBadgeFromProg(pr,title){ if(!pr)return ''; const col=pr.dir==='up'?'var(--good)':pr.dir==='down'?'var(--bad)':'var(--o40)'; const ar=pr.dir==='up'?'▲':pr.dir==='down'?'▼':'='; const pc=pr.pct?((pr.pct>0?'+':'')+pr.pct+'%'):''; return `<span class="exprog" style="color:${col}" title="${title||'progreso de fuerza · e1RM vs sesión previa'}">${ar}${pc}</span>`; }
+function progBadgeFromProg(pr,title){ if(!pr)return ''; const col=pr.dir==='up'?'var(--good)':pr.dir==='down'?'var(--bad)':'var(--o40)'; const ar=pr.dir==='up'?'▲':pr.dir==='down'?'▼':'='; const pc=pr.pct?((pr.pct>0?'+':'')+pr.pct+'%'):''; return `<span class="exprog" data-gloss="cap" style="color:${col}" title="${title||'progreso de fuerza · e1RM vs sesión previa'}">${ar}${pc}</span>`; }
 // progBadgeHTML in the WORKOUT view: only the zone counter (the % moved to per-set badges below each row).
 function progBadgeHTML(ex){ const z=exerciseZones(ex); const total=z.light+z.productive+z.heavy; if(!total)return ''; const parts=[]; if(z.productive)parts.push(`<span class="u-good">${z.productive}✓</span>`); if(z.light)parts.push(`<span class="u-warn" title="series flojas — sube peso o llega más cerca al fallo">${z.light}↑</span>`); if(z.heavy)parts.push(`<span class="u-warn" title="series demasiado pesadas — baja peso o sube reps">${z.heavy}↓</span>`); return `<span class="exzones u-xs u-w7 u-ml6 u-lsui">${parts.join(' ')}</span>`; }
 // fresh-equivalent e1RM when a fatigue-context row is available (from sessionFatigueContext), else raw.
@@ -3088,7 +3096,7 @@ function pairBadgeHTML(curA,curB,prevA,prevB,curCtxA,curCtxB,prevCtxA,prevCtxB,l
 function muscleWindowScore(muscle,startISO,endISO){ return muscleWindowTension(muscle,startISO,endISO); }   // v219: effective tension, via musclesOf
 function muscleProgress(muscle){ const now=new Date(); const c7=new Date(now); c7.setDate(now.getDate()-6); const c14=new Date(now); c14.setDate(now.getDate()-13); const tomorrow=new Date(now); tomorrow.setDate(now.getDate()+1); const cur=muscleWindowScore(muscle,todayISO(c7),todayISO(tomorrow)); const prev=muscleWindowScore(muscle,todayISO(c14),todayISO(c7)); const pr=progFromScores(cur,prev); return pr?Object.assign(pr,{cur,prev}):{dir:null,pct:0,cur,prev}; }
 // live-update the badge while logging (setField avoids a full re-render to keep input focus)
-function exTensChip(tn){ return (tn&&tn.total>0)?`<span class="exT" title="tensión efectiva del ejercicio en esta sesión (Σ T de sus series)${tn.est?' · incluye RIR estimado':''}">${tn.est?'~':''}T ${fmtT(tn.total)}</span>`:''; }
+function exTensChip(tn){ return (tn&&tn.total>0)?`<span class="exT" data-gloss="t" title="tensión efectiva del ejercicio en esta sesión (Σ T de sus series)${tn.est?' · incluye RIR estimado':''}">${tn.est?'~':''}T ${fmtT(tn.total)}</span>`:''; }
 function updateProgBadge(exi){ const w=db.activeWork; if(!w||!w.exercises[exi])return; const nm=document.querySelector('.exhead .n[data-exi="'+exi+'"]'); if(!nm)return; const ex=w.exercises[exi]; const html=progBadgeHTML(ex)+(isCardio(ex)?'':exTensChip(exTensionSets(w,exi))); ['exprog','exzones','exT'].forEach(cls=>{ const el=nm.parentElement.querySelector('.'+cls); if(el)el.remove(); }); if(html)nm.insertAdjacentHTML('afterend',html); }
 // also update per-set zone color in-place (called from setField after a weight/reps/RIR change)
 function updateSetZone(exi,si){ const w=db.activeWork; if(!w||!w.exercises[exi])return; const s=w.exercises[exi].sets[si]; if(!s)return; const z=setZone(s); const el=document.querySelector('.setn[data-exi="'+exi+'"][data-si="'+si+'"]'); if(!el)return; el.style.color = (!s.done && z==='light') ? 'var(--warn)' : (!s.done && z==='heavy') ? 'var(--bad)' : ''; }
@@ -3222,7 +3230,7 @@ function renderExercise(exi,ex,allowF,canReorder){
   }
   const isBwEx=ex.type==='bodyweight';
   if(isU){
-    let thead=`<div class="thead gc-uni-head"><div class="cl"></div><div class="cl">L/R</div><div class="cl w">weight</div><div class="cl">${isBwEx?'lastre':'unit'}</div><div class="cl">reps</div><div class="cl">rir</div><div class="cl"></div></div>`;
+    let thead=`<div class="thead gc-uni-head"><div class="cl"></div><div class="cl">L/R</div><div class="cl w">weight</div><div class="cl">${isBwEx?'lastre':'unit'}</div><div class="cl">reps</div><div class="cl" data-gloss="rir">rir</div><div class="cl"></div></div>`;
     let body='';
     const labels=setLabels(sets,2);
     const gcU=isBwEx?'gc-uni-bw':'gc-uni';
@@ -3249,7 +3257,7 @@ function renderExercise(exi,ex,allowF,canReorder){
     rows=thead+body+add;
   } else {
     const gc=isBwEx?'gc-free-bw':(isM?'gc-mach':'gc-free');
-    let thead=`<div class="thead ${gc}"><div class="cl"></div>${isM?'<div class="cl"></div>':''}<div class="cl w">weight</div><div class="cl">${isBwEx?'lastre':'unit'}</div><div class="cl">reps</div><div class="cl">rir</div><div class="cl"></div></div>`;
+    let thead=`<div class="thead ${gc}"><div class="cl"></div>${isM?'<div class="cl"></div>':''}<div class="cl w">weight</div><div class="cl">${isBwEx?'lastre':'unit'}</div><div class="cl">reps</div><div class="cl" data-gloss="rir">rir</div><div class="cl"></div></div>`;
     let body='';
     const labels=setLabels(sets,1);
     sets.forEach((s,si)=>{ const c=renderSetRow(exi,si,s,ex,allowF); const fsOn=isM&&s.fsOn&&!s.isDrop;
@@ -3307,7 +3315,7 @@ function renderHistExercise(exi,ex,sess){
     const add=`<div class="addrow afree"><span class="aleft"><button class="addbtn" data-act="h_addset" data-exi="${exi}">[+ set]</button></span></div>`;
     rows=thead+body+add;
   } else if(isU){
-    let thead=`<div class="thead gc-uni-head"><div class="cl"></div><div class="cl">L/R</div><div class="cl w">weight</div><div class="cl">${isBwEx?'lastre':'unit'}</div><div class="cl">reps</div><div class="cl">rir</div><div class="cl"></div></div>`;
+    let thead=`<div class="thead gc-uni-head"><div class="cl"></div><div class="cl">L/R</div><div class="cl w">weight</div><div class="cl">${isBwEx?'lastre':'unit'}</div><div class="cl">reps</div><div class="cl" data-gloss="rir">rir</div><div class="cl"></div></div>`;
     let body=''; const labels=setLabels(sets,2); const gcU=isBwEx?'gc-uni-bw':'gc-uni';
     for(let p=0;p<sets.length;p+=2){
       const a=sets[p],b=sets[p+1]; const ca=renderSetRow(exi,p,a,ex,true,'h_'); const cb=b?renderSetRow(exi,p+1,b,ex,true,'h_'):null;
@@ -3323,7 +3331,7 @@ function renderHistExercise(exi,ex,sess){
     rows=thead+body+add;
   } else {
     const gc=isBwEx?'gc-free-bw':(isM?'gc-mach':'gc-free');
-    let thead=`<div class="thead ${gc}"><div class="cl"></div>${isM?'<div class="cl"></div>':''}<div class="cl w">weight</div><div class="cl">${isBwEx?'lastre':'unit'}</div><div class="cl">reps</div><div class="cl">rir</div><div class="cl"></div></div>`;
+    let thead=`<div class="thead ${gc}"><div class="cl"></div>${isM?'<div class="cl"></div>':''}<div class="cl w">weight</div><div class="cl">${isBwEx?'lastre':'unit'}</div><div class="cl">reps</div><div class="cl" data-gloss="rir">rir</div><div class="cl"></div></div>`;
     let body=''; const labels=setLabels(sets,1);
     sets.forEach((s,si)=>{ const c=renderSetRow(exi,si,s,ex,true,'h_'); const fsOn=isM&&s.fsOn&&!s.isDrop;
       const fs=isM?fsCellHTML(s,exi,si,'h_fs'):'';
@@ -4871,11 +4879,11 @@ function renderProgress(){
       +`<div class="pst flat" style="opacity:.65">${_td.loggedDays} días · conf ${_td.conf}${_diff!=null?' · vs meta '+(_diff>0?'+':'')+_diff:''}</div></div>`); } }
   out+=`<div class="pgrid">${tiles.join('')}</div>`;
   // fuerza detalle (lista completa) — preserva el detalle del fork de Progreso/Gym
-  if(e1.length>1 && cfg.e1rm){ out+=`<hr class="rule"/><div class="grp-label">//FUERZA · e1RM Epley (vs semana previa)</div>`;
+  if(e1.length>1 && cfg.e1rm){ out+=`<hr class="rule"/><div class="grp-label">//FUERZA · <span data-gloss="e1rm">e1RM</span> Epley (vs semana previa)</div>`;
     e1.forEach(x=>{ const d=x.prev!=null?Math.round(x.cur-x.prev):null; const arr=d==null?'·':(d>0?'▲':d<0?'▼':'='); const col=d>0?'var(--good)':d<0?'var(--bad)':'var(--o40)';
       out+=`<div class="line u-tap" data-act="liftdetail" data-ex="${escTxt(x.name)}"><span class="k">${latTxt(x)}${escTxt(x.name)}</span><span class="dots"></span><span class="v">${Math.round(x.cur)} <span class="u-xs" style="color:${col}">${arr}${d?Math.abs(d):''}</span> <span class="ptchev u-sm">›</span></span></div>`; }); }
   if(cfg.e1rm){ const _pr=prRecords(); if(_pr.length){
-    out+=`<hr class="rule"/><div class="grp-label">//RECORDS · mejor e1RM histórico</div><div class="u-xs u-o40 u-mt-n4 u-mb6 u-mx0">tu mejor levantada histórica por ejercicio</div>`;
+    out+=`<hr class="rule"/><div class="grp-label">//RECORDS · mejor <span data-gloss="e1rm">e1RM</span> histórico</div><div class="u-xs u-o40 u-mt-n4 u-mb6 u-mx0">tu mejor levantada histórica por ejercicio</div>`;
     _pr.slice(0,10).forEach(x=>{ const _tw=Math.round(x.tw*10)/10;
       out+=`<div class="line"><span class="k">${latTxt(x)}${escTxt(x.name)}</span><span class="dots"></span><span class="v">${Math.round(x.e1)}${escTxt(x.eu||'')} <span class="u-o40 u-xs">· top ${_tw}${escTxt(x.twu||'')}×${x.twr||0}</span></span></div>`; });
   } }
@@ -5014,8 +5022,8 @@ function renderStack(){
   const pct=stackPct(iso);
   let out=statusBar(false)
     +`<hr class="rule"/><div class="section"><div class="h"><span class="s">//</span>STACK</div><div class="meta">${pct?(pct.done+'/'+pct.total+' · '+pct.pct+'%'):'sin items'}</div></div>`;
-  const tab=(k,l)=>`<span data-act="stackview" data-v="${k}" style="cursor:pointer;padding:0 8px;${view===k?'color:var(--fill)':'color:var(--o40)'}">${l}</span>`;
-  out+=`<div class="u-tc u-mb12 u-meta">${tab('today','HOY')}<span class="u-o20">·</span>${tab('all','TODOS')}</div>`;
+  const tab=(k,l)=>`<span data-act="stackview" data-v="${k}"${view===k?' class="on"':''}>${l}</span>`;
+  out+=`<div class="mdtabs" data-tk="stack">${tab('today','HOY')}${tab('all','TODOS')}</div>`;
   if(!all.length){
     out+=`<div class="empty u-mt24 u-mb16 u-mx0">stack vacío<br/><span class="ehint">agrega tu primer suplemento, skincare o medicamento abajo</span></div>`;
   } else {
@@ -5373,8 +5381,9 @@ function render(){
   // v223: tras confirmar una serie, a la vista la SIGUIENTE de ese ejercicio (no la primera del documento)
   if(state._focusSet&&sc==='workout'){ const f=state._focusSet; state._focusSet=null; const fe=v.querySelector('.setn[data-exi="'+f.exi+'"][data-si="'+f.si+'"]'); if(fe&&fe.scrollIntoView)fe.scrollIntoView({block:'center',behavior:'smooth'}); }
   // fade ONLY on screen changes via go() — never on same-screen re-renders (every keystroke re-renders)
+  const _nav=!!state._trans;
   if(state._trans){ state._trans=false; v.classList.remove('fadein'); void v.offsetWidth; v.classList.add('fadein'); }
-  afterPaint(v,false);
+  afterPaint(v,!_nav);
 }
 // v223: re-render CONSERVANDO el scroll. Todo lo que se toca dentro de una sesión (o del editor de
 // historial) tiene que pasar por aquí: un render() pelado devuelve #view al inicio, que es exactamente
@@ -5399,14 +5408,14 @@ function animNums(root){ const red=reducedMotion();
 function slideTabs(root,swap){ const red=reducedMotion();
   root.querySelectorAll('.mdtabs').forEach(c=>{ const on=c.querySelector('span.on'); let ind=c.querySelector('.tabind'); if(!on){ if(ind)ind.remove(); c.classList.remove('has-ind'); return; }
     if(!ind){ ind=document.createElement('i'); ind.className='tabind'; c.insertBefore(ind,c.firstChild); } c.classList.add('has-ind');
-    const k=c.dataset.tk||('t:'+c.textContent), x=on.offsetLeft, w=on.offsetWidth, prev=_tabPos[k]; _tabPos[k]={x,w};
+    const k=c.dataset.tk||('t:'+c.textContent), x=on.offsetLeft+on.offsetWidth*.25, w=on.offsetWidth*.5, prev=_tabPos[k]; _tabPos[k]={x,w};
     const put=(x,w)=>{ ind.style.transform='translateX('+x+'px)'; ind.style.width=w+'px'; };
     if(swap&&!red&&prev&&(prev.x!==x||prev.w!==w)){ ind.style.transition='none'; put(prev.x,prev.w); void ind.offsetWidth; ind.style.transition=''; put(x,w); } else put(x,w); }); }
 function applyEnter(root){ const e=state._enter, p=state._pop; state._enter=null; state._pop=null; if(reducedMotion())return;
   if(e){ const el=root.querySelector(e.ex!=null?'.ex[data-exi="'+e.ex+'"]':'.srow[data-exi="'+e.exi+'"][data-si="'+e.si+'"],.pair[data-exi="'+e.exi+'"][data-si="'+e.si+'"]');
     if(el){ el.classList.add('enter'); if(e.scroll&&el.scrollIntoView)el.scrollIntoView({block:'center',behavior:'smooth'}); } }
   if(p){ const el=root.querySelector('.dchk[data-exi="'+p.exi+'"][data-si="'+p.si+'"],.pairdone[data-exi="'+p.exi+'"][data-si="'+p.si+'"]'); if(el)el.classList.add('pop'); } }
-function afterPaint(root,swap){ if(!root)return; try{ animNums(root); }catch(_){} try{ slideTabs(root,swap); }catch(_){} try{ applyEnter(root); }catch(_){} }
+function afterPaint(root,swap){ if(!root)return; try{ popClose(); }catch(_){} try{ animNums(root); }catch(_){} try{ slideTabs(root,swap); }catch(_){} try{ applyEnter(root); }catch(_){} }
 function reRender(){ try{ const v=document.getElementById('view'); if(v)state._scroll=v.scrollTop; }catch(_){} render(); }
 // primera serie sin ✓, en orden de documento — alimenta la barra AHORA, la guía .ex.current y el foco.
 function currentSetTarget(){
@@ -5874,7 +5883,15 @@ document.getElementById('app').addEventListener('click',e=>{
   else if(a==='exdirectory'){ window._mgSel=[]; openExerciseDirectory(); }
   else if(a==='muscledetail'){ openMuscleDetail(el.dataset.id); }
   else if(a==='musclemap'){ openMuscleMap(); }
-  else if(a==='exprof'){ openExProfile(el.dataset.n,el.dataset.back||''); }
+  else if(a==='exprof'){ const run=()=>openExProfile(el.dataset.n,el.dataset.back||'');
+    // R3: el nombre tocado viaja al título del perfil (View Transitions); sin soporte o con reduced-motion abre normal
+    if(document.startViewTransition&&!reducedMotion()){ el.style.viewTransitionName='exname';
+      const vt=document.startViewTransition(()=>{ el.style.viewTransitionName=''; run(); const h3=document.querySelector('#modal .sheet h3'); if(h3)h3.style.viewTransitionName='exname'; });
+      vt.finished.finally(()=>{ const h3=document.querySelector('#modal .sheet h3'); if(h3)h3.style.viewTransitionName=''; }); }
+    else run(); }
+  else if(a==='exmenu'){ const nm=el.dataset.n, k=el.dataset.k;   // R3 · D10: acciones de la fila del catálogo
+    const sel=(window._mgSel||[]).indexOf(k)>=0;
+    trkMenu(nm,[['perfil del ejercicio',()=>openExProfile(nm,'catalog')],['historial · e1RM',()=>openLiftDetail(nm)],[sel?'quitar de la selección para unir':'seleccionar para unir',()=>{ window._mgSel=window._mgSel||[]; const i=window._mgSel.indexOf(k); if(i>=0)window._mgSel.splice(i,1); else window._mgSel.push(k); openExerciseDirectory(); }]]); }
   else if(a==='pf_save'){ saveExProfile(); }
   else if(a==='pf_close'){ closeProfileBack((window._exProf||{}).back); }
   else if(a==='pf_addsec'){ const box=document.getElementById('pf_secs'); if(box){ const i=box.querySelectorAll('select[data-sec]').length; if(i<3){
@@ -6524,7 +6541,7 @@ function openExerciseDirectory(){
       const sub=meta.length?` <span class="u-o40">· ${meta.join(' · ')}</span>`:'';
       const contrib=e._w<1?` <span class="u-warn u-xs u-w7">×${e._w}</span>`:'';
       const pt=profileTag(profileFor(e,db.activeGym));
-      html+=`<div class="exrow${on?' on':''}" data-act="exsel" data-k="${escTxt(k)}"><span class="mgbox">${on?'▣':'▢'}</span><span class="exn" data-act="exprof" data-n="${escTxt(e.name)}" data-back="catalog">${latTxt(e)}${escTxt(e.name)}${contrib}${sub}${pt?` <span class="exp">${escTxt(pt)}</span>`:''}${tags}</span><span class="exc">${e._sess||0} ${e._sess===1?'sesión':'sesiones'}</span></div>`;
+      html+=`<div class="exrow${on?' on':''}" data-act="exsel" data-k="${escTxt(k)}"><span class="mgbox">${on?'▣':'▢'}</span><span class="exn" data-act="exprof" data-n="${escTxt(e.name)}" data-back="catalog">${latTxt(e)}${escTxt(e.name)}${contrib}${sub}${pt?` <span class="exp">${escTxt(pt)}</span>`:''}${tags}</span><span class="exc">${e._sess||0} ${e._sess===1?'sesión':'sesiones'}</span><span class="exmore" data-act="exmenu" data-n="${escTxt(e.name)}" data-k="${escTxt(k)}" aria-label="acciones">⋯</span></div>`;
     });
   });
   html+=`<div class="sheetbtns u-mt12"><button class="cancel" data-act="closemodal">close</button></div>`;
@@ -7929,6 +7946,30 @@ function holdConfirm(o,onOk,onCancel){ const verb=o.verb||'confirmar', idle='man
     raf=requestAnimationFrame(tick); });
   ['pointerup','pointercancel'].forEach(t=>b.addEventListener(t,stop));
   m.querySelector('[data-ask="no"]').addEventListener('click',ev=>{ ev.stopPropagation(); stop(); closeAsk(); if(onCancel)onCancel(); }); }
+// ---- R3 · TRKPop (Smart Popover, §7.18): texto corto anclado al término; un MENÚ va en la capa de TRKAsk (en el
+// marco del teléfono siempre es "móvil": popover en pantalla ancha, sheet en la angosta) ----
+const GLOSS={
+  rir:'RIR · repeticiones en reserva: cuántas más te quedaban. 0 = al fallo · F = fallo con media rep extra. Se registra por serie.',
+  t:'T · tensión efectiva: estímulo estimado de cada serie por su carga relativa y su cercanía al fallo (las últimas 5 reps pesan más). ~ = con RIR supuesto.',
+  cap:'% de capacidad: tu e1RM de hoy contra la sesión equivalente anterior, descontando la fatiga acumulada en la sesión. ▲ más · ▼ menos · ~ comparación de baja confianza.',
+  lm:'MEV · mínimo efectivo · MAV · donde más se progresa · MRV · máximo recuperable. Series duras por semana (guía RP): orientan, no son reglas.',
+  est:'estimado = ventana de la literatura ajustada a tu dosis (series, fallo, estiramiento) · observado = lo que muestra tu propio historial, desde 6 pares de sesiones.',
+  rirmed:'RIR medio de tus series duras con RIR registrado · "% a RIR ≤1" = qué parte fue al fallo o casi.',
+  e1rm:'e1RM: el máximo estimado para 1 repetición (Epley + RIR) de tus series de trabajo. Compara días con pesos y reps distintos.'
+};
+const glossWrap=(t,k)=>'<span data-gloss="'+k+'">'+t+'</span>';
+function popClose(){ const g=document.getElementById('gloss'); if(g)g.remove(); window._glossEl=null; }
+function trkPop(anchor,text){ popClose(); if(!text)return; const app=document.getElementById('app'); const p=document.createElement('div'); p.className='gloss'; p.id='gloss'; p.setAttribute('role','tooltip'); p.textContent=text; app.appendChild(p);
+  const r=anchor.getBoundingClientRect(), fr=app.getBoundingClientRect(); const w=Math.min(300,fr.width-36); p.style.width=w+'px';
+  p.style.left=Math.max(18,Math.min(fr.width-18-w,r.left-fr.left+r.width/2-w/2))+'px';
+  const below=r.bottom-fr.top+8, ph=p.offsetHeight; p.style.top=(below+ph>fr.height-90?Math.max(8,r.top-fr.top-8-ph):below)+'px'; window._glossEl=anchor; }
+// menú de acciones: filas .nvm en la capa de TRKAsk (encima del sheet actual) · items = [[etiqueta, fn], …]
+function trkMenu(title,items){ const m=askLayer('<h3>'+escTxt(title)+'</h3><div class="nvm-list">'+items.map((it,i)=>'<div class="nvm" data-pop="'+i+'">'+escTxt(it[0])+'<span class="nvm-x">›</span></div>').join('')+'</div><div class="sheetbtns"><button class="cancel" data-ask="no">cerrar</button></div>');
+  m.addEventListener('click',ev=>{ const b=ev.target.closest&&ev.target.closest('[data-pop],[data-ask]'); if(!b)return; ev.stopPropagation(); closeAsk(true); if(b.dataset.pop!=null)items[+b.dataset.pop][1](); }); }
+document.addEventListener('click',e=>{ const g=e.target&&e.target.closest&&e.target.closest('[data-gloss]');
+  if(g){ e.stopPropagation(); e.preventDefault(); if(document.getElementById('gloss')&&window._glossEl===g)popClose(); else trkPop(g,GLOSS[g.dataset.gloss]); return; }
+  if(!(e.target&&e.target.closest&&e.target.closest('#gloss')))popClose(); },true);
+try{ document.addEventListener('scroll',popClose,{capture:true,passive:true}); }catch(_){}   // cualquier scroll (pantalla o sheet) la cierra
 // TRKPrompt: un campo en un sheet (reemplaza al diálogo nativo de texto). onSave(valor) → false = no cerrar (el toast dice por qué)
 function trkPrompt(o,onSave){ openModal('<h3>'+escTxt(o.title||'')+'</h3><div class="field"><label>'+escTxt(o.label||'')+'</label><input id="tp_in" type="'+(o.type||'text')+'"'+(o.inputmode?' inputmode="'+o.inputmode+'"':'')+' value="'+escTxt(o.value==null?'':String(o.value))+'" placeholder="'+escTxt(o.placeholder||'')+'"/></div>'+(o.hint?'<div class="submeta gap">'+escTxt(o.hint)+'</div>':'')+'<div class="sheetbtns"><button class="ok" id="tp_ok">'+escTxt(o.ok||'guardar')+'</button><button class="cancel" data-act="closemodal">cancelar</button></div>');
   const i=document.getElementById('tp_in'); const go=()=>{ if(onSave(i.value)!==false)closeModal(); };
