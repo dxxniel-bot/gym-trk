@@ -583,6 +583,10 @@ Zona táctil ≥44 px en todo lo tocable (acciones de texto con padding + margen
 - **Números del anillo** con escala propia; overlays (boot, wrap, escáner) fuera de la escala de tipo.
 - **`.scan-reticle`** (overlay de cámara) y `.dz` (panel de diseño, solo dev).
 - **Glifo del FAB** (`+` 30/300).
+- **Geometría atada al JS** (espaciados que el código también usa para posicionar): la columna de etiquetas Y de las
+  gráficas de detalle (40 px, `.chwrap`/`.chxs` = `.chscrub right`) y el eje de horas de la agenda (30 px, `.ag-hr i` =
+  `left:30px` en JS). **Márgenes negativos de centrado** de puntos (`.chsd` −5 px en un punto de 10, `.cd.t.l0::after`
+  −1.5 px en uno de 3).
 - **Bucles funcionales** (única animación infinita permitida): spinners de carga (700 ms), cursor `▌` y "toca para
   seguir" (1.15–1.5 s, `step-end`), el barrido del escáner mientras busca (2 s), y los 3 destellos de fin de descanso
   (500 ms × 3). Llevan `/*ds:exempt*/`.
@@ -790,6 +794,12 @@ Medido sobre v236 antes de tocar nada (auditor + lectura del código). Lo que DS
 | D15 | Logros | //RECORDS estático | `PR` en los récords de los últimos 7 días | R6 |
 | D16 | //MÚSCULOS detalle | 4 lecturas solo en texto | 4 TRKBar (volumen vs MRV, estímulo, fatiga, recuperación) + estado en texto | R6 |
 | D17 | RIR en la tabla | `<select>` nativo | TRKSelect (0–5, F), `<select>` de respaldo | R7 (B) |
+
+**Hecho R1 (v237):** D1 duplicados 2 → 0 · D2 espaciado del CSS **107 por token / 260 literales → 360 / 0** (fase exacta
+`ds-diff` = 0 diferencias en 55 escenarios con datos reales; fase de escala: 14→12 salvo encabezado→contenido (`--sp-section`: `.grp-label`,
+`.sheet h3`, `.mdhd`, `.ws-cardh`) y el menú (→16, zona táctil); 18→16; 22→24; 30/28/34→32; 20→24; 9→10; 5/3→4; `.exprog` 7→8) ·
+D3 `//FUERZA` y `.grp-label` de 14 variantes a 3 (sección · `.sub` 12/4 · `.first` 4/4, color `--o40`). Fuera de escala 0 en todo el
+archivo; las partes fijas de los badges dinámicos (`.setprog`, `.exprog`) pasan a clase y en línea solo queda el color calculado.
 
 **Ruta:** R0 guideline (este documento + auditor) · R1 v237 saneamiento · R2 v238 feedback y confirmación · R3 v239
 pestañas, glosario, acciones de fila, transición · R4 v240 filas · R5 v241 historial · R6 v242 progreso · R7 v243 RIR.

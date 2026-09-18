@@ -53,7 +53,7 @@ const radii = [...html.matchAll(/border-radius\s*:\s*([^;"'}]+)/g)].map(m => m[1
 const radiiLit = radii.filter(v => !/var\(/.test(v));
 const radiiOff = radiiLit.filter(v => !v.split(/\s+/).every(p => RADIUS_OK.has(p)));
 const spaceVals = [];
-[...html.matchAll(/(?:padding|margin|gap)(?:-(?:top|right|bottom|left))?\s*:\s*([^;"'}]+)/g)].forEach(m => {
+[...html.matchAll(/(?<![\w-])(?:padding|margin|gap)(?:-(?:top|right|bottom|left))?\s*:\s*([^;"'}]+)/g)].forEach(m => {
   m[1].split(/\s+/).forEach(p => { const x = p.match(/^(-?[\d.]+)px$/); if (x) spaceVals.push(Math.abs(+x[1])); }); });
 const spaceOff = spaceVals.filter(v => !SPACE_OK.has(v));
 const spaceTok = tokenUse('s') - tokenUse('sp-') - tokenUse('sheet') - tokenUse('shadow');
@@ -99,7 +99,7 @@ const handlers = [];
 [...js.matchAll(/getElementById\(['"]([\w-]+_save)['"]\)[^;{]*?\.onclick\s*=\s*(?:\([^)]*\)|\w+)\s*=>\s*\{/g)].forEach(m => handlers.push({ n: '#' + m[1], b: blockAt(m.index + m[0].length - 1) }));
 const silentSaves = handlers.filter(x => /\bsave\(\)/.test(x.b) && !/\btoast(Task)?\(/.test(x.b)).map(x => x.n);
 // espaciado del CSS escrito por token vs literal (6/10 medio paso y 1 óptico cuentan como válidos)
-const cssSpace = [...css.matchAll(/(?:padding|margin|gap)(?:-(?:top|right|bottom|left))?\s*:\s*([^;}]+)/g)].flatMap(m => m[1].trim().split(/\s+(?![^(]*\))/));
+const cssSpace = [...css.matchAll(/(?<![\w-])(?:padding|margin|gap)(?:-(?:top|right|bottom|left))?\s*:\s*([^;}]+)/g)].flatMap(m => m[1].trim().split(/\s+(?![^(]*\))/));
 const spTok = cssSpace.filter(p => /var\(--(s\d|sp-)/.test(p) || /^calc\(/.test(p)).length;
 const spLit = cssSpace.filter(p => /^-?[\d.]+px$/.test(p) && ![1, 6, 10].includes(Math.abs(parseFloat(p)))).length;
 
