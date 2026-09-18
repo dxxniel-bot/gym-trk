@@ -146,6 +146,24 @@
   .cd.l1{background:var(--o60);} .cd.l2{background:var(--good);}
   .cm .cd.t{box-shadow:0 0 0 1px var(--fg);} .cm .cd.t.l0::after{content:''; position:absolute; left:50%; top:50%; width:3px; height:3px; margin:-1.5px 0 0 -1.5px; border-radius:50%; background:var(--fg);}
   .calleg{display:flex; gap:12px; flex-wrap:wrap; margin-top:10px; font-size:9px; color:var(--o40);} .calleg span{display:flex; align-items:center; gap:5px;} .calleg .cd{width:14px; height:9px; border-radius:3px;}
+  /* v227 · gráfica de detalle: etiquetas HTML sobre el SVG (Y a la derecha, fechas abajo, promedio con
+     pastilla) y capa de scrub. touch-action:none solo en la gráfica: ahí el dedo es para leerla. */
+  .chwrap{position:relative; margin:12px 0 2px; padding-right:40px; touch-action:none; -webkit-user-select:none; user-select:none; cursor:crosshair;}
+  .chy{position:absolute; right:0; transform:translateY(-50%); font-size:9px; color:var(--o40); font-variant-numeric:tabular-nums; white-space:nowrap;}
+  .chavg{position:absolute; left:4px; transform:translateY(-50%); font-size:9px; color:var(--o70); background:var(--sheet-bg); border:.5px solid var(--o20); border-radius:8px; padding:1px 6px; pointer-events:none; white-space:nowrap;}
+  .chxs{position:relative; height:12px; margin:3px 40px 4px 0;}
+  .chx{position:absolute; top:0; font-size:9px; color:var(--o40); transform:translateX(-50%); white-space:nowrap;} .chx.a0{transform:none;} .chx.a1{transform:translateX(-100%);}
+  .chscrub{position:absolute; top:0; bottom:0; left:0; right:40px; pointer-events:none; display:none;} .chwrap.scrub .chscrub{display:block;}
+  .chsl{position:absolute; top:0; bottom:0; width:0; border-left:1px dashed var(--o50);}
+  .chsd{position:absolute; width:10px; height:10px; margin:-5px 0 0 -5px; border-radius:50%; background:var(--fill); box-shadow:0 0 0 2px var(--sheet-bg);}
+  .chst{position:absolute; top:-4px; transform:translate(-50%,-100%); font-size:10px; color:var(--fg); background:var(--card2); border:.5px solid var(--o20); border-radius:6px; padding:3px 7px; white-space:nowrap;}
+  .chhint{font-size:9px; color:var(--o30); text-align:center; margin:0 0 10px;}
+  .mdtop2{display:flex; justify-content:space-between; align-items:flex-end; gap:10px; margin-top:8px;}
+  .mdst{text-align:right; font-size:11px; font-weight:800; white-space:nowrap;} .mdst .mdstl{font-size:9px; font-weight:400; color:var(--o40); margin-top:3px;}
+  .mdnav{display:flex; align-items:center; justify-content:space-between; font-size:10px; color:var(--o50); margin-top:8px;} .mdnav a{cursor:pointer; padding:2px 12px; font-size:15px; color:var(--o70);} .mdnav a.off{color:var(--o20); cursor:default;}
+  .mdcust{display:flex; gap:6px; align-items:center; margin:8px 0 0; font-size:11px; color:var(--o50);} .mdcust input{flex:1; min-width:0; font-size:13px;} .mdcust .b{flex:0 0 auto;}
+  .mdtr{display:grid; grid-template-columns:48px 74px 1fr 70px; gap:6px; align-items:center; padding:5px 0; border-bottom:.5px solid var(--o10); font-size:11px;}
+  .mdtk{color:var(--o50);} .mdtv{font-weight:800; white-space:nowrap;} .mdtx{color:var(--o40); font-size:10px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;} .mdts{height:22px;}
   .pwk{display:flex; gap:6px; margin-top:12px;} .pwd{flex:1; height:5px; border-radius:3px; background:var(--track);} .pwd.on{background:var(--good);}
   .pgrid{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:11px;}
   .ptile.tap{cursor:pointer; transition:transform .1s ease, opacity .1s ease;}
@@ -2227,6 +2245,40 @@ function _streakSelfCheck(){
   } finally { db=real; }
   console.log('streak self-check OK');
 }
+// v227 — gráficas: un hueco es un hueco. Corre el renderer REAL sobre series de juguete (no toca db).
+function _chartSelfCheck(){
+  const A=(nm,c)=>{ if(!c) throw new Error('SELFCHECK chart: '+nm); };
+  const parse=h=>{ const d=document.createElement('div'); d.innerHTML=h; return d; };
+  const lines=d=>[...d.querySelectorAll('path')].filter(p=>p.getAttribute('fill')==='none'&&!/l0,0/.test(p.getAttribute('d')||'')&&!p.getAttribute('stroke-dasharray'));
+  const dotsY=d=>[...d.querySelectorAll('path')].filter(p=>/l0,0/.test(p.getAttribute('d')||'')).map(p=>+(p.getAttribute('d').match(/,([\d.]+) l0,0/)||[])[1]);
+  // 1 · [5, —, —, 7, 8]: el punto aislado se dibuja, la línea NO cruza el hueco
+  const d1=parse(lineChart([5,null,null,7,8],{h:60}));
+  A('un hueco parte la línea (un solo tramo con 2+ puntos)', lines(d1).length===1);
+  A('el tramo no empieza en el punto de antes del hueco', !/^M7\./.test(lines(d1)[0].getAttribute('d')));
+  A('el día aislado sí tiene su punto', dotsY(d1).length>=3);
+  // 2 · el caso SpO2/pasos del dueño: 0 = no registraste → hueco, no piso; la escala sale de los datos reales
+  const d2=parse(lineChart([98,97,0,0,96],{h:60,gap0:true}));
+  const ys=dotsY(d2);
+  A('los días sin registro no tienen punto', ys.length===3);
+  A('la escala usa todo el alto para 96-98 (no la aplasta un 0)', Math.max(...ys)-Math.min(...ys)>30);
+  // 3 · el 0 real sigue siendo dato cuando la métrica lo permite (auto-percepción 0/10)
+  A('un 0 real (sin gap0) se dibuja', dotsY(parse(lineChart([0,3,5],{h:40}))).length===3);
+  // 4 · ids de gradiente únicos (antes todas repetían id="lcg")
+  const g1=(lineChart([1,2],{}).match(/id="(lcg\d+)"/)||[])[1], g2=(lineChart([1,2],{}).match(/id="(lcg\d+)"/)||[])[1];
+  A('cada gráfica con su propio gradiente', g1&&g2&&g1!==g2);
+  // 5 · rango normal propio y tendencias
+  const flat=Array(40).fill(10); const nb=normalBands(flat,5,90);
+  A('banda de una serie plana = su valor', nb.every(b=>b&&b[0]===10&&b[1]===10));
+  A('sin 7 días previos no hay banda', normalBands([1,2,3,4],2,90).every(b=>b===null));
+  const rising=Array.from({length:40},(_,i)=>i<20?100:130); const tr=trendRows(rising);
+  A('un salto claro sale como tendencia ▲ significativa', tr.some(t=>t.H===14&&t.d>0&&t.sig));
+  A('una serie plana no inventa tendencia', trendRows(flat).every(t=>!t.sig));
+  // 6 · el detalle expone los puntos para el scrub (solo días con dato)
+  const dd=parse(lineChart([1,null,3],{h:100,detail:true,dates:['2026-09-01','2026-09-02','2026-09-03'],kind:'md'}));
+  const pts=JSON.parse(dd.querySelector('.chwrap').dataset.pts);
+  A('el scrub solo ofrece días con dato', pts.length===2);
+  console.log('chart self-check OK');
+}
 function _historyEditSelfCheck(){
   // the finalize step below saves and advances the rotation — split + rotIdx must come back too (they leaked before v221)
   const origSessions=db.sessions, origActive=db.activeWork, origHist=state._histSessId, origSplit=db.split, origRot=db.rotIdx;
@@ -2995,18 +3047,198 @@ function miniBars(vals,labels,opt){ opt=opt||{}; const nums=(vals||[]).map(v=>+v
     const ph=Math.round(((v-lo)/(hi-lo))*92)+(v>0||opt.norm?6:0); const cur=i===nums.length-1;
     return `<div style="flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;height:100%"><div title="${v}" style="width:78%;height:${Math.max(ph,2)}%;background:${cur?'var(--fill)':'var(--o30)'}"></div><span style="font-size:7px;color:var(--o40);margin-top:3px;height:8px;line-height:1">${(labels&&labels[i])||''}</span></div>`;
   }).join('')+`</div>`; }
-// single-dot line chart (Rimu-style: thin line + dots + soft gradient fill); opt.zero baselines at 0
-function lineChart(vals,opt){ opt=opt||{}; const nums=(vals||[]).map(v=>+v||0); if(!nums.length)return '';
-  const W=300,H=opt.h||56,pad=7; let lo=Math.min(...nums),hi=Math.max(...nums); if(opt.zero)lo=Math.min(0,lo); if(hi<=lo)hi=lo+1;
-  const n=nums.length; let xs;
-  if(opt.dates&&opt.dates.length===n&&n>1){ const ts=opt.dates.map(d=>Date.parse(d)||0); const tlo=Math.min(...ts),thi=Math.max(...ts),tsp=(thi-tlo)||1; xs=ts.map(t=>pad+(t-tlo)/tsp*(W-2*pad)); }
-  else { xs=nums.map((_,i)=>n>1?pad+i*(W-2*pad)/(n-1):W/2); }
-  const Y=v=>+(H-pad-((v-lo)/(hi-lo))*(H-2*pad)).toFixed(1);
-  const pts=nums.map((v,i)=>xs[i].toFixed(1)+','+Y(v));
-  const dots=nums.map((v,i)=>(i===n-1||n<=45||i%Math.round(n/24)===0)?`<circle cx="${xs[i].toFixed(1)}" cy="${Y(v)}" r="${i===n-1?2.8:1.7}" fill="${i===n-1?'var(--fill)':'var(--o40)'}"/>`:'').join('');
-  let extra='',hit='';
-  if(opt.interactive){ const lbls=opt.labels||nums.map(v=>String(v)); const pd=nums.map((v,i)=>({f:+(xs[i]/W).toFixed(4),l:lbls[i]})); extra=` data-act="chartpt" data-pts='${JSON.stringify(pd).replace(/'/g,'&#39;')}'`; hit=`<rect x="0" y="0" width="${W}" height="${H}" fill="transparent" pointer-events="all"/>`; }
-  return `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none"${extra} style="width:100%;height:${H}px;display:block;margin:10px 0 2px${opt.interactive?';cursor:pointer':''}"><defs><linearGradient id="lcg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--fill)" stop-opacity=".16"/><stop offset="1" stop-color="var(--fill)" stop-opacity="0"/></linearGradient></defs><polygon points="${pad},${H-pad} ${pts.join(' ')} ${W-pad},${H-pad}" fill="url(#lcg)"/><polyline points="${pts.join(' ')}" fill="none" stroke="var(--o60)" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round"/>${dots}${hit}</svg>`; }
+// ---------- v227 · gráficas (fix.md + capturas de Bevel del dueño) ----------
+// Arreglo de raíz: "sin dato no hay dato — la línea corta, no baja al piso". Antes cada día sin registro
+// entraba como un 0 real (`+v||0`) que además aplastaba la escala contra el techo. Ahora null/''/NaN — y el
+// 0 cuando opt.gap0 (métricas diarias donde 0 = no registraste) — es un HUECO: sin línea, sin relleno y sin
+// punto cruzándolo; la escala sale solo de valores reales. Sin distorsión con preserveAspectRatio=none:
+// trazos non-scaling y puntos dibujados como trazos de largo cero con remate redondo (círculos perfectos a
+// cualquier ancho). Cada gradiente con id propio (antes todas las gráficas repetían id="lcg").
+// Tiles (h 22-40): versión mínima. Detalle (opt.detail): banda de rango normal, promedio punteado con su
+// pastilla, eje Y a la derecha, fechas abajo, scrub con un dedo y pellizco con dos (motor más abajo).
+let _chartSeq=0;
+function chartNums(vals,gap0){ return (vals||[]).map(v=>{ if(v==null||v==='')return null; const x=+v; if(!isFinite(x))return null; if(gap0&&!(x>0))return null; return x; }); }
+function lineChart(vals,opt){ opt=opt||{};
+  const nums=chartNums(vals,opt.gap0); const n=nums.length; if(!n)return '';
+  const real=nums.filter(v=>v!=null); if(!real.length)return '';
+  const W=300, H=opt.h||56, padX=opt.detail?4:7, padT=opt.detail?12:7, padB=opt.detail?8:7;
+  const rlo=Math.min(...real), rhi=Math.max(...real);
+  let lo=rlo, hi=rhi;
+  if(opt.band)opt.band.forEach(b=>{ if(b){ lo=Math.min(lo,b[0]); hi=Math.max(hi,b[1]); } });
+  if(opt.avg!=null&&isFinite(opt.avg)){ lo=Math.min(lo,opt.avg); hi=Math.max(hi,opt.avg); }
+  if(opt.zero)lo=Math.min(0,lo);
+  if(hi-lo<1e-9){ const k=Math.abs(hi)*0.05||1; hi+=k; lo-=opt.zero&&lo>=0?0:k; }
+  // zoom vertical (pellizco ↕): >1 = más agresivo — rango más apretado alrededor de TU PROMEDIO (los extremos
+  // pueden salirse del cuadro, como al hacer zoom en Bevel); <1 = más plano. Doble toque vuelve a 1.
+  const z=opt.yZoom||1;
+  if(z!==1){ const c=(opt.avg!=null&&isFinite(opt.avg))?opt.avg:(rlo+rhi)/2; const half=(hi-lo)/2/z; lo=c-half; hi=c+half; }
+  let xs;
+  if(opt.dates&&opt.dates.length===n&&(n>1||opt.tlo!=null)){ const ts=opt.dates.map(d=>Date.parse(d+(String(d).length===10?'T12:00:00':''))||0);
+    const tlo=opt.tlo!=null?opt.tlo:Math.min(...ts), thi=opt.thi!=null?opt.thi:Math.max(...ts), tsp=(thi-tlo)||1;
+    xs=ts.map(t=>padX+(t-tlo)/tsp*(W-2*padX)); }
+  else xs=nums.map((_,i)=>n>1?padX+i*(W-2*padX)/(n-1):W/2);
+  const Y=v=>+(H-padB-((v-lo)/(hi-lo))*(H-padT-padB)).toFixed(2);
+  const gid='lcg'+(++_chartSeq);
+  const segs=[]; let cur=null;
+  nums.forEach((v,i)=>{ if(v==null){ cur=null; return; } if(!cur){ cur=[]; segs.push(cur); } cur.push(i); });
+  let band='';
+  if(opt.band){ const bs=[]; let c=null; opt.band.forEach((b,i)=>{ if(!b){ c=null; return; } if(!c){ c=[]; bs.push(c); } c.push(i); });
+    bs.forEach(sg=>{ if(sg.length<2)return; const top=sg.map(i=>xs[i].toFixed(1)+','+Y(opt.band[i][1])); const bot=sg.slice().reverse().map(i=>xs[i].toFixed(1)+','+Y(opt.band[i][0]));
+      band+='<path d="M'+top.join(' L')+' L'+bot.join(' L')+' Z" fill="var(--o10)"/>'; }); }
+  let area='', line='';
+  segs.forEach(sg=>{ if(sg.length<2)return; const p=sg.map(i=>xs[i].toFixed(1)+','+Y(nums[i])).join(' L');
+    line+='<path d="M'+p+'" fill="none" stroke="'+(opt.stroke||(opt.detail?'var(--fill)':'var(--o60)'))+'" stroke-width="'+(opt.detail?1.8:1.4)+'" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/>';
+    if(!opt.noFill&&!(opt.detail&&opt.band))area+='<path d="M'+xs[sg[0]].toFixed(1)+','+(H-padB)+' L'+p+' L'+xs[sg[sg.length-1]].toFixed(1)+','+(H-padB)+' Z" fill="url(#'+gid+')"/>'; });
+  let avgL='';
+  if(opt.detail&&opt.avg!=null&&isFinite(opt.avg)){ const y=Y(opt.avg); avgL='<path d="M'+padX+','+y+' L'+(W-padX)+','+y+'" stroke="var(--o40)" stroke-width="1" stroke-dasharray="3 4" fill="none" vector-effect="non-scaling-stroke"/>'; }
+  let last=-1; for(let i=n-1;i>=0;i--){ if(nums[i]!=null){ last=i; break; } }
+  const dot=(i,r,col)=>'<path d="M'+xs[i].toFixed(1)+','+Y(nums[i])+' l0,0" stroke="'+col+'" stroke-width="'+(r*2)+'" stroke-linecap="round" fill="none" vector-effect="non-scaling-stroke"/>';
+  const lone=new Set(segs.filter(sg=>sg.length===1).map(sg=>sg[0]));
+  const every=n>45?Math.round(n/24):1;
+  let dots='';
+  nums.forEach((v,i)=>{ if(v==null||i===last)return; if(lone.has(i)||(!opt.noDots&&i%every===0))dots+=dot(i,opt.detail?2:1.7,opt.detail?'var(--o60)':'var(--o40)'); });
+  if(last>=0){ if(opt.detail)dots+=dot(last,6,'var(--sheet-bg)'); dots+=dot(last,opt.detail?3.8:2.8,'var(--fill)'); }
+  const svg='<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" style="width:100%;height:'+H+'px;display:block'+(opt.detail?'':';margin:'+(opt.margin!=null?opt.margin:'10px 0 2px'))+'"><defs><linearGradient id="'+gid+'" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--fill)" stop-opacity="'+(opt.detail?'.12':'.16')+'"/><stop offset="1" stop-color="var(--fill)" stop-opacity="0"/></linearGradient></defs>'+band+area+avgL+line+dots+'</svg>';
+  if(!opt.detail)return svg;
+  // ---- detalle: etiquetas HTML sobre el SVG (el texto dentro de un SVG estirado se deformaría) ----
+  const fmt=opt.fmt||(v=>String(Math.round(v*10)/10));
+  const pct=y=>(y/H*100).toFixed(2)+'%';
+  const ticks=[hi,(hi+lo)/2,lo].map(v=>'<span class="chy" style="top:'+pct(Y(v))+'">'+escTxt(fmt(v))+'</span>').join('');
+  const avgP=(opt.avg!=null&&isFinite(opt.avg))?'<span class="chavg" style="top:'+pct(Y(opt.avg))+'">prom '+escTxt(fmt(opt.avg))+'</span>':'';
+  let xt='';
+  if(opt.dates&&opt.dates.length===n&&n){ const k=Math.min(opt.xticks||4,n); const used={};
+    for(let j=0;j<k;j++){ const i=k>1?Math.round(j*(n-1)/(k-1)):n-1; if(used[i])continue; used[i]=1;
+      xt+='<span class="chx'+(j===0?' a0':j===k-1?' a1':'')+'" style="left:'+(xs[i]/W*100).toFixed(2)+'%">'+escTxt(fmtShort(String(opt.dates[i]).slice(0,10)))+'</span>'; } }
+  const lbls=opt.labels||nums.map(v=>v==null?'':fmt(v));
+  const pd=[]; nums.forEach((v,i)=>{ if(v==null)return; pd.push({f:+(xs[i]/W).toFixed(4),y:+(Y(v)/H).toFixed(4),l:lbls[i]||''}); });
+  return '<div class="chwrap" data-chart="1" data-kind="'+(opt.kind||'')+'" data-ladder="'+(opt.ladder||[]).join(',')+'" data-cur="'+(opt.cur||'')+'" data-pts=\''+JSON.stringify(pd).replace(/'/g,'&#39;')+'\' style="height:'+H+'px">'
+    +svg+ticks+avgP+'<div class="chscrub"><i class="chsl"></i><i class="chsd"></i><span class="chst"></span></div></div>'
+    +'<div class="chxs">'+xt+'</div>';
+}
+// días que terminan en endISO (lastDays(n) = daysEnding(n, hoy)) — el detalle puede paginar hacia atrás
+function daysEnding(n,endISO){ const e=new Date((endISO||todayISO())+'T12:00:00'); const out=[]; for(let i=n-1;i>=0;i--){ const d=new Date(e); d.setDate(e.getDate()-i); out.push(todayISO(d)); } return out; }
+// rango NORMAL propio por día: percentiles 15-85 de los 90 días PREVIOS con dato (mín. 7). De tu historial,
+// no de tablas externas — "en rango" significa "normal para ti".
+function normalBands(rawLong,nShow,win){ win=win||90; const out=[]; const off=rawLong.length-nShow;
+  for(let i=off;i<rawLong.length;i++){ const w=[]; for(let j=Math.max(0,i-win);j<i;j++){ const v=rawLong[j]; if(v!=null)w.push(v); }
+    if(w.length<7){ out.push(null); continue; } w.sort((a,b)=>a-b); const q=p=>w[Math.min(w.length-1,Math.max(0,Math.round(p*(w.length-1))))]; out.push([q(.15),q(.85)]); }
+  return out; }
+// tendencias: promedio de los últimos H días vs los H anteriores. La flecha solo lleva acento si el cambio
+// supera ~1 error estándar de esa ventana (1.41·σ/√H); si no, gris — ruido no es tendencia.
+function trendRows(raw){ const mean=a=>{ const v=a.filter(x=>x!=null); return v.length?v.reduce((s,x)=>s+x,0)/v.length:null; };
+  const all=raw.filter(x=>x!=null); let sd=0; if(all.length>2){ const m=all.reduce((s,x)=>s+x,0)/all.length; sd=Math.sqrt(all.reduce((s,x)=>s+(x-m)*(x-m),0)/(all.length-1)); }
+  const N=raw.length; const ma=raw.map((_,i)=>mean(raw.slice(Math.max(0,i-6),i+1)));
+  return [3,7,14,30,90].map(H=>{ if(2*H>N)return null; const cur=mean(raw.slice(N-H)), prev=mean(raw.slice(N-2*H,N-H)); if(cur==null||prev==null)return null;
+    const d=cur-prev; return {H,cur,prev,d,pct:prev?d/Math.abs(prev)*100:0,sig:sd>0&&Math.abs(d)>1.41*sd/Math.sqrt(H),spark:ma.slice(N-Math.max(H,7))}; }).filter(Boolean); }
+// dirección "buena" de cada métrica — SOLO colorea el estado y las tendencias, nunca la línea
+function metricBetter(key){ if(key==='rhr'||key==='sc_bloat')return 'down';
+  if(['steps','sleep','hrv','water','mood','kcalact','sc_definicion','sc_facial','sc_apariencia'].indexOf(key)>=0)return 'up';
+  if(key==='weight'){ const g=(db.profile&&db.profile.goal)||'maintain'; return g==='cut'?'down':g==='bulk'?'up':null; }
+  return null; }
+// valores crudos con null = sin registro (cada serie de metricSeries usa 0 como "no hay dato", salvo peso y auto-percepción)
+function seriesRaw(sp){ if(Array.isArray(sp.raw))return sp.raw.slice(); if(sp.key==='weight')return sp.vals.slice(); return sp.vals.map(v=>(+v>0)?+v:null); }
+function dailyRawFor(key,n,end){ if(key==='weight'){ return daysEnding(n,end).map(d=>(db.bodyweight&&db.bodyweight[d]!=null)?+db.bodyweight[d]:null); } const sp=metricSeries(key,n,end); return sp?seriesRaw(sp):[]; }
+const MD_LADDER=[7,15,30,90,180,365];
+const MD_LBL={7:'7D',15:'15D',30:'30D',90:'3M',180:'6M',365:'1A'};
+function mdRound(v){ return Math.abs(v)>=100?Math.round(v):Math.round(v*10)/10; }
+function openMetricDetail(key){
+  window._mdKey=key;
+  const today=todayISO(), cust=window._mdCustom;
+  const end=cust?cust.to:(window._mdEnd||today);
+  const days=cust?Math.max(2,Math.round((Date.parse(cust.to+'T12:00:00')-Date.parse(cust.from+'T12:00:00'))/86400000)+1):(window._mdRange||30);
+  const sp=metricSeries(key,days,end); if(!sp)return;
+  const raw=seriesRaw(sp), real=raw.filter(v=>v!=null), better=metricBetter(key);
+  const vf=v=>sp.fmt(mdRound(v));
+  let band=null; if(key!=='weight'){ const lg=metricSeries(key,days+90,end); if(lg)band=normalBands(seriesRaw(lg),raw.length,90); }
+  let li=-1; for(let i=raw.length-1;i>=0;i--){ if(raw[i]!=null){ li=i; break; } }
+  const lastV=li>=0?raw[li]:null, lastBand=(band&&li>=0)?band[li]:null;
+  let st='', stCol='var(--o60)';
+  if(lastBand&&lastV!=null){ const up=lastV>lastBand[1], dn=lastV<lastBand[0];
+    st=up?'sobre lo normal':dn?'bajo lo normal':'en rango';
+    if(up||dn){ const good=(up&&better==='up')||(dn&&better==='down'); stCol=better?(good?'var(--good)':'var(--warn)'):'var(--warn)'; } }
+  const avg=real.length?real.reduce((a,b)=>a+b,0)/real.length:null;
+  const win=daysEnding(days,end);
+  const labels=raw.map((v,i)=>(v!=null?vf(v):'sin registro')+' · '+fmtShort(sp.dates[i]));
+  const yz=(window._chartYZ&&window._chartYZ.md)||1;
+  const chart=real.length?lineChart(raw,{h:150,detail:true,dates:sp.dates,tlo:Date.parse(win[0]+'T12:00:00'),thi:Date.parse(end+'T12:00:00'),band,avg,fmt:vf,labels,kind:'md',ladder:MD_LADDER,cur:cust?'':days,yZoom:yz}):'';
+  let bI=-1,wI=-1; raw.forEach((v,i)=>{ if(v==null)return; if(bI<0||v>raw[bI])bI=i; if(wI<0||v<raw[wI])wI=i; });
+  const tab=d=>`<span data-act="mdrange" data-r="${d}" data-m="${key}" class="${(!cust&&days===d)?'on':''}">${MD_LBL[d]}</span>`;
+  const segs=MD_LADDER.map(tab).join('')+`<span data-act="mdcustom" class="${cust||window._mdShowCustom?'on':''}" title="rango personalizado">▦</span>`;
+  const custBox=window._mdShowCustom?`<div class="mdcust"><input type="date" id="mdc_from" value="${cust?cust.from:win[0]}" max="${today}"/><span>→</span><input type="date" id="mdc_to" value="${end}" max="${today}"/><button class="b" data-act="mdcustapply">ok</button></div>`:'';
+  const atEnd=end>=today;
+  const nav=`<div class="mdnav"><a data-act="mdpage" data-d="-1">‹</a><span>${fmtShort(win[0])} – ${fmtShort(end)}${yz!==1?` · zoom ${Math.round(yz*10)/10}×`:''}</span><a data-act="mdpage" data-d="1" class="${atEnd?'off':''}">›</a></div>`;
+  const headBtn=sp.canLog?`<a class="mdlog" data-act="${sp.logAct}">+ log</a>`:'';
+  // tendencias (siempre sobre los últimos 180 días hasta hoy, en medias móviles de 7 días)
+  let trend=''; { const tr=trendRows(dailyRawFor(key,187,today));
+    if(tr.length){ trend=`<div class="grp-label" style="margin:16px 0 4px">TENDENCIAS <span style="color:var(--o35);font-weight:400">· últimos N días vs los N anteriores</span></div>`
+      +tr.map(t=>{ const good=better?((t.d>0)===(better==='up')):null; const col=!t.sig?'var(--o40)':(good==null?'var(--o70)':good?'var(--good)':'var(--bad)');
+        const ar=Math.abs(t.pct)<0.05?'=':(t.d>0?'▲':'▼');
+        return `<div class="mdtr"><span class="mdtk">${t.H} días</span><span class="mdtv" style="color:${col}">${ar} ${t.pct>0?'+':''}${Math.round(t.pct*10)/10}%</span><span class="mdtx">${escTxt(vf(t.prev))} → ${escTxt(vf(t.cur))}</span><span class="mdts">${lineChart(t.spark,{h:22,noFill:true,noDots:true,margin:'0'})}</span></div>`; }).join(''); } }
+  openModal(`<div class="mdetail">
+    <div class="mdhd"><h3>${sp.title}</h3>${headBtn}</div>
+    <div class="mdtabs">${segs}</div>${custBox}
+    ${!real.length?`${nav}<div class="empty" style="padding:30px 0">sin registros en este rango</div>`:`
+      <div class="mdtop2"><div><div class="mdval">${escTxt(vf(lastV))}</div><div class="mdmeta">${li>=0?fmtShort(sp.dates[li]):''}${avg!=null?' · prom '+escTxt(vf(avg)):''}</div></div>
+        ${st?`<div class="mdst" style="color:${stCol}">${st}<div class="mdstl">tu normal ${escTxt(vf(lastBand[0]))} – ${escTxt(vf(lastBand[1]))}</div></div>`:''}</div>
+      ${nav}
+      ${chart}
+      <div class="chhint">mantén y desliza para ver un día · pellizca ↔ para el periodo · ↕ para el zoom · doble toque = normal</div>
+      <div class="mdstats">
+        ${bI>=0?`<div class="mdline"><span class="mdk">${sp.lowerBetter?'día más alto':'mejor día'}</span><span class="mddots"></span><span class="mdv">${escTxt(vf(raw[bI]))} <span class="mdsub">${fmtShort(sp.dates[bI])}</span></span></div>`:''}
+        ${wI>=0&&wI!==bI?`<div class="mdline"><span class="mdk">${sp.lowerBetter?'día más bajo':'menor día'}</span><span class="mddots"></span><span class="mdv">${escTxt(vf(raw[wI]))} <span class="mdsub">${fmtShort(sp.dates[wI])}</span></span></div>`:''}
+        ${sp.goal?`<div class="mdline"><span class="mdk">meta diaria</span><span class="mddots"></span><span class="mdv">${escTxt(sp.fmt(sp.goal))}</span></div>`:''}
+        <div class="mdline"><span class="mdk">registros</span><span class="mddots"></span><span class="mdv">${real.length} de ${key==='weight'?days:raw.length} días</span></div>
+      </div>
+      ${trend}
+    `}
+    ${key==='weight'?compositionBlock(days):''}
+    <div class="sheetbtns" style="margin-top:14px"><button class="cancel" data-act="closemodal">cerrar</button></div>
+  </div>`, 'mdetail-wrap');
+}
+// ‹ › pagina el mismo tamaño de ventana hacia atrás/adelante (nunca más allá de hoy)
+function mdPage(dir){ const today=todayISO(), cust=window._mdCustom;
+  const shift=(iso,k)=>{ const d=new Date(iso+'T12:00:00'); d.setDate(d.getDate()+k); return todayISO(d); };
+  if(cust){ const len=Math.round((Date.parse(cust.to+'T12:00:00')-Date.parse(cust.from+'T12:00:00'))/86400000)+1; let to=shift(cust.to,dir*len); if(to>today)to=today; window._mdCustom={from:shift(to,-(len-1)),to}; }
+  else { const days=window._mdRange||30; let e=shift(window._mdEnd||today,dir*days); if(e>=today)e=null; window._mdEnd=e; }
+  openMetricDetail(window._mdKey); }
+// ---- pellizco y scrub: un dedo = mantener y deslizar (línea vertical punteada + punto + etiqueta);
+// dos dedos ↔ = cambia el periodo por la escalera de esa gráfica; ↕ = zoom vertical; doble toque = normal ----
+function chartReopen(kind){ if(kind==='md')openMetricDetail(window._mdKey); else if(kind==='vol')openVolumeDetail(); else if(kind==='lift')openLiftDetail(window._liftName); }
+function chartPeriodStep(w,dir){ const kind=w.dataset.kind; const lad=(w.dataset.ladder||'').split(',').map(Number).filter(Boolean); if(!kind||!lad.length)return;
+  let cur=+w.dataset.cur; if(!cur)cur=lad[Math.floor(lad.length/2)];
+  let i=lad.findIndex(x=>x>=cur); if(i<0)i=lad.length-1;
+  const ni=Math.max(0,Math.min(lad.length-1,i+dir)); if(ni===i&&lad[i]===cur)return;
+  const v=lad[ni];
+  if(kind==='md'){ window._mdRange=v; window._mdCustom=null; window._mdEnd=null; }
+  else if(kind==='vol')window._volWeeks=v; else if(kind==='lift')window._liftDays=v;
+  chartReopen(kind); }
+function chartYZoom(w,f){ const kind=w.dataset.kind; if(!kind)return; window._chartYZ=window._chartYZ||{}; window._chartYZ[kind]=Math.max(0.5,Math.min(6,(window._chartYZ[kind]||1)*f)); chartReopen(kind); }
+function chartZoomReset(w){ const kind=w.dataset.kind; if(!kind)return; window._chartYZ=window._chartYZ||{}; if((window._chartYZ[kind]||1)===1)return; window._chartYZ[kind]=1; chartReopen(kind); }
+(function(){
+  const P=new Map(); let wrap=null, pinch0=null, lastTap=0, hideT=0;
+  const ptsOf=w=>{ try{ return JSON.parse(w.dataset.pts||'[]'); }catch(_){ return []; } };
+  function show(w,cx){ const svg=w.querySelector('svg'); if(!svg)return; const r=svg.getBoundingClientRect(); const x=(cx-r.left)/(r.width||1); const pts=ptsOf(w); if(!pts.length)return;
+    let b=pts[0],bd=9; pts.forEach(p=>{ const d=Math.abs(p.f-x); if(d<bd){ bd=d; b=p; } });
+    clearTimeout(hideT); w.classList.add('scrub');
+    const sc=w.querySelector('.chscrub'); const L=(b.f*100)+'%';
+    sc.querySelector('.chsl').style.left=L; const d=sc.querySelector('.chsd'); d.style.left=L; d.style.top=Math.max(0,Math.min(100,b.y*100))+'%';
+    const t=sc.querySelector('.chst'); t.textContent=b.l||''; t.style.left=Math.min(84,Math.max(16,b.f*100))+'%'; }
+  function hideSoon(w){ if(!w)return; clearTimeout(hideT); hideT=setTimeout(()=>{ try{ w.classList.remove('scrub'); }catch(_){} },1600); }
+  document.addEventListener('pointerdown',e=>{ const w=e.target&&e.target.closest&&e.target.closest('.chwrap[data-chart]'); if(!w)return;
+    P.set(e.pointerId,{x:e.clientX,y:e.clientY}); wrap=w; try{ w.setPointerCapture(e.pointerId); }catch(_){}
+    if(P.size===1){ const now=Date.now(); if(now-lastTap<300){ lastTap=0; P.clear(); wrap=null; chartZoomReset(w); return; } lastTap=now; show(w,e.clientX); }
+    else if(P.size===2){ w.classList.remove('scrub'); const [a,b]=[...P.values()]; pinch0={dx:Math.abs(a.x-b.x),dy:Math.abs(a.y-b.y)}; lastTap=0; }
+  });
+  document.addEventListener('pointermove',e=>{ if(!wrap||!P.has(e.pointerId))return; P.set(e.pointerId,{x:e.clientX,y:e.clientY}); if(P.size===1&&!pinch0)show(wrap,e.clientX); });
+  const end=e=>{ if(!P.has(e.pointerId))return;
+    if(P.size===2&&pinch0&&wrap){ const [a,b]=[...P.values()]; const hx=pinch0.dx>24?Math.abs(a.x-b.x)/pinch0.dx:1, vy=pinch0.dy>24?Math.abs(a.y-b.y)/pinch0.dy:1;
+      const w=wrap; P.clear(); wrap=null; pinch0=null;
+      if(Math.abs(Math.log(hx))>=Math.abs(Math.log(vy))){ if(hx>1.2)chartPeriodStep(w,-1); else if(hx<0.83)chartPeriodStep(w,1); }
+      else if(vy>1.15||vy<0.87)chartYZoom(w,vy);
+      return; }
+    P.delete(e.pointerId); if(!P.size){ hideSoon(wrap); wrap=null; pinch0=null; } };
+  document.addEventListener('pointerup',end); document.addEventListener('pointercancel',end);
+})();
 // meal nutrient radar — heptagon, pairs opposite, straight polygon. Ejes = MISMO % que la tabla
 // (macros: % de aporte calórico de la meal · micros: % de la meta diaria). Radio: escala exponencial-invertida
 // (0%=centro, 100%=borde; avanza rápido y se frena cerca de 100). Anillos guía a 25/50/75/100% con la misma escala.
@@ -3509,9 +3741,9 @@ function lastDays(n){ const now=new Date(); const out=[]; for(let i=n-1;i>=0;i--
 function dayWater(iso){ const arr=db.meals[iso]; let w=0; if(arr)arr.forEach(m=>{ w+=+m.water||0; }); return w; }
 function avgPos(arr){ const v=arr.filter(x=>x>0); return v.length?v.reduce((a,b)=>a+b,0)/v.length:0; }
 // ---------- metric drill-down (peso / pasos / agua) — Apple-Health-style detail ----------
-function metricSeries(key, days){
+function metricSeries(key, days, end){ end=end||todayISO(); const LD=k=>daysEnding(k,end);
   if(key==='steps'){
-    const hd=lastDays(days);
+    const hd=LD(days);
     const vals=hd.map(d=>(db.steps&&db.steps[d])||0);
     const pos=vals.filter(x=>x>0);
     return {key, title:'pasos', unit:'pasos', dates:hd, vals,
@@ -3522,9 +3754,9 @@ function metricSeries(key, days){
       change: null, fmt:n=>n.toLocaleString(), zero:true, canLog:false};
   }
   if(key==='weight'){
-    const cutoff=lastDays(days)[0];
+    const cutoff=LD(days)[0];
     const all=Object.keys(db.bodyweight||{}).sort();
-    const dates=all.filter(k=>k>=cutoff);
+    const dates=all.filter(k=>k>=cutoff&&k<=end);
     const vals=dates.map(d=>db.bodyweight[d]);
     const curAll=all.length?db.bodyweight[all[all.length-1]]:0;
     const change=vals.length>=2?Math.round((vals[vals.length-1]-vals[0])*10)/10:null;
@@ -3536,7 +3768,7 @@ function metricSeries(key, days){
       change, fmt:n=>n+' kg', zero:false, canLog:true, logAct:'logweight'};
   }
   if(key==='water'){
-    const hd=lastDays(days);
+    const hd=LD(days);
     const vals=hd.map(d=>Math.round(dayWater(d)*10)/10);
     const pos=vals.filter(x=>x>0);
     const goal=(db.settings&&db.settings.goals&&db.settings.goals.water)||0;
@@ -3548,7 +3780,7 @@ function metricSeries(key, days){
       goal, change:null, fmt:n=>n+' L', zero:true, canLog:false};
   }
   if(key==='rhr'||key==='hrv'||key==='kcalact'){
-    const hd=lastDays(days); const h=H();
+    const hd=LD(days); const h=H();
     const get=d=>{ const x=h.daily[d]; if(!x)return 0; return key==='rhr'?(+x.rhr||0):key==='hrv'?((x.hrv&&+x.hrv.v)||0):(+x.activeKcal||0); };
     const vals=hd.map(get); const pos=vals.filter(v=>v>0);
     const title=key==='rhr'?'FC en reposo':key==='hrv'?'HRV':'energía activa', unit=key==='rhr'?'lpm':key==='hrv'?'ms':'kcal';
@@ -3557,7 +3789,7 @@ function metricSeries(key, days){
       max:vals.length?Math.max.apply(null,vals):0, change:null, fmt:n=>Math.round(n)+' '+unit, zero:key==='kcalact', canLog:false, lowerBetter:key==='rhr'};
   }
   if(key==='sleep'){
-    const hd=lastDays(days);
+    const hd=LD(days);
     const vals=hd.map(d=>sleepHours(db.sleep&&db.sleep[d]));
     const pos=vals.filter(x=>x>0);
     const goal=(db.settings&&db.settings.goals&&db.settings.goals.sleep)||0;
@@ -3569,7 +3801,7 @@ function metricSeries(key, days){
       goal, change:null, fmt:n=>n+' h', zero:true, canLog:true, logAct:'logsleep'};
   }
   if(key==='kcal'){
-    const hd=lastDays(days);
+    const hd=LD(days);
     const vals=hd.map(d=>Math.round((db.meals[d]||[]).reduce((a,m)=>a+(+m.kcal||0),0)));
     const pos=vals.filter(x=>x>0);
     const goal=(db.settings&&db.settings.goals&&db.settings.goals.kcal)||0;
@@ -3581,7 +3813,7 @@ function metricSeries(key, days){
       goal, change:null, fmt:n=>Math.round(n).toLocaleString(), zero:true, canLog:false};
   }
   if(key==='mood'){
-    const hd=lastDays(days);
+    const hd=LD(days);
     const vals=hd.map(d=>{const o=moodVal(db.mood&&db.mood[d]);return o?o.y:0;});
     const pos=vals.filter(x=>x>0);
     return {key, title:'ánimo', unit:'/10', dates:hd, vals,
@@ -3591,21 +3823,21 @@ function metricSeries(key, days){
       max: vals.length?Math.max.apply(null,vals):0,
       change:null, fmt:n=>n+'/10', zero:false, canLog:true, logAct:'logmood'};
   }
-  if(key==='sc_bloat') return scSeries(days,'bloat','hinchazón');
-  if(key==='sc_definicion') return scSeries(days,'definicion','definición');
-  if(key==='sc_facial') return scSeries(days,'facial','cara');
-  if(key==='sc_apariencia') return scSeries(days,'apariencia','apariencia');
+  if(key==='sc_bloat') return scSeries(days,'bloat','hinchazón',end);
+  if(key==='sc_definicion') return scSeries(days,'definicion','definición',end);
+  if(key==='sc_facial') return scSeries(days,'facial','cara',end);
+  if(key==='sc_apariencia') return scSeries(days,'apariencia','apariencia',end);
   return null;
 }
 // auto-percepción estética (subjetiva) — serie por campo de db.selfcheck; avg sobre días con dato (incluye 0 real). NO es el bloating() calculado.
-function scSeries(days,field,title){ const hd=lastDays(days); const raw=hd.map(d=>{const o=db.selfcheck&&db.selfcheck[d]; return (o&&o[field]!=null)?o[field]:null;}); const vals=raw.map(v=>v==null?0:v); const pos=raw.filter(v=>v!=null);
-  return {key:'sc_'+field, title, unit:'/10', dates:hd, vals, current:(raw[raw.length-1]!=null?raw[raw.length-1]:0), currentISO:hd[hd.length-1],
+function scSeries(days,field,title,end){ const hd=daysEnding(days,end); const raw=hd.map(d=>{const o=db.selfcheck&&db.selfcheck[d]; return (o&&o[field]!=null)?o[field]:null;}); const vals=raw.map(v=>v==null?0:v); const pos=raw.filter(v=>v!=null);
+  return {key:'sc_'+field, title, unit:'/10', dates:hd, vals, raw, current:(raw[raw.length-1]!=null?raw[raw.length-1]:0), currentISO:hd[hd.length-1],
     avg:pos.length?Math.round(pos.reduce((a,b)=>a+b,0)/pos.length*10)/10:0, min:pos.length?Math.min.apply(null,pos):0, max:pos.length?Math.max.apply(null,pos):0,
     change:null, fmt:n=>n+'/10', zero:false, canLog:true, logAct:'logselfcheck'};
 }
 function scTileHTML(field,label){ const hd=lastDays(14); const raw=hd.map(d=>{const o=db.selfcheck&&db.selfcheck[d]; return (o&&o[field]!=null)?o[field]:null;}); const log=raw.filter(v=>v!=null); if(!log.length)return '';
   const arr=raw.map(v=>v==null?0:v); const _a=Math.round(log.reduce((a,b)=>a+b,0)/log.length*10)/10; const _t=db.selfcheck&&db.selfcheck[todayISO()]; const cur=(_t&&_t[field]!=null)?_t[field]:'—';
-  return `<div class="ptile tap" data-act="metricdetail" data-m="sc_${field}"><div class="ptlh"><div class="plbl">${label}</div><span class="ptchev">›</span></div><div class="pval" style="font-size:18px">${cur}<span> hoy</span></div><div class="pst flat">prom ${_a} · 14d</div>${lineChart(arr,{h:32})}</div>`;
+  return `<div class="ptile tap" data-act="metricdetail" data-m="sc_${field}"><div class="ptlh"><div class="plbl">${label}</div><span class="ptchev">›</span></div><div class="pval" style="font-size:18px">${cur}<span> hoy</span></div><div class="pst flat">prom ${_a} · 14d</div>${lineChart(raw,{h:32})}</div>`;
 }
 // modal de auto-percepción — 4 campos 0-10, todos opcionales (vacío = sin dato)
 function openSelfcheckLog(){ const SF=[['bloat','¿qué tan hinchado te ves?'],['definicion','¿qué tan definido?'],['facial','¿cómo se ve tu cara?'],['apariencia','¿qué tan bien te ves en general?']];
@@ -3693,43 +3925,7 @@ function compositionBlock(days){
     </div>
     <div class="submeta" style="color:var(--o40);margin-top:4px">${escTxt(caveat)}</div>`;
 }
-function openMetricDetail(key){
-  const days=window._mdRange||14;
-  const sp=metricSeries(key, days);
-  if(!sp) return;
-  // best/worst day with date
-  let bestIso=null, worstIso=null;
-  if(sp.vals.length){ let mxI=-1, mnI=-1;   // days without a record (0) are never the "lowest day"
-    sp.vals.forEach((v,i)=>{ if(!(v>0))return; if(mxI<0||v>sp.vals[mxI])mxI=i; if(mnI<0||v<sp.vals[mnI])mnI=i; });
-    if(mxI>=0){ bestIso=sp.dates[mxI]; worstIso=sp.dates[mnI]; }
-  }
-  const tab=(d,l)=>`<span data-act="mdrange" data-r="${d}" data-m="${key}" class="${days===d?'on':''}">${l}</span>`;
-  const segs=tab(7,'7D')+tab(14,'14D')+tab(30,'30D')+tab(90,'90D')+tab(365,'1A');
-  const labels=sp.vals.map((vv,ii)=>(vv?sp.fmt(vv):'sin registro')+' · '+fmtShort(sp.dates[ii]));
-  const chart=sp.vals.length?lineChart(sp.vals,{h:140, dates:sp.dates, zero:sp.zero, interactive:true, labels}):'';
-  const empty=!sp.vals.length;
-  const headBtn=sp.canLog?`<a class="mdlog" data-act="${sp.logAct}">+ log</a>`:'';
-  const chBlock=(sp.change!=null)?` · <span class="${sp.change<0?'mdbad':sp.change>0?'mdgood':'mdflat'}">${sp.change>0?'+':''}${sp.change} ${sp.unit} en ${days}d</span>`:'';
-  openModal(`<div class="mdetail">
-    <div class="mdhd"><h3>${sp.title}</h3>${headBtn}</div>
-    <div class="mdtabs">${segs}</div>
-    ${empty?'<div class="empty" style="padding:30px 0">sin registros en este rango</div>':`
-      <div class="mdval">${sp.current?sp.fmt(sp.current):'—'}</div>
-      <div class="mdmeta">${sp.currentISO?fmtShort(sp.currentISO):''}${chBlock}</div>
-      ${chart}
-      <div class="mdstats">
-        <div class="mdline"><span class="mdk">promedio</span><span class="mddots"></span><span class="mdv">${sp.fmt(sp.avg)}</span></div>
-        ${sp.max?`<div class="mdline"><span class="mdk">${sp.lowerBetter?'día más alto':'mejor día'}</span><span class="mddots"></span><span class="mdv">${sp.fmt(sp.max)} <span class="mdsub">${bestIso?fmtShort(bestIso):''}</span></span></div>`:''}
-        ${sp.min?`<div class="mdline"><span class="mdk">${sp.lowerBetter?'día más bajo':'menor día'}</span><span class="mddots"></span><span class="mdv">${sp.fmt(sp.min)} <span class="mdsub">${worstIso?fmtShort(worstIso):''}</span></span></div>`:''}
-        ${sp.goal?`<div class="mdline"><span class="mdk">meta diaria</span><span class="mddots"></span><span class="mdv">${sp.fmt(sp.goal)}</span></div>`:''}
-        <div class="mdline"><span class="mdk">registros</span><span class="mddots"></span><span class="mdv">${sp.vals.filter(v=>v>0).length} de ${sp.dates.length} días</span></div>
-      </div>
-    `}
-    ${key==='weight'?compositionBlock(days):''}
-    <div class="sheetbtns" style="margin-top:14px"><button class="cancel" data-act="closemodal">cerrar</button></div>
-  </div>`, 'mdetail-wrap');
-  window._mdKey=key;
-}
+// (openMetricDetail vive junto al renderer de gráficas — v227)
 // hard sets per muscle for the 7-day window `offsetWeeks` weeks ago (offset 0 = last 7d).
 // Same RP counting as weeklySets (uni pair = max side, drop = 0.5); kept separate so weeklySets (home //VOLUME) is untouched.
 function setsWeek(offsetWeeks){
@@ -3761,7 +3957,8 @@ function openVolumeDetail(){
   const segs=tab(8,'8SEM')+tab(12,'12SEM')+tab(26,'26SEM')+tab(52,'1A');
   const has=vols.some(x=>x>0);
   const labels=vols.map((v,i)=>kfmt(v)+' vol · sem '+fmtShort(wkDates[i]));
-  const chart=has?lineChart(vols,{h:140,zero:true,interactive:true,labels}):'';
+  const _vAvg=(()=>{ const p=vols.filter(x=>x>0); return p.length?p.reduce((a,b)=>a+b,0)/p.length:null; })();
+  const chart=has?lineChart(vols,{h:140,detail:true,zero:true,labels,avg:_vAvg,fmt:v=>kfmt(v),dates:wkDates,kind:'vol',ladder:[8,12,26,52],cur:nW,yZoom:(window._chartYZ&&window._chartYZ.vol)||1}):'';
   const peak=has?Math.max.apply(null,vols):0; const peakI=vols.indexOf(peak);
   const posV=vols.filter(x=>x>0); const avg=posV.length?Math.round(posV.reduce((a,b)=>a+b,0)/posV.length):0;
   const tw=setsWeek(0), lw=setsWeek(1); const muscles=Object.keys(tw).sort((a,b)=>tw[b]-tw[a]);
@@ -3812,7 +4009,8 @@ function openLiftDetail(name){
   const tab=(d,l)=>`<span data-act="liftrange" data-r="${d}" class="${days===d?'on':''}">${l}</span>`;
   const segs=tab(30,'30D')+tab(90,'90D')+tab(180,'180D')+tab(365,'1A');
   const labels=ser.map(p=>p.e1+' kg · '+fmtShort(p.date));
-  const chart=vals.length>=2?lineChart(vals,{h:140,dates,interactive:true,labels}):'';
+  const _lAvg=vals.length?vals.reduce((a,b)=>a+b,0)/vals.length:null;
+  const chart=vals.length>=2?lineChart(vals,{h:140,detail:true,dates,labels,avg:_lAvg,fmt:v=>Math.round(v)+' kg',kind:'lift',ladder:[30,90,180,365],cur:days,yZoom:(window._chartYZ&&window._chartYZ.lift)||1}):'';
   const opts=lifts.map(l=>`<option value="${escTxt(l)}"${l===name?' selected':''}>${escTxt(l)}</option>`).join('');
   const body=vals.length?`
       <div class="mdval">${cur}<span style="font-size:14px;color:var(--o40);font-weight:400"> kg e1RM</span>${isPR&&vals.length>=2?' <span class="lpr">PR</span>':''}</div>
@@ -3942,14 +4140,14 @@ function renderProgress(){
   if(_stepsLog.length && cfg.steps){ const _t=_stepsArr[_stepsArr.length-1], _a=Math.round(avgPos(_stepsArr));
     tiles.push(`<div class="ptile tap" data-act="metricdetail" data-m="steps"><div class="ptlh"><div class="plbl">pasos</div><span class="ptchev">›</span></div>`
       +`<div class="pval">${_t?_t.toLocaleString():'—'}<span>hoy</span></div>`
-      +`<div class="pst flat">prom ${kFmt(_a)}/d · 14d</div>${lineChart(_stepsArr,{h:40,zero:true,dates:_shd})}</div>`);
+      +`<div class="pst flat">prom ${kFmt(_a)}/d · 14d</div>${lineChart(_stepsArr,{h:40,zero:true,gap0:true,dates:_shd})}</div>`);
   }
   // agua
   if(_waterLog.length && cfg.water){ const _g=db.settings.goals.water||0, _a=Math.round(avgPos(_waterArr)*10)/10;
     const cls=_g&&_a>=_g?'good':'flat';
     tiles.push(`<div class="ptile tap" data-act="metricdetail" data-m="water"><div class="ptlh"><div class="plbl">agua</div><span class="ptchev">›</span></div>`
       +`<div class="pval">${_a}<span>L prom</span></div>`
-      +`<div class="pst ${cls}">${_g?(_a>=_g?'▲ en meta · 14d':'meta '+_g+'L · 14d'):'14d'}</div>${lineChart(_waterArr,{h:32,zero:true})}</div>`);
+      +`<div class="pst ${cls}">${_g?(_a>=_g?'▲ en meta · 14d':'meta '+_g+'L · 14d'):'14d'}</div>${lineChart(_waterArr,{h:32,zero:true,gap0:true})}</div>`);
   }
   // sueño
   if(cfg.sleep){ const _slArr=_hd.map(d=>sleepHours(db.sleep&&db.sleep[d])); const _slLog=_slArr.filter(x=>x>0);
@@ -3957,13 +4155,13 @@ function renderProgress(){
       const cls=_g&&_a>=_g?'good':'flat';
       tiles.push(`<div class="ptile tap" data-act="metricdetail" data-m="sleep"><div class="ptlh"><div class="plbl">sueño</div><span class="ptchev">›</span></div>`
         +`<div class="pval">${_ln||'—'}<span>h dormidas</span></div>`
-        +`<div class="pst ${cls}">${_g?(_a>=_g?'▲ prom '+_a+'h en meta · 14d':'prom '+_a+'h · meta '+_g+'h'):'prom '+_a+'h · 14d'}</div>${lineChart(_slArr,{h:32,zero:true})}</div>`);
+        +`<div class="pst ${cls}">${_g?(_a>=_g?'▲ prom '+_a+'h en meta · 14d':'prom '+_a+'h · meta '+_g+'h'):'prom '+_a+'h · 14d'}</div>${lineChart(_slArr,{h:32,zero:true,gap0:true})}</div>`);
     }
   }
   // FC en reposo / HRV / energía activa (Salud, v220) — solo si hay datos
   [['rhr','FC reposo','lpm'],['hrv','HRV','ms'],['kcalact','energía activa','kcal']].forEach(([k,lbl,u])=>{ if(!cfg[k])return; const ms=metricSeries(k,14); const pos=ms.vals.filter(v=>v>0); if(!pos.length)return;
     tiles.push(`<div class="ptile tap" data-act="metricdetail" data-m="${k}"><div class="ptlh"><div class="plbl">${lbl}</div><span class="ptchev">›</span></div>`
-      +`<div class="pval">${Math.round(pos[pos.length-1])}<span>${u}</span></div><div class="pst flat">prom ${Math.round(ms.avg)} · 14d</div>${lineChart(pos,{h:32,zero:k==='kcalact'})}</div>`); });
+      +`<div class="pval">${Math.round(pos[pos.length-1])}<span>${u}</span></div><div class="pst flat">prom ${Math.round(ms.avg)} · 14d</div>${lineChart(ms.vals,{h:32,zero:k==='kcalact',gap0:true,dates:ms.dates})}</div>`); });
   // kcal
   if(cfg.kcal){ const ak=avgKcal7(), gk=db.settings.goals.kcal||0; const kcalArr=lastDays(7).map(d=>Math.round((db.meals[d]||[]).reduce((a,m)=>a+(+m.kcal||0),0)));
     let cls='flat', txt='—';
@@ -3971,14 +4169,14 @@ function renderProgress(){
     else if(ak){ txt=''; }
     tiles.push(`<div class="ptile tap" data-act="metricdetail" data-m="kcal"><div class="ptlh"><div class="plbl">kcal · prom 7d</div><span class="ptchev">›</span></div>`
       +`<div class="pval">${ak||'—'}<span>${gk?'/ '+gk:''}</span></div>`
-      +`<div class="pst ${cls}">${txt}</div>${kcalArr.some(x=>x>0)?lineChart(kcalArr,{h:32,zero:true}):''}</div>`);
+      +`<div class="pst ${cls}">${txt}</div>${kcalArr.some(x=>x>0)?lineChart(kcalArr,{h:32,zero:true,gap0:true}):''}</div>`);
   }
   // ánimo (mood)
   if(cfg.mood){ const _moArr=_hd.map(d=>{const o=moodVal(db.mood&&db.mood[d]);return o?o.y:0;}); const _moLog=_moArr.filter(x=>x>0);
     if(_moLog.length){ const _a=Math.round(avgPos(_moArr)*10)/10, _to=moodVal(db.mood&&db.mood[todayISO()]); const _lbl=_to?(_to.label||(_to.y+'/10')):'—';
       tiles.push(`<div class="ptile tap" data-act="metricdetail" data-m="mood"><div class="ptlh"><div class="plbl">ánimo</div><span class="ptchev">›</span></div>`
         +`<div class="pval" style="font-size:18px">${escTxt(_lbl)}<span> hoy</span></div>`
-        +`<div class="pst flat">prom ${_a} · 14d</div>${lineChart(_moArr,{h:32})}</div>`);
+        +`<div class="pst flat">prom ${_a} · 14d</div>${lineChart(_moArr,{h:32,gap0:true})}</div>`);
     }
   }
   // auto-percepción estética (4 tiles; solo renderizan con datos)
@@ -4896,8 +5094,11 @@ document.getElementById('app').addEventListener('click',e=>{
   else if(a==='healthhc'){ const hp=capP('Health'); if(hp&&hp.openHealthConnectSettings)hp.openHealthConnectSettings().catch(()=>{}); }
   else if(a==='steprange'){ window._stepRange=+el.dataset.r||14; render(); }
   else if(a==='bwrange'){ window._bwRange=+el.dataset.r||14; render(); }
-  else if(a==='metricdetail'){ window._mdRange=window._mdRange||14; openMetricDetail(el.dataset.m); }
-  else if(a==='mdrange'){ window._mdRange=+el.dataset.r||14; openMetricDetail(el.dataset.m); }
+  else if(a==='metricdetail'){ window._mdRange=window._mdRange||30; window._mdEnd=null; window._mdCustom=null; window._mdShowCustom=false; openMetricDetail(el.dataset.m); }
+  else if(a==='mdrange'){ window._mdRange=+el.dataset.r||30; window._mdCustom=null; window._mdEnd=null; window._mdShowCustom=false; openMetricDetail(el.dataset.m); }
+  else if(a==='mdpage'){ if(!el.classList.contains('off'))mdPage(+el.dataset.d); }
+  else if(a==='mdcustom'){ window._mdShowCustom=!window._mdShowCustom; openMetricDetail(window._mdKey); }
+  else if(a==='mdcustapply'){ const f=val('mdc_from'), t=val('mdc_to'); if(f&&t&&f<t){ const td=todayISO(); window._mdCustom={from:f,to:t>td?td:t}; window._mdShowCustom=false; openMetricDetail(window._mdKey); } else toast('elige un rango de al menos 2 días'); }
   else if(a==='volumedetail'){ window._volWeeks=window._volWeeks||12; openVolumeDetail(); }
   else if(a==='volweeks'){ window._volWeeks=+el.dataset.w||12; openVolumeDetail(); }
   else if(a==='liftdetail'){ window._liftDays=window._liftDays||90; openLiftDetail(el.dataset.ex||window._liftName); }
@@ -7172,7 +7373,7 @@ async function aiPhoto(file,barcode){ if(!file)return; window._faTag=window._faT
 // Pick AI when the proxy is configured, else on-device OCR.
 function labelPhoto(file,barcode){ if(AI_PROXY_URL) return aiPhoto(file,barcode); return ocrPhoto(file,barcode); }
 requestPersist();
-db=load(); try{ promptIdleSession(); }catch(_){} try{ if(typeof location!=='undefined' && /[?&]selftest=1/.test(location.search)){ _identitySelfCheck(); _dropsetSelfCheck(); _baselineSelfCheck(); _variantSelfCheck(); _historyEditSelfCheck(); _idSelfCheck(); _cardioSelfCheck(); _tensionSelfCheck(); _healthSelfCheck(); _readinessSelfCheck(); _loggingSelfCheck(); _mergeSelfCheck(); _streakSelfCheck(); } }catch(e){ console.error(e); } try{ const _sp=new URLSearchParams(location.search); const _hasHistorical=_sp.has('stepsh')||_sp.has('weighth')||_sp.has('stepsq')||_sp.has('sleeph'); if(_hasHistorical){ const _hsp=_sp; if(history.replaceState)history.replaceState(null,'',location.pathname); setTimeout(()=>{ if(confirm('Este link quiere importar datos históricos (pasos/peso/sueño de varios días) a tu cuenta. ¿Aplicar? — solo dile que SÍ si vienes de tu propio Atajo de iOS.')){ try{ const _imp=importHealth(_hsp); if(_imp.length){ save(); render(); toast('✓ '+_imp.join(' · ')); } }catch(_){} } },400); } else { const _imp=importHealth(_sp); if(_imp.length){ window._healthImported=_imp; if(history.replaceState)history.replaceState(null,'',location.pathname); } } }catch(_){} save(); render(); if(window._healthImported)setTimeout(()=>toast('✓ '+window._healthImported.join(' · ')),250); if(window._recoveredFromBackup)setTimeout(()=>{try{alert('Se recuperó un respaldo local: revisa tus datos, podrían faltar cambios muy recientes.');}catch(_){}},600);
+db=load(); try{ promptIdleSession(); }catch(_){} try{ if(typeof location!=='undefined' && /[?&]selftest=1/.test(location.search)){ _identitySelfCheck(); _dropsetSelfCheck(); _baselineSelfCheck(); _variantSelfCheck(); _historyEditSelfCheck(); _idSelfCheck(); _cardioSelfCheck(); _tensionSelfCheck(); _healthSelfCheck(); _readinessSelfCheck(); _loggingSelfCheck(); _mergeSelfCheck(); _streakSelfCheck(); _chartSelfCheck(); } }catch(e){ console.error(e); } try{ const _sp=new URLSearchParams(location.search); const _hasHistorical=_sp.has('stepsh')||_sp.has('weighth')||_sp.has('stepsq')||_sp.has('sleeph'); if(_hasHistorical){ const _hsp=_sp; if(history.replaceState)history.replaceState(null,'',location.pathname); setTimeout(()=>{ if(confirm('Este link quiere importar datos históricos (pasos/peso/sueño de varios días) a tu cuenta. ¿Aplicar? — solo dile que SÍ si vienes de tu propio Atajo de iOS.')){ try{ const _imp=importHealth(_hsp); if(_imp.length){ save(); render(); toast('✓ '+_imp.join(' · ')); } }catch(_){} } },400); } else { const _imp=importHealth(_sp); if(_imp.length){ window._healthImported=_imp; if(history.replaceState)history.replaceState(null,'',location.pathname); } } }catch(_){} save(); render(); if(window._healthImported)setTimeout(()=>toast('✓ '+window._healthImported.join(' · ')),250); if(window._recoveredFromBackup)setTimeout(()=>{try{alert('Se recuperó un respaldo local: revisa tus datos, podrían faltar cambios muy recientes.');}catch(_){}},600);
 applyDesign(); try{ if(/[?&]design\b/.test(location.search))localStorage.setItem('gymtrk_designmode','1'); if(localStorage.getItem('gymtrk_designmode')==='1')openDesignPanel(); }catch(_){}
 try{ bootScreen(()=>{ try{
   if(/[?&]wrap=1\b/.test(location.search)){ monthlyWrap(prevMonthYm(), true); return; }
