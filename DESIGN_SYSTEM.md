@@ -67,7 +67,8 @@ grises? ¿La jerarquía funciona sin color? Si alguna es "no", depende de la dec
 ## 4. Tokens (valores cerrados)
 
 Todo valor visual recurrente es un token en `:root` y se usa con `var(--…)`. **Nunca** se escribe un valor literal si
-existe su token. Valores marcados se agregan en la fase de corrección 1 (§20).
+existe su token. (Los tokens nuevos de hero, tracking, `--s7/--s8`, `--r-mark`, `--shadow-float`, movimiento y capas
+existen desde v231.)
 
 ### 4.1 Superficies
 
