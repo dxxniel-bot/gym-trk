@@ -101,6 +101,13 @@
   .line.stat .k{color:var(--o50);} .line.stat .v{font-weight:700;}
   .vrow{margin-bottom:11px;} .vtop{display:flex;justify-content:space-between;align-items:baseline;font-size:11px;margin-bottom:5px;} .vm{color:var(--fg);} .vn{color:var(--o50);font-size:10px;} .vd{color:var(--o40);}
   .vst{font-size:8px;padding:0 4px;border:.5px solid var(--o20);margin-left:2px;} .vst.under{color:var(--o40);} .vst.optimal{color:var(--fill);border-color:var(--o40);} .vst.high{color:var(--warn);border-color:var(--warn);} .vst.over{color:var(--bad);border-color:var(--bad);}
+  /* v228 · landmarks reales en //EFFECTIVE VOLUME + pantalla de músculos */
+  .vbar .mrv{position:absolute;top:-1px;width:1px;height:5px;background:var(--warn);opacity:.7;}
+  .vst{font-size:9px; font-weight:400; color:var(--o40); margin-left:6px; letter-spacing:.02em;} .vst.warn{color:var(--warn);} .vst.bad{color:var(--bad);}
+  .mmrow{display:flex; align-items:center; justify-content:space-between; gap:8px; padding:5px 0; border-bottom:.5px solid var(--o10);}
+  .mmrow .mml{font-size:12px; flex:1; min-width:0;} .mmrow .mml i{font-style:normal; font-size:9px; color:var(--o40); margin-left:4px;}
+  .mmrow select{flex:0 0 52%; max-width:52%; font-size:12px; height:32px; background:var(--card2); color:var(--fg); border:.5px solid var(--o20); border-radius:8px; padding:0 8px; -webkit-appearance:none; appearance:none;}
+  .mmwarn{font-size:9px; color:var(--warn); margin:-2px 0 4px;}
   .vbar{position:relative;height:3px;background:var(--track);} .vbar>i{display:block;height:100%;background:var(--fill);} .vbar .mev,.vbar .mav{position:absolute;top:-1px;width:1px;height:5px;background:var(--o40);}
   .submeta{font-size:10px; color:var(--o40); padding-top:4px;}
   .rowend{display:flex; justify-content:space-between; align-items:baseline; margin-top:12px; font-size:10px; color:var(--o50);} .rowend .view{color:var(--o60); cursor:pointer;}
@@ -873,7 +880,7 @@ function _idSelfCheck(){
   A('gated: a second call is a no-op once _idfix is set', JSON.stringify(fx)===before);
   console.log('id self-check OK');
 }
-function migrate(d){ if(!d.version){d.version=1;} if(!d.meals||typeof d.meals!=='object'||Array.isArray(d.meals))d.meals={}; if(!Array.isArray(d.foods))d.foods=[]; d.foods=d.foods.map(f=>(f&&f.per100)?f:asCanonical(f)); if(!Array.isArray(d.sessions))d.sessions=[]; if(!d.split||typeof d.split!=='object')d.split={name:'',days:[]}; if(!Array.isArray(d.split.days))d.split.days=[]; d.split.days.forEach(day=>{ if(!Array.isArray(day.exercises))day.exercises=[]; day.exercises.forEach(e=>{ if(e&&!e.id)e.id='e'+uid(); }); }); fixDuplicateExIds(d); fixLeakedFullStack(d); d.health=healthShape((d.health&&typeof d.health==='object'&&!Array.isArray(d.health))?d.health:{}); if(!d.steps||typeof d.steps!=='object')d.steps={}; if(!d.machines||typeof d.machines!=='object')d.machines={}; if(!d.exCat||typeof d.exCat!=='object')d.exCat={}; if(!d.bodyweight||typeof d.bodyweight!=='object')d.bodyweight={}; if(!d.sleep||typeof d.sleep!=='object')d.sleep={}; if(!d.mood||typeof d.mood!=='object')d.mood={}; if(!d.selfcheck||typeof d.selfcheck!=='object')d.selfcheck={}; if(!d.adhoc||typeof d.adhoc!=='object')d.adhoc={}; if(!Array.isArray(d.mealTags))d.mealTags=['breakfast','lunch','snack','dinner']; if(!Array.isArray(d.stack))d.stack=[]; if(!d.lastUsed||typeof d.lastUsed!=='object')d.lastUsed={}; if(!d.settings||typeof d.settings!=='object')d.settings={goals:seed().settings.goals}; if(d.settings&&d.settings.goals&&d.settings.goals.alcohol==null)d.settings.goals.alcohol=(d.profile&&d.profile.sex==='F')?14:28; if(d.settings&&d.settings.restSec==null)d.settings.restSec=90; if(d.settings&&d.settings.restBeep==null)d.settings.restBeep=true; if(d.settings&&d.settings.goals&&d.settings.goals.sleep==null)d.settings.goals.sleep=8; if(d.profile&&!d.profile.since){ try{ const _cd=[]; (d.sessions||[]).forEach(s=>{if(s.date)_cd.push(s.date);}); Object.keys(d.meals||{}).forEach(k=>_cd.push(k)); Object.keys(d.bodyweight||{}).forEach(k=>_cd.push(k)); if(_cd.length)d.profile.since=_cd.sort()[0]; }catch(_){} }
+function migrate(d){ if(!d.version){d.version=1;} if(!d.meals||typeof d.meals!=='object'||Array.isArray(d.meals))d.meals={}; if(!Array.isArray(d.foods))d.foods=[]; d.foods=d.foods.map(f=>(f&&f.per100)?f:asCanonical(f)); if(!Array.isArray(d.sessions))d.sessions=[]; if(!d.split||typeof d.split!=='object')d.split={name:'',days:[]}; if(!Array.isArray(d.split.days))d.split.days=[]; d.split.days.forEach(day=>{ if(!Array.isArray(day.exercises))day.exercises=[]; day.exercises.forEach(e=>{ if(e&&!e.id)e.id='e'+uid(); }); }); fixDuplicateExIds(d); fixLeakedFullStack(d); d.health=healthShape((d.health&&typeof d.health==='object'&&!Array.isArray(d.health))?d.health:{}); if(!d.steps||typeof d.steps!=='object')d.steps={}; if(!d.machines||typeof d.machines!=='object')d.machines={}; if(!d.exCat||typeof d.exCat!=='object')d.exCat={}; if(!d.muscleMap||typeof d.muscleMap!=='object')d.muscleMap={}; if(!d.muscleNames||typeof d.muscleNames!=='object')d.muscleNames={}; if(!d.bodyweight||typeof d.bodyweight!=='object')d.bodyweight={}; if(!d.sleep||typeof d.sleep!=='object')d.sleep={}; if(!d.mood||typeof d.mood!=='object')d.mood={}; if(!d.selfcheck||typeof d.selfcheck!=='object')d.selfcheck={}; if(!d.adhoc||typeof d.adhoc!=='object')d.adhoc={}; if(!Array.isArray(d.mealTags))d.mealTags=['breakfast','lunch','snack','dinner']; if(!Array.isArray(d.stack))d.stack=[]; if(!d.lastUsed||typeof d.lastUsed!=='object')d.lastUsed={}; if(!d.settings||typeof d.settings!=='object')d.settings={goals:seed().settings.goals}; if(d.settings&&d.settings.goals&&d.settings.goals.alcohol==null)d.settings.goals.alcohol=(d.profile&&d.profile.sex==='F')?14:28; if(d.settings&&d.settings.restSec==null)d.settings.restSec=90; if(d.settings&&d.settings.restBeep==null)d.settings.restBeep=true; if(d.settings&&d.settings.goals&&d.settings.goals.sleep==null)d.settings.goals.sleep=8; if(d.profile&&!d.profile.since){ try{ const _cd=[]; (d.sessions||[]).forEach(s=>{if(s.date)_cd.push(s.date);}); Object.keys(d.meals||{}).forEach(k=>_cd.push(k)); Object.keys(d.bodyweight||{}).forEach(k=>_cd.push(k)); if(_cd.length)d.profile.since=_cd.sort()[0]; }catch(_){} }
   // recompute alcohol for old meal items logged before alcohol was in MACROKEYS
   try{ Object.values(d.meals||{}).forEach(arr=>arr.forEach(m=>{ if(m.alcohol==null){ if(m._food&&m._food.per100&&m._food.per100.alcohol&&m._unit){ m.alcohol=computeNutrients(m._food,m._unit,m.qty||1).alcohol; } else m.alcohol=0; } })); }catch(e){}
   // goalHist: snapshot of intake goals at the moment of first logging that day (history is FROZEN — past days never re-read the current goal)
@@ -1212,6 +1219,7 @@ function openCalDay(iso){
 }
 // weekly hard sets per muscle (RIR<=4 = hard) over last N days, with RP landmarks
 const VOL_LANDMARKS={chest:[10,20,22],back:[10,22,25],quads:[8,18,20],hams:[6,16,20],delts:[8,22,26],biceps:[8,20,26],tricep:[6,14,18],triceps:[6,14,18],calfs:[8,16,20],calves:[8,16,20],abs:[6,25,25],traps:[4,20,26],glutes:[4,16,16],neck:[4,12,16]};
+// LEGADO (superado en v228 por MUSCLES/LABEL_CANON/muscleCanon, más abajo): no lo usa ningún camino vivo.
 // common EN/ES synonyms → canonical VOL_LANDMARKS key. ONLY for landmark lookup (bar scale/status) —
 // NEVER renames or merges the user's muscle names: every row keeps exactly what the user typed.
 const MUSCLE_ALIAS={triceps:'tricep','tríceps':'tricep',calves:'calfs',calf:'calfs',pantorrilla:'calfs',pantorrillas:'calfs',gemelos:'calfs',shoulder:'delts',shoulders:'delts',hombro:'delts',hombros:'delts',deltoids:'delts',deltoide:'delts',deltoides:'delts',quad:'quads',quadriceps:'quads',cuadriceps:'quads','cuádriceps':'quads',hamstring:'hams',hamstrings:'hams',femoral:'hams',femorales:'hams',isquios:'hams',isquiotibiales:'hams',lat:'back',lats:'back',dorsal:'back',dorsales:'back',espalda:'back',pecho:'chest',pectoral:'chest',pectorales:'chest',bicep:'biceps','bíceps':'biceps',glute:'glutes',gluteo:'glutes',gluteos:'glutes','glúteo':'glutes','glúteos':'glutes',trap:'traps',trapecio:'traps',trapecios:'traps',cuello:'neck',abdominales:'abs',abdomen:'abs',core:'abs'};
@@ -1227,6 +1235,136 @@ function exMuscles(e){
   return [];
 }
 function fmtMuscles(e){ const m=exMuscles(e); if(!m.length)return ''; return m.map((x,i)=> i===0?x.name : x.name+' ('+x.weight+')').join(' · '); }
+// ---------- v228 · músculos CANÓNICOS detrás de las etiquetas del usuario (PT2 de fix.md) ----------
+// Dos niveles: lo que el usuario escribe ("hams", "calfs", "mback", "delts") se MUESTRA siempre tal cual (regla
+// v148, VINCULANTE); el motor (volumen contra landmarks, recuperación, sugerencias) trabaja con un id canónico
+// fijo. Hasta v227 esta capa existía (MUSCLE_ALIAS/canonM/VOL_LANDMARKS) pero no la usaba nadie.
+// Landmarks = [MEV, MAV, MRV] series duras/semana, guía RP (Israetel) — los mismos que VOL_LANDMARKS, con los
+// deltoides separados; null = no hay guía y NO se inventa. rec = ventana de recuperación INICIAL estimada en horas
+// (rango conservador por tamaño/tipo de músculo; v230 la ajusta con la dosis de cada sesión y la reemplaza con lo
+// OBSERVADO en su propio historial cuando hay datos). g = grupo al que pertenece.
+const MUSCLES={
+  chest:      {n:'chest',       es:'pecho',               lm:[10,20,22], rec:[48,72]},
+  lats:       {n:'lats',        es:'dorsal',              lm:[10,22,25], rec:[48,72], g:'back'},
+  upper_back: {n:'mid back',    es:'espalda media',       lm:[10,22,25], rec:[48,72], g:'back'},
+  traps:      {n:'traps',       es:'trapecio',            lm:[4,20,26],  rec:[24,48]},
+  front_delts:{n:'front delts', es:'deltoides anterior',  lm:[0,8,12],   rec:[24,48], g:'delts'},
+  side_delts: {n:'side delts',  es:'deltoides lateral',   lm:[8,22,26],  rec:[24,48], g:'delts'},
+  rear_delts: {n:'rear delts',  es:'deltoides posterior', lm:[8,22,26],  rec:[24,48], g:'delts'},
+  biceps:     {n:'biceps',      es:'bíceps',              lm:[8,20,26],  rec:[24,48], g:'arms'},
+  triceps:    {n:'triceps',     es:'tríceps',             lm:[6,14,18],  rec:[24,48], g:'arms'},
+  forearms:   {n:'forearms',    es:'antebrazo',           lm:null,       rec:[24,48], g:'arms'},
+  quads:      {n:'quads',       es:'cuádriceps',          lm:[8,18,20],  rec:[48,96], g:'legs'},
+  hamstrings: {n:'hams',        es:'isquiosurales',       lm:[6,16,20],  rec:[48,96], g:'legs'},
+  glutes:     {n:'glutes',      es:'glúteos',             lm:[4,16,16],  rec:[48,72], g:'legs'},
+  adductors:  {n:'adductors',   es:'aductores',           lm:null,       rec:[48,72], g:'legs'},
+  calves:     {n:'calves',      es:'pantorrillas',        lm:[8,16,20],  rec:[24,48], g:'legs'},
+  abs:        {n:'abs',         es:'abdomen',             lm:[6,25,25],  rec:[24,48]},
+  neck:       {n:'neck',        es:'cuello',              lm:[4,12,16],  rec:[24,48]},
+  lower_back: {n:'lower back',  es:'lumbar',              lm:null,       rec:[48,72]}
+};
+// etiquetas AMBIGUAS: "delts" mezcla elevación lateral y press → el músculo real se resuelve POR EJERCICIO
+const MUSCLE_GROUPS={
+  delts:{n:'delts', es:'hombro',  lm:[8,22,26],  members:['side_delts','front_delts','rear_delts']},
+  back: {n:'back',  es:'espalda', lm:[10,22,25], members:['lats','upper_back']},
+  legs: {n:'legs',  es:'pierna',  lm:null,       members:['quads','hamstrings','glutes','adductors','calves']},
+  arms: {n:'arms',  es:'brazo',   lm:null,       members:['biceps','triceps','forearms']}
+};
+const mNorm=s=>String(s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/\s+/g,' ').trim();
+// etiqueta (sin acentos) → id canónico o grupo. Solo lectura interna: nunca se escribe sobre sus datos.
+const LABEL_CANON=(function(){ const m={}; const put=(id,arr)=>arr.forEach(k=>{ m[mNorm(k)]=id; });
+  put('chest',['chest','pecho','pectoral','pectorales','pecs','pec']);
+  put('lats',['lats','lat','dorsal','dorsales','latissimus']);
+  put('upper_back',['mback','mid back','midback','middle back','upper back','espalda media','espalda alta','rhomboids','romboides']);
+  put('traps',['traps','trap','trapecio','trapecios']);
+  put('front_delts',['front delts','front delt','anterior delts','deltoides anterior','deltoide anterior','hombro frontal']);
+  put('side_delts',['side delts','side delt','lateral delts','lateral delt','deltoides lateral','deltoide lateral','hombro lateral']);
+  put('rear_delts',['rear delts','rear delt','posterior delts','deltoides posterior','deltoide posterior','hombro posterior']);
+  put('biceps',['biceps','bicep','bíceps']);
+  put('triceps',['triceps','tricep','tríceps']);
+  put('forearms',['forearms','forearm','antebrazo','antebrazos','grip']);
+  put('quads',['quads','quad','quadriceps','cuadriceps','cuádriceps']);
+  put('hamstrings',['hams','ham','hamstring','hamstrings','femoral','femorales','isquios','isquiotibiales','isquiosurales']);
+  put('glutes',['glutes','glute','gluteo','gluteos','glúteo','glúteos','abductor','abductors','abductores']);
+  put('adductors',['adductor','adductors','aductor','aductores']);
+  put('calves',['calves','calfs','calf','pantorrilla','pantorrillas','gemelos','soleo','sóleo']);
+  put('abs',['abs','ab','abdominales','abdomen','core','obliques','oblicuos']);
+  put('neck',['neck','cuello']);
+  put('lower_back',['lower back','lumbar','lumbares','erectors','erectores']);
+  put('grp:delts',['delts','delt','shoulder','shoulders','hombro','hombros','deltoids','deltoide','deltoides']);
+  put('grp:back',['back','espalda']);
+  put('grp:legs',['legs','leg','pierna','piernas']);
+  put('grp:arms',['arms','arm','brazo','brazos']);
+  return m; })();
+// etiqueta → {id, group, src}: override del usuario (db.muscleMap) › tabla automática › desconocido
+function muscleCanon(label){ const k=mNorm(label); if(!k)return {id:null,group:false,src:'unknown'};
+  const ov=db&&db.muscleMap&&db.muscleMap[k]; const raw=(ov&&ov.id)||LABEL_CANON[k]||null;
+  if(!raw)return {id:null,group:false,src:'unknown'};
+  const grp=raw.indexOf('grp:')===0; const id=grp?raw.slice(4):raw;
+  if(grp?!MUSCLE_GROUPS[id]:!MUSCLES[id])return {id:null,group:false,src:'unknown'};
+  return {id,group:grp,src:ov?'user':'auto'}; }
+// grupo ambiguo → músculo real por el NOMBRE del ejercicio (src 'inferred'; el usuario lo puede fijar)
+function resolveGroup(group,exName){ const n=mNorm(exName);
+  if(group==='delts'){ if(/rear|reverse (pec|fly|flye)|face ?pull|posterior|pajaro|pájaro/.test(n))return 'rear_delts';
+    if(/lateral|lat raise|side|y[- ]?raise|upright|elevacion/.test(n))return 'side_delts';
+    if(/press|ohp|overhead|military|arnold|front|frontal/.test(n))return 'front_delts'; return null; }
+  if(group==='back'){ if(/pulldown|pull ?down|pull ?ups?|chin|jalon|dominad|pullover|lat /.test(n))return 'lats';
+    if(/row|remo|rhomb|shrug|chest ?supp|t-?bar|seal/.test(n))return 'upper_back'; return null; }
+  if(group==='legs'){ if(/calf|toe press|pantorr|gemel/.test(n))return 'calves'; if(/adduct|aduct/.test(n))return 'adductors';
+    if(/hip thrust|glute|kick ?back|abduct|bridge|gluteo/.test(n))return 'glutes';
+    if(/leg curl|curl|rdl|sldl|deadlift|hyper|good ?morning|nordic|femoral/.test(n))return 'hamstrings';
+    if(/squat|squad|leg press|hack|ext|lunge|split|pendulum|sissy|sentadilla|prensa|zancada/.test(n))return 'quads'; return null; }
+  if(group==='arms'){ if(/tri|pushdown|skull|dip|kickback|frances/.test(n))return 'triceps'; if(/curl/.test(n))return 'biceps'; if(/wrist|muneca|grip/.test(n))return 'forearms'; return null; }
+  return null; }
+// músculos del MOTOR de un ejercicio: [{id, w, label, src}] — override del ejercicio (db.exCat[name].targets,
+// src 'user') › cada etiqueta mapeada (auto/user) › grupo resuelto por nombre ('inferred') › sin resolver (id null)
+function targetsFor(ex){ if(!ex)return [];
+  const ov=(exCatRec(ex.name)||{}).targets;
+  if(Array.isArray(ov)&&ov.length) return ov.filter(t=>t&&MUSCLES[t.id]).map((t,i)=>({id:t.id,w:i===0?1:Math.max(0,Math.min(1,+t.w||0.5)),label:null,src:'user'}));
+  return exMuscles(ex).map(m=>{ const c=muscleCanon(m.name);
+    if(c.group){ const r=resolveGroup(c.id,ex.name); return {id:r,group:r?null:c.id,w:m.weight,label:m.name,src:r?'inferred':'unknown'}; }
+    return {id:c.id,group:null,w:m.weight,label:m.name,src:c.src}; }); }
+function exTargets(sw,ei){ const list=(sw&&sw.exercises)||[]; const e=list[ei]; if(!e)return []; return targetsFor(splitExFor(sw,ei)||e); }
+// nombre visible de un id canónico: el que él haya puesto › SU etiqueta si exactamente una mapea directo › el corto
+let _mLblCache={};   // se limpia en bumpIdx()
+function muscleLabel(id){ if(!id)return '';
+  if(db.muscleNames&&db.muscleNames[id])return db.muscleNames[id];
+  if(_mLblCache[id]!=null)return _mLblCache[id];
+  const mine=muscleSuggest().filter(l=>{ const c=muscleCanon(l); return !c.group&&c.id===id; });
+  return (_mLblCache[id]=mine.length===1?mine[0]:((MUSCLES[id]&&MUSCLES[id].n)||(MUSCLE_GROUPS[id]&&MUSCLE_GROUPS[id].n)||id)); }
+// landmarks de una ETIQUETA (las filas de //VOLUME siguen siendo sus etiquetas)
+function landmarksForLabel(label){ const c=muscleCanon(label); if(!c.id)return null; return (c.group?(MUSCLE_GROUPS[c.id]||{}).lm:(MUSCLES[c.id]||{}).lm)||null; }
+// pantalla "músculos": cómo entiende el motor cada etiqueta y cada ejercicio de un grupo ambiguo. Solo cambia la
+// CLASIFICACIÓN (se resuelve en lectura para todo el historial); nunca toca lo que registraste.
+function canonOptions(sel,withGroups){ let o=''; Object.keys(MUSCLES).forEach(id=>{ o+=`<option value="${id}"${sel===id?' selected':''}>${escTxt(MUSCLES[id].n)} · ${escTxt(MUSCLES[id].es)}</option>`; });
+  if(withGroups)Object.keys(MUSCLE_GROUPS).forEach(g=>{ o+=`<option value="grp:${g}"${sel==='grp:'+g?' selected':''}>grupo ${escTxt(MUSCLE_GROUPS[g].n)} · por ejercicio</option>`; });
+  return o; }
+function openMuscleMap(){
+  const labels=muscleSuggest(); const known=knownExercises();
+  const uses={}; known.forEach(x=>exMuscles(x).forEach(m=>{ uses[m.name]=(uses[m.name]||0)+1; }));
+  let rows='';
+  labels.forEach(l=>{ const c=muscleCanon(l); const k=mNorm(l); const cur=db.muscleMap&&db.muscleMap[k]?db.muscleMap[k].id:'';
+    const autoTxt=(()=>{ const a=LABEL_CANON[k]; if(!a)return 'sin mapear'; return a.indexOf('grp:')===0?'grupo '+a.slice(4):MUSCLES[a].n; })();
+    rows+=`<div class="mmrow"><span class="mml">${escTxt(l)} <i>${uses[l]||0} ej.</i></span><select data-mm="label" data-k="${escTxt(k)}"><option value="">auto · ${escTxt(autoTxt)}</option>${canonOptions(cur,true)}</select></div>`
+      +(c.src==='unknown'?`<div class="mmwarn">sin mapear: no cuenta para landmarks, recuperación ni sugerencias</div>`:''); });
+  // ejercicios cuya etiqueta es un GRUPO (delts/back/legs/arms): qué músculo real es cada uno
+  let exRows=''; known.forEach(x=>{ const t=targetsFor(x); const p=t[0]; if(!p)return; const c=muscleCanon(exMuscles(x)[0]&&exMuscles(x)[0].name);
+    const ov=(exCatRec(x.name)||{}).targets; if(!(c.group||(ov&&ov.length)))return;
+    const members=(MUSCLE_GROUPS[c.group?c.id:(MUSCLES[p.id]&&MUSCLES[p.id].g)]||{}).members||Object.keys(MUSCLES);
+    const src=p.src==='user'?'fijado':p.src==='inferred'?'~ por el nombre':'sin resolver';
+    exRows+=`<div class="mmrow"><span class="mml">${latTxt(x)}${escTxt(x.name)} <i>${src}</i></span><select data-mm="ex" data-n="${escTxt(x.name)}"><option value=""${p.id?'':' selected'}>${p.id?'auto':'— elige —'}</option>${members.map(id=>`<option value="${id}"${(p.src==='user'&&p.id===id)?' selected':''}>${escTxt(MUSCLES[id].n)}${p.src!=='user'&&p.id===id?' (~)':''}</option>`).join('')}</select></div>`; });
+  openModal(`<h3>músculos</h3>
+   <div class="submeta" style="margin-bottom:10px">tus etiquetas se ven siempre como las escribiste · esto solo le dice al motor a qué músculo real corresponde cada una (volumen contra landmarks, recuperación, sugerencias) · aplica a todo tu historial</div>
+   <div class="grp-label" style="margin:4px 0 6px">TUS ETIQUETAS</div>${rows||'<div class="submeta">aún no hay músculos</div>'}
+   ${exRows?`<div class="grp-label" style="margin:14px 0 6px">EJERCICIOS DE ETIQUETAS DE GRUPO</div><div class="submeta" style="margin-bottom:6px">"delts" puede ser deltoides lateral, frontal o posterior según el ejercicio · ~ = deducido del nombre</div>${exRows}`:''}
+   <div class="sheetbtns" style="margin-top:14px"><button class="cancel" data-act="closemodal">listo</button></div>`);
+  document.querySelectorAll('#modal select[data-mm]').forEach(s=>s.addEventListener('change',()=>{
+    if(s.dataset.mm==='label'){ db.muscleMap=db.muscleMap||{}; if(s.value)db.muscleMap[s.dataset.k]={id:s.value,src:'user'}; else delete db.muscleMap[s.dataset.k]; }
+    else { const nm=s.dataset.n; const x=known.find(z=>z.name===nm); if(!x)return;
+      if(!s.value){ const r=exCatRec(nm); if(r){ delete r.targets; } }
+      else { const cur=targetsFor(x).filter((t,i)=>i>0&&t.id).map(t=>({id:t.id,w:t.w})); setExCat(nm,{targets:[{id:s.value,w:1}].concat(cur.filter(t=>t.id!==s.value))}); } }
+    save(); openMuscleMap(); }));
+}
 // ---- exercise IDENTITY: a same-name exercise in a different type/laterality is a DIFFERENT exercise ----
 // type synonyms → canonical form, ONLY for variant matching/lookup (never rewrites the user's stored value,
 // same spirit as MUSCLE_ALIAS/canonM above — internal comparison only).
@@ -1311,7 +1449,7 @@ function musclesOf(sessOrWork,ei){
 let _exIdxCache=null;
 // call after any mutation that could change db.sessions (save() does this) so exIndex() rebuilds once, lazily.
 let _refCache={}, _sessTCache={}, _fatCtxCache={}, _readyCache={};
-function bumpIdx(){ _exIdxCache=null; _refCache={}; _sessTCache={}; _fatCtxCache={}; _readyCache={}; }
+function bumpIdx(){ _exIdxCache=null; _refCache={}; _sessTCache={}; _fatCtxCache={}; _readyCache={}; _mLblCache={}; }
 // flat, memoized list of every REAL (non-_pf, non-empty) exercise-occurrence across all saved sessions,
 // most-recent-first. Base for baselineSetsFor() — rebuilt only when bumpIdx() invalidates it.
 function exIndex(){
@@ -1397,7 +1535,7 @@ function weeklySets(days){ days=days||7; const now=new Date(); const cut=new Dat
   });
   return {byM,freq,effM,directM,indirectM};
 }
-function volStatus(m,sets){ const L=VOL_LANDMARKS[canonM(m)]; if(!L)return ''; if(sets<L[0])return 'under'; if(sets<=L[1])return 'optimal'; if(sets<=L[2])return 'high'; return 'over'; }
+function volStatus(m,sets){ const L=landmarksForLabel(m); if(!L)return ''; if(sets<L[0])return 'under'; if(sets<=L[1])return 'optimal'; if(sets<=L[2])return 'high'; return 'over'; }
 function e1rmTrend(){ // best Epley e1RM per exercise, this week vs prior week
   const wk=(off)=>{ const now=new Date(); const a=new Date(now); a.setDate(now.getDate()-7*off-7); const b=new Date(now); b.setDate(now.getDate()-7*off); const ai=todayISO(a),bi=todayISO(b); const best={};
     db.sessions.forEach(s=>{ if(s.type==='rest'||s.date<ai||s.date>=bi)return; (s.exercises||[]).forEach(e=>{ if(isCardio(e))return; (e.sets||[]).forEach(st=>{ if(bwMissing(st))return; const w=effW(st),r=parseFloat(st.r)||0; if(w&&r){ const e1=w*(1+effRepsForE1RM(st)/30); if(!best[e.name]||e1>best[e.name].v)best[e.name]={v:e1,uni:uniOf(e),type:e.type}; } }); }); }); return best; };
@@ -1549,17 +1687,21 @@ function volumeSection(){
   const muscles=Object.keys(byM).sort((a,b)=>(effM[b]||0)-(effM[a]||0));
   let rows='';
   if(!muscles.length){ rows=`<div class="submeta" style="padding:6px 0">aún sin series duras esta semana</div>`; }
-  const r1=n=>Math.round(n*10)/10; const CEIL=20, DR=10, drPct=Math.round(DR/CEIL*100);
+  const r1=n=>Math.round(n*10)/10; const CEIL=20, DR=10;
   muscles.forEach(m=>{ const eff=r1(effM[m]||0), hard=r1(byM[m]);
+    // v228: marcas = MEV y MRV del músculo real (guía RP); sin guía, la marca ~10 de rendimientos decrecientes
+    const L=landmarksForLabel(m); const CE=Math.max(CEIL,L?L[2]+2:CEIL); const drPct=Math.round(DR/CE*100);
+    const st=L?volStatus(m,eff):''; const stTag=st==='under'?` <span class="vst" title="por debajo del volumen mínimo efectivo estimado (guía RP)">bajo MEV ${L[0]}</span>`:st==='high'?` <span class="vst warn" title="entre el volumen máximo adaptativo y el máximo recuperable">cerca de MRV</span>`:st==='over'?` <span class="vst bad" title="por encima del volumen máximo recuperable estimado">sobre MRV ${L[2]}</span>`:'';
+    const marks=L?`${L[0]>0?`<span class="mev" style="left:${Math.round(L[0]/CE*100)}%" title="MEV ${L[0]}"></span>`:''}<span class="mrv" style="left:${Math.round(L[2]/CE*100)}%" title="MRV ${L[2]}"></span>`:`<span class="mev" style="left:${drPct}%"></span>`;
     const mp=muscleProgress(m); const mpBadge=(mp&&mp.dir)?progBadgeFromProg(mp,'tensión efectiva del músculo · 7d vs 7d previos'):''; const mT=(mp&&mp.cur>0)?` · T ${fmtT(mp.cur)}`:'';
-    const pct=Math.min(100,Math.round(eff/CEIL*100));
+    const pct=Math.min(100,Math.round(eff/CE*100));
     const junk=r1(hard-eff); const jn=junk>0?` <span style="color:var(--o30)" title="series duras pero de baja tensión (zona ligera) — sube carga / acércate al fallo">+${junk} lig.</span>`:'';
     const ind=r1(indirectM[m]||0), dir=r1(directM[m]||0); const brk=ind>0?`<div class="submeta" style="font-size:11px;opacity:.5;margin-top:2px" title="directas = músculo primario (1×) · indirectas = secundario (peso parcial)">↳ ${dir} directas · ${ind} indirectas</div>`:'';
-    rows+=`<div class="vrow"><div class="vtop"><span class="vm">${escTxt(m)}${mpBadge}</span><span class="vn">${eff} ef.${jn}${mT} · ${freq[m]||0}×/wk</span></div>`
-      +`<div class="vbar"><i style="width:${pct}%"></i><span class="mev" style="left:${drPct}%"></span></div>${brk}</div>`;
+    rows+=`<div class="vrow"><div class="vtop"><span class="vm">${escTxt(m)}${mpBadge}${stTag}</span><span class="vn">${eff} ef.${jn}${mT} · ${freq[m]||0}×/wk</span></div>`
+      +`<div class="vbar"><i style="width:${pct}%"></i>${marks}</div>${brk}</div>`;
   });
   return `<hr class="rule"/><div class="section" style="margin-bottom:12px"><div class="h"><span class="s">//</span>EFFECTIVE VOLUME</div><div class="meta">series efectivas/músculo · 7d</div></div>`+rows
-    +`<div class="submeta" style="margin-top:8px">ef. = series duras (RIR≤4) en zona productiva (tensión real) · marca ~10 = rendimientos decrecientes · T = tensión efectiva 7d (carga relativa × reps cerca del fallo) · ▲▼ = T vs 7d previos</div>`;
+    +`<div class="submeta" style="margin-top:8px">ef. = series duras (RIR≤4) en zona productiva (tensión real) · marcas = MEV y MRV de ese músculo (guía RP; sin guía, ~10 = rendimientos decrecientes) · T = tensión efectiva 7d (carga relativa × reps cerca del fallo) · ▲▼ = T vs 7d previos</div>`;
 }
 
 // ---------- render: workout ----------
@@ -2278,6 +2420,40 @@ function _chartSelfCheck(){
   const pts=JSON.parse(dd.querySelector('.chwrap').dataset.pts);
   A('el scrub solo ofrece días con dato', pts.length===2);
   console.log('chart self-check OK');
+}
+// v228 — músculos canónicos: mapeo de SUS etiquetas reales, grupos ambiguos resueltos por ejercicio, override
+// del usuario, landmarks por etiqueta y — lo vinculante — ninguna etiqueta renombrada. db de juguete restaurada.
+function _muscleSelfCheck(){
+  const A=(nm,c)=>{ if(!c) throw new Error('SELFCHECK muscle: '+nm); };
+  const real=db;
+  try{
+    db=migrate({_idfix:true,_fsfix:true,profile:{username:'t'},sessions:[],
+      split:{name:'t',days:[{id:'d1',name:'push',exercises:[
+        {id:'a',name:'standing lateral rises',muscle:'delts',type:'free',sets:3},
+        {id:'b',name:'shoulder press',muscle:'delts',muscles:[{name:'delts',weight:1},{name:'tricep',weight:0.25}],type:'machine',sets:3},
+        {id:'c',name:'chest supp row',muscle:'mback',type:'machine',sets:3},
+        {id:'d',name:'standing calf rises',muscle:'calfs',type:'machine',sets:3},
+        {id:'e',name:'weird move',muscle:'delts',type:'free',sets:3}]}]}});
+    A('calfs → calves', muscleCanon('calfs').id==='calves');
+    A('tricep → triceps', muscleCanon('tricep').id==='triceps');
+    A('mback → espalda media', muscleCanon('mback').id==='upper_back');
+    A('hams → isquiosurales', muscleCanon('hams').id==='hamstrings');
+    A('los acentos no importan', muscleCanon('Cuádriceps').id==='quads');
+    A('delts es un grupo, no un músculo', muscleCanon('delts').group===true);
+    const ex=db.split.days[0].exercises;
+    const lat=targetsFor(ex[0]), sp=targetsFor(ex[1]), odd=targetsFor(ex[4]);
+    A('elevación lateral → deltoides lateral (deducido)', lat[0].id==='side_delts'&&lat[0].src==='inferred');
+    A('press de hombro → deltoides frontal + tríceps 0.25', sp[0].id==='front_delts'&&sp[1].id==='triceps'&&sp[1].w===0.25);
+    A('sin pista en el nombre queda sin resolver (nunca adivina)', odd[0].id===null&&odd[0].group==='delts');
+    setExCat('weird move',{targets:[{id:'rear_delts',w:1}]});
+    A('el usuario fija el músculo del ejercicio', targetsFor(ex[4])[0].id==='rear_delts'&&targetsFor(ex[4])[0].src==='user');
+    db.muscleMap={[mNorm('calfs')]:{id:'calves',src:'user'}};
+    A('el override de etiqueta queda marcado como suyo', muscleCanon('calfs').src==='user');
+    A('landmarks por etiqueta', JSON.stringify(landmarksForLabel('calfs'))==='[8,16,20]'&&JSON.stringify(landmarksForLabel('delts'))==='[8,22,26]');
+    A('volStatus ya usa el canónico', volStatus('calfs',5)==='under'&&volStatus('calfs',25)==='over');
+    A('las etiquetas NO se renombran', exMuscles(ex[3])[0].name==='calfs'&&ex[2].muscle==='mback');
+  } finally { db=real; bumpIdx(); }
+  console.log('muscle self-check OK');
 }
 function _historyEditSelfCheck(){
   // the finalize step below saves and advances the rotation — split + rotIdx must come back too (they leaked before v221)
@@ -3932,7 +4108,7 @@ function setsWeek(offsetWeeks){
   const now=new Date(); const b=new Date(now); b.setDate(now.getDate()-7*offsetWeeks); const a=new Date(b); a.setDate(b.getDate()-7);
   const ai=todayISO(a), bi=todayISO(b); const byM={};
   (db.sessions||[]).forEach(s=>{ if(s.type==='rest'||!s.date||s.date<=ai||s.date>bi)return;
-    (s.exercises||[]).forEach(e=>{ const muscles=exMuscles(e); if(!muscles.length)return;
+    (s.exercises||[]).forEach((e,ei)=>{ const muscles=musclesOf(s,ei); if(!muscles.length)return;   // v228: vivo, como tensWeek
       let plain=0; const bySide={};
       (e.sets||[]).forEach(st=>{ if(!((st.w||st.r)&&isHardSet(st)))return; const v=st.isDrop?0.5:1; if(st.side)bySide[st.side]=(bySide[st.side]||0)+v; else plain+=v; });
       const sides=Object.keys(bySide); const hard=plain+(sides.length?Math.max.apply(null,sides.map(k=>bySide[k])):0);
@@ -5712,6 +5888,9 @@ function mergeExercises(sourceNames,target){
     if(target.unit)e.unit=target.unit;
     if(target.muscle)e.muscle=target.muscle;
     if(Array.isArray(target.muscles)&&target.muscles.length)e.muscles=target.muscles.slice();
+    // v228: primario distinto → los secundarios heredados ya no cuadran. Antes el muscles[] viejo sobrevivía y
+    // exMuscles() seguía devolviendo el primario ANTERIOR (bug de v224).
+    else if(target.muscle&&Array.isArray(e.muscles)&&e.muscles.length&&mNorm(e.muscles[0]&&e.muscles[0].name)!==mNorm(target.muscle)) e.muscles=[{name:target.muscle,weight:1}];
   };
   // 1 · split — se normaliza la configuración pero cada instancia CONSERVA su id (es su identidad; el
   // motor de baseline/máquinas cuelga de ahí). Nunca se borra un ejercicio del split: eso es su plan.
@@ -5740,8 +5919,10 @@ function mergeExercises(sourceNames,target){
   });
   // 4 · catálogo de identidad (dónde existe + configuración canónica)
   const prev=exCatRec(target.name)||{};
+  // v228: el músculo del motor fijado en una fuente viaja al ejercicio unido (solo si el primario no cambió)
+  const srcT=[...src].map(k=>(db.exCat&&db.exCat[k]&&db.exCat[k].targets)||null).find(Boolean);
   setExCat(target.name,{name:target.name,gyms:(target.gyms||[]).slice(),type:target.type,unilateral:!!target.unilateral,
-    unit:target.unit,muscle:target.muscle,muscles:target.muscles,
+    unit:target.unit,muscle:target.muscle,muscles:target.muscles,targets:target.muscles?(prev.targets||srcT):prev.targets,
     mergedFrom:[...new Set([].concat(prev.mergedFrom||[],[...src].filter(k=>k!==tgtKey)))]});
   [...src].forEach(k=>{ if(k!==tgtKey&&db.exCat&&db.exCat[k])delete db.exCat[k]; });
   save();   // bumpIdx() invalida exIndex/baselines: todo se recalcula ya unido
@@ -5878,7 +6059,8 @@ function downloadIcs(di){
 // muscleSuggest returns ONLY muscles the user has actually used (split + sessions).
 // Falls back to a minimal default set when totally empty (very new user). Lets users add
 // new muscle names by free typing — no exhaustive hardcoded chip list cluttering the UI.
-function muscleSuggest(){ const used=new Set(); (db.split&&db.split.days||[]).forEach(d=>(d.exercises||[]).forEach(e=>{ if(e.muscle)used.add(String(e.muscle).toLowerCase().trim()); })); (db.sessions||[]).forEach(s=>{ if(s.type==='rest')return; (s.exercises||[]).forEach(e=>{ if(e.muscle)used.add(String(e.muscle).toLowerCase().trim()); }); }); const arr=[...used].filter(Boolean); return arr.length?arr.sort():['chest','back','legs','delts','biceps','tricep']; }
+function muscleSuggest(){ const used=new Set(); const add=e=>exMuscles(e).forEach(m=>{ if(m.name)used.add(m.name); });   // v228: + secundarios
+  (db.split&&db.split.days||[]).forEach(d=>(d.exercises||[]).forEach(add)); (db.sessions||[]).forEach(s=>{ if(s.type==='rest')return; (s.exercises||[]).forEach(add); }); const arr=[...used].filter(Boolean); return arr.length?arr.sort():['chest','back','legs','delts','biceps','tricep']; }
 // STEP 1: pick a muscle first
 function openAddExercise(afterExi,replaceExi){
   window._axCtx={afterExi,replaceExi}; const muscles=muscleSuggest();
@@ -7183,12 +7365,13 @@ function openNavMenu(){
      ${item('perfil / ajustes','settings')}
      ${item('historial de sesiones','history')}
      ${item('editar split','splitedit')}
+     ${item('músculos · cómo los cuenta el motor','muscles')}
      ${item('suplementos · administrar','stack')}
      ${item('compartir el día','sharefood')}
      ${item('respaldo / exportar','sync')}
    </div>`);
   document.querySelectorAll('#modal .nvm').forEach(el=>el.onclick=()=>{ const a=el.dataset.nav;
-    if(a==='sync'){ openSync(); return; } closeModal();
+    if(a==='sync'){ openSync(); return; } if(a==='muscles'){ openMuscleMap(); return; } closeModal();
     if(a==='settings')go('settings'); else if(a==='history')go('history'); else if(a==='splitedit')go('splitedit'); else if(a==='stack')go('stack');
     else if(a==='sharefood'){ state.shareType='food'; go('share'); } });
 }
@@ -7373,7 +7556,7 @@ async function aiPhoto(file,barcode){ if(!file)return; window._faTag=window._faT
 // Pick AI when the proxy is configured, else on-device OCR.
 function labelPhoto(file,barcode){ if(AI_PROXY_URL) return aiPhoto(file,barcode); return ocrPhoto(file,barcode); }
 requestPersist();
-db=load(); try{ promptIdleSession(); }catch(_){} try{ if(typeof location!=='undefined' && /[?&]selftest=1/.test(location.search)){ _identitySelfCheck(); _dropsetSelfCheck(); _baselineSelfCheck(); _variantSelfCheck(); _historyEditSelfCheck(); _idSelfCheck(); _cardioSelfCheck(); _tensionSelfCheck(); _healthSelfCheck(); _readinessSelfCheck(); _loggingSelfCheck(); _mergeSelfCheck(); _streakSelfCheck(); _chartSelfCheck(); } }catch(e){ console.error(e); } try{ const _sp=new URLSearchParams(location.search); const _hasHistorical=_sp.has('stepsh')||_sp.has('weighth')||_sp.has('stepsq')||_sp.has('sleeph'); if(_hasHistorical){ const _hsp=_sp; if(history.replaceState)history.replaceState(null,'',location.pathname); setTimeout(()=>{ if(confirm('Este link quiere importar datos históricos (pasos/peso/sueño de varios días) a tu cuenta. ¿Aplicar? — solo dile que SÍ si vienes de tu propio Atajo de iOS.')){ try{ const _imp=importHealth(_hsp); if(_imp.length){ save(); render(); toast('✓ '+_imp.join(' · ')); } }catch(_){} } },400); } else { const _imp=importHealth(_sp); if(_imp.length){ window._healthImported=_imp; if(history.replaceState)history.replaceState(null,'',location.pathname); } } }catch(_){} save(); render(); if(window._healthImported)setTimeout(()=>toast('✓ '+window._healthImported.join(' · ')),250); if(window._recoveredFromBackup)setTimeout(()=>{try{alert('Se recuperó un respaldo local: revisa tus datos, podrían faltar cambios muy recientes.');}catch(_){}},600);
+db=load(); try{ promptIdleSession(); }catch(_){} try{ if(typeof location!=='undefined' && /[?&]selftest=1/.test(location.search)){ _identitySelfCheck(); _dropsetSelfCheck(); _baselineSelfCheck(); _variantSelfCheck(); _historyEditSelfCheck(); _idSelfCheck(); _cardioSelfCheck(); _tensionSelfCheck(); _healthSelfCheck(); _readinessSelfCheck(); _loggingSelfCheck(); _mergeSelfCheck(); _streakSelfCheck(); _chartSelfCheck(); _muscleSelfCheck(); } }catch(e){ console.error(e); } try{ const _sp=new URLSearchParams(location.search); const _hasHistorical=_sp.has('stepsh')||_sp.has('weighth')||_sp.has('stepsq')||_sp.has('sleeph'); if(_hasHistorical){ const _hsp=_sp; if(history.replaceState)history.replaceState(null,'',location.pathname); setTimeout(()=>{ if(confirm('Este link quiere importar datos históricos (pasos/peso/sueño de varios días) a tu cuenta. ¿Aplicar? — solo dile que SÍ si vienes de tu propio Atajo de iOS.')){ try{ const _imp=importHealth(_hsp); if(_imp.length){ save(); render(); toast('✓ '+_imp.join(' · ')); } }catch(_){} } },400); } else { const _imp=importHealth(_sp); if(_imp.length){ window._healthImported=_imp; if(history.replaceState)history.replaceState(null,'',location.pathname); } } }catch(_){} save(); render(); if(window._healthImported)setTimeout(()=>toast('✓ '+window._healthImported.join(' · ')),250); if(window._recoveredFromBackup)setTimeout(()=>{try{alert('Se recuperó un respaldo local: revisa tus datos, podrían faltar cambios muy recientes.');}catch(_){}},600);
 applyDesign(); try{ if(/[?&]design\b/.test(location.search))localStorage.setItem('gymtrk_designmode','1'); if(localStorage.getItem('gymtrk_designmode')==='1')openDesignPanel(); }catch(_){}
 try{ bootScreen(()=>{ try{
   if(/[?&]wrap=1\b/.test(location.search)){ monthlyWrap(prevMonthYm(), true); return; }
