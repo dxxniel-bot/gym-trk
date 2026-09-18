@@ -325,7 +325,7 @@ sombras internas, labels flotantes, bordes de color.
 | `.status` | 10 px `--o50`; usuario 12/800 · fecha centrada · racha a la derecha | barra de estado de toda pantalla |
 | `.whdr` | `//NEXT`/`WORKOUT` 16/800 `--o50` tracking `--ls-title` + nombre del día 22/800 | **firma de las pantallas de gym. No aplanar** |
 | `.section .h` | `<span class="s">//</span>` + nombre, 16/800 | título de sección |
-| `.grp-label` | 9 px mayúsculas `--ls-caps` `--o40` | etiqueta de grupo dentro de una sección o sheet |
+| `.grp-label` | 9 px mayúsculas `--ls-caps` `--o40` | etiqueta de grupo dentro de una sección o sheet; `.grp-label.sub` (12 arriba · 4 abajo) para rótulos dentro de un detalle, en vez de márgenes en línea |
 | `.submeta` | 10 px `--o40` | ayuda/meta bajo un bloque; variantes de espacio `.gap`, `.tight`, `.flush` (DS-4) en vez de márgenes en línea |
 | `.sheet h3` | 11/800 mayúsculas `--o50` | título de sheet |
 
@@ -395,6 +395,20 @@ neutro `--border`. Errores sin auto-cierre; máximo 3 apilados; `aria-live`. **N
 `.bar`/`.vbar`/`.wprog`: 3px (2px en `.wprog`), píldora, `--track` + relleno `--fill`; exceso (`.over`) en
 semántico. Barras segmentadas (celdas) permitidas para conteos discretos (DS-6).
 
+### 7.16 Diagnóstico (hallazgos, v234)
+
+Cómo la app **sugiere** sin inventar (primer uso: //MÚSCULOS y su detalle).
+- **Anatomía** (`.dxrow`): hallazgo 12/700 con color por severidad (`.dx-bad` `--bad` · `.dx-warn` `--warn` · `.dx-info`
+  `--fg` · `.dx-ok` `--good`) · **evidencia** 10 px `--o50` con los números que lo disparan · **acción** `→ …` 10 px
+  `--o70` · separador .5px `--o10` · nota final `.submeta` ("solo aparece lo que tu historial respalda · correlación, no
+  causa"). Orden: grave → atención → sugerencia → "en orden".
+- **En una fila de lista** (`.mscdx`): solo el hallazgo principal en corto (10 px) + `+N`; nunca repite lo que ya dice un
+  estado de la misma fila (MEV/MRV) y "en orden" no ocupa renglón.
+- **Reglas de redacción:** se dispara solo con evidencia (umbrales explícitos en el código, con prueba de "ruido" en su
+  self-check) · nunca una puntuación · verbos de sugerencia ("suele", "puede aportar", "considera"), no órdenes · cita
+  cuando la regla viene de literatura · `~` si se apoya en datos sugeridos sin confirmar · sin datos suficientes dice
+  "pocos datos", no "en orden".
+
 ---
 
 ## 8. Gráficas (instrumentación, no infografía)
@@ -433,6 +447,7 @@ punto, la escala de colores de Bevel.
 | "estimado" vs "observado" | literatura ajustada vs su propio historial | recuperación por músculo |
 | "correlación, no causa" | descriptivo, no diagnóstico | //RENDIMIENTO, causas de un ▼ |
 | lecturas separadas | nunca una puntuación única | //MÚSCULOS: volumen · estímulo · fatiga · recuperación |
+| hallazgo con su evidencia | una sugerencia existe solo si hay números que la respaldan, y se muestran | DIAGNÓSTICO por músculo (§7.16) |
 
 ## 10. Movimiento
 
@@ -624,6 +639,8 @@ el marcado de nav, sheet y toast; sheets que entran y salen deslizando; balance 
 cuatro valores; sin emoji pictográficos; CSS muerto fuera (`.rowend`, `.pfv`, `.pwk`, `.ptla`, `.prng`, vista previa de
 sesión, `.srowm`, `.shset`, `.mbanner`/`.mb-*`, `.prow`); FAB y fantasma de arrastre en `--z-float`; sin glow en la
 barra de intake ni en el escáner. Las utilidades v156 (`.t-meta`, `.mt-s*`…) se quedan para DS-4.
+**PT2 v234** (diagnóstico por músculo) construido ya con el sistema: componente §7.16, `.grp-label.sub` en lugar de
+márgenes en línea en el detalle de músculo.
 
 **Fases:** DS-0 documento y auditor · DS-1 P0 + tokens nuevos + capas + CSS muerto · DS-2 tipografía, tracking,
 gutters y espaciado · DS-3 componentes (radios, inputs, chips, botones, sombras, glass, sheets, íconos) · **PT2 v231

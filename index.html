@@ -123,6 +123,13 @@
   .msctop{display:flex; justify-content:space-between; align-items:baseline; gap:8px; margin-bottom:6px;} .mscn{font-size:var(--t-sm); font-weight:700;} .mscv{font-size:var(--t-xs); color:var(--o50); white-space:nowrap;}
   .mscrec{font-size:var(--t-xs); margin-top:6px;}
   .mscd .mdline{align-items:baseline;} .mscd .mdv{white-space:normal; text-align:right;} .mscd .mdsub{display:inline-block;}
+  /* v234 · diagnóstico por músculo: hallazgo (color = severidad) · evidencia · qué hacer. Sin puntuación. */
+  .grp-label.sub{margin:12px 0 4px;}
+  .dxrow{padding:6px 0; border-bottom:.5px solid var(--o10);}
+  .dxh{font-size:var(--t-sm); font-weight:700;} .dxev{font-size:var(--t-xs); color:var(--o50); margin-top:2px; line-height:1.4;} .dxdo{font-size:var(--t-xs); color:var(--o70); margin-top:2px; line-height:1.4;}
+  .dxnote{margin-top:6px;}
+  .dx-bad{color:var(--bad);} .dx-warn{color:var(--warn);} .dx-info{color:var(--fg);} .dx-ok{color:var(--good);}
+  .mscdx{font-size:var(--t-xs); margin-top:4px;} .mscdx.dx-info{color:var(--o70);} .dxmore{color:var(--o40);}
   /* v229 · perfil del ejercicio: lo SUGERIDO se ve punteado hasta que lo tocas */
   .pftog.sug .t.on{border-style:dashed; opacity:.75;}
   .pfsec{display:flex; gap:6px; margin-bottom:6px;} .pfsec select{flex:1; min-width:0;}
@@ -1462,7 +1469,7 @@ function muscleExposureIndex(){
         const w=t.w; a.sets+=hard*w; if(w>=1)a.direct+=hard; a.T+=T*w; a.rs+=rs*w; a.rn+=rn*w; a.near+=near*w;
         a.len[prof.len||'unk']=(a.len[prof.len||'unk']||0)+hard*w; a.rp[prof.rp||'unk']=(a.rp[prof.rp||'unk']||0)+hard*w;
         if(w>=1&&pr&&isFinite(pr.pct))a.perf.push(pr.pct);
-        a.ex.push({name:e.name,w,hard,len:prof.len,rp:prof.rp}); }); });
+        a.ex.push({name:e.name,w,hard,len:prof.len,rp:prof.rp,lenSrc:prof.lenSrc}); }); });
     Object.keys(per).forEach(id=>{ (idx[id]=idx[id]||[]).push(per[id]); }); });
   Object.keys(idx).forEach(id=>idx[id].sort((x,y)=>((x.end||Date.parse(x.date))-(y.end||Date.parse(y.date)))));
   return (_muscExpCache=idx); }
@@ -1514,9 +1521,97 @@ function musclesSectionHTML(){ const rows=muscleRowsData(); if(!rows.length)retu
     const st=L?(c.sets<L[0]?'bajo MEV':c.sets>L[2]?'sobre MRV':c.sets>L[1]?'cerca de MRV':''):'';
     out+=`<div class="mscrow" data-act="muscledetail" data-id="${r.id}"><div class="msctop"><span class="mscn">${escTxt(muscleLabel(r.id))}${st?` <span class="vst${st==='sobre MRV'?' bad':st==='cerca de MRV'?' warn':''}">${st}</span>`:''}</span><span class="mscv">${r1m(c.sets)} series${c.rir!=null?' · RIR '+r1m(c.rir):''}</span></div>`
       +`<div class="vbar"><i style="width:${pct}%"></i>${L?`${L[0]>0?`<span class="mev" style="left:${Math.round(L[0]/CE*100)}%"></span>`:''}<span class="mrv" style="left:${Math.round(L[2]/CE*100)}%"></span>`:''}</div>`
-      +`<div class="mscrec" style="color:${recStateCol(r.rec)}">${escTxt(recStateTxt(r.rec))}${r.rec&&r.rec.win.src==='observed'?' · observado':''}</div></div>`; });
+      +`<div class="mscrec" style="color:${recStateCol(r.rec)}">${escTxt(recStateTxt(r.rec))}${r.rec&&r.rec.win.src==='observed'?' · observado':''}</div>${diagRowHTML(r.id)}</div>`; });
   if(unres)out+=`<div class="submeta" style="margin-top:6px;color:var(--warn)" data-act="musclemap">${unres} ejercicio${unres>1?'s':''} con músculo sin resolver (p. ej. "delts" sin pista en el nombre) · toca para asignarlo ›</div>`;
   return out; }
+// ---- v234 · PT2 fase 4: DIAGNÓSTICO por músculo — estímulo vs recuperación ----
+// "Si la recuperación va lenta, ver por qué; si va sobrado, dar sugerencias… que todo tenga sentido" (dueño, fix.md PT2).
+// muscleDiagInput junta la evidencia (volumen 7d/7d previos, últimas 3 exposiciones con capacidad, RIR, horas de descanso
+// vs su ventana, banderas del día, sueño, secuencia, longitud 28d); diagnoseMuscle es PURA: 9 reglas con guardas que solo
+// se disparan con evidencia (umbrales en DIAG). Descriptivo: nunca una puntuación, nunca cambia un número del motor.
+const DIAG={farRIR:3, farMinRN:4, drop:-3, fatSets:1.25, fatRIR:0.5, lowSleep:6, splitN:3, splitGap:3, lenKnown:0.7, lenMinSets:6};
+// banderas del día con los MISMOS umbrales que las causas de un ▼ (downContext): una sola definición
+function dayFlags(date){ const out=[]; const r=readinessFor(date); if(!r)return out; const P=r.parts;
+  if(P.sleep&&P.sleep.score<80)out.push('dormiste '+P.sleep.v+'h');
+  if(P.rhr&&P.rhr.z>1.5)out.push(P.rhr.txt);
+  if(P.hrv&&P.hrv.z<-1)out.push('HRV baja');
+  if(P.load&&P.load.ratio>1.4)out.push(P.load.txt);
+  if(P.food&&((P.food.kr!=null&&P.food.kr<0.8)||(P.food.prr!=null&&P.food.prr<0.8)))out.push(P.food.txt);
+  return out; }
+// ¿este ejercicio iba DESPUÉS de otro del mismo músculo (primario) llevado a RIR ≤1? → nombre de ese otro
+function precededByNearFailure(s,ei,id){ for(let xi=0;xi<ei;xi++){ const x=(s.exercises||[])[xi]; if(!x||isCardio(x))continue;
+    if(!exTargets(s,xi).some(t=>t.id===id&&t.w>=1))continue;
+    if((x.sets||[]).some(st=>st&&!st._pf&&!st.isDrop&&(st.w||st.r)&&rirKnown(st)&&(isFailure(st)||setRIR(st)<=1)))return x.name; }
+  return null; }
+function muscleDiagInput(id,nowMs){ const M=MUSCLES[id]; if(!M)return null; const t=todayISO(new Date(nowMs||Date.now()));
+  const d7=shiftDate(t,-6), d8=shiftDate(t,-7), d14=shiftDate(t,-13), d28=shiftDate(t,-27);
+  const w1=muscleWindowAgg(id,d7,t), w2=muscleWindowAgg(id,d14,d8), w28=muscleWindowAgg(id,d28,t);
+  const ex=muscleExposureIndex()[id]||[]; const obs=observedRecovery(musclePairs(id)); const avg=a=>a.length?a.reduce((x,y)=>x+y,0)/a.length:null;
+  // últimas 3 exposiciones (28 d): capacidad, horas desde la anterior y la ventana que aplicaba (observada › estimada)
+  const recent=[]; ex.forEach((a,i)=>{ if(a.date<d28||a.date>t)return; const prev=ex[i-1];
+    const gap=prev?(expStart(a)-expEnd(prev))/3600000:null; const est=prev?recoveryEstimate(prev):null;
+    const win=obs.hours?{lo:obs.hours[0],hi:obs.hours[1],src:'observed'}:(est?{lo:est.lo,hi:est.hi,src:'estimated'}:null);
+    recent.push({date:a.date,sets:a.sets,rir:a.rn?a.rs/a.rn:null,rn:a.rn,perf:avg(a.perf),gap,win}); });
+  const last3=recent.slice(-3); last3.forEach(x=>{ x.flags=dayFlags(x.date); });
+  const perf14=[]; ex.forEach(a=>{ if(a.date>=d14&&a.date<=t)a.perf.forEach(p=>perf14.push(p)); });
+  // sueño <6 h la noche previa vs el resto, sobre TODAS sus exposiciones con capacidad
+  const lo=[], rest=[]; ex.forEach(a=>{ if(!a.perf.length)return; const sh=sleepOnDate(a.date); if(!(sh>0))return; (sh<DIAG.lowSleep?lo:rest).push(avg(a.perf)); });
+  const sleep={lowN:lo.length,lowMed:median(lo),restN:rest.length,restMed:median(rest)};
+  // secuencia: el caso más reciente de un primario que iba tras otro del mismo músculo al fallo, y si la vez anterior también
+  let seq=null; (db.sessions||[]).forEach(s=>{ if(!s||s.type==='rest'||!s.date||s.date<d28||s.date>t||!s.exercises)return;
+    s.exercises.forEach((e,ei)=>{ if(isCardio(e)||!exTargets(s,ei).some(g=>g.id===id&&g.w>=1))return; const ex1=precededByNearFailure(s,ei,id); if(!ex1)return;
+      let pr=null; try{ pr=histProgress(s,ei); }catch(_){} if(!pr||!isFinite(pr.pct))return; const b=pr._base;
+      if(!seq||s.date>=seq.date)seq={date:s.date,ex1,ex2:e.name,pct:pr.pct,baseKnown:!!(b&&b.sess),baseAfter:!!(b&&b.sess&&precededByNearFailure(b.sess,b.ei,id))}; }); });
+  // honestidad (§9): cuánto de la longitud conocida viene de una SUGERENCIA sin confirmar (~)
+  let lenSug=0; ex.forEach(a=>{ if(a.date<d28||a.date>t)return; (a.ex||[]).forEach(x=>{ if(x.len&&x.len!=='unk'&&x.lenSrc==='suggested')lenSug+=x.hard*x.w; }); });
+  return {id,lm:M.lm||null,w1:{sets:w1.sets,rir:w1.rir,rn:w1.rn,n:w1.n},w2:{sets:w2.sets,rir:w2.rir,rn:w2.rn,n:w2.n},
+    recent:last3,perf14,sleep,seq,len28:Object.assign({},w28.len),lenSug,n28:w28.n}; }
+const DX_RANK={bad:0,warn:1,info:2,ok:3};
+function diagnoseMuscle(inp){ const F=[]; if(!inp||!inp.n28)return {findings:F,state:'none'};
+  const L=inp.lm, w1=inp.w1||{}, w2=inp.w2||{}, R=inp.recent||[]; const last=R[R.length-1]||null;
+  const p14=median(inp.perf14||[]); const pc=x=>(x>0?'+':x<0?'−':'')+r1m(Math.abs(x))+'%'; const flagged=R.some(x=>x.flags&&x.flags.length);
+  // 1 · fatiga acumulada: más series, más cerca del fallo y la capacidad cae — sin sueño/comida que lo expliquen
+  if(w2.sets>=3&&w1.sets>=w2.sets*DIAG.fatSets&&w1.rir!=null&&w2.rir!=null&&w1.rir<=w2.rir-DIAG.fatRIR&&p14!=null&&p14<=DIAG.drop&&!flagged)
+    F.push({k:'fatigue',sev:'bad',txt:'fatiga acumulada',row:'fatiga acumulada',ev:'series '+pc((w1.sets/w2.sets-1)*100)+' · RIR '+r1m(w2.rir)+' → '+r1m(w1.rir)+' · capacidad '+pc(p14)+' (14 d)',do:'bajar series, subir el RIR unos días o dar más descanso; no sumar volumen'});
+  // 2 · entrenado antes de su ventana y rindió menos
+  const early=R.filter(x=>x.gap!=null&&x.win&&x.gap<x.win.lo&&x.perf!=null&&x.perf<=DIAG.drop);
+  if(early.length){ const x=early[early.length-1];
+    F.push({k:'early',sev:'warn',txt:'entrenado antes de recuperarse',row:'antes de recuperarse · '+pc(x.perf),ev:fmtShort(x.date)+': '+Math.round(x.gap)+' h de descanso (ventana '+(x.win.src==='observed'?'observada':'estimada')+' '+x.win.lo+'–'+x.win.hi+' h) → '+pc(x.perf)+(early.length>1?' · '+early.length+' de las últimas '+R.length:''),do:'deja más horas entre sesiones de este músculo'}); }
+  // 3 · la última baja coincidió con sueño, comida, FC o carga del día
+  if(last&&last.perf!=null&&last.perf<=DIAG.drop&&last.flags&&last.flags.length)
+    F.push({k:'context',sev:'warn',txt:'la última baja coincidió con tu día',row:'baja '+pc(last.perf)+' · '+last.flags[0].split(' · ')[0],ev:fmtShort(last.date)+' '+pc(last.perf)+' · '+last.flags.join(' · '),do:'antes de cambiar el plan, revisa sueño y comida'});
+  // 4 · sobre MRV
+  if(L&&L[2]&&w1.sets>L[2])F.push({k:'mrv',sev:'warn',txt:'sobre MRV',ev:r1m(w1.sets)+' series en 7 días (MRV '+L[2]+')',do:'si la capacidad empieza a caer, el volumen es el primer sospechoso'});
+  // 5 · secuencia: cayó yendo tras otro al fallo, y la vez anterior NO iba así
+  const S=inp.seq; if(S&&S.baseKnown&&!S.baseAfter&&S.pct<=DIAG.drop)
+    F.push({k:'sequence',sev:'warn',txt:'2.º ejercicio tras uno al fallo',row:'orden: '+S.ex2+' tras uno al fallo',ev:fmtShort(S.date)+': '+S.ex2+' después de '+S.ex1+' a RIR ≤1 → '+pc(S.pct)+' vs la vez anterior (que no iba después)',do:'para medir su progreso, ponlo antes o deja el primero a RIR 2'});
+  // 6 · lejos del fallo, sin caída de capacidad ni nada del día que lo justifique (Refalo 2023; Robinson 2024)
+  if(w1.rir!=null&&w1.rn>=DIAG.farMinRN&&w1.rir>=DIAG.farRIR&&(p14==null||p14>=-1)&&!flagged)
+    F.push({k:'far',sev:'info',txt:'lejos del fallo',row:'lejos del fallo · RIR '+r1m(w1.rir),ev:'RIR medio '+r1m(w1.rir)+' en 7 días · capacidad '+(p14==null?'sin comparación':pc(p14)),do:'antes de sumar series, acércate al fallo (RIR 0–2): suele dar más estímulo por serie (Refalo 2023; Robinson 2024)'});
+  // 7 · bajo MEV dos semanas seguidas
+  if(L&&L[0]>0&&w1.sets<L[0]&&w2.sets<L[0])
+    F.push({k:'mev',sev:'info',txt:'bajo MEV 2 semanas',ev:r1m(w2.sets)+' y '+r1m(w1.sets)+' series (MEV '+L[0]+')',do:F.some(f=>f.k==='far')?'primero acércate al fallo; después, si quieres más de este músculo, suma series':'si quieres que crezca, suma series poco a poco'});
+  // 8 · sueño y ESTE músculo (≥3 exposiciones en cada lado)
+  const Z=inp.sleep; if(Z&&Z.lowN>=DIAG.splitN&&Z.restN>=DIAG.splitN&&Z.restMed-Z.lowMed>=DIAG.splitGap)
+    F.push({k:'sleep',sev:'info',txt:'rinde menos tras dormir poco',ev:'tras <'+DIAG.lowSleep+' h: '+pc(Z.lowMed)+' (n'+Z.lowN+') · el resto: '+pc(Z.restMed)+' (n'+Z.restN+')',do:'correlación, no causa, pero es de tu historial'});
+  // 9 · cobertura de longitud: nada en estiramiento con ≥70 % del trabajo ya clasificado (Wolf 2023; Maeo 2021/2023)
+  const len=inp.len28||{}; const tot=Object.values(len).reduce((x,y)=>x+y,0); const known=tot-(len.unk||0);
+  if(tot>=DIAG.lenMinSets&&known/tot>=DIAG.lenKnown&&!((len.long||0)+(len.mixed||0)))
+    F.push({k:'length',sev:'info',txt:'sin trabajo en estiramiento'+(inp.lenSug>0?' ~':''),ev:'28 días: '+[['short','acortado'],['mid','media']].filter(k=>len[k[0]]).map(k=>k[1]+' '+Math.round(len[k[0]]/known*100)+'%').join(' · ')+' · estirado 0%'+(inp.lenSug>0?' · ~ incluye perfiles sugeridos que no has confirmado (catálogo › perfil)':''),do:'sumar un ejercicio en estiramiento puede aportar; la evidencia es mixta, no es regla'});
+  if(!F.length){ if(inp.n28<2)return {findings:F,state:'little'};
+    F.push({k:'ok',sev:'ok',txt:'en orden',ev:[L&&w1.sets>=L[0]&&w1.sets<=L[2]?'volumen en rango':null,p14!=null?'capacidad '+pc(p14):null,last&&last.gap!=null&&last.win&&last.gap>=last.win.lo?'descansó dentro de su ventana':null].filter(Boolean).join(' · ')||'sin señales de exceso ni de falta',do:''}); }
+  F.sort((a,b)=>DX_RANK[a.sev]-DX_RANK[b.sev]);
+  return {findings:F,state:F[0].k==='ok'?'ok':'findings'}; }
+let _diagCache={};   // por músculo; se limpia en bumpIdx() y al cambiar de día
+function muscleDiag(id){ const t=todayISO(); if(_diagCache._d!==t)_diagCache={_d:t}; if(_diagCache[id])return _diagCache[id];
+  let r={findings:[],state:'none'}; try{ r=diagnoseMuscle(muscleDiagInput(id)); }catch(e){ console.warn('diag',id,e); } return (_diagCache[id]=r); }
+function diagBlockHTML(dg){ if(!dg||!dg.findings.length)return `<div class="submeta">${dg&&dg.state==='little'?'pocos datos: hacen falta 2 exposiciones en 28 días':'sin exposiciones en 28 días'}</div>`;
+  return dg.findings.map(f=>`<div class="dxrow"><div class="dxh dx-${f.sev}">${escTxt(f.txt)}</div><div class="dxev">${escTxt(f.ev)}</div>${f.do?`<div class="dxdo">→ ${escTxt(f.do)}</div>`:''}</div>`).join('')
+    +`<div class="submeta dxnote">solo aparece lo que tu historial respalda · descriptivo: correlación, no causa</div>`; }
+// en //MÚSCULOS: el hallazgo principal en corto. MEV/MRV ya los dice la etiqueta junto al nombre y "en orden" no
+// ocupa renglón; el detalle los muestra todos.
+function diagRowHTML(id){ const fs=muscleDiag(id).findings.filter(x=>x.sev!=='ok'&&x.k!=='mev'&&x.k!=='mrv'); const f=fs[0]; if(!f)return '';
+  const more=fs.length-1; return `<div class="mscdx dx-${f.sev}">${escTxt(f.row||f.txt)}${more>0?` <span class="dxmore">+${more}</span>`:''}</div>`; }
 function muscleUnresolvedCount(){ let n=0; knownExercises().forEach(x=>{ if(targetsFor(x).some(t=>!t.id&&t.group))n++; }); return n; }
 // detalle: las cuatro lecturas por separado + rendimiento, cada una con su procedencia
 function openMuscleDetail(id){ const M=MUSCLES[id]; if(!M)return; const t=todayISO(); const d7=shiftDate(t,-6), d14=shiftDate(t,-13), d8=shiftDate(t,-7), d28=shiftDate(t,-27);
@@ -1530,25 +1625,26 @@ function openMuscleDetail(id){ const M=MUSCLES[id]; if(!M)return; const t=todayI
   const obs=rec?rec.obs:observedRecovery(musclePairs(id)); const est=rec?rec.est:null;
   const last=exA.slice(-5).reverse();
   let html=`<div class="mdetail mscd"><div class="mdhd"><h3>${escTxt(muscleLabel(id))} <span style="font-size:11px;color:var(--o40);font-weight:400">${escTxt(M.es)}</span></h3></div>`
-    +`<div class="grp-label" style="margin:10px 0 4px">VOLUMEN · 7 días</div>`
+    +`<div class="grp-label sub">DIAGNÓSTICO</div>`+diagBlockHTML(muscleDiag(id))
+    +`<div class="grp-label sub">VOLUMEN · 7 días</div>`
     +line('series duras',r1m(c.sets),(dv?(dv>0?'▲ +':'▼ ')+r1m(dv)+' vs 7d previos':'igual que 7d previos'))
     +line('directas · indirectas',r1m(c.direct)+' · '+r1m(c.indirect))
     +line('sesiones',c.n)
     +(L?line('guía RP · MEV/MAV/MRV',L[0]+' · '+L[1]+' · '+L[2],c.sets<L[0]?'estás bajo el mínimo efectivo':c.sets>L[2]?'sobre el máximo recuperable':c.sets>L[1]?'entre MAV y MRV':'en rango'):line('guía RP','sin guía para este músculo','no se inventa'))
-    +`<div class="grp-label" style="margin:12px 0 4px">ESTÍMULO · 7 días</div>`
+    +`<div class="grp-label sub">ESTÍMULO · 7 días</div>`
     +line('tensión efectiva','T '+fmtT(c.T),p.T>0?(c.T>=p.T?'▲ ':'▼ ')+Math.round((c.T/p.T-1)*100)+'%':'')
     +line('RIR medio',c.rir!=null?r1m(c.rir):'—',c.rn?Math.round(c.near/c.rn*100)+'% a RIR ≤1':'')
     +line('longitud',[['long','estirado'],['mid','media'],['short','acortado'],['mixed','mixto']].filter(k=>pctOf(c.len,k[0])).map(k=>k[1]+' '+pctOf(c.len,k[0])+'%').join(' · ')||'—',pctOf(c.len,'unk')?pctOf(c.len,'unk')+'% sin definir':'')
     +line('perfil',[['asc','⬆'],['desc','⬇'],['mid','↔']].filter(k=>pctOf(c.rp,k[0])).map(k=>k[1]+' '+pctOf(c.rp,k[0])+'%').join(' · ')||'—',pctOf(c.rp,'unk')?pctOf(c.rp,'unk')+'% sin definir':'')
-    +`<div class="grp-label" style="margin:12px 0 4px">FATIGA · 72 h</div>`
+    +`<div class="grp-label sub">FATIGA · 72 h</div>`
     +line('series en 72 h',r1m(acute),fr!=null?'vs '+r1m(chronic)+' de tu promedio · '+(fr>1.4?'alta':fr<0.6?'baja':'normal'):'sin historial de 4 semanas')
-    +`<div class="grp-label" style="margin:12px 0 4px">RECUPERACIÓN</div>`
+    +`<div class="grp-label sub">RECUPERACIÓN</div>`
     +(rec?line('última exposición','hace '+(rec.h<48?Math.round(rec.h)+' h':r1m(rec.h/24)+' d'),fmtShort(rec.last.date)):'')
     +(est?line('ventana estimada',est.lo+'–'+est.hi+' h','base '+M.rec[0]+'–'+M.rec[1]+' h × dosis '+est.f):'')
     +(obs&&obs.hours?line('ventana observada',obs.hours[0]+'–'+obs.hours[1]+' h','tu historial · '+obs.n+' pares'):line('ventana observada','aún no',(obs?obs.n:0)+' de 6 pares necesarios'))
     +(obs&&obs.n?`<div class="submeta" style="margin:4px 0 0">capacidad según horas de descanso: ${obs.buckets.filter(b=>b.n).map(b=>(b.b>=1e9?'>'+b.a:b.a+'-'+b.b)+' h '+(b.med>=0?'+':'')+r1m(b.med)+'% (n'+b.n+')').join(' · ')}</div>`:'')
     +(rec?line('estado',`<span style="color:${recStateCol(rec)}">${escTxt(recStateTxt(rec))}</span>`,rec.win.src==='observed'?'con tu ventana observada':'con la ventana estimada'):'')
-    +`<div class="grp-label" style="margin:12px 0 4px">RENDIMIENTO · últimas exposiciones</div>`
+    +`<div class="grp-label sub">RENDIMIENTO · últimas exposiciones</div>`
     +(last.length?last.map(a=>{ const pf=a.perf.length?a.perf.reduce((x,y)=>x+y,0)/a.perf.length:null; return line(fmtShort(a.date),r1m(a.sets)+' series'+(a.rn?' · RIR '+r1m(a.rs/a.rn):''),pf!=null?`<span style="color:${pf>0?'var(--good)':pf<0?'var(--bad)':'var(--o40)'}">${pf>0?'▲ +':pf<0?'▼ ':'= '}${r1m(pf)}%</span>`:'sin comparación'); }).join(''):'<div class="submeta">sin exposiciones</div>')
     +`<div class="submeta" style="margin-top:10px;color:var(--o40)">estimado = guía de la literatura ajustada a tu dosis · observado = tu propio historial · las cuatro lecturas van separadas a propósito: no hay una puntuación única</div>`
     +`<div class="sheetbtns" style="margin-top:14px"><button class="cancel" data-act="closemodal">cerrar</button></div></div>`;
@@ -1642,7 +1738,7 @@ function musclesOf(sessOrWork,ei){
 let _exIdxCache=null;
 // call after any mutation that could change db.sessions (save() does this) so exIndex() rebuilds once, lazily.
 let _refCache={}, _sessTCache={}, _fatCtxCache={}, _readyCache={};
-function bumpIdx(){ _exIdxCache=null; _refCache={}; _sessTCache={}; _fatCtxCache={}; _readyCache={}; _mLblCache={}; _muscExpCache=null; }
+function bumpIdx(){ _exIdxCache=null; _refCache={}; _sessTCache={}; _fatCtxCache={}; _readyCache={}; _mLblCache={}; _muscExpCache=null; _diagCache={}; }
 // flat, memoized list of every REAL (non-_pf, non-empty) exercise-occurrence across all saved sessions,
 // most-recent-first. Base for baselineSetsFor() — rebuilt only when bumpIdx() invalidates it.
 function exIndex(){
@@ -2704,6 +2800,73 @@ function _recoverySelfCheck(){
     A('a las 150 h está fresco', muscleRecoveryState('quads',expEnd(last)+150*3600000).state==='fresh');
   } finally { db=real; bumpIdx(); }
   console.log('recovery self-check OK');
+}
+function _diagSelfCheck(){
+  const A=(nm,c)=>{ if(!c) throw new Error('SELFCHECK diag: '+nm); };
+  const ks=inp=>diagnoseMuscle(inp).findings.map(f=>f.k);
+  const base=()=>({id:'quads',lm:[8,12,20],n28:3,w1:{sets:10,rir:2,rn:8,n:2},w2:{sets:10,rir:2,rn:8,n:2},
+    recent:[{date:'2026-09-10',sets:5,rir:2,rn:4,perf:1,gap:80,win:{lo:48,hi:96,src:'estimated'},flags:[]},{date:'2026-09-14',sets:5,rir:2,rn:4,perf:0,gap:90,win:{lo:48,hi:96,src:'estimated'},flags:[]}],
+    perf14:[1,0],sleep:{lowN:0,lowMed:null,restN:4,restMed:0},seq:null,len28:{long:6,short:6}});
+  const X=f=>{ const b=base(); f(b); return b; };
+  // en orden: nada que decir más que eso
+  A('sin señales → "en orden"', JSON.stringify(ks(base()))==='["ok"]');
+  A('sin exposiciones → nada que inventar', diagnoseMuscle(X(b=>{ b.n28=0; })).state==='none');
+  A('una sola exposición → pocos datos, no "en orden"', diagnoseMuscle(X(b=>{ b.n28=1; })).state==='little');
+  // 1 · fatiga acumulada: series +30 %, RIR −1, capacidad −4 % y el día sin banderas
+  const fat=X(b=>{ b.w2={sets:10,rir:2.2,rn:8,n:2}; b.w1={sets:13,rir:1.2,rn:10,n:2}; b.perf14=[-5,-4,-3]; });
+  A('fatiga acumulada con evidencia', ks(fat)[0]==='fatigue');
+  A('…pero no si el día (sueño/comida) lo explica', (()=>{ const f=X(b=>{ Object.assign(b,fat); b.recent=fat.recent.map(r=>Object.assign({},r,{perf:-4,flags:['dormiste 5.1h']})); }); const k=ks(f); return k.indexOf('fatigue')<0&&k.indexOf('context')>=0; })());
+  A('ruido: capacidad −1 % no es fatiga', ks(X(b=>{ Object.assign(b,fat); b.perf14=[-1,0]; })).indexOf('fatigue')<0);
+  // 2 · antes de su ventana
+  A('entrenado antes de recuperarse', ks(X(b=>{ b.recent[1]=Object.assign({},b.recent[1],{gap:30,perf:-5}); })).indexOf('early')>=0);
+  A('ruido: pocas horas pero rindió igual', ks(X(b=>{ b.recent[1]=Object.assign({},b.recent[1],{gap:30,perf:1}); })).indexOf('early')<0);
+  // 4 · MRV / 7 · MEV
+  A('sobre MRV', ks(X(b=>{ b.w1.sets=24; })).indexOf('mrv')>=0);
+  A('bajo MEV dos semanas', ks(X(b=>{ b.w1.sets=4; b.w2.sets=5; })).indexOf('mev')>=0);
+  A('bajo MEV UNA semana no alcanza', ks(X(b=>{ b.w1.sets=4; b.w2.sets=10; })).indexOf('mev')<0);
+  // 5 · secuencia: solo si la vez anterior NO iba tras uno al fallo
+  A('secuencia con evidencia', ks(X(b=>{ b.seq={date:'2026-09-14',ex1:'rdl',ex2:'leg curl',pct:-6,baseKnown:true,baseAfter:false}; })).indexOf('sequence')>=0);
+  A('ruido: la vez anterior también iba después', ks(X(b=>{ b.seq={date:'2026-09-14',ex1:'rdl',ex2:'leg curl',pct:-6,baseKnown:true,baseAfter:true}; })).indexOf('sequence')<0);
+  // 6 · lejos del fallo (y la recomendación de MEV lo respeta)
+  const far=X(b=>{ b.w1={sets:4,rir:3.6,rn:8,n:2}; b.w2={sets:5,rir:3.5,rn:8,n:2}; });
+  const fd=diagnoseMuscle(far).findings; A('lejos del fallo', fd.some(f=>f.k==='far'));
+  A('con lejos del fallo, MEV dice "primero acércate al fallo"', /primero acércate/.test((fd.find(f=>f.k==='mev')||{}).do||''));
+  A('ruido: RIR 3.6 con 2 series con RIR no alcanza', ks(X(b=>{ b.w1={sets:4,rir:3.6,rn:2,n:1}; })).indexOf('far')<0);
+  A('lejos del fallo pero la capacidad cae → no es "falta de esfuerzo"', ks(X(b=>{ Object.assign(b,far); b.perf14=[-4,-5]; })).indexOf('far')<0);
+  // 8 · sueño y este músculo
+  A('rinde menos tras dormir poco (n≥3 y ≥3 puntos)', ks(X(b=>{ b.sleep={lowN:3,lowMed:-5,restN:5,restMed:1}; })).indexOf('sleep')>=0);
+  A('ruido: con 2 noches cortas no se concluye', ks(X(b=>{ b.sleep={lowN:2,lowMed:-8,restN:5,restMed:1}; })).indexOf('sleep')<0);
+  // 9 · longitud
+  A('sin trabajo en estiramiento', ks(X(b=>{ b.len28={short:8,mid:2}; })).indexOf('length')>=0);
+  A('ruido: demasiado sin clasificar', ks(X(b=>{ b.len28={short:6,unk:6}; })).indexOf('length')<0);
+  A('ruido: con algo mixto ya hay estiramiento', ks(X(b=>{ b.len28={short:6,mixed:2}; })).indexOf('length')<0);
+  A('longitud apoyada en sugerencias sin confirmar lleva ~', /~$/.test((diagnoseMuscle(X(b=>{ b.len28={short:8}; b.lenSug=4; })).findings.find(f=>f.k==='length')||{}).txt||''));
+  A('orden: lo grave primero', (()=>{ const k=ks(X(b=>{ Object.assign(b,fat); b.len28={short:8}; })); return k[0]==='fatigue'&&k[k.length-1]==='length'; })());
+  // integración: exposiciones reales → entrada → reglas, y las causas de un ▼ por músculo REAL (no por etiqueta)
+  const D=k=>{ const d=new Date(); d.setDate(d.getDate()-k); return todayISO(d); };
+  const st=(r,rir)=>({w:'100',r:String(r),rir:String(rir),unit:'lbs',done:true});
+  const real=db;
+  try{
+    const mk=rir=>migrate({_idfix:true,_fsfix:true,profile:{username:'t'},
+      split:{name:'t',days:[{id:'d1',name:'legs',exercises:[{id:'q1',name:'leg ext',muscle:'quads',type:'machine',sets:3}]},{id:'d2',name:'delts',exercises:[{id:'l1',name:'lateral raise',muscle:'delts',type:'free',sets:3},{id:'p1',name:'shoulder press',muscle:'delts',type:'machine',sets:3}]}]},
+      sessions:[
+        {id:'s1',date:D(5),dayId:'d1',dayName:'legs',gym:'G',type:'training',startTime:'18:00',endTime:'19:00',exercises:[{exId:'q1',name:'leg ext',muscle:'quads',type:'machine',sets:[st(10,rir),st(10,rir),st(10,rir)]}]},
+        {id:'s2',date:D(2),dayId:'d1',dayName:'legs',gym:'G',type:'training',startTime:'18:00',endTime:'19:00',exercises:[{exId:'q1',name:'leg ext',muscle:'quads',type:'machine',sets:[st(10,rir),st(10,rir),st(10,rir)]}]},
+        {id:'s3',date:D(9),dayId:'d2',dayName:'delts',gym:'G',type:'training',startTime:'18:00',endTime:'19:00',exercises:[{exId:'l1',name:'lateral raise',muscle:'delts',type:'free',sets:[st(12,1),st(12,1)]}]},
+        {id:'s4',date:D(8),dayId:'d2',dayName:'delts',gym:'G',type:'training',startTime:'10:00',endTime:'11:00',exercises:[{exId:'p1',name:'shoulder press',muscle:'delts',type:'machine',sets:[st(8,2),st(8,2)]}]},
+        {id:'s5',date:D(7),dayId:'d2',dayName:'delts',gym:'G',type:'training',startTime:'10:00',endTime:'11:00',exercises:[{exId:'l1',name:'lateral raise',muscle:'delts',type:'free',sets:[st(12,2),st(12,2)]}]}]});
+    db=mk(4); bumpIdx();
+    const inp=muscleDiagInput('quads');
+    A('la entrada ve 2 exposiciones con RIR 4', inp.n28===2&&inp.w1.rn>=4&&Math.round(inp.w1.rir)===4);
+    A('integración: RIR 4 → lejos del fallo', diagnoseMuscle(inp).findings.some(f=>f.k==='far'));
+    db=mk(1); bumpIdx();
+    A('integración: RIR 1 → no', !diagnoseMuscle(muscleDiagInput('quads')).findings.some(f=>f.k==='far'));
+    // "delts" es una etiqueta de grupo: la elevación lateral (deltoides lateral) NO es el press (frontal)
+    const s4=db.sessions.find(s=>s.id==='s4'), s5=db.sessions.find(s=>s.id==='s5');
+    A('press 16 h después de laterales: no es "el mismo músculo"', !downContext(s4,0,null).some(x=>/entrenado hace/.test(x)));
+    A('laterales ~39 h después de laterales: sí', downContext(s5,0,null).some(x=>/entrenado hace/.test(x)));
+  } finally { db=real; bumpIdx(); }
+  console.log('diag self-check OK');
 }
 function _historyEditSelfCheck(){
   // the finalize step below saves and advances the rotation — split + rotIdx must come back too (they leaked before v221)
@@ -3803,19 +3966,15 @@ function openReadiness(date){ const r=readinessFor(date); if(!r)return;
 // probable causes when an exercise's capacity dropped ("esa disminución tiene una causa" — owner, 2026-09-16).
 // Descriptive only: lists what was different, never changes any number.
 function downContext(sess,ei,base){ const out=[]; if(!sess||!sess.date)return out;
-  const r=readinessFor(sess.date);
-  if(r){ const P=r.parts;
-    if(P.sleep&&P.sleep.score<80)out.push('dormiste '+P.sleep.v+'h');
-    if(P.rhr&&P.rhr.z>1.5)out.push(P.rhr.txt);
-    if(P.hrv&&P.hrv.z<-1)out.push('HRV baja');
-    if(P.load&&P.load.ratio>1.4)out.push(P.load.txt);
-    if(P.food&&((P.food.kr!=null&&P.food.kr<0.8)||(P.food.prr!=null&&P.food.prr<0.8)))out.push(P.food.txt); }
+  dayFlags(sess.date).forEach(x=>out.push(x));
   const e=(sess.exercises||[])[ei];
-  if(e){ const ms=musclesOf(sess,ei).filter(m=>m.weight>=1).map(m=>m.name); const w=sessionWindow(sess); const t=w?w.startMs:new Date(sess.date+'T12:00:00').getTime(); let last=0;
+  // v234: "mismo músculo" = mismo id canónico (primario), no la misma etiqueta
+  if(e){ const ids=exTargets(sess,ei).filter(g=>g.id&&g.w>=1).map(g=>g.id); const w=sessionWindow(sess); const t=w?w.startMs:new Date(sess.date+'T12:00:00').getTime(); let last=0, lid=null;
     (db.sessions||[]).forEach(s=>{ if(s===sess||s.type==='rest')return; const sw=sessionWindow(s); const te=sw?sw.endMs:new Date(s.date+'T12:00:00').getTime();
       if(!(te<t&&t-te<48*3600000))return;
-      (s.exercises||[]).forEach((x,xi)=>{ if(musclesOf(s,xi).some(m=>m.weight>=1&&ms.includes(m.name))&&(x.sets||[]).some(st=>(st.w||st.r)&&isHardSet(st)))last=Math.max(last,te); }); });
-    if(last&&ms.length)out.push(ms[0]+' entrenado hace '+Math.round((t-last)/3600000)+' h'); }
+      (s.exercises||[]).forEach((x,xi)=>{ if(isCardio(x))return; const hit=exTargets(s,xi).find(g=>g.id&&g.w>=1&&ids.includes(g.id));
+        if(hit&&(x.sets||[]).some(st=>(st.w||st.r)&&isHardSet(st))&&te>last){ last=te; lid=hit.id; } }); });
+    if(last&&lid)out.push(muscleLabel(lid)+' entrenado hace '+Math.round((t-last)/3600000)+' h'); }
   if(base&&base.sess){ const c=(fatCtxOf(sess)[ei]||[])[0], b=(fatCtxOf(base.sess)[base.ei]||[])[0];
     if(c&&b&&c.priorHardSets-b.priorHardSets>=4)out.push(Math.round(c.priorHardSets-b.priorHardSets)+' series duras más antes que la vez pasada');
     const w1=sessionWindow(sess), w0=sessionWindow(base.sess);
@@ -7833,7 +7992,7 @@ async function aiPhoto(file,barcode){ if(!file)return; window._faTag=window._faT
 // Pick AI when the proxy is configured, else on-device OCR.
 function labelPhoto(file,barcode){ if(AI_PROXY_URL) return aiPhoto(file,barcode); return ocrPhoto(file,barcode); }
 requestPersist();
-db=load(); try{ promptIdleSession(); }catch(_){} try{ if(typeof location!=='undefined' && /[?&]selftest=1/.test(location.search)){ _identitySelfCheck(); _dropsetSelfCheck(); _baselineSelfCheck(); _variantSelfCheck(); _historyEditSelfCheck(); _idSelfCheck(); _cardioSelfCheck(); _tensionSelfCheck(); _healthSelfCheck(); _readinessSelfCheck(); _loggingSelfCheck(); _mergeSelfCheck(); _streakSelfCheck(); _chartSelfCheck(); _muscleSelfCheck(); _exProfileSelfCheck(); _recoverySelfCheck(); } }catch(e){ console.error(e); } try{ const _sp=new URLSearchParams(location.search); const _hasHistorical=_sp.has('stepsh')||_sp.has('weighth')||_sp.has('stepsq')||_sp.has('sleeph'); if(_hasHistorical){ const _hsp=_sp; if(history.replaceState)history.replaceState(null,'',location.pathname); setTimeout(()=>{ if(confirm('Este link quiere importar datos históricos (pasos/peso/sueño de varios días) a tu cuenta. ¿Aplicar? — solo dile que SÍ si vienes de tu propio Atajo de iOS.')){ try{ const _imp=importHealth(_hsp); if(_imp.length){ save(); render(); toast('✓ '+_imp.join(' · ')); } }catch(_){} } },400); } else { const _imp=importHealth(_sp); if(_imp.length){ window._healthImported=_imp; if(history.replaceState)history.replaceState(null,'',location.pathname); } } }catch(_){} save(); render(); if(window._healthImported)setTimeout(()=>toast('✓ '+window._healthImported.join(' · ')),250); if(window._recoveredFromBackup)setTimeout(()=>{try{alert('Se recuperó un respaldo local: revisa tus datos, podrían faltar cambios muy recientes.');}catch(_){}},600);
+db=load(); try{ promptIdleSession(); }catch(_){} try{ if(typeof location!=='undefined' && /[?&]selftest=1/.test(location.search)){ _identitySelfCheck(); _dropsetSelfCheck(); _baselineSelfCheck(); _variantSelfCheck(); _historyEditSelfCheck(); _idSelfCheck(); _cardioSelfCheck(); _tensionSelfCheck(); _healthSelfCheck(); _readinessSelfCheck(); _loggingSelfCheck(); _mergeSelfCheck(); _streakSelfCheck(); _chartSelfCheck(); _muscleSelfCheck(); _exProfileSelfCheck(); _recoverySelfCheck(); _diagSelfCheck(); } }catch(e){ console.error(e); } try{ const _sp=new URLSearchParams(location.search); const _hasHistorical=_sp.has('stepsh')||_sp.has('weighth')||_sp.has('stepsq')||_sp.has('sleeph'); if(_hasHistorical){ const _hsp=_sp; if(history.replaceState)history.replaceState(null,'',location.pathname); setTimeout(()=>{ if(confirm('Este link quiere importar datos históricos (pasos/peso/sueño de varios días) a tu cuenta. ¿Aplicar? — solo dile que SÍ si vienes de tu propio Atajo de iOS.')){ try{ const _imp=importHealth(_hsp); if(_imp.length){ save(); render(); toast('✓ '+_imp.join(' · ')); } }catch(_){} } },400); } else { const _imp=importHealth(_sp); if(_imp.length){ window._healthImported=_imp; if(history.replaceState)history.replaceState(null,'',location.pathname); } } }catch(_){} save(); render(); if(window._healthImported)setTimeout(()=>toast('✓ '+window._healthImported.join(' · ')),250); if(window._recoveredFromBackup)setTimeout(()=>{try{alert('Se recuperó un respaldo local: revisa tus datos, podrían faltar cambios muy recientes.');}catch(_){}},600);
 applyDesign(); try{ if(/[?&]design\b/.test(location.search))localStorage.setItem('gymtrk_designmode','1'); if(localStorage.getItem('gymtrk_designmode')==='1')openDesignPanel(); }catch(_){}
 try{ bootScreen(()=>{ try{
   if(/[?&]wrap=1\b/.test(location.search)){ monthlyWrap(prevMonthYm(), true); return; }
