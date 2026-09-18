@@ -253,18 +253,24 @@
   .ex.dropbefore, .mgroup.dropbefore{position:relative;} .ex.dropbefore::before, .mgroup.dropbefore::before{content:''; position:absolute; left:0; right:0; top:-6px; height:2px; background:var(--fill); border-radius:2px;}
   .ex.dropafter, .mgroup.dropafter{position:relative;} .ex.dropafter::after, .mgroup.dropafter::after{content:''; position:absolute; left:0; right:0; bottom:-6px; height:2px; background:var(--fill); border-radius:2px;}
   .thead,.srow{display:grid; gap:4px; align-items:center;} .thead{margin-bottom:6px;} .thead .cl{font-size:9px; color:var(--o40); text-align:center; letter-spacing:.5px;} .thead .cl.w{text-align:left; padding-left:2px;}
-  .gc-free{grid-template-columns:22px 1fr 38px 44px 40px 22px;} .gc-mach{grid-template-columns:22px 26px 1fr 38px 44px 40px 22px;} .gc-uni{grid-template-columns:20px 1fr 38px 44px 40px 18px;}
-  .gc-mach-fs{grid-template-columns:22px 26px 1fr 1fr 38px 44px 40px 22px;}
+  .gc-free{grid-template-columns:22px 1fr 38px 44px 40px 30px;} .gc-mach{grid-template-columns:22px 26px 1fr 38px 44px 40px 30px;} .gc-uni{grid-template-columns:20px 1fr 38px 44px 40px 18px;}
+  .gc-mach-fs{grid-template-columns:22px 26px 1fr 1fr 38px 44px 40px 30px;}
   /* bodyweight rows: same total width as gc-free/gc-uni — the "unit" slot is repurposed for the +lastre field */
-  .gc-free-bw{grid-template-columns:22px 1fr 38px 44px 40px 22px;} .gc-uni-bw{grid-template-columns:20px 1fr 38px 44px 40px 18px;}
+  .gc-free-bw{grid-template-columns:22px 1fr 38px 44px 40px 30px;} .gc-uni-bw{grid-template-columns:20px 1fr 38px 44px 40px 18px;}
   /* cardio: set# + dynamic field cols + del — columns set inline from field count */
   .gc-cardio{align-items:center;}
   .srow{margin-bottom:5px;}
   /* v223: la celda del número ES el ✓ de la serie (un toque = confirmada). Antes solo cambiaba de color
      y no se leía como un control; el glifo va apilado bajo el número para que quepa un "1.5". */
-  .setn{font-size:11px; color:var(--o50); text-align:center; cursor:pointer; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1px; line-height:1; -webkit-user-select:none; user-select:none;}
-  .setn .sk{font-size:10px; line-height:1; color:var(--o30);}
-  .setn.done{color:var(--fill); font-weight:700;} .setn.done .sk{color:var(--fill);}
+  .setn{font-size:11px; color:var(--o50); text-align:center; line-height:1; -webkit-user-select:none; user-select:none;}
+  .setn.done{color:var(--fill); font-weight:700;}
+  /* v226 (dueño): el ✓ vive en la ÚLTIMA columna, donde antes estaba la ✕ de borrar. Borrar es ahora
+     deslizar la fila a la derecha, así que el toque de confirmar ya no comparte sitio con el de borrar. */
+  .dchk{display:flex; align-items:center; justify-content:center; width:100%; height:36px; font-size:15px; line-height:1; color:var(--o30); cursor:pointer; -webkit-user-select:none; user-select:none;}
+  .dchk.done{color:var(--fill);}
+  .pairdone{flex:0 0 28px; align-self:stretch; display:flex; align-items:center; justify-content:center; font-size:15px; color:var(--o30); cursor:pointer; -webkit-user-select:none; user-select:none;}
+  .pairdone.done{color:var(--fill);}
+  .swipehint{font-size:9px; color:var(--o25,rgba(243,243,244,.3)); text-align:right; margin:-2px 0 4px;}
   /* isdrop: visual only (opacity) — never changes grid/columns/width vs a normal row */
   .srow.isdrop{opacity:.82;} .pair.isdrop{opacity:.82;}
   .setend{display:flex;justify-content:center;} .setend .del{width:18px;flex:0 0 18px;}
@@ -414,7 +420,18 @@
   .sgrp{margin-bottom:16px;} .sgh{display:flex; justify-content:space-between; align-items:baseline; margin-bottom:8px; cursor:pointer;} .sgh .sgn{font-size:13px; font-weight:800; letter-spacing:.3px;} .sgh .sgk{font-size:10px; color:var(--o40);} .sgh:active .sgn{color:var(--o60);}
   .sitem{display:flex; justify-content:space-between; align-items:baseline; font-size:12px; padding:5px 0;}
   .sitem .sn{color:var(--o55,rgba(243,243,244,.55));} .sitem .sn .q{color:var(--o60); font-weight:700; margin-right:3px;} .sitem .sb{font-size:10px; color:var(--o40);} .sitem .sk{color:var(--o60); font-weight:500;}
-  .shfoot{text-align:center; font-size:13px; font-weight:800; color:var(--o35); margin-top:26px; letter-spacing:.5px;}
+  .shfoot{text-align:center; font-size:13px; font-weight:800; color:var(--o35); margin-top:12px; letter-spacing:.5px;}
+  /* v225 · compartir una sesión: denso, tipo terminal — una línea de cabecera y una línea de series por
+     ejercicio, con unidad, RIR, F y drops. Antes eran chips de "60 × 11" sin decir 60 de qué. */
+  .shhead{display:flex; flex-wrap:wrap; gap:4px 10px; font-size:11px; color:var(--o50); padding:5px 0 9px; border-bottom:1px solid var(--border); margin-bottom:11px;}
+  .shhead b{color:var(--fg); font-weight:800;}
+  .sxr{margin-bottom:9px;}
+  .sxh{display:flex; justify-content:space-between; align-items:baseline; gap:8px; font-size:11px;}
+  .sxh .sxn{color:var(--fg); font-weight:800; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .sxh .sxk{color:var(--o40); font-size:10px; white-space:nowrap;}
+  .sxs{font-size:11px; color:var(--o60); margin-top:1px; line-height:1.55;}
+  .sxs .dr{color:var(--o40);}
+  .shfootline{display:flex; justify-content:space-between; gap:8px; font-size:10px; color:var(--o40); border-top:1px solid var(--border); margin-top:9px; padding-top:7px;}
   .shbanner.shses, .shbanner.shwt{justify-content:space-around; gap:8px;}
   .shstat{text-align:center; flex:1;} .shstat-n{font-size:24px; font-weight:800; letter-spacing:-.5px;} .shstat-l{font-size:9px; color:var(--o50); margin-top:5px; letter-spacing:1px; text-transform:uppercase;}
   .shsets{display:flex; flex-wrap:wrap; gap:5px; margin-top:5px;} .shset{font-size:10px; color:var(--o60); border:1px solid var(--border); border-radius:6px; padding:2px 6px;} .shset i{color:var(--o40); font-style:normal;}
@@ -2304,7 +2321,12 @@ function histSetLine(sets,i,tens,hr){ const inner=progLineInner('',dropPctTxt(se
 // v223: un ✓ por serie (decisión del dueño). La celda del número ya era el toggle de 'done'; ahora
 // además MUESTRA el estado (○ pendiente · ✓ hecha) y ese toque confirma la serie entera.
 function setnHTML(label,done,act,exi,si,zSty){
-  return `<div class="setn ${done?'done':''}" style="${zSty||''}" data-act="${act}" data-exi="${exi}" data-si="${si}" title="${done?'serie confirmada · toca para deshacer':'toca para confirmar la serie'}"><span class="sl">${label}</span><span class="sk">${done?'✓':'○'}</span></div>`;
+  // solo el número (el color de zona sigue pintándose aquí, ver updateSetZone)
+  return `<div class="setn ${done?'done':''}" style="${zSty||''}" data-exi="${exi}" data-si="${si}">${label}</div>`;
+}
+// el control de confirmar: última columna de la fila (o del par, en unilateral)
+function doneCellHTML(done,act,exi,si,cls){
+  return `<div class="${cls||'dchk'} ${done?'done':''}" data-act="${act}" data-exi="${exi}" data-si="${si}" title="${done?'serie confirmada · toca para deshacer':'toca para confirmar la serie'}">${done?'✓':'○'}</div>`;
 }
 function renderExercise(exi,ex,allowF,canReorder){
   const sets=ex.sets||[]; const isCardioEx=isCardio(ex); const isM=!isCardioEx&&['machine','pulley','smith','cable'].indexOf(ex.type)>=0; const isU=!isCardioEx&&!!ex.unilateral;
@@ -2345,7 +2367,7 @@ function renderExercise(exi,ex,allowF,canReorder){
   // ---- cardio branch: field grid per subtype, no drop sets, no w/r/rir ----
   if(isCardioEx){
     const fields=cardioFields(ex);
-    const colTpl='22px '+fields.map(f=>f==='intensity'?'72px':'minmax(36px,1fr)').join(' ')+' 22px';
+    const colTpl='22px '+fields.map(f=>f==='intensity'?'72px':'minmax(36px,1fr)').join(' ')+' 30px';
     let thead=`<div class="thead gc-cardio" style="grid-template-columns:${colTpl}"><div class="cl"></div>${fields.map(f=>`<div class="cl">${CARDIO_FL[f]||f}</div>`).join('')}<div class="cl"></div></div>`;
     let body=''; const labels=setLabels(sets,1);
     sets.forEach((s,si)=>{
@@ -2360,7 +2382,7 @@ function renderExercise(exi,ex,allowF,canReorder){
       const prevS=(prevSets&&align[si]!=null)?prevSets[align[si]]:null;
       let hint='';
       if(prevS){ const bits=fields.filter(f=>f!=='intensity'&&prevS[f]).map(f=>(CARDIO_FL[f]||f)+' '+prevS[f]); if(bits.length) hint=`<div class="setprogline" style="text-align:right;padding:0 8px;margin:-1px 0 3px;height:11px;line-height:11px;font-size:9px;color:var(--o35)">${escTxt(bits.join(' · '))}</div>`; }
-      body+=`<div class="srow gc-cardio" style="grid-template-columns:${colTpl}">${setnHTML(labels[si],s.done,'done',exi,si,'')}${cells}<div class="setend"><button class="del" data-act="delset" data-exi="${exi}" data-si="${si}">×</button></div></div>${hint}`;
+      body+=`<div class="srow gc-cardio" style="grid-template-columns:${colTpl}" data-swipe="delset" data-exi="${exi}" data-si="${si}">${setnHTML(labels[si],s.done,'done',exi,si,'')}${cells}<div class="setend">${doneCellHTML(s.done,'done',exi,si)}</div></div>${hint}`;
     });
     const add=`<div class="addrow afree"><span class="aleft"><button class="addbtn" data-act="addset" data-exi="${exi}">[+ set]</button></span><button class="addbtn aex" data-act="addex" data-exi="${exi}">[+ exercise]</button></div>`;
     rows=thead+body+add;
@@ -2384,10 +2406,10 @@ function renderExercise(exi,ex,allowF,canReorder){
       const pInner=progLineInner(pBadge,dropPctTxt(sets,p),tensTag(pairTension(_tn,p)));
       const progLine=pInner?`<div class="setprogline" data-exi="${exi}" data-si="${p}" style="text-align:right;padding:0 8px;margin:-1px 0 3px;height:11px;line-height:11px">${pInner}</div>`:`<div class="setprogline" data-exi="${exi}" data-si="${p}" style="height:0"></div>`;
       // drop set: ONLY via bottom bar [↓ drop set] — per-row ↓ removed (layout desalineaba tras insertar)
-      body+=`<div class="pair ${a&&a.isDrop?'isdrop':''}">${setnHTML(labels[p],done,'done',exi,p,zSty)}<div class="prows">`
-        +`<div class="srow ${gcU}"><div class="side">${escTxt(a.side||'R')}</div>${ca.w}${midA}${ca.r}${ca.rr}${ca.del}</div>`
+      body+=`<div class="pair ${a&&a.isDrop?'isdrop':''}" data-swipe="delset" data-exi="${exi}" data-si="${p}">${setnHTML(labels[p],done,'done',exi,p,zSty)}<div class="prows">`
+        +`<div class="srow ${gcU}"><div class="side">${escTxt(a.side||'R')}</div>${ca.w}${midA}${ca.r}${ca.rr}<span class="del" style="visibility:hidden">×</span></div>`
         +(cb?`<div class="srow ${gcU}"><div class="side">${escTxt(b.side||'L')}</div>${cb.w}${midB}${cb.r}${cb.rr}<span class="del" style="visibility:hidden">×</span></div>`:'')
-        +`</div></div>${progLine}`;
+        +`</div>${doneCellHTML(done,'done',exi,p,'pairdone')}</div>${progLine}`;
     }
     // [↓ drop set] in the bottom bar only — cuelga de la ÚLTIMA serie de trabajo
     const lastPairSi=Math.max(0,sets.length-2);
@@ -2408,10 +2430,11 @@ function renderExercise(exi,ex,allowF,canReorder){
       const gcRow=isBwEx?'gc-free-bw':(fsOn?'gc-mach-fs':gc);
       const mid=isBwEx?c.we:(fsOn?c.we:c.u);
       // setend: del only (per-row ↓ removed) — same column width for normal and isdrop rows
-      body+=`<div class="srow ${gcRow} ${s.isDrop?'isdrop':''}">${setnHTML(labels[si],s.done,'done',exi,si,zSty)}${fs}${c.w}${mid}${c.r}${c.rr}<div class="setend">${c.del}</div></div>${progLine}`;
+      body+=`<div class="srow ${gcRow} ${s.isDrop?'isdrop':''}" data-swipe="delset" data-exi="${exi}" data-si="${si}">${setnHTML(labels[si],s.done,'done',exi,si,zSty)}${fs}${c.w}${mid}${c.r}${c.rr}<div class="setend">${doneCellHTML(s.done,'done',exi,si)}</div></div>${progLine}`;
     });
     const lastSi=Math.max(0,sets.length-1);
-    const add=`<div class="addrow ${isM?'amach':'afree'}"><span class="aleft"><button class="addbtn" data-act="addset" data-exi="${exi}">[+ set]</button><button class="addbtn" data-act="dropset" data-exi="${exi}" data-si="${lastSi}">[↓ drop set]</button></span><button class="addbtn aex" data-act="addex" data-exi="${exi}">[+ exercise]</button></div>`;
+    const hint=exi===0?`<div class="swipehint">desliza una serie → para borrarla</div>`:'';
+    const add=hint+`<div class="addrow ${isM?'amach':'afree'}"><span class="aleft"><button class="addbtn" data-act="addset" data-exi="${exi}">[+ set]</button><button class="addbtn" data-act="dropset" data-exi="${exi}" data-si="${lastSi}">[↓ drop set]</button></span><button class="addbtn aex" data-act="addex" data-exi="${exi}">[+ exercise]</button></div>`;
     rows=thead+body+add;
   }
   return `<div class="ex${_curCls}" data-exi="${exi}">${head}${rows}</div>`;
@@ -2436,7 +2459,7 @@ function renderHistExercise(exi,ex,sess){
   let rows='';
   if(isCardioEx){
     const fields=cardioFields(ex);
-    const colTpl='22px '+fields.map(f=>f==='intensity'?'72px':'minmax(36px,1fr)').join(' ')+' 22px';
+    const colTpl='22px '+fields.map(f=>f==='intensity'?'72px':'minmax(36px,1fr)').join(' ')+' 30px';
     let thead=`<div class="thead gc-cardio" style="grid-template-columns:${colTpl}"><div class="cl"></div>${fields.map(f=>`<div class="cl">${CARDIO_FL[f]||f}</div>`).join('')}<div class="cl"></div></div>`;
     let body=''; const labels=setLabels(sets,1);
     sets.forEach((s,si)=>{
@@ -2447,7 +2470,7 @@ function renderHistExercise(exi,ex,sess){
         }
         return `<input class="inp${s._pf?' pf':''}" data-act="h_setf" data-exi="${exi}" data-si="${si}" data-f="${f}" value="${s[f]!=null?s[f]:''}" placeholder="—" inputmode="decimal"/>`;
       }).join('');
-      body+=`<div class="srow gc-cardio" style="grid-template-columns:${colTpl}">${setnHTML(labels[si],s.done,'h_done',exi,si,'')}${cells}<div class="setend"><button class="del" data-act="h_delset" data-exi="${exi}" data-si="${si}">×</button></div></div>`;
+      body+=`<div class="srow gc-cardio" style="grid-template-columns:${colTpl}" data-swipe="h_delset" data-exi="${exi}" data-si="${si}">${setnHTML(labels[si],s.done,'h_done',exi,si,'')}${cells}<div class="setend">${doneCellHTML(s.done,'h_done',exi,si)}</div></div>`;
     });
     const add=`<div class="addrow afree"><span class="aleft"><button class="addbtn" data-act="h_addset" data-exi="${exi}">[+ set]</button></span></div>`;
     rows=thead+body+add;
@@ -2459,7 +2482,7 @@ function renderHistExercise(exi,ex,sess){
       const midA=isBwEx?ca.we:ca.u, midB=isBwEx&&cb?cb.we:(cb?cb.u:'');
       const done=a&&a.done&&b&&b.done;
       const z=!done&&a?setZone(a):null; const zSty=z==='light'?'color:var(--warn);':z==='heavy'?'color:var(--bad);':'';
-      body+=`<div class="pair ${a&&a.isDrop?'isdrop':''}">${setnHTML(labels[p],done,'h_done',exi,p,zSty)}<div class="prows">`
+      body+=`<div class="pair ${a&&a.isDrop?'isdrop':''}" data-swipe="h_delset" data-exi="${exi}" data-si="${p}">${setnHTML(labels[p],done,'h_done',exi,p,zSty)}<div class="prows">`
         +`<div class="srow ${gcU}"><div class="side">${escTxt(a.side||'R')}</div>${ca.w}${midA}${ca.r}${ca.rr}${ca.del}</div>`
         +(cb?`<div class="srow ${gcU}"><div class="side">${escTxt(b.side||'L')}</div>${cb.w}${midB}${cb.r}${cb.rr}<span class="del" style="visibility:hidden">×</span></div>`:'')
         +`</div></div>`+histSetLine(sets,p,tensTag(pairTension(_htn,p)),hrTag(_hhr[exi+':'+p]));
@@ -2475,7 +2498,7 @@ function renderHistExercise(exi,ex,sess){
       const z=!s.done?setZone(s):null; const zSty=z==='light'?'color:var(--warn);':z==='heavy'?'color:var(--bad);':'';
       const gcRow=isBwEx?'gc-free-bw':(fsOn?'gc-mach-fs':gc);
       const mid=isBwEx?c.we:(fsOn?c.we:c.u);
-      body+=`<div class="srow ${gcRow} ${s.isDrop?'isdrop':''}">${setnHTML(labels[si],s.done,'h_done',exi,si,zSty)}${fs}${c.w}${mid}${c.r}${c.rr}<div class="setend">${c.del}</div></div>`+histSetLine(sets,si,tensTag(_htn&&_htn.per[si]),hrTag(_hhr[exi+':'+si]));
+      body+=`<div class="srow ${gcRow} ${s.isDrop?'isdrop':''}" data-swipe="h_delset" data-exi="${exi}" data-si="${si}">${setnHTML(labels[si],s.done,'h_done',exi,si,zSty)}${fs}${c.w}${mid}${c.r}${c.rr}<div class="setend">${doneCellHTML(s.done,'h_done',exi,si)}</div></div>`+histSetLine(sets,si,tensTag(_htn&&_htn.per[si]),hrTag(_hhr[exi+':'+si]));
     });
     const add=`<div class="addrow ${isM?'amach':'afree'}"><span class="aleft"><button class="addbtn" data-act="h_addset" data-exi="${exi}">[+ set]</button><button class="addbtn" data-act="h_dropset" data-exi="${exi}" data-si="${Math.max(0,sets.length-1)}">[↓ drop set]</button></span></div>`;
     rows=thead+body+add;
@@ -2714,22 +2737,50 @@ function summaryShell(caption, banner, body){
    +`<div class="sharecard"><div class="shtitle">${caption}</div>`+banner+(body||'')
    +`<div class="shfoot">gym<span style="color:var(--o40)">//</span>TRK</div></div>`;
 }
+// v225 — el resumen de compartir era grande, con mucho hueco, y no decía nada: "60 × 11" sin unidad,
+// sin RIR y sin marcar los drops. Ahora usa el MISMO formateador que el export (unidad, RIR, F, lado,
+// drop con su %) con la densidad de //EFFECTIVE VOLUME. La unidad va una sola vez por ejercicio cuando
+// todas sus series comparten unidad, y por serie cuando no (entrenar en placas y kg el mismo día).
+function _shWR(x,showU){ return numTxt(effW(x))+(showU?escTxt(x.unit||''):'')+'×'+((x.r!=null&&x.r!=='')?escTxt(String(x.r)):'-'); }
+function _shRir(x){ const f=String(x.rir==null?'':x.rir).trim().toUpperCase(); return f===''?'':(f==='F'?' F':' RIR'+escTxt(f)); }
+function shareExLines(e){
+  const all=e.sets||[]; const step=e.unilateral?2:1;
+  const ok=x=>!!(x&&(x.w||x.r)&&!x._pf);
+  const units={}; all.forEach(x=>{ if(ok(x)&&x.unit)units[x.unit]=1; });
+  const uk=Object.keys(units); const one=uk.length===1?uk[0]:''; const showU=!one;
+  const out=[];
+  for(let i=0;i<all.length;i+=step){
+    const a=all[i], b=(step===2)?all[i+1]:null;
+    if(!ok(a)&&!ok(b))continue;
+    let txt;
+    if(step===2){
+      const sa=ok(a)?_shWR(a,showU)+_shRir(a):'', sb=ok(b)?_shWR(b,showU)+_shRir(b):'';
+      txt=(sa&&sa===sb)?('R/L '+sa):[sa?'R '+sa:'',sb?'L '+sb:''].filter(Boolean).join(' · ');
+    } else txt=_shWR(a,showU)+_shRir(a);
+    const dp=(a&&a.isDrop)?dropPctTxt(all,i):'';
+    out.push((a&&a.isDrop?'↓':'')+txt+(dp?' <span class="dr">'+escTxt(dp)+'</span>':''));
+  }
+  return {lines:out,unit:one,n:out.length};
+}
 function renderShareSession(id){
   const s=(db.sessions||[]).find(x=>x.id===id)||(db.sessions||[]).filter(x=>x.type!=='rest').slice(-1)[0];
   if(!s)return summaryShell('sesión',`<div class="empty">sin sesión para compartir</div>`,'');
-  let sets=0; (s.exercises||[]).forEach(e=>sets+=(e.sets||[]).length);
-  const h=Math.floor((s.durSec||0)/3600), m=Math.floor(((s.durSec||0)%3600)/60); const dur=s.durSec?(h?h+'h '+pad(m)+'m':m+'m'):'—';
-  const banner=`<div class="shbanner shses">`
-    +`<div class="shstat"><div class="shstat-n">${sets}</div><div class="shstat-l">sets</div></div>`
-    +`<div class="shstat"><div class="shstat-n">${(s.exercises||[]).length}</div><div class="shstat-l">ejercicios</div></div>`
-    +`<div class="shstat"><div class="shstat-n">${dur}</div><div class="shstat-l">duración</div></div></div>`;
-  let log='<div class="shlog">';
-  (s.exercises||[]).forEach(e=>{ const st=e.sets||[];
-    log+=`<div class="sgrp"><div class="sgh"><span class="sgn">${latTxt(e)}${escTxt(e.name)}</span><span class="sgk">${escTxt(e.muscle||'')} · ${st.length} sets</span></div>`
-      +`<div class="shsets">`+st.map(x=>`<span class="shset">${numTxt(+x.w||0)}<i>×${(x.r!=null&&x.r!=='')?x.r:'-'}</i></span>`).join('')+`</div></div>`;
+  const hh=Math.floor((s.durSec||0)/3600), mm=Math.floor(((s.durSec||0)%3600)/60);
+  const dur=s.durSec?(hh?hh+'h'+pad(mm):mm+'m'):'';
+  const tn=(function(){ try{ return sessionTension(s); }catch(_){ return []; } })();
+  let sets=0, exn=0, vol=0, body='';
+  (s.exercises||[]).forEach((e,ei)=>{
+    const r=shareExLines(e); if(!r.n)return;
+    exn++; sets+=r.n;
+    (e.sets||[]).forEach(x=>{ if(x&&!x._pf){ const rr=+x.r||0; if(rr)vol+=kgLoad(x)*rr; } });
+    const t=tn&&tn[ei]&&tn[ei].total>0?' · T '+fmtT(tn[ei].total):'';
+    body+=`<div class="sxr"><div class="sxh"><span class="sxn">${latTxt(e)}${escTxt(e.name)}</span><span class="sxk">${escTxt(e.muscle||'')}${r.unit?' · '+escTxt(r.unit):''}${t}</span></div><div class="sxs">${r.lines.join(' · ')}</div></div>`;
   });
-  log+='</div>';
-  return summaryShell(escTxt(s.dayName||'sesión')+' · '+(s.date||''), banner, log);
+  const tot=(function(){ try{ return sessionTensionTotal(s); }catch(_){ return 0; } })();
+  const head=`<div class="shhead"><span><b>${sets}</b> sets</span><span><b>${exn}</b> ejercicios</span>`
+    +(dur?`<span><b>${dur}</b></span>`:'')+(tot>0?`<span>T <b>${fmtT(tot)}</b></span>`:'')+`</div>`;
+  const foot=`<div class="shfootline"><span>${s.gym?escTxt(s.gym):''}</span><span>${vol>0?numTxt(Math.round(vol))+' kg · Σ kg×reps':''}</span></div>`;
+  return summaryShell(escTxt(s.dayName||'sesión')+' · '+(s.date||''), head, (body||'<div class="empty">sin series registradas</div>')+foot);
 }
 function renderShareWeight(){
   const ks=Object.keys(db.bodyweight||{}).sort(); const vals=ks.map(k=>db.bodyweight[k]);
@@ -4277,10 +4328,16 @@ function openSessionEdit(id){
   openModal(`<h3>${escTxt(s.dayName||'sesión')}</h3>
    <div class="field"><label>FECHA</label><input id="ss_date" type="date" value="${s.date||''}"/></div>
    <div style="display:flex;gap:8px"><div class="field" style="flex:1"><label>INICIO</label><input id="ss_start" type="time" value="${s.startTime||''}"/></div><div class="field" style="flex:1"><label>FIN</label><input id="ss_end" type="time" value="${s.endTime||''}"/></div></div>
+   ${(()=>{ // v225: empezar la sesión en el gym equivocado ya no obliga a borrarla y re-teclearla entera
+     const gs=[...new Set([].concat(db.gyms||[], s.gym?[s.gym]:[]))];
+     if(!gs.length)return '';
+     return `<div class="field"><label>GYM</label><select id="ss_gym">${gs.map(g=>`<option value="${escTxt(g)}"${g===s.gym?' selected':''}>${escTxt(g)}</option>`).join('')}${s.gym?'':'<option value="" selected>— sin gym —</option>'}</select>
+       <div class="submeta" style="margin-top:3px;color:var(--o40)">al cambiarlo se recalculan los ▲▼ contra el historial de ESE gym · la marca de máquina que quedó grabada no cambia (es lo que registraste ese día)</div></div>`;
+   })()}
    ${sessHRBlock(s)}<div class="submeta gap">${nEx} ejercicios${(()=>{ const t=sessionTensionTotal(s); return t>0?' · T '+fmtT(t):''; })()} · ▲▼ reordena</div>
    ${exHtml||'<div class="submeta">sin ejercicios</div>'}
    <div class="sheetbtns">${db.activeWork?'':`<button class="ok" data-act="resumesession">▶ continuar</button>`}<button class="ok" data-act="openhistedit" data-id="${s.id}">✎ editar sets</button></div>
-   <div class="sheetbtns" style="margin-top:6px"><button class="ok" data-act="ss_save">guardar fecha/hora</button><button class="cancel" data-act="sharesession" data-id="${s.id}">compartir</button><button class="cancel danger" data-act="ss_del">borrar</button><button class="cancel" data-act="closemodal">close</button></div>`);
+   <div class="sheetbtns" style="margin-top:6px"><button class="ok" data-act="ss_save">guardar</button><button class="cancel" data-act="sharesession" data-id="${s.id}">compartir</button><button class="cancel danger" data-act="ss_del">borrar</button><button class="cancel" data-act="closemodal">close</button></div>`);
 }
 
 // ---------- render: settings ----------
@@ -4559,7 +4616,81 @@ function setField(exi,si,f,val,skipMirror){ const w=db.activeWork; if(!w)return;
   // refresh per-set zone colors for the edited set + every propagated _pf set
   try{ const w2=db.activeWork; if(w2&&w2.exercises[exi])w2.exercises[exi].sets.forEach((_,j)=>{ updateSetZone(exi,j); updateSetProgress(exi,j); }); }catch(_){}
   save(); }
+// v226 — borrar una serie es DESLIZARLA A LA DERECHA (el ✓ se quedó con la última columna). La lógica
+// de borrado sale del dispatcher para que el gesto y cualquier otro disparador usen exactamente la misma:
+// una serie de trabajo se lleva consigo los drops que le cuelgan, y solo pregunta si esos drops tienen datos.
+function delSetLive(exi,si){
+  const w=db.activeWork; const ex=w&&w.exercises[exi]; if(!ex)return false;
+  const step=ex.unilateral?2:1; const p=Math.floor(si/step)*step; const s=ex.sets[p]; if(!s)return false;
+  if(s.isDrop){ ex.sets.splice(p,step); }
+  else {
+    let end=p+step; while(end<ex.sets.length&&ex.sets[end]&&ex.sets[end].isDrop)end+=step;
+    const trailing=ex.sets.slice(p+step,end);
+    const hasData=trailing.some(x=>x&&!x._pf&&(x.done||(+x.w>0)||(+x.r>0)));
+    if(trailing.length&&hasData&&!confirm('Esta serie tiene '+(trailing.length/step)+' drop set(s) con datos. ¿Borrar todo junto?'))return false;
+    ex.sets.splice(p,end-p);
+  }
+  save(); reRender(); return true;
+}
+function delSetHist(exi,si){
+  const s=(db.sessions||[]).find(x=>x.id===state._histSessId); if(!s)return false;
+  const ex=s.exercises[exi]; if(!ex)return false;
+  const step=ex.unilateral?2:1; const p=Math.floor(si/step)*step; const st=ex.sets[p]; if(!st)return false;
+  if(st.isDrop){ ex.sets.splice(p,step); }
+  else { let end=p+step; while(end<ex.sets.length&&ex.sets[end]&&ex.sets[end].isDrop)end+=step;
+    const trailing=ex.sets.slice(p+step,end); const hasData=trailing.some(x=>x&&(x.done||(+x.w>0)||(+x.r>0)));
+    if(trailing.length&&hasData&&!confirm('Esta serie tiene '+(trailing.length/step)+' drop set(s) con datos. ¿Borrar todo junto?'))return false;
+    ex.sets.splice(p,end-p);
+  }
+  save(); reRender(); return true;
+}
+// Gesto: solo se engancha si el movimiento es CLARAMENTE horizontal (si no, manda el scroll vertical de
+// #view) y solo hacia la derecha. Empezar sobre un input/select/✓ nunca cuenta: ahí estás tecleando.
+(function(){
+  const TH=76, MAX=140;
+  let el=null,x0=0,y0=0,dx=0,lock=null,act='',exi=0,si=0,moved=false;
+  const pt=e=>(e.touches&&e.touches[0])||(e.changedTouches&&e.changedTouches[0])||e;
+  function clear(){ if(el){ el.style.transform=''; el.style.opacity=''; } el=null; lock=null; dx=0; moved=false; }
+  function begin(e){
+    const tg=e.target; if(!tg||!tg.closest)return;
+    if(tg.closest('input,select,button,textarea,.dchk,.pairdone,.dgrip'))return;
+    const row=tg.closest('[data-swipe]'); if(!row)return;
+    const t=pt(e); el=row; x0=t.clientX; y0=t.clientY; dx=0; lock=null; moved=false;
+    act=row.dataset.swipe; exi=+row.dataset.exi; si=+row.dataset.si;
+  }
+  function move(e){
+    if(!el)return; const t=pt(e); dx=t.clientX-x0; const dy=t.clientY-y0;
+    if(lock===null){
+      if(Math.abs(dx)<9&&Math.abs(dy)<9)return;
+      lock=(Math.abs(dx)>Math.abs(dy)+5)?'x':'y';
+      if(lock==='y'){ clear(); return; }
+    }
+    if(dx<0)dx=0; if(dx>MAX)dx=MAX;
+    moved=true;
+    el.style.transform='translateX('+dx+'px)';
+    el.style.opacity=String(Math.max(.3,1-dx/(MAX*1.35)));
+    if(e.cancelable)e.preventDefault();
+  }
+  function finish(){
+    if(!el)return;
+    const go=moved&&dx>=TH, a=act, i=exi, j=si, node=el;
+    node.style.transition='transform .15s ease,opacity .15s ease'; node.style.transform=''; node.style.opacity='';
+    setTimeout(()=>{ try{ node.style.transition=''; }catch(_){} },170);
+    if(moved)window._swipeGuard=Date.now();   // que el 'click' de después no dispare nada
+    el=null; lock=null; dx=0; moved=false;
+    if(go){ if(a==='h_delset')delSetHist(i,j); else delSetLive(i,j); }
+  }
+  const app=document.getElementById('app');
+  app.addEventListener('touchstart',begin,{passive:true});
+  app.addEventListener('touchmove',move,{passive:false});
+  app.addEventListener('touchend',finish);
+  app.addEventListener('touchcancel',clear);
+  app.addEventListener('mousedown',begin);
+  app.addEventListener('mousemove',move);
+  app.addEventListener('mouseup',finish);
+})();
 document.getElementById('app').addEventListener('click',e=>{
+  if(window._swipeGuard&&Date.now()-window._swipeGuard<350)return;
   const el=e.target.closest('[data-act]'); if(!el)return; const a=el.dataset.act;
   const exi=el.dataset.exi!=null?+el.dataset.exi:null, si=el.dataset.si!=null?+el.dataset.si:null;
   // v223: cualquier toque dentro de la sesión viva cuenta como actividad (ver sessionIdleEnd)
@@ -4687,14 +4818,7 @@ document.getElementById('app').addEventListener('click',e=>{
     const sIdx=db.sessions.indexOf(s);
     insertDrop(ex,si,Object.assign(exIdentity(s,exi),{orderIdx:exi,excludeSessionId:s.id,beforeDate:s.date,beforeSIdx:sIdx}));
     save(); reRender(); }
-  else if(a==='h_delset'){ const s=db.sessions.find(x=>x.id===state._histSessId); if(!s)return; const ex=s.exercises[exi]; const step=ex.unilateral?2:1; const p=Math.floor(si/step)*step; const st=ex.sets[p];
-    if(st&&st.isDrop){ ex.sets.splice(p,step); }
-    else { let end=p+step; while(end<ex.sets.length&&ex.sets[end]&&ex.sets[end].isDrop)end+=step;
-      const trailing=ex.sets.slice(p+step,end); const hasData=trailing.some(x=>x&&(x.done||(+x.w>0)||(+x.r>0)));
-      if(trailing.length&&hasData&&!confirm('Esta serie tiene '+(trailing.length/step)+' drop set(s) con datos. ¿Borrar todo junto?'))return;
-      ex.sets.splice(p,end-p);
-    }
-    save(); reRender(); }
+  else if(a==='h_delset'){ delSetHist(exi,si); }
   else if(a==='schedcal'){ openScheduleModal(+el.dataset.di); }
   else if(a==='dl_ics'){ downloadIcs(+el.dataset.di); }
   else if(a==='sd_deld'){ const di=+el.dataset.di; if(db.split.days.length>1&&confirm('¿Borrar este día?')){ db.split.days.splice(di,1); if(typeof db.rotIdx==='number'){ if(di<db.rotIdx)db.rotIdx--; if(db.rotIdx>=db.split.days.length)db.rotIdx=Math.max(0,db.split.days.length-1); } save(); render(); } }
@@ -4713,7 +4837,10 @@ document.getElementById('app').addEventListener('click',e=>{
   else if(a==='openmerge'){ openMergeModal(); }
   else if(a==='domerge'){ doMerge(); }
   else if(a==='okexedit'){ saveExEdit(); }
-  else if(a==='ss_save'){ const s=db.sessions.find(x=>x.id===window._sessId); if(s){ const dt=document.getElementById('ss_date'); if(dt)s.date=dt.value; const sst=document.getElementById('ss_start'); if(sst)s.startTime=sst.value||null; const set=document.getElementById('ss_end'); if(set)s.endTime=set.value||null; if(s.startTime&&s.endTime){let d=hm2min(s.endTime)-hm2min(s.startTime);if(d<0)d+=1440;s.durSec=d*60;} save(); closeModal(); render(); } }
+  else if(a==='ss_save'){ const s=db.sessions.find(x=>x.id===window._sessId); if(s){ const dt=document.getElementById('ss_date'); if(dt)s.date=dt.value;
+    // corregir el gym: save() → bumpIdx() recalcula baselines y ▲▼ contra el historial del gym correcto
+    const gs=document.getElementById('ss_gym'); if(gs&&gs.value!==s.gym){ s.gym=gs.value||undefined; }
+    const sst=document.getElementById('ss_start'); if(sst)s.startTime=sst.value||null; const set=document.getElementById('ss_end'); if(set)s.endTime=set.value||null; if(s.startTime&&s.endTime){let d=hm2min(s.endTime)-hm2min(s.startTime);if(d<0)d+=1440;s.durSec=d*60;} save(); closeModal(); render(); } }
   else if(a==='ss_del'){ if(confirm('¿Borrar esta sesión?')){ db.sessions=db.sessions.filter(x=>x.id!==window._sessId); save(); closeModal(); render(); } }
   else if(a==='resumesession'){
     // "jamás perder una sesión" (feedback del dueño, 2026-08-03) — ANY past session is resumable, not
@@ -4755,17 +4882,7 @@ document.getElementById('app').addEventListener('click',e=>{
     // v218: never full stack; prefilled from the matching drop (session → baseline → drop/parent ratio history)
     insertDrop(ex,si,Object.assign(exIdentity(db.activeWork,exi),{orderIdx:exi}));
     save(); state._scroll=document.getElementById('view').scrollTop; render(); }
-  else if(a==='delset'){ const ex=db.activeWork.exercises[exi]; const step=ex.unilateral?2:1; const p=Math.floor(si/step)*step; const s=ex.sets[p];
-    if(s&&s.isDrop){ ex.sets.splice(p,step); }
-    else {
-      // deleting a WORKING set also removes the drops hanging off it (confirm only if they carry real data)
-      let end=p+step; while(end<ex.sets.length&&ex.sets[end]&&ex.sets[end].isDrop)end+=step;
-      const trailing=ex.sets.slice(p+step,end);
-      const hasData=trailing.some(x=>x&&!x._pf&&(x.done||(+x.w>0)||(+x.r>0)));
-      if(trailing.length&&hasData&&!confirm('Esta serie tiene '+(trailing.length/step)+' drop set(s) con datos. ¿Borrar todo junto?'))return;
-      ex.sets.splice(p,end-p);
-    }
-    save(); state._scroll=document.getElementById('view').scrollTop; render(); }
+  else if(a==='delset'){ delSetLive(exi,si); }
   else if(a==='delex'){ const w=db.activeWork; if(w&&w.exercises[exi]&&confirm('¿Quitar "'+((w.exercises[exi].name)||'este ejercicio')+'" de la sesión? (no toca tu split)')){ w.exercises.splice(exi,1); save(); state._scroll=(document.getElementById('view')||{}).scrollTop||0; render(); } }
   else if(a==='addex'){ openAddExercise(exi); }
   else if(a==='axmus'){ const c=window._axCtx||{}; openAddExStep2(c.afterExi, el.dataset.v, c.replaceExi); }
