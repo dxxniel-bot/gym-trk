@@ -109,6 +109,11 @@
   .mmrow select{flex:0 0 52%; max-width:52%; font-size:12px; height:32px; background:var(--card2); color:var(--fg); border:.5px solid var(--o20); border-radius:8px; padding:0 8px; -webkit-appearance:none; appearance:none;}
   .mmwarn{font-size:9px; color:var(--warn); margin:-2px 0 4px;}
   .mmp{font-size:9px; color:var(--o60); cursor:pointer; margin-left:6px; white-space:nowrap;}
+  /* v230 · //MÚSCULOS */
+  .mscrow{padding:7px 0 8px; border-bottom:.5px solid var(--o10); cursor:pointer;} .mscrow:active{opacity:.7;}
+  .msctop{display:flex; justify-content:space-between; align-items:baseline; gap:8px; margin-bottom:5px;} .mscn{font-size:12px; font-weight:700;} .mscv{font-size:10px; color:var(--o50); white-space:nowrap;}
+  .mscrec{font-size:10px; margin-top:5px;}
+  .mscd .mdline{align-items:baseline;} .mscd .mdv{white-space:normal; text-align:right;} .mscd .mdsub{display:inline-block;}
   /* v229 · perfil del ejercicio: lo SUGERIDO se ve punteado hasta que lo tocas */
   .pftog.sug .t.on{border-style:dashed; opacity:.75;}
   .pfsec{display:flex; gap:6px; margin-bottom:6px;} .pfsec select{flex:1; min-width:0;} .pfw{flex:0 0 64px; width:64px;}
@@ -1449,6 +1454,128 @@ function saveExProfile(){ const ctx=window._exProf; if(!ctx)return; const m=docu
       setExCat(nm,{targets:[{id:prim,w:1}].concat(secs)}); } }
   save(); closeProfileBack(ctx.back); }
 function closeProfileBack(back){ window._exProf=null; if(back==='catalog')openExerciseDirectory(); else if(back==='muscles')openMuscleMap(); else { closeModal(); reRender(); } }
+// ---------- v230 · RECUPERACIÓN por músculo (estimada → observada) y tablero //MÚSCULOS ----------
+// PT2: "la recuperación debería ser individual, no un número fijo". Cada músculo canónico arranca con una
+// ventana ESTIMADA (MUSCLES[id].rec, ajustada por la dosis de esa sesión) y, cuando su propio historial tiene
+// suficientes pares de sesiones, la reemplaza por la OBSERVADA: cuántas horas después rinde igual o mejor.
+// Cuatro lecturas SEPARADAS, sin un "score mágico": VOLUMEN · ESTÍMULO · FATIGA · RECUPERACIÓN (+ rendimiento).
+let _muscExpCache=null;   // se limpia en bumpIdx()
+// una "exposición" = lo que recibió un músculo canónico en UNA sesión (primario 1× + secundarios con su peso).
+// Series duras con las mismas reglas que //VOLUME (par unilateral = 1, drop = 0.5). El rendimiento sale SOLO de
+// sus ejercicios primarios (capacidad vs la sesión equivalente anterior, histProgress).
+function muscleExposureIndex(){
+  if(_muscExpCache)return _muscExpCache;
+  const idx={};
+  (db.sessions||[]).forEach(s=>{ if(!s||s.type==='rest'||!s.exercises)return;
+    const win=sessionWindow(s)||{}; let tn=null; try{ tn=sessionTension(s); }catch(_){}
+    const per={};
+    s.exercises.forEach((e,ei)=>{ if(isCardio(e))return; const tg=exTargets(s,ei).filter(t=>t.id); if(!tg.length)return;
+      let plain=0; const bySide={}; let rs=0,rn=0,near=0;
+      (e.sets||[]).forEach(st=>{ if(!st||st._pf||!((st.w||st.r)&&isHardSet(st)))return; const v=st.isDrop?0.5:1;
+        if(st.side)bySide[st.side]=(bySide[st.side]||0)+v; else plain+=v;
+        if(!st.isDrop&&rirKnown(st)){ rs+=setRIR(st); rn++; if(isFailure(st)||setRIR(st)<=1)near++; } });
+      const sides=Object.keys(bySide); const hard=plain+(sides.length?Math.max(...sides.map(k=>bySide[k])):0); if(!(hard>0))return;
+      const T=(tn&&tn[ei]&&tn[ei].total)||0; const prof=exProfileOf(s,ei)||{}; let pr=null; try{ pr=histProgress(s,ei); }catch(_){}
+      tg.forEach(t=>{ const a=per[t.id]||(per[t.id]={id:t.id,sid:s.id,date:s.date,start:win.startMs||null,end:win.endMs||null,sets:0,direct:0,T:0,rs:0,rn:0,near:0,len:{},rp:{},perf:[],ex:[]});
+        const w=t.w; a.sets+=hard*w; if(w>=1)a.direct+=hard; a.T+=T*w; a.rs+=rs*w; a.rn+=rn*w; a.near+=near*w;
+        a.len[prof.len||'unk']=(a.len[prof.len||'unk']||0)+hard*w; a.rp[prof.rp||'unk']=(a.rp[prof.rp||'unk']||0)+hard*w;
+        if(w>=1&&pr&&isFinite(pr.pct))a.perf.push(pr.pct);
+        a.ex.push({name:e.name,w,hard,len:prof.len,rp:prof.rp}); }); });
+    Object.keys(per).forEach(id=>{ (idx[id]=idx[id]||[]).push(per[id]); }); });
+  Object.keys(idx).forEach(id=>idx[id].sort((x,y)=>((x.end||Date.parse(x.date))-(y.end||Date.parse(y.date)))));
+  return (_muscExpCache=idx); }
+const expEnd=a=>a.end||(Date.parse(a.date+'T20:00:00')||0);
+const expStart=a=>a.start||(Date.parse(a.date+'T18:00:00')||0);
+// ventana ESTIMADA para una exposición: base del músculo × dosis. Más series, más cerca del fallo (Morán-Navarro
+// 2017: al fallo la recuperación tarda más) y más trabajo en estiramiento (más daño) → más horas.
+function recoveryEstimate(a){ const M=MUSCLES[a&&a.id]; if(!M)return null; const [lo,hi]=M.rec;
+  const dose=Math.max(0.8,Math.min(1.35,0.8+0.05*(a.sets-2)));
+  const nearSh=a.rn>0?a.near/a.rn:0.5; const prox=1+0.3*nearSh;
+  const lenT=Object.values(a.len||{}).reduce((x,y)=>x+y,0)||1; const longSh=((a.len||{}).long||0)/lenT; const stretch=1+0.15*longSh;
+  const f=dose*prox*stretch; return {lo:Math.round(lo*f),hi:Math.round(hi*f),f:Math.round(f*100)/100,src:'estimated'}; }
+// ventana OBSERVADA: pares de exposiciones seguidas → capacidad de la 2.ª (vs su sesión equivalente) según las
+// horas de descanso, por tramos. Recuperado = primer tramo cuya mediana ya no cae (≥ −1 %). Mínimo 6 pares.
+const REC_BUCKETS=[[0,48],[48,72],[72,96],[96,168],[168,1e9]];
+function observedRecovery(pairs){ const ok=(pairs||[]).filter(p=>isFinite(p.gap)&&isFinite(p.perf)); const out={n:ok.length,buckets:[],hours:null,src:'observed'};
+  REC_BUCKETS.forEach(([a,b])=>{ const xs=ok.filter(p=>p.gap>=a&&p.gap<b).map(p=>p.perf); out.buckets.push({a,b,n:xs.length,med:xs.length?median(xs):null}); });
+  if(ok.length>=6){ const hit=out.buckets.find(bk=>bk.n>=2&&bk.med>=-1); if(hit)out.hours=[hit.a,Math.min(hit.b,168)]; }
+  return out; }
+function musclePairs(id){ const ex=muscleExposureIndex()[id]||[]; const pr=[];
+  for(let i=1;i<ex.length;i++){ const A=ex[i-1],B=ex[i]; if(!B.perf.length)continue; const gap=(expStart(B)-expEnd(A))/3600000; if(!(gap>0))continue; pr.push({gap,perf:B.perf.reduce((x,y)=>x+y,0)/B.perf.length,date:B.date}); }
+  return pr; }
+// estado AHORA: horas desde la última exposición vs la ventana (observada si existe; si no, estimada con su dosis)
+function muscleRecoveryState(id,nowMs){ const ex=muscleExposureIndex()[id]||[]; if(!ex.length)return null; const last=ex[ex.length-1];
+  const h=((nowMs||Date.now())-expEnd(last))/3600000; const est=recoveryEstimate(last); const obs=observedRecovery(musclePairs(id));
+  const win=obs.hours?{lo:obs.hours[0],hi:obs.hours[1],src:'observed',n:obs.n}:est;
+  const mid=(win.lo+win.hi)/2; const pct=Math.max(0,Math.min(100,Math.round(h/Math.max(1,mid)*100)));
+  const state=h>=win.hi?'fresh':h>=win.lo?'likely':'recovering';
+  return {id,h,last,est,obs,win,pct,state}; }
+function recStateTxt(r){ if(!r)return ''; const hh=r.h<48?Math.round(r.h)+' h':Math.round(r.h/24*10)/10+' d';
+  return r.state==='fresh'?'fresco · '+hh:r.state==='likely'?'casi · '+hh:'~'+r.pct+'% · '+hh; }
+function recStateCol(r){ return !r?'var(--o40)':r.state==='fresh'?'var(--good)':r.state==='likely'?'var(--o70)':'var(--warn)'; }
+// agregados por ventana de fechas (VOLUMEN/ESTÍMULO) sobre las exposiciones
+function muscleWindowAgg(id,fromISO,toISO){ const ex=(muscleExposureIndex()[id]||[]).filter(a=>a.date>=fromISO&&a.date<=toISO);
+  const r={n:ex.length,sets:0,direct:0,T:0,rs:0,rn:0,near:0,len:{},rp:{},perf:[]};
+  ex.forEach(a=>{ r.sets+=a.sets; r.direct+=a.direct; r.T+=a.T; r.rs+=a.rs; r.rn+=a.rn; r.near+=a.near; a.perf.forEach(p=>r.perf.push(p));
+    Object.keys(a.len).forEach(k=>r.len[k]=(r.len[k]||0)+a.len[k]); Object.keys(a.rp).forEach(k=>r.rp[k]=(r.rp[k]||0)+a.rp[k]); });
+  r.rir=r.rn>0?r.rs/r.rn:null; r.indirect=r.sets-r.direct; return r; }
+const r1m=x=>Math.round(x*10)/10;
+function muscleRowsData(){ const now=new Date(); const t=todayISO(now), d7=shiftDate(t,-6), d14=shiftDate(t,-13), d8=shiftDate(t,-7), d28=shiftDate(t,-27);
+  const idx=muscleExposureIndex();
+  return Object.keys(idx).filter(id=>idx[id].some(a=>a.date>=d28)).map(id=>{ const cur=muscleWindowAgg(id,d7,t), prev=muscleWindowAgg(id,d14,d8);
+    return {id,cur,prev,rec:muscleRecoveryState(id),lm:(MUSCLES[id]||{}).lm}; }).sort((a,b)=>b.cur.sets-a.cur.sets); }
+// //MÚSCULOS en Progreso: una fila por músculo real con volumen 7d vs landmarks, RIR medio, y su recuperación
+function musclesSectionHTML(){ const rows=muscleRowsData(); if(!rows.length)return '';
+  const unres=muscleUnresolvedCount();
+  let out=`<hr class="rule"/><div class="grp-label">//MÚSCULOS · volumen · estímulo · recuperación</div><div style="font-size:10px;color:var(--o40);margin:-4px 0 8px">por músculo real (tus etiquetas se traducen en "músculos" del menú) · 7 días · toca uno para el detalle</div>`;
+  rows.forEach(r=>{ const c=r.cur; const L=r.lm; const CE=Math.max(20,L?L[2]+2:20); const pct=Math.min(100,Math.round(c.sets/CE*100));
+    const st=L?(c.sets<L[0]?'bajo MEV':c.sets>L[2]?'sobre MRV':c.sets>L[1]?'cerca de MRV':''):'';
+    out+=`<div class="mscrow" data-act="muscledetail" data-id="${r.id}"><div class="msctop"><span class="mscn">${escTxt(muscleLabel(r.id))}${st?` <span class="vst${st==='sobre MRV'?' bad':st==='cerca de MRV'?' warn':''}">${st}</span>`:''}</span><span class="mscv">${r1m(c.sets)} series${c.rir!=null?' · RIR '+r1m(c.rir):''}</span></div>`
+      +`<div class="vbar"><i style="width:${pct}%"></i>${L?`${L[0]>0?`<span class="mev" style="left:${Math.round(L[0]/CE*100)}%"></span>`:''}<span class="mrv" style="left:${Math.round(L[2]/CE*100)}%"></span>`:''}</div>`
+      +`<div class="mscrec" style="color:${recStateCol(r.rec)}">${escTxt(recStateTxt(r.rec))}${r.rec&&r.rec.win.src==='observed'?' · observado':''}</div></div>`; });
+  if(unres)out+=`<div class="submeta" style="margin-top:6px;color:var(--warn)" data-act="musclemap">${unres} ejercicio${unres>1?'s':''} con músculo sin resolver (p. ej. "delts" sin pista en el nombre) · toca para asignarlo ›</div>`;
+  return out; }
+function muscleUnresolvedCount(){ let n=0; knownExercises().forEach(x=>{ if(targetsFor(x).some(t=>!t.id&&t.group))n++; }); return n; }
+// detalle: las cuatro lecturas por separado + rendimiento, cada una con su procedencia
+function openMuscleDetail(id){ const M=MUSCLES[id]; if(!M)return; const t=todayISO(); const d7=shiftDate(t,-6), d14=shiftDate(t,-13), d8=shiftDate(t,-7), d28=shiftDate(t,-27);
+  const c=muscleWindowAgg(id,d7,t), p=muscleWindowAgg(id,d14,d8), m28=muscleWindowAgg(id,d28,t); const L=M.lm; const rec=muscleRecoveryState(id);
+  const line=(k,v,sub)=>`<div class="mdline"><span class="mdk">${k}</span><span class="mddots"></span><span class="mdv">${v}${sub?` <span class="mdsub">${sub}</span>`:''}</span></div>`;
+  const pctOf=(o,k)=>{ const tot=Object.values(o).reduce((x,y)=>x+y,0)||0; return tot?Math.round((o[k]||0)/tot*100):0; };
+  const dv=c.sets-p.sets;
+  // FATIGA: series de las últimas 72 h vs el promedio por 72 h de sus 4 semanas
+  const exA=muscleExposureIndex()[id]||[]; const now=Date.now(); const acute=exA.filter(a=>now-expEnd(a)<=72*3600000).reduce((x,a)=>x+a.sets,0);
+  const chronic=m28.sets/(28/3); const fr=chronic>0?acute/chronic:null;
+  const obs=rec?rec.obs:observedRecovery(musclePairs(id)); const est=rec?rec.est:null;
+  const last=exA.slice(-5).reverse();
+  let html=`<div class="mdetail mscd"><div class="mdhd"><h3>${escTxt(muscleLabel(id))} <span style="font-size:11px;color:var(--o40);font-weight:400">${escTxt(M.es)}</span></h3></div>`
+    +`<div class="grp-label" style="margin:10px 0 4px">VOLUMEN · 7 días</div>`
+    +line('series duras',r1m(c.sets),(dv?(dv>0?'▲ +':'▼ ')+r1m(dv)+' vs 7d previos':'igual que 7d previos'))
+    +line('directas · indirectas',r1m(c.direct)+' · '+r1m(c.indirect))
+    +line('sesiones',c.n)
+    +(L?line('guía RP · MEV/MAV/MRV',L[0]+' · '+L[1]+' · '+L[2],c.sets<L[0]?'estás bajo el mínimo efectivo':c.sets>L[2]?'sobre el máximo recuperable':c.sets>L[1]?'entre MAV y MRV':'en rango'):line('guía RP','sin guía para este músculo','no se inventa'))
+    +`<div class="grp-label" style="margin:12px 0 4px">ESTÍMULO · 7 días</div>`
+    +line('tensión efectiva','T '+fmtT(c.T),p.T>0?(c.T>=p.T?'▲ ':'▼ ')+Math.round((c.T/p.T-1)*100)+'%':'')
+    +line('RIR medio',c.rir!=null?r1m(c.rir):'—',c.rn?Math.round(c.near/c.rn*100)+'% a RIR ≤1':'')
+    +line('longitud',[['long','estirado'],['mid','media'],['short','acortado'],['mixed','mixto']].filter(k=>pctOf(c.len,k[0])).map(k=>k[1]+' '+pctOf(c.len,k[0])+'%').join(' · ')||'—',pctOf(c.len,'unk')?pctOf(c.len,'unk')+'% sin definir':'')
+    +line('perfil',[['asc','⬆'],['desc','⬇'],['mid','↔']].filter(k=>pctOf(c.rp,k[0])).map(k=>k[1]+' '+pctOf(c.rp,k[0])+'%').join(' · ')||'—',pctOf(c.rp,'unk')?pctOf(c.rp,'unk')+'% sin definir':'')
+    +`<div class="grp-label" style="margin:12px 0 4px">FATIGA · 72 h</div>`
+    +line('series en 72 h',r1m(acute),fr!=null?'vs '+r1m(chronic)+' de tu promedio · '+(fr>1.4?'alta':fr<0.6?'baja':'normal'):'sin historial de 4 semanas')
+    +`<div class="grp-label" style="margin:12px 0 4px">RECUPERACIÓN</div>`
+    +(rec?line('última exposición','hace '+(rec.h<48?Math.round(rec.h)+' h':r1m(rec.h/24)+' d'),fmtShort(rec.last.date)):'')
+    +(est?line('ventana estimada',est.lo+'–'+est.hi+' h','base '+M.rec[0]+'–'+M.rec[1]+' h × dosis '+est.f):'')
+    +(obs&&obs.hours?line('ventana observada',obs.hours[0]+'–'+obs.hours[1]+' h','tu historial · '+obs.n+' pares'):line('ventana observada','aún no',(obs?obs.n:0)+' de 6 pares necesarios'))
+    +(obs&&obs.n?`<div class="submeta" style="margin:4px 0 0">capacidad según horas de descanso: ${obs.buckets.filter(b=>b.n).map(b=>(b.b>=1e9?'>'+b.a:b.a+'-'+b.b)+' h '+(b.med>=0?'+':'')+r1m(b.med)+'% (n'+b.n+')').join(' · ')}</div>`:'')
+    +(rec?line('estado',`<span style="color:${recStateCol(rec)}">${escTxt(recStateTxt(rec))}</span>`,rec.win.src==='observed'?'con tu ventana observada':'con la ventana estimada'):'')
+    +`<div class="grp-label" style="margin:12px 0 4px">RENDIMIENTO · últimas exposiciones</div>`
+    +(last.length?last.map(a=>{ const pf=a.perf.length?a.perf.reduce((x,y)=>x+y,0)/a.perf.length:null; return line(fmtShort(a.date),r1m(a.sets)+' series'+(a.rn?' · RIR '+r1m(a.rs/a.rn):''),pf!=null?`<span style="color:${pf>0?'var(--good)':pf<0?'var(--bad)':'var(--o40)'}">${pf>0?'▲ +':pf<0?'▼ ':'= '}${r1m(pf)}%</span>`:'sin comparación'); }).join(''):'<div class="submeta">sin exposiciones</div>')
+    +`<div class="submeta" style="margin-top:10px;color:var(--o40)">estimado = guía de la literatura ajustada a tu dosis · observado = tu propio historial · las cuatro lecturas van separadas a propósito: no hay una puntuación única</div>`
+    +`<div class="sheetbtns" style="margin-top:14px"><button class="cancel" data-act="closemodal">cerrar</button></div></div>`;
+  openModal(html,'mdetail-wrap'); }
+// gym (home): los músculos del día y su estado, bajo //NEXT
+function dayMusclesLineHTML(day){ if(!day)return ''; const {list}=daySource(day); const ids=[];
+  (list||[]).forEach(e=>{ const t=targetsFor(e)[0]; if(t&&t.id&&ids.indexOf(t.id)<0)ids.push(t.id); });
+  const parts=ids.map(id=>{ const r=muscleRecoveryState(id); if(!r)return null; return `<span style="color:${recStateCol(r)}">${escTxt(muscleLabel(id))} ${escTxt(r.state==='fresh'?'fresco':r.state==='likely'?'casi':'~'+r.pct+'%')}</span>`; }).filter(Boolean);
+  return parts.length?`<div class="ready" data-act="nav" data-screen="progress" title="recuperación estimada por músculo (observada cuando hay datos)"><span class="rk">MÚSCULOS</span> ${parts.join(' · ')}</div>`:''; }
 // ---- exercise IDENTITY: a same-name exercise in a different type/laterality is a DIFFERENT exercise ----
 // type synonyms → canonical form, ONLY for variant matching/lookup (never rewrites the user's stored value,
 // same spirit as MUSCLE_ALIAS/canonM above — internal comparison only).
@@ -1533,7 +1660,7 @@ function musclesOf(sessOrWork,ei){
 let _exIdxCache=null;
 // call after any mutation that could change db.sessions (save() does this) so exIndex() rebuilds once, lazily.
 let _refCache={}, _sessTCache={}, _fatCtxCache={}, _readyCache={};
-function bumpIdx(){ _exIdxCache=null; _refCache={}; _sessTCache={}; _fatCtxCache={}; _readyCache={}; _mLblCache={}; }
+function bumpIdx(){ _exIdxCache=null; _refCache={}; _sessTCache={}; _fatCtxCache={}; _readyCache={}; _mLblCache={}; _muscExpCache=null; }
 // flat, memoized list of every REAL (non-_pf, non-empty) exercise-occurrence across all saved sessions,
 // most-recent-first. Base for baselineSetsFor() — rebuilt only when bumpIdx() invalidates it.
 function exIndex(){
@@ -1718,7 +1845,7 @@ function renderHome(){
     +`<div class="ctrls"><a data-act="changesplit">[change split]</a><a data-act="changegym">[change gym]</a><a data-act="history">[history]</a></div>`
     +`<div class="whdr"><div class="l1"><span class="s">//</span>${l1}</div><div class="wname">${escTxt(day.name)}</div><div class="l2">WORKOUT</div><div class="wmeta">${escTxt(db.split.name)} · ${escTxt(day.tag)}</div></div>`
     +`<div class="wgym">${db.activeGym} · ${day.exercises.length} exercises</div>`
-    +(isCurrent?readinessLineHTML(todayISO()):'')
+    +(isCurrent?readinessLineHTML(todayISO())+dayMusclesLineHTML(day):'')
     +`<div style="text-align:center;margin:9px 0 2px"><a data-act="togglepreview" style="font-size:10px;color:var(--o50);cursor:pointer;letter-spacing:.04em;border:1px solid var(--o20);border-radius:4px;padding:2px 6px;">${state.previewDay?'[ ocultar rutina ▴ ]':'[ ver rutina ▾ ]'}</a></div>`
     +(state.previewDay?dayPreviewHTML(day):'')
     +cta
@@ -2563,6 +2690,38 @@ function _exProfileSelfCheck(){
     A('la etiqueta corta marca lo sugerido con ~', profileTag(profileFor(dlr,'AGON'))==='⬆~ acortado~');
   } finally { db=real; bumpIdx(); }
   console.log('profile self-check OK');
+}
+// v230 — recuperación por músculo: la dosis mueve la ventana estimada, lo observado exige datos (≥6 pares) y el
+// estado depende de las horas reales. db de juguete con fechas relativas; se restaura y se limpia la caché.
+function _recoverySelfCheck(){
+  const A=(nm,c)=>{ if(!c) throw new Error('SELFCHECK recovery: '+nm); };
+  // 1 · estimado: una sesión ligera recupera antes que una pesada, al fallo y en estiramiento
+  const light=recoveryEstimate({id:'quads',sets:2,rn:2,near:0,len:{unk:2}}), heavy=recoveryEstimate({id:'quads',sets:12,rn:12,near:12,len:{long:12}});
+  A('la dosis mueve la ventana estimada', light.hi<heavy.lo&&light.src==='estimated');
+  A('la ventana parte de la base del músculo', recoveryEstimate({id:'biceps',sets:6,rn:6,near:3,len:{}}).hi<recoveryEstimate({id:'quads',sets:6,rn:6,near:3,len:{}}).hi);
+  // 2 · observado: con 6 pares, el primer tramo que ya no cae; con menos, nada
+  const pairs=[{gap:30,perf:-5},{gap:36,perf:-4},{gap:40,perf:-6},{gap:55,perf:1},{gap:60,perf:0},{gap:66,perf:2}];
+  A('con 6 pares sale la ventana observada', JSON.stringify(observedRecovery(pairs).hours)==='[48,72]');
+  A('con menos de 6 pares no se inventa', observedRecovery(pairs.slice(0,5)).hours===null);
+  // 3 · exposiciones reales: primario 1×, secundario con su peso, y estado según las horas
+  const D=k=>{ const d=new Date(); d.setDate(d.getDate()-k); return todayISO(d); };
+  const st=(r)=>({w:'100',r:String(r),rir:'2',unit:'lbs',done:true});
+  const real=db;
+  try{
+    db=migrate({_idfix:true,_fsfix:true,profile:{username:'t'},
+      split:{name:'t',days:[{id:'d1',name:'legs',exercises:[{id:'q1',name:'leg ext',muscle:'quads',type:'machine',sets:3},{id:'q2',name:'pendulum',muscle:'quads',muscles:[{name:'quads',weight:1},{name:'glutes',weight:0.5}],type:'machine',sets:2}]}]},
+      sessions:[{id:'s1',date:D(3),dayId:'d1',dayName:'legs',gym:'G',type:'training',startTime:'18:00',endTime:'19:00',exercises:[
+        {exId:'q1',name:'leg ext',muscle:'quads',type:'machine',sets:[st(10),st(9),st(8)]},
+        {exId:'q2',name:'pendulum',muscle:'quads',muscles:[{name:'quads',weight:1},{name:'glutes',weight:0.5}],type:'machine',sets:[st(8),st(8)]}]}]});
+    bumpIdx();
+    const ix=muscleExposureIndex();
+    A('una exposición por músculo y sesión', ix.quads&&ix.quads.length===1&&ix.quads[0].sets===5);
+    A('el secundario cuenta con su peso', ix.glutes&&ix.glutes[0].sets===1&&ix.glutes[0].direct===0);
+    const last=ix.quads[0];
+    A('a las 24 h sigue recuperándose', muscleRecoveryState('quads',expEnd(last)+24*3600000).state==='recovering');
+    A('a las 150 h está fresco', muscleRecoveryState('quads',expEnd(last)+150*3600000).state==='fresh');
+  } finally { db=real; bumpIdx(); }
+  console.log('recovery self-check OK');
 }
 function _historyEditSelfCheck(){
   // the finalize step below saves and advances the rotation — split + rotIdx must come back too (they leaked before v221)
@@ -4486,6 +4645,7 @@ function renderProgress(){
       out+=`<div class="line"><span class="k">${latTxt(x)}${escTxt(x.name)}</span><span class="dots"></span><span class="v">${Math.round(x.e1)}${escTxt(x.eu||'')} <span style="color:var(--o40);font-size:10px">· top ${_tw}${escTxt(x.twu||'')}×${x.twr||0}</span></span></div>`; });
   } }
   try{ const _wp=prevMonthYm().split('-'); if(wrapMonthData(+_wp[0],+_wp[1]-1).hasData) out+='<div style="text-align:center;margin:18px 0 2px"><a data-act="wrapview" style="font-size:11px;color:var(--o60);cursor:pointer">▸ ver tu wrap · '+escTxt(MONFULL[+_wp[1]-1])+'</a></div>'; }catch(_){}
+  out+=musclesSectionHTML();
   const _pins=performanceInsights(); if(_pins.length){ out+=`<hr class="rule"/><div class="grp-label">//RENDIMIENTO · correlaciones</div><div style="font-size:10px;color:var(--o40);margin:-4px 0 6px">qué coincide con sesiones de más o menos capacidad · correlación, no causa</div>`; _pins.forEach(function(x){ out+=`<div class="line"><span class="k">${escTxt(x.variable)}</span><span class="dots"></span><span class="v" style="color:${x.r>0?'var(--good)':'var(--bad)'}">${x.r>0?'▲':'▼'} capacidad<span style="color:var(--o40);font-size:10px"> · r=${Math.round(Math.abs(x.r)*100)/100} (${x.n} sesiones)</span></span></div>`; }); }
   const _ins=selfcheckInsights(); if(_ins.length){ out+=`<hr class="rule"/><div class="grp-label">//INSIGHTS · correlaciones</div><div style="font-size:10px;color:var(--o40);margin:-4px 0 6px">qué coincide con cómo te ves y sientes</div>`; _ins.forEach(function(x){ out+=`<div class="line"><span class="k">${escTxt(x.variable)}</span><span class="dots"></span><span class="v" style="color:${x.eff>0?'var(--good)':'var(--bad)'}">${x.eff>0?'▲':'▼'} ${escTxt(x.field)}<span style="color:var(--o40);font-size:10px"> · r=${Math.round(Math.abs(x.r)*100)/100} (${x.n}d${x.lag>0?' · D+'+x.lag:''})</span></span></div>`; }); }
   out+='<div style="text-align:center;margin:16px 0 2px"><a data-act="healthsync" style="font-size:11px;color:var(--o60);cursor:pointer">↻ sync de Salud (pasos/peso)</a></div>';
@@ -5445,6 +5605,8 @@ document.getElementById('app').addEventListener('click',e=>{
   else if(a==='sd_adopt'){ adoptDaySource(+el.dataset.di); }
   else if(a==='sd_addday'){ db.split.days.push({id:'d'+uid(),name:'new day',tag:'@ RIR · F',metric:'rir',allowFailure:true,exercises:[]}); save(); render(); }
   else if(a==='exdirectory'){ window._mgSel=[]; openExerciseDirectory(); }
+  else if(a==='muscledetail'){ openMuscleDetail(el.dataset.id); }
+  else if(a==='musclemap'){ openMuscleMap(); }
   else if(a==='exprof'){ openExProfile(el.dataset.n,el.dataset.back||''); }
   else if(a==='pf_save'){ saveExProfile(); }
   else if(a==='pf_close'){ closeProfileBack((window._exProf||{}).back); }
@@ -7678,7 +7840,7 @@ async function aiPhoto(file,barcode){ if(!file)return; window._faTag=window._faT
 // Pick AI when the proxy is configured, else on-device OCR.
 function labelPhoto(file,barcode){ if(AI_PROXY_URL) return aiPhoto(file,barcode); return ocrPhoto(file,barcode); }
 requestPersist();
-db=load(); try{ promptIdleSession(); }catch(_){} try{ if(typeof location!=='undefined' && /[?&]selftest=1/.test(location.search)){ _identitySelfCheck(); _dropsetSelfCheck(); _baselineSelfCheck(); _variantSelfCheck(); _historyEditSelfCheck(); _idSelfCheck(); _cardioSelfCheck(); _tensionSelfCheck(); _healthSelfCheck(); _readinessSelfCheck(); _loggingSelfCheck(); _mergeSelfCheck(); _streakSelfCheck(); _chartSelfCheck(); _muscleSelfCheck(); _exProfileSelfCheck(); } }catch(e){ console.error(e); } try{ const _sp=new URLSearchParams(location.search); const _hasHistorical=_sp.has('stepsh')||_sp.has('weighth')||_sp.has('stepsq')||_sp.has('sleeph'); if(_hasHistorical){ const _hsp=_sp; if(history.replaceState)history.replaceState(null,'',location.pathname); setTimeout(()=>{ if(confirm('Este link quiere importar datos históricos (pasos/peso/sueño de varios días) a tu cuenta. ¿Aplicar? — solo dile que SÍ si vienes de tu propio Atajo de iOS.')){ try{ const _imp=importHealth(_hsp); if(_imp.length){ save(); render(); toast('✓ '+_imp.join(' · ')); } }catch(_){} } },400); } else { const _imp=importHealth(_sp); if(_imp.length){ window._healthImported=_imp; if(history.replaceState)history.replaceState(null,'',location.pathname); } } }catch(_){} save(); render(); if(window._healthImported)setTimeout(()=>toast('✓ '+window._healthImported.join(' · ')),250); if(window._recoveredFromBackup)setTimeout(()=>{try{alert('Se recuperó un respaldo local: revisa tus datos, podrían faltar cambios muy recientes.');}catch(_){}},600);
+db=load(); try{ promptIdleSession(); }catch(_){} try{ if(typeof location!=='undefined' && /[?&]selftest=1/.test(location.search)){ _identitySelfCheck(); _dropsetSelfCheck(); _baselineSelfCheck(); _variantSelfCheck(); _historyEditSelfCheck(); _idSelfCheck(); _cardioSelfCheck(); _tensionSelfCheck(); _healthSelfCheck(); _readinessSelfCheck(); _loggingSelfCheck(); _mergeSelfCheck(); _streakSelfCheck(); _chartSelfCheck(); _muscleSelfCheck(); _exProfileSelfCheck(); _recoverySelfCheck(); } }catch(e){ console.error(e); } try{ const _sp=new URLSearchParams(location.search); const _hasHistorical=_sp.has('stepsh')||_sp.has('weighth')||_sp.has('stepsq')||_sp.has('sleeph'); if(_hasHistorical){ const _hsp=_sp; if(history.replaceState)history.replaceState(null,'',location.pathname); setTimeout(()=>{ if(confirm('Este link quiere importar datos históricos (pasos/peso/sueño de varios días) a tu cuenta. ¿Aplicar? — solo dile que SÍ si vienes de tu propio Atajo de iOS.')){ try{ const _imp=importHealth(_hsp); if(_imp.length){ save(); render(); toast('✓ '+_imp.join(' · ')); } }catch(_){} } },400); } else { const _imp=importHealth(_sp); if(_imp.length){ window._healthImported=_imp; if(history.replaceState)history.replaceState(null,'',location.pathname); } } }catch(_){} save(); render(); if(window._healthImported)setTimeout(()=>toast('✓ '+window._healthImported.join(' · ')),250); if(window._recoveredFromBackup)setTimeout(()=>{try{alert('Se recuperó un respaldo local: revisa tus datos, podrían faltar cambios muy recientes.');}catch(_){}},600);
 applyDesign(); try{ if(/[?&]design\b/.test(location.search))localStorage.setItem('gymtrk_designmode','1'); if(localStorage.getItem('gymtrk_designmode')==='1')openDesignPanel(); }catch(_){}
 try{ bootScreen(()=>{ try{
   if(/[?&]wrap=1\b/.test(location.search)){ monthlyWrap(prevMonthYm(), true); return; }
