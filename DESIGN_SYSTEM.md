@@ -79,7 +79,7 @@ existen desde v231.)
 | `--card2` | `#16161c` | superficie elevada (chip seleccionable, select en sheet, tooltip) |
 | `--sheet-bg` | `#0a0a0c` | fallback sólido de sheets glass |
 | `--track` | `#191920` | pista de barras y días vacíos del calendario |
-| `--faint` | `#3a3a3e` | borde de `.pill` (legado; no usar en nuevo) |
+| `--faint` | `#3a3a3e` | glifos casi apagados (`.chev`, el `#` del log de comidas); legado, no usar en nuevo |
 | `--fill` / `--on-fill` | `#f3f3f4` / `#000` | fondo del botón primario / texto sobre él |
 
 No hay grises nuevos. Si alguien necesita `#121212`, la pregunta es "¿por qué no es `--card` o `--card2`?".
@@ -195,7 +195,9 @@ Tabla → casi cuadrada · control → poco redondeado · tarjeta → redondeada
   en datos densos (tabla de sesión) · .5px `--o10` como separador de lista · **2px** solo como indicador (ejercicio en
   curso, hoy en el calendario, posición de drop). Sin 1.5px. Punteado = sugerido/no confirmado (§9) o líder de `.line`.
 - **Sombras:** `--glass-shadow` (chrome glass) y `--shadow-float` `0 6px 22px rgba(0,0,0,.55)` para lo que
-  flota sobre contenido (FAB, popover, fantasma de arrastre, panel de diseño). Ninguna otra.
+  flota sobre contenido (FAB, popover, fantasma de arrastre, panel de diseño, marco de escritorio). Ninguna otra.
+  Un anillo `0 0 0 Npx` (contorno de "hoy", halo del punto de scrub, el velo del escáner) y un `inset` (bordes del
+  vidrio) son **bordes dibujados**, no sombras: están permitidos y el auditor no los cuenta.
 - **Sin gradientes CSS.** El único gradiente es el relleno tenue bajo la línea de las tiles de gráfica (SVG, ≤.16 α).
 - **Sin glow**, salvo la excepción documentada del estado del anillo de macros (§15).
 
@@ -218,9 +220,11 @@ Tabla → casi cuadrada · control → poco redondeado · tarjeta → redondeada
 ### 4.10 Glass (solo chrome)
 
 `--glass-bg rgba(14,14,17,.55)` · `--glass-bg-strong .72` · `--glass-blur 18px` · `--glass-sat 1.7` · `--glass-edge`
-· `--glass-ring` · `--glass-shadow`. Se aplica con las utilidades `.glass` / `.glass-strong` (DS-3: nav, sheet y toast
-dejan de copiar sus propiedades). Fallbacks existentes: `@supports not (backdrop-filter)` y
-`prefers-reduced-transparency` → sólido `--sheet-bg`.
+· `--glass-ring` · `--glass-shadow`. **Una sola definición:** las utilidades `.glass` (nav) y `.glass-strong` (sheet,
+toast) se ponen en el marcado (`<nav class="nav glass">`, `openModal`, `toast()`); el componente no repite blur, fondo,
+borde ni sombra. Ajustes por pieza con selector doble, nunca copiando el material: `.sheet.glass-strong` (solo borde
+inferior, cuelga de arriba) y `.toast.glass-strong` (se centra con transform). Fallbacks en las utilidades:
+`@supports not (backdrop-filter)` y `prefers-reduced-transparency` → sólido (`--card2` nav, `--sheet-bg` sheet/toast).
 
 ---
 
@@ -267,20 +271,24 @@ componente nuevo que sea variante de uno de estos se hace como **modificador**, 
 | **Acción de texto** | `.addbtn`, `.ctrls a`, `.section .meta a` | texto `[ ]` 10–11 px `--o60`, zona táctil ≥44 (padding + margen negativo) | acciones frecuentes dentro de datos |
 | **Flotante** | `.fab` | 56 círculo, `--fill`, glifo 30/300, `--shadow-float` | agregar (macros) |
 
-Destructivo = secundario + `.danger` (`--bad`). **No:** botones con estética propia por módulo, botones <44 px de zona
-táctil (el footer de sesión hoy mide ~30 px: se corrige en DS-3), pills como sustituto de botón, íconos sin texto en
-acciones importantes.
+Destructivo = secundario + `.danger` (`--bad`); en el footer de sesión, `abort` lleva borde `--abort`. **En barras
+acopladas** (footer de sesión) primario y secundarios miden **44**, no 48, para no robarle alto a la tabla. Un botón
+que se ve más chico que 44 (los −15/+15/skip del descanso, 32 px) extiende su zona táctil con `::after` (`inset`
+negativo), sin crecer visualmente. **No:** botones con estética propia por módulo, botones <44 px de zona táctil, pills
+como sustituto de botón, íconos sin texto en acciones importantes.
 
 ### 7.2 Inputs — dos familias (dualidad intencional)
 
 | Familia | Clases | Anatomía | Dónde |
 |---|---|---|---|
-| **Formulario** | `.field input/select`, `#fa_q`, `textarea.ta(.sm/.md/.lg/.xl)` | 44px · `--r-ctl` · 1px `--border` · `--card` · 16px | sheets, ajustes, onboarding, perfiles |
+| **Formulario** | `.field input/select`, `#fa_q`, `textarea.ta(.sm/.md/.lg/.xl)`, `.pfsel`/`#pf_gym`/`.pfw` (perfil), `.slblk input` (sueño), `.mdcust input` (rango de fechas), `.mmrow select` | 44px · `--r-ctl` · 1px `--border` · `--card` · 16px | sheets, ajustes, onboarding, perfiles |
 | **Dato** | `.inp`, `.pick`, `.fs`, `.bwchip` | 36px · `--r-sm` · .5px `--o20` · transparente · 12px | tabla de sesión e historial ("la caja cabe su contenido") |
 
 Label: `.field label` en mayúsculas 10 px `--o50`. **Unidad/porción siempre `<select>`, nunca texto libre**
-(vinculante). Selects en sheets (`.pfsel`, `.mmrow select`) pasan a la familia formulario en DS-3. **No:** alturas
-30/32/34/38, radios 8, sombras internas, labels flotantes, bordes de color.
+(vinculante). **Select dentro de una fila de lista** (`.mmrow select`, el mapeo etiqueta → músculo): geometría de
+formulario pero texto de 13 px, porque acompaña a la fila en vez de dominarla (a 16 px cortaba "grupo deltoides"); el
+viewport ya fija `maximum-scale=1`, así que iOS no hace zoom al enfocarlo. **No:** alturas 30/32/34/38, radios 8,
+sombras internas, labels flotantes, bordes de color.
 
 ### 7.3 Toggles y pestañas
 
@@ -294,8 +302,8 @@ Label: `.field label` en mayúsculas 10 px `--o50`. **Unidad/porción siempre `<
 | Familia | Clases | Anatomía | Función |
 |---|---|---|---|
 | **Etiqueta de dato** | `.note` (`[cable]`, `[+ nota]`), `.exp`, `.exT` | texto sin caja, 10–11 px, `--o50`; tappable con subrayado punteado | describe (tipo, T, perfil) |
-| **Estado** | `.vst`, `.setprog`, `.lpr` | texto 9 px mayúsculas sin caja; color = semántico del estado | dice cómo está (bajo MEV, ▲+3 %, PR) |
-| **Seleccionable** | `.chip`, `.spc`, `.ag-chip` | píldora, ≥36 px de alto, `--card2` o borde .5px, 11 px | se toca para marcar/filtrar (suplementos) |
+| **Estado** | `.vst`, `.setprog`, `.lpr`, `.pill` | texto 9 px **sin caja** (minúsculas; mayúsculas solo si es sigla: PR); color = semántico del estado | dice cómo está (bajo MEV, ▲+3 %, PR, retención alta) |
+| **Seleccionable** | `.chip`, `.spc`, `.ag-chip` | píldora `--r-pill`, ≥36 px de alto, `--card2` o borde .5px, 11 px | se toca para marcar/filtrar (suplementos) |
 
 **No:** chips con radio 4/6/8/14, cajas alrededor de estados, más familias.
 
@@ -303,8 +311,10 @@ Label: `.field label` en mayúsculas 10 px `--o50`. **Unidad/porción siempre `<
 
 - **`.line` — firma de la app.** Clave (`--o60`) · líder punteado (`.dots`) · valor (`--fg`). Para toda lectura
   clave-valor (stats, detalles, perfiles). `.mdline` es su variante de detalle (12 px) y converge a `.line.lg`.
-- **Fila de lista** (`.row`, DS-3; hoy `.exrow`, `.mmrow`, `.mscrow`, `.mdtr`, `.nvm`, `.pickitem`, `.hrow`):
-  padding `--s3`–`--s4`, separador .5px `--o10`, tap en toda la fila, contenido en una línea + sublínea opcional.
+- **Fila de lista** (`.exrow`, `.mmrow`, `.mscrow`, `.mdtr`, `.nvm`, `.pickitem`, `.hrow` — los nombres se quedan,
+  los valores convergen): padding 6–12 px (el de menú 14 para zona táctil), **separador .5px `--o10`** en todas, tap en
+  toda la fila, contenido en una línea + sublínea opcional. Dentro de una tarjeta (`.grp .item`) el separador es el
+  borde de la tarjeta (1px `--border`).
 - **Fila de volumen** (`.vrow` + `.vbar`): nombre + estado a la izquierda, lectura a la derecha, barra de 3 px con
   marcas MEV (`--o40`) y MRV (`--warn`).
 
@@ -341,8 +351,9 @@ Denso, afilado, técnico. **Jamás** glass, radios grandes ni colores decorativo
 ### 7.9 Barras acopladas
 
 `.restbar` (descanso: etiqueta + tiempo 16/800 + −15/+15/skip), `.nowbar` (AHORA), `.footer` (abort · ↩ · save
-session). Sólidas (`--frame`) con borde superior `--o12`; gutter `--sp-px`; alturas táctiles ≥44 en sus botones
-(DS-3). Fin de descanso: 3 destellos de borde `--good`.
+session). Sólidas (`--frame`) con borde superior `--o12`; gutter `--sp-px`. Botones: footer 44 (`abort` borde
+`--abort` · `↩` borde `--border` · `save session` primario), descanso 32 visibles con zona táctil de 44 (`::after`).
+Fin de descanso: 3 destellos de borde `--good`.
 
 ### 7.10 Navegación
 
@@ -354,8 +365,14 @@ historial y ajustes viven en el menú `u/…`. **No:** más de 3–4 pestañas, 
 
 `openModal(html, cls)`: scrim `rgba(0,0,0,.6)` + `.sheet` **glass-strong anclado arriba** (esquinas inferiores
 `--r-sheet`), padding `--sp-sheet`, máx. 80 % (`.tall` 90 vh). Título `.sheet h3`, botones `.sheetbtns`
-(primario + secundario). Entrada/salida deslizando 280 ms `--ease-out` (DS-3). El contenido dentro del sheet usa el
-lenguaje normal (no todo es glass). `nodismiss` solo para decisiones obligatorias (sesión inactiva).
+(primario + secundario). El contenido dentro del sheet usa el lenguaje normal (no todo es glass). `nodismiss` solo
+para decisiones obligatorias (sesión inactiva).
+- **Movimiento:** al abrir, el sheet baja desde arriba (`sheetin`, `--dur-3` `--ease-out`) y el scrim aparece
+  (`--dur-2`); al cerrar sube y se desvanece (`--dur-2` `--ease-in`). **`openModal` sobre otro sheet —o justo después de
+  `closeModal()`, el patrón `closeModal(); openX()`— es un cambio de contenido: sin animación**, así nunca hay dos
+  sheets moviéndose ni se anima un re-render.
+- **Cierre sin trampas:** `closeModal()` quita el `id` al instante (para la lógica el modal ya no existe) y deja un
+  fantasma `.modal.out` sin clics que sale en 180 ms y se borra a los 200 ms.
 
 ### 7.12 Toast
 
@@ -428,10 +445,13 @@ se sienta premium". Pressed: opacidad o `scale(.98)`. `prefers-reduced-motion` y
 ## 11. Íconos y glifos
 
 - **SVG** de línea, viewBox 24, trazo **1.6**, puntas redondas, `currentColor`. Una sola familia (sin mezclar relleno,
-  3D o redondeados).
+  3D o redondeados). Las barras gruesas del ícono de código de barras son dibujo (ancho de barra), no grosor de trazo.
+- **Trazos de gráfica** (cuatro valores, nada más): **dato** 1.4 en tiles, anillo grande, radar y FC · 1.8 en detalle
+  y anillos chicos · **referencia** 1 (promedio punteado) · **rejilla** .5 (radar, cruz central).
 - **Vocabulario de glifos** (fijo): ✓ hecho · ○ pendiente · ▲▼ progreso · ⬆⬇↔ perfil de resistencia · › entra a
   detalle · ↓ drop · ✕ quitar · ▾ desplegar · ⠿ arrastrar · ▦ rango custom · ~ estimado · ▌ cursor · ⚠ aviso.
-- **Emoji pictográficos no** (🗑 🔒 📸 se cambian en DS-3). Sus etiquetas con emoji ("puh🥀") se respetan: son suyas.
+- **Emoji pictográficos no** (DS-3: 🗑 borrar → `✕ borrar` · 🔒 → `[fijar]`/`[fijo]` · 📸 fuera). Sus etiquetas con
+  emoji ("puh🥀") se respetan: son suyas.
 
 ## 12. Estados de interacción
 
@@ -508,7 +528,13 @@ Antes de escribir UI, responder por escrito (en el plan):
 **`tools/ds-audit.cjs`** (node puro, sin npm; `node tools/ds-audit.cjs`) reporta: tamaños de letra fuera de token,
 pesos no cargados, letter-spacing fuera de rol, radios y espaciados fuera de escala, colores literales fuera de token,
 variables usadas sin definir, reglas CSS duplicadas, `style=""` totales y por función, clases definidas sin uso. Se
-corre antes y después de cada cambio de UI; **ningún commit puede subir los contadores P0/P1**.
+corre antes y después de cada cambio de UI; **ningún commit puede subir los contadores P0/P1**. Con un archivo como
+argumento audita ese (`node tools/ds-audit.cjs respaldo.html`), para comparar contra la versión anterior.
+- **Selector repetido** = el mismo selector escrito como regla propia dos veces en el nivel superior (el síntoma de
+  "parche encima de parche"). No cuentan las variantes dentro de `@media`/`@supports` ni base compartida + ajuste
+  (`.a,.b{…}` + `.a{…}`).
+- **Sombra fuera de token** = cualquier sombra con desenfoque que no sea `--glass-shadow`/`--shadow-float`; anillos
+  `0 0 0 Npx` e `inset` son bordes (§4.7).
 
 **Severidad:** **P0** identidad o bug visible (fuente/color/glass fuera de lugar, algo que no se pinta) · **P1**
 sistema (altura, radio, espaciado o variante inconsistente) · **P2** un módulo · **P3** detalle.
@@ -576,7 +602,7 @@ variantes de chip · 8 sombras · 25 duraciones · peso 600 ×10 · 3 variables 
 | 19 | P2 | la nav queda encima del scrim de los modales | capas §4.9 | DS-1 |
 | 20 | P2 | `.mdetail-wrap .sheet` nunca coincide | `.sheet.mdetail-wrap` | DS-1 |
 | 21 | P2 | sheets sin animación de entrada/salida | slide 280 ms | DS-3 |
-| 22 | P2 | balance: mantenimiento verde / volumen ámbar como categoría | neutro + glifo (déficit azul se queda) | DS-3 |
+| 22 | P2 | balance: mantenimiento verde / volumen ámbar como categoría | neutro — la palabra es la señal (déficit azul se queda) | DS-3 |
 | 23 | P2 | 11 grosores de trazo SVG | 1.6 íconos · 1.4/1.8 gráficas | DS-3 |
 | 24 | P2 | emoji 🗑 🔒 📸 | glifo/texto | DS-3 |
 | 25 | P3 | CSS muerto (`.glass*`, utilidades v156, `.prow`, `.srowm`, `--warn-glow`) y reglas repetidas (`.nav`, `.fab`, `.grp`, `.sheet`×3, `.grp-label`, `.mdk`) | limpiar | DS-1 |
@@ -589,6 +615,15 @@ variantes de chip · 8 sombras · 25 duraciones · peso 600 ×10 · 3 variables 
 de `var(--t-*)`, antes 31; 22 remapeos fuera de escala y 22 exenciones marcadas), 51 tracking por rol, 118
 espaciados impares al par más cercano, márgenes laterales de barras y nav a `--sp-px`. Quedan en línea (DS-4) 111
 tamaños y el espaciado de 14/18/22 que no es ritmo de página.
+**DS-3 (v233)**: #9–#13, #18, #21–#25 — radios fuera de escala **16 → 0** (literales 43 → 14, solo `50%`/`0`/2 en
+línea), sombras fuera de token **10 → 0**, selectores repetidos **18 → 0**, colores literales en CSS 18 → 4, sin bordes
+de 1.5px; inputs en dos familias (selects de sheets, horas de sueño y rango de fechas a formulario 44/r12); chips en
+tres familias (la cajita de "bajo MEV", `PR` y la retención sin caja; suplementos y chips de píldora a 36 px); footer de
+sesión a 44 (↩ deja de llevar el borde de abort) y botones del descanso con zona táctil 44; `.glass`/`.glass-strong` en
+el marcado de nav, sheet y toast; sheets que entran y salen deslizando; balance neutro salvo déficit; trazos SVG en
+cuatro valores; sin emoji pictográficos; CSS muerto fuera (`.rowend`, `.pfv`, `.pwk`, `.ptla`, `.prng`, vista previa de
+sesión, `.srowm`, `.shset`, `.mbanner`/`.mb-*`, `.prow`); FAB y fantasma de arrastre en `--z-float`; sin glow en la
+barra de intake ni en el escáner. Las utilidades v156 (`.t-meta`, `.mt-s*`…) se quedan para DS-4.
 
 **Fases:** DS-0 documento y auditor · DS-1 P0 + tokens nuevos + capas + CSS muerto · DS-2 tipografía, tracking,
 gutters y espaciado · DS-3 componentes (radios, inputs, chips, botones, sombras, glass, sheets, íconos) · **PT2 v231

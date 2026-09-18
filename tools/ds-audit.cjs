@@ -8,7 +8,8 @@
 // glass en contenido) sigue siendo revisión humana con las capturas.
 'use strict';
 const fs = require('fs'), path = require('path');
-const FILE = path.join(__dirname, '..', 'index.html');
+const fileArg = process.argv.slice(2).find(a => !a.startsWith('--'));   // otro archivo (p. ej. un respaldo) para comparar antes/después
+const FILE = fileArg ? path.resolve(fileArg) : path.join(__dirname, '..', 'index.html');
 const raw = fs.readFileSync(FILE, 'utf8');
 // las excepciones documentadas (§15) llevan /*ds:exempt*/ junto a la declaración y no cuentan como desviación
 const html = raw.replace(/[a-z-]+\s*:\s*[^;{}]*?\/\*ds:exempt\*\//g, '');
@@ -57,7 +58,10 @@ const spaceVals = [];
 const spaceOff = spaceVals.filter(v => !SPACE_OK.has(v));
 const spaceTok = tokenUse('s') - tokenUse('sp-') - tokenUse('sheet') - tokenUse('shadow');
 const borderW = countBy([...html.matchAll(/border(?:-(?:top|right|bottom|left))?\s*:\s*([\d.]+px)/g)].map(m => m[1]));
-const shadows = [...css.matchAll(/box-shadow\s*:\s*([^;}]+)/g)].map(m => m[1].trim()).filter(v => !/var\(--(glass-shadow|shadow-float)\)/.test(v) && v !== 'none');
+// una sombra es elevación (blur); los anillos `0 0 0 Npx` y los `inset` son bordes dibujados, no sombras
+const splitTop = v => { const out = []; let d = 0, cur = ''; for (const ch of v) { if (ch === '(') d++; if (ch === ')') d--; if (ch === ',' && !d) { out.push(cur.trim()); cur = ''; } else cur += ch; } if (cur.trim()) out.push(cur.trim()); return out; };
+const shadowPartOK = p => p === 'none' || /^inset\b/.test(p) || /^0 0 0 [\d.]+px\b/.test(p) || /^var\(--(glass-shadow|shadow-float)\)$/.test(p);
+const shadows = [...css.matchAll(/box-shadow\s*:\s*([^;}]+)/g)].map(m => m[1].trim()).filter(v => !splitTop(v).every(shadowPartOK));
 
 // ---- 4 · color ----
 const noRoot = css.replace(/:root\s*\{[^}]*\}/g, '');
@@ -66,8 +70,16 @@ const rgbaCSS = [...noRoot.matchAll(/rgba?\([^)]*\)/g)].map(m => m[0]);
 const inlineColors = [...js.matchAll(/(?:color|background|border[\w-]*|fill|stroke)\s*:\s*(#[0-9a-fA-F]{3,8}|rgba?\([^)]*\))/g)].map(m => m[1]);
 
 // ---- 5 · reglas CSS duplicadas ----
-const rules = [...css.replace(/\/\*[\s\S]*?\*\//g, '').matchAll(/([^{}@]+)\{[^{}]*\}/g)].map(m => m[1].trim()).filter(s => s && !/^(from|to|\d+%)/.test(s));
-const selCount = {}; rules.forEach(r => r.split(',').map(s => s.trim()).forEach(s => { selCount[s] = (selCount[s] || 0) + 1; }));
+// Un selector escrito como regla PROPIA dos veces en el nivel superior (el síntoma de "parche encima de parche").
+// No cuentan: lo que vive dentro de @media/@supports/@keyframes (variantes legítimas) ni las listas compartidas
+// (`.a,.b{…}` + `.a{…}` es base común + ajuste, práctica normal).
+const topLevel = (() => { const s = css.replace(/\/\*[\s\S]*?\*\//g, ''); let out = '', d = 0, skip = false, i = 0;
+  while (i < s.length) { const ch = s[i];
+    if (!d && ch === '@') { skip = true; }
+    if (ch === '{') { d++; if (!skip) out += ch; } else if (ch === '}') { d--; if (!skip) out += ch; if (!d) skip = false; } else if (!skip) out += ch;
+    i++; } return out; })();
+const rules = [...topLevel.matchAll(/([^{}]+)\{[^{}]*\}/g)].map(m => m[1].trim()).filter(s => s && !s.includes(','));
+const selCount = {}; rules.forEach(s => { selCount[s] = (selCount[s] || 0) + 1; });
 const dupSel = Object.entries(selCount).filter(([s, n]) => n > 1 && !/^(:root|html|body)$/.test(s));
 
 // ---- 6 · deuda style="" por función ----
@@ -93,7 +105,7 @@ const report = {
   shadowsOffToken: shadows.length,
   colors: { hexCSS: hexCSS.length, rgbaCSS: rgbaCSS.length, inline: inlineColors.length },
   vars: { undefinedNoFallback: undefNoFallback, undefinedWithFallback: undefWithFallback, unusedTokens },
-  duplicateSelectors: dupSel.length,
+  duplicateSelectors: dupSel.length, duplicateList: dupSel.map(([s, n]) => s + ' ×' + n),
   motion: { distinctDurationsMs: distinctDur },
   inlineByFunction: topFn
 };
@@ -115,7 +127,7 @@ else {
   L('bordes (grosor ×usos)', Object.entries(borderW).map(([k, v]) => k + '×' + v).join(' ')); L('sombras fuera de token', shadows.length);
   console.log('\nColor y variables'); L('hex / rgba literales en CSS', hexCSS.length + ' / ' + rgbaCSS.length); L('colores literales en línea', inlineColors.length);
   L('sin definir (con fallback)', Object.keys(undefWithFallback).map(k => '--' + k).join(', ') || '—'); L('tokens definidos sin uso', unusedTokens.map(k => '--' + k).join(', ') || '—');
-  console.log('\nEstructura'); L('excepciones marcadas (ds:exempt)', exemptCount); L('style="" en total', styleIdx.length); L('selectores CSS repetidos', dupSel.length); L('duraciones distintas (ms)', distinctDur.join(' '));
+  console.log('\nEstructura'); L('excepciones marcadas (ds:exempt)', exemptCount); L('style="" en total', styleIdx.length); L('selectores CSS repetidos', dupSel.length + (dupSel.length ? '  [' + report.duplicateList.join(', ') + ']' : '')); L('duraciones distintas (ms)', distinctDur.join(' '));
   console.log('\nMás style="" por función'); topFn.forEach(([n, c]) => L(n, c));
   console.log('');
 }
