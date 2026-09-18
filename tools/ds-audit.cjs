@@ -9,14 +9,17 @@
 'use strict';
 const fs = require('fs'), path = require('path');
 const FILE = path.join(__dirname, '..', 'index.html');
-const html = fs.readFileSync(FILE, 'utf8');
+const raw = fs.readFileSync(FILE, 'utf8');
+// las excepciones documentadas (§15) llevan /*ds:exempt*/ junto a la declaración y no cuentan como desviación
+const html = raw.replace(/[a-z-]+\s*:\s*[^;{}]*?\/\*ds:exempt\*\//g, '');
+const exemptCount = (raw.match(/\/\*ds:exempt\*\//g) || []).length;
 const args = process.argv.slice(2);
 
 // ---- escalas del sistema (DESIGN_SYSTEM.md §4) ----
 const TYPE_OK = new Set([9, 10, 11, 12, 13, 16, 22, 34]);
 const RADIUS_OK = new Set(['0', '2px', '4px', '12px', '16px', '22px', '999px', '50%']); // literales tolerados solo mientras migran a token
-const SPACE_OK = new Set([0, 1, 2, 4, 8, 12, 16, 24, 32, 48]);
-const LS_OK = new Set(['0', 'normal', '.2em', '.12em', '-.03em']);
+const SPACE_OK = new Set([0, 1, 2, 4, 6, 8, 10, 12, 16, 24, 32, 48]);   // 6 y 10 = medios pasos de componente
+const LS_OK = new Set(['0', 'normal']);   // todo lo demás va por var(--ls-*)
 
 // ---- partes del archivo ----
 const cssStart = html.indexOf('<style>'), cssEnd = html.indexOf('</style>');
@@ -41,8 +44,8 @@ const fsOff = [...cssFS, ...jsFS].filter(v => !TYPE_OK.has(v));
 const loaded = new Set(((html.match(/JetBrains\+Mono:wght@([\d;]+)/) || [])[1] || '').split(';').filter(Boolean).map(Number));
 const weights = [...html.matchAll(/font-weight\s*:\s*(\d{3})/g)].map(m => +m[1]);
 const unloadedW = weights.filter(w => loaded.size && !loaded.has(w));
-const ls = [...html.matchAll(/letter-spacing\s*:\s*([-\d.]+(?:px|em)|0|normal)/g)].map(m => m[1]);
-const lsOff = ls.filter(v => !LS_OK.has(v));
+const ls = [...html.matchAll(/letter-spacing\s*:\s*(var\(--ls-[\w-]+\)|[-\d.]+(?:px|em)|0|normal)/g)].map(m => m[1]);
+const lsOff = ls.filter(v => !LS_OK.has(v) && !/^var\(--ls-/.test(v));
 
 // ---- 3 · radios, espaciado, bordes, sombras ----
 const radii = [...html.matchAll(/border-radius\s*:\s*([^;"'}]+)/g)].map(m => m[1].trim());
@@ -112,7 +115,7 @@ else {
   L('bordes (grosor ×usos)', Object.entries(borderW).map(([k, v]) => k + '×' + v).join(' ')); L('sombras fuera de token', shadows.length);
   console.log('\nColor y variables'); L('hex / rgba literales en CSS', hexCSS.length + ' / ' + rgbaCSS.length); L('colores literales en línea', inlineColors.length);
   L('sin definir (con fallback)', Object.keys(undefWithFallback).map(k => '--' + k).join(', ') || '—'); L('tokens definidos sin uso', unusedTokens.map(k => '--' + k).join(', ') || '—');
-  console.log('\nEstructura'); L('style="" en total', styleIdx.length); L('selectores CSS repetidos', dupSel.length); L('duraciones distintas (ms)', distinctDur.join(' '));
+  console.log('\nEstructura'); L('excepciones marcadas (ds:exempt)', exemptCount); L('style="" en total', styleIdx.length); L('selectores CSS repetidos', dupSel.length); L('duraciones distintas (ms)', distinctDur.join(' '));
   console.log('\nMás style="" por función'); topFn.forEach(([n, c]) => L(n, c));
   console.log('');
 }

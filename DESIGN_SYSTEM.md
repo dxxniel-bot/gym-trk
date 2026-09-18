@@ -133,15 +133,17 @@ Familia única: **JetBrains Mono** (Google Fonts, pesos 300/400/500/700/800), fa
 - **Prohibidos:** 7, 7.5, 8, 9.5, 14, 15, 17–21, 23–26, 30, 36, 40. Se mapean según §20.
 - **Excepción de componente:** el número dentro de un anillo escala con el anillo (lg 26 · share 24 · banner 21).
 - **Overlays exentos:** boot, wrap (60/44/20) y escáner (40) son pantallas de un solo mensaje.
-- Micro-texto legible **≥10 px**; 9 px solo para mayúsculas espaciadas (etiquetas, ejes).
+- Micro-texto legible **≥10 px**; 9 px solo para mayúsculas espaciadas (etiquetas, ejes) y **anotaciones de dato**
+  pegadas a una fila (línea de progreso por serie, T, FC, % de drop, estado de volumen).
 - Inputs de formulario en **16 px** (evita el zoom de iOS).
 
 **Peso:** 300 glifos grandes (`+` del FAB) · 400 texto · 500 (reservado, casi sin uso) · **700** énfasis, números,
 botones · **800** títulos, `//SECCIÓN`, `.whdr`, nombre del ejercicio, valores display. **600 prohibido** (no está
 cargado; el navegador lo pinta como 700).
 
-**Tracking:** `--ls-caps .2em` mayúsculas de 9–11 px · `--ls-title .12em` `.whdr`/títulos en mayúsculas ·
-`--ls-num -.03em` números ≥22 px · 0 por defecto. Un rol = un valor, siempre en `em`.
+**Tracking (4 roles):** `--ls-caps .2em` mayúsculas de 9–11 px (`.grp-label`, labels de campo, `ROTATION`) ·
+`--ls-title .12em` `.whdr`/títulos en mayúsculas · `--ls-num -.03em` números ≥20 px · `--ls-ui .03em` botones,
+controles y meta de interfaz · 0 por defecto. Un rol = un valor, siempre por token.
 
 **Números.** Son lecturas de instrumento: la unidad va separada y más tenue (`59.8` + `kg` en `--o40`, más chica);
 monoespaciado ya es tabular; decimales solo cuando informan (kg 1, porcentajes 0–1, series 1); los cambios con signo
@@ -167,8 +169,9 @@ minúsculas (nombres, meta). Sus etiquetas conservan exactamente cómo él las e
 (gutter horizontal) · `--sp-card 15` · `--sp-gap 12` · `--sp-section 14` · `--sp-field 12` · `--sp-row 12` ·
 `--sp-sheet 18`.
 
-Reglas: lo interno de un componente usa la escala `--s*`; el ritmo de página usa `--sp-*`; nada de 3/5/7/9/11/13 px
-salvo ajuste óptico ≤2 px comentado. **Todo borde horizontal de contenido = `--sp-px`** (página, barras, nav, FAB,
+Reglas: lo interno de un componente usa la escala `--s*` (con **6 y 10 como medios pasos** de componente); el ritmo de
+página usa `--sp-*`; nada de 3/5/7/9/11/13/15 px. Los márgenes **negativos que centran un punto** (el del scrub, el
+"hoy" del calendario) son geometría, no espaciado: se calculan de su tamaño y no se redondean. **Todo borde horizontal de contenido = `--sp-px`** (página, barras, nav, FAB,
 sheets); solo los overlays de pantalla completa se salen.
 
 ### 4.6 Radios (comunican jerarquía)
@@ -469,6 +472,11 @@ Zona táctil ≥44 px en todo lo tocable (acciones de texto con padding + margen
 - **`--info`** azul solo para déficit calórico.
 - **Números del anillo** con escala propia; overlays (boot, wrap, escáner) fuera de la escala de tipo.
 - **`.scan-reticle`** (overlay de cámara) y `.dz` (panel de diseño, solo dev).
+- **Glifo del FAB** (`+` 30/300).
+
+Las declaraciones exentas llevan el marcador **`/*ds:exempt*/`** pegado a la declaración (p. ej.
+`font-size:26px/*ds:exempt*/` en el número del anillo): el auditor las cuenta aparte y no como desviación. Marcar algo
+como exento exige que esté en esta lista.
 
 ## 16. Prohibido
 
@@ -577,6 +585,10 @@ variantes de chip · 8 sombras · 25 duraciones · peso 600 ×10 · 3 variables 
 **Hecho:** DS-0 (2026-09-18, documento + auditor) · **DS-1 (v231)**: #1–#6, #19, #20, tokens nuevos de §4
 (hero, tracking, `--s7/--s8`, `--r-mark`, `--shadow-float`, movimiento, capas), `--warn-glow` fuera. Auditor tras DS-1:
 **P0 detectables = 0** (antes `--o15` + peso 600 ×10).
+**DS-2 (v232)**: #7, #8, #14 y los impares de #15 en el bloque CSS — `font-size` literales en CSS **229 → 0** (240 usos
+de `var(--t-*)`, antes 31; 22 remapeos fuera de escala y 22 exenciones marcadas), 51 tracking por rol, 118
+espaciados impares al par más cercano, márgenes laterales de barras y nav a `--sp-px`. Quedan en línea (DS-4) 111
+tamaños y el espaciado de 14/18/22 que no es ritmo de página.
 
 **Fases:** DS-0 documento y auditor · DS-1 P0 + tokens nuevos + capas + CSS muerto · DS-2 tipografía, tracking,
 gutters y espaciado · DS-3 componentes (radios, inputs, chips, botones, sombras, glass, sheets, íconos) · **PT2 v231
