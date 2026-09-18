@@ -1,0 +1,41 @@
+<!doctype html><html><head><meta charset="utf-8"><title>ds-diff</title>
+<style>body{margin:0;background:#111;display:flex;gap:8px} iframe{width:393px;height:852px;border:0;background:#000}</style></head>
+<body><iframe id="A" src="../_pre.html"></iframe><iframe id="B" src="../index.html"></iframe>
+<script>
+// gym//TRK · diff de estilos computados (DESIGN_SYSTEM.md §18). Copia la versión anterior a repo/_pre.html (no se versiona),
+// sirve repo/ y abre /tools/ds-diff.html; en consola: go2() y luego report(). Mismo escenario en A (antes) y B (ahora), elemento por elemento.
+const P=['color','fontSize','fontWeight','marginTop','marginBottom','marginLeft','marginRight','paddingTop','paddingBottom','paddingLeft','paddingRight','textAlign','cursor','flexGrow','flexShrink','flexBasis','minWidth','whiteSpace','textDecorationLine','cssFloat','verticalAlign','display','flexWrap','alignItems','justifyContent','columnGap','rowGap','flexDirection','fontStyle','letterSpacing','width','height'];
+function snap(W){ W.document.getAnimations().forEach(a=>{ try{a.finish();}catch(_){} }); const out=[];
+  const walk=(el,path)=>{ const cs=W.getComputedStyle(el); out.push({path,cls:el.getAttribute('class')||'',v:P.map(p=>cs[p])}); [...el.children].forEach((c,i)=>walk(c,path+'/'+c.tagName.toLowerCase()+i)); };
+  ['view','modal','nowbar','resttimer','wfooter','nav'].forEach(id=>{ const el=W.document.getElementById(id); if(el)walk(el,'#'+id); });
+  return out; }
+const food={name:'x',base:'g',per100:{kcal:100,protein:10,carbs:10,fat:2},sizes:{serving:30}};
+const lastS=D=>D.sessions[D.sessions.length-1];
+const S2=[
+['home',W=>W.go('home')],['workout',W=>W.go('workout')],['macros',W=>W.go('macros')],['progress',W=>W.go('progress')],['history',W=>W.go('history')],['settings',W=>W.go('settings')],['splitedit',W=>W.go('splitedit')],['stack',W=>W.go('stack')],
+['landing',W=>W.go('landing')],['login',W=>W.go('login')],['onboard',W=>W.go('onboard')],
+['m:metric',W=>{W.go('progress');W.openMetricDetail('steps')}],['m:muscle',W=>W.openMuscleDetail('side_delts')],['m:catalog',W=>W.openExerciseDirectory()],['m:session',(W,D)=>W.openSessionEdit(lastS(D).id)],
+['m:ready',W=>W.openReadiness(W.todayISO())],['m:food',W=>W.openFoodAdd()],['m:goals',W=>W.openGoals()],['m:sleep',W=>W.openSleepLog()],['m:mood',W=>W.openMoodLog()],['m:weight',W=>W.openWeightLog()],['m:selfcheck',W=>W.openSelfcheckLog()],
+['m:profile',(W,D)=>W.openExProfile(D.split.days[0].exercises[0].name)],['m:musclemap',W=>W.openMuscleMap()],['m:exedit',W=>{W.go('splitedit');W.openExEdit(0,0)}],['m:stackedit',(W,D)=>W.openStackEdit((D.stack[0]||{}).id)],['m:stacknew',W=>W.openStackEdit(null)],
+['m:merge',W=>W.openMergeModal()],['m:lift',(W,D)=>W.openLiftDetail(lastS(D).exercises[0].name)],['m:addex2',W=>{W.go('workout');W.openAddExStep2(0,'chest')}],['m:addexform',W=>{W.go('workout');W.openAddExForm(0,'chest')}],
+['m:namesearch',W=>W.openNameSearch()],['m:machine',W=>{W.go('workout');W.openMachineEdit(0)}],['m:volume',W=>W.openVolumeDetail()],['m:workshop',W=>W.openWorkshop()],['m:approx',W=>W.openApproxMeal()],['m:progcfg',W=>W.openProgConfig()],
+['m:adhoc',W=>W.openAdhocLog()],['m:import',W=>W.openImportSplit()],['m:gympick',W=>W.openGymPicker()],['m:sched',W=>W.openScheduleModal(0)],['m:drink',W=>W.openDrink()],['m:text',W=>W.openTextParse()],['m:health',W=>W.openHealthImport()],['m:mealcode',W=>W.openMealCode()],
+['m:verify',W=>W.openVerify(food,{})],['m:log',(W,D)=>W.openLog((D.foods||[])[0]||food,{isNew:true})],['m:lognutri',(W,D)=>W.openLog(food,{isNew:true})],['m:navmenu',W=>{ const u=W.document.querySelector('[data-act="navmenu"]'); if(u)u.click(); }],
+['m:mealsum',(W,D)=>{ W.go('macros'); const d=Object.keys(D.meals||{}).sort().pop(); const t=((D.meals||{})[d]||[])[0]; if(t)W.openMealSummary(t.tag); }],
+['m:shareday',W=>{ W.go('macros'); const s=W.document.querySelector('[data-act="share"],[data-act="sharemacros"]'); if(s)s.click(); }],
+['m:histrow',W=>{ W.go('history'); const r=W.document.querySelector('.hrow'); if(r)r.click(); }]
+];
+async function runDiff2(S){ const A=document.getElementById('A').contentWindow, B=document.getElementById('B').contentWindow; const res={};
+  const D=W=>JSON.parse(W.localStorage.getItem('gymtrk_db_v1')||'{}');
+  for(const [name,fn] of S){ let ea='',eb='';
+    try{ try{A.closeModal()}catch(_){} fn(A,D(A)); }catch(e){ ea=e.message; }
+    try{ try{B.closeModal()}catch(_){} fn(B,D(B)); }catch(e){ eb=e.message; }
+    await new Promise(r=>setTimeout(r,40));
+    const a=snap(A), b=snap(B); const diffs=[];
+    if(a.length!==b.length){ res[name]={err:ea||eb||null, struct:'A '+a.length+' vs B '+b.length}; continue; }
+    a.forEach((x,i)=>{ const y=b[i]; x.v.forEach((v,j)=>{ if(v!==y.v[j])diffs.push(x.path+' ['+y.cls+'] '+P[j]+': '+v+' → '+y.v[j]); }); });
+    res[name]={n:a.length, err:ea||eb||null, diffs:diffs.slice(0,10), nd:diffs.length}; }
+  return res; }
+function go2(){ window._R2=null; window._t0=Date.now(); runDiff2(S2).then(r=>{ window._R2=r; window._t1=Date.now(); }).catch(e=>{ window._R2={fatal:e.message}; }); return 'started '+S2.length; }
+function report(){ const r=window._R2; if(!r)return 'running'; if(r.fatal)return r.fatal; return JSON.stringify({ok:Object.entries(r).filter(([k,v])=>!v.struct&&!v.nd).map(([k,v])=>k+'('+v.n+(v.err?' ERR '+v.err.slice(0,60):'')+')').join(' '), bad:Object.fromEntries(Object.entries(r).filter(([k,v])=>v.struct||v.nd))},null,1); }
+</script></body></html>

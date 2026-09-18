@@ -83,7 +83,7 @@ const selCount = {}; rules.forEach(s => { selCount[s] = (selCount[s] || 0) + 1; 
 const dupSel = Object.entries(selCount).filter(([s, n]) => n > 1 && !/^(:root|html|body)$/.test(s));
 
 // ---- 6 · deuda style="" por función ----
-const styleIdx = [...html.matchAll(/style="/g)].map(m => m.index);
+const styleIdx = [...html.slice(cssEnd).matchAll(/style="/g)].map(m => m.index + cssEnd);   // solo marcado (no comentarios del CSS)
 const fnDecl = [...html.matchAll(/function\s+([A-Za-z_$][\w$]*)\s*\(/g)].map(m => ({ i: m.index, n: m[1] }));
 const byFn = {};
 styleIdx.forEach(i => { let n = '(html estático)'; for (let k = fnDecl.length - 1; k >= 0; k--) { if (fnDecl[k].i < i) { n = fnDecl[k].n; break; } } byFn[n] = (byFn[n] || 0) + 1; });

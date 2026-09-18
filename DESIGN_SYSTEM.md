@@ -266,7 +266,7 @@ componente nuevo que sea variante de uno de estos se hace como **modificador**, 
 
 | Rol | Clases | Anatomía | Función |
 |---|---|---|---|
-| **Primario** | `.start`, `.sheetbtns .ok` | 48px · `--r-ctl` · `--fill` + `--on-fill` · 13/700 · tracking .02em | la acción principal de la vista (una por vista) |
+| **Primario** | `.start`, `.sheetbtns .ok` | 48px · `--r-ctl` · `--fill` + `--on-fill` · 13/700 · tracking .02em | la acción principal de la vista (una por vista); `.start.ghost` = misma geometría en contorno (`--border`, texto `--fg`) para una alternativa de igual peso ("registrar a mano") |
 | **Secundario** | `.secondary .b`, `.sheetbtns .cancel`, `.toggles button` | 44px · `--r-ctl` · 1px `--border` · 12/400 · `--o60` (`.on` = relleno) | alternativas, cancelar, selector de opciones |
 | **Acción de texto** | `.addbtn`, `.ctrls a`, `.section .meta a` | texto `[ ]` 10–11 px `--o60`, zona táctil ≥44 (padding + margen negativo) | acciones frecuentes dentro de datos |
 | **Flotante** | `.fab` | 56 círculo, `--fill`, glifo 30/300, `--shadow-float` | agregar (macros) |
@@ -283,6 +283,7 @@ como sustituto de botón, íconos sin texto en acciones importantes.
 |---|---|---|---|
 | **Formulario** | `.field input/select`, `#fa_q`, `textarea.ta(.sm/.md/.lg/.xl)`, `.pfsel`/`#pf_gym`/`.pfw` (perfil), `.slblk input` (sueño), `.mdcust input` (rango de fechas), `.mmrow select` | 44px · `--r-ctl` · 1px `--border` · `--card` · 16px | sheets, ajustes, onboarding, perfiles |
 | **Dato** | `.inp`, `.pick`, `.fs`, `.bwchip` | 36px · `--r-sm` · .5px `--o20` · transparente · 12px | tabla de sesión e historial ("la caja cabe su contenido") |
+| Dato mini | `.inp-mini` | alto de su texto · `--r-sm` · .5px `--o20` · transparente · 10px · padding 4/6 | campos dentro de una línea de datos (fecha/duración/horas del registro tardío) |
 
 Label: `.field label` en mayúsculas 10 px `--o50`. **Unidad/porción siempre `<select>`, nunca texto libre**
 (vinculante). **Select dentro de una fila de lista** (`.mmrow select`, el mapeo etiqueta → músculo): geometría de
@@ -409,6 +410,30 @@ Cómo la app **sugiere** sin inventar (primer uso: //MÚSCULOS y su detalle).
   cuando la regla viene de literatura · `~` si se apoya en datos sugeridos sin confirmar · sin datos suficientes dice
   "pocos datos", no "en orden".
 
+### 7.17 Utilidades (DS-4) — la capa mínima entre componentes
+
+Lo que antes era `style=""` fijo es una **clase `u-` de un vocabulario cerrado**, todo por token. Sirven para el ajuste
+entre piezas (espacio entre bloques, un color de dato, una alineación), **no** para inventar componentes: si un
+conjunto de utilidades se repite como forma propia, se vuelve componente (así nacieron `.setprogline`, `.inp-mini`,
+`.gc-uni-head`, `.moodax.at/ab/al/ar`, `.start.ghost`, `.fa-em-step.off`).
+
+| Grupo | Clases | Valor |
+|---|---|---|
+| color | `u-fg` `u-o70` `u-o60` `u-o50` `u-o40` `u-o35` `u-o30` `u-o20` `u-good` `u-bad` `u-warn` `u-info` | la escala de §4.2–§4.3 |
+| tipo | `u-cap` `u-xs` `u-meta` `u-sm` `u-body` `u-sec` `u-disp` `u-hero` · `u-w3` `u-w4` `u-w5` `u-w7` `u-w8` | `--t-*` · pesos cargados |
+| tracking | `u-lscaps` `u-lsui` `u-lsnum` `u-ls0` · `u-upper` | los roles de §4.4 |
+| espacio | `u-m{t,b,l,r,x,y}N` · `u-p{…}N` · `u-gapN` · negativos `u-mt-nN` · `u-mlauto` | N ∈ 0 · 1 · 2 · 4 · 6 · 8 · 10 · 12 · 16 · 24 · 32 · 48 (· 96); por `--s*` salvo los medios pasos |
+| layout | `u-flex` `u-iflex` `u-block` `u-ib` `u-col` `u-wrap` `u-aic` `u-ais` `u-aib` `u-jsb` `u-jfe` `u-asc` `u-f1` `u-f0` `u-fhalf` `u-fthird` `u-min0` `u-w100` `u-wauto` `u-h100` `u-fr` `u-vam` | — |
+| texto y estado | `u-tc` `u-tr` `u-tl` `u-nowrap` `u-preline` `u-ul` `u-fsn` `u-tap` `u-dim` (.5) `u-invis` `u-sep` (separador .5 `--o10`) `u-dash` (subrayado punteado = tocable) | — |
+
+- **Cómo ganan:** van al final del CSS como `#app .u-x` — ganan como ganaba el `style=""` que reemplazan, y un
+  `el.style.*` asignado en vivo sigue ganándoles. El bloque se **genera solo con las que se usan**.
+- **Siguen en línea (y está bien):** valores calculados en vivo (`width:${pct}%`, colores de zona, posiciones de la
+  agenda) y `display:none` inicial (el JS lo alterna y a veces lo lee); más ~25 dimensiones únicas (la cámara del
+  escáner, anchos de inputs numéricos, alturas mínimas de avisos).
+- **No:** valores fuera de la escala (no existe `u-mt14`), utilidades de color literal, dos declaraciones de la misma
+  propiedad en un elemento (una utilidad + un `style` que la pise), utilidades para lo que ya es componente.
+
 ---
 
 ## 8. Gráficas (instrumentación, no infografía)
@@ -520,7 +545,7 @@ tarjetas 3D o glass en contenido · sombras decorativas · paletas pastel o arco
 color como categoría · tamaños, espacios o radios fuera de token · peso 600 · pills como botón universal ·
 tarjeta por cada dato · confeti, partículas, XP, mascotas, FOMO · renombrar sus etiquetas · anillos fuera de
 macros · puntuación única · 0 falso en gráficas · placeholders de relleno ("+ machine") · unidad en el corchete
-frontal · unidad en texto libre · animar re-renders · `style=""` para lo que ya es clase · componentes de librerías
+frontal · unidad en texto libre · animar re-renders · `style=""` fijo (usa una utilidad o un componente, §7.17) · componentes de librerías
 externas sin adaptar (§19).
 
 ---
@@ -550,6 +575,13 @@ argumento audita ese (`node tools/ds-audit.cjs respaldo.html`), para comparar co
   (`.a,.b{…}` + `.a{…}`).
 - **Sombra fuera de token** = cualquier sombra con desenfoque que no sea `--glass-shadow`/`--shadow-float`; anillos
   `0 0 0 Npx` e `inset` son bordes (§4.7).
+
+**`tools/ds-diff.html`** — para refactors de CSS o de marcado que no deberían cambiar lo que se ve. Copia la versión
+anterior a `repo/_pre.html` (en `.gitignore`), sirve `repo/`, abre `/tools/ds-diff.html` y en consola `go2()` →
+`report()`: corre ~50 escenarios (pantallas y sheets) en la versión anterior y en la actual, lado a lado, y compara
+32 propiedades computadas elemento por elemento. Un refactor "exacto" debe dar cero diferencias; uno que corrige hacia
+el sistema debe dar **solo** las diferencias que se buscaban (así se verificó DS-4). La app tiene CSP sin `eval`: los
+escenarios llaman a las funciones globales del iframe, no evalúan texto.
 
 **Severidad:** **P0** identidad o bug visible (fuente/color/glass fuera de lugar, algo que no se pinta) · **P1**
 sistema (altura, radio, espaciado o variante inconsistente) · **P2** un módulo · **P3** detalle.
@@ -641,6 +673,14 @@ sesión, `.srowm`, `.shset`, `.mbanner`/`.mb-*`, `.prow`); FAB y fantasma de arr
 barra de intake ni en el escáner. Las utilidades v156 (`.t-meta`, `.mt-s*`…) se quedan para DS-4.
 **PT2 v234** (diagnóstico por músculo) construido ya con el sistema: componente §7.16, `.grp-label.sub` en lugar de
 márgenes en línea en el detalle de músculo.
+**DS-4 (v235)**: #17 — `style=""` **562 → 97** (72 con valores calculados en vivo + 25 dimensiones únicas y
+`display:none` que el JS alterna); tamaños de letra en línea **111 → 0** y fuera de escala 8 → 0; tracking fuera de rol
+14 → 0. Todo lo fijo pasó a utilidades `u-` (§7.17) o a componentes nuevos (`.setprogline`, `.inp-mini`,
+`.gc-uni-head`, `.moodax.at/ab/al/ar`, `.start.ghost`, `.fa-em-step.off`; `updateSetProgress` alterna `.nil` en vez de
+escribir estilos). Verificado con `tools/ds-diff.html` en 52 escenarios: **fase exacta con cero diferencias**; la fase de
+corrección cambia solo lo buscado (espaciados 3/5/9/13/14/18/26/36/50 → la escala, tracking por rol, 24→22 y 14→13 en
+tipo, las dos acciones de texto del gym sin caja). Error corregido de paso: un `style` condicional
+(`${b?' style=…':''}`) que el convertidor habría vuelto fijo → `class="k${b?' u-fg':''}"`.
 
 **Fases:** DS-0 documento y auditor · DS-1 P0 + tokens nuevos + capas + CSS muerto · DS-2 tipografía, tracking,
 gutters y espaciado · DS-3 componentes (radios, inputs, chips, botones, sombras, glass, sheets, íconos) · **PT2 v231
