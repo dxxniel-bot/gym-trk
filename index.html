@@ -3222,11 +3222,11 @@ function renderExercise(exi,ex,allowF,canReorder){
       const prevS=(prevSets&&align[si]!=null)?prevSets[align[si]]:null;
       let hint='';
       if(prevS){ const bits=fields.filter(f=>f!=='intensity'&&prevS[f]).map(f=>(CARDIO_FL[f]||f)+' '+prevS[f]); if(bits.length) hint=`<div class="setprogline u-cap u-o35">${escTxt(bits.join(' · '))}</div>`; }
-      body+=`<div class="srow gc-cardio" style="grid-template-columns:${colTpl}" data-swipe="delset" data-exi="${exi}" data-si="${si}">${setnHTML(labels[si],s.done,'done',exi,si,'')}${cells}<div class="setend">${doneCellHTML(s.done,'done',exi,si)}</div></div>${hint}`;
+      body+=`<div class="srow gc-cardio" style="grid-template-columns:${colTpl}" data-swipe="delset" data-exi="${exi}" data-si="${si}" data-rk="${rk(s)}">${setnHTML(labels[si],s.done,'done',exi,si,'')}${cells}<div class="setend">${doneCellHTML(s.done,'done',exi,si)}</div></div>${hint}`;
     });
     const add=`<div class="addrow afree"><span class="aleft"><button class="addbtn" data-act="addset" data-exi="${exi}">[+ set]</button></span><button class="addbtn aex" data-act="addex" data-exi="${exi}">[+ exercise]</button></div>`;
     rows=thead+body+add;
-    return `<div class="ex${_curCls}" data-exi="${exi}">${head}${rows}</div>`;
+    return `<div class="ex${_curCls}" data-exi="${exi}" data-rk="${rk(ex)}">${head}${rows}</div>`;
   }
   const isBwEx=ex.type==='bodyweight';
   if(isU){
@@ -3244,9 +3244,9 @@ function renderExercise(exi,ex,allowF,canReorder){
       const prevB=(prevSets&&align[p+1]!=null)?prevSets[align[p+1]]:null;
       const pBadge=pairBadgeHTML(a,b,prevA,prevB,curFatCtx[p],curFatCtx[p+1],align[p]!=null?baseFatCtx[align[p]]:null,align[p+1]!=null?baseFatCtx[align[p+1]]:null,_bl.level);
       const pInner=progLineInner(pBadge,dropPctTxt(sets,p),tensTag(pairTension(_tn,p)));
-      const progLine=pInner?`<div class="setprogline" data-exi="${exi}" data-si="${p}">${pInner}</div>`:`<div class="setprogline nil" data-exi="${exi}" data-si="${p}"></div>`;
+      const progLine=pInner?`<div class="setprogline" data-exi="${exi}" data-si="${p}" data-rk="${rk(a)}p">${pInner}</div>`:`<div class="setprogline nil" data-exi="${exi}" data-si="${p}"></div>`;
       // drop set: ONLY via bottom bar [↓ drop set] — per-row ↓ removed (layout desalineaba tras insertar)
-      body+=`<div class="pair ${a&&a.isDrop?'isdrop':''}" data-swipe="delset" data-exi="${exi}" data-si="${p}">${setnHTML(labels[p],done,'done',exi,p,zSty)}<div class="prows">`
+      body+=`<div class="pair ${a&&a.isDrop?'isdrop':''}" data-swipe="delset" data-exi="${exi}" data-si="${p}" data-rk="${rk(a)}">${setnHTML(labels[p],done,'done',exi,p,zSty)}<div class="prows">`
         +`<div class="srow ${gcU}"><div class="side">${escTxt(a.side||'R')}</div>${ca.w}${midA}${ca.r}${ca.rr}<span class="del u-invis">×</span></div>`
         +(cb?`<div class="srow ${gcU}"><div class="side">${escTxt(b.side||'L')}</div>${cb.w}${midB}${cb.r}${cb.rr}<span class="del u-invis">×</span></div>`:'')
         +`</div>${doneCellHTML(done,'done',exi,p,'pairdone')}</div>${progLine}`;
@@ -3266,18 +3266,18 @@ function renderExercise(exi,ex,allowF,canReorder){
       const prevS=(prevSets&&align[si]!=null)?prevSets[align[si]]:null;
       const sBadge=setBadgeHTML(s,prevS,curFatCtx[si],align[si]!=null?baseFatCtx[align[si]]:null,_bl.level);
       const sInner=progLineInner(sBadge,dropPctTxt(sets,si),tensTag(_tn&&_tn.per[si]));
-      const progLine=sInner?`<div class="setprogline" data-exi="${exi}" data-si="${si}">${sInner}</div>`:`<div class="setprogline nil" data-exi="${exi}" data-si="${si}"></div>`;
+      const progLine=sInner?`<div class="setprogline" data-exi="${exi}" data-si="${si}" data-rk="${rk(s)}p">${sInner}</div>`:`<div class="setprogline nil" data-exi="${exi}" data-si="${si}"></div>`;
       const gcRow=isBwEx?'gc-free-bw':(fsOn?'gc-mach-fs':gc);
       const mid=isBwEx?c.we:(fsOn?c.we:c.u);
       // setend: del only (per-row ↓ removed) — same column width for normal and isdrop rows
-      body+=`<div class="srow ${gcRow} ${s.isDrop?'isdrop':''}" data-swipe="delset" data-exi="${exi}" data-si="${si}">${setnHTML(labels[si],s.done,'done',exi,si,zSty)}${fs}${c.w}${mid}${c.r}${c.rr}<div class="setend">${doneCellHTML(s.done,'done',exi,si)}</div></div>${progLine}`;
+      body+=`<div class="srow ${gcRow} ${s.isDrop?'isdrop':''}" data-swipe="delset" data-exi="${exi}" data-si="${si}" data-rk="${rk(s)}">${setnHTML(labels[si],s.done,'done',exi,si,zSty)}${fs}${c.w}${mid}${c.r}${c.rr}<div class="setend">${doneCellHTML(s.done,'done',exi,si)}</div></div>${progLine}`;
     });
     const lastSi=Math.max(0,sets.length-1);
     const hint=exi===0?`<div class="swipehint">desliza una serie → para borrarla</div>`:'';
     const add=hint+`<div class="addrow ${isM?'amach':'afree'}"><span class="aleft"><button class="addbtn" data-act="addset" data-exi="${exi}">[+ set]</button><button class="addbtn" data-act="dropset" data-exi="${exi}" data-si="${lastSi}">[↓ drop set]</button></span><button class="addbtn aex" data-act="addex" data-exi="${exi}">[+ exercise]</button></div>`;
     rows=thead+body+add;
   }
-  return `<div class="ex${_curCls}" data-exi="${exi}">${head}${rows}</div>`;
+  return `<div class="ex${_curCls}" data-exi="${exi}" data-rk="${rk(ex)}">${head}${rows}</div>`;
 }
 // simplified, mostly-read per-exercise renderer for the history editor: same per-set richness as the
 // live view (bodyweight chip/unit/reps/rir/side/drop/zone-color) so editing a past session is the
@@ -3310,7 +3310,7 @@ function renderHistExercise(exi,ex,sess){
         }
         return `<input class="inp${s._pf?' pf':''}" data-act="h_setf" data-exi="${exi}" data-si="${si}" data-f="${f}" value="${s[f]!=null?s[f]:''}" placeholder="—" inputmode="decimal"/>`;
       }).join('');
-      body+=`<div class="srow gc-cardio" style="grid-template-columns:${colTpl}" data-swipe="h_delset" data-exi="${exi}" data-si="${si}">${setnHTML(labels[si],s.done,'h_done',exi,si,'')}${cells}<div class="setend">${doneCellHTML(s.done,'h_done',exi,si)}</div></div>`;
+      body+=`<div class="srow gc-cardio" style="grid-template-columns:${colTpl}" data-swipe="h_delset" data-exi="${exi}" data-si="${si}" data-rk="${rk(s)}">${setnHTML(labels[si],s.done,'h_done',exi,si,'')}${cells}<div class="setend">${doneCellHTML(s.done,'h_done',exi,si)}</div></div>`;
     });
     const add=`<div class="addrow afree"><span class="aleft"><button class="addbtn" data-act="h_addset" data-exi="${exi}">[+ set]</button></span></div>`;
     rows=thead+body+add;
@@ -3322,7 +3322,7 @@ function renderHistExercise(exi,ex,sess){
       const midA=isBwEx?ca.we:ca.u, midB=isBwEx&&cb?cb.we:(cb?cb.u:'');
       const done=a&&a.done&&b&&b.done;
       const z=!done&&a?setZone(a):null; const zSty=z==='light'?'color:var(--warn);':z==='heavy'?'color:var(--bad);':'';
-      body+=`<div class="pair ${a&&a.isDrop?'isdrop':''}" data-swipe="h_delset" data-exi="${exi}" data-si="${p}">${setnHTML(labels[p],done,'h_done',exi,p,zSty)}<div class="prows">`
+      body+=`<div class="pair ${a&&a.isDrop?'isdrop':''}" data-swipe="h_delset" data-exi="${exi}" data-si="${p}" data-rk="${rk(a)}">${setnHTML(labels[p],done,'h_done',exi,p,zSty)}<div class="prows">`
         +`<div class="srow ${gcU}"><div class="side">${escTxt(a.side||'R')}</div>${ca.w}${midA}${ca.r}${ca.rr}${ca.del}</div>`
         +(cb?`<div class="srow ${gcU}"><div class="side">${escTxt(b.side||'L')}</div>${cb.w}${midB}${cb.r}${cb.rr}<span class="del u-invis">×</span></div>`:'')
         +`</div></div>`+histSetLine(sets,p,tensTag(pairTension(_htn,p)),hrTag(_hhr[exi+':'+p]));
@@ -3338,12 +3338,12 @@ function renderHistExercise(exi,ex,sess){
       const z=!s.done?setZone(s):null; const zSty=z==='light'?'color:var(--warn);':z==='heavy'?'color:var(--bad);':'';
       const gcRow=isBwEx?'gc-free-bw':(fsOn?'gc-mach-fs':gc);
       const mid=isBwEx?c.we:(fsOn?c.we:c.u);
-      body+=`<div class="srow ${gcRow} ${s.isDrop?'isdrop':''}" data-swipe="h_delset" data-exi="${exi}" data-si="${si}">${setnHTML(labels[si],s.done,'h_done',exi,si,zSty)}${fs}${c.w}${mid}${c.r}${c.rr}<div class="setend">${doneCellHTML(s.done,'h_done',exi,si)}</div></div>`+histSetLine(sets,si,tensTag(_htn&&_htn.per[si]),hrTag(_hhr[exi+':'+si]));
+      body+=`<div class="srow ${gcRow} ${s.isDrop?'isdrop':''}" data-swipe="h_delset" data-exi="${exi}" data-si="${si}" data-rk="${rk(s)}">${setnHTML(labels[si],s.done,'h_done',exi,si,zSty)}${fs}${c.w}${mid}${c.r}${c.rr}<div class="setend">${doneCellHTML(s.done,'h_done',exi,si)}</div></div>`+histSetLine(sets,si,tensTag(_htn&&_htn.per[si]),hrTag(_hhr[exi+':'+si]));
     });
     const add=`<div class="addrow ${isM?'amach':'afree'}"><span class="aleft"><button class="addbtn" data-act="h_addset" data-exi="${exi}">[+ set]</button><button class="addbtn" data-act="h_dropset" data-exi="${exi}" data-si="${Math.max(0,sets.length-1)}">[↓ drop set]</button></span></div>`;
     rows=thead+body+add;
   }
-  return `<div class="ex" data-exi="${exi}">${head}${rows}</div>`;
+  return `<div class="ex" data-exi="${exi}" data-rk="${rk(ex)}">${head}${rows}</div>`;
 }
 // full-screen history editor: reuses the exact set-row UI/CSS of the live workout (grouped by muscle,
 // same grids/badges/bodyweight chips), just denser (.hist-compact) and without structural editing.
@@ -3355,7 +3355,7 @@ function renderHistoryEditor(){
   (s.exercises||[]).forEach((ex,exi)=>{ const m=ex.muscle||'other';
     if(m!==curM){ if(curM!==null)body+='</div></div>';
       let cnt=0; for(let j=exi;j<s.exercises.length&&(s.exercises[j].muscle||'other')===m;j++)cnt+=(s.exercises[j].sets||[]).length;
-      body+=`<div class="mgroup"><div class="mhead">${escTxt(m)} <span class="u-o50">|</span> ${cnt} sets</div><div class="mbody">`; curM=m; }
+      body+=`<div class="mgroup" data-rk="g:${escTxt(m)}"><div class="mhead">${escTxt(m)} <span class="u-o50">|</span> ${cnt} sets</div><div class="mbody">`; curM=m; }
     body+=renderHistExercise(exi,ex,s);
   });
   if(curM!==null)body+='</div></div>';
@@ -3396,7 +3396,7 @@ function renderWorkout(){
       let cnt=0,exCnt=0; for(let j=exi;j<w.exercises.length&&(w.exercises[j].muscle||'other')===m;j++){cnt+=w.exercises[j].sets.length; exCnt++;}
       curBlkEx=exCnt;
       const gripM=nblk>1?`<span class="dgrip" data-dragm="${blk}" title="mantén y arrastra · mueve el músculo completo">⠿</span> `:'';
-      body+=`<div class="mgroup" data-mg="${blk}"><div class="mhead">${gripM}${escTxt(m)} <span class="u-o50">|</span> ${cnt} sets</div><div class="mbody">`; curM=m; }
+      body+=`<div class="mgroup" data-mg="${blk}" data-rk="g:${escTxt(m)}"><div class="mhead">${gripM}${escTxt(m)} <span class="u-o50">|</span> ${cnt} sets</div><div class="mbody">`; curM=m; }
     body+=renderExercise(exi,ex,day.allowFailure, curBlkEx>1);
   });
   if(curM!==null)body+='</div></div>';
@@ -5416,7 +5416,19 @@ function applyEnter(root){ const e=state._enter, p=state._pop; state._enter=null
     if(el){ el.classList.add('enter'); if(e.scroll&&el.scrollIntoView)el.scrollIntoView({block:'center',behavior:'smooth'}); } }
   if(p){ const el=root.querySelector('.dchk[data-exi="'+p.exi+'"][data-si="'+p.si+'"],.pairdone[data-exi="'+p.exi+'"][data-si="'+p.si+'"]'); if(el)el.classList.add('pop'); } }
 function afterPaint(root,swap){ if(!root)return; try{ popClose(); }catch(_){} try{ animNums(root); }catch(_){} try{ slideTabs(root,swap); }catch(_){} try{ applyEnter(root); }catch(_){} }
-function reRender(){ try{ const v=document.getElementById('view'); if(v)state._scroll=v.scrollTop; }catch(_){} render(); }
+// ---- R4 · TRKRow reflow (§7.18): lo que queda se reacomoda en vez de saltar ----
+// Cada fila/bloque lleva data-rk = identidad de SU objeto (serie, ejercicio) — un WeakMap en memoria, nunca se guarda.
+// reRender() mide antes de pintar y, después, anima a cada elemento desde donde estaba (FLIP). Un elemento que se mueve
+// junto con su contenedor no se anima dos veces (se resta el desplazamiento del ancestro que ya se anima).
+const _rkMap=new WeakMap(); let _rkN=0;
+function rk(o){ if(!o||typeof o!=='object')return ''; let k=_rkMap.get(o); if(!k){ k='r'+(++_rkN); _rkMap.set(o,k); } return k; }
+function flipCapture(root){ const m=new Map(); if(!root)return m; root.querySelectorAll('[data-rk]').forEach(el=>{ const k=el.dataset.rk; if(k)m.set(k,el.getBoundingClientRect().top); }); return m; }
+function flipPlay(root,prev){ if(!root||!prev||!prev.size||reducedMotion())return; const dys=new Map();
+  root.querySelectorAll('[data-rk]').forEach(el=>{ const k=el.dataset.rk; if(!k||!prev.has(k))return; const dy=prev.get(k)-el.getBoundingClientRect().top; if(Math.abs(dy)>=1)dys.set(el,dy); });
+  const D=durMs('--dur-2',180);
+  dys.forEach((dy,el)=>{ let a=el.parentElement&&el.parentElement.closest('[data-rk]'), up=0; while(a){ if(dys.has(a)){ up=dys.get(a); break; } a=a.parentElement&&a.parentElement.closest('[data-rk]'); }
+    const rel=dy-up; if(Math.abs(rel)<1)return; try{ el.animate([{transform:'translateY('+rel+'px)'},{transform:'none'}],{duration:D,easing:'cubic-bezier(.22,1,.36,1)'}); }catch(_){} }); }
+function reRender(){ let v=null, prev=null; try{ v=document.getElementById('view'); if(v){ state._scroll=v.scrollTop; prev=flipCapture(v); } }catch(_){} render(); try{ flipPlay(v,prev); }catch(_){} }
 // primera serie sin ✓, en orden de documento — alimenta la barra AHORA, la guía .ex.current y el foco.
 function currentSetTarget(){
   const w=db&&db.activeWork; if(!w||!w.exercises)return null;
@@ -5940,15 +5952,15 @@ document.getElementById('app').addEventListener('click',e=>{
     save(); reRender(); }
   else if(a==='gonow'){ const t=currentSetTarget(); if(t){ const fe=document.querySelector('.setn[data-exi="'+t.exi+'"][data-si="'+t.si+'"]'); if(fe&&fe.scrollIntoView)fe.scrollIntoView({block:'center',behavior:'smooth'}); } }
   else if(a==='fs'){ const s=db.activeWork.exercises[exi].sets[si]; if(!s||s.isDrop)return; s.fsOn=!s.fsOn; if(!s.fsOn&&!s.bw)s.extraW=''; save(); reRender(); }
-  else if(a==='addset'){ const ex=db.activeWork.exercises[exi]; if(isCardio(ex)){ const lt=ex.sets[ex.sets.length-1]||null; ex.sets.push(emptySet(ex,null,false,lt)); } else if(ex.unilateral){ const [s1,s2]=uniSides(ex); const lr=workSource(ex,s1)||ex.sets[ex.sets.length-2]||null, ll=workSource(ex,s2)||ex.sets[ex.sets.length-1]||null; ex.sets.push(emptySet(ex,s1,false,lr)); ex.sets.push(emptySet(ex,s2,false,ll)); } else { ex.sets.push(emptySet(ex,null,false,workSource(ex,null))); } state._enter={exi,si:ex.unilateral&&!isCardio(ex)?ex.sets.length-2:ex.sets.length-1}; save(); state._scroll=document.getElementById('view').scrollTop; render(); }
+  else if(a==='addset'){ const ex=db.activeWork.exercises[exi]; if(isCardio(ex)){ const lt=ex.sets[ex.sets.length-1]||null; ex.sets.push(emptySet(ex,null,false,lt)); } else if(ex.unilateral){ const [s1,s2]=uniSides(ex); const lr=workSource(ex,s1)||ex.sets[ex.sets.length-2]||null, ll=workSource(ex,s2)||ex.sets[ex.sets.length-1]||null; ex.sets.push(emptySet(ex,s1,false,lr)); ex.sets.push(emptySet(ex,s2,false,ll)); } else { ex.sets.push(emptySet(ex,null,false,workSource(ex,null))); } state._enter={exi,si:ex.unilateral&&!isCardio(ex)?ex.sets.length-2:ex.sets.length-1}; save(); reRender(); }
   else if(a==='dropset'){ const ex=db.activeWork.exercises[exi]; if(isCardio(ex))return; // cardio has no drop sets
     // a drop is a SUBSERIE hung right after its parent (+ any drops the parent already has) — never
     // appended at the end of the exercise. Tapping ↓ on an existing drop chains another onto the same parent.
     // v218: never full stack; prefilled from the matching drop (session → baseline → drop/parent ratio history)
     state._enter={exi,si:insertDrop(ex,si,Object.assign(exIdentity(db.activeWork,exi),{orderIdx:exi}))};
-    save(); state._scroll=document.getElementById('view').scrollTop; render(); }
+    save(); reRender(); }
   else if(a==='delset'){ delSetLive(exi,si); }
-  else if(a==='delex'){ const w=db.activeWork; if(w&&w.exercises[exi]){ trkAsk({title:'quitar "'+((w.exercises[exi].name)||'este ejercicio')+'" de la sesión',detail:'lo registrado en ese ejercicio se descarta · tu split no cambia',ok:'quitar',danger:true},()=>{ w.exercises.splice(exi,1); save(); state._scroll=(document.getElementById('view')||{}).scrollTop||0; render(); }); } }
+  else if(a==='delex'){ const w=db.activeWork; if(w&&w.exercises[exi]){ trkAsk({title:'quitar "'+((w.exercises[exi].name)||'este ejercicio')+'" de la sesión',detail:'lo registrado en ese ejercicio se descarta · tu split no cambia',ok:'quitar',danger:true},()=>{ w.exercises.splice(exi,1); save(); reRender(); }); } }
   else if(a==='addex'){ openAddExercise(exi); }
   else if(a==='axmus'){ const c=window._axCtx||{}; openAddExStep2(c.afterExi, el.dataset.v, c.replaceExi); }
   else if(a==='axpick'){ const c=window._axCtx||{}; const x=(window._axList||[])[+el.dataset.i]; if(x){ if(c.replaceExi!=null)replaceExFromKnown(c.replaceExi,x); else addExFromKnown(c.afterExi,x); } }
@@ -6039,7 +6051,7 @@ document.getElementById('app').addEventListener('click',e=>{
   else if(a==='restskip'){ const w=db.activeWork; if(w){ w.restEnd=null; _restFinT=0; save(); updateRestBar(); } }
   else if(a==='editrest'){ trkPrompt({title:'descanso entre series',label:'SEGUNDOS',value:db.settings.restSec||90,type:'number',inputmode:'numeric',hint:'entre 10 y 600'},v=>{ const n=parseInt(v,10); if(isNaN(n)||n<10||n>600){ toast('⚠ entre 10 y 600 segundos','err'); return false; } db.settings.restSec=n; save(); render(); toast('✓ descanso guardado'); }); }
   else if(a==='togglebeep'){ db.settings.restBeep=!db.settings.restBeep; save(); render(); }
-  else if(a==='undo'){ const w=db.activeWork; if(!w)return; let lExi=-1,lSi=-1; w.exercises.forEach((ex,ei)=>ex.sets.forEach((s,si)=>{ if(setComplete(s)&&!s._pf){lExi=ei;lSi=si;} })); if(lExi<0)return; const s=w.exercises[lExi].sets[lSi]; s.w='';s.r='';s.rir='';s.done=false;s._pf=false; if(w.exercises[lExi].unilateral){ const pj=lSi^1,ps=w.exercises[lExi].sets[pj]; if(ps&&setComplete(ps)){ps.w='';ps.r='';ps.rir='';ps.done=false;ps._pf=false;} } save(); state._scroll=document.getElementById('view').scrollTop; render(); }
+  else if(a==='undo'){ const w=db.activeWork; if(!w)return; let lExi=-1,lSi=-1; w.exercises.forEach((ex,ei)=>ex.sets.forEach((s,si)=>{ if(setComplete(s)&&!s._pf){lExi=ei;lSi=si;} })); if(lExi<0)return; const s=w.exercises[lExi].sets[lSi]; s.w='';s.r='';s.rir='';s.done=false;s._pf=false; if(w.exercises[lExi].unilateral){ const pj=lSi^1,ps=w.exercises[lExi].sets[pj]; if(ps&&setComplete(ps)){ps.w='';ps.r='';ps.rir='';ps.done=false;ps._pf=false;} } save(); reRender(); }
   else if(a==='closemodal'){ closeModal(); render(); }
 });
 // ---------- hold & drag reorder: exercises within a muscle + whole muscle blocks ----------
@@ -6081,7 +6093,7 @@ document.getElementById('app').addEventListener('click',e=>{
     else { const bs=curBlocks(), m=cur.mg; let q=Math.max(0,Math.min(bs.length, cur.idx==null?bs.length:cur.idx)); const fin=q>m?q-1:q;
       if(fin!==m){ const slices=bs.map(b=>xs.slice(b.start,b.end)); const order=bs.map((_,i)=>i); order.splice(m,1); order.splice(fin,0,m);
         const flat=[]; order.forEach(i=>{ for(const it of slices[i])flat.push(it); }); xs.length=0; for(const it of flat)xs.push(it); changed=true; } }
-    if(changed){ save(); state._scroll=(document.getElementById('view')||{}).scrollTop||0; render(); }
+    if(changed){ save(); reRender(); }
   }
   function cleanup(){ document.removeEventListener('touchmove',move); document.removeEventListener('touchend',end); document.removeEventListener('touchcancel',end);
     document.removeEventListener('mousemove',move); document.removeEventListener('mouseup',end);
