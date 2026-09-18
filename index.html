@@ -42,7 +42,7 @@
     --s7:32px; --s8:48px;
     --r-mark:4px;
     --shadow-float:0 6px 22px rgba(0,0,0,.55);
-    --dur-1:120ms; --dur-2:180ms; --dur-3:280ms; --dur-screen:140ms;
+    --dur-1:120ms; --dur-2:180ms; --dur-3:280ms; --dur-screen:140ms; --toast-life:2.3s; --toast-life-err:4.6s;
     --ease-out:cubic-bezier(.22,1,.36,1); --ease-in:cubic-bezier(.4,0,1,1);
     --z-float:20; --z-nav:30; --z-modal:40; --z-pop:50; --z-overlay:60; --z-toast:80; --z-dev:90;
   }
@@ -143,14 +143,14 @@
   .hero{width:100%; background:none; border:0; color:inherit; font:inherit; display:flex; flex-direction:column; align-items:center; cursor:pointer;}
   .ring{position:relative;} .ring svg{display:block; width:100%; height:100%;}
   /* modo "restante": mismos colores — solo cambia QUÉ arco se llena (el restante, dibujado desde el final) */
-  .ring-track{fill:none; stroke:var(--track); transition:stroke .28s ease;} .ring-fill{fill:none; stroke:var(--fill); stroke-linecap:round; transition:stroke-dasharray .32s ease, stroke-dashoffset .32s ease, stroke .28s ease;}
+  .ring-track{fill:none; stroke:var(--track); transition:stroke var(--dur-3) var(--ease-out);} .ring-fill{fill:none; stroke:var(--fill); stroke-linecap:round; transition:stroke-dasharray var(--dur-3) var(--ease-out), stroke-dashoffset var(--dur-3) var(--ease-out), stroke var(--dur-3) var(--ease-out);}
   .ring-center{position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; line-height:1;}
   .ring.lg{width:132px; height:132px;} .ring.lg .ring-track,.ring.lg .ring-fill{stroke-width:1.4;} .ring.lg .num{font-size:26px/*ds:exempt*/; font-weight:800; letter-spacing:-1px/*ds:exempt*/;} .ring.lg .of{font-size:var(--t-xs); color:var(--o40); margin-top:6px;}
   .ring.md{width:72px; height:72px;} .ring.md .ring-track,.ring.md .ring-fill{stroke-width:1.8;} .ring.md .num{font-size:var(--t-body); font-weight:700;}
-  .hero-meta{margin-top:12px; font-size:var(--t-xs); color:var(--o40); display:flex; gap:8px; align-items:center;} .hero-meta .left{color:var(--o60);} .chev{font-size:var(--t-caption); color:var(--faint); transition:transform .2s;} .hero.open .chev{transform:rotate(180deg);}
+  .hero-meta{margin-top:12px; font-size:var(--t-xs); color:var(--o40); display:flex; gap:8px; align-items:center;} .hero-meta .left{color:var(--o60);} .chev{font-size:var(--t-caption); color:var(--faint); transition:transform var(--dur-2) var(--ease-out);} .hero.open .chev{transform:rotate(180deg);}
   .rings{display:flex; justify-content:space-between; padding:0 4px;} .cell{display:flex; flex-direction:column; align-items:center; text-align:center; flex:1; cursor:pointer;}
   .cap{font-size:var(--t-xs); color:var(--fg); margin-top:10px;} .sub{font-size:var(--t-caption); color:var(--o40); margin-top:2px;}
-  .cell .sub{transition:color .25s;} .cell .cap{transition:color .25s;}
+  .cell .sub{transition:color var(--dur-2);} .cell .cap{transition:color var(--dur-2);}
   .grp-label{font-size:var(--t-caption); color:var(--o40); letter-spacing:var(--ls-caps); margin-bottom:14px;}
   /* progress dashboard tiles (área Progreso · layout Diseño) */
   .pfeat{background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:var(--sp-card); margin-top:14px;}
@@ -165,7 +165,7 @@
   .spc.on{color:var(--o35); border-color:var(--o10);} .spc.on .k{color:var(--good);}
   /* v226 · racha (comida O gym) + calendario de dos meses, estilo "last 30 days" de Bevel en monocromo */
   .strk-top{display:flex; justify-content:space-between; align-items:flex-end; gap:10px; margin-top:4px;}
-  .strk-n{font-size:var(--t-hero); font-weight:800; letter-spacing:var(--ls-num); line-height:1;} .strk-n span{font-size:var(--t-body); font-weight:400; color:var(--o50); letter-spacing:0; margin-left:4px;}
+  .strk-n{font-size:var(--t-hero); font-weight:800; letter-spacing:var(--ls-num); line-height:1;} .strk-n span:not([data-nk]){font-size:var(--t-body); font-weight:400; color:var(--o50); letter-spacing:0; margin-left:4px;}
   .strk-side{font-size:var(--t-xs); color:var(--o50); text-align:right; line-height:1.6;} .strk-side b{color:var(--fg); font-weight:800;}
   .strk-sub{font-size:var(--t-xs); color:var(--o40); margin-top:8px; line-height:1.4;}
   .cal2{display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-top:12px;}
@@ -197,7 +197,7 @@
   .mdtr{display:grid; grid-template-columns:48px 74px 1fr 70px; gap:6px; align-items:center; padding:6px 0; border-bottom:.5px solid var(--o10); font-size:var(--t-meta);}
   .mdtk{color:var(--o50);} .mdtv{font-weight:800; white-space:nowrap;} .mdtx{color:var(--o40); font-size:var(--t-xs); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;} .mdts{height:22px;}
   .pgrid{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:12px;}
-  .ptile.tap{cursor:pointer; transition:transform .1s ease, opacity .1s ease;}
+  .ptile.tap{cursor:pointer; transition:transform var(--dur-1) var(--ease-out), opacity var(--dur-1) var(--ease-out);}
   .ptile.tap:active{transform:scale(.98); opacity:.85;}
   .ptchev{font-size:var(--t-body); color:var(--o30); margin-left:6px; line-height:1;}
   .pthrow{background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:var(--sp-card); margin-top:12px;}
@@ -264,7 +264,13 @@
   .hrow .hagg{font-size:var(--t-meta); white-space:nowrap;}
   .hrow .hchev{color:var(--o30); font-size:var(--t-body); line-height:1;}
   /* inline meal detail under a tapped log item */
-  .mdmeal{padding:8px 10px 10px 22px; margin-bottom:2px; border-left:2px solid var(--o20); animation:mdslide .2s ease;}
+  .mdmeal{padding:8px 10px 10px 22px; margin-bottom:2px; border-left:2px solid var(--o20); animation:mdslide var(--dur-2) var(--ease-out);}
+  /* DS-5 · §10: entra lo que se AGREGÓ (serie, drop, ejercicio) — nunca un re-render; el ✓ confirma con el único
+     overshoot permitido; las pestañas de periodo mueven un indicador en vez de saltar */
+  @keyframes rowin{from{opacity:0; transform:translateY(-4px)}} .enter{animation:rowin var(--dur-2) var(--ease-out);}
+  @keyframes chkpop{0%{transform:scale(.6)}60%{transform:scale(1.18)}100%{transform:scale(1)}} .dchk.pop,.pairdone.pop{animation:chkpop var(--dur-1) var(--ease-out);}
+  .mdtabs{position:relative;} .mdtabs span{position:relative; z-index:1;} .mdtabs.has-ind span.on{background:transparent;}
+  .mdtabs .tabind{position:absolute; top:4px; bottom:4px; left:0; width:0; border-radius:var(--r-ctl); background:var(--card); pointer-events:none; transition:transform var(--dur-2) var(--ease-out), width var(--dur-2) var(--ease-out);}
   @keyframes mdslide{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
   .mdtop{font-size:var(--t-xs); color:var(--o60); margin-bottom:8px;}
   .mdgrid{display:grid; grid-template-columns:1fr 1fr; gap:4px 16px;}
@@ -277,7 +283,7 @@
   /* add menu popover — emerges from FAB (bottom-right), stacks up */
   .addscrim{position:fixed; inset:0; z-index:var(--z-pop);}
   .addpop{position:fixed; right:var(--sp-px); bottom:calc(140px + env(safe-area-inset-bottom)); z-index:var(--z-pop); display:flex; flex-direction:column; align-items:flex-end; gap:8px;}
-  .addpop .api{background:var(--fill); color:var(--on-fill); border:none; border-radius:var(--r-pill); padding:12px 18px; font-family:inherit; font-size:var(--t-body); font-weight:700; box-shadow:var(--shadow-float); cursor:pointer; opacity:0; transform:translateY(10px) scale(.9); transition:opacity .18s ease, transform .22s cubic-bezier(.2,1.2,.4,1); white-space:nowrap;}
+  .addpop .api{background:var(--fill); color:var(--on-fill); border:none; border-radius:var(--r-pill); padding:12px 18px; font-family:inherit; font-size:var(--t-body); font-weight:700; box-shadow:var(--shadow-float); cursor:pointer; opacity:0; transform:translateY(8px); transition:opacity var(--dur-2) var(--ease-out), transform var(--dur-2) var(--ease-out); white-space:nowrap;}
   .addpop.show .api{opacity:1; transform:none;}
   .addpop.show .api:nth-child(1){transition-delay:.0s;} .addpop.show .api:nth-child(2){transition-delay:.04s;} .addpop.show .api:nth-child(3){transition-delay:.08s;} .addpop.show .api:nth-child(4){transition-delay:.12s;}
 
@@ -384,7 +390,7 @@
   .restbar a{position:relative; display:inline-flex; align-items:center; height:32px; padding:0 var(--s4); color:var(--o60); border:1px solid var(--border); border-radius:var(--r-ctl); cursor:pointer; font-size:var(--t-meta); -webkit-user-select:none; user-select:none;}
   .restbar a::after{content:''; position:absolute; inset:-6px -3px;}   /* se ve de 32, se toca de 44 */
   .restbar.fin .rt{color:var(--good);}
-  .restbar.fin{animation:restdone .5s ease 3;}
+  .restbar.fin{animation:restdone .5s ease 3/*ds:exempt*/;}   /* aviso: 3 destellos, ritmo propio (§15) */
   @keyframes restdone{50%{border-top-color:var(--good);}}
   /* DS-3: antes ~30 px de alto, 10 px de letra y sin radio. En la barra acoplada el primario baja a 44 (no 48) para no
      robarle alto a la tabla; abort = secundario destructivo, ↩ = secundario neutro (antes llevaba el borde de abort). */
@@ -451,17 +457,17 @@
   /* bottom nav: píldora flotante glass (absolute al .frame; el scroll vive en .scroll, no en body → esquiva el bug iOS de fixed) */
   .nav{ position:absolute; left:0; right:0; bottom:calc(12px + env(safe-area-inset-bottom)); margin:0 auto; width:max-content; max-width:calc(100% - 2 * var(--sp-px)); z-index:var(--z-nav); flex:0 0 auto; display:flex; align-items:center; justify-content:center; gap:4px; padding:6px; border-radius:var(--r-pill); font-size:var(--t-sm);}   /* material: .glass */
   /* expandable tabs (ref ExpandableTabs): ícono colapsado · activo expande con spring; anima al togglear .active sobre nodos persistentes (renderNav build-once) */
-  .nav a{display:flex; align-items:center; gap:0; border-radius:var(--r-pill); padding:10px 8px; color:var(--o50); cursor:pointer; letter-spacing:var(--ls-ui); transition:gap .5s cubic-bezier(.22,1,.36,1) .08s, padding .5s cubic-bezier(.22,1,.36,1) .08s, background .3s ease, color .3s ease;}
+  .nav a{display:flex; align-items:center; gap:0; border-radius:var(--r-pill); padding:10px 8px; color:var(--o50); cursor:pointer; letter-spacing:var(--ls-ui); transition:gap var(--dur-3) var(--ease-out), padding var(--dur-3) var(--ease-out), background var(--dur-2) var(--ease-out), color var(--dur-2) var(--ease-out);}
   .nav a .ic{flex:0 0 auto; width:20px; height:20px; display:flex; align-items:center; justify-content:center;}
   .nav a .ic svg{width:20px; height:20px; stroke:currentColor; fill:none; stroke-width:1.6; stroke-linecap:round; stroke-linejoin:round; pointer-events:none;}
-  .nav a .lbl{display:grid; grid-template-columns:0fr; opacity:0; transition:grid-template-columns .5s cubic-bezier(.22,1,.36,1) .08s, opacity .35s ease .08s;}
+  .nav a .lbl{display:grid; grid-template-columns:0fr; opacity:0; transition:grid-template-columns var(--dur-3) var(--ease-out), opacity var(--dur-2) var(--ease-out);}
   .nav a .lbl>span{overflow:hidden; min-width:0; white-space:nowrap; font-weight:700; letter-spacing:var(--ls-ui);}
   .nav a.active{gap:8px; padding:10px 16px; color:var(--fg); background:var(--o12); font-weight:700;}
   .nav a.active .lbl{grid-template-columns:1fr; opacity:1;}
   /* rounded progress bars */
   .bar,.wprog,.vbar{border-radius:var(--r-pill);} .bar>i,.wprog>i,.vbar>i{border-radius:var(--r-pill);}
   /* subtle ascii cursor kept on the landing wordmark */
-  .cur::after{content:"▌"; color:var(--o50); margin-left:4px; animation:blink 1.15s step-end infinite;}
+  .cur::after{content:"▌"; color:var(--o50); margin-left:4px; animation:blink 1.15s step-end infinite/*ds:exempt*/;}
   @keyframes blink{50%{opacity:0}}
   @media (prefers-reduced-motion:reduce){ .cur::after{animation:none;} }
   /* ===== shareable summary (mono, monochrome + green/white/red) ===== */
@@ -490,7 +496,7 @@
   .shstat{text-align:center; flex:1;} .shstat-n{font-size:var(--t-display); font-weight:800; letter-spacing:var(--ls-num);} .shstat-l{font-size:var(--t-caption); color:var(--o50); margin-top:6px; letter-spacing:var(--ls-caps); text-transform:uppercase;}
   .shr-ring.good .ring-fill{stroke:var(--good);} .shr-ring.over .ring-fill{stroke:var(--bad);}
   .macro-rad{max-width:228px; margin:0 auto 2px;} .macro-rad svg{width:100%; height:auto; display:block;} .macro-rad svg text{font-family:'JetBrains Mono',ui-monospace,monospace; letter-spacing:0;} .msum-top{display:flex; gap:16px; align-items:stretch; justify-content:center; margin-top:10px;} .msum-rad{flex:0 0 48%; min-width:0; align-self:stretch;} .msum-rad svg{height:100%; width:100%; display:block;} .msum-rad svg text{font-family:'JetBrains Mono',ui-monospace,monospace; letter-spacing:0;} .msum-right{flex:0 0 142px; display:flex; flex-direction:column; justify-content:center;} .msum-list{min-width:0;} .nl-row{display:flex; justify-content:space-between; align-items:baseline; gap:6px; padding:2px 0; border-bottom:1px solid var(--line); font-size:var(--t-xs);} .nl-row:last-child{border-bottom:none;} .nl-k{color:var(--o50);} .nl-r{display:flex; gap:8px; align-items:baseline; white-space:nowrap;} .nl-g{color:var(--o40); font-size:var(--t-caption);} .nl-pct{color:var(--fill); min-width:28px; text-align:right;} .nl-hd{display:flex; justify-content:space-between; align-items:baseline; font-size:var(--t-caption); letter-spacing:var(--ls-caps); text-transform:uppercase; color:var(--o35); padding:6px 0 2px;} .nl-hd .nl-hi{color:var(--o50); letter-spacing:var(--ls-ui);} .msum-kcal{text-align:center; margin-top:8px; font-size:var(--t-display); font-weight:400; letter-spacing:var(--ls-num); color:var(--fill);} .msum-kcal span{font-size:var(--t-xs); letter-spacing:var(--ls-caps); color:var(--o40); margin-left:4px;}
-  @keyframes radbreathe{0%,100%{fill-opacity:.09}50%{fill-opacity:.17}} .rad-fill{fill-opacity:.12; animation:radbreathe 5.5s ease-in-out infinite}
+  .rad-fill{fill-opacity:.12;}
   /* ===== green / white / red status (margins & over) ===== */
   .hero.good .ring-fill{stroke:var(--good); filter:drop-shadow(0 0 4px var(--good-glow));} .hero.over .ring-fill{stroke:var(--bad); filter:drop-shadow(0 0 4px var(--bad-glow));}
   .hero-meta .left.under{color:var(--o60);} .hero-meta .left.over{color:var(--bad); font-weight:700;}
@@ -508,34 +514,34 @@
   .fa-empty{padding:18px 6px; color:var(--o50); font-size:var(--t-meta); line-height:1.55;}
   .fa-empty .fa-em-h{color:var(--fg); font-weight:700; font-size:var(--t-sm); margin-bottom:12px; display:block; text-align:center;}
   .fa-empty .fa-em-steps{display:flex; gap:6px; align-items:stretch; justify-content:center;}
-  .fa-empty .fa-em-step{flex:1 1 0; max-width:96px; text-align:center; padding:12px 6px 12px; border:1px solid var(--border); border-radius:var(--r-ctl); background:var(--card); cursor:pointer; opacity:0; transform:translateY(6px); animation:faPop .35s ease forwards; color:var(--fg);}
+  .fa-empty .fa-em-step{flex:1 1 0; max-width:96px; text-align:center; padding:12px 6px 12px; border:1px solid var(--border); border-radius:var(--r-ctl); background:var(--card); cursor:pointer; opacity:0; transform:translateY(6px); animation:faPop var(--dur-3) var(--ease-out) forwards; color:var(--fg);}
   .fa-empty .fa-em-step .ic{display:flex; justify-content:center; align-items:center; height:26px; margin-bottom:6px; color:var(--fg);}
   .fa-empty .fa-em-step .ic svg{width:auto; height:22px; display:block;}
   .fa-empty .fa-em-step .lb{font-size:var(--t-xs); color:var(--o60); letter-spacing:var(--ls-ui); line-height:1.25;}
   .fa-empty .fa-em-step:nth-child(1){animation-delay:0s} .fa-empty .fa-em-step:nth-child(3){animation-delay:.25s} .fa-empty .fa-em-step:nth-child(5){animation-delay:.5s}
-  .fa-empty .fa-em-arr{align-self:center; color:var(--o30); font-size:var(--t-body); opacity:0; animation:faFade .35s ease forwards;}
+  .fa-empty .fa-em-arr{align-self:center; color:var(--o30); font-size:var(--t-body); opacity:0; animation:faFade var(--dur-3) var(--ease-out) forwards;}
   .fa-empty .fa-em-arr:nth-of-type(1){animation-delay:.15s} .fa-empty .fa-em-arr:nth-of-type(2){animation-delay:.4s}
   .fa-empty .fa-em-foot{margin-top:12px; text-align:center; color:var(--o35); font-size:var(--t-xs);}
   @keyframes faPop{to{opacity:1; transform:translateY(0)}}
   @keyframes faFade{to{opacity:.5}}
-  .fa-spin{display:inline-block; width:10px; height:10px; border:1px solid var(--o20); border-top-color:var(--fg); border-radius:50%; animation:spin .7s linear infinite; vertical-align:middle; margin-right:6px;}
+  .fa-spin{display:inline-block; width:10px; height:10px; border:1px solid var(--o20); border-top-color:var(--fg); border-radius:50%; animation:spin .7s linear infinite/*ds:exempt*/; vertical-align:middle; margin-right:6px;}
   .fa-listwrap{flex:1; overflow-y:auto; min-height:0; -webkit-overflow-scrolling:touch; margin-top:14px;}
   /* scanner reticle overlay */
   .scan-reticle{position:absolute; inset:0; pointer-events:none; display:flex; align-items:center; justify-content:center;}
   .scan-reticle .frame2{width:78%; height:46%; border:2px solid var(--fg); border-radius:var(--r-ctl); box-shadow:0 0 0 2000px rgba(0,0,0,.35);}
-  .scan-reticle .scl{position:absolute; left:11%; right:11%; height:2px; background:var(--fg); animation:scanmove 2s ease-in-out infinite;}
+  .scan-reticle .scl{position:absolute; left:11%; right:11%; height:2px; background:var(--fg); animation:scanmove 2s ease-in-out infinite/*ds:exempt*/;}
   @keyframes scanmove{0%,100%{top:30%}50%{top:70%}}
   @media (prefers-reduced-motion:reduce){ .scan-reticle .scl{animation:none; top:50%;} }
   /* barcode detected → green lock-on */
   .scan-reticle.hit .scl{display:none;}
-  .scan-reticle.hit .frame2{border-color:var(--good); box-shadow:0 0 0 2000px rgba(0,0,0,.35); animation:bcpop .42s cubic-bezier(.2,1.3,.4,1);}
+  .scan-reticle.hit .frame2{border-color:var(--good); box-shadow:0 0 0 2000px rgba(0,0,0,.35); animation:bcpop var(--dur-3) cubic-bezier(.2,1.3,.4,1);}   /* confirmación: el overshoot permitido */
   .scan-reticle .chk{position:absolute; opacity:0; color:var(--good); font-size:40px/*ds:exempt*/; font-weight:800;}
-  .scan-reticle.hit .chk{animation:bcchk .5s ease forwards;}
+  .scan-reticle.hit .chk{animation:bcchk var(--dur-3) var(--ease-out) forwards;}
   @keyframes bcpop{0%{transform:scale(1)}40%{transform:scale(1.06)}100%{transform:scale(1)}}
   @keyframes bcchk{0%{opacity:0;transform:scale(.4)}55%{opacity:1;transform:scale(1.15)}100%{opacity:1;transform:scale(1)}}
   .bc-check{color:var(--good); font-weight:800; margin-right:6px;}
   /* loading spinner / dots */
-  .spin{display:inline-block; width:11px; height:11px; border:1px solid var(--o20); border-top-color:var(--fg); border-radius:50%; animation:spin .7s linear infinite; vertical-align:middle; margin-right:6px;}
+  .spin{display:inline-block; width:11px; height:11px; border:1px solid var(--o20); border-top-color:var(--fg); border-radius:50%; animation:spin .7s linear infinite/*ds:exempt*/; vertical-align:middle; margin-right:6px;}
   @keyframes spin{to{transform:rotate(360deg)}}
   /* day navigator (macros) */
   .dnavh{display:flex; align-items:center; gap:2px;}
@@ -558,23 +564,23 @@
   .nvm{display:flex; justify-content:space-between; align-items:center; padding:14px 2px; font-size:var(--t-body); cursor:pointer; border-bottom:.5px solid var(--o10);} .nvm:last-child{border-bottom:none;} .nvm:active{color:var(--o60);} .nvm-x{color:var(--o30); font-size:var(--t-body);}
   /* screen-change fade (applied by render() only when go() switches screens) */
   @keyframes viewin{from{opacity:.4; transform:translateY(4px)}}
-  .fadein{animation:viewin 140ms ease-out;}
+  .fadein{animation:viewin var(--dur-screen) var(--ease-out);}
   /* boot / recap overlay — terminal status, tap or timeout dismisses */
-  .bootov{position:absolute; inset:0; z-index:var(--z-overlay); background:var(--frame); display:flex; flex-direction:column; justify-content:center; padding:0 34px; transition:opacity .18s ease;}
+  .bootov{position:absolute; inset:0; z-index:var(--z-overlay); background:var(--frame); display:flex; flex-direction:column; justify-content:center; padding:0 34px; transition:opacity var(--dur-2) var(--ease-out);}
   .bootov .bootsh{position:absolute; inset:0; width:100%; height:100%; z-index:-1; pointer-events:none; opacity:.5;}
   .bootov.out{opacity:0; pointer-events:none;}
   .bootov .bt{font-size:18px/*ds:exempt*/; font-weight:800; letter-spacing:.02em/*ds:exempt*/; margin-bottom:18px;}
   .bootov .bt .s{color:var(--o40);}
   .bootov .line{font-size:var(--t-sm); padding:4px 0;}
-  .bootov .bready{margin-top:18px; font-size:11px/*ds:exempt*/; color:var(--o50); animation:blink 1.15s step-end infinite;}
+  .bootov .bready{margin-top:18px; font-size:11px/*ds:exempt*/; color:var(--o50); animation:blink 1.15s step-end infinite/*ds:exempt*/;}
   /* monthly wrap — tap-through story, mono/terminal, screenshot-shareable */
   .wrapov{justify-content:space-between; padding:0; cursor:pointer;}
   .wtop{padding:24px 24px 0;}
   .wdots{display:flex; gap:6px;}
   .wdot{flex:1; height:3px; border-radius:var(--r-sm); background:var(--o20);} .wdot.on{background:var(--fill);} .wdot.done{background:var(--o50);}
-  .wstage{flex:1; display:flex; flex-direction:column; justify-content:center; align-items:center; text-align:center; padding:0 30px; animation:wsin .32s ease;}
+  .wstage{flex:1; display:flex; flex-direction:column; justify-content:center; align-items:center; text-align:center; padding:0 30px; animation:wsin var(--dur-3) var(--ease-out);}
   @keyframes wsin{from{opacity:0; transform:translateY(10px)} to{opacity:1; transform:none}}
-  .wnav{text-align:center; padding:0 0 28px; font-size:11px/*ds:exempt*/; color:var(--o40); letter-spacing:.5px/*ds:exempt*/; animation:blink 1.5s step-end infinite;}
+  .wnav{text-align:center; padding:0 0 28px; font-size:11px/*ds:exempt*/; color:var(--o40); letter-spacing:.5px/*ds:exempt*/; animation:blink 1.5s step-end infinite/*ds:exempt*/;}
   .ws-big{font-size:60px/*ds:exempt*/; font-weight:800; letter-spacing:-2px/*ds:exempt*/; line-height:1; max-width:100%; overflow:hidden; text-overflow:ellipsis;} .ws-big span{font-size:20px/*ds:exempt*/; font-weight:700; color:var(--o40); letter-spacing:0; margin-left:4px;}
   .ws-lbl{font-size:13px/*ds:exempt*/; color:var(--o60); margin-top:16px; letter-spacing:.5px/*ds:exempt*/;}
   .ws-sub{font-size:11px/*ds:exempt*/; color:var(--o40); margin-top:8px; letter-spacing:.3px/*ds:exempt*/; max-width:280px;}
@@ -588,8 +594,8 @@
   .ws-card .line{padding:6px 0; font-size:var(--t-body);}
   .ws-cardf{text-align:center; font-size:15px/*ds:exempt*/; font-weight:800; color:var(--o35); margin-top:16px; letter-spacing:.5px/*ds:exempt*/;} .ws-cardf span{color:var(--o20);}
   .ws-share{font-size:11px/*ds:exempt*/; color:var(--o40); margin-top:18px; letter-spacing:.3px/*ds:exempt*/;}
-  .toast{position:fixed; left:50%; bottom:84px; transform:translateX(-50%); color:var(--fg); padding:10px 16px; border-radius:var(--r-pill); font-size:var(--t-sm); font-weight:700; z-index:var(--z-toast); white-space:nowrap; animation:toastin .28s ease, toastout .4s ease 2.3s forwards;}   /* material: .glass-strong */
-  .toast.ok{border-color:var(--good);} .toast.err{border-color:var(--bad); animation:toastin .28s ease, toastout .4s ease 4.6s forwards;}
+  .toast{position:fixed; left:50%; bottom:84px; transform:translateX(-50%); color:var(--fg); padding:10px 16px; border-radius:var(--r-pill); font-size:var(--t-sm); font-weight:700; z-index:var(--z-toast); white-space:nowrap; animation:toastin var(--dur-3) var(--ease-out), toastout var(--dur-3) var(--ease-in) var(--toast-life) forwards;}   /* material: .glass-strong */
+  .toast.ok{border-color:var(--good);} .toast.err{border-color:var(--bad); animation:toastin var(--dur-3) var(--ease-out), toastout var(--dur-3) var(--ease-in) var(--toast-life-err) forwards;}
   @keyframes toastin{from{opacity:0; transform:translate(-50%,10px)} to{opacity:1; transform:translate(-50%,0)}}
   @keyframes toastout{to{opacity:0; transform:translate(-50%,8px)}}
 
@@ -1254,7 +1260,7 @@ function streakCardHTML(){
   const pct=el?Math.round(logged/el*100):0; const tv=a[today]||0;
   const hoy=tv===3?'hoy: comida + gym ✓':tv?('hoy: '+((tv&1)?'comida':'gym')+' ✓'):'hoy: aún sin registro';
   return `<div class="pfeat"><div class="pfl">racha · comida o gym</div>`
-    +`<div class="strk-top"><div class="strk-n">${st}<span>día${st===1?'':'s'}</span></div>`
+    +`<div class="strk-top"><div class="strk-n"><span data-nk="streak" data-nv="${st}">${st}</span><span>día${st===1?'':'s'}</span></div>`
     +`<div class="strk-side"><div>mejor racha <b>${best}</b></div><div>este mes <b>${logged}/${el}</b> días registrados · <b>${pct}%</b></div><div>días completos (ambos) <b>${both}</b></div></div></div>`
     +`<div class="strk-sub">${hoy} · solo se corta el día en que no registras ni comida ni gym</div>`
     +streakCalendarHTML()
@@ -3453,7 +3459,7 @@ function renderMacros(){
     if(state.macroPct){ p=goal?val/goal*100:0; ctr=Math.round(p)+'%'; sub='completado'; }
     else if(isRem){ const r=goal-val; p=goal?r/goal*100:0; ctr=Math.round(r); sub='restante'; }
     else { p=goal?val/goal*100:0; ctr=Math.round(val); sub='/ '+goal+' '+unit; }
-    return `<div class="cell ${macroStatus(val,goal)}" data-act="ringtog" data-k="${key}">${ringHTML(p,'<div class="num">'+ctr+'</div>',null,isRem)}<div class="cap">${lbl}</div><div class="sub">${sub}</div></div>`;
+    return `<div class="cell ${macroStatus(val,goal)}" data-act="ringtog" data-k="${key}">${ringHTML(p,'<div class="num" data-nk="m-'+key+'-'+(state.macroPct?'pct':isRem?'rem':'val')+'" data-nv="'+parseFloat(ctr)+'">'+ctr+'</div>',null,isRem)}<div class="cap">${lbl}</div><div class="sub">${sub}</div></div>`;
   };
   const intakeRow=(lbl,val,goal,unit,extra,dec)=>{const p=goal?val/goal*100:0;const ov=goal&&val>goal*1.05;const disp=dec?(+val).toFixed(dec):Math.round(val);return `<div class="mrow"><span class="ml">${lbl}</span><div class="bar"><i class="${ov?'over':''}" style="width:${Math.min(100,p)}%"></i></div><span class="mv ${ov?'ovr':''}">${disp} <span class="g">/ ${goal} ${unit}</span>${extra||''}</span></div>`;};
   const bl=bloating(t,g);
@@ -3494,7 +3500,7 @@ function renderMacros(){
   return statusBar(false)
     +`<hr class="rule"/>`
     +`<div class="section"><div class="h dnavh"><a data-act="dayprev" class="dnav">‹</a><span class="dnlbl-wrap"><span class="dnlbl">${dayLabel(curDate())}</span><input type="date" class="dcal" data-act="daycal" value="${curDate()}"/></span><a data-act="daynext" class="dnav">›</a></div><div class="meta"><a data-act="share" class="u-tap">[share]</a> <a data-act="editgoals" class="u-tap u-ml8">[goals]</a></div></div>`
-    +`<div class="card u-pt16 u-pb16 u-px16"><button class="hero ${open?'open':''} ${kStat}" data-act="togglemacros">${ringHTML(pct,`<div class="num">${Math.round(t.kcal).toLocaleString()}</div><div class="of">/ ${g.kcal.toLocaleString()} kcal</div>`,'lg')}<div class="hero-meta"><span class="left ${left<0?'over':'under'}">${left>=0?left+' left':Math.abs(left)+' over'}</span> · ${Math.round(pct)}% <span class="chev">▾</span></div></button>${goalSecHidden('balance')?'':(function(){var b=balanceOf(g.kcal);return b?'<div class="hbal">'+(b.label==='mantenimiento'?'en mantenimiento':'<span style="color:'+b.col+';font-weight:700">'+b.label+'</span> '+Math.abs(b.delta)+' kcal')+' · mant. ≈ '+b.maint+'</div>':'';})()}${details}</div>`
+    +`<div class="card u-pt16 u-pb16 u-px16"><button class="hero ${open?'open':''} ${kStat}" data-act="togglemacros">${ringHTML(pct,`<div class="num" data-nk="kcal" data-nv="${Math.round(t.kcal)}">${Math.round(t.kcal).toLocaleString()}</div><div class="of">/ ${g.kcal.toLocaleString()} kcal</div>`,'lg')}<div class="hero-meta"><span class="left ${left<0?'over':'under'}">${left>=0?left+' left':Math.abs(left)+' over'}</span> · ${Math.round(pct)}% <span class="chev">▾</span></div></button>${goalSecHidden('balance')?'':(function(){var b=balanceOf(g.kcal);return b?'<div class="hbal">'+(b.label==='mantenimiento'?'en mantenimiento':'<span style="color:'+b.col+';font-weight:700">'+b.label+'</span> '+Math.abs(b.delta)+' kcal')+' · mant. ≈ '+b.maint+'</div>':'';})()}${details}</div>`
     +suppStripHTML(curDate())
     +`<div class="section u-mb10"><div class="h"><span class="s">//</span>LOG&nbsp; today</div></div>`
     +log
@@ -3816,7 +3822,7 @@ function openMetricDetail(key){
         return `<div class="mdtr"><span class="mdtk">${t.H} días</span><span class="mdtv" style="color:${col}">${ar} ${t.pct>0?'+':''}${Math.round(t.pct*10)/10}%</span><span class="mdtx">${escTxt(vf(t.prev))} → ${escTxt(vf(t.cur))}</span><span class="mdts">${lineChart(t.spark,{h:22,noFill:true,noDots:true,margin:'0'})}</span></div>`; }).join(''); } }
   openModal(`<div class="mdetail">
     <div class="mdhd"><h3>${sp.title}</h3>${headBtn}</div>
-    <div class="mdtabs">${segs}</div>${custBox}
+    <div class="mdtabs" data-tk="md-${key}">${segs}</div>${custBox}
     ${!real.length?`${nav}<div class="empty u-py32 u-px0">sin registros en este rango</div>`:`
       <div class="mdtop2"><div><div class="mdval">${escTxt(vf(lastV))}</div><div class="mdmeta">${li>=0?fmtShort(sp.dates[li]):''}${avg!=null?' · prom '+escTxt(vf(avg)):''}</div></div>
         ${st?`<div class="mdst" style="color:${stCol}">${st}<div class="mdstl">tu normal ${escTxt(vf(lastBand[0]))} – ${escTxt(vf(lastBand[1]))}</div></div>`:''}</div>
@@ -5331,10 +5337,38 @@ function render(){
   if(state._focusSet&&sc==='workout'){ const f=state._focusSet; state._focusSet=null; const fe=v.querySelector('.setn[data-exi="'+f.exi+'"][data-si="'+f.si+'"]'); if(fe&&fe.scrollIntoView)fe.scrollIntoView({block:'center',behavior:'smooth'}); }
   // fade ONLY on screen changes via go() — never on same-screen re-renders (every keystroke re-renders)
   if(state._trans){ state._trans=false; v.classList.remove('fadein'); void v.offsetWidth; v.classList.add('fadein'); }
+  afterPaint(v,false);
 }
 // v223: re-render CONSERVANDO el scroll. Todo lo que se toca dentro de una sesión (o del editor de
 // historial) tiene que pasar por aquí: un render() pelado devuelve #view al inicio, que es exactamente
 // lo que hacía insoportable loggear en vivo ("siempre se me scrollea hasta arriba", fix.md).
+// ---- DS-5 · movimiento después de pintar (render y openModal) ----
+// Números que CAMBIAN se cuentan hasta su valor (solo si ya estaban en pantalla con otro valor: nunca al entrar);
+// lo agregado entra (state._enter), el ✓ recién puesto hace pop (state._pop) y las pestañas de periodo deslizan su
+// indicador cuando el sheet se re-abre encima de sí mismo. Todo respeta prefers-reduced-motion.
+const _nk={}, _tabPos={};
+function reducedMotion(){ try{ return !!(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches); }catch(_){ return false; } }
+function durMs(tok,dflt){ try{ const v=getComputedStyle(document.documentElement).getPropertyValue(tok); return parseFloat(v)||dflt; }catch(_){ return dflt; } }
+function animNums(root){ const red=reducedMotion();
+  root.querySelectorAll('[data-nk]').forEach(el=>{ const k=el.dataset.nk, to=+el.dataset.nv; if(!isFinite(to))return; const from=_nk[k]; _nk[k]=to;
+    if(red||from==null||from===to)return;
+    const txt=el.textContent, m=txt.match(/^(\D*?)(-?\d[\d.,\s]*)(\D*)$/); if(!m)return;
+    const nd=+(el.dataset.nd||0), grp=/\d\D\d{3}/.test(m[2]);
+    const fmt=v=>m[1]+v.toLocaleString(undefined,{minimumFractionDigits:nd,maximumFractionDigits:nd,useGrouping:grp})+m[3];
+    const t0=performance.now(), D=durMs('--dur-3',280);
+    const step=now=>{ if(!el.isConnected)return; const p=Math.min(1,(now-t0)/D), e=1-Math.pow(1-p,3); el.textContent=p<1?fmt(from+(to-from)*e):txt; if(p<1)requestAnimationFrame(step); };
+    el.textContent=fmt(from); requestAnimationFrame(step); }); }
+function slideTabs(root,swap){ const red=reducedMotion();
+  root.querySelectorAll('.mdtabs').forEach(c=>{ const on=c.querySelector('span.on'); let ind=c.querySelector('.tabind'); if(!on){ if(ind)ind.remove(); c.classList.remove('has-ind'); return; }
+    if(!ind){ ind=document.createElement('i'); ind.className='tabind'; c.insertBefore(ind,c.firstChild); } c.classList.add('has-ind');
+    const k=c.dataset.tk||('t:'+c.textContent), x=on.offsetLeft, w=on.offsetWidth, prev=_tabPos[k]; _tabPos[k]={x,w};
+    const put=(x,w)=>{ ind.style.transform='translateX('+x+'px)'; ind.style.width=w+'px'; };
+    if(swap&&!red&&prev&&(prev.x!==x||prev.w!==w)){ ind.style.transition='none'; put(prev.x,prev.w); void ind.offsetWidth; ind.style.transition=''; put(x,w); } else put(x,w); }); }
+function applyEnter(root){ const e=state._enter, p=state._pop; state._enter=null; state._pop=null; if(reducedMotion())return;
+  if(e){ const el=root.querySelector(e.ex!=null?'.ex[data-exi="'+e.ex+'"]':'.srow[data-exi="'+e.exi+'"][data-si="'+e.si+'"],.pair[data-exi="'+e.exi+'"][data-si="'+e.si+'"]');
+    if(el){ el.classList.add('enter'); if(e.scroll&&el.scrollIntoView)el.scrollIntoView({block:'center',behavior:'smooth'}); } }
+  if(p){ const el=root.querySelector('.dchk[data-exi="'+p.exi+'"][data-si="'+p.si+'"],.pairdone[data-exi="'+p.exi+'"][data-si="'+p.si+'"]'); if(el)el.classList.add('pop'); } }
+function afterPaint(root,swap){ if(!root)return; try{ animNums(root); }catch(_){} try{ slideTabs(root,swap); }catch(_){} try{ applyEnter(root); }catch(_){} }
 function reRender(){ try{ const v=document.getElementById('view'); if(v)state._scroll=v.scrollTop; }catch(_){} render(); }
 // primera serie sin ✓, en orden de documento — alimenta la barra AHORA, la guía .ex.current y el foco.
 function currentSetTarget(){
@@ -5632,11 +5666,14 @@ function delSetHist(exi,si){
   function finish(){
     if(!el)return;
     const go=moved&&dx>=TH, a=act, i=exi, j=si, node=el;
-    node.style.transition='transform .15s ease,opacity .15s ease'; node.style.transform=''; node.style.opacity='';
-    setTimeout(()=>{ try{ node.style.transition=''; }catch(_){} },170);
     if(moved)window._swipeGuard=Date.now();   // que el 'click' de después no dispare nada
     el=null; lock=null; dx=0; moved=false;
-    if(go){ if(a==='h_delset')delSetHist(i,j); else delSetLive(i,j); }
+    const reset=()=>{ try{ node.style.transition=''; node.style.transform=''; node.style.opacity=''; }catch(_){} };
+    if(go){   // DS-5: sale hacia la derecha (180 ms) y entonces se borra; si el borrado se cancela, vuelve
+      node.style.transition='transform var(--dur-2) var(--ease-in),opacity var(--dur-2) var(--ease-in)'; node.style.transform='translateX(60%)'; node.style.opacity='0';
+      setTimeout(()=>{ if(a==='h_delset')delSetHist(i,j); else delSetLive(i,j); if(node.isConnected)reset(); },reducedMotion()?0:190); }
+    else { node.style.transition='transform var(--dur-2) var(--ease-out),opacity var(--dur-2) var(--ease-out)'; node.style.transform=''; node.style.opacity='';
+      setTimeout(()=>{ try{ node.style.transition=''; }catch(_){} },200); }
   }
   const app=document.getElementById('app');
   app.addEventListener('touchstart',begin,{passive:true});
@@ -5778,10 +5815,10 @@ document.getElementById('app').addEventListener('click',e=>{
   else if(a==='h_addset'){ const s=db.sessions.find(x=>x.id===state._histSessId); if(!s)return; const ex=s.exercises[exi];
     if(ex.unilateral){ const [s1,s2]=uniSides(ex); ex.sets.push(emptySet(ex,s1,false,null)); ex.sets.push(emptySet(ex,s2,false,null)); }
     else { ex.sets.push(emptySet(ex,null,false,null)); }
-    save(); reRender(); }
+    state._enter={exi,si:ex.unilateral?ex.sets.length-2:ex.sets.length-1}; save(); reRender(); }
   else if(a==='h_dropset'){ const s=db.sessions.find(x=>x.id===state._histSessId); if(!s)return; const ex=s.exercises[exi]; if(isCardio(ex))return;
     const sIdx=db.sessions.indexOf(s);
-    insertDrop(ex,si,Object.assign(exIdentity(s,exi),{orderIdx:exi,excludeSessionId:s.id,beforeDate:s.date,beforeSIdx:sIdx}));
+    state._enter={exi,si:insertDrop(ex,si,Object.assign(exIdentity(s,exi),{orderIdx:exi,excludeSessionId:s.id,beforeDate:s.date,beforeSIdx:sIdx}))};
     save(); reRender(); }
   else if(a==='h_delset'){ delSetHist(exi,si); }
   else if(a==='schedcal'){ openScheduleModal(+el.dataset.di); }
@@ -5844,16 +5881,16 @@ document.getElementById('app').addEventListener('click',e=>{
     else { const st=ex.sets[si]; if(!st)return; st.done=!st.done; nowDone=st.done; if(nowDone)pfClearAll(st); }
     if(nowDone&&!w.loggedAfter){ restAudioInit(); w.restEnd=Date.now()+((db.settings.restSec||90)*1000); _restFinT=0; }
     if(nowDone){ const ts=Date.now(); if(ex.unilateral){if(ex.sets[si])ex.sets[si].doneAt=ts;if(ex.sets[si+1])ex.sets[si+1].doneAt=ts;}else ex.sets[si].doneAt=ts; }
-    if(nowDone)state._focusSet=nextSetTarget(exi,si);
+    if(nowDone){ state._focusSet=nextSetTarget(exi,si); state._pop={exi,si}; }
     save(); reRender(); }
   else if(a==='gonow'){ const t=currentSetTarget(); if(t){ const fe=document.querySelector('.setn[data-exi="'+t.exi+'"][data-si="'+t.si+'"]'); if(fe&&fe.scrollIntoView)fe.scrollIntoView({block:'center',behavior:'smooth'}); } }
   else if(a==='fs'){ const s=db.activeWork.exercises[exi].sets[si]; if(!s||s.isDrop)return; s.fsOn=!s.fsOn; if(!s.fsOn&&!s.bw)s.extraW=''; save(); reRender(); }
-  else if(a==='addset'){ const ex=db.activeWork.exercises[exi]; if(isCardio(ex)){ const lt=ex.sets[ex.sets.length-1]||null; ex.sets.push(emptySet(ex,null,false,lt)); } else if(ex.unilateral){ const [s1,s2]=uniSides(ex); const lr=workSource(ex,s1)||ex.sets[ex.sets.length-2]||null, ll=workSource(ex,s2)||ex.sets[ex.sets.length-1]||null; ex.sets.push(emptySet(ex,s1,false,lr)); ex.sets.push(emptySet(ex,s2,false,ll)); } else { ex.sets.push(emptySet(ex,null,false,workSource(ex,null))); } save(); state._scroll=document.getElementById('view').scrollTop; render(); }
+  else if(a==='addset'){ const ex=db.activeWork.exercises[exi]; if(isCardio(ex)){ const lt=ex.sets[ex.sets.length-1]||null; ex.sets.push(emptySet(ex,null,false,lt)); } else if(ex.unilateral){ const [s1,s2]=uniSides(ex); const lr=workSource(ex,s1)||ex.sets[ex.sets.length-2]||null, ll=workSource(ex,s2)||ex.sets[ex.sets.length-1]||null; ex.sets.push(emptySet(ex,s1,false,lr)); ex.sets.push(emptySet(ex,s2,false,ll)); } else { ex.sets.push(emptySet(ex,null,false,workSource(ex,null))); } state._enter={exi,si:ex.unilateral&&!isCardio(ex)?ex.sets.length-2:ex.sets.length-1}; save(); state._scroll=document.getElementById('view').scrollTop; render(); }
   else if(a==='dropset'){ const ex=db.activeWork.exercises[exi]; if(isCardio(ex))return; // cardio has no drop sets
     // a drop is a SUBSERIE hung right after its parent (+ any drops the parent already has) — never
     // appended at the end of the exercise. Tapping ↓ on an existing drop chains another onto the same parent.
     // v218: never full stack; prefilled from the matching drop (session → baseline → drop/parent ratio history)
-    insertDrop(ex,si,Object.assign(exIdentity(db.activeWork,exi),{orderIdx:exi}));
+    state._enter={exi,si:insertDrop(ex,si,Object.assign(exIdentity(db.activeWork,exi),{orderIdx:exi}))};
     save(); state._scroll=document.getElementById('view').scrollTop; render(); }
   else if(a==='delset'){ delSetLive(exi,si); }
   else if(a==='delex'){ const w=db.activeWork; if(w&&w.exercises[exi]&&confirm('¿Quitar "'+((w.exercises[exi].name)||'este ejercicio')+'" de la sesión? (no toca tu split)')){ w.exercises.splice(exi,1); save(); state._scroll=(document.getElementById('view')||{}).scrollTop||0; render(); } }
@@ -6295,7 +6332,7 @@ function setHistField(exi,si,f,val){
 function openModal(html,cls){ const had=!!document.getElementById('modal'); closeModal();
   // DS-3: si había un sheet (abierto o saliendo) esto es un cambio de contenido → sin animación de entrada
   const g=window._modalGhost; const swap=had||!!(g&&g.isConnected); if(g){ try{g.remove();}catch(_){} window._modalGhost=null; }
-  const m=document.createElement('div'); m.className='modal'+(swap?'':' in'); m.id='modal'; m.innerHTML=`<div class="sheet glass-strong ${cls||''}">${html}</div>`; if(!/\bnodismiss\b/.test(cls||''))m.addEventListener('click',ev=>{if(ev.target===m){ closeModal(); render(); }}); document.getElementById('app').appendChild(m); }
+  const m=document.createElement('div'); m.className='modal'+(swap?'':' in'); m.id='modal'; m.innerHTML=`<div class="sheet glass-strong ${cls||''}">${html}</div>`; if(!/\bnodismiss\b/.test(cls||''))m.addEventListener('click',ev=>{if(ev.target===m){ closeModal(); render(); }}); document.getElementById('app').appendChild(m); afterPaint(m,swap); }
 function closeModal(){ const s=window._scanner; if(s){ try{ if(s.timer)clearTimeout(s.timer); }catch(_){} try{ if(s._q&&typeof Quagga!=='undefined'){ if(s._fn)Quagga.offDetected(s._fn); Quagga.stop(); } }catch(_){} try{ if(s.stream)s.stream.getTracks().forEach(t=>t.stop()); }catch(_){} window._scanner=null; } window._linkBarcode=''; const m=document.getElementById('modal'); if(!m)return;
   // DS-3: el modal deja de existir YA para la lógica (sin id, sin clics); lo que queda es su fantasma saliendo 180 ms
   m.removeAttribute('id'); m.classList.remove('in'); m.classList.add('out'); window._modalGhost=m;
@@ -6577,7 +6614,7 @@ function addExFromKnown(afterExi,x){
   const newEx={exId:'e'+uid(),name:x.name,muscle:x.muscle||((x.muscles&&x.muscles[0]&&x.muscles[0].name)||'other'),muscles:x.muscles,type:x.type||'free',machine:x.machine||'',unilateral:!!x.unilateral,startSide:x.startSide||'R',assisted:!!x.assisted,weighted:!!x.weighted,note:'',sets:[]};
   let insertAt; if(afterExi!=null&&afterExi>=0&&afterExi<w.exercises.length){ insertAt=afterExi+1; w.exercises.splice(insertAt,0,newEx); } else { w.exercises.push(newEx); insertAt=w.exercises.length-1; }
   const ex=w.exercises[insertAt]; ex.sets=seedSets(ex,(typeof x.sets==='number'?x.sets:2),{dayId:w.dayId,orderIdx:insertAt});
-  save(); closeModal(); render();
+  save(); closeModal(); state._enter={ex:insertAt,scroll:true}; reRender();
 }
 // REPLACE the live exercise at exi with a REGISTERED one: registry metadata + re-seeded sets, position kept (#4/#6/#7)
 function replaceExFromKnown(exi,x){
@@ -6646,7 +6683,7 @@ function openAddExForm(afterExi,muscle,replaceExi){
     if(afterExi!=null && afterExi>=0 && afterExi<w.exercises.length){ insertAt=afterExi+1; w.exercises.splice(insertAt,0,newEx); }
     else { w.exercises.push(newEx); insertAt=w.exercises.length-1; }
     const ex=w.exercises[insertAt]; ex.sets=seedSets(ex,+val('fx_sets')||1,{dayId:w.dayId,orderIdx:insertAt});
-    save(); closeModal(); render();
+    save(); closeModal(); state._enter={ex:insertAt,scroll:true}; reRender();
   };
 }
 function openMachineEdit(exi){

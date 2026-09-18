@@ -211,6 +211,9 @@ Tabla → casi cuadrada · control → poco redondeado · tarjeta → redondeada
 | `--dur-screen` | 140ms | fade de cambio de pantalla (existente, `viewin`) |
 | `--ease-out` | `cubic-bezier(.22,1,.36,1)` | entradas y transformaciones (sin overshoot) |
 | `--ease-in` | `cubic-bezier(.4,0,1,1)` | salidas |
+| `--toast-life` / `--toast-life-err` | 2.3s / 4.6s | cuánto vive un toast antes de salir (el de error, el doble) |
+
+Ninguna duración literal en el CSS: lo que no es token es un bucle funcional marcado `/*ds:exempt*/` (§15).
 
 ### 4.9 Capas (z-index)
 
@@ -382,7 +385,8 @@ neutro `--border`. Errores sin auto-cierre; máximo 3 apilados; `aria-live`. **N
 
 ### 7.13 Popover de agregar (FAB)
 
-`.addpop`: acciones `.api` en píldoras sólidas `--fill`, escalonadas 40 ms, `--ease-out` (sin overshoot, DS-5).
+`.addpop`: acciones `.api` en píldoras sólidas `--fill`, escalonadas 40 ms, suben 8 px con `--dur-2` `--ease-out`
+(sin escala ni overshoot desde DS-5).
 
 ### 7.14 Vacíos, carga y errores
 
@@ -478,9 +482,23 @@ punto, la escala de colores de Bevel.
 
 Anima **cambios de estado**: navegación entre pantallas (fade 140 ms), sheets (280 ms), filas que entran/salen
 (180 ms), pestañas (180 ms), barras que crecen (180 ms), confirmación ✓ (120 ms con el único overshoot permitido),
-números que cambian (DS-5). **Nunca** en re-renders de la misma pantalla (cada tecla re-renderiza).
-**No:** rebote, elástico, parallax, animaciones infinitas decorativas (el radar que "respira" se quita en DS-5), "que
-se sienta premium". Pressed: opacidad o `scale(.98)`. `prefers-reduced-motion` ya reduce todo a 0.01 ms.
+números que cambian (280 ms). **Nunca** en re-renders de la misma pantalla (cada tecla re-renderiza).
+**No:** rebote, elástico, parallax, animaciones infinitas decorativas, "que se sienta premium". Pressed: opacidad o
+`scale(.98)`. `prefers-reduced-motion` reduce todo a 0.01 ms y apaga los conteos.
+
+**Cómo se implementa (DS-5, v236)** — como `render()` rehace el DOM, lo que anima se marca ANTES de pintar y
+`afterPaint(root, swap)` (al final de `render()` y de `openModal`) lo aplica una sola vez:
+- **Lo que se agregó entra** (`rowin`: 4 px + opacidad, `--dur-2`): el handler pone `state._enter` = `{exi, si}` (+ serie,
+  ↓ drop, en vivo y en historial) o `{ex, scroll}` (+ ejercicio, que además queda a la vista sin saltar al inicio).
+- **El ✓ confirma** (`chkpop`, `--dur-1`, overshoot 1.18): `state._pop` = `{exi, si}` en el handler de `done`.
+- **Lo que se borra sale:** deslizar ≥76 px lleva la fila a la derecha y la desvanece (`--dur-2` `--ease-in`) y
+  entonces se borra; si el borrado se cancela, vuelve.
+- **Números que cuentan:** `data-nk` (clave) + `data-nv` (valor) (+ `data-nd` decimales) en el elemento que solo tiene el
+  número; si esa clave ya estaba en pantalla con otro valor, cuenta del anterior al nuevo con el mismo formato
+  (`toLocaleString`). Hoy: kcal del anillo, anillos P/C/F (la clave incluye el modo g/%/restante, así que cambiar de
+  modo no cuenta) y la racha.
+- **Pestañas de periodo** (`.mdtabs`, clave `data-tk`): un indicador `.tabind` que se desliza cuando el sheet se re-abre
+  encima de sí mismo (cambio de periodo); al abrir, aparece en su sitio.
 
 ## 11. Íconos y glifos
 
@@ -533,6 +551,9 @@ Zona táctil ≥44 px en todo lo tocable (acciones de texto con padding + margen
 - **Números del anillo** con escala propia; overlays (boot, wrap, escáner) fuera de la escala de tipo.
 - **`.scan-reticle`** (overlay de cámara) y `.dz` (panel de diseño, solo dev).
 - **Glifo del FAB** (`+` 30/300).
+- **Bucles funcionales** (única animación infinita permitida): spinners de carga (700 ms), cursor `▌` y "toca para
+  seguir" (1.15–1.5 s, `step-end`), el barrido del escáner mientras busca (2 s), y los 3 destellos de fin de descanso
+  (500 ms × 3). Llevan `/*ds:exempt*/`.
 
 Las declaraciones exentas llevan el marcador **`/*ds:exempt*/`** pegado a la declaración (p. ej.
 `font-size:26px/*ds:exempt*/` en el número del anillo): el auditor las cuenta aparte y no como desviación. Marcar algo
@@ -600,12 +621,12 @@ para QA visual. Solo filosofía: `minimalist-skill`, `taste-skill`, `redesign-sk
 **21st.dev.** Es un registro de componentes **React + Tailwind** (shadcn/Radix/Motion), instalación con clave de API,
 licencia por componente. Se usa **solo como catálogo de comportamientos**: *se toma la interacción, se reescribe en JS
 puro con los tokens de TRK; nunca se pega un componente*. Componentes con licencia "unknown" = solo inspiración.
-Dependencias permitidas: MIT, versión fijada, cacheadas por `sw.js` (offline). Hoy solo `number-flow` lo justifica
-(web component sin React); sonner, cmdk y vaul son solo-React.
+Dependencias permitidas: MIT, versión fijada, cacheadas por `sw.js` (offline). Hoy **ninguna**: `number-flow` era la
+única candidata (web component sin React) y el conteo se hizo propio en DS-5 (§10); sonner, cmdk y vaul son solo-React.
 
 | Prioridad | Patrón (ej. en 21st) | Dónde | Cómo |
 |---|---|---|---|
-| A | Números animados (Number Flow) | kcal y macros, racha, valor de detalles, totales de sesión/compartir, series de //MÚSCULOS | `number-flow` fijado; sin blur; respeta reduced-motion |
+| A | Números animados (Number Flow) | kcal y macros, racha (hecho en DS-5); después: totales de sesión, series de //MÚSCULOS | **propio**, sin dependencia (§10): `number-flow` anima un nodo que persiste, y aquí `render()` rehace el DOM, así que habría que conservar nodos entre renders; un conteo de 30 líneas sobre `data-nk` funciona offline, sin tocar la CSP ni `sw.js` |
 | A | Toast semántico (Sonner) | todo el feedback | propio: tipos, máx. 3, errores sin temporizador, `aria-live` |
 | A | Mantener para confirmar (Hold to Confirm) | abortar sesión, borrar sesión/día/comida, reset | pointer + `animate`, barra "armando %"; reemplaza `confirm()` en lo irreversible |
 | A | Filas que entran/salen (Animated List) | + serie, drop, borrar, + ejercicio, chips de supps | FLIP / `@starting-style`, 4 px + opacidad, `--dur-2` |
@@ -681,6 +702,13 @@ escribir estilos). Verificado con `tools/ds-diff.html` en 52 escenarios: **fase 
 corrección cambia solo lo buscado (espaciados 3/5/9/13/14/18/26/36/50 → la escala, tracking por rol, 24→22 y 14→13 en
 tipo, las dos acciones de texto del gym sin caja). Error corregido de paso: un `style` condicional
 (`${b?' style=…':''}`) que el convertidor habría vuelto fijo → `class="k${b?' u-fg':''}"`.
+**DS-5 (v236)**: #16 + #21 cerrado — **duraciones literales en el CSS 21 → 0** (todo por `--dur-*`/`--ease-*`/`--toast-life*`;
+los bucles funcionales exentos y listados en §15); el radar ya no "respira"; el popover del FAB sin rebote; la nav se
+expande en 280 ms (antes 500 + retraso). Nuevo (§10): `afterPaint` con filas que entran, ✓ con pop, fila que sale al
+deslizar, números que cuentan (kcal, P/C/F, racha) y el indicador deslizante de periodos; `number-flow` descartado a
+favor de un conteo propio. Verificado en preview: + serie/↓ drop/+ ejercicio con `rowin` (y el ejercicio nuevo ya no
+salta al inicio), ✓ con `chkpop` solo en esa serie, un re-render sin cambios no anima nada, kcal 0 → 1,234 contando,
+indicador 104 → 4 px al cambiar de periodo, deslizar borra tras salir.
 
 **Fases:** DS-0 documento y auditor · DS-1 P0 + tokens nuevos + capas + CSS muerto · DS-2 tipografía, tracking,
 gutters y espaciado · DS-3 componentes (radios, inputs, chips, botones, sombras, glass, sheets, íconos) · **PT2 v231
