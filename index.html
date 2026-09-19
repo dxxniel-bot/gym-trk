@@ -207,6 +207,14 @@
   .tbv{font-weight:700; white-space:nowrap;} .tbv i{font-style:normal; color:var(--o40); font-size:var(--t-xs); font-weight:400; margin-left:var(--s1);} .tbv b{font-weight:700; margin-left:6px;}
   .tba{color:var(--o35); margin:0 var(--s1);}
   .lpr{font-size:var(--t-caption); font-weight:800; color:var(--good); letter-spacing:var(--ls-caps); vertical-align:middle; margin-left:6px;}
+  /* R6 · TRKTrend (//FUERZA, D14): nombre · línea de 30 días · e1RM que cuenta (TRKNum) · Δ vs semana previa · › */
+  .trow{display:grid; grid-template-columns:minmax(0,1fr) 64px auto auto; align-items:center; gap:var(--s3); font-size:var(--t-meta); padding:var(--s2) 0; cursor:pointer;}
+  .trow+.trow{border-top:.5px solid var(--o10);}
+  .trow .trn{color:var(--o60); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .trow .trsp{display:block; height:22px;} .trow .trsp svg{overflow:visible;}
+  .trow .trv{color:var(--fg); white-space:nowrap; text-align:right;} .trow .trv b{font-weight:700;} .trow .trd{font-size:var(--t-xs);} .trow .ptchev{margin-left:0;}
+  /* R6 · TRKBar en el detalle de músculo (D16): una barra por lectura, track + fill; el color va solo en el texto de estado */
+  .mdbar{display:flex; align-items:center; gap:var(--s3); margin:var(--s1) 0 var(--s2);} .mdbar .vbar{flex:1;} .mdbar .mdbc{font-size:var(--t-xs); color:var(--o40); white-space:nowrap;}
   .sheet.mdetail-wrap{max-height:88vh; overflow-y:auto;}
   .mdetail{padding:0;}
   .mdhd{display:flex; align-items:flex-end; justify-content:space-between; gap:var(--s3); margin-bottom:var(--sp-section);}
@@ -1582,6 +1590,8 @@ function recoveryEstimate(a){ const M=MUSCLES[a&&a.id]; if(!M)return null; const
 // ventana OBSERVADA: pares de exposiciones seguidas → capacidad de la 2.ª (vs su sesión equivalente) según las
 // horas de descanso, por tramos. Recuperado = primer tramo cuya mediana ya no cae (≥ −1 %). Mínimo 6 pares.
 const REC_BUCKETS=[[0,48],[48,72],[72,96],[96,168],[168,1e9]];
+// D20: una ventana en texto — los tramos abiertos del historial se dicen como tales (<48 h, >168 h), nunca "168–168 h"
+function winTxt(lo,hi){ return lo<=0?'<'+hi+' h':lo>=hi?'>'+lo+' h':lo+'–'+hi+' h'; }
 function observedRecovery(pairs){ const ok=(pairs||[]).filter(p=>isFinite(p.gap)&&isFinite(p.perf)); const out={n:ok.length,buckets:[],hours:null,src:'observed'};
   REC_BUCKETS.forEach(([a,b])=>{ const xs=ok.filter(p=>p.gap>=a&&p.gap<b).map(p=>p.perf); out.buckets.push({a,b,n:xs.length,med:xs.length?median(xs):null}); });
   if(ok.length>=6){ const hit=out.buckets.find(bk=>bk.n>=2&&bk.med>=-1); if(hit)out.hours=[hit.a,Math.min(hit.b,168)]; }
@@ -1617,7 +1627,7 @@ function musclesSectionHTML(){ const rows=muscleRowsData(); if(!rows.length)retu
   rows.forEach(r=>{ const c=r.cur; const L=r.lm; const CE=Math.max(20,L?L[2]+2:20); const pct=Math.min(100,Math.round(c.sets/CE*100));
     const st=L?(c.sets<L[0]?'bajo MEV':c.sets>L[2]?'sobre MRV':c.sets>L[1]?'cerca de MRV':''):'';
     out+=`<div class="mscrow" data-act="muscledetail" data-id="${r.id}"><div class="msctop"><span class="mscn">${escTxt(muscleLabel(r.id))}${st?` <span class="vst${st==='sobre MRV'?' bad':st==='cerca de MRV'?' warn':''}">${st}</span>`:''}</span><span class="mscv">${r1m(c.sets)} series${c.rir!=null?' · RIR '+r1m(c.rir):''}</span></div>`
-      +`<div class="vbar"><i style="width:${pct}%"></i>${L?`${L[0]>0?`<span class="mev" style="left:${Math.round(L[0]/CE*100)}%"></span>`:''}<span class="mrv" style="left:${Math.round(L[2]/CE*100)}%"></span>`:''}</div>`
+      +`<div class="vbar">${trkBarI('msc:'+r.id,pct)}${L?(L[0]>0?trkMark(L[0]/CE*100):'')+trkMark(L[2]/CE*100,'mrv'):''}</div>`
       +`<div class="mscrec" style="color:${recStateCol(r.rec)}">${escTxt(recStateTxt(r.rec))}${r.rec&&r.rec.win.src==='observed'?' · observado':''}</div>${diagRowHTML(r.id)}</div>`; });
   if(unres)out+=`<div class="submeta u-mt6 u-warn" data-act="musclemap">${unres} ejercicio${unres>1?'s':''} con músculo sin resolver (p. ej. "delts" sin pista en el nombre) · toca para asignarlo ›</div>`;
   return out; }
@@ -1673,7 +1683,7 @@ function diagnoseMuscle(inp){ const F=[]; if(!inp||!inp.n28)return {findings:F,s
   // 2 · entrenado antes de su ventana y rindió menos
   const early=R.filter(x=>x.gap!=null&&x.win&&x.gap<x.win.lo&&x.perf!=null&&x.perf<=DIAG.drop);
   if(early.length){ const x=early[early.length-1];
-    F.push({k:'early',sev:'warn',txt:'entrenado antes de recuperarse',row:'antes de recuperarse · '+pc(x.perf),ev:fmtShort(x.date)+': '+Math.round(x.gap)+' h de descanso (ventana '+(x.win.src==='observed'?'observada':'estimada')+' '+x.win.lo+'–'+x.win.hi+' h) → '+pc(x.perf)+(early.length>1?' · '+early.length+' de las últimas '+R.length:''),do:'deja más horas entre sesiones de este músculo'}); }
+    F.push({k:'early',sev:'warn',txt:'entrenado antes de recuperarse',row:'antes de recuperarse · '+pc(x.perf),ev:fmtShort(x.date)+': '+Math.round(x.gap)+' h de descanso (ventana '+(x.win.src==='observed'?'observada':'estimada')+' '+winTxt(x.win.lo,x.win.hi)+') → '+pc(x.perf)+(early.length>1?' · '+early.length+' de las últimas '+R.length:''),do:'deja más horas entre sesiones de este músculo'}); }
   // 3 · la última baja coincidió con sueño, comida, FC o carga del día
   if(last&&last.perf!=null&&last.perf<=DIAG.drop&&last.flags&&last.flags.length)
     F.push({k:'context',sev:'warn',txt:'la última baja coincidió con tu día',row:'baja '+pc(last.perf)+' · '+last.flags[0].split(' · ')[0],ev:fmtShort(last.date)+' '+pc(last.perf)+' · '+last.flags.join(' · '),do:'antes de cambiar el plan, revisa sueño y comida'});
@@ -1716,29 +1726,37 @@ function openMuscleDetail(id){ const M=MUSCLES[id]; if(!M)return; const t=todayI
   const line=(k,v,sub)=>`<div class="mdline"><span class="mdk">${k}</span><span class="mddots"></span><span class="mdv">${v}${sub?` <span class="mdsub">${sub}</span>`:''}</span></div>`;
   const pctOf=(o,k)=>{ const tot=Object.values(o).reduce((x,y)=>x+y,0)||0; return tot?Math.round((o[k]||0)/tot*100):0; };
   const dv=c.sets-p.sets;
+  // D16 · TRKBar por lectura: volumen vs MEV/MRV · T vs 7d previos · series 72 h vs tu promedio · % de la ventana de recuperación
+  const bar=(k,pct,marks,cap)=>`<div class="mdbar"><div class="vbar">${trkBarI('md:'+id+':'+k,pct)}${marks||''}</div>${cap?`<span class="mdbc">${cap}</span>`:''}</div>`;
+  const CE=Math.max(20,L?L[2]+2:20), tmx=Math.max(c.T||0,p.T||0)*1.25;
   // FATIGA: series de las últimas 72 h vs el promedio por 72 h de sus 4 semanas
   const exA=muscleExposureIndex()[id]||[]; const now=Date.now(); const acute=exA.filter(a=>now-expEnd(a)<=72*3600000).reduce((x,a)=>x+a.sets,0);
-  const chronic=m28.sets/(28/3); const fr=chronic>0?acute/chronic:null;
+  const chronic=m28.sets/(28/3); const fr=chronic>0?acute/chronic:null; const fmx=Math.max(acute,chronic*2);
   const obs=rec?rec.obs:observedRecovery(musclePairs(id)); const est=rec?rec.est:null;
   const last=exA.slice(-5).reverse();
   let html=`<div class="mdetail mscd"><div class="mdhd"><h3>${escTxt(muscleLabel(id))} <span class="u-meta u-o40 u-w4">${escTxt(M.es)}</span></h3></div>`
     +`<div class="grp-label sub">DIAGNÓSTICO</div>`+diagBlockHTML(muscleDiag(id))
     +`<div class="grp-label sub">VOLUMEN · 7 días</div>`
+    +bar('vol',c.sets/CE*100,L?(L[0]>0?trkMark(L[0]/CE*100):'')+trkMark(L[2]/CE*100,'mrv'):'',L?'marcas: MEV · MRV':'sin guía')
     +line('series duras',r1m(c.sets),(dv?(dv>0?'▲ +':'▼ ')+r1m(dv)+' vs 7d previos':'igual que 7d previos'))
     +line('directas · indirectas',r1m(c.direct)+' · '+r1m(c.indirect))
     +line('sesiones',c.n)
     +(L?line(glossWrap('guía RP · MEV/MAV/MRV','lm'),L[0]+' · '+L[1]+' · '+L[2],c.sets<L[0]?'estás bajo el mínimo efectivo':c.sets>L[2]?'sobre el máximo recuperable':c.sets>L[1]?'entre MAV y MRV':'en rango'):line(glossWrap('guía RP','lm'),'sin guía para este músculo','no se inventa'))
     +`<div class="grp-label sub">ESTÍMULO · 7 días</div>`
+    +(tmx>0?bar('t',c.T/tmx*100,p.T>0?trkMark(p.T/tmx*100):'',p.T>0?'marca: 7d previos':''):'')
     +line(glossWrap('tensión efectiva','t'),'T '+fmtT(c.T),p.T>0?(c.T>=p.T?'▲ ':'▼ ')+Math.round((c.T/p.T-1)*100)+'%':'')
     +line(glossWrap('RIR medio','rirmed'),c.rir!=null?r1m(c.rir):'—',c.rn?Math.round(c.near/c.rn*100)+'% a RIR ≤1':'')
     +line('longitud',[['long','estirado'],['mid','media'],['short','acortado'],['mixed','mixto']].filter(k=>pctOf(c.len,k[0])).map(k=>k[1]+' '+pctOf(c.len,k[0])+'%').join(' · ')||'—',pctOf(c.len,'unk')?pctOf(c.len,'unk')+'% sin definir':'')
     +line('perfil',[['asc','⬆'],['desc','⬇'],['mid','↔']].filter(k=>pctOf(c.rp,k[0])).map(k=>k[1]+' '+pctOf(c.rp,k[0])+'%').join(' · ')||'—',pctOf(c.rp,'unk')?pctOf(c.rp,'unk')+'% sin definir':'')
     +`<div class="grp-label sub">FATIGA · 72 h</div>`
+    +(fmx>0?bar('fat',acute/fmx*100,chronic>0?trkMark(chronic/fmx*100):'',chronic>0?'marca: tu promedio':''):'')
     +line('series en 72 h',r1m(acute),fr!=null?'vs '+r1m(chronic)+' de tu promedio · '+(fr>1.4?'alta':fr<0.6?'baja':'normal'):'sin historial de 4 semanas')
     +`<div class="grp-label sub">RECUPERACIÓN</div>`
+    // D19: la escala es el FIN de la ventana (lleno ⇔ fresco) con marca en su inicio; rec.pct (vs punto medio) queda para el texto
+    +(rec?bar('rec',rec.h/Math.max(1,rec.win.hi)*100,rec.win.lo>0&&rec.win.lo<rec.win.hi?trkMark(rec.win.lo/rec.win.hi*100):'',rec.win.lo>0&&rec.win.lo<rec.win.hi?'marca: inicio de la ventana':''):'')
     +(rec?line('última exposición','hace '+(rec.h<48?Math.round(rec.h)+' h':r1m(rec.h/24)+' d'),fmtShort(rec.last.date)):'')
     +(est?line(glossWrap('ventana estimada','est'),est.lo+'–'+est.hi+' h','base '+M.rec[0]+'–'+M.rec[1]+' h × dosis '+est.f):'')
-    +(obs&&obs.hours?line(glossWrap('ventana observada','est'),obs.hours[0]+'–'+obs.hours[1]+' h','tu historial · '+obs.n+' pares'):line(glossWrap('ventana observada','est'),'aún no',(obs?obs.n:0)+' de 6 pares necesarios'))
+    +(obs&&obs.hours?line(glossWrap('ventana observada','est'),winTxt(obs.hours[0],obs.hours[1]),'tu historial · '+obs.n+' pares'):line(glossWrap('ventana observada','est'),'aún no',(obs?obs.n:0)+' de 6 pares necesarios'))
     +(obs&&obs.n?`<div class="submeta u-mt4 u-mb0 u-mx0">capacidad según horas de descanso: ${obs.buckets.filter(b=>b.n).map(b=>(b.b>=1e9?'>'+b.a:b.a+'-'+b.b)+' h '+(b.med>=0?'+':'')+r1m(b.med)+'% (n'+b.n+')').join(' · ')}</div>`:'')
     +(rec?line('estado',`<span style="color:${recStateCol(rec)}">${escTxt(recStateTxt(rec))}</span>`,rec.win.src==='observed'?'con tu ventana observada':'con la ventana estimada'):'')
     +`<div class="grp-label sub">RENDIMIENTO · últimas exposiciones</div>`
@@ -2062,7 +2080,7 @@ function plannedVolumeSection(){
   let rows=''; const CEIL=20, DR=10, drPct=Math.round(DR/CEIL*100);
   muscles.forEach(m=>{ const sets=byM[m]; const pct=Math.min(100,Math.round(sets/CEIL*100));
     rows+=`<div class="vrow"><div class="vtop"><span class="vm">${escTxt(m)}</span><span class="vn">${sets} sets/vuelta</span></div>`
-      +`<div class="vbar"><i style="width:${pct}%"></i><span class="mev" style="left:${drPct}%"></span></div></div>`;
+      +`<div class="vbar">${trkBarI('cov:'+m,pct)}${trkMark(drPct)}</div></div>`;
   });
   return `<hr class="rule"/><div class="section u-mb10"><div class="h"><span class="s">//</span>COBERTURA</div><div class="meta">sets/músculo · por vuelta</div></div>`+rows
     +`<div class="submeta u-mt8">cobertura del split por músculo · la tensión real se mide al loguear · marca ~10 = rendimientos decrecientes</div>`;
@@ -2078,13 +2096,13 @@ function volumeSection(){
     // v228: marcas = MEV y MRV del músculo real (guía RP); sin guía, la marca ~10 de rendimientos decrecientes
     const L=landmarksForLabel(m); const CE=Math.max(CEIL,L?L[2]+2:CEIL); const drPct=Math.round(DR/CE*100);
     const st=L?volStatus(m,eff):''; const stTag=st==='under'?` <span class="vst" data-gloss="lm" title="por debajo del volumen mínimo efectivo estimado (guía RP)">bajo MEV ${L[0]}</span>`:st==='high'?` <span class="vst warn" title="entre el volumen máximo adaptativo y el máximo recuperable">cerca de MRV</span>`:st==='over'?` <span class="vst bad" title="por encima del volumen máximo recuperable estimado">sobre MRV ${L[2]}</span>`:'';
-    const marks=L?`${L[0]>0?`<span class="mev" style="left:${Math.round(L[0]/CE*100)}%" title="MEV ${L[0]}"></span>`:''}<span class="mrv" style="left:${Math.round(L[2]/CE*100)}%" title="MRV ${L[2]}"></span>`:`<span class="mev" style="left:${drPct}%"></span>`;
+    const marks=L?(L[0]>0?trkMark(L[0]/CE*100,'mev','MEV '+L[0]):'')+trkMark(L[2]/CE*100,'mrv','MRV '+L[2]):trkMark(drPct);
     const mp=muscleProgress(m); const mpBadge=(mp&&mp.dir)?progBadgeFromProg(mp,'tensión efectiva del músculo · 7d vs 7d previos'):''; const mT=(mp&&mp.cur>0)?` · T ${fmtT(mp.cur)}`:'';
     const pct=Math.min(100,Math.round(eff/CE*100));
     const junk=r1(hard-eff); const jn=junk>0?` <span class="u-o30" title="series duras pero de baja tensión (zona ligera) — sube carga / acércate al fallo">+${junk} lig.</span>`:'';
     const ind=r1(indirectM[m]||0), dir=r1(directM[m]||0); const brk=ind>0?`<div class="submeta u-meta u-mt2 u-dim" title="directas = músculo primario (1×) · indirectas = secundario (peso parcial)">↳ ${dir} directas · ${ind} indirectas</div>`:'';
     rows+=`<div class="vrow"><div class="vtop"><span class="vm">${escTxt(m)}${mpBadge}${stTag}</span><span class="vn">${eff} ef.${jn}${mT} · ${freq[m]||0}×/wk</span></div>`
-      +`<div class="vbar"><i style="width:${pct}%"></i>${marks}</div>${brk}</div>`;
+      +`<div class="vbar">${trkBarI('vol:'+m,pct)}${marks}</div>${brk}</div>`;
   });
   return `<hr class="rule"/><div class="section u-mb12"><div class="h"><span class="s">//</span>EFFECTIVE VOLUME</div><div class="meta">series efectivas/músculo · 7d</div></div>`+rows
     +`<div class="submeta u-mt8">ef. = series duras (RIR≤4) en zona productiva (tensión real) · marcas = MEV y MRV de ese músculo (guía RP; sin guía, ~10 = rendimientos decrecientes) · T = tensión efectiva 7d (carga relativa × reps cerca del fallo) · ▲▼ = T vs 7d previos</div>`;
@@ -2973,6 +2991,12 @@ function _uiSelfCheck(){
     ['a','b','c','d'].forEach(x=>toast('✓ prueba '+x));
     A('la pila guarda como máximo 3 toasts', box().children.length===3&&/prueba b/.test(box().firstElementChild.textContent));
     A('la vida del toast sale del token en segundos (2.3s → 2300 ms)', durMs('--toast-life',0)===2300&&durMs('--dur-3',0)===280);
+    A('TRKBar: ancho acotado a 0-100 con su clave', /data-bk="k" style="width:100%"/.test(trkBarI('k',140))&&/style="width:0%"/.test(trkBarI('k',-5))&&/class="over"/.test(trkBarI('',50,'over')));
+    const bx=document.createElement('div'); document.body.appendChild(bx);
+    try{ bx.innerHTML=trkBarI('_selftest',20); animBars(bx); A('TRKBar: la primera vez no anima', !bx.firstChild.getAnimations().length);
+      bx.innerHTML=trkBarI('_selftest',60); animBars(bx); A('TRKBar: un cambio anima desde el ancho anterior', reducedMotion()||bx.firstChild.getAnimations().length===1);
+      bx.innerHTML=trkBarI('_selftest',60); animBars(bx); A('TRKBar: sin cambio no anima', !bx.firstChild.getAnimations().length); }
+    finally{ bx.remove(); delete _bk._selftest; }
     const cal=monthCalHTML(2026,1,iso=>iso==='2026-02-03'?{lv:1,act:'x',title:'t'}:null,{head:false,num:true});
     A('TRKCal: febrero 2026 = 28 días, empieza en domingo (sin relleno), sin cabecera', (cal.match(/class="cd /g)||[]).length===28&&!/cd e"/.test(cal)&&!/cmh/.test(cal));
     A('TRKCal: solo el día marcado lleva acción y su número', (cal.match(/data-act=/g)||[]).length===1&&/cd l1" data-act="x" data-d="2026-02-03" title="2026-02-03 · t">3<\/i>/.test(cal));
@@ -3382,7 +3406,7 @@ function renderHistoryEditor(){
   });
   if(curM!==null)body+='</div></div>';
   return statusBar(true)
-    +`<div class="wprog"><i style="width:${total?Math.round(done/total*100):0}%"></i></div>`
+    +`<div class="wprog">${trkBarI('wp:'+s.id,total?Math.round(done/total*100):0)}</div>`
     +`<div class="whdr top"><div class="l1"><span class="s">//</span>HISTORY</div><div class="wname">${escTxt(s.dayName||'sesión')}</div><div class="l2"></div><div class="wmeta">${escTxt(fmtDate(s.date))}${s.startTime?' · '+escTxt(s.startTime)+(s.endTime?'–'+escTxt(s.endTime):''):''}</div></div>`
     +`<div class="wgym">${escTxt(s.gym||'')}</div>`
     +`<div class="hist-editbar"><button class="cancel" data-act="h_close">‹ cerrar</button><button class="cancel" data-act="sharesession" data-id="${s.id}">compartir</button><button class="cancel danger" data-act="h_delsession" data-id="${s.id}">borrar</button></div>`
@@ -3426,7 +3450,7 @@ function renderWorkout(){
     +(w.loggedAfter
       ? `<div class="rot u-mt12"><span class="lbl">LOGGED AFTER</span><span class="n"><input type="date" value="${w.date}" max="${todayISO()}" data-act="setdate" class="inp-mini"/></span></div><div class="rot u-mt6"><span class="lbl">duración (min) · opcional</span><span class="n"><input type="number" value="${w.manualDur||''}" data-act="setdur" inputmode="numeric" placeholder="—" class="inp-mini u-tr" style="width:70px"/></span></div><div class="rot u-mt6"><span class="lbl">inicio · opcional</span><span class="n"><input type="time" value="${w.startTime||''}" data-act="setstarttime" class="inp-mini"/></span></div><div class="rot u-mt6"><span class="lbl">fin · opcional</span><span class="n"><input type="time" value="${w.endTime||''}" data-act="setendtime" class="inp-mini"/></span></div><div class="rot u-mt6"><span class="lbl">avanzar rotación</span><span class="n"><a data-act="togglenoadv" class="u-tap u-py2 u-px10 u-xs" style="border:.5px solid var(--o20)">${w.noAdvance?'no':'sí'}</a></span></div>`
       : `<div class="rot u-mt12"><span class="lbl">ROTATION - DAY ${curDayIdx()+1}/${dayCount()}${w.startMs?' · '+elapsedStr(w.startMs):''}</span><span class="n u-tap" data-act="changegym">[change gym]</span></div>`)
-    +`<div class="wprog"><i style="width:${total?Math.round(done/total*100):0}%"></i></div>`
+    +`<div class="wprog">${trkBarI('wp:live',total?Math.round(done/total*100):0)}</div>`
     +`<div class="whdr top"><div class="l1"><span class="s">//</span>NOW</div><div class="wname">${escTxt(w.dayName)}</div><div class="l2"></div><div class="wmeta">${escTxt(db.split.name)} · ${escTxt(day.tag)}</div></div>`
     +`<div class="wgym">${w.gym}</div>`
     +sessionContextNote(w)
@@ -3528,7 +3552,7 @@ function renderMacros(){
     else { p=goal?val/goal*100:0; ctr=Math.round(val); sub='/ '+goal+' '+unit; }
     return `<div class="cell ${macroStatus(val,goal)}" data-act="ringtog" data-k="${key}">${ringHTML(p,'<div class="num" data-nk="m-'+key+'-'+(state.macroPct?'pct':isRem?'rem':'val')+'" data-nv="'+parseFloat(ctr)+'">'+ctr+'</div>',null,isRem)}<div class="cap">${lbl}</div><div class="sub">${sub}</div></div>`;
   };
-  const intakeRow=(lbl,val,goal,unit,extra,dec)=>{const p=goal?val/goal*100:0;const ov=goal&&val>goal*1.05;const disp=dec?(+val).toFixed(dec):Math.round(val);return `<div class="mrow"><span class="ml">${lbl}</span><div class="bar"><i class="${ov?'over':''}" style="width:${Math.min(100,p)}%"></i></div><span class="mv ${ov?'ovr':''}">${disp} <span class="g">/ ${goal} ${unit}</span>${extra||''}</span></div>`;};
+  const intakeRow=(lbl,val,goal,unit,extra,dec)=>{const p=goal?val/goal*100:0;const ov=goal&&val>goal*1.05;const disp=dec?(+val).toFixed(dec):Math.round(val);return `<div class="mrow"><span class="ml">${lbl}</span><div class="bar">${trkBarI('in:'+lbl,Math.min(100,p),ov?'over':'')}</div><span class="mv ${ov?'ovr':''}">${disp} <span class="g">/ ${goal} ${unit}</span>${extra||''}</span></div>`;};
   const bl=bloating(t,g);
   let details = !open?'' : `<hr class="rule u-my4 u-mx0"/>`
     +`<div class="u-flex u-mb0 u-jfe u-aib"><a data-act="toggleMacroUnit" class="u-cap u-o50 u-tap">[${state.macroPct?'ver gramos':'ver %'}]</a></div>`
@@ -3776,7 +3800,7 @@ function chartNums(vals,gap0){ return (vals||[]).map(v=>{ if(v==null||v==='')ret
 function lineChart(vals,opt){ opt=opt||{};
   const nums=chartNums(vals,opt.gap0); const n=nums.length; if(!n)return '';
   const real=nums.filter(v=>v!=null); if(!real.length)return '';
-  const W=300, H=opt.h||56, padX=opt.detail?4:7, padT=opt.detail?12:7, padB=opt.detail?8:7;
+  const W=300, H=opt.h||56, padX=opt.detail?4:7, padT=opt.detail?12:(opt.pad!=null?opt.pad:7), padB=opt.detail?8:(opt.pad!=null?opt.pad:7);
   const rlo=Math.min(...real), rhi=Math.max(...real);
   let lo=rlo, hi=rhi;
   if(opt.band)opt.band.forEach(b=>{ if(b){ lo=Math.min(lo,b[0]); hi=Math.max(hi,b[1]); } });
@@ -4903,13 +4927,18 @@ function renderProgress(){
       +`<div class="pst flat" style="opacity:.65">${_td.loggedDays} días · conf ${_td.conf}${_diff!=null?' · vs meta '+(_diff>0?'+':'')+_diff:''}</div></div>`); } }
   out+=`<div class="pgrid">${tiles.join('')}</div>`;
   // fuerza detalle (lista completa) — preserva el detalle del fork de Progreso/Gym
-  if(e1.length>1 && cfg.e1rm){ out+=`<hr class="rule"/><div class="grp-label">//FUERZA · <span data-gloss="e1rm">e1RM</span> Epley (vs semana previa)</div>`;
-    e1.forEach(x=>{ const d=x.prev!=null?Math.round(x.cur-x.prev):null; const arr=d==null?'·':(d>0?'▲':d<0?'▼':'='); const col=d>0?'var(--good)':d<0?'var(--bad)':'var(--o40)';
-      out+=`<div class="line u-tap" data-act="liftdetail" data-ex="${escTxt(x.name)}"><span class="k">${latTxt(x)}${escTxt(x.name)}</span><span class="dots"></span><span class="v">${Math.round(x.cur)} <span class="u-xs" style="color:${col}">${arr}${d?Math.abs(d):''}</span> <span class="ptchev u-sm">›</span></span></div>`; }); }
+  if(e1.length>1 && cfg.e1rm){ out+=`<hr class="rule"/><div class="grp-label">//FUERZA · <span data-gloss="e1rm">e1RM</span> Epley (vs semana previa)</div><div class="u-xs u-o40 u-mt-n4 u-mb6 u-mx0">línea = tus últimos 30 días · toca uno para el detalle</div>`;
+    // TRKTrend (D14): la línea usa el mismo eje de 30 días en todas las filas (sin dato = sin punto); con <2 sesiones no se dibuja
+    const _tlo=Date.parse(lastDays(30)[0]+'T12:00:00'), _thi=Date.parse(todayISO()+'T12:00:00');
+    e1.forEach(x=>{ const d=x.prev!=null?Math.round(x.cur-x.prev):null; const arr=d==null?'·':(d>0?'▲':d<0?'▼':'='); const dc=d>0?'u-good':d<0?'u-bad':'u-o40';
+      const ser=liftE1Series(x.name,30); const sp=ser.length>=2?lineChart(ser.map(p=>p.e1),{h:22,pad:3,noFill:true,noDots:true,margin:'0',dates:ser.map(p=>p.date),tlo:_tlo,thi:_thi}):''; const v=Math.round(x.cur);
+      out+=`<div class="trow" data-act="liftdetail" data-ex="${escTxt(x.name)}"><span class="trn">${latTxt(x)}${escTxt(x.name)}</span><span class="trsp">${sp}</span><span class="trv"><b data-nk="e1:${escTxt(x.name)}" data-nv="${v}">${v}</b> <span class="trd ${dc}">${arr}${d?Math.abs(d):''}</span></span><span class="ptchev u-sm">›</span></div>`; }); }
   if(cfg.e1rm){ const _pr=prRecords(); if(_pr.length){
-    out+=`<hr class="rule"/><div class="grp-label">//RECORDS · mejor <span data-gloss="e1rm">e1RM</span> histórico</div><div class="u-xs u-o40 u-mt-n4 u-mb6 u-mx0">tu mejor levantada histórica por ejercicio</div>`;
-    _pr.slice(0,10).forEach(x=>{ const _tw=Math.round(x.tw*10)/10;
-      out+=`<div class="line"><span class="k">${latTxt(x)}${escTxt(x.name)}</span><span class="dots"></span><span class="v">${Math.round(x.e1)}${escTxt(x.eu||'')} <span class="u-o40 u-xs">· top ${_tw}${escTxt(x.twu||'')}×${x.twr||0}</span></span></div>`; });
+    // D15: PR = el récord se marcó en los últimos 7 días (logro reciente, no solo la tabla)
+    const _d7=shiftDate(todayISO(),-6), _top=_pr.slice(0,10), _nPR=_top.filter(x=>x.edate>=_d7).length;
+    out+=`<hr class="rule"/><div class="grp-label">//RECORDS · mejor <span data-gloss="e1rm">e1RM</span> histórico</div><div class="u-xs u-o40 u-mt-n4 u-mb6 u-mx0">tu mejor levantada histórica por ejercicio${_nPR?' · PR = récord de los últimos 7 días':''}</div>`;
+    _top.forEach(x=>{ const _tw=Math.round(x.tw*10)/10;
+      out+=`<div class="line"><span class="k">${latTxt(x)}${escTxt(x.name)}${x.edate>=_d7?'<span class="lpr" title="récord marcado el '+escTxt(fmtShort(x.edate))+'">PR</span>':''}</span><span class="dots"></span><span class="v">${Math.round(x.e1)}${escTxt(x.eu||'')} <span class="u-o40 u-xs">· top ${_tw}${escTxt(x.twu||'')}×${x.twr||0}</span></span></div>`; });
   } }
   try{ const _wp=prevMonthYm().split('-'); if(wrapMonthData(+_wp[0],+_wp[1]-1).hasData) out+='<div class="u-tc u-mt16 u-mb2 u-mx0"><a data-act="wrapview" class="u-meta u-o60 u-tap">▸ ver tu wrap · '+escTxt(MONFULL[+_wp[1]-1])+'</a></div>'; }catch(_){}
   out+=musclesSectionHTML();
@@ -5466,6 +5495,14 @@ function animNums(root){ const red=reducedMotion();
     const t0=performance.now(), D=durMs('--dur-3',280);
     const step=now=>{ if(!el.isConnected)return; const p=Math.min(1,(now-t0)/D), e=1-Math.pow(1-p,3); el.textContent=p<1?fmt(from+(to-from)*e):txt; if(p<1)requestAnimationFrame(step); };
     el.textContent=fmt(from); requestAnimationFrame(step); }); }
+// ---- R6 · TRKBar (§7.18): pista + relleno (+ marcas). La clave (data-bk) es la identidad de la barra: al volver a pintarse
+// con otro ancho, crece o encoge desde el que tenía (--dur-2); la primera vez y sin cambio no se anima. pct acotado a 0-100.
+const _bk={};
+function trkBarI(key,pct,cls){ return `<i${cls?` class="${cls}"`:''}${key?` data-bk="${escTxt(key)}"`:''} style="width:${Math.max(0,Math.min(100,pct))}%"></i>`; }
+function trkMark(pct,cls,title){ return `<span class="${cls||'mev'}" style="left:${Math.max(0,Math.min(100,Math.round(pct)))}%"${title?` title="${escTxt(title)}"`:''}></span>`; }
+function animBars(root){ const red=reducedMotion();
+  root.querySelectorAll('[data-bk]').forEach(el=>{ const k=el.dataset.bk, to=el.style.width, from=_bk[k]; _bk[k]=to;
+    if(red||from==null||from===to||!to)return; try{ el.animate([{width:from},{width:to}],{duration:durMs('--dur-2',180),easing:'cubic-bezier(.22,1,.36,1)'}); }catch(_){} }); }
 function slideTabs(root,swap){ const red=reducedMotion();
   root.querySelectorAll('.mdtabs').forEach(c=>{ const on=c.querySelector('span.on'); let ind=c.querySelector('.tabind'); if(!on){ if(ind)ind.remove(); c.classList.remove('has-ind'); return; }
     if(!ind){ ind=document.createElement('i'); ind.className='tabind'; c.insertBefore(ind,c.firstChild); } c.classList.add('has-ind');
@@ -5477,7 +5514,7 @@ function applyEnter(root){ const e=state._enter, p=state._pop; state._enter=null
   else if(e){ const el=root.querySelector(e.ex!=null?'.ex[data-exi="'+e.ex+'"]':'.srow[data-exi="'+e.exi+'"][data-si="'+e.si+'"],.pair[data-exi="'+e.exi+'"][data-si="'+e.si+'"]');
     if(el){ el.classList.add('enter'); if(e.scroll&&el.scrollIntoView)el.scrollIntoView({block:'center',behavior:'smooth'}); } }
   if(p){ const el=root.querySelector('.dchk[data-exi="'+p.exi+'"][data-si="'+p.si+'"],.pairdone[data-exi="'+p.exi+'"][data-si="'+p.si+'"]'); if(el)el.classList.add('pop'); } }
-function afterPaint(root,swap){ if(!root)return; try{ popClose(); }catch(_){} try{ animNums(root); }catch(_){} try{ slideTabs(root,swap); }catch(_){} try{ applyEnter(root); }catch(_){} }
+function afterPaint(root,swap){ if(!root)return; try{ popClose(); }catch(_){} try{ animNums(root); }catch(_){} try{ animBars(root); }catch(_){} try{ slideTabs(root,swap); }catch(_){} try{ applyEnter(root); }catch(_){} }
 // ---- R4 · TRKRow reflow (§7.18): lo que queda se reacomoda en vez de saltar ----
 // Cada fila/bloque lleva data-rk = identidad de SU objeto (serie, ejercicio) — un WeakMap en memoria, nunca se guarda.
 // reRender() mide antes de pintar y, después, anima a cada elemento desde donde estaba (FLIP). Un elemento que se mueve
