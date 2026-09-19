@@ -384,6 +384,14 @@
      campo (setField ya limpia _pf ahí; elegir el MISMO valor en un <select> no dispara 'change',
      por eso hay un click listener aparte — ver el dispatcher de 'click' cerca de 'setf'/'h_setf'). */
   .inp.pf, .pick.pf{opacity:.45;}
+  /* R7 · TRKSelect (D17): la celda de RIR es un botón con el aspecto del select; elegir = un toque en una fila de 44 px */
+  .rirb{padding:0; line-height:1;}
+  .tsel{position:absolute; z-index:var(--z-pop); background:var(--card2); border:1px solid var(--border); border-radius:var(--r-ctl); box-shadow:var(--shadow-float); padding:var(--s3); animation:rowin var(--dur-2) var(--ease-out);}
+  .tselh{font-size:var(--t-caption); letter-spacing:var(--ls-caps); text-transform:uppercase; color:var(--o50); margin:0 0 var(--s3) var(--s1);}
+  .tselr{display:flex; gap:var(--s2);}
+  .tselo{flex:1; min-width:0; height:44px; border:.5px solid var(--o20); border-radius:var(--r-sm); background:transparent; color:var(--fg); font-size:var(--t-body); font-weight:700; cursor:pointer;}
+  .tselo.on{background:var(--fill); border-color:var(--fill); color:var(--bg);} .tselo:active{background:var(--o10);}
+  .tselx{display:block; margin:var(--s2) 0 0 auto; background:none; border:0; color:var(--o50); font-size:var(--t-xs); padding:var(--s2) var(--s1); cursor:pointer;}
   .fs{height:36px; border:.5px solid var(--o20); border-radius:var(--r-sm); background:transparent; color:var(--o50); font-size:var(--t-caption); cursor:pointer;} .fs.on{background:var(--o12); color:var(--fg);} .fs.ds{display:flex; align-items:center; justify-content:center; cursor:default;}
   .droppct{float:left; font-size:var(--t-caption); font-weight:400; color:var(--o35);}
   .settens{font-size:var(--t-caption); font-weight:400; color:var(--o40); margin-left:6px;}
@@ -2114,6 +2122,7 @@ function rirOpts(sel,allowF){ let o='<option value="">—</option>'; if(allowF)o
 function unitOpts(sel){ return ['kg','lbs','pla'].map(u=>`<option ${sel===u?'selected':''}>${u}</option>`).join(''); }
 function rirOpts(sel){ sel=(sel==null?'':String(sel)); const base=['F','0','1','2','3','4','5']; if(sel&&base.indexOf(sel)<0)base.unshift(sel); return '<option value="">—</option>'+base.map(o=>`<option value="${o}"${o===sel?' selected':''}>${o}</option>`).join(''); }
 
+const TRK_RIR=true;   // R7: la celda de RIR usa TRKSelect (openRirSelect); false = <select> nativo de respaldo
 // actPrefix ('' live | 'h_' history-edit): lets the exact same row markup dispatch to an isolated
 // set of handlers when editing a past session, without touching the live setf/delset handlers at all.
 function renderSetRow(exi,si,set,ex,allowF,actPrefix){
@@ -2133,7 +2142,12 @@ function renderSetRow(exi,si,set,ex,allowF,actPrefix){
   }
   const u=`<select class="pick" data-act="${actPrefix}setf" data-exi="${exi}" data-si="${si}" data-f="unit" ${lk}>${unitOpts(set.unit)}</select>`;
   const r=`<input class="inp${pfHas(set,'r')?' pf':''}" data-act="${actPrefix}setf" data-exi="${exi}" data-si="${si}" data-f="r" value="${set.r}" placeholder="—" inputmode="numeric" ${ro} ${lk}/>`;
-  const rr=`<select class="pick${pfHas(set,'rir')?' pf':''}" data-act="${actPrefix}setf" data-exi="${exi}" data-si="${si}" data-f="rir" ${lk}>${rirOpts(set.rir)}</select>`;
+  // R7 (D17): TRKSelect — un botón con el aspecto del select abre la fila F 0-5 (openRirSelect); mismo data-act/data-f,
+  // así candado, auto-scroll, gris .pf y el parche de setField siguen igual. TRK_RIR=false vuelve al <select> nativo.
+  const _rv=set.rir==null?'':String(set.rir);
+  const rr=TRK_RIR
+    ? `<button type="button" class="pick rirb${pfHas(set,'rir')?' pf':''}" data-act="${actPrefix}setf" data-exi="${exi}" data-si="${si}" data-f="rir" data-v="${escTxt(_rv)}" aria-label="RIR" ${lk}>${_rv?escTxt(_rv):'—'}</button>`
+    : `<select class="pick${pfHas(set,'rir')?' pf':''}" data-act="${actPrefix}setf" data-exi="${exi}" data-si="${si}" data-f="rir" ${lk}>${rirOpts(set.rir)}</select>`;
   const del=`<button class="del" data-act="${actPrefix}delset" data-exi="${exi}" data-si="${si}">×</button>`;
   const we=`<input class="inp weight" data-act="${actPrefix}setf" data-exi="${exi}" data-si="${si}" data-f="extraW" value="${set.extraW||''}" placeholder="${_bw?'+lastre':'+extra'}" inputmode="decimal" ${ro} ${lk}/>`;
   return {w,u,r,rr,del,we};
@@ -2997,6 +3011,15 @@ function _uiSelfCheck(){
       bx.innerHTML=trkBarI('_selftest',60); animBars(bx); A('TRKBar: un cambio anima desde el ancho anterior', reducedMotion()||bx.firstChild.getAnimations().length===1);
       bx.innerHTML=trkBarI('_selftest',60); animBars(bx); A('TRKBar: sin cambio no anima', !bx.firstChild.getAnimations().length); }
     finally{ bx.remove(); delete _bk._selftest; }
+    let picked=null; const an=document.createElement('button'); document.body.appendChild(an);
+    try{ trkSelect(an,['F','0','1'],'0',v=>{ picked=v; },{clear:'— quitar'}); const ts=document.getElementById('tsel');
+      A('TRKSelect: abre con sus opciones y marca la actual', !!ts&&ts.querySelectorAll('.tselo').length===3&&ts.querySelector('.tselo.on').textContent==='0');
+      ts.querySelectorAll('.tselo')[2].click(); A('TRKSelect: un toque elige y cierra', picked==='1'&&!document.getElementById('tsel'));
+      trkSelect(an,['F','0'],'F',v=>{ picked=v; },{clear:'— quitar'}); document.querySelector('#tsel .tselx').click(); A('TRKSelect: quitar deja vacío', picked==='');
+      trkSelect(an,['F'],'',()=>{ picked='x'; },{clear:'— quitar'}); A('TRKSelect: sin valor no ofrece quitar', !document.querySelector('#tsel .tselx'));
+      popClose(); A('TRKSelect: cerrar sin elegir no cambia nada', picked===''&&!document.getElementById('tsel'));
+      A('TRKSelect: la celda de RIR es el botón con su valor', !TRK_RIR||/^<button type="button" class="pick rirb" [^>]*data-f="rir" data-v="2"[^>]*>2<\/button>$/.test(renderSetRow(0,0,{w:'',r:'',rir:'2'},{type:'free'},true,'').rr)); }
+    finally{ an.remove(); popClose(); }
     const cal=monthCalHTML(2026,1,iso=>iso==='2026-02-03'?{lv:1,act:'x',title:'t'}:null,{head:false,num:true});
     A('TRKCal: febrero 2026 = 28 días, empieza en domingo (sin relleno), sin cabecera', (cal.match(/class="cd /g)||[]).length===28&&!/cd e"/.test(cal)&&!/cmh/.test(cal));
     A('TRKCal: solo el día marcado lleva acción y su número', (cal.match(/data-act=/g)||[]).length===1&&/cd l1" data-act="x" data-d="2026-02-03" title="2026-02-03 · t">3<\/i>/.test(cal));
@@ -5854,6 +5877,8 @@ document.getElementById('app').addEventListener('click',e=>{
   // confirmar esa sugerencia gris. v223: confirma SOLO ese campo y parchea el DOM en sitio. El código
   // viejo re-renderizaba con el selector nativo ABIERTO: el <select> original quedaba huérfano, su
   // 'change' nunca llegaba a #app (perdías el RIR que acababas de elegir) y #view saltaba al inicio.
+  // R7 · TRKSelect: la celda de RIR es un botón — abre la fila F 0-5 y elegir pasa por el mismo setField/setHistField
+  if(el.classList&&el.classList.contains('rirb')&&(a==='setf'||a==='h_setf')){ openRirSelect(el,a==='h_setf'); return; }
   if(el.tagName==='SELECT'&&(a==='setf'||a==='h_setf')){
     let s=null;
     if(a==='setf'){ const w=db.activeWork; s=w&&w.exercises[exi]&&w.exercises[exi].sets[si]; }
@@ -8072,7 +8097,29 @@ const GLOSS={
   e1rm:'e1RM: el máximo estimado para 1 repetición (Epley + RIR) de tus series de trabajo. Compara días con pesos y reps distintos.'
 };
 const glossWrap=(t,k)=>'<span data-gloss="'+k+'">'+t+'</span>';
-function popClose(){ const g=document.getElementById('gloss'); if(g)g.remove(); window._glossEl=null; }
+function popClose(){ const g=document.getElementById('gloss'); if(g)g.remove(); window._glossEl=null; const t=document.getElementById('tsel'); if(t)t.remove(); window._tselEl=null; }
+// ---- R7 · TRKSelect (§7.18, D17): elegir de una lista corta con UN toque, sin la rueda nativa ----
+// trkSelect(anchor, opts, cur, onPick, {title, clear}): popover pegado al control con una fila de opciones de 44 px;
+// tocar una = onPick(valor) y se cierra (elegir la misma también cuenta); tocar fuera, hacer scroll o repintar = se cierra
+// sin cambiar nada. Vive con el glosario (popClose lo cierra). TRK_RIR (junto a renderSetRow) = false devuelve la celda de RIR al <select>.
+function trkSelect(anchor,opts,cur,onPick,o){ o=o||{}; popClose(); const app=document.getElementById('app'); if(!app||!anchor)return null;
+  const p=document.createElement('div'); p.id='tsel'; p.className='tsel'; p.setAttribute('role','listbox'); cur=cur==null?'':String(cur);
+  if(o.title){ const h=document.createElement('div'); h.className='tselh'; h.textContent=o.title; p.appendChild(h); }
+  const row=document.createElement('div'); row.className='tselr';
+  opts.forEach(v=>{ v=String(v); const b=document.createElement('button'); b.type='button'; b.className='tselo'+(v===cur?' on':''); b.textContent=v; b.setAttribute('role','option'); b.setAttribute('aria-selected',v===cur?'true':'false');
+    b.addEventListener('click',ev=>{ ev.stopPropagation(); popClose(); onPick(v); }); row.appendChild(b); });
+  p.appendChild(row);
+  if(o.clear&&cur!==''){ const c=document.createElement('button'); c.type='button'; c.className='tselx'; c.textContent=o.clear; c.addEventListener('click',ev=>{ ev.stopPropagation(); popClose(); onPick(''); }); p.appendChild(c); }
+  app.appendChild(p);
+  const r=anchor.getBoundingClientRect(), fr=app.getBoundingClientRect(); const w=Math.min(348,fr.width-36); p.style.width=w+'px';
+  p.style.left=Math.max(18,Math.min(fr.width-18-w,r.left-fr.left+r.width/2-w/2))+'px';
+  const below=r.bottom-fr.top+6, ph=p.offsetHeight; p.style.top=(below+ph>fr.height-90?Math.max(8,r.top-fr.top-6-ph):below)+'px';
+  window._tselEl=anchor; return p; }
+function openRirSelect(el,hist){ const exi=+el.dataset.exi, si=+el.dataset.si;
+  trkSelect(el,['F','0','1','2','3','4','5'],el.dataset.v||'',v=>{
+    if(hist){ setHistField(exi,si,'rir',v); reRender(); return; }
+    setField(exi,si,'rir',v); el.dataset.v=v; el.textContent=v||'—';
+  },{title:'RIR · reps en reserva',clear:'— quitar'}); }
 function trkPop(anchor,text){ popClose(); if(!text)return; const app=document.getElementById('app'); const p=document.createElement('div'); p.className='gloss'; p.id='gloss'; p.setAttribute('role','tooltip'); p.textContent=text; app.appendChild(p);
   const r=anchor.getBoundingClientRect(), fr=app.getBoundingClientRect(); const w=Math.min(300,fr.width-36); p.style.width=w+'px';
   p.style.left=Math.max(18,Math.min(fr.width-18-w,r.left-fr.left+r.width/2-w/2))+'px';
@@ -8082,7 +8129,7 @@ function trkMenu(title,items){ const m=askLayer('<h3>'+escTxt(title)+'</h3><div 
   m.addEventListener('click',ev=>{ const b=ev.target.closest&&ev.target.closest('[data-pop],[data-ask]'); if(!b)return; ev.stopPropagation(); closeAsk(true); if(b.dataset.pop!=null)items[+b.dataset.pop][1](); }); }
 document.addEventListener('click',e=>{ const g=e.target&&e.target.closest&&e.target.closest('[data-gloss]');
   if(g){ e.stopPropagation(); e.preventDefault(); if(document.getElementById('gloss')&&window._glossEl===g)popClose(); else trkPop(g,GLOSS[g.dataset.gloss]); return; }
-  if(!(e.target&&e.target.closest&&e.target.closest('#gloss')))popClose(); },true);
+  if(!(e.target&&e.target.closest&&e.target.closest('#gloss,#tsel')))popClose(); },true);
 try{ document.addEventListener('scroll',popClose,{capture:true,passive:true}); }catch(_){}   // cualquier scroll (pantalla o sheet) la cierra
 // TRKPrompt: un campo en un sheet (reemplaza al diálogo nativo de texto). onSave(valor) → false = no cerrar (el toast dice por qué)
 function trkPrompt(o,onSave){ openModal('<h3>'+escTxt(o.title||'')+'</h3><div class="field"><label>'+escTxt(o.label||'')+'</label><input id="tp_in" type="'+(o.type||'text')+'"'+(o.inputmode?' inputmode="'+o.inputmode+'"':'')+' value="'+escTxt(o.value==null?'':String(o.value))+'" placeholder="'+escTxt(o.placeholder||'')+'"/></div>'+(o.hint?'<div class="submeta gap">'+escTxt(o.hint)+'</div>':'')+'<div class="sheetbtns"><button class="ok" id="tp_ok">'+escTxt(o.ok||'guardar')+'</button><button class="cancel" data-act="closemodal">cancelar</button></div>');

@@ -1,7 +1,12 @@
 <!doctype html><html><head><meta charset="utf-8"><title>ds-diff</title>
 <style>body{margin:0;background:#111;display:flex;gap:8px} iframe{width:393px;height:852px;border:0;background:#000}</style></head>
-<body><iframe id="A" src="../_pre.html"></iframe><iframe id="B" src="../index.html"></iframe>
+<body><iframe id="A"></iframe><iframe id="B"></iframe>
 <script>
+// D21: cada carga rompe la caché (?cb=hora) — sin esto el navegador podía servir un _pre.html o index.html viejo y el diff
+// comparaba versiones equivocadas. ?a=… / ?b=… eligen otros archivos (p. ej. ?a=../_v241.html para re-verificar una fase).
+const _q=new URLSearchParams(location.search), _cb='?cb='+Date.now(), SRC={A:(_q.get('a')||'../_pre.html'),B:(_q.get('b')||'../index.html')};
+document.getElementById('A').src=SRC.A+_cb; document.getElementById('B').src=SRC.B+_cb;
+function loaded(){ return Object.fromEntries(['A','B'].map(k=>{ const e=performance.getEntriesByType('resource').filter(x=>x.name.indexOf(SRC[k].replace('../','/'))>=0&&x.name.indexOf(_cb)>=0).pop(); return [k,SRC[k]+(e?' · '+(e.transferSize||e.encodedBodySize)+' B'+(e.transferSize?'':' (¿caché?)'):' · sin registro')]; })); }
 // gym//TRK · diff de estilos computados (DESIGN_SYSTEM.md §18). Copia la versión anterior a repo/_pre.html (no se versiona),
 // sirve repo/ y abre /tools/ds-diff.html; en consola: go2() y luego report(). Mismo escenario en A (antes) y B (ahora), elemento por elemento.
 const P=['color','fontSize','fontWeight','marginTop','marginBottom','marginLeft','marginRight','paddingTop','paddingBottom','paddingLeft','paddingRight','textAlign','cursor','flexGrow','flexShrink','flexBasis','minWidth','whiteSpace','textDecorationLine','cssFloat','verticalAlign','display','flexWrap','alignItems','justifyContent','columnGap','rowGap','flexDirection','fontStyle','letterSpacing','width','height'];
@@ -43,5 +48,5 @@ async function runDiff2(S){ const A=document.getElementById('A').contentWindow, 
     res[name]={n:a.length, err:ea||eb||null, diffs:diffs.slice(0,10), nd:diffs.length}; }
   return res; }
 function go2(){ window._R2=null; window._t0=Date.now(); runDiff2(S2).then(r=>{ window._R2=r; window._t1=Date.now(); }).catch(e=>{ window._R2={fatal:e.message}; }); return 'started '+S2.length; }
-function report(){ const r=window._R2; if(!r)return 'running'; if(r.fatal)return r.fatal; return JSON.stringify({ok:Object.entries(r).filter(([k,v])=>!v.struct&&!v.nd).map(([k,v])=>k+'('+v.n+(v.err?' ERR '+v.err.slice(0,60):'')+')').join(' '), bad:Object.fromEntries(Object.entries(r).filter(([k,v])=>v.struct||v.nd))},null,1); }
+function report(){ const r=window._R2; if(!r)return 'running'; if(r.fatal)return r.fatal; return JSON.stringify({loaded:loaded(),ok:Object.entries(r).filter(([k,v])=>!v.struct&&!v.nd).map(([k,v])=>k+'('+v.n+(v.err?' ERR '+v.err.slice(0,60):'')+')').join(' '), bad:Object.fromEntries(Object.entries(r).filter(([k,v])=>v.struct||v.nd))},null,1); }
 </script></body></html>
