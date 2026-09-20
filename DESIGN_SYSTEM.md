@@ -895,6 +895,8 @@ Pillow, AutoSleep, Fitbit + HIG / Material 3 / NN-g. **No hay ninguna captura de
 
 **Hecho U4 (v249):** E11–E15. La banda deja de ser un relleno invisible (`--o10`, ratio ≈1.1:1) y pasa a **dos líneas de referencia** de .5 px en `--o30`; deja de ser rodante y de expandir el dominio (`normalBandFixed`: un par p15–p85 por periodo), el peso por fin la tiene, el relleno de área ya no depende de si hay banda, y sin 7 días de historia el detalle dice `sin normal · N/7 d`. Fuera la pastilla "prom" de dentro de la gráfica (el encabezado ya lo dice) y el dibujante de banda por tramos.
 
+**Hecho U5 (v250):** E16–E18. La racha deja el par gris + verde y pasa a **opacidad de un solo blanco** (`--track` · `--o30` · `--fg`); celda **cuadrada** de 19 px; "hoy" con anillo `--o40` en vez de blanco puro; **sin leyenda** (tres muestras de color para un dato binario son texto instructivo disfrazado, §9.1); y la semana empieza en **lunes** con columnas `L M X J V S D` en los dos calendarios que comparten `monthCalHTML`.
+
 **Ruta:** U0 bases (este documento + auditor) · U1 v246 macros sin fricción · U2 v247 sheet de alimento ·
 U3 v248 una sola voz · U4 v249 señal en las gráficas · U5 v250 racha · U6 v251 sueño con fases · U7 v252 compartir.
 Cada fase cierra con `ds-audit` sin regresiones, `ds-diff` con cargas frescas, self-checks y QA 393×852 con toques

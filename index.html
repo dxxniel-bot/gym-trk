@@ -201,11 +201,12 @@
   .cm .cmh{font-size:var(--t-caption); letter-spacing:var(--ls-caps); text-transform:uppercase; color:var(--o50); margin-bottom:6px;}
   .cm .cmw,.cm .cmg{display:grid; grid-template-columns:repeat(7,1fr); gap:var(--s2);}
   .cm .cmw{margin-bottom:var(--s2);} .cm .cmw b{font-size:var(--t-caption); font-weight:400; color:var(--o35); text-align:center;}
-  .cd{display:block; height:13px; border-radius:var(--r-mark); background:var(--track); position:relative;}
+  /* U5 (E16): celda CUADRADA y escala de opacidad de un solo blanco — el gris + verde era la pareja rechazada */
+  .cd{display:block; aspect-ratio:1; border-radius:var(--r-mark); background:var(--track); position:relative;}
   .cm .cd{cursor:pointer;} .cm .cd.e{background:none; cursor:default;} .cm .cd.f{background:none; box-shadow:inset 0 0 0 .5px var(--o10); cursor:default;}
-  .cd.l1{background:var(--o60);} .cd.l2{background:var(--good);}
-  .cm .cd.t{box-shadow:0 0 0 1px var(--fg);} .cm .cd.t.l0::after{content:''; position:absolute; left:50%; top:50%; width:3px; height:3px; margin:-1.5px 0 0 -1.5px/*ds:exempt*/; border-radius:50%; background:var(--fg);}
-  .calleg{display:flex; gap:var(--s4); flex-wrap:wrap; margin-top:10px; font-size:var(--t-caption); color:var(--o40);} .calleg span{display:flex; align-items:center; gap:6px;} .calleg .cd{width:14px; height:9px; border-radius:var(--r-mark);}
+  .cd.l1{background:var(--o30);} .cd.l2{background:var(--fg);}
+  .cm .cd.t{box-shadow:0 0 0 1px var(--o40);} .cm .cd.t.l0::after{content:''; position:absolute; left:50%; top:50%; width:3px; height:3px; margin:-1.5px 0 0 -1.5px/*ds:exempt*/; border-radius:50%; background:var(--fg);}
+
   /* v227 · gráfica de detalle: etiquetas HTML sobre el SVG (Y a la derecha, fechas abajo, promedio con
      pastilla) y capa de scrub. touch-action:none solo en la gráfica: ahí el dedo es para leerla. */
   .chwrap{position:relative; margin:var(--s4) 0 var(--s1); padding-right:40px/*ds:exempt*/; touch-action:none; -webkit-user-select:none; user-select:none; cursor:crosshair;}
@@ -1317,13 +1318,14 @@ function bestStreak(){ const ks=Object.keys(activityDays()).sort(); let best=0,r
   return best; }
 // TRKCal (§7.18): un mes en pastillas D L M M J V S. mark(iso) → {lv:0|1|2, act?, title?} (1 = tenue, 2 = acento);
 // futuro sin relleno, hoy con contorno. o.head:false quita el nombre del mes (quien lo usa pone su cabecera); o.num pinta el día.
-function monthCalHTML(y,m,mark,o){ o=o||{}; const today=todayISO(); const lead=new Date(y,m,1).getDay(), days=new Date(y,m+1,0).getDate(); let cells='';
+// U5 (E18): la semana empieza en LUNES (convención MX) y las columnas son L M X J V S D — sin dos "M" ambiguas
+function monthCalHTML(y,m,mark,o){ o=o||{}; const today=todayISO(); const lead=(new Date(y,m,1).getDay()+6)%7, days=new Date(y,m+1,0).getDate(); let cells='';
   for(let i=0;i<lead;i++)cells+='<i class="cd e"></i>';
   for(let dd=1;dd<=days;dd++){ const iso=y+'-'+pad(m+1)+'-'+pad(dd);
     if(iso>today){ cells+='<i class="cd f">'+(o.num?dd:'')+'</i>'; continue; }
     const k=mark(iso)||{lv:0};
     cells+=`<i class="cd l${k.lv||0}${iso===today?' t':''}"${k.act?` data-act="${k.act}" data-d="${iso}"`:''}${k.title?` title="${iso} · ${escTxt(k.title)}"`:''}>${o.num?dd:''}</i>`; }
-  return `<div class="cm">${o.head===false?'':`<div class="cmh">${MONFULL[m]}</div>`}<div class="cmw">${['D','L','M','M','J','V','S'].map(x=>'<b>'+x+'</b>').join('')}</div><div class="cmg">${cells}</div></div>`; }
+  return `<div class="cm">${o.head===false?'':`<div class="cmh">${MONFULL[m]}</div>`}<div class="cmw">${['L','M','X','J','V','S','D'].map(x=>'<b>'+x+'</b>').join('')}</div><div class="cmg">${cells}</div></div>`; }
 // calendario de dos meses (anterior | actual): gris = sin registro, tenue = comida o gym, acento = comida + gym;
 // hoy con contorno (y punto si aún no registras nada). Toque = abre ese día.
 function streakCalendarHTML(){
@@ -1344,7 +1346,7 @@ function streakCardHTML(){
     +`<div class="strk-side"><div>mejor racha <b>${best}</b></div><div>este mes <b>${logged}/${el}</b> días registrados · <b>${pct}%</b></div><div>días completos (ambos) <b>${both}</b></div></div></div>`
     +`<div class="strk-sub">${hoy}</div>`
     +streakCalendarHTML()
-    +`<div class="calleg"><span><i class="cd l1"></i>comida o gym</span><span><i class="cd l2"></i>comida + gym</span><span><i class="cd"></i>sin registro</span></div></div>`;
+    +`</div>`;   // U5 (E16): sin leyenda — es texto instructivo disfrazado de gráfico (§9.1); el dato ya se lee por intensidad
 }
 // toque en un día del calendario: si hubo las dos cosas pregunta cuál abrir; si no, abre la que hubo
 function openCalDay(iso){
