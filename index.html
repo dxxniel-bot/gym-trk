@@ -156,13 +156,42 @@
   .pfeat{background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:var(--sp-card); margin-top:var(--s4);}
   .pfl{font-size:var(--t-caption); color:var(--o40); letter-spacing:var(--ls-caps); text-transform:uppercase; margin-bottom:var(--s3);}
   /* v226 · //SUPPS dentro de macros: un chip por toma, un toque = tomado. Sin acordeones que perder. */
+  /* U1 · //SUPPS en UNA línea que se despliega en un riel horizontal (antes: 4 filas con etiqueta fija de 58px y chips que hacían wrap) */
   .supps{margin:0 0 var(--s5);}
-  .supps .sph{display:flex; justify-content:space-between; align-items:baseline; margin-bottom:var(--s3);}
-  .spg{display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-bottom:6px;}
-  .spl{flex:0 0 58px; font-size:var(--t-caption); letter-spacing:var(--ls-caps); color:var(--o35);}
-  .spc{display:inline-flex; align-items:center; height:36px; font-size:var(--t-meta); padding:0 var(--s4); border:.5px solid var(--o20); border-radius:var(--r-pill); cursor:pointer; color:var(--fg); white-space:nowrap; -webkit-user-select:none; user-select:none;}
+  .supps .sph{display:flex; align-items:center; gap:var(--s3); width:100%; height:36px; padding:0; background:none; border:0; color:inherit; font:inherit; cursor:pointer; text-align:left;}
+  .supps .sph .h{font-size:var(--t-section); font-weight:800; letter-spacing:var(--ls-title);}
+  .supps .spdots{font-size:var(--t-meta); letter-spacing:.14em; color:var(--o30); white-space:nowrap;}
+  .supps .spdots b{color:var(--fg); font-weight:400;}
+  .supps .spn{font-size:var(--t-xs); color:var(--o40); margin-left:auto;}
+  .supps .sphx{font-size:var(--t-xs); color:var(--o30); width:12px; text-align:center;}
+  .sprail{display:flex; align-items:center; gap:var(--s2); overflow-x:auto; padding:var(--s2) 0 var(--s1); scrollbar-width:none; -webkit-overflow-scrolling:touch;}
+  .sprail::-webkit-scrollbar{display:none;}
+  .spl{flex:0 0 auto; font-size:var(--t-caption); letter-spacing:var(--ls-caps); text-transform:uppercase; color:var(--o35); padding:0 var(--s1);}
+  .spc{display:inline-flex; flex:0 0 auto; align-items:center; height:36px; font-size:var(--t-meta); padding:0 var(--s4); border:.5px solid var(--o20); border-radius:var(--r-pill); cursor:pointer; color:var(--fg); white-space:nowrap; -webkit-user-select:none; user-select:none; background:none; font-family:inherit;}
   .spc .k{color:var(--o40); margin-right:var(--s2);}
   .spc.on{color:var(--o35); border-color:var(--o10);} .spc.on .k{color:var(--good);}
+  .spc.all{color:var(--o60); border-style:dashed;}
+  /* U1 · el log es un diario: la acción vive dentro de la comida (MyFitnessPal), no en un botón flotante */
+  .ghead .gnm{font-size:var(--t-body); font-weight:800; color:var(--fg); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .gnmin{font-family:inherit; font-size:var(--t-section); font-weight:800; color:var(--fg); background:transparent; border:0; border-bottom:1px solid var(--o40); padding:0 0 1px; max-width:160px; outline:none;}
+  .gmore{grid-column:4; justify-self:end; width:30px; height:30px; margin:-6px 0; background:none; border:0; color:var(--o30); font-size:var(--t-body); line-height:1; cursor:pointer; font-family:inherit;}
+  .gmore:active{color:var(--fg);}
+  .gadd{padding:0 0 10px 24px;} .gadd a{display:inline-block; padding:var(--s3) 0; font-size:var(--t-xs); color:var(--o50); cursor:pointer;}
+  .newmeal{margin:0 0 var(--sp-gap);} .newmeal a{display:inline-block; padding:var(--s3) var(--s1); font-size:var(--t-xs); color:var(--o60); cursor:pointer;}
+  /* U1 · agua al final del día, un toque = registrado (MFP/Yazio/Cronometer) */
+  .wrow{display:flex; gap:var(--s2); margin-bottom:var(--s3);}
+  .wq{flex:1; height:44px; background:none; border:.5px solid var(--o20); border-radius:var(--r-ctl); color:var(--fg); font-family:inherit; font-size:var(--t-meta); font-weight:700; letter-spacing:var(--ls-ui); cursor:pointer;}
+  .wq:active{background:var(--o10);} .wq.alt{color:var(--o50);}
+  .wlog{display:flex; flex-wrap:wrap; gap:var(--s2); margin-bottom:var(--sp-gap);}
+  .wchip{display:inline-flex; align-items:center; height:36px; padding:0 var(--s4); border:.5px solid var(--o10); border-radius:var(--r-pill); font-size:var(--t-meta); color:var(--o60); cursor:pointer;}
+  /* TRKWheel (§7.18): rueda de scroll-snap en CSS puro — 5 filas de 40px, la central es la elegida */
+  .whl{position:relative; height:200px; margin:var(--s4) 0;}
+  .whl-list{height:200px; overflow-y:auto; scroll-snap-type:y mandatory; -webkit-overflow-scrolling:touch; scrollbar-width:none;}
+  .whl-list::-webkit-scrollbar{display:none;}
+  .whl-pad{height:80px;}
+  .whl-o{display:block; width:100%; height:40px; scroll-snap-align:center; background:none; border:0; font-family:inherit; font-size:var(--t-body); color:var(--o35); text-align:center; cursor:pointer;}
+  .whl-o.on{color:var(--fg); font-weight:800;}
+  .whl-sel{position:absolute; left:0; right:0; top:80px; height:40px; border-top:.5px solid var(--o20); border-bottom:.5px solid var(--o20); pointer-events:none;}
   /* v226 · racha (comida O gym) + calendario de dos meses, estilo "last 30 days" de Bevel en monocromo */
   .strk-top{display:flex; justify-content:space-between; align-items:flex-end; gap:10px; margin-top:var(--s2);}
   .strk-n{font-size:var(--t-hero); font-weight:800; letter-spacing:var(--ls-num); line-height:1;} .strk-n span:not([data-nk]){font-size:var(--t-body); font-weight:400; color:var(--o50); letter-spacing:0; margin-left:var(--s2);}
@@ -303,14 +332,7 @@
   .mdmeal .mdk{color:var(--o50);} .mdmeal .mdv{color:var(--fg);}
   .mdacts{display:flex; gap:var(--s5); margin-top:10px;} .mdacts a{font-size:var(--t-xs); color:var(--o50); cursor:pointer; text-decoration:underline;}
   .mgd{margin-bottom:6px; padding-top:var(--s1);} .ghead.exp .gkc{color:var(--fg);}
-  .fab{position:fixed; right:var(--sp-px); bottom:calc(76px + env(safe-area-inset-bottom)); width:56px; height:56px; border-radius:50%; background:var(--fill); color:var(--on-fill); border:none; font-size:30px/*ds:exempt*/; font-weight:300; line-height:0; display:flex; align-items:center; justify-content:center; box-shadow:var(--shadow-float); z-index:var(--z-float); cursor:pointer;}
-  .fab:active{transform:scale(.93);}
-  /* add menu popover — emerges from FAB (bottom-right), stacks up */
-  .addscrim{position:fixed; inset:0; z-index:var(--z-pop);}
-  .addpop{position:fixed; right:var(--sp-px); bottom:calc(140px + env(safe-area-inset-bottom)); z-index:calc(var(--z-pop) + 1); display:flex; flex-direction:column; align-items:flex-end; gap:var(--s3);}
-  .addpop .api{background:var(--fill); color:var(--on-fill); border:none; border-radius:var(--r-pill); padding:var(--s4) var(--s5); font-family:inherit; font-size:var(--t-body); font-weight:700; box-shadow:var(--shadow-float); cursor:pointer; opacity:0; transform:translateY(8px); transition:opacity var(--dur-2) var(--ease-out), transform var(--dur-2) var(--ease-out); white-space:nowrap;}
-  .addpop.show .api{opacity:1; transform:none;}
-  .addpop.show .api:nth-child(1){transition-delay:.0s;} .addpop.show .api:nth-child(2){transition-delay:.04s;} .addpop.show .api:nth-child(3){transition-delay:.08s;} .addpop.show .api:nth-child(4){transition-delay:.12s;}
+  /* U1: el FAB (+) y su popover se eliminan — todo se agrega desde el propio log */
 
   /* workout sets table */
   .wprog{height:2px; background:var(--o10); margin:var(--s3) 0 0;} .wprog>i{display:block; height:100%; background:var(--fill);}
@@ -482,7 +504,7 @@
   .card{background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:var(--sp-card); margin-bottom:var(--sp-gap);}
   /* food-log meal groups become rounded cards */
   .grp{background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:var(--s2) var(--s4); margin-bottom:var(--sp-gap);}
-  .ghead{color:var(--o50); padding:var(--s4) 0 10px; margin-bottom:0; border-bottom:1px solid var(--border);}
+  .ghead{color:var(--o50); padding:var(--s4) 0 10px; margin-bottom:0; border-bottom:1px solid var(--border); grid-template-columns:1fr 76px 40px 30px;}
   .grp .item{padding:var(--sp-row) var(--s1);} .grp .item:not(:last-child){border-bottom:1px solid var(--border);}
   .item:active{background:var(--card2);}
   /* rounded controls (base rules consolidated above) */
@@ -3537,20 +3559,41 @@ function macroStatus(val,goal){ if(!goal)return ''; const r=val/goal; if(r>1.05)
 // (se re-abría "el primer bloque con algo pendiente" en cada render). Aquí: un chip por toma pendiente,
 // agrupados por momento con una etiqueta; UN toque = tomado (y otro lo deshace). Lo tomado se va al final
 // en gris. Sus nutrientes siguen sumando a macros (macroTotals) — ahora se ven y se destildan aquí mismo.
+// U1 (E1): UNA línea — `//SUPPS ●●○○ 2/4` — que se despliega en un riel horizontal sin wrap. Antes eran 4 filas
+// (AM/PM/ENTRENO/OTROS) con etiqueta fija de 58 px y chips que envolvían: de ahí el escalonado. El momento sigue
+// visible como etiqueta dentro del riel (Habitify: el momento es estado, no estructura) y los tomados NO se
+// reordenan bajo el dedo. `[✓ todo]` marca lo pendiente de una vez (Apple Salud · Medicamentos).
 function suppStripHTML(iso){
   const all=(db.stack||[]).filter(x=>x&&!x.archived&&isDueToday(x,iso));
   if(!all.length)return '';
   const ORDER=[['AM','AM'],['PM','PM'],['entreno','ENTRENO'],['otros','OTROS']];
   const slot=it=>{ const w=it.when||[]; for(const [k] of ORDER){ if(k!=='otros'&&w.indexOf(k)>=0)return k; } return 'otros'; };  // un item con varios momentos sale en el primero (1 tick por día)
   const done=it=>tickDone(it.ticks&&it.ticks[iso]);
-  const nDone=all.filter(done).length;
-  let rows='';
-  ORDER.forEach(([k,lbl])=>{ const items=all.filter(it=>slot(it)===k); if(!items.length)return;
-    items.sort((a,b)=>(done(a)-done(b)));
-    rows+=`<div class="spg"><span class="spl">${lbl}</span>`+items.map(it=>{ const on=done(it); const tt=on&&it.tickTimes&&it.tickTimes[iso];
-      return `<span class="spc${on?' on':''}" data-act="suppq" data-id="${escTxt(it.id)}" data-d="${iso}" title="${on?'tomado'+(tt?' a las '+escTxt(tt):'')+' · toca para deshacer':'toca = tomado'}"><span class="k">${on?'✓':'○'}</span>${escTxt(it.name||'supp')}</span>`; }).join('')+`</div>`;
-  });
-  return `<div class="supps"><div class="sph"><div class="h u-meta u-w8 u-lsui"><span class="s u-o40">//</span>SUPPS <span class="u-o40 u-w4">· ${nDone}/${all.length}</span></div><a data-act="nav" data-screen="stack" class="u-xs u-o50 u-tap">[administrar]</a></div>${rows}</div>`;
+  const nDone=all.filter(done).length, pend=all.length-nDone;
+  if(state.suppOpen===undefined)state.suppOpen=pend>0;   // se fija una vez: marcar un chip no puede cerrar la tira (el bug de v226)
+  const dots=all.slice(0,8).map(it=>done(it)?'<b>●</b>':'○').join('')+(all.length>8?' …':'');
+  let rail='';
+  if(state.suppOpen){
+    ORDER.forEach(([k,lbl])=>{ const items=all.filter(it=>slot(it)===k); if(!items.length)return;
+      rail+=`<span class="spl">${lbl}</span>`+items.map(it=>{ const on=done(it); const tt=on&&it.tickTimes&&it.tickTimes[iso];
+        return `<button type="button" class="spc${on?' on':''}" data-act="suppq" data-id="${escTxt(it.id)}" data-d="${iso}" title="${on?'tomado'+(tt?' a las '+escTxt(tt):'')+' · toca para deshacer':'toca = tomado'}"><span class="k">${on?'✓':'○'}</span>${escTxt(it.name||'supp')}</button>`; }).join('');
+    });
+    if(pend)rail+=`<button type="button" class="spc all" data-act="suppall" data-d="${iso}">✓ todo</button>`;
+    rail+=`<a data-act="nav" data-screen="stack" class="spl u-tap">[administrar]</a>`;
+    rail=`<div class="sprail">${rail}</div>`;
+  }
+  return `<div class="supps"><button type="button" class="sph" data-act="suppopen" aria-expanded="${state.suppOpen?'true':'false'}"><span class="h"><span class="s u-o40">//</span>SUPPS</span><span class="spdots">${dots}</span><span class="spn">${nDone}/${all.length}</span><span class="sphx">${state.suppOpen?'▴':'▾'}</span></button>${rail}</div>`;
+}
+// agua = item de `drink` sin kcal (una bebida con calorías sigue siendo comida y se queda en el log)
+function isWaterItem(m){ return !!m && m.tag==='drink' && !(+m.kcal>0) && (+m.water>0); }
+// U1 (E4): el agua vive al FINAL del día con incrementos de un toque + [otro] (MFP, Yazio, Cronometer)
+function waterSectionHTML(iso){
+  const g=goalsFor(iso)||{}; const items=(db.meals[iso]||[]).filter(isWaterItem);
+  const ml=Math.round(items.reduce((a,m)=>a+(+m.water||0),0)*1000); const goal=+g.water||0;
+  const btn=v=>`<button type="button" class="wq" data-act="water" data-ml="${v}">${v>=1000?'1 L':v}</button>`;
+  return `<div class="section u-mb10"><div class="h"><span class="s">//</span>AGUA</div><div class="meta">${(ml/1000).toFixed(1)}${goal?' / '+goal:''} L</div></div>`
+    +`<div class="wrow">${[250,500,750,1000].map(btn).join('')}<button type="button" class="wq alt" data-act="waterother">otro</button></div>`
+    +(items.length?`<div class="wlog">${items.map(m=>`<span class="wchip" data-act="waterdel" data-id="${escTxt(m.id)}" title="toca para quitarlo">${Math.round((+m.water||0)*1000)} ml</span>`).join('')}</div>`:'');
 }
 // un toque: pendiente → tomado (con su hora real, que nunca se pisa) · tomado/tarde → sin marcar
 function suppQuickTick(id,iso){
@@ -3591,34 +3634,38 @@ function renderMacros(){
 
   // food log grouped by tag
   const order=['breakfast','lunch','snack','dinner','drink']; const byTag={};
-  items.forEach(m=>{(byTag[m.tag]=byTag[m.tag]||[]).push(m);});
+  items.filter(m=>!isWaterItem(m)).forEach(m=>{(byTag[m.tag]=byTag[m.tag]||[]).push(m);});   // el agua tiene su propia sección al final
   let log='';
   // orden cronológico por hora de meal (mealMeta[date][tag].time); sin hora -> al final; tiebreak = enum
   const _tmin=tg=>{ const mm=hm2min(mealTime(curDate(),tg)); return isFinite(mm)?mm:Infinity; };
   const tags=Object.keys(byTag).sort((a,b)=>{ const A=_tmin(a),B=_tmin(b); return A!==B ? A-B : (order.indexOf(a)-order.indexOf(b)); });
-  if(!items.length){ log=`<div class="empty">sin comida registrada hoy<br/><span class="ehint">toca ＋ abajo para agregar</span></div>`; }
+  if(!items.length){ log=`<div class="empty">sin comida registrada</div>`; }
   tags.forEach(tag=>{ const list=byTag[tag];
     const mt={kcal:0,protein:0,carbs:0,fat:0,caffeine:0,alcohol:0}; list.forEach(m=>{mt.kcal+=+m.kcal||0;mt.protein+=+m.protein||0;mt.carbs+=+m.carbs||0;mt.fat+=+m.fat||0;mt.caffeine+=+m.caffeine||0;mt.alcohol+=+m.alcohol||0;});
     const _renaming=state.renamingTag===tag;
     const _nameCell=_renaming
-      ? `<span class="u-aic u-iflex"><span class="hash">#</span><input id="mealrnm" value="${escTxt(tag)}" onclick="event.stopPropagation()" autocomplete="off" autocapitalize="none" style="font:inherit;color:var(--fg);background:transparent;border:none;border-bottom:1px solid var(--o40);padding:0 0 1px;width:${Math.max(4,(tag||'').length+1)}ch;max-width:160px;outline:none"/></span>`
-      : `<span data-act="mealrename" data-tag="${escTxt(tag)}" style="cursor:text" title="renombrar"><span class="hash">#</span>${escTxt(tag)}</span>`;
-    log+=`<div class="grp"><div class="ghead u-tap" data-act="mealsummary" data-tag="${escTxt(tag)}">${_nameCell}<span class="gmac">${Math.round(mt.protein)}P ${Math.round(mt.carbs)}C ${Math.round(mt.fat)}F</span><span class="gkc">${Math.round(mt.kcal)}</span></div>`;
+      ? `<span class="u-aic u-iflex"><span class="hash">#</span><input id="mealrnm" class="gnmin" value="${escTxt(tag)}" onclick="event.stopPropagation()" autocomplete="off" autocapitalize="none" style="width:${Math.max(4,(tag||'').length+1)}ch"/></span>`
+      : `<span class="gnm u-tap" data-act="mealrename" data-tag="${escTxt(tag)}" title="toca para renombrar"><span class="hash">#</span>${escTxt(tag)}</span>`;
+    log+=`<div class="grp"><div class="ghead">${_nameCell}`
+      +`<span class="gmac u-tap" data-act="mealsummary" data-tag="${escTxt(tag)}">${Math.round(mt.protein)}P ${Math.round(mt.carbs)}C ${Math.round(mt.fat)}F</span>`
+      +`<span class="gkc u-tap" data-act="mealsummary" data-tag="${escTxt(tag)}">${Math.round(mt.kcal)}</span>`
+      +`<button type="button" class="gmore" data-act="mealmenu" data-tag="${escTxt(tag)}" aria-label="acciones de ${escTxt(tag)}">···</button></div>`;
     list.forEach(m=>{ const nm=(m.name||'').replace(/ ×[\d.]+$/,''); const br=(m._food&&m._food.brand)||''; const exp=state.expandedMeal===m.id; const mp=Math.round(m.protein)||0,mc=Math.round(m.carbs)||0,mf=Math.round(m.fat)||0; const _dom=(mp+mc+mf)>0?((mp>=mc&&mp>=mf)?'p':(mc>=mf?'c':'f')):''; const _bq=(v,l,k)=>_dom===k?`<b class="u-fg">${v}${l}</b>`:`${v}${l}`; const mq=(mp+mc+mf)>0?`${_bq(mp,'P','p')} ${_bq(mc,'C','c')} ${_bq(mf,'F','f')}`:'';
       log+=`<div class="item${exp?' exp':''}" data-act="viewmeal" data-id="${m.id}"><span class="nm"><b class="q">${itemQtyLabel(m)}</b>${escTxt(nm)}${br?' <span class="br">'+escTxt(br)+'</span>':''}</span><span class="macq">${mq}</span><span class="kc">${Math.round(m.kcal)||0}</span></div>`;
       if(exp) log+=mealDetailInline(m);
     });
-    log+=`</div>`;
+    log+=`<div class="gadd"><a data-act="addtomeal" data-tag="${escTxt(tag)}">[+ alimento]</a></div></div>`;   // la acción cierra el bloque de SU comida
   });
+  log+=`<div class="newmeal"><a data-act="newmeal">[+ comida]</a></div>`;
 
   return statusBar(false)
     +`<hr class="rule"/>`
     +`<div class="section"><div class="h dnavh"><a data-act="dayprev" class="dnav">‹</a><span class="dnlbl-wrap"><span class="dnlbl">${dayLabel(curDate())}</span><input type="date" class="dcal" data-act="daycal" value="${curDate()}"/></span><a data-act="daynext" class="dnav">›</a></div><div class="meta"><a data-act="share" class="u-tap">[share]</a> <a data-act="editgoals" class="u-tap u-ml8">[goals]</a></div></div>`
     +`<div class="card u-pt16 u-pb16 u-px16"><button class="hero ${open?'open':''} ${kStat}" data-act="togglemacros">${ringHTML(pct,`<div class="num" data-nk="kcal" data-nv="${Math.round(t.kcal)}">${Math.round(t.kcal).toLocaleString()}</div><div class="of">/ ${g.kcal.toLocaleString()} kcal</div>`,'lg')}<div class="hero-meta"><span class="left ${left<0?'over':'under'}">${left>=0?left+' left':Math.abs(left)+' over'}</span> · ${Math.round(pct)}% <span class="chev">▾</span></div></button>${goalSecHidden('balance')?'':(function(){var b=balanceOf(g.kcal);return b?'<div class="hbal">'+(b.label==='mantenimiento'?'en mantenimiento':'<span style="color:'+b.col+';font-weight:700">'+b.label+'</span> '+Math.abs(b.delta)+' kcal')+' · mant. ≈ '+b.maint+'</div>':'';})()}${details}</div>`
     +suppStripHTML(curDate())
-    +`<div class="section u-mb10"><div class="h"><span class="s">//</span>LOG&nbsp; today</div></div>`
+    +`<div class="section u-mb10"><div class="h"><span class="s">//</span>LOG</div><div class="meta">${escTxt(dayLabel(curDate()).toLowerCase())}</div></div>`
     +log
-    +`<button class="fab" data-act="addmenu" aria-label="agregar">+</button>`;
+    +waterSectionHTML(curDate());
 }
 // ---------- render: shareable summary (gym//TRK aesthetic, horizontal banner) ----------
 // display quantity: always grams/ml for weight-based units (clearer for screenshots); keep pieces for piece unit
@@ -6112,8 +6159,14 @@ document.getElementById('app').addEventListener('click',e=>{
   else if(a==='editmealx'){ const id=el.dataset.id; const t=curDate(); const m=(db.meals[t]||[]).find(x=>x.id===id); if(m){ if(m._food){ openLog(m._food,{editId:m.id,qty:m.qty||1,unit:m._unit,tag:m.tag}); } else { const q=m.qty||1; const per={}; ['kcal','protein','carbs','fat','sugar','sodium','potassium','fiber','caffeine','alcohol','water'].forEach(k=>per[k]=(+m[k]||0)/q); openLog({name:(m.name||'').replace(/ ×[\d.]+$/,''),serving:m.serving||'1 serving',per},{editId:m.id,qty:q,tag:m.tag}); } } }
   else if(a==='delmealx'){ state._scroll=document.getElementById('view').scrollTop; const id=el.dataset.id; const t=curDate(); db.meals[t]=(db.meals[t]||[]).filter(m=>m.id!==id); if(state.expandedMeal===id)state.expandedMeal=null; save(); render(); }
   else if(a==='vfixkcal'){ const P=parseFloat(val('v_protein'))||0,C=parseFloat(val('v_carbs'))||0,F=parseFloat(val('v_fat'))||0; const e=document.getElementById('v_kcal'); if(e){ e.value=Math.round(P*4+C*4+F*9); e.dispatchEvent(new Event('input',{bubbles:true})); } }
-  else if(a==='foodadd'){ closeAddPop(); openFoodAdd(); }
-  else if(a==='addmenu'){ openAddMenu(); }
+  else if(a==='foodadd'){ openFoodAdd(); }
+  else if(a==='suppopen'){ state.suppOpen=!state.suppOpen; reRender(); }
+  else if(a==='suppall'){ const d=el.dataset.d; (db.stack||[]).filter(x=>x&&!x.archived&&isDueToday(x,d)).forEach(it=>{ if(tickDone(it.ticks&&it.ticks[d]))return; it.ticks=it.ticks||{}; it.ticks[d]='taken'; it.tickTimes=it.tickTimes||{}; if(!it.tickTimes[d]&&d===todayISO())it.tickTimes[d]=nowHM(); it.tickEdited=it.tickEdited||{}; it.tickEdited[d]=Date.now(); }); save(); reRender(); toast('✓ suplementos marcados'); }
+  else if(a==='newmeal'){ openMealWheel(); }
+  else if(a==='mealmenu'){ openMealMenu(el.dataset.tag); }
+  else if(a==='water'){ logWater(+el.dataset.ml||0); reRender(); }
+  else if(a==='waterother'){ openDrink(); }
+  else if(a==='waterdel'){ const id=el.dataset.id, d=curDate(); const m=(db.meals[d]||[]).find(x=>x.id===id); if(m)trkAsk({title:'quitar '+Math.round((+m.water||0)*1000)+' ml',ok:'quitar',danger:true},()=>{ db.meals[d]=(db.meals[d]||[]).filter(x=>x.id!==id); save(); reRender(); toast('✓ agua quitada'); }); }
   else if(a==='share'){ state.shareType='food'; go('share'); }
   else if(a==='sharesession'){ state.shareType='session'; state.shareId=el.dataset.id; closeModal(); go('share'); }
   else if(a==='shareweight'){ state.shareType='weight'; go('share'); }
@@ -6138,15 +6191,13 @@ document.getElementById('app').addEventListener('click',e=>{
   else if(a==='agsuppgrp'){ const t=el.dataset.t; if(t){ state.agSuppOpen=state.agSuppOpen||{}; state.agSuppOpen[t]=!state.agSuppOpen[t]; state._scroll=(document.getElementById('view')||{}).scrollTop||0; render(); } }
   else if(a==='progconfig'){ openProgConfig(); }
   else if(a==='progmtog'){ const k=el.dataset.m; if(k){ const c=progMetrics(); c[k]=!c[k]; try{localStorage.setItem('gymtrk_progress_metrics_config',JSON.stringify(c));}catch(_){} render(); openProgConfig(); } }
-  else if(a==='addfood'||a==='addnext'||a==='addmeal'){ closeAddPop(); openFoodAdd(nextMealTag()); }
-  else if(a==='addapprox'){ closeAddPop(); openApproxMeal(); }
+  else if(a==='addfood'||a==='addnext'||a==='addmeal'){ openFoodAdd(nextMealTag()); }
+  else if(a==='addapprox'){ openApproxMeal(); }
   else if(a==='addmealnext'){ openFoodAdd(nextAfterCurrent()); }
   else if(a==='addtomeal'){ openFoodAdd(el.dataset.tag, true); }
   else if(a==='dupmeal'){ openDupMeal(el.dataset.tag); }
   else if(a==='movemeal'){ const id=el.dataset.id; const t=curDate(); const m=(db.meals[t]||[]).find(x=>x.id===id); if(m)openMoveItem(m); }
-  else if(a==='addsnack'){ closeAddPop(); openFoodAdd('snack'); }
-  else if(a==='adddrink'){ closeAddPop(); openDrink(); }
-  else if(a==='addwaterquick'){ closeAddPop(); openDrink(); }
+  else if(a==='addsnack'){ openFoodAdd('snack'); }
   else if(a==='drml'){ const e=document.getElementById('dr_ml'); if(e)e.value=el.dataset.v; }
   else if(a==='drinkcal'){ openVerify({name:'',base:'ml',per100:{},sizes:{}},{isNew:true,tag:'drink'}); }
   else if(a==='fregister'){ openRegisterMenu(null); }
@@ -7011,27 +7062,59 @@ function curTag(){ const e=document.getElementById('fa_tagtxt'); const v=e?e.val
 function nextMealTag(){ const h=(new Date()).getHours(); if(h<11)return 'breakfast'; if(h<16)return 'lunch'; if(h<21)return 'dinner'; return 'snack'; }
 function nextAfterCurrent(){ const seq=['breakfast','lunch','dinner']; const i=seq.indexOf(nextMealTag()); return (i>=0&&i<2)?seq[i+1]:'snack'; }
 // add menu — emerges from the FAB (anchored bottom-right, opens up/left)
-function openAddMenu(){
-  closeAddPop();
-  const pop=document.createElement('div'); pop.className='addpop'; pop.id='addpop';
-  pop.innerHTML=`<button class="api" data-act="addmeal">meal</button>`
-    +`<button class="api" data-act="addapprox">aproximada</button>`
-    +`<button class="api" data-act="addsnack">snack</button>`
-    +`<button class="api" data-act="adddrink">drink</button>`
-    +`<button class="api" data-act="addwaterquick">+ agua</button>`;
-  document.getElementById('app').appendChild(pop);
-  requestAnimationFrame(()=>pop.classList.add('show'));
-  const scrim=document.createElement('div'); scrim.className='addscrim'; scrim.id='addscrim';
-  scrim.addEventListener('click',closeAddPop); document.getElementById('app').appendChild(scrim);
+// TRKWheel (§7.18, U1): rueda de valores en CSS puro (scroll-snap). 5 filas de 40 px, la central es la elegida;
+// tocar una fila la elige directo, o se gira y se confirma con [elegir]. Cada fila es un botón dentro de un
+// role="radiogroup" (accesible). Se reserva a listas cortas y ordenables; el texto libre sale por `other`.
+function trkWheel(o,onPick){
+  const opts=(o.opts||[]).map(String); if(!opts.length)return;
+  const cur=o.cur!=null?String(o.cur):'';
+  const rows=opts.map((v,i)=>`<button type="button" class="whl-o" data-i="${i}" role="radio" aria-checked="${v===cur?'true':'false'}">${escTxt(v)}</button>`).join('');
+  openModal(`<h3>${escTxt(o.title||'')}</h3>`
+    +`<div class="whl"><div class="whl-sel"></div><div class="whl-list" id="whl_list" role="radiogroup" aria-label="${escTxt(o.title||'')}"><div class="whl-pad"></div>${rows}<div class="whl-pad"></div></div></div>`
+    +`<div class="sheetbtns"><button class="ok" id="whl_ok">${escTxt(o.ok||'elegir')}</button>${o.other?`<button class="cancel" id="whl_other">${escTxt(o.other)}</button>`:''}</div>`);
+  const list=document.getElementById('whl_list'); if(!list)return; const H=40;
+  let idx=Math.max(0,opts.indexOf(cur));
+  const mark=()=>{ list.querySelectorAll('.whl-o').forEach((b,i)=>{ b.classList.toggle('on',i===idx); b.setAttribute('aria-checked',i===idx?'true':'false'); }); };
+  list.scrollTop=idx*H; mark();
+  // el marcado se actualiza en el propio evento (nada de rAF: en segundo plano no corre y la fila central se quedaba atrás)
+  const sync=()=>{ const i=Math.max(0,Math.min(opts.length-1,Math.round(list.scrollTop/H))); if(i!==idx){ idx=i; mark(); } };
+  list.addEventListener('scroll',sync,{passive:true});
+  list.querySelectorAll('.whl-o').forEach(b=>b.addEventListener('click',()=>{ idx=+b.dataset.i; closeModal(); onPick(opts[idx]); }));
+  const ok=document.getElementById('whl_ok'); if(ok)ok.onclick=()=>{ sync(); closeModal(); onPick(opts[idx]); };   // al confirmar se lee la posición real, no el último evento
+  const ot=document.getElementById('whl_other'); if(ot)ot.onclick=()=>{ closeModal(); trkPrompt({title:o.title||'',label:o.otherLabel||'NOMBRE',ok:'usar'},v=>{ v=(v||'').trim(); if(!v){ toast('⚠ escribe un nombre','err'); return false; } onPick(v); }); };
 }
-function closeAddPop(){ ['addpop','addscrim'].forEach(id=>{const e=document.getElementById(id); if(e)e.remove();}); }
+// U1 (E2): [+ comida] — se elige el nombre en la rueda y se entra directo a agregar alimento a esa comida
+function openMealWheel(){
+  const used=(db.meals[curDate()]||[]).map(m=>m.tag);
+  const opts=[...new Set([...mealSuggestions(),'breakfast','lunch','snack','dinner','pre workout','post workout'])].filter(t=>t&&t!=='drink');
+  trkWheel({title:'comida',opts,cur:used.indexOf(nextMealTag())<0?nextMealTag():opts.find(t=>used.indexOf(t)<0)||nextMealTag(),other:'otro nombre…',otherLabel:'NOMBRE DE LA COMIDA'},tag=>openFoodAdd(tag,true));
+}
+// U1 (E3): [···] de cada comida — todas sus acciones en filas de 44 px (MyFitnessPal)
+function openMealMenu(tag){
+  const d=curDate();
+  trkMenu('#'+tag,[
+    ['+ alimento',()=>openFoodAdd(tag,true)],
+    ['aproximada aquí',()=>openApproxMeal(tag)],
+    ['ver desglose',()=>openMealSummary(tag)],
+    ['renombrar',()=>{ trkPrompt({title:'renombrar comida',label:'NOMBRE',value:tag,ok:'guardar'},v=>{ v=(v||'').trim(); if(!v){ toast('⚠ escribe un nombre','err'); return false; } renameMealTag(tag,v); }); }],
+    ['hora de la comida',()=>{ trkPrompt({title:'hora de #'+tag,label:'HH:MM',value:mealTime(d,tag)||'',type:'time',ok:'guardar'},v=>{ setMealTime(d,tag,(v||'').trim()||null); save(); reRender(); toast('✓ hora guardada'); }); }],
+    ['borrar la comida',()=>holdConfirm({title:'borrar #'+tag,detail:'se quitan todos sus alimentos de este día',verb:'borrar'},()=>{ db.meals[d]=(db.meals[d]||[]).filter(m=>m.tag!==tag); save(); reRender(); toast('✓ comida borrada'); })],
+  ]);
+}
+function renameMealTag(from,to){
+  if(!to||to===from)return; const d=curDate();
+  (db.meals[d]||[]).forEach(m=>{ if(m.tag===from)m.tag=to; });
+  try{ const mm=(db.mealMeta||{})[d]; if(mm&&mm[from]){ mm[to]=mm[from]; delete mm[from]; } }catch(_){}
+  if(Array.isArray(db.mealTags)){ const i=db.mealTags.indexOf(from); if(i>=0&&db.mealTags.indexOf(to)<0)db.mealTags[i]=to; }
+  save(); reRender(); toast('✓ comida renombrada');
+}
 // meal "aproximada": ingresas P/C/G totales (comidas fuera de casa); kcal 4-4-9; crea 1 item sintético que suma al día
-function openApproxMeal(){
+function openApproxMeal(preset){
   const sugg=(typeof mealSuggestions==='function'?mealSuggestions():(db.mealTags||['comida'])).filter(x=>x&&x!=='drink');
   const chips=sugg.map(v=>`<span class="chip" data-v="${escTxt(v)}">${escTxt(v)}</span>`).join('');
   openModal(`<h3>meal aproximada</h3>
    <div class="submeta u-mb10">solo macros · sin buscar alimentos · kcal 4-4-9</div>
-   <div class="field"><label>COMIDA</label><input id="am_tag" type="text" value="comida" autocomplete="off"/></div>
+   <div class="field"><label>COMIDA</label><input id="am_tag" type="text" value="${escTxt(preset||'comida')}" autocomplete="off"/></div>
    ${chips?`<div class="chips u-mt-n4 u-mb10 u-mx0" id="am_chips">${chips}</div>`:''}
    <div class="field row3"><div><label>PROT g</label><input id="am_p" type="number" inputmode="decimal" placeholder="0"/></div><div><label>CARB g</label><input id="am_c" type="number" inputmode="decimal" placeholder="0"/></div><div><label>GRASA g</label><input id="am_f" type="number" inputmode="decimal" placeholder="0"/></div></div>
    <div id="am_kcal" class="submeta u-mt2 u-mb10 u-mx0 u-body">= 0 kcal</div>
