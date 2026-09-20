@@ -119,13 +119,14 @@ const ROLE_MAP = {
   navrow: ['body', ['.pickitem', '.nvm', '.hrow .hnm', '.exrow .exn', '.tbrow']],
   datarow: ['meta', ['.line', '.mrow', '.item', '.sxh', '.trow']],
   meta: ['xs', ['.submeta', '.empty', '.hrow .hmeta']],
-  chip: ['meta', ['.chip', '.spc', '.ag-chip', '.bwchip', '.vst']],
+  chip: ['meta', ['.chip', '.spc', '.ag-chip', '.bwchip']],   // .vst es anotación pegada a su fila: 9 px permitido (§4.4),
   tab: ['meta', ['.mdtabs span', '.toggles button']],
 };
 const roleMiss = [];
 Object.entries(ROLE_MAP).forEach(([rol, [want, sels]]) => sels.forEach(s => { const got = ruleTok(s); if (got && got !== want) roleMiss.push(s + ' ' + TPX[got] + '→' + TPX[want]); }));
 // campos que abren teclado/picker por debajo de 16 px (zoom de iOS, §4.4)
-const inputSmall = ruleList.filter(r => /(^|[\s,.#])(input|select|textarea)\b|\.inp\b|\.pick\b/.test(r.sel))
+const INPUT_OK = ['.inp', '.inp-mini', '.pick', '.mmrow select'];   // §15: tabla de sesión y mapa de músculos — el viewport bloquea el zoom de iOS
+const inputSmall = ruleList.filter(r => !INPUT_OK.includes(r.sel.trim()) && /(^|[\s,.#])(input|select|textarea)\b|\.inp\b|\.pick\b/.test(r.sel))
   .map(r => ({ s: r.sel, t: tokOf(r.body) })).filter(x => x.t && TPX[x.t] < 16).map(x => x.s + ' ' + TPX[x.t]);
 // 9 px reservado a MAYÚSCULAS espaciadas: una regla con --t-caption debe declarar uppercase o --ls-caps
 const capsLower = ruleList.filter(r => tokOf(r.body) === 'caption' && !/text-transform\s*:\s*uppercase/.test(r.body) && !/var\(--ls-caps\)/.test(r.body)).map(r => r.sel);

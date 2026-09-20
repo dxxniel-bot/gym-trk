@@ -116,8 +116,8 @@
   .mmrow{display:flex; align-items:center; justify-content:space-between; gap:var(--s3); padding:6px 0; border-bottom:.5px solid var(--o10);}
   .mmrow .mml{font-size:var(--t-sm); flex:1; min-width:0;} .mmrow .mml i{font-style:normal; font-size:var(--t-caption); color:var(--o40); margin-left:var(--s2);}
   .mmrow select{flex:0 0 52%; max-width:52%; font-size:var(--t-body); height:44px; background:var(--card); color:var(--fg); border:1px solid var(--border); border-radius:var(--r-ctl); padding:0 var(--s4); -webkit-appearance:none; appearance:none;}
-  .mmwarn{font-size:var(--t-caption); color:var(--warn); margin:calc(-1 * var(--s1)) 0 var(--s2);}
-  .mmp{font-size:var(--t-caption); color:var(--o60); cursor:pointer; margin-left:6px; white-space:nowrap;}
+  .mmwarn{font-size:var(--t-xs); color:var(--warn); margin:calc(-1 * var(--s1)) 0 var(--s2);}
+  .mmp{font-size:var(--t-xs); color:var(--o60); cursor:pointer; margin-left:6px; white-space:nowrap;}
   /* v230 · //MÚSCULOS */
   .mscrow{padding:var(--s3) 0 var(--s3); border-bottom:.5px solid var(--o10); cursor:pointer;} .mscrow:active{opacity:.7;}
   .msctop{display:flex; justify-content:space-between; align-items:baseline; gap:var(--s3); margin-bottom:6px;} .mscn{font-size:var(--t-sm); font-weight:700;} .mscv{font-size:var(--t-xs); color:var(--o50); white-space:nowrap;}
@@ -217,7 +217,7 @@
   .chsl{position:absolute; top:0; bottom:0; width:0; border-left:1px dashed var(--o50);}
   .chsd{position:absolute; width:10px; height:10px; margin:-5px 0 0 -5px/*ds:exempt*/; border-radius:50%; background:var(--fill); box-shadow:0 0 0 2px var(--sheet-bg);}
   .chst{position:absolute; top:-4px; transform:translate(-50%,-100%); font-size:var(--t-xs); color:var(--fg); background:var(--card2); border:.5px solid var(--o20); border-radius:var(--r-pill); padding:var(--s2) var(--s3); white-space:nowrap;}
-  .chhint{font-size:var(--t-caption); color:var(--o30); text-align:center; margin:0 0 10px;}
+
   .mdtop2{display:flex; justify-content:space-between; align-items:flex-end; gap:10px; margin-top:var(--s3);}
   .mdst{text-align:right; font-size:var(--t-meta); font-weight:800; white-space:nowrap;} .mdst .mdstl{font-size:var(--t-caption); font-weight:400; color:var(--o40); margin-top:var(--s2);}
   .mdnav{display:flex; align-items:center; justify-content:space-between; font-size:var(--t-xs); color:var(--o50); margin-top:var(--s3);} .mdnav a{cursor:pointer; padding:var(--s1) var(--s4); font-size:var(--t-section); color:var(--o70);} .mdnav a.off{color:var(--o20); cursor:default;}
@@ -280,12 +280,12 @@
   /* food log — grid 3-col: name | macros(76px) | kcal(40px) */
   .ghead,.item{display:grid; grid-template-columns:1fr 76px 40px; column-gap:var(--s3); align-items:baseline; padding:0 0 0 var(--s6); font-size:var(--t-xs); margin-bottom:0;}
   .ghead .hash{color:var(--faint);}
-  .ghead .gmac{color:var(--o40); font-size:var(--t-caption); text-align:right;}
+  .ghead .gmac{color:var(--o40); font-size:var(--t-xs); text-align:right;}
   .ghead .gkc{color:var(--fg); font-size:var(--t-body); font-weight:800; text-align:right;}
   .item{padding:var(--sp-row) 0 var(--sp-row) var(--s6); font-size:var(--t-meta); cursor:pointer;}
   .item .nm{color:var(--o60); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
-  .item .nm .q{color:var(--fg); font-weight:700; margin-right:6px;} .item .nm .br{color:var(--o35); font-size:var(--t-caption); margin-left:var(--s2);}
-  .item .macq{color:var(--o40); font-size:var(--t-caption); text-align:right; white-space:nowrap;}
+  .item .nm .q{color:var(--fg); font-weight:700; margin-right:6px;} .item .nm .br{color:var(--o35); font-size:var(--t-xs); margin-left:var(--s2);}
+  .item .macq{color:var(--o40); font-size:var(--t-xs); text-align:right; white-space:nowrap;}
   .item .kc{color:var(--o50); font-size:var(--t-xs); font-weight:400; text-align:right;}
   .item.exp{background:var(--o10);}
   /* session history — agrupado por mes, fila de 2 líneas (reusa .grp) */
@@ -296,7 +296,7 @@
   .hrow:active{background:var(--o10);}
   .hrow .hL{min-width:0;}
   .hrow .hnm{font-size:var(--t-body); font-weight:700; color:var(--fg); line-height:1.2; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
-  .hrow .hmeta{font-size:var(--t-meta); color:var(--o40); margin-top:var(--s2);}
+  .hrow .hmeta{font-size:var(--t-xs); color:var(--o40); margin-top:var(--s2);}
   .hrow .hR{display:flex; align-items:center; gap:var(--s3); flex:0 0 auto;}
   .hrow .hday{font-size:var(--t-meta); color:var(--o50); white-space:nowrap;}
   .hrow .hagg{font-size:var(--t-meta); white-space:nowrap;}
@@ -354,7 +354,7 @@
   .mgbar .b{background:none; border:0; color:var(--fg); font-size:var(--t-meta); font-weight:700; cursor:pointer; padding:0;}
   .exrow{display:flex; align-items:center; gap:var(--s3); padding:6px 0; border-bottom:.5px solid var(--o10); cursor:pointer;}
   .exrow.on{background:var(--o10);} .exrow .mgbox{flex:0 0 auto; font-size:var(--t-sm); color:var(--o35);} .exrow.on .mgbox{color:var(--fg);}
-  .exrow .exn{flex:1; font-size:var(--t-sm);} .exrow .exc{font-size:var(--t-xs); color:var(--o50); white-space:nowrap;}
+  .exrow .exn{flex:1; font-size:var(--t-body);} .exrow .exc{font-size:var(--t-xs); color:var(--o50); white-space:nowrap;}
   .exsub{display:flex; align-items:baseline; flex-wrap:wrap; gap:var(--s3); margin:calc(-1 * var(--s2)) 0 10px;}
   .exsub .note{font-size:var(--t-meta); color:var(--o50);} .exsub .note.add{color:var(--o30);}
   .exsub .mch{font-size:var(--t-meta); color:var(--o60); cursor:pointer; border-bottom:.5px dashed var(--o20);}
@@ -392,7 +392,7 @@
   /* isdrop: visual only (opacity) — never changes grid/columns/width vs a normal row */
   .srow.isdrop{opacity:.82;} .pair.isdrop{opacity:.82;}
   .setend{display:flex;justify-content:center;} .setend .del{width:18px;flex:0 0 18px;}
-  .bwchip{height:36px;display:flex;align-items:center;justify-content:flex-start;padding:0 var(--s3);border:.5px solid var(--o20);border-radius:var(--r-sm);font-size:var(--t-sm);color:var(--o70);cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .bwchip{height:36px;display:flex;align-items:center;justify-content:flex-start;padding:0 var(--s3);border:.5px solid var(--o20);border-radius:var(--r-sm);font-size:var(--t-meta);color:var(--o70);cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .bwchip.warn{color:var(--warn);border-color:var(--warn);}
   /* history editor: same components as live, just denser — smaller gaps, no scroll-wasting margins */
   .hist-editbar{display:flex;gap:var(--s3);margin:10px 0 6px;} .hist-editbar button{flex:1;}
@@ -464,7 +464,7 @@
   @keyframes sheetin{from{transform:translateY(-100%)}} @keyframes sheetout{to{transform:translateY(-100%)}}
   .sheet{width:100%; padding:calc(var(--s4) + env(safe-area-inset-top)) var(--sp-sheet) var(--s6); max-height:80%; overflow-y:auto; border-radius:0 0 var(--r-sheet) var(--r-sheet);}   /* material: .glass-strong (openModal) */
   #bc_cam video{width:100%; height:auto; display:block;} #bc_cam canvas.drawingBuffer{display:none;}
-  .sheet h3{font-size:var(--t-meta); color:var(--o50); letter-spacing:var(--ls-caps); margin-bottom:var(--sp-section); font-weight:800;}
+  .sheet h3{font-size:var(--t-section); color:var(--fg); letter-spacing:var(--ls-title); margin-bottom:var(--sp-section); font-weight:800;}
   .field{margin-bottom:var(--sp-field);} .field label{display:block; font-size:var(--t-xs); color:var(--o50); letter-spacing:var(--ls-caps); margin-bottom:6px;}
   .field input,.field select{width:100%; height:44px; border:1px solid var(--border); background:var(--card); color:var(--fg); font-size:var(--t-section); padding:0 var(--s4); appearance:none; border-radius:var(--r-ctl);}
   .field.row2{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
@@ -478,7 +478,7 @@
   .hbal{text-align:center; font-size:var(--t-xs); color:var(--o50); margin-top:var(--s3);}
   .lkc{text-align:center; margin:10px 0 6px;} .lkc b{font-size:var(--t-display); font-weight:800; color:var(--fg);} .lkc .u{font-size:var(--t-meta); color:var(--o50);}
   .lnut{max-height:38vh; overflow-y:auto; -webkit-overflow-scrolling:touch; margin:var(--s1) 0 10px;} .lnut .line{padding:var(--s2) 0;}
-  .toggles{display:flex; gap:var(--s3);} .toggles button{flex:1; height:44px; border:1px solid var(--border); background:transparent; color:var(--o50); font-size:var(--t-sm); cursor:pointer; border-radius:var(--r-ctl);} .toggles button.on{background:var(--fill); color:var(--on-fill);}
+  .toggles{display:flex; gap:var(--s3);} .toggles button{flex:1; height:44px; border:1px solid var(--border); background:transparent; color:var(--o50); font-size:var(--t-meta); font-weight:700; letter-spacing:var(--ls-ui); cursor:pointer; border-radius:var(--r-ctl);} .toggles button.on{background:var(--fill); color:var(--on-fill);}
   .toggles.wrap{flex-wrap:wrap;} .toggles.wrap button{flex:1 1 44%;}
   .chips{display:flex;flex-wrap:wrap;gap:var(--s3);margin-top:var(--s3);} .chip{font-size:var(--t-meta);color:var(--o50);border:.5px solid var(--border);border-radius:var(--r-pill);padding:var(--s4);cursor:pointer;} .chip:active{background:var(--o12);}
   .moodpad{position:relative;width:100%;max-width:300px;aspect-ratio:1;min-height:240px;margin:0 auto var(--s3);border:.5px solid var(--o20);border-radius:var(--r-ctl);touch-action:none;overflow:hidden;}
@@ -493,9 +493,9 @@
   .sheetbtns{display:flex; gap:10px; margin-top:10px;} .sheetbtns .ok{flex:1; height:48px; background:var(--fill); color:var(--on-fill); font-weight:700; border:0; font-size:var(--t-body); cursor:pointer; border-radius:var(--r-ctl);} .sheetbtns .cancel{height:48px; padding:0 var(--s5); border:1px solid var(--border); background:none; color:var(--o60); font-size:var(--t-sm); cursor:pointer; border-radius:var(--r-ctl);}
   .pickitem{padding:var(--s4) 6px; font-size:var(--t-body); border-bottom:.5px solid var(--o10); cursor:pointer;} .pickitem:hover{color:var(--fg);} .pickitem:active{background:var(--o10);}
 
-  .empty{font-size:var(--t-meta); color:var(--o50); text-align:center; padding:var(--s7) 0; line-height:1.8;}
+  .empty{font-size:var(--t-xs); color:var(--o50); text-align:center; padding:var(--s7) 0; line-height:1.8;}
   .empty::before{content:"// "; color:var(--o30);}
-  .empty .ehint{color:var(--o40); font-size:var(--t-xs);}
+  .empty .ehint{color:var(--o40);}
   .empty-cta{margin-top:var(--s5);}
   .bltips{margin-top:var(--s3);} .bltip{font-size:var(--t-xs); color:var(--o50); padding:var(--s1) 0; line-height:1.4;} .bltip:first-child{color:var(--o60);}
   .caption{font-size:var(--t-xs); color:var(--o40);} .caption b{color:var(--o60);}
@@ -516,7 +516,7 @@
   .nav a .ic{flex:0 0 auto; width:20px; height:20px; display:flex; align-items:center; justify-content:center;}
   .nav a .ic svg{width:20px; height:20px; stroke:currentColor; fill:none; stroke-width:1.6; stroke-linecap:round; stroke-linejoin:round; pointer-events:none;}
   .nav a .lbl{display:grid; grid-template-columns:0fr; opacity:0; transition:grid-template-columns var(--dur-3) var(--ease-out), opacity var(--dur-2) var(--ease-out);}
-  .nav a .lbl>span{overflow:hidden; min-width:0; white-space:nowrap; font-weight:700; letter-spacing:var(--ls-ui);}
+  .nav a .lbl>span{overflow:hidden; min-width:0; white-space:nowrap; font-size:var(--t-meta); font-weight:700; letter-spacing:var(--ls-ui);}
   .nav a.active{gap:var(--s3); padding:10px var(--s5); color:var(--fg); background:var(--o12); font-weight:700;}
   .nav a.active .lbl{grid-template-columns:1fr; opacity:1;}
   /* rounded progress bars */
@@ -1343,7 +1343,7 @@ function streakCardHTML(){
   return `<div class="pfeat"><div class="pfl">racha · comida o gym</div>`
     +`<div class="strk-top"><div class="strk-n"><span data-nk="streak" data-nv="${st}">${st}</span><span>día${st===1?'':'s'}</span></div>`
     +`<div class="strk-side"><div>mejor racha <b>${best}</b></div><div>este mes <b>${logged}/${el}</b> días registrados · <b>${pct}%</b></div><div>días completos (ambos) <b>${both}</b></div></div></div>`
-    +`<div class="strk-sub">${hoy} · solo se corta el día en que no registras ni comida ni gym</div>`
+    +`<div class="strk-sub">${hoy}</div>`
     +streakCalendarHTML()
     +`<div class="calleg"><span><i class="cd l1"></i>comida o gym</span><span><i class="cd l2"></i>comida + gym</span><span><i class="cd"></i>sin registro</span></div></div>`;
 }
@@ -1748,7 +1748,7 @@ function muscleDiag(id){ const t=todayISO(); if(_diagCache._d!==t)_diagCache={_d
   let r={findings:[],state:'none'}; try{ r=diagnoseMuscle(muscleDiagInput(id)); }catch(e){ console.warn('diag',id,e); } return (_diagCache[id]=r); }
 function diagBlockHTML(dg){ if(!dg||!dg.findings.length)return `<div class="submeta">${dg&&dg.state==='little'?'pocos datos: hacen falta 2 exposiciones en 28 días':'sin exposiciones en 28 días'}</div>`;
   return dg.findings.map(f=>`<div class="dxrow"><div class="dxh dx-${f.sev}">${escTxt(f.txt)}</div><div class="dxev">${escTxt(f.ev)}</div>${f.do?`<div class="dxdo">→ ${escTxt(f.do)}</div>`:''}</div>`).join('')
-    +`<div class="submeta dxnote">solo aparece lo que tu historial respalda · descriptivo: correlación, no causa</div>`; }
+    +`<div class="submeta dxnote">solo aparece lo que tu historial respalda</div>`; }
 // en //MÚSCULOS: el hallazgo principal en corto. MEV/MRV ya los dice la etiqueta junto al nombre y "en orden" no
 // ocupa renglón; el detalle los muestra todos.
 function diagRowHTML(id){ const fs=muscleDiag(id).findings.filter(x=>x.sev!=='ok'&&x.k!=='mev'&&x.k!=='mrv'); const f=fs[0]; if(!f)return '';
@@ -3368,7 +3368,8 @@ function renderExercise(exi,ex,allowF,canReorder){
       body+=`<div class="srow ${gcRow} ${s.isDrop?'isdrop':''}" data-swipe="delset" data-exi="${exi}" data-si="${si}" data-rk="${rk(s)}">${setnHTML(labels[si],s.done,'done',exi,si,zSty)}${fs}${c.w}${mid}${c.r}${c.rr}<div class="setend">${doneCellHTML(s.done,'done',exi,si)}</div></div>${progLine}`;
     });
     const lastSi=Math.max(0,sets.length-1);
-    const hint=exi===0?`<div class="swipehint">desliza una serie → para borrarla</div>`:'';
+    // §9.1: la pista de un gesto se enseña UNA vez por dispositivo, no en cada render
+    const hint=(exi===0&&!hintSeen('swipe'))?`<div class="swipehint" data-hint="swipe">desliza una serie → para borrarla</div>`:'';
     const add=hint+`<div class="addrow ${isM?'amach':'afree'}"><span class="aleft"><button class="addbtn" data-act="addset" data-exi="${exi}">[+ set]</button><button class="addbtn" data-act="dropset" data-exi="${exi}" data-si="${lastSi}">[↓ drop set]</button></span><button class="addbtn aex" data-act="addex" data-exi="${exi}">[+ exercise]</button></div>`;
     rows=thead+body+add;
   }
@@ -3995,7 +3996,7 @@ function openMetricDetail(key){
         ${st?`<div class="mdst" style="color:${stCol}">${st}<div class="mdstl">tu normal ${escTxt(vf(lastBand[0]))} – ${escTxt(vf(lastBand[1]))}</div></div>`:''}</div>
       ${nav}
       ${chart}
-      <div class="chhint">mantén y desliza para ver un día · pellizca ↔ para el periodo · ↕ para el zoom · doble toque = normal</div>
+
       <div class="mdstats">
         ${bI>=0?`<div class="mdline"><span class="mdk">${sp.lowerBetter?'día más alto':'mejor día'}</span><span class="mddots"></span><span class="mdv">${escTxt(vf(raw[bI]))} <span class="mdsub">${fmtShort(sp.dates[bI])}</span></span></div>`:''}
         ${wI>=0&&wI!==bI?`<div class="mdline"><span class="mdk">${sp.lowerBetter?'día más bajo':'menor día'}</span><span class="mddots"></span><span class="mdv">${escTxt(vf(raw[wI]))} <span class="mdsub">${fmtShort(sp.dates[wI])}</span></span></div>`:''}
@@ -4464,7 +4465,7 @@ function openWeightLog(){ const ks=Object.keys(db.bodyweight||{}).sort(); const 
   openModal(`<h3>peso corporal</h3>
    <div class="field row2"><div><label>PESO (kg)</label><input id="bw_kg" type="number" inputmode="decimal" value="${last||''}" placeholder="ej. 72.5"/></div><div><label>FECHA</label><input id="bw_date" type="date" value="${todayISO()}" max="${todayISO()}"/></div></div>
    <div class="sheetbtns u-mb6"><button class="ok" id="bw_save">guardar</button><button class="cancel" data-act="closemodal">cerrar</button></div>
-   ${recent.length?`<div class="grp-label sub">REGISTROS RECIENTES</div>`+rows+`<div class="submeta">toca una fecha para editarla · ✕ para borrar</div>`:''}`);
+   ${recent.length?`<div class="grp-label sub">REGISTROS RECIENTES</div>`+rows+``:''}`);
   document.getElementById('bw_save').onclick=()=>{ const v=parseFloat(val('bw_kg')); const d=val('bw_date')||todayISO(); if(!v||v<=0){ toast('⚠ pon un peso válido','err'); return; } db.bodyweight=db.bodyweight||{}; db.bodyweight[d]=Math.round(v*10)/10; const allk=Object.keys(db.bodyweight).sort(); if(allk.length&&db.profile)db.profile.weightKg=db.bodyweight[allk[allk.length-1]]; save(); toast('✓ peso guardado'); closeModal(); render(); };
 }
 // mood — circumplejo 2D: db.mood{'YYYY-MM-DD':{x:energía 0-10, y:valencia 0-10, label, ts}}. Legacy: número 1-10 = valencia.
@@ -4483,7 +4484,7 @@ function openMoodLog(){ const ks=Object.keys(db.mood||{}).sort();
    <div class="submeta u-tc u-mb10" id="mo_read" style="min-height:16px">arrastra o toca para marcar tu ánimo</div>
    <div class="field"><label>FECHA</label><input id="mo_date" type="date" value="${todayISO()}" max="${todayISO()}"/></div>
    <div class="sheetbtns u-mb6"><button class="cancel" data-act="closemodal">cerrar</button></div>
-   ${recent.length?`<div class="grp-label sub">REGISTROS RECIENTES</div>`+rows+`<div class="submeta">toca una fecha para editarla · ✕ para borrar</div>`:''}`);
+   ${recent.length?`<div class="grp-label sub">REGISTROS RECIENTES</div>`+rows+``:''}`);
   (function(){ const pad=document.getElementById('mo_pad'),pt=document.getElementById('mo_pt'),read=document.getElementById('mo_read'),dt=document.getElementById('mo_date'); if(!pad)return;
     let mx=5,my=5,drag=false;
     function paint(){ pt.style.left=(mx*10)+'%'; pt.style.top=((10-my)*10)+'%'; read.textContent=moodLabel(mx,my)+' · energía '+mx.toFixed(1)+' · ánimo '+my.toFixed(1); }
@@ -4516,7 +4517,7 @@ function openSleepLog(){
    <div id="sl_blocks"></div>
    <div class="u-flex u-gap12 u-aic u-mt8 u-mb4 u-mx0"><button class="b u-f0" id="sl_add">+ siesta</button><a id="sl_manual" class="u-meta u-o50 u-tap u-ul">¿sin hora? horas →</a><span id="sl_total" class="submeta u-mlauto">total — h</span></div>
    <div class="sheetbtns u-mb6"><button class="ok" id="sl_save">guardar</button><button class="cancel" data-act="closemodal">cerrar</button></div>
-   ${recent.length?`<div class="grp-label sub">REGISTROS RECIENTES</div>`+rows+`<div class="submeta">toca una fecha para editarla · ✕ para borrar</div>`:''}`);
+   ${recent.length?`<div class="grp-label sub">REGISTROS RECIENTES</div>`+rows+``:''}`);
   let blocks=[];
   const blkTimed=b=>b.start!==undefined; // manual block has no start key
   const blkH=b=>blkTimed(b)?((b.start&&b.end)?sleepDur(b.start,b.end):0):(+b.hours>0?Math.round(+b.hours*10)/10:0);
@@ -4659,7 +4660,7 @@ function openSelfcheckLog(){ const SF=[['bloat','¿qué tan hinchado te ves?'],[
    <div class="field"><label>FECHA</label><input id="sc_date" type="date" value="${todayISO()}" max="${todayISO()}"/></div>
    ${fields}
    <div class="sheetbtns u-mb6"><button class="ok" id="sc_save">guardar</button><button class="cancel" data-act="closemodal">cerrar</button></div>
-   ${recent.length?`<div class="grp-label sub">REGISTROS RECIENTES</div>`+rows+`<div class="submeta">toca una fecha para editarla · ✕ para borrar</div>`:''}`);
+   ${recent.length?`<div class="grp-label sub">REGISTROS RECIENTES</div>`+rows+``:''}`);
   const load=d=>{ const o=(db.selfcheck&&db.selfcheck[d])||{}; SF.forEach(([f])=>{ const el=document.getElementById('sc_'+f); if(el)el.value=(o[f]!=null?o[f]:''); }); };
   const dt=document.getElementById('sc_date'); if(dt)dt.onchange=()=>load(dt.value);
   document.getElementById('sc_save').onclick=()=>{ const d=val('sc_date')||todayISO(); const o={}; SF.forEach(([f])=>{ const v=parseInt(val('sc_'+f),10); if(isFinite(v)&&v>=0&&v<=10)o[f]=v; });
@@ -5557,6 +5558,9 @@ function render(){
 // lo agregado entra (state._enter), el ✓ recién puesto hace pop (state._pop) y las pestañas de periodo deslizan su
 // indicador cuando el sheet se re-abre encima de sí mismo. Todo respeta prefers-reduced-motion.
 const _nk={}, _tabPos={};
+// §9.1 · pistas de gesto: se enseñan una vez por dispositivo y desaparecen al usarlas (o al tocarlas)
+function hintSeen(k){ try{ return localStorage.getItem('gymtrk_hint_'+k)==='1'; }catch(_){ return false; } }
+function hintMark(k){ try{ localStorage.setItem('gymtrk_hint_'+k,'1'); }catch(_){} }
 function reducedMotion(){ try{ return !!(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches); }catch(_){ return false; } }
 // token de duración → ms, respetando la unidad ('280ms' → 280, '2.3s' → 2300; antes leía '2.3s' como 2.3 ms)
 function durMs(tok,dflt){ try{ const v=getComputedStyle(document.documentElement).getPropertyValue(tok).trim(), x=parseFloat(v); return isFinite(x)?(/ms$/.test(v)?x:/s$/.test(v)?x*1000:x):dflt; }catch(_){ return dflt; } }
@@ -5899,6 +5903,7 @@ function delSetHist(exi,si){
     if(!el)return;
     const go=moved&&dx>=TH, a=act, i=exi, j=si, node=el;
     if(moved)window._swipeGuard=Date.now();   // que el 'click' de después no dispare nada
+    if(go)hintMark('swipe');                  // §9.1: aprendido el gesto, la pista no vuelve
     el=null; lock=null; dx=0; moved=false;
     const reset=()=>{ try{ node.style.transition=''; node.style.transform=''; node.style.opacity=''; }catch(_){} };
     if(go){   // DS-5: sale hacia la derecha (180 ms) y entonces se borra; si el borrado se cancela, vuelve
@@ -5918,6 +5923,7 @@ function delSetHist(exi,si){
 })();
 document.getElementById('app').addEventListener('click',e=>{
   if(window._swipeGuard&&Date.now()-window._swipeGuard<350)return;
+  const _hn=e.target.closest&&e.target.closest('[data-hint]'); if(_hn){ hintMark(_hn.dataset.hint); _hn.remove(); return; }   // §9.1: tocar la pista la despide
   const el=e.target.closest('[data-act]'); if(!el)return; const a=el.dataset.act;
   const exi=el.dataset.exi!=null?+el.dataset.exi:null, si=el.dataset.si!=null?+el.dataset.si:null;
   // v223: cualquier toque dentro de la sesión viva cuenta como actividad (ver sessionIdleEnd)
