@@ -107,6 +107,32 @@ const spLit = cssSpace.filter(p => /^-?[\d.]+px$/.test(p) && ![1, 6, 10].include
 const durs = [...css.matchAll(/(?:transition|animation)\s*:\s*([^;}]+)/g)].flatMap(m => [...m[1].matchAll(/([\d.]+)(ms|s)\b/g)].map(x => x[2] === 's' ? Math.round(+x[1] * 1000) : +x[1]));
 const distinctDur = [...new Set(durs)].sort((a, b) => a - b);
 
+// ---- 8 · armonía (§4.4b) y ruido (§9.1) — UX-2 ----
+// "un rol, un token": el mismo rol no puede pintarse con dos tamaños según la pantalla.
+const ruleList = [...topLevel.matchAll(/([^{}]+)\{([^{}]*)\}/g)].map(m => ({ sel: m[1].trim(), body: m[2] }));
+const TPX = { caption: 9, xs: 10, meta: 11, sm: 12, body: 13, section: 16, display: 22, hero: 34 };
+const tokOf = body => ((body.match(/font-size\s*:\s*var\(--t-([\w-]+)\)/) || [])[1] || null);
+const ruleTok = sel => { let t = null; ruleList.forEach(r => { if (r.sel === sel) { const k = tokOf(r.body); if (k) t = k; } }); return t; };
+// tabla cerrada de §4.4b: selector → token esperado
+const ROLE_MAP = {
+  section: ['section', ['.section .h', '.sheet h3', '.mdhd h3']],
+  navrow: ['body', ['.pickitem', '.nvm', '.hrow .hnm', '.exrow .exn', '.tbrow']],
+  datarow: ['meta', ['.line', '.mrow', '.item', '.sxh', '.trow']],
+  meta: ['xs', ['.submeta', '.empty', '.hrow .hmeta']],
+  chip: ['meta', ['.chip', '.spc', '.ag-chip', '.bwchip', '.vst']],
+  tab: ['meta', ['.mdtabs span', '.toggles button']],
+};
+const roleMiss = [];
+Object.entries(ROLE_MAP).forEach(([rol, [want, sels]]) => sels.forEach(s => { const got = ruleTok(s); if (got && got !== want) roleMiss.push(s + ' ' + TPX[got] + '→' + TPX[want]); }));
+// campos que abren teclado/picker por debajo de 16 px (zoom de iOS, §4.4)
+const inputSmall = ruleList.filter(r => /(^|[\s,.#])(input|select|textarea)\b|\.inp\b|\.pick\b/.test(r.sel))
+  .map(r => ({ s: r.sel, t: tokOf(r.body) })).filter(x => x.t && TPX[x.t] < 16).map(x => x.s + ' ' + TPX[x.t]);
+// 9 px reservado a MAYÚSCULAS espaciadas: una regla con --t-caption debe declarar uppercase o --ls-caps
+const capsLower = ruleList.filter(r => tokOf(r.body) === 'caption' && !/text-transform\s*:\s*uppercase/.test(r.body) && !/var\(--ls-caps\)/.test(r.body)).map(r => r.sel);
+// texto instructivo en pantalla (§9.1): pistas de gesto y leyendas impresas en cada render
+const hintCls = ['chhint', 'swipehint', 'ehint'].reduce((o, c) => (o[c] = (js.match(new RegExp('class="[^"]*\\b' + c + '\\b', 'g')) || []).length, o), {});
+hintCls.submeta = (js.match(/class="[^"]*\bsubmeta\b/g) || []).length;
+
 // ---- reporte ----
 const report = {
   inlineStyles: styleIdx.length,
@@ -122,6 +148,7 @@ const report = {
   duplicateSelectors: dupSel.length, duplicateList: dupSel.map(([s, n]) => s + ' ×' + n),
   motion: { distinctDurationsMs: distinctDur },
   behavior: { nativeDialogs, silentSaves, spacingCss: { tokens: spTok, literalPx: spLit } },
+  harmony: { roleMismatch: roleMiss, inputsUnder16: inputSmall, captionLowercase: capsLower, hints: hintCls },
   inlineByFunction: topFn
 };
 const p0 = [];
@@ -146,6 +173,11 @@ else {
   console.log('\nComportamiento (§7.18)'); L('diálogos nativos', ['alert', 'confirm', 'prompt'].map(k => k + ' ' + (nativeDialogs[k] || 0)).join(' · '));
   L('guardados sin feedback', silentSaves.length + (silentSaves.length ? '  [' + silentSaves.join(', ') + ']' : ''));
   L('espaciado CSS token / px literal', spTok + ' / ' + spLit);
+  console.log('\nArmonía (§4.4b) y ruido (§9.1)');
+  L('rol con token fuera de tabla', roleMiss.length + (roleMiss.length ? '  [' + roleMiss.join(', ') + ']' : ''));
+  L('campos por debajo de 16 px', inputSmall.length + (inputSmall.length ? '  [' + inputSmall.join(', ') + ']' : ''));
+  L('9 px en minúsculas', capsLower.length + (capsLower.length ? '  [' + capsLower.slice(0, 8).join(', ') + (capsLower.length > 8 ? ', …' : '') + ']' : ''));
+  L('texto instructivo en pantalla', Object.entries(hintCls).map(([k, v]) => k + ' ' + v).join(' · '));
   console.log('\nMás style="" por función'); topFn.forEach(([n, c]) => L(n, c));
   console.log('');
 }

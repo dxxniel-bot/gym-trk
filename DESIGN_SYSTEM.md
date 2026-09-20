@@ -152,6 +152,26 @@ monoespaciado ya es tabular; decimales solo cuando informan (kg 1, porcentajes 0
 **Mayúsculas.** Etiquetas de sistema en MAYÚSCULAS espaciadas (`//MÚSCULOS`, `RACHA · COMIDA O GYM`); contenido en
 minúsculas (nombres, meta). Sus etiquetas conservan exactamente cómo él las escribió.
 
+### 4.4b Un rol, un token (regla de armonía, UX-2)
+
+El CSS ya está tokenizado; el problema medido no son px sueltos sino **el mismo rol pintado con 3 o 4 tokens** según
+la pantalla. Esta tabla es cerrada: un componente nuevo elige su fila, no un tamaño.
+
+| Rol | Token | Peso | Notas |
+|---|---|---|---|
+| `//SECCIÓN` de pantalla | `--t-section` 16 | 800 | una sola por bloque; el subtítulo interno es `.grp-label` 9 CAPS |
+| Campo que abre teclado o picker | `--t-section` 16 | 400/700 | **siempre** 16 (anti-zoom iOS): `.field input`, `.inp`, `.pick`, selects y el renombrar en sitio |
+| Nombre de fila **navegable** (abre algo) | `--t-body` 13 | 700 | catálogo, historial, comida del log, `.pickitem`, `.nvm` |
+| Nombre de fila de **dato** | `--t-meta` 11 | 400/700 | `.line`, `.item`, `.mrow`, `.sxh` — **el 12 no existe en este rol** |
+| Valor de la fila | el de su fila | 700/800 | nunca token propio; se distingue por peso y opacidad |
+| Meta pegada a la fila | `--t-xs` 10 | 400 | 9 queda solo para MAYÚSCULAS espaciadas y anotaciones de serie |
+| Chip / badge | `--t-meta` 11 | 700 | alto 36 |
+| Tab / segmentado | `--t-meta` 11 | 700 | spec de TRKTabs (§7.18) |
+| Botón | 48 → `--t-body` 13 · ≤44 → `--t-meta` 11 | 700 | por altura, no por importancia |
+| Leyenda / ayuda / vacío | `--t-xs` 10 | 400 | una sola voz (`.submeta`, `.empty`, `.ehint`) |
+| Título de sheet | `--t-section` 16 | 800 | `.sheet h3`, `.mdhd h3` |
+| Nombre de pantalla / del día | `--t-display` 22 | 800 | `.wname`, `.dnlbl`; las flechas `‹ ›` nunca pesan más que el dato (16) |
+
 ### 4.5 Espaciado y ritmo
 
 | Token | px | Uso |
@@ -510,6 +530,20 @@ punto, la escala de colores de Bevel.
 | lecturas separadas | nunca una puntuación única | //MÚSCULOS: volumen · estímulo · fatiga · recuperación |
 | hallazgo con su evidencia | una sugerencia existe solo si hay números que la respaldan, y se muestran | DIAGNÓSTICO por músculo (§7.16) |
 
+### 9.1 Qué texto se queda (UX-2)
+
+*Estado sí · instrucción no · definición al glosario.*
+
+| Tipo | Ejemplo | Regla |
+|---|---|---|
+| **Estado** | "sin baseline", "4/14 d", "hoy: comida + gym ✓", "sin clasificar 42 m" | se queda: es dato |
+| **Instrucción de gesto** | "mantén y desliza… pellizca ↔… doble toque" | **fuera**: el gesto se descubre tocando (NN/g: los *coach marks* fallan por saturación) |
+| **Pista de una vez** | "desliza una serie → para borrarla" | una sola vez por dispositivo (`localStorage`), nunca en cada render |
+| **Definición** | "MEV/MAV/MRV", "correlación, no causa", "estimado vs observado" | al glosario `data-gloss` (§7.18 TRKPop), que ya existe; no se imprime como párrafo fijo |
+| **Regla del sistema** | "solo se corta el día en que no registras ni comida ni gym" | al glosario; en pantalla queda solo el estado |
+
+Ninguna idea se dice dos veces en la misma pantalla, ni la misma idea en cuatro pantallas con cuatro redacciones.
+
 ## 10. Movimiento
 
 Anima **cambios de estado**: navegación entre pantallas (fade 140 ms), sheets (280 ms), filas que entran/salen
@@ -817,6 +851,45 @@ archivo; las partes fijas de los badges dinámicos (`.setprog`, `.exprog`) pasan
 **Ruta:** R0 guideline (este documento + auditor) · R1 v237 saneamiento · R2 v238 feedback y confirmación · R3 v239
 pestañas, glosario, acciones de fila, transición · R4 v240 filas · R5 v241 historial · R6 v242 progreso · R7 v243 RIR.
 Cada una cierra con `ds-audit` sin regresiones (duplicados 0), `ds-diff`, self-checks y QA 393×852.
+
+### 20.2 Inventario v245 → ruta UX-2 (2026-09-19)
+
+Quejas de uso del dueño (voz) + investigación de 10 agentes sobre MyFitnessPal, MacroFactor, Cronometer, Yazio,
+Bevel, Whoop, Oura, Gentler Streak, Apple Salud, Hevy, Strong, Boostcamp, Strava, Streaks, Habitify, Medisafe,
+Pillow, AutoSleep, Fitbit + HIG / Material 3 / NN-g. **No hay ninguna captura de Bevel archivada en el proyecto**
+(se buscó en `projects/gym-trk/**` e `imports/`): las referencias a Bevel son solo texto.
+
+| # | Área | Actual (medido en v245) | Objetivo | Fase |
+|---|---|---|---|---|
+| E1 | Suplementos en macros | 4 filas `.spg` con etiqueta fija de 58 px y chips de 36 px con `wrap` → escalonado, justo encima del log | una línea `//SUPPS ●●○○ 2/4` desplegable, riel sin wrap, `[✓ todo]` del momento (Apple Salud, Habitify) | U1 |
+| E2 | Agregar comida | única puerta: FAB → popover de 5 → sheet | `[+ alimento]` como última fila de cada comida y `[+ comida]` al final del log (MFP) | U1 |
+| E3 | Renombrar comida | existe pero escondido dentro del `.ghead` que abre el modal, objetivo < 44 px | `[···]` por comida → renombrar · aproximada · hora · borrar, filas de 44 px | U1 |
+| E4 | Agua | 3 toques y los chips solo rellenan el input | sección `//AGUA` al final: `[250] [500] [750] [1 L]` = un toque; `[otro]` abre el campo | U1 |
+| E5 | Menú (+) | 5 píldoras; `adddrink`/`addwaterquick` duplicados; el 5.º entra sin animación | **se quita** (decisión del dueño); sus acciones viven en el log y en el sheet | U1 |
+| E6 | Nombre de comida nueva | input libre de 16 px + chips arriba del sheet | **TRKWheel** (rueda `scroll-snap`, filas 40 px, 5 visibles, radiogroup accesible) + `otro nombre…` | U2 |
+| E7 | Sheet add food | 7 tamaños en 400 px; `fsearch`/`inlineSearchOFF` código muerto | buscar → `[escanear] [aproximada] [registrar]` → resultados agrupados; 4 tamaños | U2 |
+| E8 | Acciones de item | 3 enlaces de 10 px con sangría propia, < 44 px | fila de acciones de 44 px con el vocabulario `[ ]` | U2 |
+| E9 | Tipografía | 12 choques de rol medidos | tabla §4.4b aplicada; el 12 desaparece del rol "fila de dato" | U3 |
+| E10 | Ruido | `.chhint` en 17 métricas · `.swipehint` en cada render · 4 copias de la misma nota · `.submeta` con ~120 usos de 7 tipos | política §9.1 | U3 |
+| E11 | Franja de rango | `fill:var(--o10)` contra trazo `--o60` → ratio ≈ 1.1:1, invisible | dos líneas de referencia .5 px `--o25` + etiqueta `p15–p85 · 90d` | U4 |
+| E12 | Franja en peso | `if(key!=='weight')`: nunca hay banda ni línea de estado | banda fija del periodo también en peso | U4 |
+| E13 | Franja en pasos | la banda expande el dominio Y y aplasta la línea | banda fija por periodo, sin expandir el dominio | U4 |
+| E14 | Franja: huecos y zoom | segmentos de 1 día descartados; sin `clipPath` al hacer zoom; relleno incoherente | dibujar 1 día, `clipPath`, mismo tratamiento de relleno | U4 |
+| E15 | Sin historia | < 7 días: ni banda ni aviso | `sin normal · 4/14 d` en el sitio de la etiqueta | U4 |
+| E16 | Calendario de racha | `--o60` gris + `--good` verde (la pareja rechazada), celdas de 13 px no cuadradas, leyenda con muestras | opacidad de un solo blanco (`--track` · `--o30` · `--fg`), celda cuadrada, sin leyenda | U5 |
+| E17 | Tarjeta de racha | 4 niveles tipográficos + la regla impresa en cada render | 3 niveles; la regla al glosario | U5 |
+| E18 | Semana | empieza en domingo, columnas `D L M M J V S` | lunes primero, `L M X J V S D` | U5 |
+| E19 | Sueño manual | solo horas; las fases ya se capturan en `db.health.sleep[].stages` y mueren en `asleepMin` | línea de tiempo con bloques (Pillow/Apple/Fitbit); resto `sin clasificar` visible; nunca pedir minutos y validar sumas | U6 |
+| E20 | `hours` ambiguo | sincronizado = dormido; manual = en cama; `sleepHours` los suma igual | `inBed` y `asleep` separados; procedencia explícita | U6 |
+| E21 | Compartir sesión | sin jerarquía de tarjeta | 3 lecturas en `--t-hero` (duración · tonelaje · T) + cuerpo comprimido + `[copiar como texto]` (Strong) | U7 |
+| E22 | Compartir día | resumen sin foco | energía + macros contra meta + 3 alimentos principales, misma retícula | U7 |
+
+**Línea base del auditor en v245** (contadores nuevos de U0): rol con token fuera de tabla **7** · campos por debajo de 16 px **4** (`.mmrow select` 13, `.inp` 12, `.pick` 12, `.inp-mini` 10) · 9 px en minúsculas **34** · texto instructivo: `chhint` 1 (se imprime en las 17 métricas), `swipehint` 1 (en cada render), `ehint` 7, `submeta` 114.
+
+**Ruta:** U0 bases (este documento + auditor) · U1 v246 macros sin fricción · U2 v247 sheet de alimento ·
+U3 v248 una sola voz · U4 v249 señal en las gráficas · U5 v250 racha · U6 v251 sueño con fases · U7 v252 compartir.
+Cada fase cierra con `ds-audit` sin regresiones, `ds-diff` con cargas frescas, self-checks y QA 393×852 con toques
+reales. Lo no previsto se agrega a esta tabla con su valor ANTES de corregirlo.
 
 *Historial:* v33 "Luxury Terminal" · v139–v145 consolidación (48/44, `.field`, 140 ms, vacíos `//`) · v160 color ·
 v169–v176 glass en chrome · v171 headers tokenizados · v213 `.pf` · v224 encabezado de ejercicio en dos líneas ·
