@@ -31,6 +31,7 @@ const rootBlocks = [...css.matchAll(/:root\s*\{([^}]*)\}/g)].map(m => m[1]).join
 // ---- 1 · variables ----
 const defined = new Set([...rootBlocks.matchAll(/--([\w-]+)\s*:/g)].map(m => m[1]));
 [...html.matchAll(/setProperty\(\s*['"]--([\w-]+)/g)].forEach(m => defined.add(m[1]));
+[...css.matchAll(/(?:^|[{;\s])--([\w-]+)\s*:\s*[^;}]+/g)].forEach(m => defined.add(m[1]));   // también las locales de un componente (p. ej. .hist-rail{--hdot:20px})
 const uses = [...html.matchAll(/var\(\s*--([\w-]+)\s*(,)?/g)];
 const undefNoFallback = {}, undefWithFallback = {};
 uses.forEach(m => { if (defined.has(m[1])) return; const bag = m[2] ? undefWithFallback : undefNoFallback; bag[m[1]] = (bag[m[1]] || 0) + 1; });
