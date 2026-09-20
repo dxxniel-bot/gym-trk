@@ -330,7 +330,7 @@
   .mdgrid{display:grid; grid-template-columns:1fr 1fr; gap:var(--s2) var(--s5);}
   .mdr{display:flex; justify-content:space-between; font-size:var(--t-xs);}
   .mdmeal .mdk{color:var(--o50);} .mdmeal .mdv{color:var(--fg);}
-  .mdacts{display:flex; gap:var(--s5); margin-top:10px;} .mdacts a{font-size:var(--t-xs); color:var(--o50); cursor:pointer; text-decoration:underline;}
+  .mdacts{display:flex; gap:var(--s5); margin-top:var(--s2);} .mdacts a{display:inline-flex; align-items:center; height:44px; font-size:var(--t-xs); color:var(--o60); cursor:pointer;}
   .mgd{margin-bottom:6px; padding-top:var(--s1);} .ghead.exp .gkc{color:var(--fg);}
   /* U1: el FAB (+) y su popover se eliminan — todo se agrega desde el propio log */
 
@@ -562,12 +562,16 @@
   .fa-wrap{display:flex; flex-direction:column; height:100%; min-height:0;}
   .fa-top{flex:0 0 auto;}
   #fa_q{width:100%; height:44px; border:1px solid var(--border); border-radius:var(--r-ctl); background:var(--card); color:var(--fg); font-size:var(--t-section); padding:0 var(--s4); margin-bottom:10px;}
+  /* U2 · atajos del sheet como una fila de acciones de texto (MFP pone buscar arriba y los atajos en fila) */
+  .fa-acts{display:flex; gap:var(--s5); align-items:center; padding:var(--s2) var(--s1) 0;}
+  .fa-acts a{font-size:var(--t-xs); color:var(--o60); cursor:pointer; padding:var(--s3) 0;}
+  .fa-meal{display:flex; align-items:center; gap:var(--s3); margin:0 0 var(--s3); font-size:var(--t-meta); color:var(--o50);}
+  .fa-meal b{color:var(--fg); font-weight:700;} .fa-meal a{font-size:var(--t-xs); color:var(--o60); cursor:pointer; padding:var(--s3) var(--s2); margin:calc(-1 * var(--s3)) 0;}
   .fa-btns{display:flex; gap:var(--s3);}
   .fa-btns .b{flex:1 1 0; text-align:center; font-family:inherit; font-size:var(--t-sm); font-weight:700; letter-spacing:var(--ls-ui); color:var(--fg); border:1px solid var(--border); border-radius:var(--r-ctl); padding:var(--s4) 0; background:var(--card); cursor:pointer;}
   .fa-btns .b:active{background:var(--card2);}
   /* empty-state hint: sequenced animation of scan → photo → register */
-  .fa-empty{padding:var(--s5) 6px; color:var(--o50); font-size:var(--t-meta); line-height:1.55;}
-  .fa-empty .fa-em-h{color:var(--fg); font-weight:700; font-size:var(--t-sm); margin-bottom:var(--s4); display:block; text-align:center;}
+  .fa-empty{padding:var(--s5) 6px; color:var(--o50); font-size:var(--t-xs); line-height:1.55; text-align:center;}
   .fa-empty .fa-em-steps{display:flex; gap:6px; align-items:stretch; justify-content:center;}
   .fa-empty .fa-em-step{flex:1 1 0; max-width:96px; text-align:center; padding:var(--s4) 6px var(--s4); border:1px solid var(--border); border-radius:var(--r-ctl); background:var(--card); cursor:pointer; opacity:0; transform:translateY(6px); animation:faPop var(--dur-3) var(--ease-out) forwards; color:var(--fg);}
   .fa-empty .fa-em-step .ic{display:flex; justify-content:center; align-items:center; height:26px; margin-bottom:6px; color:var(--fg);}
@@ -3684,7 +3688,7 @@ function itemQtyLabel(m){ const f=m._food, u=m._unit, q=m.qty||1; const base=(f&
   return grams ? numTxt(q)+' ('+grams+' '+base+')' : numTxt(q)+'×'; }
 // tap a food item -> just edit / delete (no per-item nutrition; that's at meal level)
 function mealDetailInline(m){
-  return `<div class="mdmeal"><div class="mdacts"><a data-act="editmealx" data-id="${m.id}">editar</a><a data-act="movemeal" data-id="${m.id}">mover</a><a data-act="delmealx" data-id="${m.id}">borrar</a></div></div>`;
+  return `<div class="mdmeal"><div class="mdacts"><a data-act="editmealx" data-id="${m.id}">[editar]</a><a data-act="movemeal" data-id="${m.id}">[mover]</a><a data-act="delmealx" data-id="${m.id}">[borrar]</a></div></div>`;
 }
 // tap a meal header -> full nutrition breakdown of the whole meal (the set)
 function mealGroupDetail(list){
@@ -6150,7 +6154,8 @@ document.getElementById('app').addEventListener('click',e=>{
   else if(a==='ringtog'){ state._scroll=document.getElementById('view').scrollTop; const k=el.dataset.k; state.ringRem=state.ringRem||{}; state.ringRem[k]=!state.ringRem[k]; render(); }
   else if(a==='viewmeal'){ state._scroll=document.getElementById('view').scrollTop; state.expandedMeal = state.expandedMeal===el.dataset.id ? null : el.dataset.id; render(); }
   else if(a==='viewtag'){ state._scroll=document.getElementById('view').scrollTop; state.expandedTag = state.expandedTag===el.dataset.tag ? null : el.dataset.tag; render(); }
-  else if(a==='pickmealtag'){ const e=document.getElementById('fa_tagtxt'); if(e)e.value=el.dataset.v; }
+  else if(a==='famealwheel'){ faMealWheel(); }
+  else if(a==='faapprox'){ openApproxMeal(curTag()); }
   else if(a==='editmeal'){ const t=curDate(); const m=(db.meals[t]||[]).find(x=>x.id===window._mealId); if(m){ closeModal();
       if(m._food){ openLog(m._food,{editId:m.id,qty:m.qty||1,unit:m._unit,tag:m.tag}); }
       else { const q=m.qty||1; const per={}; ['kcal','protein','carbs','fat','sugar','sodium','potassium','fiber','caffeine','alcohol','water'].forEach(k=>per[k]=(+m[k]||0)/q); openLog({name:(m.name||'').replace(/ ×[\d.]+$/,''),serving:m.serving||'1 serving',per},{editId:m.id,qty:q,tag:m.tag}); } } }
@@ -6204,7 +6209,7 @@ document.getElementById('app').addEventListener('click',e=>{
   else if(a==='pickfood'){ snapshotFaCtx(); const f=(db.foods||[]).find(x=>x.id===el.dataset.id); if(f) openLog(f,{fromId:f.id,tag:curTag()}); }
   else if(a==='pickbase'){ snapshotFaCtx(); const f=BASE_FOODS.find(x=>x.id===el.dataset.id); if(f){ const tg=document.getElementById('fa_tagtxt')?curTag():(window._faTag||'meal'); openLog(f,{tag:tg,isNew:true}); } }
   else if(a==='fbarcode'){ openBarcode(); }
-  else if(a==='fsearch'){ inlineSearchOFF(); }
+
   else if(a==='fphoto'){ window._faTag=window._faTag||curTag(); const inp=document.createElement('input'); inp.type='file'; inp.accept='image/*'; inp.setAttribute('capture','environment'); inp.onchange=()=>{ if(inp.files&&inp.files[0]) labelPhoto(inp.files[0], window._linkBarcode||''); }; inp.click(); }
   else if(a==='nspick'){ snapshotFaCtx(); const f=(window._nsRes||[])[+el.dataset.i]; if(!f)return; if(window._linkBarcode)f.barcode=window._linkBarcode; openVerify(f,{isNew:true,tag:window._faTag||curTag()}); }
   else if(a==='ofpick'){ snapshotFaCtx(); const f=(window._ofRes||[])[+el.dataset.i]; if(!f)return; openLog(f,{tag:window._faTag||curTag(),isNew:true}); }
@@ -7068,20 +7073,24 @@ function nextAfterCurrent(){ const seq=['breakfast','lunch','dinner']; const i=s
 function trkWheel(o,onPick){
   const opts=(o.opts||[]).map(String); if(!opts.length)return;
   const cur=o.cur!=null?String(o.cur):'';
+  if(cur&&opts.indexOf(cur)<0)opts.unshift(cur);   // el valor actual siempre está en la rueda, aunque sea un nombre propio
   const rows=opts.map((v,i)=>`<button type="button" class="whl-o" data-i="${i}" role="radio" aria-checked="${v===cur?'true':'false'}">${escTxt(v)}</button>`).join('');
-  openModal(`<h3>${escTxt(o.title||'')}</h3>`
+  // va en la capa de TRKAsk: se abre ENCIMA del sheet actual y no lo reemplaza (lo escrito abajo se conserva)
+  const m=askLayer(`<h3>${escTxt(o.title||'')}</h3>`
     +`<div class="whl"><div class="whl-sel"></div><div class="whl-list" id="whl_list" role="radiogroup" aria-label="${escTxt(o.title||'')}"><div class="whl-pad"></div>${rows}<div class="whl-pad"></div></div></div>`
-    +`<div class="sheetbtns"><button class="ok" id="whl_ok">${escTxt(o.ok||'elegir')}</button>${o.other?`<button class="cancel" id="whl_other">${escTxt(o.other)}</button>`:''}</div>`);
-  const list=document.getElementById('whl_list'); if(!list)return; const H=40;
+    +`<div class="sheetbtns"><button class="ok" data-whl="ok">${escTxt(o.ok||'elegir')}</button>${o.other?`<button class="cancel" data-whl="other">${escTxt(o.other)}</button>`:''}<button class="cancel" data-ask="no">cerrar</button></div>`);
+  const list=m.querySelector('#whl_list'); if(!list)return; const H=40;
   let idx=Math.max(0,opts.indexOf(cur));
   const mark=()=>{ list.querySelectorAll('.whl-o').forEach((b,i)=>{ b.classList.toggle('on',i===idx); b.setAttribute('aria-checked',i===idx?'true':'false'); }); };
   list.scrollTop=idx*H; mark();
   // el marcado se actualiza en el propio evento (nada de rAF: en segundo plano no corre y la fila central se quedaba atrás)
   const sync=()=>{ const i=Math.max(0,Math.min(opts.length-1,Math.round(list.scrollTop/H))); if(i!==idx){ idx=i; mark(); } };
   list.addEventListener('scroll',sync,{passive:true});
-  list.querySelectorAll('.whl-o').forEach(b=>b.addEventListener('click',()=>{ idx=+b.dataset.i; closeModal(); onPick(opts[idx]); }));
-  const ok=document.getElementById('whl_ok'); if(ok)ok.onclick=()=>{ sync(); closeModal(); onPick(opts[idx]); };   // al confirmar se lee la posición real, no el último evento
-  const ot=document.getElementById('whl_other'); if(ot)ot.onclick=()=>{ closeModal(); trkPrompt({title:o.title||'',label:o.otherLabel||'NOMBRE',ok:'usar'},v=>{ v=(v||'').trim(); if(!v){ toast('⚠ escribe un nombre','err'); return false; } onPick(v); }); };
+  m.addEventListener('click',ev=>{ const b=ev.target.closest&&ev.target.closest('.whl-o,[data-whl],[data-ask]'); if(!b)return; ev.stopPropagation();
+    if(b.classList.contains('whl-o')){ idx=+b.dataset.i; closeAsk(true); onPick(opts[idx]); return; }
+    if(b.dataset.whl==='ok'){ sync(); closeAsk(true); onPick(opts[idx]); return; }   // al confirmar se lee la posición real, no el último evento
+    if(b.dataset.whl==='other'){ closeAsk(true); trkPrompt({title:o.title||'',label:o.otherLabel||'NOMBRE',ok:'usar'},v=>{ v=(v||'').trim(); if(!v){ toast('⚠ escribe un nombre','err'); return false; } onPick(v); }); return; }
+    closeAsk(); });
 }
 // U1 (E2): [+ comida] — se elige el nombre en la rueda y se entra directo a agregar alimento a esa comida
 function openMealWheel(){
@@ -7581,46 +7590,35 @@ function renderOFFRows(term){ const list=document.getElementById('fa_list'); con
 function lastUsedKey(f){ if(!f)return ''; if(f.barcode)return 'b:'+f.barcode; if(f.id)return 'i:'+f.id; return 'n:'+bfNorm((f.name||'')+'|'+(f.brand||'')); }
 function getLastUsed(f){ try{ return (db.lastUsed||{})[lastUsedKey(f)]||null; }catch(_){ return null; } }
 function saveLastUsed(f,unit,qty){ try{ db.lastUsed=db.lastUsed||{}; const k=lastUsedKey(f); if(!k)return; db.lastUsed[k]={unit:unit,qty:qty,when:Date.now()}; }catch(_){} }
+// U2 (E6/E7): la jerarquía del sheet es buscar → atajos → resultados (MyFitnessPal). La comida deja de ser un campo
+// libre con una tira de chips arriba del todo: es una línea `a #desayuno [cambiar]` que abre TRKWheel. `#fa_tagtxt`
+// sigue existiendo (oculto) porque `curTag()` lo lee desde media docena de sitios.
 function openFoodAdd(preset, lockTag){
-  const sugg=mealSuggestions(); const tag=preset||nextMealTag();
-  const head = lockTag
-    ? `<h3 class="u-mb12">add food <span class="u-o40 u-w4">· ${escTxt(tag)}</span></h3><input type="hidden" id="fa_tagtxt" value="${(tag+'').replace(/"/g,'&quot;')}"/>`
-    : `<h3 class="u-mb10">add food</h3>
-       <div class="field u-mb10"><label>COMIDA <span class="u-o30 u-w4">· mantén pulsado un chip para borrarlo</span></label><input id="fa_tagtxt" value="${(tag+'').replace(/"/g,'&quot;')}" placeholder="ej. desayuno, pre-workout" autocomplete="off"/>
-       <div class="chips" id="fa_sugg">${sugg.map(s=>`<span class="chip" data-act="pickmealtag" data-v="${escTxt(s)}">${escTxt(s)}</span>`).join('')}</div></div>`;
+  const tag=preset||nextMealTag();
   openModal(`<div class="fa-wrap">
-     ${head}
+     <h3 class="u-mb10">add food</h3>
+     <div class="fa-meal">a <b id="fa_tagname">#${escTxt(tag)}</b>${lockTag?'':'<a data-act="famealwheel">[cambiar]</a>'}</div>
+     <input type="hidden" id="fa_tagtxt" value="${(tag+'').replace(/"/g,'&quot;')}"/>
      <div class="fa-top">
        <input id="fa_q" placeholder="buscar — huevo / egg, pollo / chicken…" autocomplete="off"/>
-       <div class="fa-btns"><button class="b" data-act="fbarcode">scan</button><button class="b" data-act="fregister">register</button></div>
+       <div class="fa-acts"><a data-act="fbarcode">[escanear]</a><a data-act="faapprox">[aproximada]</a><a data-act="fregister">[registrar]</a></div>
      </div>
      <div class="fa-listwrap"><div class="grp-label first" id="fa_lbl">RECIENTES</div><div id="fa_list"></div></div>
    </div>`,'tall');
   const q=document.getElementById('fa_q');
   const foodRow=(f,act)=>`<div class="pickitem" data-act="${act}" data-id="${f.id}">${escTxt(f.name)}${srcMark(f)}${f.brand?' <span class="u-o35 u-xs">'+escTxt(f.brand)+'</span>':''} <span class="u-fr u-o50">${Math.round(foodKcal100(f))} /100${f.base==='ml'?'ml':'g'}</span></div>`;
-  const _icBarcode='<svg viewBox="0 0 32 22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><line x1="3" y1="3" x2="3" y2="19"/><line x1="7" y1="3" x2="7" y2="19"/><line x1="11" y1="3" x2="11" y2="19" stroke-width="3"/><line x1="16" y1="3" x2="16" y2="19"/><line x1="20" y1="3" x2="20" y2="19" stroke-width="3"/><line x1="25" y1="3" x2="25" y2="19"/><line x1="29" y1="3" x2="29" y2="19"/></svg>';
-  const _icTable='<svg viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><rect x="3" y="2" width="16" height="18" rx="1.5"/><line x1="3" y1="7" x2="19" y2="7"/><line x1="3" y1="11" x2="19" y2="11"/><line x1="3" y1="14.5" x2="19" y2="14.5"/><line x1="3" y1="18" x2="19" y2="18"/><line x1="11" y1="11" x2="11" y2="20"/></svg>';
-  const _icCheck='<svg viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 12 9 17 18 6"/></svg>';
-  const emptyHTML=`<div class="fa-empty">
-     <span class="fa-em-h">no se encontró · verifica y registra el producto</span>
-     <div class="fa-em-steps">
-       <button class="fa-em-step" type="button" data-act="fbarcode"><span class="ic">${_icBarcode}</span><span class="lb">escanea código de barras</span></button>
-       <span class="fa-em-arr">→</span>
-       <button class="fa-em-step" type="button" data-act="fregister"><span class="ic">${_icTable}</span><span class="lb">foto tabla o rellenar manualmente</span></button>
-       <span class="fa-em-arr">→</span>
-       <button class="fa-em-step off" type="button" data-act="fdone" disabled><span class="ic">${_icCheck}</span><span class="lb">registrar</span></button>
-     </div>
-     <div class="fa-em-foot">sigue escribiendo · también buscamos en línea automáticamente</div>
-   </div>`;
+  // el vacío deja de ser un diagrama de 3 tarjetas con 5 tamaños: una línea, y los atajos ya están arriba
+  const emptyHTML=`<div class="fa-empty">sin resultados todavía · también se busca en línea</div>`;
   let _offT=0, _offSeq=0;
   const renderList=()=>{ const s=(q.value||'').toLowerCase().trim();
     const mine=(db.foods||[]).slice().filter(f=>!s||searchScore(s,f)>0).map(f=>({f,sc:s?searchScore(s,f):0,lu:f.lastUsed||0}))
       .sort((a,b)=>s?(b.sc-a.sc)||(b.lu-a.lu):(b.lu-a.lu)).slice(0,40).map(x=>x.f);
     const base=s?BASE_FOODS.map(f=>({f,sc:searchScore(s,f)})).filter(x=>x.sc>0 && !mine.some(m=>m.id===x.f.id||bfNorm(m.name)===bfNorm(x.f.name)))
       .sort((a,b)=>b.sc-a.sc).slice(0,80).map(x=>x.f):[];
-    const lbl=document.getElementById('fa_lbl'); if(lbl)lbl.textContent=s?'RESULTADOS':'RECIENTES';
+    const lbl=document.getElementById('fa_lbl'); if(lbl)lbl.textContent=s?'TUYOS':'RECIENTES';   // grupos con su propio encabezado (MacroFactor)
     let html=mine.map(f=>foodRow(f,'pickfood')).join('');
     if(base.length)html+=(mine.length?'<div class="grp-label sub">BÁSICOS</div>':'')+base.map(f=>foodRow(f,'pickbase')).join('');
+    if(lbl)lbl.style.display=(mine.length?'':'none');
     const list=document.getElementById('fa_list');
     if(html){ list.innerHTML=html; if(s && s.length>=2){ scheduleOFF(s); } }
     else if(!s){ list.innerHTML=`<div class="submeta u-py6 u-px0">busca un alimento (huevo / egg, pollo / chicken…) o usa scan / register</div>`; }
@@ -7638,20 +7636,15 @@ function openFoodAdd(preset, lockTag){
       }
     }catch(_){ const oldh=document.getElementById('fa_offhint'); if(oldh)oldh.remove(); } }, 450); }
   q.oninput=renderList; renderList();
-  // long-press a meal chip to delete it
-  const sg=document.getElementById('fa_sugg'); if(sg)sg.querySelectorAll('.chip').forEach(ch=>wireLongPress(ch,()=>{ const v=ch.dataset.v; const _go12=()=>{ db.mealTags=(db.mealTags||[]).filter(x=>x!==v); save(); ch.remove(); }; return trkAsk({title:'quitar "'+v+'" de la lista',ok:'quitar',danger:true},_go12);}));
 }
-// search OpenFoodFacts inline — same sheet, same input/list, no new screen
-async function inlineSearchOFF(){
-  const q=document.getElementById('fa_q'); const list=document.getElementById('fa_list'); const lbl=document.getElementById('fa_lbl');
-  if(!q||!list) return; const term=(q.value||'').trim();
-  if(!term){ q.focus(); return; }
-  if(lbl)lbl.textContent='BUSCANDO…'; list.innerHTML='<div class="submeta u-py8 u-px0">buscando productos…</div>';
-  const res=await searchFoods(term); window._faTag=curTag();
-  if(lbl)lbl.textContent='PRODUCTOS · '+term;
-  if(!res.length){ list.innerHTML='<div class="submeta u-py8 u-px0">sin productos · prueba register para agregarlo manual</div>'; return; }
-  window._ofRes=res;
-  list.innerHTML=res.map((f,i)=>`<div class="pickitem" data-act="ofpick" data-i="${i}">${escTxt(f.name)}${f.brand?' <span class="u-o35 u-xs">'+escTxt(f.brand)+'</span>':''} <span class="u-fr u-o50">${Math.round((f.per100&&f.per100.kcal)||foodKcal100(f)||0)} /100${f.base==='ml'?'ml':'g'}</span></div>`).join('');
+// U2: cambiar la comida destino sin salir del sheet — la rueda escribe en el campo oculto que lee curTag()
+function faMealWheel(){
+  const opts=[...new Set([...mealSuggestions(),'breakfast','lunch','snack','dinner','pre workout','post workout'])].filter(t=>t&&t!=='drink');
+  const cur=curTag();
+  trkWheel({title:'comida',opts,cur,other:'otro nombre…',otherLabel:'NOMBRE DE LA COMIDA'},v=>{
+    const i=document.getElementById('fa_tagtxt'), n=document.getElementById('fa_tagname');
+    if(i)i.value=v; if(n)n.textContent='#'+v; else openFoodAdd(v,false);
+  });
 }
 function wireLongPress(el,fn){ let t=null; const start=()=>{ t=setTimeout(()=>{ t=null; fn(); },550); }; const cancel=()=>{ if(t){clearTimeout(t); t=null;} };
   el.addEventListener('touchstart',start,{passive:true}); el.addEventListener('touchend',cancel); el.addEventListener('touchmove',cancel);
