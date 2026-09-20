@@ -157,6 +157,13 @@
   .pfl{font-size:var(--t-caption); color:var(--o40); letter-spacing:var(--ls-caps); text-transform:uppercase; margin-bottom:var(--s3);}
   /* v226 · //SUPPS dentro de macros: un chip por toma, un toque = tomado. Sin acordeones que perder. */
   /* U1 · //SUPPS en UNA línea que se despliega en un riel horizontal (antes: 4 filas con etiqueta fija de 58px y chips que hacían wrap) */
+  /* v254 · aviso permanente mientras el guardado falla (un toast se iba y la app seguía fallando en silencio) */
+  .savebar{position:fixed; left:var(--sp-px); right:var(--sp-px); bottom:calc(76px + env(safe-area-inset-bottom)); z-index:var(--z-toast); display:flex; align-items:center; gap:var(--s4); height:44px; padding:0 var(--s4); background:var(--card2); border:1px solid var(--bad); border-radius:var(--r-ctl); box-shadow:var(--shadow-float);}
+  .savebar .sbt{flex:1; min-width:0; font-size:var(--t-meta); font-weight:700; color:var(--bad); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .savebar a{flex:0 0 auto; font-size:var(--t-xs); color:var(--o60); cursor:pointer; padding:var(--s3) 0;}
+  .stline{display:flex; align-items:baseline; gap:var(--s3); font-size:var(--t-meta); padding:var(--s3) 0; border-bottom:.5px solid var(--o10);}
+  .stline .stk{flex:1; min-width:0; color:var(--o60); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .stline .stv{color:var(--fg); font-weight:700; white-space:nowrap;} .stline.gone .stk,.stline.gone .stv{color:var(--o35); text-decoration:line-through;}
   .supps{margin:0 0 var(--s5);}
   .supps .sph{display:flex; align-items:center; gap:var(--s3); width:100%; height:36px; padding:0; background:none; border:0; color:inherit; font:inherit; cursor:pointer; text-align:left;}
   .supps .sph .h{font-size:var(--t-section); font-weight:800; letter-spacing:var(--ls-title);}
@@ -1069,11 +1076,69 @@ async function nativeShareFile(name,text){ const fs=capP('Filesystem'), sh=capP(
   try{ await fs.writeFile({path:name,data:text,directory:'DOCUMENTS',encoding:'utf8'}); const u=await fs.getUri({path:name,directory:'DOCUMENTS'});
     if(sh) await sh.share({title:name,files:[u.uri]}); else toast('guardado en Archivos › gym//TRK › '+name,'ok'); }
   catch(e){ if(!/cancel/i.test(String(e&&e.message)))toast('⚠ no pude exportar · '+((e&&e.message)||''),'err'); } }
-let _saveBakT=0;
-function save(){ bumpIdx(); try{ const s=JSON.stringify(db); localStorage.setItem(LS_KEY,s); if(NATIVE_APP)nativeMirrorSoon(s);
-  // redundant backup, throttled to once every ~4s (cheap safety net if primary key gets corrupted)
-  const now=performance.now(); if(now-_saveBakT>4000){ _saveBakT=now; try{localStorage.setItem(LS_BACKUP,s);}catch(e){} }
-  }catch(e){ console.warn('save failed',e); if(!window._saveQuotaWarned){ window._saveQuotaWarned=true; try{ setTimeout(()=>{ try{toast('⚠ sin espacio: exporta y borra datos viejos para liberar');}catch(_){} },500); }catch(_){} } } }
+// ---- v254 · el guardado deja de mentir -------------------------------------------------------------------------
+// El 19-sep el dueño perdió una sesión entera: el cupo de localStorage estaba al 98.5 % (CUATRO copias del mismo db:
+// principal + `_bak` + dos fotos de reparaciones viejas que nunca se borraban), `setItem` lanzó, `save()` se tragó la
+// excepción y `saveSession()` igual cantó "✓ sesión guardada". Reglas nuevas:
+//   1. save() DEVUELVE si escribió. Quien confirme al usuario tiene que preguntárselo.
+//   2. Si falla, intenta rescatarse solo (borra las fotos huérfanas, suelta el respaldo) y reintenta.
+//   3. La sesión en curso se espeja SIEMPRE en su propia clave chica (unos KB), pase lo que pase con la grande.
+//   4. Mientras el guardado esté fallando hay un aviso PERMANENTE en pantalla, no un toast que se va.
+const LS_LIVE='gymtrk_live';                 // espejo de la sesión en curso (pequeño, sobrevive al cupo lleno)
+const LS_ORPHANS=['gymtrk_db_v1_pre218','gymtrk_db_v1_premerge'];   // fotos de reparaciones ya aplicadas (v218, v224): ocupaban el 47 % del cupo. Literales porque sus constantes se declaran más abajo.
+let _saveBakT=0, _saveBakDay='';
+let _saveErr=null;                            // último error real (no "sin espacio" para todo)
+function lsBytes(k){ try{ const v=localStorage.getItem(k); return v?v.length*2:0; }catch(_){ return 0; } }   // WebKit cuenta UTF-16
+// borra las fotos de reparaciones ya aplicadas (v218 y v224). Devuelve los bytes liberados.
+function freeOrphanBackups(){ let f=0; LS_ORPHANS.forEach(k=>{ const b=lsBytes(k); if(b){ try{ localStorage.removeItem(k); f+=b; }catch(_){} } }); return f; }
+// espejo de la sesión viva: es lo único que no se puede perder mientras entrenas
+function mirrorLive(){ try{ const w=db&&db.activeWork;
+    if(w&&w.exercises&&w.exercises.length)localStorage.setItem(LS_LIVE,JSON.stringify({t:Date.now(),w}));
+    else localStorage.removeItem(LS_LIVE); }catch(_){} }
+function writeDb(s){ try{ localStorage.setItem(LS_KEY,s); return true; }catch(e){ _saveErr=e; return false; } }
+function save(){ bumpIdx();
+  let s=''; try{ s=JSON.stringify(db); }catch(e){ _saveErr=e; saveFailed(); return false; }
+  let ok=writeDb(s);
+  if(!ok){ const freed=freeOrphanBackups(); try{ localStorage.removeItem(LS_BACKUP); }catch(_){}   // autorrescate: suelta lo prescindible y reintenta
+    ok=writeDb(s);
+    if(ok&&freed>0){ try{ toast('✓ espacio liberado · '+Math.round(freed/1024)+' KB'); }catch(_){} } }
+  mirrorLive();                                  // pase lo que pase con la grande, la sesión viva queda a salvo
+  if(NATIVE_APP&&ok)nativeMirrorSoon(s);
+  if(ok){ _saveErr=null; saveOK();
+    const day=todayISO(), now=performance.now();
+    if(_saveBakDay!==day&&now-_saveBakT>4000){ _saveBakDay=day; _saveBakT=now; try{ localStorage.setItem(LS_BACKUP,s); }catch(_){} }   // v254: una copia al día, no cada 4 s
+  } else saveFailed();
+  return ok; }
+// aviso PERMANENTE mientras no se pueda guardar (el toast se iba y dejaba a la app fallando en silencio)
+function saveFailed(){ try{ let b=document.getElementById('savebar');
+    if(!b){ b=document.createElement('div'); b.id='savebar'; b.className='savebar'; document.getElementById('app').appendChild(b); }
+    b.innerHTML='<span class="sbt">no se está guardando</span><a data-act="storage">[ver por qué]</a><a data-act="export">[exportar]</a>';
+  }catch(_){} }
+function saveOK(){ try{ const b=document.getElementById('savebar'); if(b)b.remove(); }catch(_){} }
+function saveErrTxt(){ if(!_saveErr)return ''; const n=(_saveErr.name||''), m=(_saveErr.message||'');
+  if(/quota|exceeded/i.test(n+' '+m))return 'el navegador no deja escribir más: cupo lleno';
+  return (n||'error')+(m?' · '+m:''); }
+// v254 · //ESPACIO: qué ocupa el cupo del navegador, en bytes de verdad. Hasta ahora la app no medía nada: se llenó
+// al 98.5 % sin decir una palabra y solo avisó cuando ya no pudo escribir.
+function storageRows(){ const out=[]; try{ for(let i=0;i<localStorage.length;i++){ const k=localStorage.key(i); if(!k||k.indexOf('gymtrk')!==0)continue; out.push({k,b:lsBytes(k)}); } }catch(_){}
+  return out.sort((a,b)=>b.b-a.b); }
+function storageTotal(){ return storageRows().reduce((s,r)=>s+r.b,0); }
+const LS_QUOTA=5*1024*1024;   // WebKit: 5 MB por origen, contados en UTF-16
+function openStorage(){
+  const rows=storageRows(), tot=storageTotal(), pct=Math.min(100,Math.round(tot/LS_QUOTA*100));
+  const kb=b=>b>=1048576?(b/1048576).toFixed(2)+' MB':Math.round(b/1024)+' KB';
+  const nm=k=>k===LS_KEY?'tus datos':k===LS_BACKUP?'respaldo del día':k===LS_LIVE?'sesión en curso':LS_ORPHANS.indexOf(k)>=0?'foto vieja de una reparación':k.replace('gymtrk_','');
+  const orph=rows.filter(r=>LS_ORPHANS.indexOf(r.k)>=0).reduce((s,r)=>s+r.b,0);
+  openModal(`<h3>espacio</h3>`
+    +`<div class="line"><span class="k">usado en este navegador</span><span class="dots"></span><span class="v">${kb(tot)} <span class="u-o40 u-xs">/ 5 MB</span></span></div>`
+    +`<div class="bar u-mb8">${trkBarI('storage',pct,pct>=85?'over':'')}</div>`
+    +(pct>=70?`<div class="submeta u-mb8" style="color:${pct>=85?'var(--bad)':'var(--warn)'}">${pct>=85?'a punto de llenarse: libera o exporta ya':'se está llenando'}</div>`:'')
+    +(_saveErr?`<div class="submeta u-mb8 u-bad">último fallo al guardar: ${escTxt(saveErrTxt())}</div>`:'')
+    +`<div class="grp-label sub">QUÉ OCUPA</div>`
+    +rows.map(r=>`<div class="stline"><span class="stk">${escTxt(nm(r.k))}</span><span class="stv">${kb(r.b)}</span></div>`).join('')
+    +`<div class="sheetbtns u-mt12">${orph?`<button class="ok" data-act="stfree">liberar ${kb(orph)}</button>`:''}<button class="cancel" data-act="export">exportar</button><button class="cancel" data-act="closemodal">cerrar</button></div>`
+    +`<div class="submeta u-mt8">las "fotos viejas" son copias que dejaron dos reparaciones ya aplicadas (2026-08 y 2026-09); nada las lee.</div>`);
+}
 // data-safety: count all data records so a restore can warn before any loss (meals + sessions + foods + bodyweight days + steps days)
 function dbMass(o){ try{ const m=Object.values((o&&o.meals)||{}).reduce((n,a)=>n+(a?a.length:0),0); return m+(((o&&o.sessions)||[]).length)+(((o&&o.foods)||[]).length)+Object.keys((o&&o.bodyweight)||{}).length+Object.keys((o&&o.steps)||{}).length+Object.keys((o&&o.sleep)||{}).length; }catch(_){ return 0; } }
 // ALWAYS ask before destructive replace (not just when shrinking) — silent imports on fresh accounts were a vector for malicious backups
@@ -3050,6 +3115,18 @@ function _uiSelfCheck(){
     ['a','b','c','d'].forEach(x=>toast('✓ prueba '+x));
     A('la pila guarda como máximo 3 toasts', box().children.length===3&&/prueba b/.test(box().firstElementChild.textContent));
     A('la vida del toast sale del token en segundos (2.3s → 2300 ms)', durMs('--toast-life',0)===2300&&durMs('--dur-3',0)===280);
+    // v254 · el guardado no puede volver a mentir
+    A('save() dice si escribió de verdad', save()===true&&saveErrTxt()==='');
+    (function(){ const liveBefore=localStorage.getItem(LS_LIVE);
+      try{ localStorage.setItem(LS_ORPHANS[0],'x'.repeat(1000)); const freed=freeOrphanBackups();
+        A('las fotos de reparaciones viejas se liberan y se contabilizan', freed>=2000&&!localStorage.getItem(LS_ORPHANS[0]));
+        const awBefore=db.activeWork; db.activeWork={id:'t',exercises:[{name:'x',sets:[{w:'1',r:'1'}]}]}; mirrorLive();
+        A('la sesión viva se espeja en su propia clave', !!localStorage.getItem(LS_LIVE));
+        db.activeWork=null; mirrorLive();
+        A('sin sesión viva, el espejo se limpia', !localStorage.getItem(LS_LIVE));
+        db.activeWork=awBefore;
+      } finally { try{ if(liveBefore!=null)localStorage.setItem(LS_LIVE,liveBefore); else localStorage.removeItem(LS_LIVE); }catch(_){} } })();
+    A('el medidor cuenta en UTF-16, como el navegador', lsBytes(LS_KEY)>0&&lsBytes(LS_KEY)===(localStorage.getItem(LS_KEY)||'').length*2);
     A('TRKBar: ancho acotado a 0-100 con su clave', /data-bk="k" style="width:100%"/.test(trkBarI('k',140))&&/style="width:0%"/.test(trkBarI('k',-5))&&/class="over"/.test(trkBarI('',50,'over')));
     const bx=document.createElement('div'); document.body.appendChild(bx);
     try{ bx.innerHTML=trkBarI('_selftest',20); animBars(bx); A('TRKBar: la primera vez no anima', !bx.firstChild.getAnimations().length);
@@ -3066,7 +3143,8 @@ function _uiSelfCheck(){
       A('TRKSelect: la celda de RIR es el botón con su valor', !TRK_RIR||/^<button type="button" class="pick rirb" [^>]*data-f="rir" data-v="2"[^>]*>2<\/button>$/.test(renderSetRow(0,0,{w:'',r:'',rir:'2'},{type:'free'},true,'').rr)); }
     finally{ an.remove(); popClose(); }
     const cal=monthCalHTML(2026,1,iso=>iso==='2026-02-03'?{lv:1,act:'x',title:'t'}:null,{head:false,num:true});
-    A('TRKCal: febrero 2026 = 28 días, empieza en domingo (sin relleno), sin cabecera', (cal.match(/class="cd /g)||[]).length===28&&!/cd e"/.test(cal)&&!/cmh/.test(cal));
+    // v250 cambió la semana a lunes: febrero 2026 empieza en domingo, así que lleva 6 celdas de relleno delante
+    A('TRKCal: febrero 2026 = 28 días + 6 de relleno (semana-lunes), sin cabecera', (cal.match(/class="cd /g)||[]).length===34&&(cal.match(/cd e"/g)||[]).length===6&&!/cmh/.test(cal));
     A('TRKCal: solo el día marcado lleva acción y su número', (cal.match(/data-act=/g)||[]).length===1&&/cd l1" data-act="x" data-d="2026-02-03" title="2026-02-03 · t">3<\/i>/.test(cal));
     const e=toast('⚠ error de prueba'); A('un error lleva role=alert y se queda (sin temporizador)', e.getAttribute('role')==='alert'&&e.classList.contains('err'));
     const t=toastTask('probando'); A('una tarea arranca con "…" y sin tipo', /^…/.test(box().lastElementChild.textContent)&&box().lastElementChild.classList.contains('task'));
@@ -5628,7 +5706,7 @@ function renderSettings(){
     +`<div class="line u-tap" data-act="togglebeep"><span class="k">beep fin de descanso</span><span class="dots"></span><span class="v">${db.settings.restBeep?'on':'off'} ›</span></div>`
     +healthSettingsHTML()
     +`<hr class="rule"/><div class="cta"><button class="start" data-act="sync">sync data (copy / paste)</button>`
-    +`<div class="secondary"><button class="b" data-act="export">export file</button><button class="b" data-act="exportmd">export .md</button><button class="b" data-act="import">import file</button></div>`
+    +`<div class="secondary"><button class="b" data-act="storage">espacio</button><button class="b" data-act="export">export file</button><button class="b" data-act="exportmd">export .md</button><button class="b" data-act="import">import file</button></div>`
     +`<div class="secondary u-mt10"><button class="b" data-act="reset">reset data</button></div></div>`
     +`<div class="submeta u-mt12">tus datos se guardan solos en este dispositivo (con respaldo automático). para no perderlos: <b class="u-o60">agrega la app a inicio</b> y ábrela seguido. si vas a cambiar de teléfono, usa export.</div>`;
 }
@@ -6339,10 +6417,12 @@ document.getElementById('app').addEventListener('click',e=>{
   else if(a==='goalsechtog'){ const k=el.dataset.sec; db.settings=db.settings||{}; const arr=db.settings.hiddenGoalSections=db.settings.hiddenGoalSections||[]; const i=arr.indexOf(k); if(i>=0)arr.splice(i,1); else arr.push(k); save(); openGoals(); }
   else if(a==='editsteps'){ const cur=(db.steps&&db.steps[todayISO()])||''; trkPrompt({title:'pasos de hoy',label:'PASOS',value:cur,type:'number',inputmode:'numeric',hint:'de Apple Health o tu reloj'},v=>{ const n=parseInt(String(v).replace(/[^0-9]/g,''),10); if(isNaN(n)){ toast('⚠ pon un número','err'); return false; } db.steps=db.steps||{}; db.steps[todayISO()]=n; H().src.steps[todayISO()]='manual'; save(); render(); toast('✓ pasos guardados'); }); }
   else if(a==='export'){ doExport(); }
+  else if(a==='storage'){ openStorage(); }
+  else if(a==='stfree'){ const f=freeOrphanBackups(); closeModal(); if(f>0){ toast('✓ '+Math.round(f/1024)+' KB liberados'); if(!_saveErr||save())saveOK(); } else toast('no había nada que liberar'); }
   else if(a==='exportmd'){ exportMarkdown(db); }
   else if(a==='import'){ doImport(); }
   else if(a==='sync'){ openSync(); }
-  else if(a==='reset'){ holdConfirm({title:'borrar TODOS los datos',detail:'sesiones, comidas, split y ajustes de este dispositivo · exporta un respaldo antes',verb:'borrar todo'},()=>{ localStorage.removeItem(LS_KEY); try{localStorage.removeItem(LS_BACKUP);}catch(_){} _saveBakT=0; db=seed(); save(); go('home'); }); }
+  else if(a==='reset'){ holdConfirm({title:'borrar TODOS los datos',detail:'sesiones, comidas, split y ajustes de este dispositivo · exporta un respaldo antes',verb:'borrar todo'},()=>{ localStorage.removeItem(LS_KEY); try{localStorage.removeItem(LS_BACKUP);}catch(_){} try{ localStorage.removeItem(LS_LIVE); freeOrphanBackups(); }catch(_){} _saveBakT=0; db=seed(); save(); go('home'); }); }
   else if(a==='restminus'){ const w=db.activeWork; if(w&&w.restEnd){ w.restEnd-=15000; save(); updateRestBar(); } }
   else if(a==='restplus'){ const w=db.activeWork; if(w&&w.restEnd){ w.restEnd+=15000; save(); updateRestBar(); } }
   else if(a==='restskip'){ const w=db.activeWork; if(w){ w.restEnd=null; _restFinT=0; save(); updateRestBar(); } }
@@ -6625,7 +6705,14 @@ function saveSession(){
   touched.forEach(pfClearAll);
   const sess={id:w.id,date:w.date,dayId:w.dayId,dayName:w.dayName,gym:w.gym,type:'training',savedMs:Date.now(),loggedAfter:!!w.loggedAfter,durSec:w.loggedAfter?((parseInt(w.manualDur,10)||0)*60):(w.startMs?Math.round((Date.now()-w.startMs)/1000):0),startTime:w.loggedAfter?(w.startTime||null):(w.startTs||null),endTime:w.loggedAfter?(w.endTime||null):nowHM(),startMs:w.loggedAfter?null:(w.startMs||null),endMs:w.loggedAfter?null:Date.now(),
     exercises:mapWorkExercises(w)};
-  if(!(w.loggedAfter&&w.noAdvance)){ const idx=db.split.days.findIndex(d=>d.id===w.dayId); db.rotIdx=(idx>=0?idx:db.rotIdx)+1; } db.activeWork=null; state.selDay=null; db.sessions.push(sess); save(); go('home');
+  // v254: la sesión NO se suelta de memoria hasta confirmar que se escribió en disco
+  const _rot=db.rotIdx, _aw=db.activeWork;
+  if(!(w.loggedAfter&&w.noAdvance)){ const idx=db.split.days.findIndex(d=>d.id===w.dayId); db.rotIdx=(idx>=0?idx:db.rotIdx)+1; } db.activeWork=null; state.selDay=null; db.sessions.push(sess);
+    const _okSave=save();
+    if(!_okSave){ db.sessions.pop(); db.rotIdx=_rot; db.activeWork=_aw; mirrorLive();   // se deshace: la sesión sigue viva y recuperable
+      trkAsk({title:'no se pudo guardar',detail:saveErrTxt()+' · tu sesión sigue aquí, sin perderse. Exporta un respaldo y vuelve a intentarlo.',ok:'exportar ahora'},()=>doExport());
+      return; }
+    go('home');
     const _ns=sess.exercises.reduce((x,e)=>x+((e.sets||[]).length),0); toast('✓ sesión guardada · '+_ns+' serie'+(_ns===1?'':'s'));
   };
   if(!has) return trkAsk({title:'guardar sin series',detail:'no registraste ninguna serie en esta sesión',ok:'guardar igual'},commit);
@@ -8552,7 +8639,19 @@ async function aiPhoto(file,barcode){ if(!file)return; window._faTag=window._faT
 // Pick AI when the proxy is configured, else on-device OCR.
 function labelPhoto(file,barcode){ if(AI_PROXY_URL) return aiPhoto(file,barcode); return ocrPhoto(file,barcode); }
 requestPersist();
-db=load(); try{ promptIdleSession(); }catch(_){} try{ if(typeof location!=='undefined' && /[?&]selftest=1/.test(location.search)){ _identitySelfCheck(); _dropsetSelfCheck(); _baselineSelfCheck(); _variantSelfCheck(); _historyEditSelfCheck(); _idSelfCheck(); _cardioSelfCheck(); _tensionSelfCheck(); _healthSelfCheck(); _readinessSelfCheck(); _loggingSelfCheck(); _mergeSelfCheck(); _streakSelfCheck(); _chartSelfCheck(); _muscleSelfCheck(); _exProfileSelfCheck(); _recoverySelfCheck(); _diagSelfCheck(); _uiSelfCheck(); } }catch(e){ console.error(e); } try{ const _sp=new URLSearchParams(location.search); const _hasHistorical=_sp.has('stepsh')||_sp.has('weighth')||_sp.has('stepsq')||_sp.has('sleeph'); if(_hasHistorical){ const _hsp=_sp; if(history.replaceState)history.replaceState(null,'',location.pathname); setTimeout(()=>{ trkAsk({title:'importar datos históricos',detail:'este link trae pasos, peso o sueño de varios días · acepta solo si viene de tu propio Atajo de iOS',ok:'importar'},()=>{ try{ const _imp=importHealth(_hsp); if(_imp.length){ save(); render(); toast('✓ '+_imp.join(' · ')); } }catch(_){} }); },400); } else { const _imp=importHealth(_sp); if(_imp.length){ window._healthImported=_imp; if(history.replaceState)history.replaceState(null,'',location.pathname); } } }catch(_){} save(); render(); if(window._healthImported)setTimeout(()=>toast('✓ '+window._healthImported.join(' · ')),250); if(window._recoveredFromBackup)setTimeout(()=>{try{toast('⚠ se recuperó un respaldo local · revisa tus datos, podrían faltar cambios muy recientes','err');}catch(_){}},600);
+db=load();
+// v254 · al arrancar: suelta las fotos de reparaciones ya aplicadas (47 % del cupo) y ofrece recuperar una sesión
+// que se haya quedado sin guardar (el espejo chico de LS_LIVE sobrevive aunque la clave grande no se pueda escribir).
+try{ freeOrphanBackups(); }catch(_){}
+try{ const raw=localStorage.getItem(LS_LIVE); if(raw){ const mir=JSON.parse(raw);
+  const liveSets=w=>((w&&w.exercises)||[]).reduce((n,e)=>n+((e.sets||[]).length),0);
+  const cur=db.activeWork, mine=mir&&mir.w;
+  if(mine&&liveSets(mine)>liveSets(cur)){
+    setTimeout(()=>{ trkAsk({title:'tienes una sesión sin guardar',detail:(mine.dayName||'sesión')+' · '+liveSets(mine)+' series · '+fmtShort(mine.date||todayISO())+' · no alcanzó a guardarse la última vez',ok:'recuperarla'},
+      ()=>{ db.activeWork=mine; if(save())toast('✓ sesión recuperada'); go('workout'); },
+      ()=>{ try{ localStorage.removeItem(LS_LIVE); }catch(_){} }); },700);
+  } } }catch(_){}
+try{ promptIdleSession(); }catch(_){} try{ if(typeof location!=='undefined' && /[?&]selftest=1/.test(location.search)){ _identitySelfCheck(); _dropsetSelfCheck(); _baselineSelfCheck(); _variantSelfCheck(); _historyEditSelfCheck(); _idSelfCheck(); _cardioSelfCheck(); _tensionSelfCheck(); _healthSelfCheck(); _readinessSelfCheck(); _loggingSelfCheck(); _mergeSelfCheck(); _streakSelfCheck(); _chartSelfCheck(); _muscleSelfCheck(); _exProfileSelfCheck(); _recoverySelfCheck(); _diagSelfCheck(); _uiSelfCheck(); } }catch(e){ console.error(e); } try{ const _sp=new URLSearchParams(location.search); const _hasHistorical=_sp.has('stepsh')||_sp.has('weighth')||_sp.has('stepsq')||_sp.has('sleeph'); if(_hasHistorical){ const _hsp=_sp; if(history.replaceState)history.replaceState(null,'',location.pathname); setTimeout(()=>{ trkAsk({title:'importar datos históricos',detail:'este link trae pasos, peso o sueño de varios días · acepta solo si viene de tu propio Atajo de iOS',ok:'importar'},()=>{ try{ const _imp=importHealth(_hsp); if(_imp.length){ save(); render(); toast('✓ '+_imp.join(' · ')); } }catch(_){} }); },400); } else { const _imp=importHealth(_sp); if(_imp.length){ window._healthImported=_imp; if(history.replaceState)history.replaceState(null,'',location.pathname); } } }catch(_){} save(); render(); if(window._healthImported)setTimeout(()=>toast('✓ '+window._healthImported.join(' · ')),250); if(window._recoveredFromBackup)setTimeout(()=>{try{toast('⚠ se recuperó un respaldo local · revisa tus datos, podrían faltar cambios muy recientes','err');}catch(_){}},600);
 applyDesign(); try{ if(/[?&]design\b/.test(location.search))localStorage.setItem('gymtrk_designmode','1'); if(localStorage.getItem('gymtrk_designmode')==='1')openDesignPanel(); }catch(_){}
 try{ bootScreen(()=>{ try{
   if(/[?&]wrap=1\b/.test(location.search)){ monthlyWrap(prevMonthYm(), true); return; }

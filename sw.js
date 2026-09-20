@@ -1,4 +1,4 @@
-﻿const C = 'gymtrk-v253';
+﻿const C = 'gymtrk-v254';
 self.addEventListener('install', e => {
   e.waitUntil(
     caches.open(C).then(c => c.addAll(['./', './index.html', './manifest.json'].map(x => new Request(x, { cache: 'reload' }))))
@@ -21,9 +21,11 @@ self.addEventListener('fetch', e => {
   if (e.request.method === 'GET' && u.origin === location.origin) {
     e.respondWith(
       fetch(e.request.url, { cache: 'no-cache', credentials: 'same-origin' }).then(resp => {
-        try { const cc = resp.clone(); caches.open(C).then(c => c.put(e.request, cc)); } catch (_) {}
+        // v254: la clave de caché va SIN query — cada '?v=253' guardaba su propia copia de ~870 KB y
+        // eso consumía el cupo del origen (el mismo del que vive localStorage).
+        try { const cc = resp.clone(); const key = u.origin + u.pathname; caches.open(C).then(c => c.put(key, cc)); } catch (_) {}
         return resp;
-      }).catch(() => caches.match(e.request).then(r => r || caches.match('./index.html')))
+      }).catch(() => caches.match(u.origin + u.pathname).then(r => r || caches.match('./index.html')))
     );
   }
 });
