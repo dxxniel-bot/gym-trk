@@ -893,6 +893,8 @@ Pillow, AutoSleep, Fitbit + HIG / Material 3 / NN-g. **No hay ninguna captura de
 
 **Hecho U3 (v248):** E9–E10. Tabla §4.4b aplicada: título de sheet 11 → 16/800 con color `--fg`, fila navegable 12 → 13, meta 11 → 10, tabs y nav 12 → 11/700, chips 12 → 11, y los 9 px en minúsculas del log y del mapa de músculos a 10 (el 9 queda para MAYÚSCULAS y anotaciones de serie). Ruido: fuera el hint de gestos de las 17 métricas, las 4 copias de "toca una fecha para editarla", la regla impresa en la tarjeta de racha y la duplicación de "correlación, no causa"; la pista de deslizar se enseña una vez (`hintSeen`/`hintMark`) y se retira al usar el gesto o al tocarla. Auditor: rol fuera de tabla 7 → 0, campos < 16 px 4 → 0 (las 4 son excepciones de §15 con el zoom bloqueado por el viewport). `ds-diff`: solo los cambios buscados.
 
+**Hecho U4 (v249):** E11–E15. La banda deja de ser un relleno invisible (`--o10`, ratio ≈1.1:1) y pasa a **dos líneas de referencia** de .5 px en `--o30`; deja de ser rodante y de expandir el dominio (`normalBandFixed`: un par p15–p85 por periodo), el peso por fin la tiene, el relleno de área ya no depende de si hay banda, y sin 7 días de historia el detalle dice `sin normal · N/7 d`. Fuera la pastilla "prom" de dentro de la gráfica (el encabezado ya lo dice) y el dibujante de banda por tramos.
+
 **Ruta:** U0 bases (este documento + auditor) · U1 v246 macros sin fricción · U2 v247 sheet de alimento ·
 U3 v248 una sola voz · U4 v249 señal en las gráficas · U5 v250 racha · U6 v251 sueño con fases · U7 v252 compartir.
 Cada fase cierra con `ds-audit` sin regresiones, `ds-diff` con cargas frescas, self-checks y QA 393×852 con toques

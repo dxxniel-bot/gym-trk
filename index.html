@@ -210,7 +210,6 @@
      pastilla) y capa de scrub. touch-action:none solo en la gráfica: ahí el dedo es para leerla. */
   .chwrap{position:relative; margin:var(--s4) 0 var(--s1); padding-right:40px/*ds:exempt*/; touch-action:none; -webkit-user-select:none; user-select:none; cursor:crosshair;}
   .chy{position:absolute; right:0; transform:translateY(-50%); font-size:var(--t-caption); color:var(--o40); font-variant-numeric:tabular-nums; white-space:nowrap;}
-  .chavg{position:absolute; left:4px; transform:translateY(-50%); font-size:var(--t-caption); color:var(--o70); background:var(--sheet-bg); border:.5px solid var(--o20); border-radius:var(--r-pill); padding:1px 6px; pointer-events:none; white-space:nowrap;}
   .chxs{position:relative; height:12px; margin:var(--s2) 40px var(--s2) 0/*ds:exempt*/;}
   .chx{position:absolute; top:0; font-size:var(--t-caption); color:var(--o40); transform:translateX(-50%); white-space:nowrap;} .chx.a0{transform:none;} .chx.a1{transform:translateX(-100%);}
   .chscrub{position:absolute; top:0; bottom:0; left:0; right:40px; pointer-events:none; display:none;} .chwrap.scrub .chscrub{display:block;}
@@ -2853,9 +2852,10 @@ function _chartSelfCheck(){
   const g1=(lineChart([1,2],{}).match(/id="(lcg\d+)"/)||[])[1], g2=(lineChart([1,2],{}).match(/id="(lcg\d+)"/)||[])[1];
   A('cada gráfica con su propio gradiente', g1&&g2&&g1!==g2);
   // 5 · rango normal propio y tendencias
-  const flat=Array(40).fill(10); const nb=normalBands(flat,5,90);
-  A('banda de una serie plana = su valor', nb.every(b=>b&&b[0]===10&&b[1]===10));
-  A('sin 7 días previos no hay banda', normalBands([1,2,3,4],2,90).every(b=>b===null));
+  const flat=Array(40).fill(10); const nb=normalBandFixed(flat,5,90);
+  A('banda de una serie plana = su valor', nb.lo===10&&nb.hi===10);
+  A('sin 7 días previos no hay banda, pero sí cuenta cuántos faltan', (()=>{ const b=normalBandFixed([1,2,3,4],2,90); return b.lo==null&&b.n===2&&b.need===7; })());
+  A('la banda es UNA sola (fija del periodo), no una por día', typeof normalBandFixed(Array.from({length:120},(_,i)=>i),30,90).lo==='number');
   const rising=Array.from({length:40},(_,i)=>i<20?100:130); const tr=trendRows(rising);
   A('un salto claro sale como tendencia ▲ significativa', tr.some(t=>t.H===14&&t.d>0&&t.sig));
   A('una serie plana no inventa tendencia', trendRows(flat).every(t=>!t.sig));
@@ -3878,7 +3878,9 @@ function lineChart(vals,opt){ opt=opt||{};
   const W=300, H=opt.h||56, padX=opt.detail?4:7, padT=opt.detail?12:(opt.pad!=null?opt.pad:7), padB=opt.detail?8:(opt.pad!=null?opt.pad:7);
   const rlo=Math.min(...real), rhi=Math.max(...real);
   let lo=rlo, hi=rhi;
-  if(opt.band)opt.band.forEach(b=>{ if(b){ lo=Math.min(lo,b[0]); hi=Math.max(hi,b[1]); } });
+  // U4 (E13): la banda ya NO expande el dominio — en pasos, p15–p85 de 90 días es tan ancha que aplastaba la serie.
+  // Solo se ensancha lo justo para que las dos líneas de referencia quepan si están cerca del rango real (±25 %).
+  if(opt.band2){ const sp=(hi-lo)||1; if(opt.band2[0]>=lo-sp*0.25)lo=Math.min(lo,opt.band2[0]); if(opt.band2[1]<=hi+sp*0.25)hi=Math.max(hi,opt.band2[1]); }
   if(opt.avg!=null&&isFinite(opt.avg)){ lo=Math.min(lo,opt.avg); hi=Math.max(hi,opt.avg); }
   if(opt.zero)lo=Math.min(0,lo);
   if(hi-lo<1e-9){ const k=Math.abs(hi)*0.05||1; hi+=k; lo-=opt.zero&&lo>=0?0:k; }
@@ -3895,14 +3897,15 @@ function lineChart(vals,opt){ opt=opt||{};
   const gid='lcg'+(++_chartSeq);
   const segs=[]; let cur=null;
   nums.forEach((v,i)=>{ if(v==null){ cur=null; return; } if(!cur){ cur=[]; segs.push(cur); } cur.push(i); });
+  // U4 (E11): en monocromo un BORDE marca un rango mejor que un relleno tenue (--o10 sobre negro era invisible:
+  // ratio ≈1.1:1). Dos líneas de referencia de .5 px en --o25, con el interior vacío; fuera del dominio no se dibujan.
   let band='';
-  if(opt.band){ const bs=[]; let c=null; opt.band.forEach((b,i)=>{ if(!b){ c=null; return; } if(!c){ c=[]; bs.push(c); } c.push(i); });
-    bs.forEach(sg=>{ if(sg.length<2)return; const top=sg.map(i=>xs[i].toFixed(1)+','+Y(opt.band[i][1])); const bot=sg.slice().reverse().map(i=>xs[i].toFixed(1)+','+Y(opt.band[i][0]));
-      band+='<path d="M'+top.join(' L')+' L'+bot.join(' L')+' Z" fill="var(--o10)"/>'; }); }
+  if(opt.band2){ [0,1].forEach(k=>{ const v=opt.band2[k]; if(v==null||v<lo||v>hi)return; const y=Y(v);
+    band+='<path d="M'+padX+','+y+' L'+(W-padX)+','+y+'" stroke="var(--o30)" stroke-width=".5" fill="none" vector-effect="non-scaling-stroke"/>'; }); }
   let area='', line='';
   segs.forEach(sg=>{ if(sg.length<2)return; const p=sg.map(i=>xs[i].toFixed(1)+','+Y(nums[i])).join(' L');
     line+='<path d="M'+p+'" fill="none" stroke="'+(opt.stroke||(opt.detail?'var(--fill)':'var(--o60)'))+'" stroke-width="'+(opt.detail?1.8:1.4)+'" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/>';
-    if(!opt.noFill&&!(opt.detail&&opt.band))area+='<path d="M'+xs[sg[0]].toFixed(1)+','+(H-padB)+' L'+p+' L'+xs[sg[sg.length-1]].toFixed(1)+','+(H-padB)+' Z" fill="url(#'+gid+')"/>'; });
+    if(!opt.noFill)area+='<path d="M'+xs[sg[0]].toFixed(1)+','+(H-padB)+' L'+p+' L'+xs[sg[sg.length-1]].toFixed(1)+','+(H-padB)+' Z" fill="url(#'+gid+')"/>'; });   // U4 (E14): el relleno ya no depende de si hay banda
   let avgL='';
   if(opt.detail&&opt.avg!=null&&isFinite(opt.avg)){ const y=Y(opt.avg); avgL='<path d="M'+padX+','+y+' L'+(W-padX)+','+y+'" stroke="var(--o40)" stroke-width="1" stroke-dasharray="3 4" fill="none" vector-effect="non-scaling-stroke"/>'; }
   let last=-1; for(let i=n-1;i>=0;i--){ if(nums[i]!=null){ last=i; break; } }
@@ -3918,7 +3921,7 @@ function lineChart(vals,opt){ opt=opt||{};
   const fmt=opt.fmt||(v=>String(Math.round(v*10)/10));
   const pct=y=>(y/H*100).toFixed(2)+'%';
   const ticks=[hi,(hi+lo)/2,lo].map(v=>'<span class="chy" style="top:'+pct(Y(v))+'">'+escTxt(fmt(v))+'</span>').join('');
-  const avgP=(opt.avg!=null&&isFinite(opt.avg))?'<span class="chavg" style="top:'+pct(Y(opt.avg))+'">prom '+escTxt(fmt(opt.avg))+'</span>':'';
+  const avgP='';   // U4: la pastilla 'prom' dentro de la gráfica era redundante — el encabezado ya dice el promedio (Oura: el ancla numérica va FUERA del SVG)
   let xt='';
   if(opt.dates&&opt.dates.length===n&&n){ const k=Math.min(opt.xticks||4,n); const used={};
     for(let j=0;j<k;j++){ const i=k>1?Math.round(j*(n-1)/(k-1)):n-1; if(used[i])continue; used[i]=1;
@@ -3931,13 +3934,15 @@ function lineChart(vals,opt){ opt=opt||{};
 }
 // días que terminan en endISO (lastDays(n) = daysEnding(n, hoy)) — el detalle puede paginar hacia atrás
 function daysEnding(n,endISO){ const e=new Date((endISO||todayISO())+'T12:00:00'); const out=[]; for(let i=n-1;i>=0;i--){ const d=new Date(e); d.setDate(e.getDate()-i); out.push(todayISO(d)); } return out; }
-// rango NORMAL propio por día: percentiles 15-85 de los 90 días PREVIOS con dato (mín. 7). De tu historial,
-// no de tablas externas — "en rango" significa "normal para ti".
-function normalBands(rawLong,nShow,win){ win=win||90; const out=[]; const off=rawLong.length-nShow;
-  for(let i=off;i<rawLong.length;i++){ const w=[]; for(let j=Math.max(0,i-win);j<i;j++){ const v=rawLong[j]; if(v!=null)w.push(v); }
-    if(w.length<7){ out.push(null); continue; } w.sort((a,b)=>a-b); const q=p=>w[Math.min(w.length-1,Math.max(0,Math.round(p*(w.length-1))))]; out.push([q(.15),q(.85)]); }
-  return out; }
-// tendencias: promedio de los últimos H días vs los H anteriores. La flecha solo lleva acento si el cambio
+// U4 (E12/E13/E15): rango normal FIJO del periodo — un solo par p15–p85 de los `win` días previos al final de la
+// ventana, para TODAS las métricas (el peso también). Devuelve {lo,hi,n} o {n} si aún no hay 7 días con dato:
+// con eso el detalle puede decir "sin normal · 4/7 d" en vez de no mostrar nada (Intuit: progreso literal).
+function normalBandFixed(rawLong,nShow,win){ win=win||90; const end=rawLong.length-nShow; const w=[];
+  for(let j=Math.max(0,end-win);j<end;j++){ const v=rawLong[j]; if(v!=null)w.push(v); }
+  if(w.length<7)return {n:w.length,need:7};
+  w.sort((a,b)=>a-b); const q=p=>w[Math.min(w.length-1,Math.max(0,Math.round(p*(w.length-1))))];
+  return {lo:q(.15),hi:q(.85),n:w.length}; }
+// // tendencias: promedio de los últimos H días vs los H anteriores. La flecha solo lleva acento si el cambio
 // supera ~1 error estándar de esa ventana (1.41·σ/√H); si no, gris — ruido no es tendencia.
 function trendRows(raw){ const mean=a=>{ const v=a.filter(x=>x!=null); return v.length?v.reduce((s,x)=>s+x,0)/v.length:null; };
   const all=raw.filter(x=>x!=null); let sd=0; if(all.length>2){ const m=all.reduce((s,x)=>s+x,0)/all.length; sd=Math.sqrt(all.reduce((s,x)=>s+(x-m)*(x-m),0)/(all.length-1)); }
@@ -3963,9 +3968,10 @@ function openMetricDetail(key){
   const sp=metricSeries(key,days,end); if(!sp)return;
   const raw=seriesRaw(sp), real=raw.filter(v=>v!=null), better=metricBetter(key);
   const vf=v=>sp.fmt(mdRound(v));
-  let band=null; if(key!=='weight'){ const lg=metricSeries(key,days+90,end); if(lg)band=normalBands(seriesRaw(lg),raw.length,90); }
+  const lg=metricSeries(key,days+90,end); const nb=lg?normalBandFixed(seriesRaw(lg),raw.length,90):null;   // el peso ya también tiene rango normal (E12)
+  const band2=(nb&&nb.lo!=null)?[nb.lo,nb.hi]:null;
   let li=-1; for(let i=raw.length-1;i>=0;i--){ if(raw[i]!=null){ li=i; break; } }
-  const lastV=li>=0?raw[li]:null, lastBand=(band&&li>=0)?band[li]:null;
+  const lastV=li>=0?raw[li]:null, lastBand=band2;
   let st='', stCol='var(--o60)';
   if(lastBand&&lastV!=null){ const up=lastV>lastBand[1], dn=lastV<lastBand[0];
     st=up?'sobre lo normal':dn?'bajo lo normal':'en rango';
@@ -3974,7 +3980,7 @@ function openMetricDetail(key){
   const win=daysEnding(days,end);
   const labels=raw.map((v,i)=>(v!=null?vf(v):'sin registro')+' · '+fmtShort(sp.dates[i]));
   const yz=(window._chartYZ&&window._chartYZ.md)||1;
-  const chart=real.length?lineChart(raw,{h:150,detail:true,dates:sp.dates,tlo:Date.parse(win[0]+'T12:00:00'),thi:Date.parse(end+'T12:00:00'),band,avg,fmt:vf,labels,kind:'md',ladder:MD_LADDER,cur:cust?'':days,yZoom:yz}):'';
+  const chart=real.length?lineChart(raw,{h:150,detail:true,dates:sp.dates,tlo:Date.parse(win[0]+'T12:00:00'),thi:Date.parse(end+'T12:00:00'),band2,avg,fmt:vf,labels,kind:'md',ladder:MD_LADDER,cur:cust?'':days,yZoom:yz}):'';
   let bI=-1,wI=-1; raw.forEach((v,i)=>{ if(v==null)return; if(bI<0||v>raw[bI])bI=i; if(wI<0||v<raw[wI])wI=i; });
   const tab=d=>`<span data-act="mdrange" data-r="${d}" data-m="${key}" class="${(!cust&&days===d)?'on':''}">${MD_LBL[d]}</span>`;
   const segs=MD_LADDER.map(tab).join('')+`<span data-act="mdcustom" class="${cust||window._mdShowCustom?'on':''}" title="rango personalizado">▦</span>`;
@@ -3993,7 +3999,8 @@ function openMetricDetail(key){
     <div class="mdtabs" data-tk="md-${key}">${segs}</div>${custBox}
     ${!real.length?`${nav}<div class="empty u-py32 u-px0">sin registros en este rango</div>`:`
       <div class="mdtop2"><div><div class="mdval">${escTxt(vf(lastV))}</div><div class="mdmeta">${li>=0?fmtShort(sp.dates[li]):''}${avg!=null?' · prom '+escTxt(vf(avg)):''}</div></div>
-        ${st?`<div class="mdst" style="color:${stCol}">${st}<div class="mdstl">tu normal ${escTxt(vf(lastBand[0]))} – ${escTxt(vf(lastBand[1]))}</div></div>`:''}</div>
+        ${st?`<div class="mdst" style="color:${stCol}">${st}<div class="mdstl">tu normal ${escTxt(vf(lastBand[0]))} – ${escTxt(vf(lastBand[1]))}</div></div>`
+            :(nb&&nb.lo==null?`<div class="mdst u-o40">sin normal<div class="mdstl">${nb.n}/${nb.need} d</div></div>`:'')}</div>
       ${nav}
       ${chart}
 
