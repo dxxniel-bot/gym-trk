@@ -969,7 +969,16 @@ function seedPrev(){
 let db;
 const LS_BACKUP='gymtrk_db_v1_bak';
 // Ask the browser to NOT evict our data on inactivity (key for iOS Safari).
-function requestPersist(){ try{ if(navigator.storage&&navigator.storage.persist){ navigator.storage.persisted().then(p=>{ if(!p)navigator.storage.persist().catch(()=>{}); }).catch(()=>{}); } }catch(e){} }
+// v255: la respuesta SÍ se guarda. Llevaba meses pidiéndose y tirándose a la basura, así que nunca supimos
+// si estábamos protegidos del desalojo por presión de disco. Ahora se ve en //ESPACIO.
+let _persisted=null, _estim=null;
+function requestPersist(){
+  try{ if(navigator.storage&&navigator.storage.persisted){
+      navigator.storage.persisted().then(p=>{ _persisted=p;
+        if(!p&&navigator.storage.persist)return navigator.storage.persist().then(g=>{ _persisted=g; });
+      }).catch(()=>{}); } }catch(e){}
+  try{ if(navigator.storage&&navigator.storage.estimate)navigator.storage.estimate().then(e=>{ _estim=e; }).catch(()=>{}); }catch(e){}
+}
 function load(){
   // try primary, then redundant backup — recover the larger/valid one
   let main=null, bak=null;
@@ -1091,11 +1100,25 @@ let _saveErr=null;                            // último error real (no "sin esp
 function lsBytes(k){ try{ const v=localStorage.getItem(k); return v?v.length*2:0; }catch(_){ return 0; } }   // WebKit cuenta UTF-16
 // borra las fotos de reparaciones ya aplicadas (v218 y v224). Devuelve los bytes liberados.
 function freeOrphanBackups(){ let f=0; LS_ORPHANS.forEach(k=>{ const b=lsBytes(k); if(b){ try{ localStorage.removeItem(k); f+=b; }catch(_){} } }); return f; }
-// espejo de la sesión viva: es lo único que no se puede perder mientras entrenas
+// espejo de la sesión viva: es lo único que no se puede perder mientras entrenas.
+// v255 · YA NO SE AUTODESTRUYE AL GUARDAR. Antes, al cerrar la sesión `activeWork` pasaba a null y esto hacía
+// removeItem: la red de seguridad se quitaba exactamente en el instante en que la escritura grande podía
+// perderse después. Ahora, sin sesión viva, el espejo conserva la ÚLTIMA CERRADA (unos KB) hasta que empiece
+// otra, y al arrancar se comprueba que esa sesión exista de verdad en db.sessions.
+let _lastClosed=null;                        // {t, w, sid, closed:true} de la última sesión guardada
 function mirrorLive(){ try{ const w=db&&db.activeWork;
-    if(w&&w.exercises&&w.exercises.length)localStorage.setItem(LS_LIVE,JSON.stringify({t:Date.now(),w}));
-    else localStorage.removeItem(LS_LIVE); }catch(_){} }
-function writeDb(s){ try{ localStorage.setItem(LS_KEY,s); return true; }catch(e){ _saveErr=e; return false; } }
+    if(w&&w.exercises&&w.exercises.length){ localStorage.setItem(LS_LIVE,JSON.stringify({t:Date.now(),w})); return; }
+    if(_lastClosed){ localStorage.setItem(LS_LIVE,JSON.stringify(_lastClosed)); return; }
+    localStorage.removeItem(LS_LIVE); }catch(_){} }
+// v255: que setItem no lance NO significa que quedó escrito. Se relee antes de cantar victoria.
+// Comparar SOLO la longitud no basta: si la escritura se pierde queda el valor anterior, que muchas veces mide
+// igual. Se compara una firma O(1) — longitud + 10 caracteres repartidos por toda la cadena — en vez de recorrer
+// 1.26 MB en cada guardado (save() corre en cada tecla).
+function lsSig(s){ const n=s.length; let o=n+':'; for(let i=0;i<9;i++)o+=s.charCodeAt(Math.floor(n*i/9))+','; return o+s.charCodeAt(n-1); }
+function writeDb(s){ try{ localStorage.setItem(LS_KEY,s);
+    const back=localStorage.getItem(LS_KEY);
+    if(back===null||lsSig(back)!==lsSig(s)){ _saveErr=new Error('la escritura no quedó en disco (releídos '+(back?back.length:0)+' de '+s.length+' caracteres)'); return false; }
+    return true; }catch(e){ _saveErr=e; return false; } }
 function save(){ bumpIdx();
   let s=''; try{ s=JSON.stringify(db); }catch(e){ _saveErr=e; saveFailed(); return false; }
   let ok=writeDb(s);
@@ -1107,6 +1130,7 @@ function save(){ bumpIdx();
   if(ok){ _saveErr=null; saveOK();
     const day=todayISO(), now=performance.now();
     if(_saveBakDay!==day&&now-_saveBakT>4000){ _saveBakDay=day; _saveBakT=now; try{ localStorage.setItem(LS_BACKUP,s); }catch(_){} }   // v254: una copia al día, no cada 4 s
+    idbBackup(s,!!_lastClosed);            // v255: copia en IndexedDB (sin el techo de 5 MB); sin freno al cerrar una sesión
   } else saveFailed();
   return ok; }
 // aviso PERMANENTE mientras no se pueda guardar (el toast se iba y dejaba a la app fallando en silencio)
@@ -1118,6 +1142,53 @@ function saveOK(){ try{ const b=document.getElementById('savebar'); if(b)b.remov
 function saveErrTxt(){ if(!_saveErr)return ''; const n=(_saveErr.name||''), m=(_saveErr.message||'');
   if(/quota|exceeded/i.test(n+' '+m))return 'el navegador no deja escribir más: cupo lleno';
   return (n||'error')+(m?' · '+m:''); }
+// ---- v255 · IndexedDB: la otra bodega -------------------------------------------------------------------------
+// Web Storage tiene un techo LEGACY de 5 MB por origen contado en UTF-16, y ese techo NO sube aunque la app esté
+// instalada en la pantalla de inicio. El cupo grande de iOS 17 (hasta ~60 % del disco) cubre IndexedDB / Cache /
+// OPFS, no localStorage. O sea: la misma app, otra puerta, mil veces más espacio. Aquí solo vive el RESPALDO
+// (el almacén primario sigue siendo localStorage hasta la migración completa), pero eso ya saca la copia de
+// seguridad del bote que se llena.
+const IDB_NAME='gymtrk', IDB_STORE='backups';
+let _idb=null, _idbErr=null, _idbLast=null, _idbT=0;
+function idbOpen(){ if(_idb)return _idb;
+  _idb=new Promise((res,rej)=>{ try{ if(!self.indexedDB)return rej(new Error('sin IndexedDB'));
+      const r=indexedDB.open(IDB_NAME,1);
+      r.onupgradeneeded=()=>{ const d=r.result; if(!d.objectStoreNames.contains(IDB_STORE))d.createObjectStore(IDB_STORE); };
+      r.onsuccess=()=>res(r.result); r.onerror=()=>rej(r.error||new Error('no abre'));
+      r.onblocked=()=>rej(new Error('bloqueada'));
+    }catch(e){ rej(e); } });
+  _idb.catch(()=>{ _idb=null; });
+  return _idb; }
+function idbPut(key,val){ return idbOpen().then(d=>new Promise((res,rej)=>{
+  const t=d.transaction(IDB_STORE,'readwrite'); t.objectStore(IDB_STORE).put(val,key);
+  t.oncomplete=()=>res(true); t.onerror=()=>rej(t.error); t.onabort=()=>rej(t.error||new Error('abortada')); })); }
+function idbGet(key){ return idbOpen().then(d=>new Promise((res,rej)=>{
+  const t=d.transaction(IDB_STORE,'readonly'); const q=t.objectStore(IDB_STORE).get(key);
+  q.onsuccess=()=>res(q.result); q.onerror=()=>rej(q.error); })); }
+// respaldo a IndexedDB. `force` para los momentos que importan (cerrar una sesión); si no, con freno de 30 s.
+function idbBackup(s,force){ const now=Date.now();
+  if(!force&&now-_idbT<30000)return; _idbT=now;
+  try{ const rec={t:now, day:todayISO(), mass:dbMass(db), s:s};
+    idbPut('latest',rec).then(()=>{ _idbErr=null; _idbLast=rec; return idbPut('day-'+rec.day,rec); }).catch(e=>{ _idbErr=e; });
+  }catch(e){ _idbErr=e; } }
+// el ritmo de crecimiento, para avisar con meses de anticipación y no cuando ya no se puede escribir
+const LS_GROWTH='gymtrk_growth';
+function growthLog(){ let g=[]; try{ g=JSON.parse(localStorage.getItem(LS_GROWTH)||'[]')||[]; }catch(_){ g=[]; }
+  if(!Array.isArray(g))g=[];
+  const day=todayISO();
+  if(!g.length||g[g.length-1].d!==day){ g.push({d:day,b:lsBytes(LS_KEY)}); if(g.length>12)g=g.slice(-12);
+    try{ localStorage.setItem(LS_GROWTH,JSON.stringify(g)); }catch(_){} }
+  return g; }
+function growthTxt(){ const g=growthLog(); if(g.length<2)return '';
+  const a=g[0], b=g[g.length-1];
+  const days=Math.max(1,Math.round((new Date(b.d+'T12:00:00')-new Date(a.d+'T12:00:00'))/86400000));
+  const per=(b.b-a.b)/days;
+  if(per<=0)return 'sin crecer en los últimos '+days+' d';
+  const wk=Math.round(per*7/1024);
+  const left=LS_QUOTA-storageTotal(), daysLeft=Math.floor(left/per);
+  let txt='+'+(wk<1?'<1':wk)+' KB por semana';
+  if(daysLeft<365){ const f=new Date(Date.now()+daysLeft*86400000); txt+=' · al ritmo actual se llena el '+fmtShort(todayISO(f)); }
+  return txt; }
 // v254 · //ESPACIO: qué ocupa el cupo del navegador, en bytes de verdad. Hasta ahora la app no medía nada: se llenó
 // al 98.5 % sin decir una palabra y solo avisó cuando ya no pudo escribir.
 function storageRows(){ const out=[]; try{ for(let i=0;i<localStorage.length;i++){ const k=localStorage.key(i); if(!k||k.indexOf('gymtrk')!==0)continue; out.push({k,b:lsBytes(k)}); } }catch(_){}
@@ -1126,18 +1197,26 @@ function storageTotal(){ return storageRows().reduce((s,r)=>s+r.b,0); }
 const LS_QUOTA=5*1024*1024;   // WebKit: 5 MB por origen, contados en UTF-16
 function openStorage(){
   const rows=storageRows(), tot=storageTotal(), pct=Math.min(100,Math.round(tot/LS_QUOTA*100));
+  const gTxt=growthTxt();
   const kb=b=>b>=1048576?(b/1048576).toFixed(2)+' MB':Math.round(b/1024)+' KB';
-  const nm=k=>k===LS_KEY?'tus datos':k===LS_BACKUP?'respaldo del día':k===LS_LIVE?'sesión en curso':LS_ORPHANS.indexOf(k)>=0?'foto vieja de una reparación':k.replace('gymtrk_','');
+  const nm=k=>k===LS_KEY?'tus datos':k===LS_BACKUP?'respaldo del día':k===LS_LIVE?'última sesión (caja negra)':k===LS_GROWTH?'medidor de crecimiento':LS_ORPHANS.indexOf(k)>=0?'foto vieja de una reparación':k.replace('gymtrk_','');
   const orph=rows.filter(r=>LS_ORPHANS.indexOf(r.k)>=0).reduce((s,r)=>s+r.b,0);
   openModal(`<h3>espacio</h3>`
     +`<div class="line"><span class="k">usado en este navegador</span><span class="dots"></span><span class="v">${kb(tot)} <span class="u-o40 u-xs">/ 5 MB</span></span></div>`
     +`<div class="bar u-mb8">${trkBarI('storage',pct,pct>=85?'over':'')}</div>`
     +(pct>=70?`<div class="submeta u-mb8" style="color:${pct>=85?'var(--bad)':'var(--warn)'}">${pct>=85?'a punto de llenarse: libera o exporta ya':'se está llenando'}</div>`:'')
     +(_saveErr?`<div class="submeta u-mb8 u-bad">último fallo al guardar: ${escTxt(saveErrTxt())}</div>`:'')
+    +(gTxt?`<div class="submeta u-mb8">${escTxt(gTxt)}</div>`:'')
+    +`<div class="grp-label sub">PROTECCIÓN</div>`
+    +`<div class="stline"><span class="stk">almacenamiento persistente</span><span class="stv">${_persisted===null?'—':_persisted?'sí':'NO'}</span></div>`
+    +`<div class="stline"><span class="stk">respaldo en IndexedDB</span><span class="stv">${_idbLast?fmtShort(_idbLast.day):(_idbErr?'falla':'—')}</span></div>`
+    +(_estim&&_estim.quota?`<div class="stline"><span class="stk">cupo del navegador (no es el de arriba)</span><span class="stv">${kb(_estim.usage||0)} / ${kb(_estim.quota)}</span></div>`:'')
+    +(_persisted===false?`<div class="submeta u-mb8 u-warn">sin persistencia, el navegador puede borrar todo si el iPhone se queda sin espacio · exporta seguido</div>`:'')
     +`<div class="grp-label sub">QUÉ OCUPA</div>`
     +rows.map(r=>`<div class="stline"><span class="stk">${escTxt(nm(r.k))}</span><span class="stv">${kb(r.b)}</span></div>`).join('')
-    +`<div class="sheetbtns u-mt12">${orph?`<button class="ok" data-act="stfree">liberar ${kb(orph)}</button>`:''}<button class="cancel" data-act="export">exportar</button><button class="cancel" data-act="closemodal">cerrar</button></div>`
-    +`<div class="submeta u-mt8">las "fotos viejas" son copias que dejaron dos reparaciones ya aplicadas (2026-08 y 2026-09); nada las lee.</div>`);
+    +`<div class="sheetbtns u-mt12">${orph?`<button class="ok" data-act="stfree">liberar ${kb(orph)}</button>`:''}<button class="ok" data-act="bakshare">guardar respaldo</button><button class="cancel" data-act="closemodal">cerrar</button></div>`
+    +`<div class="submeta u-mt8">"guardar respaldo" abre la hoja de iOS: elige Archivos y la carpeta que quieras. Último: ${daysSinceBackup()>=999?'nunca':'hace '+daysSinceBackup()+' d'}.</div>`
+    +(orph?`<div class="submeta u-mt8">las "fotos viejas" son copias que dejaron dos reparaciones ya aplicadas (2026-08 y 2026-09); nada las lee.</div>`:''));
 }
 // data-safety: count all data records so a restore can warn before any loss (meals + sessions + foods + bodyweight days + steps days)
 function dbMass(o){ try{ const m=Object.values((o&&o.meals)||{}).reduce((n,a)=>n+(a?a.length:0),0); return m+(((o&&o.sessions)||[]).length)+(((o&&o.foods)||[]).length)+Object.keys((o&&o.bodyweight)||{}).length+Object.keys((o&&o.steps)||{}).length+Object.keys((o&&o.sleep)||{}).length; }catch(_){ return 0; } }
@@ -3123,9 +3202,25 @@ function _uiSelfCheck(){
         const awBefore=db.activeWork; db.activeWork={id:'t',exercises:[{name:'x',sets:[{w:'1',r:'1'}]}]}; mirrorLive();
         A('la sesión viva se espeja en su propia clave', !!localStorage.getItem(LS_LIVE));
         db.activeWork=null; mirrorLive();
-        A('sin sesión viva, el espejo se limpia', !localStorage.getItem(LS_LIVE));
+        A('sin sesión viva ni última cerrada, el espejo se limpia', !localStorage.getItem(LS_LIVE));
+        // v255 · el hueco que le costó el entrenamiento: el espejo NO puede borrarse al guardar
+        const lcBefore=_lastClosed;
+        _lastClosed={t:Date.now(),w:{id:'t',dayName:'quads',exercises:[{name:'x',sets:[{w:'1',r:'1'}]}]},sid:'s1',closed:true};
+        mirrorLive();
+        A('al cerrar una sesión el espejo la conserva, no se borra', (()=>{ const m=JSON.parse(localStorage.getItem(LS_LIVE)||'{}'); return m.closed===true&&m.sid==='s1'; })());
+        _lastClosed=lcBefore;
         db.activeWork=awBefore;
       } finally { try{ if(liveBefore!=null)localStorage.setItem(LS_LIVE,liveBefore); else localStorage.removeItem(LS_LIVE); }catch(_){} } })();
+    // v255 · una escritura que el navegador acepta pero no conserva ya NO cuenta como guardada
+    (function(){ const realSet=Storage.prototype.setItem, bakBefore=localStorage.getItem(LS_BACKUP);
+      // OJO: `localStorage.setItem = fn` NO sustituye el método — Storage tiene setter de propiedades con nombre,
+      // así que eso crea una CLAVE llamada "setItem". Hay que parchear el prototipo.
+      try{ Storage.prototype.setItem=function(k,v){ if(this===localStorage&&k===LS_KEY)return; return realSet.call(this,k,v); };
+        db._sctest=1;                        // el contenido tiene que CAMBIAR, si no el valor viejo pasaría la firma
+        A('si la escritura no queda en disco, save() devuelve false', save()===false&&/no quedó en disco/.test(saveErrTxt()));
+      } finally { delete db._sctest; Storage.prototype.setItem=realSet; try{ if(bakBefore!=null)localStorage.setItem(LS_BACKUP,bakBefore); localStorage.removeItem('setItem'); }catch(_){} saveOK(); }
+      A('restaurada la escritura, save() vuelve a guardar de verdad', save()===true&&localStorage.getItem(LS_KEY).length===JSON.stringify(db).length);
+    })();
     A('el medidor cuenta en UTF-16, como el navegador', lsBytes(LS_KEY)>0&&lsBytes(LS_KEY)===(localStorage.getItem(LS_KEY)||'').length*2);
     A('TRKBar: ancho acotado a 0-100 con su clave', /data-bk="k" style="width:100%"/.test(trkBarI('k',140))&&/style="width:0%"/.test(trkBarI('k',-5))&&/class="over"/.test(trkBarI('',50,'over')));
     const bx=document.createElement('div'); document.body.appendChild(bx);
@@ -6417,6 +6512,7 @@ document.getElementById('app').addEventListener('click',e=>{
   else if(a==='goalsechtog'){ const k=el.dataset.sec; db.settings=db.settings||{}; const arr=db.settings.hiddenGoalSections=db.settings.hiddenGoalSections||[]; const i=arr.indexOf(k); if(i>=0)arr.splice(i,1); else arr.push(k); save(); openGoals(); }
   else if(a==='editsteps'){ const cur=(db.steps&&db.steps[todayISO()])||''; trkPrompt({title:'pasos de hoy',label:'PASOS',value:cur,type:'number',inputmode:'numeric',hint:'de Apple Health o tu reloj'},v=>{ const n=parseInt(String(v).replace(/[^0-9]/g,''),10); if(isNaN(n)){ toast('⚠ pon un número','err'); return false; } db.steps=db.steps||{}; db.steps[todayISO()]=n; H().src.steps[todayISO()]='manual'; save(); render(); toast('✓ pasos guardados'); }); }
   else if(a==='export'){ doExport(); }
+  else if(a==='bakshare'){ doBackupShare(); }
   else if(a==='storage'){ openStorage(); }
   else if(a==='stfree'){ const f=freeOrphanBackups(); closeModal(); if(f>0){ toast('✓ '+Math.round(f/1024)+' KB liberados'); if(!_saveErr||save())saveOK(); } else toast('no había nada que liberar'); }
   else if(a==='exportmd'){ exportMarkdown(db); }
@@ -6708,12 +6804,14 @@ function saveSession(){
   // v254: la sesión NO se suelta de memoria hasta confirmar que se escribió en disco
   const _rot=db.rotIdx, _aw=db.activeWork;
   if(!(w.loggedAfter&&w.noAdvance)){ const idx=db.split.days.findIndex(d=>d.id===w.dayId); db.rotIdx=(idx>=0?idx:db.rotIdx)+1; } db.activeWork=null; state.selDay=null; db.sessions.push(sess);
+    _lastClosed={t:Date.now(), w:w, sid:sess.id, closed:true};   // v255: el espejo conserva esta sesión aunque la grande se escriba bien
     const _okSave=save();
-    if(!_okSave){ db.sessions.pop(); db.rotIdx=_rot; db.activeWork=_aw; mirrorLive();   // se deshace: la sesión sigue viva y recuperable
+    if(!_okSave){ db.sessions.pop(); db.rotIdx=_rot; db.activeWork=_aw; _lastClosed=null; mirrorLive();   // se deshace: la sesión sigue viva y recuperable
       trkAsk({title:'no se pudo guardar',detail:saveErrTxt()+' · tu sesión sigue aquí, sin perderse. Exporta un respaldo y vuelve a intentarlo.',ok:'exportar ahora'},()=>doExport());
       return; }
     go('home');
     const _ns=sess.exercises.reduce((x,e)=>x+((e.sets||[]).length),0); toast('✓ sesión guardada · '+_ns+' serie'+(_ns===1?'':'s'));
+    setTimeout(()=>{ try{ nudgeBackup('acabas de cerrar una sesión y '); }catch(_){} },1200);   // v255: el momento en que más duele perderla
   };
   if(!has) return trkAsk({title:'guardar sin series',detail:'no registraste ninguna serie en esta sesión',ok:'guardar igual'},commit);
   const n=w.exercises.reduce((a,e)=>a+e.sets.filter(s=>(savable(s)||touched.indexOf(s)>=0)&&(s.rir===''||s.rir==null)).length,0);
@@ -8503,6 +8601,29 @@ function openSync(){
   document.querySelector('[data-act="sycopy"]').onclick=()=>{ ta.select(); ta.setSelectionRange(0,ta.value.length); let ok=false; try{ok=document.execCommand('copy');}catch(e){} if(navigator.clipboard){navigator.clipboard.writeText(ta.value).then(()=>{},()=>{});} toast('✓ copiado'); };
   document.querySelector('[data-act="syimport"]').onclick=()=>{ try{const d=JSON.parse(ta.value); if(!d.split)throw 0; const _go17=()=>{ db=migrate(d); save(); closeModal(); go('home'); toast('✓ datos importados'); }; return confirmReplace(d,_go17);}catch(e){ toast('⚠ texto inválido','err'); } };
 }
+// v255 · respaldo AL TELÉFONO, eligiendo la carpeta. En iOS la web no tiene selector de archivos (Safari no
+// implementa showSaveFilePicker), pero navigator.share SÍ abre la hoja nativa → "Guardar en Archivos", y ahí
+// el dueño elige iCloud, "En mi iPhone" o donde quiera. Un toque por respaldo, pero sale del navegador.
+const LS_LASTBAK='gymtrk_lastbak';
+function markBackup(){ try{ localStorage.setItem(LS_LASTBAK,todayISO()); }catch(_){} }
+function daysSinceBackup(){ try{ const d=localStorage.getItem(LS_LASTBAK); if(!d)return 999;
+    return Math.round((new Date(todayISO()+'T12:00:00')-new Date(d+'T12:00:00'))/86400000); }catch(_){ return 999; } }
+function doBackupShare(){
+  const name='gymtrk-backup-'+todayISO()+'.json', txt=JSON.stringify(db,null,2);
+  if(NATIVE_APP){ nativeShareFile(name,txt); markBackup(); return; }
+  try{ const f=new File([txt],name,{type:'application/json'});
+    if(navigator.share&&navigator.canShare&&navigator.canShare({files:[f]})){
+      navigator.share({files:[f],title:name}).then(()=>{ markBackup(); toast('✓ respaldo guardado'); })
+        .catch(e=>{ if(e&&e.name==='AbortError')return; doExport(); markBackup(); });
+      return; } }catch(_){}
+  doExport(); markBackup();
+}
+// el recordatorio terco: si pasaron 7 días sin respaldo, se pide UNA vez (no un toast que se va)
+function nudgeBackup(why){
+  if(daysSinceBackup()<7)return false;
+  trkAsk({title:'respalda tus datos',detail:(why||'')+'llevas '+(daysSinceBackup()>=999?'sin respaldar nunca':daysSinceBackup()+' días sin respaldar')+' · se guarda en Archivos, fuera del navegador',ok:'guardar respaldo'},()=>doBackupShare());
+  return true;
+}
 function doExport(){
   if(NATIVE_APP){ nativeShareFile('gymtrk-backup-'+todayISO()+'.json',JSON.stringify(db,null,2)); return; }
   const blob=new Blob([JSON.stringify(db,null,2)],{type:'application/json'});
@@ -8646,11 +8767,34 @@ try{ freeOrphanBackups(); }catch(_){}
 try{ const raw=localStorage.getItem(LS_LIVE); if(raw){ const mir=JSON.parse(raw);
   const liveSets=w=>((w&&w.exercises)||[]).reduce((n,e)=>n+((e.sets||[]).length),0);
   const cur=db.activeWork, mine=mir&&mir.w;
-  if(mine&&liveSets(mine)>liveSets(cur)){
+  // v255 · el caso que le costó el entrenamiento: la sesión SE GUARDÓ (✓ verde) y luego la escritura se perdió.
+  // El espejo conserva la última cerrada, así que al arrancar se comprueba que exista de verdad en db.sessions.
+  if(mir&&mir.closed&&mine){
+    const sid=mir.sid, hay=(db.sessions||[]).some(s=>s&&s.id===sid);
+    // si SÍ está, el espejo se conserva igual: `_lastClosed` vive en memoria, así que sin esto el primer
+    // save() tras recargar lo borraría y la red de seguridad duraría solo hasta la siguiente recarga.
+    if(hay)_lastClosed=mir;
+    if(!hay&&liveSets(mine)>0){
+      _lastClosed=mir;                      // se conserva el espejo mientras el dueño decide
+      setTimeout(()=>{ trkAsk({title:'falta una sesión que sí guardaste',detail:(mine.dayName||'sesión')+' · '+liveSets(mine)+' series · '+fmtShort(mine.date||todayISO())+' · la app dijo que la guardó pero no está en tu historial',ok:'recuperarla'},
+        ()=>{ db.activeWork=mine; _lastClosed=null; if(save())toast('✓ sesión recuperada · revísala y guárdala'); go('workout'); },
+        ()=>{ _lastClosed=null; try{ localStorage.removeItem(LS_LIVE); }catch(_){} }); },700);
+    }
+  } else if(mine&&liveSets(mine)>liveSets(cur)){
     setTimeout(()=>{ trkAsk({title:'tienes una sesión sin guardar',detail:(mine.dayName||'sesión')+' · '+liveSets(mine)+' series · '+fmtShort(mine.date||todayISO())+' · no alcanzó a guardarse la última vez',ok:'recuperarla'},
       ()=>{ db.activeWork=mine; if(save())toast('✓ sesión recuperada'); go('workout'); },
       ()=>{ try{ localStorage.removeItem(LS_LIVE); }catch(_){} }); },700);
   } } }catch(_){}
+// v255 · IndexedDB vive en el cupo grande (el que iOS mide en GB), así que sobrevive a que Web Storage se
+// llene o se desaloje. Si al arrancar la base local tiene MENOS registros que ese respaldo, se ofrece volver.
+try{ idbGet('latest').then(rec=>{ if(!rec||!rec.s)return; _idbLast=rec;
+  let inc=null; try{ inc=JSON.parse(rec.s); }catch(_){ return; }
+  if(!inc||!inc.split)return;
+  const cur=dbMass(db), got=dbMass(inc);
+  if(got>cur){ setTimeout(()=>{ trkAsk({title:'hay un respaldo más completo',detail:'tu copia de seguridad interna tiene '+got+' registros y lo que quedó en este navegador tiene '+cur+' · guardada el '+fmtShort(rec.day||todayISO()),ok:'recuperarla'},
+      ()=>{ db=migrate(inc); if(save())toast('✓ '+got+' registros recuperados'); go('home'); }); },900); }
+}).catch(e=>{ _idbErr=e; }); }catch(_){}
+try{ growthLog(); }catch(_){}
 try{ promptIdleSession(); }catch(_){} try{ if(typeof location!=='undefined' && /[?&]selftest=1/.test(location.search)){ _identitySelfCheck(); _dropsetSelfCheck(); _baselineSelfCheck(); _variantSelfCheck(); _historyEditSelfCheck(); _idSelfCheck(); _cardioSelfCheck(); _tensionSelfCheck(); _healthSelfCheck(); _readinessSelfCheck(); _loggingSelfCheck(); _mergeSelfCheck(); _streakSelfCheck(); _chartSelfCheck(); _muscleSelfCheck(); _exProfileSelfCheck(); _recoverySelfCheck(); _diagSelfCheck(); _uiSelfCheck(); } }catch(e){ console.error(e); } try{ const _sp=new URLSearchParams(location.search); const _hasHistorical=_sp.has('stepsh')||_sp.has('weighth')||_sp.has('stepsq')||_sp.has('sleeph'); if(_hasHistorical){ const _hsp=_sp; if(history.replaceState)history.replaceState(null,'',location.pathname); setTimeout(()=>{ trkAsk({title:'importar datos históricos',detail:'este link trae pasos, peso o sueño de varios días · acepta solo si viene de tu propio Atajo de iOS',ok:'importar'},()=>{ try{ const _imp=importHealth(_hsp); if(_imp.length){ save(); render(); toast('✓ '+_imp.join(' · ')); } }catch(_){} }); },400); } else { const _imp=importHealth(_sp); if(_imp.length){ window._healthImported=_imp; if(history.replaceState)history.replaceState(null,'',location.pathname); } } }catch(_){} save(); render(); if(window._healthImported)setTimeout(()=>toast('✓ '+window._healthImported.join(' · ')),250); if(window._recoveredFromBackup)setTimeout(()=>{try{toast('⚠ se recuperó un respaldo local · revisa tus datos, podrían faltar cambios muy recientes','err');}catch(_){}},600);
 applyDesign(); try{ if(/[?&]design\b/.test(location.search))localStorage.setItem('gymtrk_designmode','1'); if(localStorage.getItem('gymtrk_designmode')==='1')openDesignPanel(); }catch(_){}
 try{ bootScreen(()=>{ try{
