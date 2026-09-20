@@ -489,6 +489,15 @@
   .seex{display:flex;align-items:baseline;justify-content:space-between;gap:var(--s3);padding:var(--s2) 0;} .seexn{flex:1;font-size:var(--t-sm);color:var(--o60);cursor:pointer;} .seexn .seexm{font-size:var(--t-caption);color:var(--o40);} .sedel{color:var(--o30);cursor:pointer;font-size:var(--t-body);padding:0 var(--s2);}
   .semv{display:inline-flex;gap:1px;flex:0 0 auto;} .semv span{color:var(--o30);cursor:pointer;font-size:var(--t-meta);padding:var(--s1) var(--s2);line-height:1;} .semv span:active{color:var(--fg);}
   .seadd{font-size:var(--t-xs);color:var(--o50);cursor:pointer;padding:var(--s3) 0;}
+  /* U6 · fases del sueño: hipnograma proporcional + filas de intervalo (la escala es opacidad, no color) */
+  .hypno{display:flex; height:8px; gap:1px; margin:var(--s2) 0 var(--s3); border-radius:var(--r-mark); overflow:hidden;}
+  .hypno i{display:block; min-width:1px;}
+  .hy-deep{background:var(--fg);} .hy-core{background:var(--o50);} .hy-rem{background:var(--o30);} .hy-awake{background:var(--o12);} .hy-none{background:var(--track);}
+  .slst{display:flex; align-items:center; gap:var(--s2); margin:0 0 var(--s2) var(--s5);}
+  .slst input[type=time]{flex:0 0 auto; height:36px; font-size:var(--t-sm); background:var(--card); color:var(--fg); border:1px solid var(--border); border-radius:var(--r-sm); padding:0 var(--s2);}
+  .slst .slsg{flex:1; min-width:0; height:36px; background:none; border:.5px solid var(--o20); border-radius:var(--r-sm); color:var(--fg); font-family:inherit; font-size:var(--t-meta); cursor:pointer;}
+  .slst .slx{flex:0 0 auto;}
+  .slsum{font-size:var(--t-xs); color:var(--o40); margin:0 0 var(--s3) var(--s5);}
   .slblk{display:flex;gap:var(--s3);align-items:center;margin-bottom:6px;} .slblk input{height:44px;background:var(--card);border:1px solid var(--border);border-radius:var(--r-ctl);color:var(--fg);font:inherit;font-size:var(--t-section);padding:0 var(--s3);min-width:0;} .slblk input[type=time]{flex:0 0 auto;} .slblk .slsep{color:var(--o40);} .slblk .sllbl{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;font-size:var(--t-meta);color:var(--o50);text-align:right;white-space:nowrap;} .slblk .slx{color:var(--o40);cursor:pointer;padding:0 var(--s2);flex:0 0 auto;}
   .sheetbtns{display:flex; gap:10px; margin-top:10px;} .sheetbtns .ok{flex:1; height:48px; background:var(--fill); color:var(--on-fill); font-weight:700; border:0; font-size:var(--t-body); cursor:pointer; border-radius:var(--r-ctl);} .sheetbtns .cancel{height:48px; padding:0 var(--s5); border:1px solid var(--border); background:none; color:var(--o60); font-size:var(--t-sm); cursor:pointer; border-radius:var(--r-ctl);}
   .pickitem{padding:var(--s4) 6px; font-size:var(--t-body); border-bottom:.5px solid var(--o10); cursor:pointer;} .pickitem:hover{color:var(--fg);} .pickitem:active{background:var(--o10);}
@@ -4510,6 +4519,25 @@ function openMoodLog(){ const ks=Object.keys(db.mood||{}).sort();
 // legacy: número (h) u objeto único {start,end,...}. sleepBlocks() normaliza a array, sleepHours() suma — reads nunca se rompen.
 function sleepBlocks(v){ if(v==null)return []; if(Array.isArray(v))return v; if(typeof v==='number')return [{hours:v}]; return [v]; }
 function sleepHours(v){ return Math.round(sleepBlocks(v).reduce((s,b)=>{ const h=+(b&&b.hours); return s+(isFinite(h)?h:0); },0)*10)/10; }
+// U6 (E19/E20) · FASES a mano. Un bloque puede llevar `stages:[[inicio,fin,fase]]` en HH:MM (deep|core|rem|awake).
+// Regla del modelo, copiada de Apple/Fitbit: se guardan INTERVALOS y todo lo demás se DERIVA — nunca se pide una suma
+// ni se bloquea el guardado. Lo que no clasificas se ve como "sin clasificar" (Fitbit deja el hueco a la vista).
+// `hours` significa SIEMPRE tiempo DORMIDO: con fases = ventana − despierto; sin fases = la ventana (no hay con qué
+// distinguir). `inBed` guarda la ventana cuando hay fases, para poder mostrar las dos lecturas.
+const SLEEP_STAGES=[['deep','profundo'],['core','core'],['rem','REM'],['awake','despierto']];
+function stageMin(b,st){ return (b&&b.stages||[]).reduce((s,g)=>{ if(g&&g[2]===st){ const d=sleepDur(g[0],g[1]); if(d>0)s+=d*60; } return s; },0); }
+function stagesMin(b){ return (b&&b.stages||[]).reduce((s,g)=>{ const d=g?sleepDur(g[0],g[1]):0; return s+(d>0?d*60:0); },0); }
+function blockAsleep(b){ if(!b)return 0; const win=(b.start&&b.end)?sleepDur(b.start,b.end):(+b.hours||0);
+  if(!(b.stages&&b.stages.length))return win;
+  const awake=stageMin(b,'awake')/60; return Math.max(0,Math.round((win-awake)*10)/10); }
+// hipnograma: una barra por bloque, proporcional, en la escala de opacidad (profundo = lo más sólido)
+function hypnoHTML(b){ const win=(b.start&&b.end)?sleepDur(b.start,b.end)*60:0; if(!(win>0)||!(b.stages&&b.stages.length))return '';
+  const segs=b.stages.slice().filter(g=>g&&sleepDur(g[0],g[1])>0);
+  const known=stagesMin(b); const rest=Math.max(0,win-known);
+  const part=segs.map(g=>`<i class="hy-${escTxt(g[2])}" style="flex:${(sleepDur(g[0],g[1])*60/win).toFixed(4)}" title="${escTxt(g[0])}–${escTxt(g[1])}"></i>`).join('')
+    +(rest>0?`<i class="hy-none" style="flex:${(rest/win).toFixed(4)}" title="sin clasificar"></i>`:'');
+  return `<div class="hypno">${part}</div>`;
+}
 function hm2min(s){ if(!s||typeof s!=='string'||s.indexOf(':')<0)return NaN; const a=s.split(':'); const H=+a[0],M=+a[1]; return (isFinite(H)&&isFinite(M))?H*60+M:NaN; }
 function sleepDur(start,end){ const a=hm2min(start),b=hm2min(end); if(!isFinite(a)||!isFinite(b))return 0; let diff=b-a; if(diff<0)diff+=1440; return Math.round(diff/6)/10; } // minutos→horas (0.1); cruza medianoche; iguales→0 (rechazado)
 function isNocturnal(start){ const a=hm2min(start); if(!isFinite(a))return true; return a>=1200||a<360; } // inicio ≥20:00 ó <06:00
@@ -4529,17 +4557,35 @@ function openSleepLog(){
    ${recent.length?`<div class="grp-label sub">REGISTROS RECIENTES</div>`+rows+``:''}`);
   let blocks=[];
   const blkTimed=b=>b.start!==undefined; // manual block has no start key
-  const blkH=b=>blkTimed(b)?((b.start&&b.end)?sleepDur(b.start,b.end):0):(+b.hours>0?Math.round(+b.hours*10)/10:0);
+  const blkH=b=>blkTimed(b)?((b.start&&b.end)?blockAsleep(b):0):(+b.hours>0?Math.round(+b.hours*10)/10:0);
   const blkLabel=b=>{ const h=blkH(b); if(h<=0)return'—'; return h+'h · '+(blkTimed(b)?(isNocturnal(b.start)?'nocturno':'siesta'):'manual'); };
   function total(){ const el=document.getElementById('sl_total'); if(el){ let t=0; blocks.forEach(b=>t+=blkH(b)); el.textContent='total '+(Math.round(t*10)/10)+' h'; } }
   function relabel(i){ const el=document.getElementById('sllbl'+i); if(el)el.textContent=blkLabel(blocks[i]); }
   function paint(){ const wrap=document.getElementById('sl_blocks'); if(!wrap)return;
-    wrap.innerHTML=blocks.map((b,i)=> blkTimed(b)
-      ? `<div class="slblk"><input type="time" data-i="${i}" data-f="start" value="${escTxt(b.start||'')}"/><span class="slsep">–</span><input type="time" data-i="${i}" data-f="end" value="${escTxt(b.end||'')}"/><span class="sllbl" id="sllbl${i}">${blkLabel(b)}</span><a class="slx" data-i="${i}">✕</a></div>`
-      : `<div class="slblk"><input type="number" inputmode="decimal" step="0.5" placeholder="horas" data-i="${i}" data-f="hours" value="${escTxt(b.hours!=null?b.hours:'')}" class="u-f1"/><span class="sllbl" id="sllbl${i}">${blkLabel(b)}</span><a class="slx" data-i="${i}">✕</a></div>`
-    ).join('');
-    wrap.querySelectorAll('input').forEach(inp=>{ inp.oninput=()=>{ const i=+inp.dataset.i; blocks[i][inp.dataset.f]=inp.value; relabel(i); total(); }; });
-    wrap.querySelectorAll('.slx').forEach(x=>{ x.onclick=()=>{ blocks.splice(+x.dataset.i,1); paint(); }; });
+    const stRow=(i,j,g)=>`<div class="slst"><input type="time" data-i="${i}" data-s="${j}" data-f="0" value="${escTxt(g[0]||'')}"/><span class="slsep">–</span><input type="time" data-i="${i}" data-s="${j}" data-f="1" value="${escTxt(g[1]||'')}"/>`
+      +`<button type="button" class="slsg" data-stg="${i}:${j}">${escTxt((SLEEP_STAGES.find(s=>s[0]===g[2])||['','fase'])[1])}</button><a class="slx" data-i="${i}" data-s="${j}">✕</a></div>`;
+    wrap.innerHTML=blocks.map((b,i)=>{
+      const head= blkTimed(b)
+        ? `<div class="slblk"><input type="time" data-i="${i}" data-f="start" value="${escTxt(b.start||'')}"/><span class="slsep">–</span><input type="time" data-i="${i}" data-f="end" value="${escTxt(b.end||'')}"/><span class="sllbl" id="sllbl${i}">${blkLabel(b)}</span><a class="slx" data-i="${i}">✕</a></div>`
+        : `<div class="slblk"><input type="number" inputmode="decimal" step="0.5" placeholder="horas" data-i="${i}" data-f="hours" value="${escTxt(b.hours!=null?b.hours:'')}" class="u-f1"/><span class="sllbl" id="sllbl${i}">${blkLabel(b)}</span><a class="slx" data-i="${i}">✕</a></div>`;
+      if(!blkTimed(b)||!b.start||!b.end)return head;
+      const win=sleepDur(b.start,b.end)*60, known=stagesMin(b), rest=Math.max(0,Math.round(win-known));
+      const sum=(b.stages&&b.stages.length)
+        ? `dormido ${blockAsleep(b)} h · en cama ${sleepDur(b.start,b.end)} h`+(rest>0?` · sin clasificar ${rest<60?rest+' m':(Math.round(rest/6)/10)+' h'}`:'')
+        : '';
+      return head+hypnoHTML(b)
+        +(b.stages||[]).map((g,j)=>stRow(i,j,g)).join('')
+        +(sum?`<div class="slsum">${sum}</div>`:'')
+        +`<div class="slsum"><a class="u-tap u-o60" data-addstg="${i}">[+ fase]</a></div>`;
+    }).join('');
+    wrap.querySelectorAll('.slblk input').forEach(inp=>{ inp.oninput=()=>{ const i=+inp.dataset.i; blocks[i][inp.dataset.f]=inp.value; relabel(i); total(); if(inp.dataset.f!=='hours')paint(); }; });
+    wrap.querySelectorAll('.slst input').forEach(inp=>{ inp.oninput=()=>{ const i=+inp.dataset.i, j=+inp.dataset.s; blocks[i].stages[j][+inp.dataset.f]=inp.value; paint(); }; });
+    wrap.querySelectorAll('[data-stg]').forEach(btn=>{ btn.onclick=()=>{ const [i,j]=btn.dataset.stg.split(':').map(Number);
+      trkWheel({title:'fase',opts:SLEEP_STAGES.map(s=>s[1]),cur:(SLEEP_STAGES.find(s=>s[0]===blocks[i].stages[j][2])||[])[1]||''},v=>{ const k=SLEEP_STAGES.find(s=>s[1]===v); blocks[i].stages[j][2]=k?k[0]:'core'; paint(); }); }; });
+    wrap.querySelectorAll('[data-addstg]').forEach(a=>{ a.onclick=()=>{ const i=+a.dataset.addstg; const b=blocks[i]; b.stages=b.stages||[];
+      const last=b.stages.length?b.stages[b.stages.length-1][1]:b.start;   // encadenado: cada fase empieza donde acabó la anterior
+      b.stages.push([last||b.start||'', '', 'core']); paint(); }; });
+    wrap.querySelectorAll('.slx').forEach(x=>{ x.onclick=()=>{ const i=+x.dataset.i; if(x.dataset.s!=null)blocks[i].stages.splice(+x.dataset.s,1); else blocks.splice(i,1); paint(); }; });
     total();
   }
   function load(d){ blocks=sleepBlocks(db.sleep&&db.sleep[d]).map(b=>(b&&typeof b==='object')?Object.assign({},b,{_o:{start:b.start,end:b.end}}):{hours:b}); if(!blocks.length)blocks=[{start:'23:00',end:'07:00'}]; paint(); }
@@ -4548,7 +4594,11 @@ function openSleepLog(){
   document.getElementById('sl_date').onchange=function(){ load(this.value); };
   document.getElementById('sl_save').onclick=()=>{ const d=val('sl_date')||todayISO(); const out=[];
     blocks.forEach(b=>{ if(blkTimed(b)&&b.src&&b._o&&b.start===b._o.start&&b.end===b._o.end&&+b.hours>0){ const k=Object.assign({},b); delete k._o; out.push(k); return; }
-      if(blkTimed(b)){ if(b.start&&b.end){ const h=sleepDur(b.start,b.end); if(h>0&&h<24)out.push({start:b.start,end:b.end,date:d,type:isNocturnal(b.start)?'nocturno':'siesta',hours:h}); } }
+      if(blkTimed(b)){ if(b.start&&b.end){ const win=sleepDur(b.start,b.end); if(win>0&&win<24){
+        const stages=(b.stages||[]).filter(g=>g&&g[0]&&g[1]&&sleepDur(g[0],g[1])>0);
+        const o={start:b.start,end:b.end,date:d,type:isNocturnal(b.start)?'nocturno':'siesta',hours:win};
+        if(stages.length){ o.stages=stages; o.inBed=win; o.hours=blockAsleep({start:b.start,end:b.end,stages}); }   // E20: `hours` = DORMIDO
+        out.push(o); } } }
       else { const mh=Math.round((+b.hours)*10)/10; if(mh>0&&mh<24)out.push({date:d,type:'nocturno',hours:mh}); } });
     if(!out.length){ toast('⚠ agrega un bloque: dormir + despertar, o las horas','err'); return; }
     db.sleep=db.sleep||{}; db.sleep[d]=out; save(); toast('✓ sueño guardado'); closeModal(); render();

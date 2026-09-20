@@ -897,6 +897,8 @@ Pillow, AutoSleep, Fitbit + HIG / Material 3 / NN-g. **No hay ninguna captura de
 
 **Hecho U5 (v250):** E16–E18. La racha deja el par gris + verde y pasa a **opacidad de un solo blanco** (`--track` · `--o30` · `--fg`); celda **cuadrada** de 19 px; "hoy" con anillo `--o40` en vez de blanco puro; **sin leyenda** (tres muestras de color para un dato binario son texto instructivo disfrazado, §9.1); y la semana empieza en **lunes** con columnas `L M X J V S D` en los dos calendarios que comparten `monthCalHTML`.
 
+**Hecho U6 (v251):** E19–E20. Fases del sueño a mano por **intervalos** (nunca minutos ni sumas que validar, como Apple/Fitbit/Pillow): `[+ fase]` añade filas `HH:MM – HH:MM` encadenadas, la fase se elige con TRKWheel, y encima va un **hipnograma** proporcional en escala de opacidad con la lectura `dormido · en cama · sin clasificar` — el hueco se ve, no se reparte. `hours` pasa a significar siempre **dormido** y la ventana se guarda en `inBed` (antes un bloque sincronizado y uno manual significaban cosas distintas y se sumaban igual). Los bloques manuales siguen sin `src`, así que el sync no los pisa.
+
 **Ruta:** U0 bases (este documento + auditor) · U1 v246 macros sin fricción · U2 v247 sheet de alimento ·
 U3 v248 una sola voz · U4 v249 señal en las gráficas · U5 v250 racha · U6 v251 sueño con fases · U7 v252 compartir.
 Cada fase cierra con `ds-audit` sin regresiones, `ds-diff` con cargas frescas, self-checks y QA 393×852 con toques
