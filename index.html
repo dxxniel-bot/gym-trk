@@ -547,6 +547,14 @@
   .shfoot{text-align:center; font-size:var(--t-body); font-weight:800; color:var(--o35); margin-top:var(--s4); letter-spacing:var(--ls-ui);}
   /* v225 · compartir una sesión: denso, tipo terminal — una línea de cabecera y una línea de series por
      ejercicio, con unidad, RIR, F y drops. Antes eran chips de "60 × 11" sin decir 60 de qué. */
+  /* U7 · tres lecturas arriba: el tamaño ES la jerarquía (Hevy, Strava, Whoop), el resto baja a letra chica */
+  .sh3{display:flex; gap:var(--s3); padding:var(--s2) 0 var(--s5); border-bottom:1px solid var(--border); margin-bottom:var(--s4);}
+  .sh3 .sh3c{flex:1; min-width:0;}
+  .sh3 .sh3v{font-size:var(--t-hero); font-weight:800; letter-spacing:var(--ls-num); color:var(--fg); line-height:1;}
+  .sh3 .sh3v span{font-size:var(--t-meta); font-weight:400; color:var(--o40); letter-spacing:0; margin-left:var(--s1);}
+  .sh3 .sh3l{font-size:var(--t-caption); letter-spacing:var(--ls-caps); text-transform:uppercase; color:var(--o35); margin-top:var(--s2);}
+  .shacts{display:flex; justify-content:flex-end; gap:var(--s5); margin-top:var(--s4);}
+  .shacts a{font-size:var(--t-xs); color:var(--o60); cursor:pointer; padding:var(--s3) 0;}
   .shhead{display:flex; flex-wrap:wrap; gap:var(--s2) 10px; font-size:var(--t-meta); color:var(--o50); padding:6px 0 10px; border-bottom:1px solid var(--border); margin-bottom:var(--s4);}
   .shhead b{color:var(--fg); font-weight:800;}
   .sxr{margin-bottom:10px;}
@@ -3731,7 +3739,17 @@ function renderShare(){
     log+=`<div class="sgrp"><div class="sgh" data-act="mealsummary" data-tag="${escTxt(tag)}"><span class="sgn">${escTxt(tag)}</span><span class="sgk">${Math.round(mp)}P ${Math.round(mc)}C ${Math.round(mf)}F · ${Math.round(mk)}</span></div>`
       +mealFoodRows(byTag[tag])+`</div>`;
   });
-  return summaryShell('resumen · '+dayLabel(curDate()), banner, items.length?`<div class="shlog">${log}</div>`:`<div class="empty">sin alimentos hoy</div>`);
+  // U7 (E22): el día también abre con tres lecturas (energía · proteína · restante) y cierra con sus 3 alimentos principales
+  const left=Math.round((g.kcal||0)-t.kcal);
+  const three=`<div class="sh3">`
+    +`<div class="sh3c"><div class="sh3v">${Math.round(t.kcal).toLocaleString()}<span>/ ${(g.kcal||0).toLocaleString()}</span></div><div class="sh3l">kcal</div></div>`
+    +`<div class="sh3c"><div class="sh3v">${Math.round(t.protein)}<span>g</span></div><div class="sh3l">proteína</div></div>`
+    +`<div class="sh3c"><div class="sh3v">${left>=0?left:'+'+Math.abs(left)}</div><div class="sh3l">${left>=0?'restan':'de más'}</div></div></div>`;
+  const top3=items.slice().sort((a,b)=>(+b.kcal||0)-(+a.kcal||0)).slice(0,3);
+  const topHTML=top3.length?`<div class="shfootline"><span>lo que más pesó hoy</span><span>${Math.round(top3.reduce((a,m)=>a+(+m.kcal||0),0))} kcal</span></div>`
+    +top3.map(m=>`<div class="sxr"><div class="sxh"><span class="sxn">${escTxt((m.name||'').replace(/ ×[\d.]+$/,''))}</span><span class="sxk">${Math.round(+m.kcal||0)} kcal</span></div></div>`).join(''):'';
+  return summaryShell('resumen · '+dayLabel(curDate()), three+banner, (items.length?`<div class="shlog">${log}</div>`:`<div class="empty">sin alimentos hoy</div>`)+topHTML
+    +`<div class="shacts"><a data-act="shcopy">[copiar como texto]</a></div>`);
 }
 // unified share wrapper: caption + banner + body + gym//TRK footer (used by all shareable summaries)
 function summaryShell(caption, banner, body){
@@ -3781,10 +3799,37 @@ function renderShareSession(id){
     body+=sessExBlockHTML(e,r,t);
   });
   const tot=(function(){ try{ return sessionTensionTotal(s); }catch(_){ return 0; } })();
-  const head=`<div class="shhead"><span><b>${sets}</b> sets</span><span><b>${exn}</b> ejercicios</span>`
-    +(dur?`<span><b>${dur}</b></span>`:'')+(tot>0?`<span>T <b>${fmtT(tot)}</b></span>`:'')+`</div>`;
-  const foot=`<div class="shfootline"><span>${s.gym?escTxt(s.gym):''}</span><span>${vol>0?numTxt(Math.round(vol))+' kg · Σ kg×reps':''}</span></div>`;
+  // U7 (E21): arriba van TRES lecturas grandes (Hevy/Strava/Whoop: el tamaño es la jerarquía); el conteo de series
+  // y ejercicios baja a la línea chica de abajo, que es donde se lee sin competir con los números.
+  const head=`<div class="sh3">`
+    +`<div class="sh3c"><div class="sh3v">${dur||'—'}</div><div class="sh3l">duración</div></div>`
+    +`<div class="sh3c"><div class="sh3v">${vol>0?Math.round(vol).toLocaleString():'—'}<span>kg</span></div><div class="sh3l">tonelaje</div></div>`
+    +`<div class="sh3c"><div class="sh3v">${tot>0?fmtT(tot):'—'}</div><div class="sh3l">tensión</div></div></div>`;
+  const foot=`<div class="shfootline"><span>${sets} sets · ${exn} ejercicios${s.gym?' · '+escTxt(s.gym):''}</span><span>${escTxt(fmtShort(s.date||''))}</span></div>`
+    +`<div class="shacts"><a data-act="shcopy">[copiar como texto]</a></div>`;
   return summaryShell(escTxt(s.dayName||'sesión')+' · '+(s.date||''), head, (body||'<div class="empty">sin series registradas</div>')+foot);
+}
+// U7 (E21): compartir como TEXTO monoespaciado — es la estética de la app y se pega en cualquier chat (Strong)
+function shareTextFor(){
+  if(state.shareType==='session'){
+    const s=(db.sessions||[]).find(x=>x.id===state.shareId)||(db.sessions||[]).filter(x=>x.type!=='rest').slice(-1)[0]; if(!s)return '';
+    const hh=Math.floor((s.durSec||0)/3600), mm=Math.floor(((s.durSec||0)%3600)/60); const dur=s.durSec?(hh?hh+'h'+pad(mm):mm+'m'):'';
+    const tn=(function(){ try{ return sessionTension(s); }catch(_){ return []; } })();
+    let vol=0, L=[];
+    (s.exercises||[]).forEach((e,ei)=>{ const r=shareExLines(e); if(!r.n)return;
+      (e.sets||[]).forEach(x=>{ if(x&&!x._pf){ const rr=+x.r||0; if(rr)vol+=kgLoad(x)*rr; } });
+      const t=tn&&tn[ei]&&tn[ei].total>0?' · T '+fmtT(tn[ei].total):'';
+      L.push(latTxt(e)+e.name+(r.unit?' ('+r.unit+')':'')+t); L.push('  '+r.lines.join(' · ')); });
+    const tot=(function(){ try{ return sessionTensionTotal(s); }catch(_){ return 0; } })();
+    return [ (s.dayName||'sesión')+' · '+fmtShort(s.date||''),
+      [dur||'', vol>0?Math.round(vol).toLocaleString()+' kg':'', tot>0?'T '+fmtT(tot):''].filter(Boolean).join('  ·  '),
+      '', ...L, '', 'gym//TRK' ].join('\n');
+  }
+  const {items,t}=macroTotals(); const g=goalsFor(curDate());
+  const top=items.slice().sort((a,b)=>(+b.kcal||0)-(+a.kcal||0)).slice(0,3).map(m=>'  '+(m.name||'').replace(/ ×[\d.]+$/,'')+' · '+Math.round(+m.kcal||0));
+  return ['comida · '+dayLabel(curDate()).toLowerCase(),
+    Math.round(t.kcal)+' / '+g.kcal+' kcal  ·  '+Math.round(t.protein)+'P '+Math.round(t.carbs)+'C '+Math.round(t.fat)+'F',
+    '', ...top, '', 'gym//TRK'].join('\n');
 }
 function renderShareWeight(){
   const ks=Object.keys(db.bodyweight||{}).sort(); const vals=ks.map(k=>db.bodyweight[k]);
@@ -6239,6 +6284,10 @@ document.getElementById('app').addEventListener('click',e=>{
   else if(a==='waterdel'){ const id=el.dataset.id, d=curDate(); const m=(db.meals[d]||[]).find(x=>x.id===id); if(m)trkAsk({title:'quitar '+Math.round((+m.water||0)*1000)+' ml',ok:'quitar',danger:true},()=>{ db.meals[d]=(db.meals[d]||[]).filter(x=>x.id!==id); save(); reRender(); toast('✓ agua quitada'); }); }
   else if(a==='share'){ state.shareType='food'; go('share'); }
   else if(a==='sharesession'){ state.shareType='session'; state.shareId=el.dataset.id; closeModal(); go('share'); }
+  else if(a==='shcopy'){ const txt=shareTextFor(); if(!txt){ toast('⚠ nada que copiar','err'); return; }
+    const done=()=>toast('✓ copiado como texto');
+    try{ if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(txt).then(done,()=>trkPrompt({title:'copiar',label:'TEXTO',value:txt,ok:'listo'},()=>{})); }
+      else trkPrompt({title:'copiar',label:'TEXTO',value:txt,ok:'listo'},()=>{}); }catch(_){ trkPrompt({title:'copiar',label:'TEXTO',value:txt,ok:'listo'},()=>{}); } }
   else if(a==='shareweight'){ state.shareType='weight'; go('share'); }
   else if(a==='mealsummary'){ openMealSummary(el.dataset.tag); }
   else if(a==='mealrename'){ const tag=el.dataset.tag; state.renamingTag=tag; render();
