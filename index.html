@@ -779,7 +779,7 @@
   /* DS-4 · componentes que vivían en style="" */
   .setprog{font-size:var(--t-caption); font-weight:700;} .exprog{font-size:var(--t-sm); font-weight:800; margin-left:var(--s3);}   /* R1: la forma fija en clase; en línea solo el color calculado */
   .setprogline{text-align:right; padding:0 var(--s3); margin:-1px 0 var(--s2); height:11px; line-height:11px;} .setprogline.nil{height:0; padding:0; margin:0;}
-  .gc-uni-head{grid-template-columns:22px 20px 1fr 38px 44px 40px 18px;}
+  .pair.phead{margin-bottom:6px;} .pair.phead .thead{margin-bottom:0;} .pair.phead .setn,.pair.phead .pairdone{cursor:default;}   /* v256: cabecera unilateral con la envoltura del par */
   .moodax.at{top:6px; left:50%; transform:translateX(-50%);} .moodax.ab{bottom:6px; left:50%; transform:translateX(-50%);} .moodax.al{left:6px; top:50%; transform:translateY(-50%);} .moodax.ar{right:6px; top:50%; transform:translateY(-50%);}
   .start.ghost{background:transparent; border:1px solid var(--border); color:var(--fg);}
   .fa-empty .fa-em-step.off{opacity:.5; cursor:default;}
@@ -1468,7 +1468,8 @@ function stat7(){
 // hoy se perdona hasta medianoche. Un descanso registrado con el botón "rest" cuenta como registro de gym
 // (lo registraste a mano: es parte del plan). Bits por día: 1 = comida · 2 = gym.
 function activityDays(){ const a={};
-  Object.keys(db.meals||{}).forEach(d=>{ if((db.meals[d]||[]).length)a[d]=(a[d]||0)|1; });
+  // v256: un vaso de agua NO es "registrar comida" — antes un día con solo agua sostenía la racha
+  Object.keys(db.meals||{}).forEach(d=>{ if((db.meals[d]||[]).some(m=>!isWaterItem(m)))a[d]=(a[d]||0)|1; });
   (db.sessions||[]).forEach(s=>{ if(s&&s.date)a[s.date]=(a[s.date]||0)|2; });
   return a; }
 function streak(){ const a=activityDays(); const today=todayISO(); let st=0; const d=new Date();
@@ -3455,6 +3456,11 @@ function setnHTML(label,done,act,exi,si,zSty){
 function doneCellHTML(done,act,exi,si,cls){
   return `<div class="${cls||'dchk'} ${done?'done':''}" data-act="${act}" data-exi="${exi}" data-si="${si}" title="${done?'serie confirmada · toca para deshacer':'toca para confirmar la serie'}">${done?'✓':'○'}</div>`;
 }
+// v256 · la cabecera unilateral se alinea POR CONSTRUCCIÓN: usa la misma envoltura que el par (.setn + .prows con el
+// MISMO template de columnas que la fila + el hueco del ✓ solo en vivo). Antes era un grid aparte de 7 columnas que no
+// contaba el ✓ de 28 px ni la ✕ invisible: unit, reps y rir quedaban 32 px corridos respecto a su etiqueta.
+function uniHeadHTML(isBwEx,live){ const gcU=isBwEx?'gc-uni-bw':'gc-uni';
+  return `<div class="pair phead"><div class="setn"></div><div class="prows"><div class="thead ${gcU}"><div class="cl">L/R</div><div class="cl w">weight</div><div class="cl">${isBwEx?'lastre':'unit'}</div><div class="cl">reps</div><div class="cl" data-gloss="rir">rir</div><div class="cl"></div></div></div>${live?'<div class="pairdone u-invis"></div>':''}</div>`; }
 function renderExercise(exi,ex,allowF,canReorder){
   const sets=ex.sets||[]; const isCardioEx=isCardio(ex); const isM=!isCardioEx&&['machine','pulley','smith','cable'].indexOf(ex.type)>=0; const isU=!isCardioEx&&!!ex.unilateral;
   const rec=machineRec((db.activeWork||{}).gym,ex); const ed=`data-act="editmach" data-exi="${exi}"`;
@@ -3517,7 +3523,7 @@ function renderExercise(exi,ex,allowF,canReorder){
   }
   const isBwEx=ex.type==='bodyweight';
   if(isU){
-    let thead=`<div class="thead gc-uni-head"><div class="cl"></div><div class="cl">L/R</div><div class="cl w">weight</div><div class="cl">${isBwEx?'lastre':'unit'}</div><div class="cl">reps</div><div class="cl" data-gloss="rir">rir</div><div class="cl"></div></div>`;
+    let thead=uniHeadHTML(isBwEx,true);
     let body='';
     const labels=setLabels(sets,2);
     const gcU=isBwEx?'gc-uni-bw':'gc-uni';
@@ -3555,7 +3561,7 @@ function renderExercise(exi,ex,allowF,canReorder){
       const sInner=progLineInner(sBadge,dropPctTxt(sets,si),tensTag(_tn&&_tn.per[si]));
       const progLine=sInner?`<div class="setprogline" data-exi="${exi}" data-si="${si}" data-rk="${rk(s)}p">${sInner}</div>`:`<div class="setprogline nil" data-exi="${exi}" data-si="${si}"></div>`;
       const gcRow=isBwEx?'gc-free-bw':(fsOn?'gc-mach-fs':gc);
-      const mid=isBwEx?c.we:(fsOn?c.we:c.u);
+      const mid=isBwEx?c.we:(fsOn?c.we+c.u:c.u);   // v256 B1b: antes el lastre SUSTITUÍA a la unidad → 7 hijos en 8 columnas
       // setend: del only (per-row ↓ removed) — same column width for normal and isdrop rows
       body+=`<div class="srow ${gcRow} ${s.isDrop?'isdrop':''}" data-swipe="delset" data-exi="${exi}" data-si="${si}" data-rk="${rk(s)}">${setnHTML(labels[si],s.done,'done',exi,si,zSty)}${fs}${c.w}${mid}${c.r}${c.rr}<div class="setend">${doneCellHTML(s.done,'done',exi,si)}</div></div>${progLine}`;
     });
@@ -3603,7 +3609,7 @@ function renderHistExercise(exi,ex,sess){
     const add=`<div class="addrow afree"><span class="aleft"><button class="addbtn" data-act="h_addset" data-exi="${exi}">[+ set]</button></span></div>`;
     rows=thead+body+add;
   } else if(isU){
-    let thead=`<div class="thead gc-uni-head"><div class="cl"></div><div class="cl">L/R</div><div class="cl w">weight</div><div class="cl">${isBwEx?'lastre':'unit'}</div><div class="cl">reps</div><div class="cl" data-gloss="rir">rir</div><div class="cl"></div></div>`;
+    let thead=uniHeadHTML(isBwEx,false);
     let body=''; const labels=setLabels(sets,2); const gcU=isBwEx?'gc-uni-bw':'gc-uni';
     for(let p=0;p<sets.length;p+=2){
       const a=sets[p],b=sets[p+1]; const ca=renderSetRow(exi,p,a,ex,true,'h_'); const cb=b?renderSetRow(exi,p+1,b,ex,true,'h_'):null;
@@ -3625,7 +3631,7 @@ function renderHistExercise(exi,ex,sess){
       const fs=isM?fsCellHTML(s,exi,si,'h_fs'):'';
       const z=!s.done?setZone(s):null; const zSty=z==='light'?'color:var(--warn);':z==='heavy'?'color:var(--bad);':'';
       const gcRow=isBwEx?'gc-free-bw':(fsOn?'gc-mach-fs':gc);
-      const mid=isBwEx?c.we:(fsOn?c.we:c.u);
+      const mid=isBwEx?c.we:(fsOn?c.we+c.u:c.u);   // v256 B1b: antes el lastre SUSTITUÍA a la unidad → 7 hijos en 8 columnas
       body+=`<div class="srow ${gcRow} ${s.isDrop?'isdrop':''}" data-swipe="h_delset" data-exi="${exi}" data-si="${si}" data-rk="${rk(s)}">${setnHTML(labels[si],s.done,'h_done',exi,si,zSty)}${fs}${c.w}${mid}${c.r}${c.rr}<div class="setend">${doneCellHTML(s.done,'h_done',exi,si)}</div></div>`+histSetLine(sets,si,tensTag(_htn&&_htn.per[si]),hrTag(_hhr[exi+':'+si]));
     });
     const add=`<div class="addrow ${isM?'amach':'afree'}"><span class="aleft"><button class="addbtn" data-act="h_addset" data-exi="${exi}">[+ set]</button><button class="addbtn" data-act="h_dropset" data-exi="${exi}" data-si="${Math.max(0,sets.length-1)}">[↓ drop set]</button></span></div>`;
@@ -5190,7 +5196,12 @@ function renderProgress(){
   if(cfg.consistency){ out+=streakCardHTML(); void str; void s7; }
   out+=throwbackBlock();
   const tiles=[];
+  // v256 · una métrica ACTIVA de registro manual nunca desaparece por no tener datos: sin tile no había por dónde
+  // registrarla (la config decía "on" y el sueño no salía en ningún lado). Sin dato, la tile entera abre su hoja.
+  const emptyTile=(lbl,unit,act)=>`<div class="ptile tap" data-act="${act}"><div class="ptlh"><div class="plbl">${lbl}</div><span class="ptchev">›</span></div>`
+    +`<div class="pval u-o30">—<span>${unit}</span></div><div class="pst flat">sin registro</div></div>`;
   // peso
+  if(cfg.weight&&!bwVals.length)tiles.push(emptyTile('peso','kg','logweight'));
   if(bwVals.length && cfg.weight){ let st=''; let chartHtml='';
     if(_bv.length>=2){ const _ch=Math.round((_bv[_bv.length-1]-_bv[0])*10)/10;
       let cls='flat'; if(_ch<0)cls=goal==='cut'?'good':goal==='bulk'?'bad':'flat'; else if(_ch>0)cls=goal==='bulk'?'good':goal==='cut'?'bad':'flat';
@@ -5224,12 +5235,14 @@ function renderProgress(){
       +`<div class="pst ${cls}">${arr}${pct!=null?' '+(pct>0?'+':'')+pct+'%':''}</div>${lineChart(t.prev!=null?[t.prev,t.cur]:[t.cur],{h:32})}</div>`);
   }
   // pasos
+  if(cfg.steps&&!_stepsLog.length)tiles.push(emptyTile('pasos','hoy','editsteps'));
   if(_stepsLog.length && cfg.steps){ const _t=_stepsArr[_stepsArr.length-1], _a=Math.round(avgPos(_stepsArr));
     tiles.push(`<div class="ptile tap" data-act="metricdetail" data-m="steps"><div class="ptlh"><div class="plbl">pasos</div><span class="ptchev">›</span></div>`
       +`<div class="pval">${_t?_t.toLocaleString():'—'}<span>hoy</span></div>`
       +`<div class="pst flat">prom ${kFmt(_a)}/d · 14d</div>${lineChart(_stepsArr,{h:40,zero:true,gap0:true,dates:_shd})}</div>`);
   }
   // agua
+  if(cfg.water&&!_waterLog.length)tiles.push(emptyTile('agua','L','waterother'));
   if(_waterLog.length && cfg.water){ const _g=db.settings.goals.water||0, _a=Math.round(avgPos(_waterArr)*10)/10;
     const cls=_g&&_a>=_g?'good':'flat';
     tiles.push(`<div class="ptile tap" data-act="metricdetail" data-m="water"><div class="ptlh"><div class="plbl">agua</div><span class="ptchev">›</span></div>`
@@ -5243,7 +5256,7 @@ function renderProgress(){
       tiles.push(`<div class="ptile tap" data-act="metricdetail" data-m="sleep"><div class="ptlh"><div class="plbl">sueño</div><span class="ptchev">›</span></div>`
         +`<div class="pval">${_ln||'—'}<span>h dormidas</span></div>`
         +`<div class="pst ${cls}">${_g?(_a>=_g?'▲ prom '+_a+'h en meta · 14d':'prom '+_a+'h · meta '+_g+'h'):'prom '+_a+'h · 14d'}</div>${lineChart(_slArr,{h:32,zero:true,gap0:true})}</div>`);
-    }
+    } else tiles.push(emptyTile('sueño','h','logsleep'));
   }
   // FC en reposo / HRV / energía activa (Salud, v220) — solo si hay datos
   [['rhr','FC reposo','lpm'],['hrv','HRV','ms'],['kcalact','energía activa','kcal']].forEach(([k,lbl,u])=>{ if(!cfg[k])return; const ms=metricSeries(k,14); const pos=ms.vals.filter(v=>v>0); if(!pos.length)return;
@@ -5264,7 +5277,7 @@ function renderProgress(){
       tiles.push(`<div class="ptile tap" data-act="metricdetail" data-m="mood"><div class="ptlh"><div class="plbl">ánimo</div><span class="ptchev">›</span></div>`
         +`<div class="pval u-sec">${escTxt(_lbl)}<span> hoy</span></div>`
         +`<div class="pst flat">prom ${_a} · 14d</div>${lineChart(_moArr,{h:32,gap0:true})}</div>`);
-    }
+    } else tiles.push(emptyTile('ánimo','hoy','logmood'));
   }
   // auto-percepción estética (4 tiles; solo renderizan con datos)
   if(cfg.sc_bloat){ const _h=scTileHTML('bloat','hinchazón'); if(_h)tiles.push(_h); }
@@ -7118,11 +7131,8 @@ function downloadIcs(di){
     'DESCRIPTION:'+(day.tag||'')+'\\n\\n'+exList,
     'LOCATION:'+(db.activeGym||''),
     'END:VEVENT','END:VCALENDAR'].join('\r\n');
-  const blob=new Blob([ics],{type:'text/calendar;charset=utf-8'});
-  const url=URL.createObjectURL(blob); const a=document.createElement('a');
-  a.href=url; a.download='gymtrk-'+(day.name||'workout').replace(/[^a-zA-Z0-9_-]+/g,'_')+'-'+date+'.ics';
-  document.body.appendChild(a); a.click(); document.body.removeChild(a);
-  setTimeout(()=>URL.revokeObjectURL(url),1000); closeModal();
+  closeModal();
+  saveFileSafe('gymtrk-'+(day.name||'workout').replace(/[^a-zA-Z0-9_-]+/g,'_')+'-'+date+'.ics',ics,'text/calendar');
 }
 // muscleSuggest returns ONLY muscles the user has actually used (split + sessions).
 // Falls back to a minimal default set when totally empty (very new user). Lets users add
@@ -8608,27 +8618,49 @@ const LS_LASTBAK='gymtrk_lastbak';
 function markBackup(){ try{ localStorage.setItem(LS_LASTBAK,todayISO()); }catch(_){} }
 function daysSinceBackup(){ try{ const d=localStorage.getItem(LS_LASTBAK); if(!d)return 999;
     return Math.round((new Date(todayISO()+'T12:00:00')-new Date(d+'T12:00:00'))/86400000); }catch(_){ return 999; } }
-function doBackupShare(){
-  const name='gymtrk-backup-'+todayISO()+'.json', txt=JSON.stringify(db,null,2);
-  if(NATIVE_APP){ nativeShareFile(name,txt); markBackup(); return; }
-  try{ const f=new File([txt],name,{type:'application/json'});
-    if(navigator.share&&navigator.canShare&&navigator.canShare({files:[f]})){
-      navigator.share({files:[f],title:name}).then(()=>{ markBackup(); toast('✓ respaldo guardado'); })
-        .catch(e=>{ if(e&&e.name==='AbortError')return; doExport(); markBackup(); });
-      return; } }catch(_){}
-  doExport(); markBackup();
+// v256 · guardar un archivo SIN atrapar la app. En una web app de pantalla de inicio de iOS, `<a download>` NO
+// descarga: abre la pantalla de sistema "Abrir en…" sin forma de volver y hay que matar la app (el dueño lo sufrió
+// al tocar exportar). Y Web Share solo acepta ciertos tipos — application/json NO está —, así que el botón de v255
+// caía siempre a esa descarga. Orden: nativo → hoja de compartir (tipo propio → text/plain → .txt) → en pantalla de
+// inicio, una hoja con el texto y [copiar] → solo en una pestaña normal, la descarga de siempre.
+function isStandalone(){ try{ return !!(navigator.standalone||(window.matchMedia&&matchMedia('(display-mode: standalone)').matches)); }catch(_){ return false; } }
+function saveFileSafe(name,text,mime,onDone){
+  if(NATIVE_APP){ nativeShareFile(name,text); if(onDone)onDone(); return; }
+  const tries=[[name,mime],[name,'text/plain'],[name.replace(/\.[a-z0-9]+$/i,'')+'.txt','text/plain']];
+  try{ if(navigator.share&&navigator.canShare){
+      for(const pair of tries){ const f=new File([text],pair[0],{type:pair[1]});
+        if(navigator.canShare({files:[f]})){
+          navigator.share({files:[f],title:pair[0]}).then(()=>{ if(onDone)onDone(); })
+            .catch(e=>{ if(e&&e.name==='AbortError')return; openTextSheet(pair[0],text,onDone); });
+          return; } } } }catch(_){}
+  if(isStandalone()){ openTextSheet(name,text,onDone); return; }
+  const url=URL.createObjectURL(new Blob([text],{type:mime}));
+  const a=document.createElement('a'); a.href=url; a.download=name; document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(()=>URL.revokeObjectURL(url),4000);
+  if(onDone)onDone();
 }
+// la salida que nunca atrapa: el contenido en una hoja, con [copiar]. Se pega en Notas o en Archivos.
+function openTextSheet(name,text,onDone){
+  openModal(`<h3>guardar ${escTxt(name)}</h3>`
+    +`<div class="submeta u-mb8">este navegador no deja guardar el archivo directo · cópialo y pégalo en Notas o en un archivo nuevo</div>`
+    +`<textarea id="ts_txt" class="ta lg" readonly></textarea>`
+    +`<div class="sheetbtns u-mt12"><button class="ok" id="ts_copy">copiar</button><button class="cancel" data-act="closemodal">cerrar</button></div>`);
+  const ta=document.getElementById('ts_txt'); if(ta)ta.value=text;
+  const b=document.getElementById('ts_copy');
+  if(b)b.onclick=()=>{ const ok=()=>{ toast('✓ copiado · '+Math.round(text.length/1024)+' KB'); if(onDone)onDone(); };
+    try{ if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(text).then(ok,()=>{ ta.focus(); ta.select(); toast('selecciona y copia a mano'); }); return; } }catch(_){}
+    ta.focus(); ta.select(); try{ if(document.execCommand('copy'))ok(); }catch(_){} };
+}
+function doBackupShare(){ doExport(); }
 // el recordatorio terco: si pasaron 7 días sin respaldo, se pide UNA vez (no un toast que se va)
 function nudgeBackup(why){
   if(daysSinceBackup()<7)return false;
   trkAsk({title:'respalda tus datos',detail:(why||'')+'llevas '+(daysSinceBackup()>=999?'sin respaldar nunca':daysSinceBackup()+' días sin respaldar')+' · se guarda en Archivos, fuera del navegador',ok:'guardar respaldo'},()=>doBackupShare());
   return true;
 }
-function doExport(){
-  if(NATIVE_APP){ nativeShareFile('gymtrk-backup-'+todayISO()+'.json',JSON.stringify(db,null,2)); return; }
-  const blob=new Blob([JSON.stringify(db,null,2)],{type:'application/json'});
-  const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='gymtrk-backup-'+todayISO()+'.json'; a.click(); URL.revokeObjectURL(url);
-}
+// v256: el respaldo sale SIEMPRE por saveFileSafe (nunca `<a download>` dentro de la app instalada). JSON compacto:
+// la mitad de peso que con sangría, y la importación lo lee igual.
+function doExport(){ saveFileSafe('gymtrk-backup-'+todayISO()+'.json',JSON.stringify(db),'application/json',()=>{ markBackup(); toast('✓ respaldo guardado'); }); }
 // Markdown journal export (legible, para Obsidian/archivo). El JSON sigue siendo el backup máquina; esto es su contraparte humana.
 // ponytail: etiquetas del usuario van CRUDAS (sin escTxt) — regla dura "nunca renombrar" + Markdown es texto plano; la única tabla es numérica (//HÁBITOS) → cero riesgo de `|` en texto de usuario.
 function buildExportMd(db){
@@ -8687,16 +8719,9 @@ function buildExportMd(db){
   }
   return L.join('\n');
 }
-function exportMarkdown(db){
-  if(NATIVE_APP){ nativeShareFile('gymtrk-export-'+todayISO()+'.md',buildExportMd(db)); return; }
-  const blob=new Blob([buildExportMd(db)],{type:'text/markdown;charset=utf-8'});
-  const url=URL.createObjectURL(blob); const a=document.createElement('a');
-  a.href=url; a.download='gymtrk-export-'+todayISO()+'.md';
-  document.body.appendChild(a); a.click(); document.body.removeChild(a);
-  setTimeout(()=>URL.revokeObjectURL(url),1000);
-}
+function exportMarkdown(db){ saveFileSafe('gymtrk-export-'+todayISO()+'.md',buildExportMd(db),'text/markdown'); }
 function doImport(){
-  const inp=document.createElement('input'); inp.type='file'; inp.accept='.json,application/json';
+  const inp=document.createElement('input'); inp.type='file'; inp.accept='.json,.txt,application/json,text/plain';   // v256: el respaldo puede salir como .txt
   inp.onchange=()=>{ const file=inp.files[0]; if(!file)return; const rd=new FileReader(); rd.onload=()=>{ try{ const d=JSON.parse(rd.result); if(!d.split)throw 0; const _go18=()=>{ db=migrate(d); save(); go('home'); toast('✓ respaldo importado'); }; return confirmReplace(d,_go18);}catch(e){ toast('⚠ archivo inválido','err'); } }; rd.readAsText(file); };
   inp.click();
 }
