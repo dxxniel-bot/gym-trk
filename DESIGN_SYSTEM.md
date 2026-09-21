@@ -485,6 +485,19 @@ comportamiento, §19). **Ninguna pantalla implementa su propia versión**: si fa
 **v256 · extensiones:** `toast(msg,type,{undo})` agrega `[deshacer]` (4.6 s, uno vivo a la vez; lo reversible ya no pregunta) ·
 `trkSelect` acepta `{v,t,sub}` con sublínea de 10 (meta, actividad) · TRKCal gana la variante `stripCalHTML(n,mark)` (racha en franja).
 
+**v257 · piezas nuevas y una regla que se revierte:**
+- **Compartir es VERTICAL y a altura natural** (una historia de Instagram). Se revierte el cuadro 1:1 de v256: recortaba
+  (comida perdía todos sus alimentos) y apretaba las series. Sin escalones, sin `+N`, sin bajar la letra; interlineado
+  1.5-1.6. Comida = la primera versión (1-jun) con el total de cada comida a 12/800; sesión = su referencia RECENT con
+  16 px entre ejercicios. `[guardar imagen]` = 1080 de ancho × la altura real.
+- **Compartir un ejercicio** (`openExShare`): botón SVG junto al ✕ (44×44 sin crecer la línea) → capa sólida con el MISMO
+  `renderExercise` de solo lectura, misma x y ancho; 📷 a 10 px en el margen izquierdo de la serie grabada (es contenido,
+  no ícono de UI); tocar fuera cierra. Vistas `igual · grande · la serie` desde `shExModel`. La marca vive en memoria.
+- **Más acciones** (`.dots3`): tres puntos de 3 px con 3 px de aire, `--o50`, en 44×44; nunca el texto `···`.
+- **TRKTabs:** la rayita nueva aparece en su lugar sin transición; solo viaja cuando cambia la pestaña elegida.
+- **Sueño:** fases como DURACIONES (`ph` en minutos, `+ detalles`), campos numéricos a 16; el detalle gana `FASES`:
+  columnas apiladas bajo la x de cada fecha de la gráfica + 4 filas con etiqueta y valor escritos.
+
 La navegación (§7.10) ya cumple el patrón de [Bottom menu](https://21st.dev/community/components/yadwinder/bottom-menu/default)
 (activo que se ensancha con su etiqueta, sobre glass): sin cambio.
 
@@ -704,7 +717,8 @@ settings + sheets (detalle de métrica, perfil de ejercicio, catálogo, músculo
 `impeccable` (audit/polish), `emil-design-eng` (movimiento), `ecc:accessibility`, `ecc:browser-qa`, Playwright/preview
 para QA visual. Solo filosofía: `minimalist-skill`, `taste-skill`, `redesign-skill`, `ecc:design-system`.
 **`ui-ux-pro-max` y `design:design-system`: consulta de datos, nunca generador** (v256, a pedido del dueño: su buscador
-sustentó la escala de 5 tamaños). **Evitar:** `frontend-design`, `soft-skill`, `gpt-tasteskill`, `stitch-skill`,
+sustentó la escala de 5 tamaños; en v257: interlineado 1.5-1.75 de lectura, ≥8 px entre toques, etiqueta visible por
+campo, barra 100 % con ≤5 categorías y etiqueta directa, sin emoji como ícono estructural). **Evitar:** `frontend-design`, `soft-skill`, `gpt-tasteskill`, `stitch-skill`,
 `imagegen-*`, **MCP `magic`/21st**.
 
 **21st.dev.** Es un registro de componentes **React + Tailwind** (shadcn/Radix/Motion), instalación con clave de API,

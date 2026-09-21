@@ -358,14 +358,17 @@
   .lc.on{color:var(--o35);} .lc.on .k{color:var(--good);} .lc:active{background:var(--o10);}
   .lseg{margin-bottom:var(--s2);} .lseg span i{margin-left:var(--s2); font-style:normal; font-size:var(--t-label); font-weight:400; color:var(--o50);}
   /* comidas plegables: el total (16/800) manda sobre sus alimentos (12/400) — queja 9 */
-  .mrec{--mcol:30px;} .mrec+.mrec{border-top:.5px solid var(--o10);}
+  .mrec{--mcol:32px;} .mrec+.mrec{border-top:.5px solid var(--o10);}
   .mhd{display:grid; grid-template-columns:minmax(0,1fr) auto var(--mcol); align-items:center; min-height:44px;}
   .mtg{display:block; min-width:0; height:44px; padding:0; border:0; background:none; color:inherit; font-family:inherit; text-align:left; line-height:44px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; cursor:pointer;}
   .mchev{display:inline-block; width:var(--s5); font-size:var(--t-section); color:var(--o30); transition:transform var(--dur-2) var(--ease-out);} .mrec.open .mchev{transform:rotate(90deg);}
   .mnm{font-size:var(--t-section); font-weight:800; color:var(--fg);}
   .mmeta{margin-left:var(--s3); font-size:var(--t-label); color:var(--o40);}
   .mkc{height:44px; padding:0 0 0 var(--s3); border:0; background:none; color:var(--fg); font-family:inherit; font-size:var(--t-section); font-weight:800; letter-spacing:var(--ls-num); text-align:right; cursor:pointer;}
-  .mhd .gmore{grid-column:3; width:var(--mcol); height:44px; margin:0; padding:0; text-align:right;}   /* la regla base de .gmore lo manda a la columna 4 (rejilla vieja de .ghead) */
+  .mhd .gmore{grid-column:3; width:44px; height:44px; margin:0 -12px 0 0; padding:0 12px 0 0; display:flex; align-items:center; justify-content:flex-end; color:var(--o50);}   /* la regla base de .gmore lo manda a la columna 4 (rejilla vieja de .ghead) */
+  /* v257 · "más acciones": tres puntos dibujados (3 px, 3 px de aire) — el texto ··· a 16 salía diminuto y pegado al
+     total. Toque de 44×44 que se mete 12 px en el margen de la página; 17 px entre el total y el primer punto. */
+  .dots3{display:block; width:3px; height:3px; margin-right:12px; border-radius:50%; background:currentColor; box-shadow:6px 0 0 currentColor, 12px 0 0 currentColor/*ds:exempt*/;}   /* la "sombra" dibuja los puntos 2 y 3 */
   .mlbody{padding-bottom:var(--s2);}
   .mit{display:flex; align-items:center; gap:var(--s3); width:100%; min-height:36px; padding:0 var(--mcol) 0 var(--s5); border:0; background:none; color:inherit; font-family:inherit; font-size:var(--t-data); text-align:left; cursor:pointer;}
   .mit .nm{flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--o70);} .mit .q{font-weight:700; color:var(--o70);} .mit .kc{flex:0 0 auto; color:var(--o50);}
@@ -562,14 +565,22 @@
   .seex{display:flex;align-items:baseline;justify-content:space-between;gap:var(--s3);padding:var(--s2) 0;} .seexn{flex:1;font-size:var(--t-data);color:var(--o60);cursor:pointer;} .seexn .seexm{font-size:var(--t-label);color:var(--o40);} .sedel{color:var(--o30);cursor:pointer;font-size:var(--t-section);padding:0 var(--s2);}
   .semv{display:inline-flex;gap:1px;flex:0 0 auto;} .semv span{color:var(--o30);cursor:pointer;font-size:var(--t-data);padding:var(--s1) var(--s2);line-height:1;} .semv span:active{color:var(--fg);}
   .seadd{font-size:var(--t-label);color:var(--o50);cursor:pointer;padding:var(--s3) 0;}
-  /* U6 · fases del sueño: hipnograma proporcional + filas de intervalo (la escala es opacidad, no color) */
+  /* U6 · fases del sueño: barra proporcional (la escala es opacidad, no color) */
   .hypno{display:flex; height:8px; gap:1px; margin:var(--s2) 0 var(--s3); border-radius:var(--r-mark); overflow:hidden;}
   .hypno i{display:block; min-width:1px;}
   .hy-deep{background:var(--fg);} .hy-core{background:var(--o50);} .hy-rem{background:var(--o30);} .hy-awake{background:var(--o12);} .hy-none{background:var(--track);}
-  .slst{display:flex; align-items:center; gap:var(--s2); margin:0 0 var(--s2) var(--s5);}
-  .slst input[type=time]{flex:0 0 auto; height:40px; font-size:var(--t-section); background:var(--card); color:var(--fg); border:1px solid var(--border); border-radius:var(--r-sm); padding:0 var(--s2);}
-  .slst .slsg{flex:1; min-width:0; height:40px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; padding:0 var(--s1); background:none; border:.5px solid var(--o20); border-radius:var(--r-sm); color:var(--fg); font-family:inherit; font-size:var(--t-data); cursor:pointer;}
-  .slst .slx{flex:0 0 auto;}
+  /* v257 · fases como DURACIONES: 4 filas h + min con etiqueta visible; campos a 16 (anti-zoom iOS), teclado numérico */
+  .sldet a{display:inline-block; padding:var(--s2) 0; font-size:var(--t-data); color:var(--o60); text-decoration:underline; text-underline-offset:3px; cursor:pointer;}
+  .slphs{margin:var(--s2) 0 var(--s4);}
+  .slph{display:grid; grid-template-columns:minmax(0,1fr) 56px 24px 56px 32px; align-items:center; gap:var(--s2); margin-bottom:6px;}
+  .slph label{font-size:var(--t-data); color:var(--o70);} .slph span{font-size:var(--t-label); color:var(--o50);}
+  .slph input{width:100%; min-width:0; height:44px; padding:0; background:var(--card); border:1px solid var(--border); border-radius:var(--r-ctl); color:var(--fg); font:inherit; font-size:var(--t-section); text-align:center;}
+  .slphs .slsum{margin-left:0;} .slsum .w{color:var(--warn);}
+  /* v257 · FASES en el detalle de sueño: una columna apilada por noche (profundo abajo) + filas con etiqueta directa */
+  .slfc{position:relative; height:56px; margin:var(--s2) 0 var(--s3); margin-right:40px/*ds:exempt*/;}   /* el mismo margen de eje que .chwrap */
+  .slfc i{position:absolute; top:0; bottom:0; min-width:2px; max-width:8px; transform:translateX(-50%); display:flex; flex-direction:column-reverse; border-radius:var(--r-sm); overflow:hidden;} .slfc b{display:block; width:100%;}
+  .slfr{display:flex; align-items:center; gap:var(--s3); min-height:28px; font-size:var(--t-data);} .slfr .k{flex:1; color:var(--o70);} .slfr .v{font-weight:700; color:var(--fg);}
+  .slsw{flex:0 0 auto; width:10px; height:10px; border-radius:2px;} .slsw.hy-awake{box-shadow:inset 0 0 0 .5px var(--o30);}
   .slsum{font-size:var(--t-label); color:var(--o40); margin:0 0 var(--s3) var(--s5);}
   .slblk{display:flex;gap:var(--s3);align-items:center;margin-bottom:6px;} .slblk input{height:44px;background:var(--card);border:1px solid var(--border);border-radius:var(--r-ctl);color:var(--fg);font:inherit;font-size:var(--t-section);padding:0 var(--s3);min-width:0;} .slblk input[type=time]{flex:0 0 auto;} .slblk .slsep{color:var(--o40);} .slblk .sllbl{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;font-size:var(--t-label);color:var(--o50);text-align:right;white-space:nowrap;} .slblk .slx{color:var(--o40);cursor:pointer;padding:0 var(--s2);flex:0 0 auto;}
   .sheetbtns{display:flex; gap:10px; margin-top:10px;} .sheetbtns .ok{flex:1; height:48px; background:var(--fill); color:var(--on-fill); font-weight:700; border:0; font-size:var(--t-data); cursor:pointer; border-radius:var(--r-ctl);} .sheetbtns .cancel{height:48px; padding:0 var(--s5); border:1px solid var(--border); background:none; color:var(--o60); font-size:var(--t-data); cursor:pointer; border-radius:var(--r-ctl);}
@@ -607,40 +618,58 @@
   .cur::after{content:"▌"; color:var(--o50); margin-left:var(--s2); animation:blink 1.15s step-end infinite/*ds:exempt*/;}
   @keyframes blink{50%{opacity:0}}
   @media (prefers-reduced-motion:reduce){ .cur::after{animation:none;} }
-  /* ===== shareable summary (mono, monochrome + green/white/red) ===== */
-  /* v256 · compartir en 1:1: el cuadro de 393×393 se captura tal cual para una historia; la tarjeta de 357×357 vive
-     dentro con margen negro de 18 y NUNCA crece (fitShareCard ajusta por escalones). Las acciones van fuera. */
-  .shsq{width:calc(100% + 2 * var(--sp-px)); max-width:393px/*ds:exempt*/; aspect-ratio:1; margin:0 calc(-1 * var(--sp-px)); padding:var(--sp-px); background:var(--bg); box-sizing:border-box;}
-  .sharecard{width:100%; height:100%; display:flex; flex-direction:column; overflow:hidden; color:var(--fg);}
-  .shtop{display:flex; align-items:baseline; gap:var(--s3); line-height:1.2;}
+  /* ===== compartir (mono, monocromo + verde/blanco/rojo) ===== */
+  /* v257 · VERTICAL a altura natural (una historia): sin cuadro 1:1, sin escalones, sin recortes. El cuadro de v256
+     recortaba (comida perdía sus alimentos) y apretaba las series. Interlineado 1.5-1.6 (ui-ux-pro-max: lectura). */
+  .sharecard{padding:var(--s4) 0 var(--s5); color:var(--fg);}
+  .shtop{display:flex; align-items:baseline; gap:var(--s3); line-height:1.2; margin-bottom:var(--s3);}
   .shtt{font-size:var(--t-section); font-weight:800; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
   .shtm{margin-left:auto; font-size:var(--t-label); color:var(--o40); white-space:nowrap;}
-  .shbody{min-height:0;}
-  .shfoot{margin-top:auto; padding-top:var(--s4); text-align:right; font-size:var(--t-data); font-weight:800; line-height:1.2; color:var(--o35);}
+  .shfoot{margin-top:var(--s6); text-align:center; font-size:var(--t-section); font-weight:800; line-height:1.2; color:var(--o35);}
   .shacts{margin-top:10px;}
-  .shmore{margin-top:var(--s2); font-size:var(--t-label); line-height:1.2; color:var(--o40);}
   .shimgv{display:block; width:100%; height:auto; border-radius:var(--r-ctl);}
-  /* sesión: el formato de la referencia del dueño — una fila por ejercicio: #músculo · nombre · series en gris
-     "160lbs×8@0 / 160lbs×6@0". Una línea chica arriba con duración · series · ejercicios; nada de héroes. */
-  .shsum{margin:var(--s2) 0 var(--s5); font-size:var(--t-label); color:var(--o50); line-height:1.2;}
-  .srw{display:grid; grid-template-columns:64px minmax(0,1fr); column-gap:var(--s3); align-items:baseline; font-size:var(--t-data); line-height:1.5;}
-  .srw + .srw{margin-top:var(--s2);}
+  /* sesión: la referencia del dueño (su vista RECENT) — #músculo tenue · nombre en negrita · series en gris, y una
+     línea en blanco entre ejercicios como en su foto */
+  .shst{margin-bottom:var(--s6);}
+  .shsn{font-size:var(--t-display); font-weight:800; line-height:1.2;}
+  .shsm{margin-top:var(--s2); font-size:var(--t-label); color:var(--o50);}
+  .shsum{margin-top:var(--s3); font-size:var(--t-data); color:var(--o70);}
+  .srw{display:grid; grid-template-columns:64px minmax(0,1fr); column-gap:var(--s3); align-items:baseline; font-size:var(--t-data); line-height:1.6;}
+  .srw + .srw{margin-top:var(--s5);}
   .srm{font-size:var(--t-label); color:var(--o40); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
-  .srn{font-weight:700; color:var(--fg);} .srs1{color:var(--o50); white-space:nowrap;} .srs1.dr{color:var(--o40);} .srsep{color:var(--o20);}
-  .sharecard[data-shlvl="1"] .srb{font-size:var(--t-label);}   /* escalón 1: la fila a 10, sigue dentro de la escala */
-  /* comida: el anillo con las kcal dentro y los gramos a la derecha; cada comida con su total a 16/800 */
-  .shbanner{display:flex; align-items:center; gap:var(--s5); margin:var(--s4) 0 var(--s5);}
-  .shr-ring .ring.lg{width:106px; height:106px;} .shr-ring .ring.lg .num{font-size:var(--t-display); font-weight:800; letter-spacing:var(--ls-num);} .shr-ring .ring.lg .of{font-size:var(--t-label); color:var(--o40); margin-top:var(--s2);}
+  .srn{font-weight:800; color:var(--fg);} .srs1{color:var(--o50); white-space:nowrap;} .srs1.dr{color:var(--o40);} .srsep{color:var(--o30);}
+  /* comida: la primera versión (1-jun) — rótulo centrado, anillo + P/C/F, y cada comida con TODOS sus alimentos */
+  .shcap{margin:var(--s2) 0 6px; text-align:center; font-size:var(--t-label); color:var(--o40); letter-spacing:var(--ls-caps); text-transform:uppercase;}
+  .shbanner{display:flex; align-items:center; gap:var(--s4); padding:var(--s5) var(--s2); border-bottom:1px solid var(--border);}
+  .shr-ring .ring.lg{width:104px; height:104px;} .shr-ring .ring.lg .num{font-size:var(--t-display); font-weight:800; letter-spacing:var(--ls-num);} .shr-ring .ring.lg .of{font-size:var(--t-label); color:var(--o40); margin-top:var(--s1); letter-spacing:var(--ls-title);}
   .shr-macros{flex:1; display:flex; justify-content:space-around;}
-  .shm{text-align:center; flex:1;} .shm-g{font-size:var(--t-display); font-weight:800; letter-spacing:var(--ls-num); line-height:1;} .shm-g span{font-size:var(--t-data); color:var(--o40); font-weight:400; margin-left:var(--s1);} .shm-l{font-size:var(--t-label); color:var(--o50); margin-top:var(--s3);} .shm-p{font-size:var(--t-label); color:var(--o35); margin-top:var(--s1);}
+  .shm{text-align:center; flex:1;} .shm-g{font-size:var(--t-display); font-weight:800; letter-spacing:var(--ls-num); line-height:1;} .shm-g span{font-size:var(--t-label); color:var(--o40); font-weight:400; margin-left:1px;} .shm-l{font-size:var(--t-label); color:var(--o50); margin-top:var(--s2); letter-spacing:var(--ls-ui);} .shm-p{font-size:var(--t-label); color:var(--o35); margin-top:var(--s1);}
   .shlog{margin-top:var(--s5);}
-  .sgrp + .sgrp{margin-top:var(--s3);}
-  .sgh{display:flex; align-items:baseline; gap:var(--s3); line-height:1.2;}
-  .sgh .sgn{font-size:var(--t-section); font-weight:800; color:var(--fg); min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
-  .sgh .sgt,.sgh .sgm{font-size:var(--t-label); color:var(--o40); white-space:nowrap;} .sgh .sgm{margin-left:auto;}
-  .sgh .sgk{font-size:var(--t-section); font-weight:800; color:var(--fg); white-space:nowrap;} .sgh .sgn + .sgk{margin-left:auto;} .sgh .sgk .un{font-size:var(--t-data); font-weight:400; color:var(--o40); margin-left:var(--s1);}
-  .sharecard .sgh + .mit{margin-top:var(--s1);} .sharecard .mit{min-height:0; line-height:1.2;}
-  .sharecard[data-shlvl="1"] .sgrp .mit{display:none;}   /* escalón 1 de comida: solo los totales de cada comida */
+  .sgrp{margin-bottom:var(--s5);} .sgrp:last-child{margin-bottom:0;}
+  .sgh{display:flex; justify-content:space-between; align-items:baseline; gap:var(--s3); margin-bottom:var(--s3); font-size:var(--t-label); color:var(--o50); letter-spacing:var(--ls-title);}
+  .sgh .sgn{font-weight:700; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .sgh .sgk{color:var(--o40); letter-spacing:0; white-space:nowrap;} .sgh .sgk b{font-size:var(--t-data); font-weight:800; color:var(--fg);}
+  .sitem{display:flex; justify-content:space-between; align-items:baseline; gap:var(--s3); padding:var(--s2) 0; font-size:var(--t-data); line-height:1.5;}
+  .sitem .sn{min-width:0; color:var(--o60); overflow:hidden; text-overflow:ellipsis;} .sitem .sn .q{color:var(--fg); font-weight:700; margin-right:2px;} .sitem .sb{font-size:var(--t-label); color:var(--o40);} .sitem .sk{color:var(--fg); white-space:nowrap;}
+  /* v257 · compartir UN ejercicio: botón SVG junto al ✕ (44×44 de toque sin crecer la línea) y una capa SÓLIDA — la
+     captura sale limpia — con el MISMO HTML de la sesión, de solo lectura. 📷 a la izquierda de la serie grabada, en el
+     margen de la página: el ejercicio no se mueve. */
+  .exshr{display:inline-flex; align-items:center; justify-content:center; align-self:center; flex:0 0 auto; width:44px; height:44px; margin:-12px -6px -12px auto; padding:0; border:0; background:none; color:var(--o50); cursor:pointer;} .exshr:active{color:var(--fg);}
+  .exsh{position:absolute; inset:0; z-index:var(--z-overlay); display:flex; flex-direction:column; overflow-y:auto; padding:calc(var(--s8) + env(safe-area-inset-top)) 0 calc(var(--s8) + var(--s7) + env(safe-area-inset-bottom)); background:var(--bg);}
+  .exshh{position:absolute; top:calc(var(--s5) + env(safe-area-inset-top)); left:var(--sp-px); right:var(--sp-px); text-align:center; font-size:var(--t-label); color:var(--o40);}
+  .exshc{flex:0 0 auto; margin-top:auto; margin-bottom:auto;}
+  .exsh .exshc input,.exsh .exshc select,.exsh .exshc textarea,.exsh .exshc button{pointer-events:none;}
+  .exsh .addrow,.exsh .exdel,.exsh .exshr,.exsh .dgrip,.exsh .note.add,.exsh .swipehint{display:none;}
+  .exsh [data-camsi]{cursor:pointer;}
+  .exsh .camon{position:relative;} .exsh .camon::before{content:'📷'; position:absolute; right:calc(100% + 2px); top:50%; transform:translateY(-50%); font-size:var(--t-label); line-height:1;}   /* a 10 cabe en el margen de 18 (a 12 medía 16.5 y se salía) */
+  .exshv{position:absolute; left:var(--sp-px); right:var(--sp-px); bottom:calc(var(--s5) + env(safe-area-inset-bottom)); margin:0;}
+  /* grande: una serie por línea a 16, se lee en una historia sin zoom */
+  .exbn{font-size:var(--t-display); font-weight:800; line-height:1.2;} .exbm{margin-top:var(--s2); font-size:var(--t-label); color:var(--o50);}
+  .exbr{display:grid; grid-template-columns:40px minmax(0,1fr) auto; column-gap:var(--s3); align-items:baseline; min-height:36px; font-size:var(--t-section); line-height:1.6;}
+  .exbn + .exbr,.exbm + .exbr{margin-top:var(--s5);}
+  .exbr .o{color:var(--o40);} .exbr .v{font-weight:800; color:var(--fg);} .exbr .rr{color:var(--o50); white-space:nowrap;} .exbr.dr .v{font-weight:400; color:var(--o70);}
+  /* la serie: solo la grabada, en héroe */
+  .exon{font-size:var(--t-section); font-weight:800;} .exov{margin-top:var(--s3); font-size:var(--t-hero); font-weight:800; line-height:1.1; letter-spacing:var(--ls-num);} .exov .sd{margin-right:var(--s3); font-size:var(--t-section); color:var(--o40);} .exom{margin-top:var(--s3); font-size:var(--t-data); color:var(--o60);}
   /* historial: el formato compacto de una sesión (se conserva) */
   .sxr{margin-bottom:10px;}
   .sxh{display:flex; justify-content:space-between; align-items:baseline; gap:var(--s3); font-size:var(--t-data);}
@@ -3315,6 +3344,27 @@ function _v256SelfCheck(){
   A('//ESTÍMULO no pinta verde', rs.every(r=>r.cls!=='good'));
   console.log('v256 self-check OK');
 }
+// v257 self-check — sueño por duraciones, compartir ejercicio sin tocar db, rayita de pestañas sin viaje
+function _v257SelfCheck(){
+  const A=(nm,c)=>{ if(!c) throw new Error('SELFCHECK v257: '+nm); };
+  // 1 · un bloque viejo con intervalos (U6) se lee por fase y su DORMIDO no cambia
+  const old={start:'23:00',end:'07:00',stages:[['23:00','23:30','awake'],['23:30','01:00','core'],['01:00','02:00','deep'],['02:00','03:30','rem']]};
+  const p=phaseMin(old); A('phaseMin de intervalos = stageMin por fase', p&&p.awake===30&&p.core===90&&p.deep===60&&p.rem===90);
+  A('blockAsleep de un bloque viejo: ventana − despierto, como antes', blockAsleep(old)===7.5);
+  // 2 · duraciones: con las tres fases de sueño, DORMIDO es su suma; con una sola, ventana − despierto (nunca a medias)
+  A('ph completo: dormido = REM + core + profundo', blockAsleep({start:'23:40',end:'07:10',ph:{awake:25,rem:95,core:230,deep:70}})===6.6);
+  A('ph parcial: dormido = ventana − despierto', blockAsleep({start:'23:00',end:'07:00',ph:{awake:30,deep:60}})===7.5);
+  A('ph manda sobre stages', phaseMin(Object.assign({},old,{ph:{rem:10}})).rem===10);
+  // 3 · marcar 📷 nunca toca db
+  const h0=JSON.stringify(db), ex={name:'x',sets:[{w:60,r:10,done:true}]}; exCamSet(ex,0); A('📷 se guarda en memoria', exCamGet(ex)===0); exCamSet(ex,0);
+  A('📷 misma serie = quitar', exCamGet(ex)===null); A('📷 no cambia db', JSON.stringify(db)===h0);
+  A('shExModel: cada token sabe su serie', (shExModel({name:'y',sets:[{w:50,r:8},{w:50,r:6,isDrop:true}]})||{toks:[]}).toks.map(t=>t.si).join()==='0,1');
+  // 4 · una rayita de pestaña recién creada NO viaja desde x=0 (el "PM parpadea")
+  const box=document.createElement('div'); box.style.cssText='position:absolute;left:-9999px;width:300px'; box.innerHTML='<div class="mdtabs" data-tk="_sc257"><span>a</span><span class="on">b</span></div>';
+  document.body.appendChild(box); try{ slideTabs(box,true); const ind=box.querySelector('.tabind');
+    A('rayita nueva sin transición', !!ind&&(!ind.getAnimations||ind.getAnimations().length===0)); } finally { box.remove(); delete _tabPos._sc257; }
+  console.log('v257 self-check OK');
+}
 function _uiSelfCheck(){
   const A=(nm,c)=>{ if(!c) throw new Error('SELFCHECK ui: '+nm); };
   const box=()=>document.getElementById('toasts'); const before=box()?[...box().children]:[]; let pending=false;
@@ -3625,7 +3675,7 @@ function renderExercise(exi,ex,allowF,canReorder){
   // v256 (B3): el asa vive en SU columna y las dos líneas comparten borde — [bi] sobre [cable]. Antes el asa y el
   // corchete empujaban solo la primera línea (nombre en x≈72, marca en x≈54). [uni]/[bi] se queda AL FRENTE del
   // nombre: es pedido explícito del dueño (21-ago), no se mueve.
-  const head=`<div class="exhd${gripE?' hasgrip':''}">${gripE}<div class="exhdc"><div class="exhead">${exLatTagHead(ex)}<span class="n u-tap" data-act="editexname" data-exi="${exi}">${escTxt(ex.name)}</span>${prBadge}${noBaseline}<span class="exdel u-o35 u-tap u-data u-py2 u-px6 u-mlauto u-asc" data-act="delex" data-exi="${exi}" title="quitar de la sesión">✕</span></div>`
+  const head=`<div class="exhd${gripE?' hasgrip':''}">${gripE}<div class="exhdc"><div class="exhead">${exLatTagHead(ex)}<span class="n u-tap" data-act="editexname" data-exi="${exi}">${escTxt(ex.name)}</span>${prBadge}${noBaseline}<button type="button" class="exshr" data-act="exshare" data-exi="${exi}" aria-label="compartir ${escTxt(ex.name||'ejercicio')}" title="compartir · marca con 📷 la serie que grabaste">${EXSH_SVG}</button><span class="exdel u-o35 u-tap u-data u-py2 u-px6 u-asc" data-act="delex" data-exi="${exi}" title="quitar de la sesión">✕</span></div>`
    +`<div class="exsub">${variantChips(ex,{act:'editmach',exi})}${mhtml}${noteHTML}</div></div></div>`;
   // ---- cardio branch: field grid per subtype, no drop sets, no w/r/rir ----
   if(isCardioEx){
@@ -3966,7 +4016,7 @@ function foodSecHTML(iso,items,dayKcal){
     const rows=op?`<div class="mlbody">${list.map((m,i)=>mealItemRow(m,kp[i])).join('')}<button type="button" class="mit add" data-act="addtomeal" data-tag="${et}"><span class="nm">+ food</span></button></div>`:'';
     return `<div class="mrec${op?' open':''}" data-tag="${et}" data-rk="ml:${et}"><div class="mhd"><button type="button" class="mtg" data-act="mealfold" data-tag="${et}" aria-expanded="${op}"><span class="mchev" aria-hidden="true">›</span><span class="mnm">${et}</span><span class="mmeta">${escTxt(meta)}</span></button>`
       +`<button type="button" class="mkc" data-act="mealsummary" data-tag="${et}" aria-label="desglose de ${et} · ${kc} kcal"><span data-nk="mk:${et}" data-nv="${kc}">${kc.toLocaleString()}</span></button>`
-      +`<button type="button" class="gmore" data-act="mealmenu" data-tag="${et}" aria-label="acciones de ${et}">···</button></div>${rows}</div>`; }).join('');
+      +`<button type="button" class="gmore" data-act="mealmenu" data-tag="${et}" aria-label="acciones de ${et}"><span class="dots3" aria-hidden="true"></span></button></div>${rows}</div>`; }).join('');
   const n=tags.length;
   return logSecHTML({k:'food',title:'MEALS',v:`<b>${n}</b> meal${n===1?'':'s'}`,act:`<button type="button" class="lact" data-act="newmeal">+ meal</button>`,body:meals||`<div class="empty">no meals logged</div>`,open:state._lfold.food}); }
 // un toque: pendiente → tomado (con su hora real, que nunca se pisa) · tomado/tarde → sin marcar
@@ -4050,49 +4100,110 @@ function mealFoodRows(items){ const kp=kcalParts(items);
   return items.map((m,i)=>{ const nm=(m.name||'').replace(/ ×[\d.]+$/,'');
     return `<div class="mit st"><span class="nm"><b class="q">${itemQtyLabel(m)}</b> ${escTxt(nm)}</span><span class="kc">${kp[i]}</span></div>`; }).join(''); }
 // ---- v256 · compartir en 1:1 (quejas 7, 8 y 11) ------------------------------------------------------------------
-// Un cuadro de 393×393 (margen negro de 18) con la tarjeta de 357×357 dentro: se captura tal cual para una historia de
-// Instagram. Las acciones (copiar texto, guardar imagen) van FUERA del cuadro. La tarjeta y el texto copiable salen del
-// MISMO modelo, así nunca dicen cosas distintas. Si algo no cabe, se ajusta por escalones medidos (fitShareCard):
-// nunca scroll, nunca más alto que ancho, nunca un tamaño fuera de la escala.
-function summaryShell(title,meta,head,body){
+// v257 · VERTICAL, a altura natural: lo que se ve es una historia de Instagram (el dueño toma captura). El cuadro 1:1
+// de v256 recortaba — comida perdía TODOS sus alimentos — y apretaba las series: "amontonado". Aquí nada se recorta,
+// nada baja de tamaño y nada hace scroll dentro. Las acciones van FUERA de la tarjeta. La tarjeta y el texto copiable
+// salen del MISMO modelo, así nunca dicen cosas distintas.
+function summaryShell(top,body){
   return statusBar(true)
-   +`<div class="shsq"><div class="sharecard" data-shlvl="0"><div class="shtop"><span class="shtt">${title}</span><span class="shtm">${meta||''}</span></div>${head||''}<div class="shbody">${body||''}</div><div class="shfoot">gym<span class="u-o40">//</span>TRK</div></div></div>`
+   +`<div class="sharecard">${top||''}<div class="shbody">${body||''}</div><div class="shfoot">gym<span class="u-o40">//</span>TRK</div></div>`
    +`<div class="secondary shacts"><button class="b" data-act="shcopy">copiar texto</button><button class="b" data-act="shimg">guardar imagen</button></div>`; }
+function shTopRow(title,meta){ return `<div class="shtop"><span class="shtt">${title}</span><span class="shtm">${meta||''}</span></div>`; }
 // ---- sesión: duración · series · ejercicios arriba (sin tonelaje ni tensión, pedido del dueño); cada serie numerada
 // con la unidad pegada al peso y su RIR escrito completo.
 function shSessModel(s){
   const hh=Math.floor((s.durSec||0)/3600), mm=Math.floor(((s.durSec||0)%3600)/60);
-  const ok=x=>!!(x&&(x.w||x.r)&&!x._pf);
   const exs=[]; let series=0;
-  (s.exercises||[]).forEach(e=>{ if(isCardio(e))return; const all=e.sets||[]; if(!all.some(ok))return;
-    const uni=!!e.unilateral, labels=setLabels(all,uni?2:1); let maxInt=0, drops=0; const toks=[];
-    for(let i=0;i<all.length;i+=uni?2:1){
-      const grp=uni?[all[i],all[i+1]].filter(ok).sort((a,b)=>((a.side==='L')-(b.side==='L'))):[all[i]].filter(ok);   // R antes que L, por x.side
-      grp.forEach((x,k)=>{ const lb=String(labels[i]); const n=parseFloat(lb);
-        if(!x.isDrop&&Number.isInteger(n)&&n>maxInt)maxInt=n; if(x.isDrop)drops++;
-        const r=String(x.rir==null?'':x.rir).trim().toUpperCase();
-        toks.push({ord:lb+(uni?(x.side||(k?'L':'R')):''), drop:!!x.isDrop, w:numTxt(effW(x)), unit:x.unit||e.unit||'', r:(x.r!=null&&x.r!=='')?String(x.r):'-', rir:r}); }); }
-    series+=maxInt; exs.push({name:e.name||'', muscle:e.muscle||'', series:maxInt, drops, uni, toks}); });
+  (s.exercises||[]).forEach(e=>{ const x=shExModel(e); if(!x)return; series+=x.series; exs.push(x); });
   return {title:s.dayName||'sesión', meta:[fmtShort(s.date||''),s.gym||''].filter(Boolean).join(' · '),
     dur:s.durSec?(hh?{h:hh,m:pad(mm)}:{min:mm}):null, series, exn:exs.length, exs}; }
+// v257 · el modelo de UN ejercicio: lo usan el share de sesión y compartir ejercicio con 📷. Cada token sabe su serie
+// (`si`, el índice en e.sets; en unilateral el del par) para que la marca apunte a la misma fila en las tres vistas.
+function shExModel(e){ const ok=x=>!!(x&&(x.w||x.r)&&!x._pf);
+  if(!e||isCardio(e))return null; const all=e.sets||[]; if(!all.some(ok))return null;
+  const uni=!!e.unilateral, labels=setLabels(all,uni?2:1); let maxInt=0, drops=0; const toks=[];
+  for(let i=0;i<all.length;i+=uni?2:1){
+    const grp=uni?[all[i],all[i+1]].filter(ok).sort((a,b)=>((a.side==='L')-(b.side==='L'))):[all[i]].filter(ok);   // R antes que L, por x.side
+    grp.forEach((x,k)=>{ const lb=String(labels[i]); const n=parseFloat(lb);
+      if(!x.isDrop&&Number.isInteger(n)&&n>maxInt)maxInt=n; if(x.isDrop)drops++;
+      const r=String(x.rir==null?'':x.rir).trim().toUpperCase();
+      toks.push({ord:lb+(uni?(x.side||(k?'L':'R')):''), drop:!!x.isDrop, w:numTxt(effW(x)), unit:x.unit||e.unit||'', r:(x.r!=null&&x.r!=='')?String(x.r):'-', rir:r, si:i}); }); }
+  return {name:e.name||'', muscle:e.muscle||'', series:maxInt, drops, uni, toks}; }
 function shTokTxt(t){ const side=/[RL]$/.test(t.ord)?t.ord.slice(-1)+' ':''; return side+(t.drop?'↓':'')+t.w+t.unit+'×'+t.r+(t.rir?'@'+t.rir:''); }
 function shTokHTML(t){ return `<span class="srs1${t.drop?' dr':''}">${escTxt(shTokTxt(t))}</span>`; }
+// ---- v257 · compartir UN ejercicio (historia de Instagram) ------------------------------------------------------------
+// El dueño sube el ejercicio completo a su historia y marcaba a mano con 📷 cuál serie es la del video. [compartir] en la
+// cabecera del ejercicio abre una capa con EL MISMO HTML de la sesión (renderExercise, mismo ancho y misma x: no es un
+// rediseño), de solo lectura. Tocar una serie le pone 📷 a su izquierda, en el margen de la página (el ejercicio no se
+// mueve); tocar fuera cierra. 📷 es CONTENIDO (lo que él escribe en la historia), no un ícono de la interfaz: el botón es
+// SVG. La marca vive en memoria mientras dura la sesión y nunca toca db. Dos propuestas más: "grande" (una serie por
+// línea a 16, se lee sin zoom) y "la serie" (solo la grabada, en héroe); salen de shExModel, el modelo del share de sesión.
+const EXSH_V=[['igual','igual'],['grande','grande'],['serie','la serie']];
+const EXSH_SVG='<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M8 10V1.8M5.2 4.4 8 1.6l2.8 2.8M5.6 6.8H4.2v7.4h7.6V6.8h-1.4"/></svg>';
+function exCamGet(ex){ const c=state._cam||{}, v=c[rk(ex)]; return v==null?null:v; }
+function exCamSet(ex,si){ state._cam=state._cam||{}; const k=rk(ex); if(si==null||state._cam[k]===si)delete state._cam[k]; else state._cam[k]=si; }
+function exShRir(t){ return t.rir?(t.rir==='F'?'F':'RIR '+t.rir):''; }
+function openExShare(exi,v){ const w=db.activeWork||state.work, ex=w&&w.exercises&&w.exercises[exi]; if(!ex)return;
+  closeExShare();
+  const app=document.getElementById('app'), ar=app.getBoundingClientRect(), live=document.querySelector('#view .ex[data-exi="'+exi+'"]');
+  const P=parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--sp-px'))||18, lr=live?live.getBoundingClientRect():null;
+  state._exsh={exi, v:v||'igual', left:lr?lr.left-ar.left:P, width:lr?lr.width:ar.width-2*P};
+  const L=document.createElement('div'); L.className='exsh'; L.id='exsh'; L.setAttribute('role','dialog'); L.setAttribute('aria-label','compartir '+(ex.name||'ejercicio'));
+  app.appendChild(L); paintExShare(false);
+  L.addEventListener('click',ev=>{ const t=ev.target;
+    const tab=t.closest('.exshv span[data-v]'); if(tab){ if(state._exsh){ state._exsh.v=tab.dataset.v; paintExShare(true); } return; }
+    if(!t.closest('.exshc')){ closeExShare(); return; }
+    const row=t.closest('[data-camsi]'); if(!row)return;
+    const w2=db.activeWork||state.work, ex2=w2&&w2.exercises&&w2.exercises[state._exsh.exi]; if(!ex2)return;
+    exCamSet(ex2,+row.dataset.camsi); paintExShare(false); }); }
+function closeExShare(){ const L=document.getElementById('exsh'); if(L)L.remove(); state._exsh=null; }
+function paintExShare(swap){ const L=document.getElementById('exsh'), S=state._exsh; if(!L||!S)return;
+  const w=db.activeWork||state.work, ex=w&&w.exercises&&w.exercises[S.exi]; if(!ex){ closeExShare(); return; }
+  const cam=exCamGet(ex), X=shExModel(ex); let inner='';
+  if(S.v==='igual'){ const day=(db.split&&db.split.days||[]).find(d=>d.id===w.dayId)||curDay();
+    inner=`<div class="wfocus"><div class="mbody">${renderExercise(S.exi,ex,day&&day.allowFailure,false)}</div></div>`; }
+  else if(!X) inner=`<div class="empty">aún sin series con peso y reps</div>`;
+  else if(S.v==='grande'){
+    inner=`<div class="exbig"><div class="exbn">${escTxt(X.name)}</div>${X.muscle?`<div class="exbm">#${escTxt(X.muscle)}</div>`:''}`
+      +X.toks.map(t=>`<div class="exbr${t.drop?' dr':''}" data-camsi="${t.si}"><span class="o">${escTxt(t.drop?'↓':t.ord)}</span><span class="v">${escTxt(t.w+t.unit)} × ${escTxt(t.r)}</span><span class="rr">${escTxt(exShRir(t))}</span></div>`).join('')+`</div>`; }
+  else { const t=(cam!=null&&X.toks.find(x=>x.si===cam))||X.toks[X.toks.length-1], sel=X.toks.filter(x=>x.si===t.si), on=cam!=null&&t.si===cam;
+    const n=String(t.ord).replace(/[RL]$/,'');
+    inner=`<div class="exone"><div class="exon">${escTxt(X.name)}</div>`
+      +sel.map(x=>`<div class="exov${on?' camon':''}">${X.uni?`<span class="sd">${escTxt(String(x.ord).slice(-1))}</span>`:''}${escTxt(x.w+x.unit)} × ${escTxt(x.r)}</div>`).join('')
+      +`<div class="exom">${escTxt([exShRir(t), t.drop?'drop set':'serie '+n+' de '+X.series].filter(Boolean).join(' · '))}</div></div>`; }
+  const tabs=`<div class="mdtabs exshv" data-tk="exsh" role="tablist">${EXSH_V.map(([k,l])=>`<span class="${k===S.v?'on':''}" role="tab" aria-selected="${k===S.v}" data-v="${k}">${l}</span>`).join('')}</div>`;
+  const hint=S.v==='serie'?(X&&cam==null?'marca la serie en igual o grande · toca fuera para cerrar':'toca fuera para cerrar'):(cam==null?'toca la serie que grabaste · toca fuera para cerrar':'toca otra serie para mover 📷 · toca fuera para cerrar');
+  L.innerHTML=`<div class="exshh">${escTxt(hint)}</div><div class="exshc" style="margin-left:${S.left}px; width:${S.width}px">${inner}</div>${tabs}`;
+  const C=L.querySelector('.exshc');
+  if(S.v==='igual'){
+    // solo lectura: nada de acciones, deslizar para borrar, arrastre ni animaciones de la sesión viva
+    C.querySelectorAll('*').forEach(el=>{ [...el.attributes].forEach(a=>{ if(/^data-(act|swipe|drag|rk|gloss|nk|bk)/.test(a.name))el.removeAttribute(a.name); }); });
+    C.querySelectorAll('input,select,textarea').forEach(el=>{ el.readOnly=true; el.tabIndex=-1; el.setAttribute('aria-readonly','true'); });
+    const exEl=C.querySelector('.ex'); if(exEl)exEl.classList.add('current');
+    C.querySelectorAll('.pair[data-si],.srow[data-si]').forEach(r=>{ if(r.parentElement&&r.parentElement.closest('.pair[data-si]'))return; r.dataset.camsi=r.dataset.si; }); }
+  if(cam!=null)C.querySelectorAll('[data-camsi="'+cam+'"]').forEach(r=>r.classList.add('camon'));
+  slideTabs(L,!!swap); }
 function renderShareSession(id){
   const s=(db.sessions||[]).find(x=>x.id===id)||(db.sessions||[]).filter(x=>x.type!=='rest').slice(-1)[0];
-  if(!s)return summaryShell('sesión','','',`<div class="empty">sin sesión para compartir</div>`);
+  if(!s)return summaryShell(shTopRow('sesión',''),`<div class="empty">sin sesión para compartir</div>`);
   const M=shSessModel(s), pl=(n,w)=>n+' '+w+(n===1?'':'s');
   const dur=M.dur?(M.dur.h!=null?M.dur.h+'h'+M.dur.m:M.dur.min+' min'):'';
-  const head=`<div class="shsum">${[dur,pl(M.series,'serie'),pl(M.exn,'ejercicio')].filter(Boolean).join(' · ')}</div>`;
+  // cabecera como en su foto: el día grande, fecha · gym, y una línea con duración · series · ejercicios
+  const top=`<div class="shst"><div class="shsn">${escTxt(M.title)}</div>${M.meta?`<div class="shsm">${escTxt(M.meta)}</div>`:''}<div class="shsum">${[dur,pl(M.series,'serie'),pl(M.exn,'ejercicio')].filter(Boolean).join(' · ')}</div></div>`;
   let prevM=null;
   const body=M.exs.map(x=>{ const m=x.muscle&&x.muscle!==prevM?'#'+x.muscle:''; prevM=x.muscle;
-    return `<div class="srw" data-n="${x.series}"><span class="srm">${escTxt(m)}</span><span class="srb"><span class="srn">${escTxt(x.name)}</span> ${x.toks.map(shTokHTML).join('<span class="srsep">&nbsp;/</span> ')}</span></div>`; }).join('');
-  return summaryShell(escTxt(M.title),escTxt(M.meta),head,body||'<div class="empty">sin series registradas</div>'); }
+    return `<div class="srw"><span class="srm">${escTxt(m)}</span><span class="srb"><span class="srn">${escTxt(x.name)}</span> ${x.toks.map(shTokHTML).join('<span class="srsep">&nbsp;/</span> ')}</span></div>`; }).join('');
+  return summaryShell(top,body||'<div class="empty">sin series registradas</div>'); }
 function shFoodModel(iso){
   const {items,t}=macroTotals(); const food=items.filter(m=>!isWaterItem(m));
   const P=dayMealParts(iso,food,t.kcal);
   return {t, iso, meals:P.tags.map((tag,i)=>{ const list=P.byTag[tag], mt={protein:0,carbs:0,fat:0}; list.forEach(m=>{ for(const k in mt)mt[k]+=+m[k]||0; });
       return {tag, time:mealTime(iso,tag), kcal:P.meal[i], P:Math.round(mt.protein), C:Math.round(mt.carbs), F:Math.round(mt.fat), items:list, parts:kcalParts(list,P.meal[i])}; }),
     rest:P.rest}; }
+// v257 · comida = la PRIMERA versión (1-jun, 457fe79), a pedido del dueño ("estaba mejor la primer versión"): rótulo
+// centrado, anillo + P/C/F, y cada comida con TODOS sus alimentos (cantidad corta · nombre · marca · kcal). Único cambio:
+// el total de la comida a 12/800 — manda sobre sus alimentos (queja 9). Sin las tres cifras ni "lo que más pesó".
+function shQty(m){ const us={serving:'porc',container:'env',piece:'pza','100':'100',g:'g',ml:'ml'}; return numTxt(m.qty||1)+(us[m._unit]?' '+us[m._unit]:'×'); }
 function renderShare(){
   if(state.shareType==='session')return renderShareSession(state.shareId);
   if(state.shareType==='weight')return renderShareWeight();
@@ -4102,11 +4213,11 @@ function renderShare(){
   const mm=(lbl,grams,p)=>`<div class="shm"><div class="shm-g">${Math.round(grams)}<span>g</span></div><div class="shm-l">${lbl}</div><div class="shm-p">${p}%</div></div>`;
   const banner=`<div class="shbanner"><div class="shr-ring ${kStat}">${ringHTML(kpct,'<div class="num">'+Math.round(t.kcal).toLocaleString()+'</div><div class="of">kcal</div>','lg')}</div>`
     +`<div class="shr-macros">${mm('protein',t.protein,pc(pk))}${mm('carbs',t.carbs,pc(ck))}${mm('fat',t.fat,pc(fk))}</div></div>`;
-  const grp=(name,time,macros,kcal,rows)=>`<div class="sgrp" data-n="1"><div class="sgh"><span class="sgn">${escTxt(name)}</span>${time?`<span class="sgt">${escTxt(time)}</span>`:''}${macros?`<span class="sgm">${macros}</span>`:''}<span class="sgk">${kcal.toLocaleString()}<span class="un">kcal</span></span></div>${rows||''}</div>`;
-  let body=M.meals.map(m=>grp(m.tag,m.time,m.P+'P '+m.C+'C '+m.F+'F',m.kcal,m.items.map((it,i)=>{ const nm=(it.name||'').replace(/ ×[\d.]+$/,'');
-    return `<div class="mit st"><span class="nm"><b class="q">${itemQtyLabel(it)}</b> ${escTxt(nm)}</span><span class="kc">${m.parts[i]}</span></div>`; }).join(''))).join('');
-  if(M.rest>0)body+=grp('supps','','',M.rest,'');
-  return summaryShell('comida',escTxt(fmtShort(curDate())),banner,body||`<div class="empty">sin alimentos este día</div>`); }
+  const grp=(name,macros,kcal,rows)=>`<div class="sgrp"><div class="sgh"><span class="sgn">// ${escTxt(name)}</span><span class="sgk">${macros?macros+' · ':''}<b>${kcal.toLocaleString()}</b></span></div>${rows||''}</div>`;
+  let log=M.meals.map(m=>grp(m.tag,m.P+'P '+m.C+'C '+m.F+'F',m.kcal,m.items.map((it,i)=>{ const nm=(it.name||'').replace(/ ×[\d.]+$/,''), br=(it._food&&it._food.brand)||'';
+    return `<div class="sitem"><span class="sn"><b class="q">${escTxt(shQty(it))}</b> ${escTxt(nm)}${br?` <span class="sb">${escTxt(br)}</span>`:''}</span><span class="sk">${m.parts[i]}</span></div>`; }).join(''))).join('');
+  if(M.rest>0)log+=grp('supps','',M.rest,'');
+  return summaryShell(`<div class="shcap">// resumen · ${escTxt(fmtShort(curDate()))}</div>`, banner+(log?`<div class="shlog">${log}</div>`:`<div class="empty">sin alimentos este día</div>`)); }
 // reparto del día: las comidas (y lo que no es comida, p. ej. suplementos con kcal) suman EXACTO lo que dice el anillo
 function dayMealParts(iso,food,dayKcal){
   const byTag={}; food.forEach(m=>{(byTag[m.tag]=byTag[m.tag]||[]).push(m);});
@@ -4117,19 +4228,6 @@ function dayMealParts(iso,food,dayKcal){
   const restK=Math.max(0,(+dayKcal||mealsK)-mealsK);
   const parts=kcalParts(sums.map(k=>({kcal:k})).concat([{kcal:restK}]),Math.round(+dayKcal||mealsK));
   return {tags, byTag, meal:parts.slice(0,tags.length), rest:parts[tags.length]||0}; }
-// escalones medidos después de pintar: 0 tal cual · 1 series a 10 (sigue en la escala) / comida sin alimentos ·
-// 2 recorte de bloques del final con aviso "+N". La tarjeta nunca crece ni hace scroll.
-function fitShareCard(root){ const card=(root||document).querySelector('.sharecard'); if(!card)return;
-  const over=()=>card.scrollHeight>card.clientHeight+0.5;
-  card.querySelectorAll('.shmore').forEach(x=>x.remove()); card.querySelectorAll('.shbody>[data-n]').forEach(x=>{ x.hidden=false; });
-  card.dataset.shlvl='0'; if(!over())return;
-  card.dataset.shlvl='1'; if(!over())return;
-  card.dataset.shlvl='2'; const body=card.querySelector('.shbody'); if(!body)return;
-  const blocks=[...body.querySelectorAll(':scope>[data-n]')], more=document.createElement('div'); more.className='shmore'; body.appendChild(more);
-  let cut=0, cutN=0; const isEx=!!body.querySelector('.srw');
-  for(let i=blocks.length-1;i>0&&over();i--){ blocks[i].hidden=true; cut++; cutN+=+(blocks[i].dataset.n||0);
-    more.textContent='+'+cut+(isEx?' ejercicio'+(cut===1?'':'s')+' · '+cutN+' serie'+(cutN===1?'':'s'):' comida'+(cut===1?'':'s'))+' · completo en copiar texto'; }
-  if(!cut)more.remove(); }
 // texto copiable = el MISMO modelo (con RIR y F; sin tonelaje, T ni "restan")
 function shareTextFor(){
   if(state.shareType==='session'){
@@ -4143,16 +4241,17 @@ function shareTextFor(){
     m.items.forEach((it,i)=>L.push('  '+itemQtyLabel(it)+' '+(it.name||'').replace(/ ×[\d.]+$/,'')+' · '+m.parts[i])); });
   if(M.rest>0)L.push('supps · '+M.rest+' kcal');
   return ['comida · '+fmtShort(curDate()), Math.round(t.kcal).toLocaleString()+' kcal · '+Math.round(t.protein)+'P '+Math.round(t.carbs)+'C '+Math.round(t.fat)+'F', '', ...L, '', 'gym//TRK'].join('\n'); }
-// [guardar imagen]: el cuadro de 393 dibujado en un canvas de 1080×1080 desde el DOM (sin librerías, sin tocar la CSP).
+// [guardar imagen]: la tarjeta (con el margen negro de la página) dibujada en un canvas de 1080 de ancho y SU altura real, desde el DOM (sin librerías, sin tocar la CSP).
 // Monoespaciada = avance exacto, así lo que se ve en pantalla es lo que sale. Se entrega por la hoja de compartir (PNG
 // sí está permitido); si no se puede, una hoja con la imagen para mantenerla presionada. Nunca `<a download>`.
 async function shareImage(){
-  const sq=document.querySelector('.shsq'), card=sq&&sq.querySelector('.sharecard'); if(!card)return;
+  const card=document.querySelector('.sharecard'); if(!card)return;
   const job=toastTask('generando imagen');
   try{ if(document.fonts&&document.fonts.ready)await document.fonts.ready;
-    const S=1080, box=sq.getBoundingClientRect(), K=S/box.width;
-    const c=document.createElement('canvas'); c.width=S; c.height=S; const x=c.getContext('2d');
-    x.fillStyle=getComputedStyle(document.body).backgroundColor||'#000'; x.fillRect(0,0,S,S);
+    const P=parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--sp-px'))||18, r0=card.getBoundingClientRect();
+    const box={left:r0.left-P, top:r0.top-P, width:r0.width+2*P, height:r0.height+2*P}, S=1080, K=S/box.width, SH=Math.round(box.height*K);
+    const c=document.createElement('canvas'); c.width=S; c.height=SH; const x=c.getContext('2d');
+    x.fillStyle=getComputedStyle(document.body).backgroundColor||'#000'; x.fillRect(0,0,S,SH);
     // anillo (si lo hay): pista y arco con el color computado
     card.querySelectorAll('.ring').forEach(rg=>{ const svg=rg.querySelector('svg'); if(!svg)return; const r=svg.getBoundingClientRect(); const cx=(r.left+r.width/2-box.left)*K, cy=(r.top+r.height/2-box.top)*K, rad=15.7/36*r.width*K;
       const tr=svg.querySelector('.ring-track'), fl=svg.querySelector('.ring-fill'); x.lineWidth=1.4/36*r.width*K; x.lineCap='round';
@@ -4201,13 +4300,13 @@ function shareExLines(e){
 function sessExBlockHTML(e,r,t,extra){ return `<div class="sxr"><div class="sxh"><span class="sxn">${latTxt(e)}${escTxt(e.name)}</span><span class="sxk">${escTxt(e.muscle||'')}${r.unit?' · '+escTxt(r.unit):''}${t||''}${extra||''}</span></div><div class="sxs">${r.lines.join(' · ')}</div></div>`; }
 function renderShareWeight(){
   const ks=Object.keys(db.bodyweight||{}).sort(); const vals=ks.map(k=>db.bodyweight[k]);
-  if(vals.length<2)return summaryShell('peso','','',`<div class="empty">registra tu peso varios días<br/><span class="ehint">para compartir tu progreso</span></div>`);
+  if(vals.length<2)return summaryShell(shTopRow('peso',''),`<div class="empty">registra tu peso varios días<br/><span class="ehint">para compartir tu progreso</span></div>`);
   const cur=vals[vals.length-1], ch=Math.round((cur-vals[0])*10)/10; const goal=(db.profile&&db.profile.goal)||'maintain';
   let col='var(--o50)'; if(goal==='cut')col=ch<0?'var(--good)':ch>0?'var(--bad)':'var(--o50)'; else if(goal==='bulk')col=ch>0?'var(--good)':ch<0?'var(--bad)':'var(--o50)'; else col=Math.abs(ch)<=1?'var(--good)':'var(--warn)';
   const banner=`<div class="shbanner shwt">`
     +`<div class="shstat"><div class="shstat-n">${cur}<span class="u-data u-o40 u-w4"> kg</span></div><div class="shstat-l">actual</div></div>`
     +`<div class="shstat"><div class="shstat-n" style="color:${col}">${ch>=0?'+':''}${ch}</div><div class="shstat-l">kg · ${vals.length} reg.</div></div></div>`;
-  return summaryShell('peso corporal',escTxt(fmtShort(ks[ks.length-1])),banner,`<div class="shlog">${lineChart(vals.slice(-16))}</div>`);
+  return summaryShell(shTopRow('peso corporal',escTxt(fmtShort(ks[ks.length-1]))),banner+`<div class="shlog">${lineChart(vals.slice(-16))}</div>`);
 }
 // meal-level: hora opcional por meal. El objeto meal = db.mealMeta[date][tag] = {time:'HH:MM'}. Aditivo; ausencia = sin hora (nunca asumir). La timeline referencia mealMeta[date][tag].time.
 function mealTime(date,tag){ try{ const o=((db.mealMeta||{})[date]||{})[tag]; return (o&&o.time)||''; }catch(_){ return ''; } }
@@ -4428,6 +4527,7 @@ function openMetricDetail(key){
             :(nb&&nb.lo==null?`<div class="mdst u-o40">sin normal<div class="mdstl">${nb.n}/${nb.need} d</div></div>`:'')}</div>
       ${nav}
       ${chart}
+      ${key==='sleep'?sleepPhasesBlock(sp.dates):''}
 
       <div class="mdstats">
         ${bI>=0?`<div class="mdline"><span class="mdk">${sp.lowerBetter?'día más alto':'mejor día'}</span><span class="mddots"></span><span class="mdv">${escTxt(vf(raw[bI]))} <span class="mdsub">${fmtShort(sp.dates[bI])}</span></span></div>`:''}
@@ -4941,17 +5041,44 @@ function sleepHours(v){ return Math.round(sleepBlocks(v).reduce((s,b)=>{ const h
 const SLEEP_STAGES=[['deep','profundo'],['core','core'],['rem','REM'],['awake','despierto']];
 function stageMin(b,st){ return (b&&b.stages||[]).reduce((s,g)=>{ if(g&&g[2]===st){ const d=sleepDur(g[0],g[1]); if(d>0)s+=d*60; } return s; },0); }
 function stagesMin(b){ return (b&&b.stages||[]).reduce((s,g)=>{ const d=g?sleepDur(g[0],g[1]):0; return s+(d>0?d*60:0); },0); }
+// v257 · FASES COMO DURACIONES. El dueño: "me sale de qué hora a qué hora y eso está bien cabrón porque va fluctuando;
+// nomás poner tiempos totales". El bloque gana `ph:{awake,rem,core,deep}` en MINUTOS — lo que muestra el reloj
+// ("REM 1 h 35 min"). Los `stages` de U6 (intervalos) se siguen leyendo: phaseMin los suma por fase; nunca se borran.
+const SLEEP_PH=[['awake','despierto'],['rem','REM'],['core','core'],['deep','profundo']];   // orden de Salud de Apple
+function phaseMin(b){ if(!b)return null; const o={awake:0,rem:0,core:0,deep:0}; let any=false;
+  if(b.ph&&typeof b.ph==='object'){ SLEEP_PH.forEach(([k])=>{ const v=Math.max(0,Math.round(+b.ph[k]||0)); o[k]=v; if(v)any=true; }); return any?o:null; }
+  if(b.stages&&b.stages.length){ SLEEP_PH.forEach(([k])=>{ const v=Math.round(stageMin(b,k)); o[k]=v; if(v)any=true; }); return any?o:null; }
+  return null; }
+// ventana exacta en minutos (sleepDur redondea a 0.1 h y aquí se escriben minutos)
+function winMin(b){ const a=hm2min(b&&b.start), e=hm2min(b&&b.end); if(!isFinite(a)||!isFinite(e))return 0; let d=e-a; if(d<0)d+=1440; return d; }
+// DORMIDO con duraciones: si están las TRES fases de sueño, su suma (así lo cuenta Salud); si no, ventana − despierto.
+// Con solo "profundo" apuntado, sumar daría 1 h de sueño en una noche de 7: por eso nunca se suma a medias.
+function phAsleepMin(ph,wm){ if(ph.rem>0&&ph.core>0&&ph.deep>0)return ph.rem+ph.core+ph.deep; return Math.max(0,wm-ph.awake); }
 function blockAsleep(b){ if(!b)return 0; const win=(b.start&&b.end)?sleepDur(b.start,b.end):(+b.hours||0);
+  if(b.ph){ const ph=phaseMin(b); return ph?Math.round(phAsleepMin(ph,winMin(b)||win*60)/6)/10:win; }   // v257
   if(!(b.stages&&b.stages.length))return win;
-  const awake=stageMin(b,'awake')/60; return Math.max(0,Math.round((win-awake)*10)/10); }
-// hipnograma: una barra por bloque, proporcional, en la escala de opacidad (profundo = lo más sólido)
-function hypnoHTML(b){ const win=(b.start&&b.end)?sleepDur(b.start,b.end)*60:0; if(!(win>0)||!(b.stages&&b.stages.length))return '';
-  const segs=b.stages.slice().filter(g=>g&&sleepDur(g[0],g[1])>0);
-  const known=stagesMin(b); const rest=Math.max(0,win-known);
-  const part=segs.map(g=>`<i class="hy-${escTxt(g[2])}" style="flex:${(sleepDur(g[0],g[1])*60/win).toFixed(4)}" title="${escTxt(g[0])}–${escTxt(g[1])}"></i>`).join('')
-    +(rest>0?`<i class="hy-none" style="flex:${(rest/win).toFixed(4)}" title="sin clasificar"></i>`:'');
-  return `<div class="hypno">${part}</div>`;
-}
+  const awake=stageMin(b,'awake')/60; return Math.max(0,Math.round((win-awake)*10)/10); }   // U6: intervalos, igual que antes
+function fmtHM(min){ min=Math.max(0,Math.round(+min||0)); const h=Math.floor(min/60), m=min%60; return h?h+'h'+(m?' '+pad(m)+'m':''):m+'m'; }
+// barra proporcional (profundo → core → REM → despierto, de sólido a tenue); lo que no llega a la ventana queda como
+// "sin clasificar" a la vista (Fitbit hace lo mismo)
+function hypnoHTML(b){ const ph=phaseMin(b); if(!ph)return ''; const wm=winMin(b);
+  const sum=ph.awake+ph.rem+ph.core+ph.deep, tot=Math.max(wm,sum); if(!(tot>0))return '';
+  const part=['deep','core','rem','awake'].filter(k=>ph[k]>0).map(k=>`<i class="hy-${k}" style="flex:${(ph[k]/tot).toFixed(4)}"></i>`).join('')
+    +(wm>sum?`<i class="hy-none" style="flex:${((wm-sum)/tot).toFixed(4)}" title="sin clasificar"></i>`:'');
+  return `<div class="hypno">${part}</div>`; }
+// fases de UN día (suma de sus bloques con fases) — alimenta el bloque FASES del detalle de sueño
+function sleepPhDay(d){ let o=null; sleepBlocks(db.sleep&&db.sleep[d]).forEach(b=>{ const p=phaseMin(b); if(!p)return; o=o||{awake:0,rem:0,core:0,deep:0}; SLEEP_PH.forEach(([k])=>{ o[k]+=p[k]; }); }); return o; }
+// FASES en el detalle: una columna apilada por noche (profundo abajo, alineada al rango de la gráfica) y 4 filas con
+// etiqueta y valor escritos — nunca solo el tono (ui-ux-pro-max: barra 100 % con ≤5 categorías, etiqueta directa).
+// Sin ninguna noche con fases en el rango, no aparece.
+function sleepPhasesBlock(dates){ const days=dates.map(sleepPhDay), has=days.filter(Boolean); if(!has.length)return '';
+  const tot=p=>p.awake+p.rem+p.core+p.deep, mx=Math.max.apply(null,has.map(tot))||1, order=['deep','core','rem','awake'];
+  // cada columna cae en la x de su fecha en la gráfica de arriba (mismo padX 4/300 y el mismo margen de eje de 40 px)
+  const n=dates.length, PX=4/300, bw=(60/Math.max(1,n-1)).toFixed(2);
+  const cols=days.map((p,i)=>p?`<i title="${escTxt(fmtShort(dates[i]))}" style="left:${((PX+(n>1?i/(n-1):0.5)*(1-2*PX))*100).toFixed(2)}%; width:${bw}%">${order.filter(k=>p[k]>0).map(k=>`<b class="hy-${k}" style="height:${(p[k]/mx*100).toFixed(2)}%"></b>`).join('')}</i>`:'').join('');
+  const avg=k=>has.reduce((a,p)=>a+p[k],0)/has.length;
+  const rows=[['deep','profundo'],['core','core'],['rem','REM'],['awake','despierto']].map(([k,l])=>`<div class="slfr"><span class="slsw hy-${k}"></span><span class="k">${l}</span><span class="v">${fmtHM(avg(k))}</span></div>`).join('');
+  return `<div class="grp-label sub">FASES <span class="u-o35 u-w4">· promedio de ${has.length} noche${has.length===1?'':'s'}</span></div><div class="slfc">${cols}</div>${rows}`; }
 function hm2min(s){ if(!s||typeof s!=='string'||s.indexOf(':')<0)return NaN; const a=s.split(':'); const H=+a[0],M=+a[1]; return (isFinite(H)&&isFinite(M))?H*60+M:NaN; }
 function sleepDur(start,end){ const a=hm2min(start),b=hm2min(end); if(!isFinite(a)||!isFinite(b))return 0; let diff=b-a; if(diff<0)diff+=1440; return Math.round(diff/6)/10; } // minutos→horas (0.1); cruza medianoche; iguales→0 (rechazado)
 function isNocturnal(start){ const a=hm2min(start); if(!isFinite(a))return true; return a>=1200||a<360; } // inicio ≥20:00 ó <06:00
@@ -4975,43 +5102,45 @@ function openSleepLog(){
   const blkLabel=b=>{ const h=blkH(b); if(h<=0)return'—'; return h+'h · '+(blkTimed(b)?(isNocturnal(b.start)?'nocturno':'siesta'):'manual'); };
   function total(){ const el=document.getElementById('sl_total'); if(el){ let t=0; blocks.forEach(b=>t+=blkH(b)); el.textContent='total '+(Math.round(t*10)/10)+' h'; } }
   function relabel(i){ const el=document.getElementById('sllbl'+i); if(el)el.textContent=blkLabel(blocks[i]); }
+  // v257: el resumen de fases se reescribe SOLO él — los campos nunca se vuelven a crear mientras escribes
+  function phSum(i){ const el=document.getElementById('slhy'+i), b=blocks[i]; if(!el||!b)return;
+    const ph=phaseMin(b), wm=winMin(b);
+    if(!ph){ el.innerHTML=`<div class="slsum">lo que marcó tu reloj · lo que falte queda sin clasificar</div>`; return; }
+    const sum=ph.awake+ph.rem+ph.core+ph.deep;
+    const tail=!wm?'':(sum>wm+1?` · <span class="w">las fases suman ${fmtHM(sum)}, más que en cama</span>`:(wm-sum>1?` · sin clasificar ${fmtHM(wm-sum)}`:''));
+    el.innerHTML=hypnoHTML(b)+`<div class="slsum">dormido ${fmtHM(phAsleepMin(ph,wm))}${wm?' · en cama '+fmtHM(wm):''}${tail}</div>`; }
   function paint(){ const wrap=document.getElementById('sl_blocks'); if(!wrap)return;
-    const stRow=(i,j,g)=>`<div class="slst"><input type="time" data-i="${i}" data-s="${j}" data-f="0" value="${escTxt(g[0]||'')}"/><span class="slsep">–</span><input type="time" data-i="${i}" data-s="${j}" data-f="1" value="${escTxt(g[1]||'')}"/>`
-      +`<button type="button" class="slsg" data-stg="${i}:${j}">${escTxt((SLEEP_STAGES.find(s=>s[0]===g[2])||['','fase'])[1])}</button><a class="slx" data-i="${i}" data-s="${j}">✕</a></div>`;
     wrap.innerHTML=blocks.map((b,i)=>{
-      const head= blkTimed(b)
-        ? `<div class="slblk"><input type="time" data-i="${i}" data-f="start" value="${escTxt(b.start||'')}"/><span class="slsep">–</span><input type="time" data-i="${i}" data-f="end" value="${escTxt(b.end||'')}"/><span class="sllbl" id="sllbl${i}">${blkLabel(b)}</span><a class="slx" data-i="${i}">✕</a></div>`
-        : `<div class="slblk"><input type="number" inputmode="decimal" step="0.5" placeholder="horas" data-i="${i}" data-f="hours" value="${escTxt(b.hours!=null?b.hours:'')}" class="u-f1"/><span class="sllbl" id="sllbl${i}">${blkLabel(b)}</span><a class="slx" data-i="${i}">✕</a></div>`;
-      if(!blkTimed(b)||!b.start||!b.end)return head;
-      const win=sleepDur(b.start,b.end)*60, known=stagesMin(b), rest=Math.max(0,Math.round(win-known));
-      const sum=(b.stages&&b.stages.length)
-        ? `dormido ${blockAsleep(b)} h · en cama ${sleepDur(b.start,b.end)} h`+(rest>0?` · sin clasificar ${rest<60?rest+' m':(Math.round(rest/6)/10)+' h'}`:'')
-        : '';
-      return head+hypnoHTML(b)
-        +(b.stages||[]).map((g,j)=>stRow(i,j,g)).join('')
-        +(sum?`<div class="slsum">${sum}</div>`:'')
-        +`<div class="slsum"><a class="u-tap u-o60" data-addstg="${i}">[+ fase]</a></div>`;
-    }).join('');
-    wrap.querySelectorAll('.slblk input').forEach(inp=>{ inp.oninput=()=>{ const i=+inp.dataset.i; blocks[i][inp.dataset.f]=inp.value; relabel(i); total(); if(inp.dataset.f!=='hours')paint(); }; });
-    wrap.querySelectorAll('.slst input').forEach(inp=>{ inp.oninput=()=>{ const i=+inp.dataset.i, j=+inp.dataset.s; blocks[i].stages[j][+inp.dataset.f]=inp.value; paint(); }; });
-    wrap.querySelectorAll('[data-stg]').forEach(btn=>{ btn.onclick=()=>{ const [i,j]=btn.dataset.stg.split(':').map(Number);
-      trkWheel({title:'fase',opts:SLEEP_STAGES.map(s=>s[1]),cur:(SLEEP_STAGES.find(s=>s[0]===blocks[i].stages[j][2])||[])[1]||''},v=>{ const k=SLEEP_STAGES.find(s=>s[1]===v); blocks[i].stages[j][2]=k?k[0]:'core'; paint(); }); }; });
-    wrap.querySelectorAll('[data-addstg]').forEach(a=>{ a.onclick=()=>{ const i=+a.dataset.addstg; const b=blocks[i]; b.stages=b.stages||[];
-      const last=b.stages.length?b.stages[b.stages.length-1][1]:b.start;   // encadenado: cada fase empieza donde acabó la anterior
-      b.stages.push([last||b.start||'', '', 'core']); paint(); }; });
-    wrap.querySelectorAll('.slx').forEach(x=>{ x.onclick=()=>{ const i=+x.dataset.i; if(x.dataset.s!=null)blocks[i].stages.splice(+x.dataset.s,1); else blocks.splice(i,1); paint(); }; });
-    total();
+      if(!blkTimed(b)) return `<div class="slblk"><input type="number" inputmode="decimal" step="0.5" placeholder="horas" data-i="${i}" data-f="hours" value="${escTxt(b.hours!=null?b.hours:'')}" class="u-f1"/><span class="sllbl" id="sllbl${i}">${blkLabel(b)}</span><a class="slx" data-i="${i}">✕</a></div>`;
+      const ph=b.ph||phaseMin(b)||{};   // un bloque viejo con intervalos muestra sus totales
+      const det=b._det?`<div class="slphs">`+SLEEP_PH.map(([k,l])=>{ const v=Math.round(+ph[k]||0);
+          return `<div class="slph"><label for="ph${i}${k}">${l}</label><input id="ph${i}${k}" type="number" inputmode="numeric" min="0" max="16" placeholder="0" data-i="${i}" data-k="${k}" data-u="h" value="${v?Math.floor(v/60):''}"/><span>h</span><input type="number" inputmode="numeric" min="0" max="59" placeholder="0" data-i="${i}" data-k="${k}" data-u="m" value="${v?v%60:''}" aria-label="${l} · minutos"/><span>min</span></div>`; }).join('')
+        +`<div id="slhy${i}"></div></div>`:'';
+      return `<div class="slblk"><input type="time" data-i="${i}" data-f="start" value="${escTxt(b.start||'')}"/><span class="slsep">–</span><input type="time" data-i="${i}" data-f="end" value="${escTxt(b.end||'')}"/><span class="sllbl" id="sllbl${i}">${blkLabel(b)}</span><a class="slx" data-i="${i}">✕</a></div>`
+        +`<div class="sldet"><a data-det="${i}" aria-expanded="${!!b._det}">${b._det?'− detalles':'+ detalles'}</a></div>`+det; }).join('');
+    // v257: dormir/despertar NO repintan — rehacer el HTML destruía el <input type=time> con el selector de iOS abierto
+    // y se cerraba tras elegir la hora (el dueño tenía que reabrirlo para los minutos)
+    wrap.querySelectorAll('.slblk input').forEach(inp=>{ inp.oninput=()=>{ const i=+inp.dataset.i; blocks[i][inp.dataset.f]=inp.value; relabel(i); total(); phSum(i); }; });
+    wrap.querySelectorAll('.slph input').forEach(inp=>{ inp.oninput=()=>{ const i=+inp.dataset.i, k=inp.dataset.k, b=blocks[i];
+      const f=u=>{ const x=wrap.querySelector('.slph input[data-i="'+i+'"][data-k="'+k+'"][data-u="'+u+'"]'); return x?(+x.value||0):0; };
+      if(!b.ph)b.ph=Object.assign({awake:0,rem:0,core:0,deep:0},phaseMin(b)||{});
+      b.ph[k]=Math.max(0,Math.round(f('h')*60+f('m'))); b._phEd=true; relabel(i); total(); phSum(i); }; });
+    wrap.querySelectorAll('[data-det]').forEach(a=>{ a.onclick=()=>{ const i=+a.dataset.det; blocks[i]._det=!blocks[i]._det; paint(); }; });
+    wrap.querySelectorAll('.slx').forEach(x=>{ x.onclick=()=>{ blocks.splice(+x.dataset.i,1); paint(); }; });
+    blocks.forEach((b,i)=>phSum(i)); total();
   }
-  function load(d){ blocks=sleepBlocks(db.sleep&&db.sleep[d]).map(b=>(b&&typeof b==='object')?Object.assign({},b,{_o:{start:b.start,end:b.end}}):{hours:b}); if(!blocks.length)blocks=[{start:'23:00',end:'07:00'}]; paint(); }
+  function load(d){ blocks=sleepBlocks(db.sleep&&db.sleep[d]).map(b=>(b&&typeof b==='object')?Object.assign({},b,{_o:{start:b.start,end:b.end},_det:!!phaseMin(b)},b.ph?{ph:Object.assign({},b.ph)}:{}):{hours:b}); if(!blocks.length)blocks=[{start:'23:00',end:'07:00'}]; paint(); }
   document.getElementById('sl_add').onclick=()=>{ blocks.push({start:'',end:''}); paint(); };
   document.getElementById('sl_manual').onclick=()=>{ blocks.push({hours:''}); paint(); };
   document.getElementById('sl_date').onchange=function(){ load(this.value); };
   document.getElementById('sl_save').onclick=()=>{ const d=val('sl_date')||todayISO(); const out=[];
-    blocks.forEach(b=>{ if(blkTimed(b)&&b.src&&b._o&&b.start===b._o.start&&b.end===b._o.end&&+b.hours>0){ const k=Object.assign({},b); delete k._o; out.push(k); return; }
+    blocks.forEach(b=>{ if(blkTimed(b)&&b.src&&b._o&&b.start===b._o.start&&b.end===b._o.end&&+b.hours>0&&!b._phEd){ const k=Object.assign({},b); delete k._o; delete k._det; out.push(k); return; }
       if(blkTimed(b)){ if(b.start&&b.end){ const win=sleepDur(b.start,b.end); if(win>0&&win<24){
         const stages=(b.stages||[]).filter(g=>g&&g[0]&&g[1]&&sleepDur(g[0],g[1])>0);
         const o={start:b.start,end:b.end,date:d,type:isNocturnal(b.start)?'nocturno':'siesta',hours:win};
-        if(stages.length){ o.stages=stages; o.inBed=win; o.hours=blockAsleep({start:b.start,end:b.end,stages}); }   // E20: `hours` = DORMIDO
+        if(stages.length){ o.stages=stages; o.inBed=win; o.hours=blockAsleep({start:b.start,end:b.end,stages}); }   // U6: los intervalos viejos se conservan tal cual
+        const ph=b.ph?phaseMin({ph:b.ph}):null;
+        if(ph){ o.ph={}; SLEEP_PH.forEach(([k])=>{ if(ph[k]>0)o.ph[k]=ph[k]; }); o.inBed=win; o.hours=blockAsleep(o); }   // v257 · `hours` = DORMIDO
         out.push(o); } } }
       else { const mh=Math.round((+b.hours)*10)/10; if(mh>0&&mh<24)out.push({date:d,type:'nocturno',hours:mh}); } });
     if(!out.length){ toast('⚠ agrega un bloque: dormir + despertar, o las horas','err'); return; }
@@ -6067,13 +6196,16 @@ function slideTabs(root,swap){ const red=reducedMotion();
     if(!ind){ ind=document.createElement('i'); ind.className='tabind'; c.insertBefore(ind,c.firstChild); } c.classList.add('has-ind');
     const k=c.dataset.tk||('t:'+c.textContent), x=on.offsetLeft+on.offsetWidth*.25, w=on.offsetWidth*.5, prev=_tabPos[k]; _tabPos[k]={x,w};
     const put=(x,w)=>{ ind.style.transform='translateX('+x+'px)'; ind.style.width=w+'px'; };
-    if(swap&&!red&&prev&&(prev.x!==x||prev.w!==w)){ ind.style.transition='none'; put(prev.x,prev.w); void ind.offsetWidth; ind.style.transition=''; put(x,w); } else put(x,w); }); }
+    // v257: la rayita nace con cada render; si se colocaba CON transición, corría de x=0 a su pestaña en cada toque
+    // (el "PM parpadea" del dueño). Ahora solo viaja cuando cambia la pestaña elegida; si no, aparece ya en su lugar.
+    if(swap&&!red&&prev&&(prev.x!==x||prev.w!==w)){ ind.style.transition='none'; put(prev.x,prev.w); void ind.offsetWidth; ind.style.transition=''; put(x,w); }
+    else { ind.style.transition='none'; put(x,w); void ind.offsetWidth; ind.style.transition=''; } }); }
 function applyEnter(root){ const e=state._enter, p=state._pop; state._enter=null; state._pop=null; if(reducedMotion())return;
   if(e&&e.sel){ root.querySelectorAll(e.sel).forEach(x=>x.classList.add('enter')); }
   else if(e){ const el=root.querySelector(e.ex!=null?'.ex[data-exi="'+e.ex+'"]':'.srow[data-exi="'+e.exi+'"][data-si="'+e.si+'"],.pair[data-exi="'+e.exi+'"][data-si="'+e.si+'"]');
     if(el){ el.classList.add('enter'); if(e.scroll&&el.scrollIntoView)el.scrollIntoView({block:'center',behavior:'smooth'}); } }
   if(p){ const el=root.querySelector('.dchk[data-exi="'+p.exi+'"][data-si="'+p.si+'"],.pairdone[data-exi="'+p.exi+'"][data-si="'+p.si+'"]'); if(el)el.classList.add('pop'); } }
-function afterPaint(root,swap){ if(!root)return; try{ popClose(); }catch(_){} if(state.screen==='share'){ try{ fitShareCard(root); if(document.fonts&&document.fonts.ready)document.fonts.ready.then(()=>fitShareCard(root)); }catch(_){} } try{ animNums(root); }catch(_){} try{ animBars(root); }catch(_){} try{ slideTabs(root,swap); }catch(_){} try{ applyEnter(root); }catch(_){} }
+function afterPaint(root,swap){ if(!root)return; try{ popClose(); }catch(_){} try{ animNums(root); }catch(_){} try{ animBars(root); }catch(_){} try{ slideTabs(root,swap); }catch(_){} try{ applyEnter(root); }catch(_){} }
 // ---- R4 · TRKRow reflow (§7.18): lo que queda se reacomoda en vez de saltar ----
 // Cada fila/bloque lleva data-rk = identidad de SU objeto (serie, ejercicio) — un WeakMap en memoria, nunca se guarda.
 // reRender() mide antes de pintar y, después, anima a cada elemento desde donde estaba (FLIP). Un elemento que se mueve
@@ -6627,6 +6759,7 @@ document.getElementById('app').addEventListener('click',e=>{
     state._enter={exi,si:insertDrop(ex,si,Object.assign(exIdentity(db.activeWork,exi),{orderIdx:exi}))};
     save(); reRender(); }
   else if(a==='delset'){ delSetLive(exi,si); }
+  else if(a==='exshare'){ openExShare(exi); }
   else if(a==='delex'){ const w=db.activeWork; if(w&&w.exercises[exi]){ trkAsk({title:'quitar "'+((w.exercises[exi].name)||'este ejercicio')+'" de la sesión',detail:'lo registrado en ese ejercicio se descarta · tu split no cambia',ok:'quitar',danger:true},()=>{ w.exercises.splice(exi,1); save(); reRender(); }); } }
   else if(a==='addex'){ openAddExercise(exi); }
   else if(a==='axmus'){ const c=window._axCtx||{}; openAddExStep2(c.afterExi, el.dataset.v, c.replaceExi); }
@@ -9095,7 +9228,7 @@ try{ idbGet('latest').then(rec=>{ if(!rec||!rec.s)return; _idbLast=rec;
       ()=>{ db=migrate(inc); if(save())toast('✓ '+got+' registros recuperados'); go('home'); }); },900); }
 }).catch(e=>{ _idbErr=e; }); }catch(_){}
 try{ growthLog(); }catch(_){}
-try{ promptIdleSession(); }catch(_){} try{ if(typeof location!=='undefined' && /[?&]selftest=1/.test(location.search)){ _identitySelfCheck(); _dropsetSelfCheck(); _baselineSelfCheck(); _variantSelfCheck(); _historyEditSelfCheck(); _idSelfCheck(); _cardioSelfCheck(); _tensionSelfCheck(); _healthSelfCheck(); _readinessSelfCheck(); _loggingSelfCheck(); _mergeSelfCheck(); _streakSelfCheck(); _chartSelfCheck(); _muscleSelfCheck(); _exProfileSelfCheck(); _recoverySelfCheck(); _diagSelfCheck(); _uiSelfCheck(); _v256SelfCheck(); } }catch(e){ console.error(e); } try{ const _sp=new URLSearchParams(location.search); const _hasHistorical=_sp.has('stepsh')||_sp.has('weighth')||_sp.has('stepsq')||_sp.has('sleeph'); if(_hasHistorical){ const _hsp=_sp; if(history.replaceState)history.replaceState(null,'',location.pathname); setTimeout(()=>{ trkAsk({title:'importar datos históricos',detail:'este link trae pasos, peso o sueño de varios días · acepta solo si viene de tu propio Atajo de iOS',ok:'importar'},()=>{ try{ const _imp=importHealth(_hsp); if(_imp.length){ save(); render(); toast('✓ '+_imp.join(' · ')); } }catch(_){} }); },400); } else { const _imp=importHealth(_sp); if(_imp.length){ window._healthImported=_imp; if(history.replaceState)history.replaceState(null,'',location.pathname); } } }catch(_){} save(); render(); if(window._healthImported)setTimeout(()=>toast('✓ '+window._healthImported.join(' · ')),250); if(window._recoveredFromBackup)setTimeout(()=>{try{toast('⚠ se recuperó un respaldo local · revisa tus datos, podrían faltar cambios muy recientes','err');}catch(_){}},600);
+try{ promptIdleSession(); }catch(_){} try{ if(typeof location!=='undefined' && /[?&]selftest=1/.test(location.search)){ _identitySelfCheck(); _dropsetSelfCheck(); _baselineSelfCheck(); _variantSelfCheck(); _historyEditSelfCheck(); _idSelfCheck(); _cardioSelfCheck(); _tensionSelfCheck(); _healthSelfCheck(); _readinessSelfCheck(); _loggingSelfCheck(); _mergeSelfCheck(); _streakSelfCheck(); _chartSelfCheck(); _muscleSelfCheck(); _exProfileSelfCheck(); _recoverySelfCheck(); _diagSelfCheck(); _uiSelfCheck(); _v256SelfCheck(); _v257SelfCheck(); } }catch(e){ console.error(e); } try{ const _sp=new URLSearchParams(location.search); const _hasHistorical=_sp.has('stepsh')||_sp.has('weighth')||_sp.has('stepsq')||_sp.has('sleeph'); if(_hasHistorical){ const _hsp=_sp; if(history.replaceState)history.replaceState(null,'',location.pathname); setTimeout(()=>{ trkAsk({title:'importar datos históricos',detail:'este link trae pasos, peso o sueño de varios días · acepta solo si viene de tu propio Atajo de iOS',ok:'importar'},()=>{ try{ const _imp=importHealth(_hsp); if(_imp.length){ save(); render(); toast('✓ '+_imp.join(' · ')); } }catch(_){} }); },400); } else { const _imp=importHealth(_sp); if(_imp.length){ window._healthImported=_imp; if(history.replaceState)history.replaceState(null,'',location.pathname); } } }catch(_){} save(); render(); if(window._healthImported)setTimeout(()=>toast('✓ '+window._healthImported.join(' · ')),250); if(window._recoveredFromBackup)setTimeout(()=>{try{toast('⚠ se recuperó un respaldo local · revisa tus datos, podrían faltar cambios muy recientes','err');}catch(_){}},600);
 applyDesign(); try{ if(/[?&]design\b/.test(location.search))localStorage.setItem('gymtrk_designmode','1'); if(localStorage.getItem('gymtrk_designmode')==='1')openDesignPanel(); }catch(_){}
 try{ bootScreen(()=>{ try{
   if(/[?&]wrap=1\b/.test(location.search)){ monthlyWrap(prevMonthYm(), true); return; }
