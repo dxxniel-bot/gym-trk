@@ -68,12 +68,16 @@
   input,select,button{font-family:inherit;}
 
   /* status bar */
-  .status{display:flex; justify-content:space-between; align-items:flex-start; font-size:var(--t-label); color:var(--o50);}
+  .status{display:grid; grid-template-columns:1fr auto 1fr; align-items:start; font-size:var(--t-label); color:var(--o50);}   /* v256: grid, la fecha queda centrada de verdad */
+  .status .sright{justify-self:end; display:flex; flex-direction:column; align-items:flex-end; text-align:right;}
+  .sgoal{position:relative; margin-top:var(--s2); padding:0; background:none; border:0; font-family:inherit; font-size:var(--t-label); line-height:1.2; color:var(--o40); cursor:pointer;}
+  .sgoal b{font-weight:400; color:var(--o70);} .sgoal .cv{color:var(--o30); margin-left:var(--s1);} .sgoal:active{opacity:.7;}
+  .sgoal::after{content:''; position:absolute; left:-12px; right:-8px; top:-4px; height:44px;}
   .status .uname{font-weight:800; font-size:var(--t-data); color:var(--fg);}
   .status .back{display:inline-block; margin-top:var(--s2); font-size:var(--t-data); color:var(--o60); border:1px solid var(--o20); padding:10px var(--s4); cursor:pointer; border-radius:var(--r-ctl);}
   .status .center{text-align:center; line-height:1.4;}
   .status .streak{font-size:var(--t-data); font-weight:800; color:var(--o50);}
-  .status b{color:var(--o60); font-weight:400;}
+  .status b{color:var(--o70); font-weight:inherit;}
 
   .rule{border:0; border-top:1px solid var(--line); margin:var(--s5) 0;}
 
@@ -206,6 +210,14 @@
   .strk-side{font-size:var(--t-label); color:var(--o50); text-align:right; line-height:1.6;} .strk-side b{color:var(--fg); font-weight:800;}
   .strk-sub{font-size:var(--t-label); color:var(--o40); margin-top:var(--s3); line-height:1.4;}
   .cal2{display:grid; grid-template-columns:1fr 1fr; gap:var(--s4); margin-top:var(--s4);}
+  .strk{display:block; width:100%; margin:0 0 var(--s4); padding:var(--s3) 0; background:none; border:0; font-family:inherit; color:inherit; text-align:left; cursor:pointer;} .strk:active{opacity:.7;}
+  .strk-h{display:flex; justify-content:space-between; align-items:baseline; font-size:var(--t-label); line-height:1.2; color:var(--o40); margin-bottom:6px;}
+  .strk-k{text-transform:uppercase; letter-spacing:var(--ls-caps);} .strk-b b{font-weight:400; color:var(--fg);} .strk-h .rchev{color:var(--o30); margin-left:var(--s2);}
+  .strk-row{display:grid; grid-template-columns:repeat(28,minmax(0,1fr)); gap:var(--s1);} .strk-row .cd{border-radius:var(--r-sm);}
+  .strk-row .cd.t{box-shadow:0 0 0 1px var(--o40);} .strk-row .cd.t.l0::after{content:''; position:absolute; left:50%; top:50%; width:3px; height:3px; margin:-1.5px 0 0 -1.5px/*ds:exempt*/; border-radius:50%; background:var(--fg);}
+  .line .v .u{font-weight:400; color:var(--o40);}
+  .tselo.hs{display:flex; flex-direction:column; align-items:center; justify-content:center; gap:var(--s1); line-height:1.1;} .tselo .tsub{font-size:var(--t-label); font-weight:400; color:var(--o50);} .tselo.on .tsub{color:inherit; opacity:.7;}
+  .line.lnav{min-height:44px; align-items:center; padding:0; cursor:pointer;} .line.lnav .v{font-weight:700;} .line .rchev{color:var(--o30); margin-left:var(--s2);} .line.lnav:active{opacity:.7;}
   .cm .cmh{font-size:var(--t-label); letter-spacing:var(--ls-caps); text-transform:uppercase; color:var(--o50); margin-bottom:6px;}
   .cm .cmw,.cm .cmg{display:grid; grid-template-columns:repeat(7,1fr); gap:var(--s2);}
   .cm .cmw{margin-bottom:var(--s2);} .cm .cmw b{font-size:var(--t-label); font-weight:400; color:var(--o35); text-align:center;}
@@ -1537,25 +1549,25 @@ function streakCalendarHTML(){
   const pm=new Date(now.getFullYear(),now.getMonth()-1,1);
   return `<div class="cal2">${monthCalHTML(pm.getFullYear(),pm.getMonth(),mark)}${monthCalHTML(now.getFullYear(),now.getMonth(),mark)}</div>`;
 }
-function streakCardHTML(){
-  const a=activityDays(); if(!Object.keys(a).length)return '';
-  const st=streak(), best=bestStreak(), today=todayISO(), now=new Date();
-  let logged=0, both=0; const el=now.getDate();
-  for(let dd=1;dd<=el;dd++){ const v=a[now.getFullYear()+'-'+pad(now.getMonth()+1)+'-'+pad(dd)]||0; if(v)logged++; if(v===3)both++; }
-  const pct=el?Math.round(logged/el*100):0; const tv=a[today]||0;
-  const hoy=tv===3?'hoy: comida + gym ✓':tv?('hoy: '+((tv&1)?'comida':'gym')+' ✓'):'hoy: aún sin registro';
-  return `<div class="pfeat"><div class="pfl">racha · comida o gym</div>`
-    +`<div class="strk-top"><div class="strk-n"><span data-nk="streak" data-nv="${st}">${st}</span><span>día${st===1?'':'s'}</span></div>`
-    +`<div class="strk-side"><div>mejor racha <b>${best}</b></div><div>este mes <b>${logged}/${el}</b> días registrados · <b>${pct}%</b></div><div>días completos (ambos) <b>${both}</b></div></div></div>`
-    +`<div class="strk-sub">${hoy}</div>`
-    +streakCalendarHTML()
-    +`</div>`;   // U5 (E16): sin leyenda — es texto instructivo disfrazado de gráfico (§9.1); el dato ya se lee por intensidad
-}
+// v256 (queja 4) · la racha es una FRANJA: RACHA · mejor N › y 28 días en la escala de blanco. El número actual ya
+// está en la barra de estado (§9.1: ninguna idea dos veces por pantalla). El detalle y el calendario van en su hoja.
+function stripCalHTML(n,mark){ const now=new Date(); let cells='';
+  for(let i=n-1;i>=0;i--){ const iso=todayISO(new Date(now.getFullYear(),now.getMonth(),now.getDate()-i)); const k=mark(iso)||{lv:0}; cells+=`<i class="cd l${k.lv||0}${i===0?' t':''}"></i>`; }
+  return `<span class="strk-row" aria-hidden="true">${cells}</span>`; }
+function streakStripHTML(){ const a=activityDays(); if(!Object.keys(a).length)return '';
+  const st=streak(), best=bestStreak(), mark=iso=>{ const v=a[iso]||0; return {lv:(v&1?1:0)+(v&2?1:0)}; };
+  return `<button type="button" class="strk" data-act="streakcal" aria-label="racha ${st} días · mejor ${best} · ver calendario"><span class="strk-h"><span class="strk-k">racha</span><span class="strk-b">mejor <b>${best}</b><span class="rchev">›</span></span></span>${stripCalHTML(28,mark)}</button>`; }
+function openStreakSheet(){ const a=activityDays(), now=new Date(), el=now.getDate(); let logged=0;
+  for(let dd=1;dd<=el;dd++){ if(a[now.getFullYear()+'-'+pad(now.getMonth()+1)+'-'+pad(dd)])logged++; }
+  const ln=(k,v,g)=>`<div class="line"><span class="k"${g?` data-gloss="${g}"`:''}>${k}</span><span class="dots"></span><span class="v">${v} <span class="u">d</span></span></div>`;
+  openModal(`<h3>racha</h3>`+ln('actual',streak(),'racha')+ln('mejor',bestStreak())+ln('este mes',logged+'/'+el)+streakCalendarHTML()
+    +`<div class="sheetbtns u-mt12"><button class="cancel" data-act="closemodal">cerrar</button></div>`); }
 // toque en un día del calendario: si hubo las dos cosas pregunta cuál abrir; si no, abre la que hubo
+function goPerfil(){ go('settings'); setTimeout(()=>{ const e=document.getElementById('perfil'); if(e&&e.scrollIntoView)e.scrollIntoView({block:'start'}); },60); }
 function openCalDay(iso){
   const ss=(db.sessions||[]).filter(x=>x.date===iso&&x.type!=='rest'&&x.exercises&&x.exercises.length);
   const food=((db.meals&&db.meals[iso])||[]).length>0;
-  const goFood=()=>{ state.screen='macros'; state.macroDate=iso; state._trans=true; render(); };
+  const goFood=()=>{ closeModal(); state.screen='macros'; state.macroDate=iso; state._trans=true; render(); };   // v256: desde la hoja de la racha, primero se cierra
   if(ss.length&&food){ openModal(`<h3>${escTxt(dayLabel(iso))}</h3><div class="sheetbtns"><button class="ok" data-act="calday_food" data-d="${iso}">comida</button>${ss.map(s=>`<button class="ok" data-act="calday_gym" data-id="${s.id}">${escTxt(s.dayName||'sesión')}</button>`).join('')}<button class="cancel" data-act="closemodal">cancel</button></div>`); return; }
   if(ss.length){ openSessionEdit(ss[ss.length-1].id); return; }
   goFood();
@@ -2229,8 +2241,12 @@ function statusBar(back){
   const d=new Date();
   return `<div class="status"><div class="left"><div class="uname u-tap" data-act="navmenu">u/${escTxt(db.profile.username)} <span class="umcaret">▾</span></div>${back?'<span class="back" data-act="leave">← back</span>':''}</div>`
     +`<div class="center">${fmtDate(todayISO())}<br/>${nowHM()}</div>`
-    +`<div class="streak u-tap" data-act="nav" data-screen="progress" title="días seguidos registrando comida o gym">streak: <b>${streak()}</b></div></div>`;
+    +`<div class="sright"><div class="streak u-tap" data-act="nav" data-screen="progress">streak: <b>${streak()}</b></div>`
+    // v256 · la meta vive "abajo de streak" (pedido del dueño): dos toques para cambiarla desde cualquier pantalla con nav
+    +(STATUS_GOAL.indexOf(state.screen)>=0?`<button type="button" class="sgoal" data-act="goalpick" aria-label="meta: ${GOAL_L[db.profile.goal||'maintain']} · cambiar">meta: <b>${GOAL_L[db.profile.goal||'maintain']}</b><span class="cv">▾</span></button>`:'')
+    +`</div></div>`;
 }
+const STATUS_GOAL=['home','macros','progress','settings','stack','history'];   // no en sesión, historial en edición ni compartir
 // v256 · la cabecera del día (//NEXT, //NOW, //HISTORY, //GYM) sale de UN solo lugar: rótulo · nombre · una línea de meta.
 function dayHeadHTML(lbl,name,meta,cls){ return `<div class="whdr${cls?' '+cls:''}"><div class="wlbl"><span class="s">//</span>${lbl}</div><div class="wname">${name}</div>${meta?`<div class="wmeta">${meta}</div>`:''}</div>`; }
 function renderHome(){
@@ -5256,7 +5272,7 @@ function renderProgress(){
   const goal=(db.profile&&db.profile.goal)||'maintain';
   // featured: esta semana (consistencia)
   // v226: la tira de 7 puntos (solo gym) se reemplaza por la racha de registro con su calendario
-  if(cfg.consistency){ out+=streakCardHTML(); void str; void s7; }
+  if(cfg.consistency){ out+=streakStripHTML(); void str; void s7; }
   out+=throwbackBlock();
   const tiles=[];
   // v256 · una métrica ACTIVA de registro manual nunca desaparece por no tener datos: sin tile no había por dónde
@@ -5870,6 +5886,7 @@ function openSessionEdit(id){
 // ---------- render: settings ----------
 function renderSettings(){
   return statusBar(true)
+    +profileSecHTML()
     +`<hr class="rule"/><div class="section"><div class="h"><span class="s">//</span>SETTINGS</div></div>`
     +`<div class="line"><span class="k">data</span><span class="dots"></span><span class="v">${(JSON.stringify(db).length/1024).toFixed(1)} kb</span></div>`
     +`<div class="line"><span class="k">sessions</span><span class="dots"></span><span class="v">${db.sessions.length}</span></div>`
@@ -6385,13 +6402,12 @@ document.getElementById('app').addEventListener('click',e=>{
   else if(a==='editbw'){ const d=el.dataset.d; const dt=document.getElementById('bw_date'), kg=document.getElementById('bw_kg'); if(dt)dt.value=d; if(kg){ kg.value=(db.bodyweight&&db.bodyweight[d])||''; kg.focus(); } }
   else if(a==='delbw'){ const d=el.dataset.d; trkAsk({title:'borrar el peso del '+fmtShort(d),ok:'borrar',danger:true},()=>{ if(db.bodyweight)delete db.bodyweight[d]; const allk=Object.keys(db.bodyweight||{}).sort(); if(db.profile)db.profile.weightKg=allk.length?db.bodyweight[allk[allk.length-1]]:db.profile.weightKg; save(); openWeightLog(); }); }
   else if(a==='settings'){ go('settings'); }
-  else if(a==='profile'){ go('settings'); }
+  else if(a==='profile'||a==='editprofile'){ goPerfil(); }
   else if(a==='navmenu'){ openNavMenu(); }
   else if(a==='suppq'){ suppQuickTick(el.dataset.id,el.dataset.d); }
   else if(a==='calday'){ openCalDay(el.dataset.d); }
   else if(a==='calday_food'){ closeModal(); state.screen='macros'; state.macroDate=el.dataset.d; state._trans=true; render(); }
   else if(a==='calday_gym'){ closeModal(); openSessionEdit(el.dataset.id); }
-  else if(a==='editprofile'){ openProfileEdit(); }
   else if(a==='editsplit'){ go('splitedit'); }
   else if(a==='importsplit'){ openImportSplit(); }
   else if(a==='history'){ go('history'); }
@@ -6609,6 +6625,13 @@ document.getElementById('app').addEventListener('click',e=>{
   else if(a==='export'){ doExport(); }
   else if(a==='bakshare'){ doBackupShare(); }
   else if(a==='storage'){ openStorage(); }
+  else if(a==='goalpick'){ openGoalPick(el); }
+  else if(a==='streakcal'){ openStreakSheet(); }
+  else if(a==='pf_sex'){ trkSelect(el,[{v:'M',t:'hombre'},{v:'F',t:'mujer'}],db.profile.sex||'',v=>setProfile('sex',v),{title:'sexo'}); }
+  else if(a==='pf_age'){ trkWheel({title:'edad',opts:Array.from({length:77},(_,i)=>String(14+i)),cur:String(db.profile.age||'')},v=>setProfile('age',+v)); }
+  else if(a==='pf_height'){ trkWheel({title:'estatura · cm',opts:Array.from({length:76},(_,i)=>String(140+i)),cur:String(db.profile.heightCm||'')},v=>setProfile('heightCm',+v)); }
+  else if(a==='pf_act'){ trkSelect(el,ACT_OPTS.map(x=>({v:x[0],t:x[1],sub:x[2]})),String(db.profile.activity||''),v=>setProfile('activity',+v),{title:'actividad · entrenos por semana'}); }
+  else if(a==='pf_goals'){ openGoals(todayISO()); }
   else if(a==='stfree'){ const f=freeOrphanBackups(); closeModal(); if(f>0){ toast('✓ '+Math.round(f/1024)+' KB liberados'); if(!_saveErr||save())saveOK(); } else toast('no había nada que liberar'); }
   else if(a==='exportmd'){ exportMarkdown(db); }
   else if(a==='import'){ doImport(); }
@@ -8416,13 +8439,54 @@ function recalcGoals(p){ p=p||db.profile||{}; const w=+p.weightKg||70, hh=+p.hei
 }
 // secciones de goals que el usuario eligió ocultar (persistente en db.settings); aplica al editor Y a las barras del día
 function goalSecHidden(k){ return (((db.settings&&db.settings.hiddenGoalSections)||[]).indexOf(k)>=0); }
-function maintenanceKcal(){ const p=db.profile||{}; if(!p.weightKg||!p.heightCm||!p.age)return 0; const bmr=10*(+p.weightKg)+6.25*(+p.heightCm)-5*(+p.age)+((p.sex==='M')?5:-161); return Math.round(bmr*(+p.activity||1.2)); }
+// v256: un solo default de actividad (1.375, el mismo que recalcGoals; antes aquí era 1.2)
+function maintenanceKcal(){ const p=db.profile||{}; if(!p.weightKg||!p.heightCm||!p.age)return 0; const bmr=10*(+p.weightKg)+6.25*(+p.heightCm)-5*(+p.age)+((p.sex==='M')?5:-161); return Math.round(bmr*(+p.activity||1.375)); }
+// ---- v256 · meta: mantener · bajar · subir (queja 5) ----
+// Cambiar de meta mueve SOLO kcal y carbos (su proteína y su grasa se quedan) y es "desde hoy": goalHist de días
+// anteriores JAMÁS se toca (regla dura: las metas pasadas no se recalculan). Cada meta guarda sus propios números,
+// así volver a la anterior devuelve exactamente lo que tenía.
+const GOAL_F={cut:.8,maintain:1,bulk:1.1}, GOAL_L={cut:'bajar',maintain:'mantener',bulk:'subir'};
+function goalSetFor(goal){ const gs=db.settings.goalSets&&db.settings.goalSets[goal]; if(gs)return Object.assign({},gs);
+  const m=maintenanceKcal(); if(!m)return null; const cur=db.settings.goals||{}, w=+db.profile.weightKg||70;
+  const P=+cur.protein||Math.round(2*w), F=+cur.fat||Math.round(.9*w), kcal=Math.round(m*GOAL_F[goal]/10)*10;
+  return Object.assign({},cur,{kcal,protein:P,fat:F,carbs:Math.max(0,Math.round((kcal-P*4-F*9)/4))}); }
+function applyGoal(goal){ const old=db.profile.goal||'maintain'; if(goal===old)return; const next=goalSetFor(goal);
+  if(!next){ toast('⚠ completa peso, estatura y edad en tu perfil','err'); state._focus='perfil'; return go('settings'); }
+  db.settings.goalSets=Object.assign({},db.settings.goalSets,{[old]:Object.assign({},db.settings.goals)});
+  db.profile.goal=goal; db.settings.goals=next; const t=todayISO(); db.goalHist=db.goalHist||{};
+  Object.keys(db.goalHist).forEach(k=>{ if(k>t)db.goalHist[k]=Object.assign({},next); });   // días futuros: "desde hoy"
+  db.goalHist[t]=Object.assign({},next);                                                      // días < hoy: nunca
+  save(); reRender(); toast('✓ meta: '+GOAL_L[goal]+' · '+next.kcal.toLocaleString()+' kcal desde hoy'); }
+function openGoalPick(anchor){ const cur=db.profile.goal||'maintain';
+  const opts=['cut','maintain','bulk'].map(v=>{ const s=v===cur?db.settings.goals:goalSetFor(v); return {v,t:GOAL_L[v],sub:s&&s.kcal?(+s.kcal).toLocaleString()+' kcal':'—'}; });
+  trkSelect(anchor,opts,cur,v=>applyGoal(v),{title:'meta · desde hoy'}); }
+const ACT_OPTS=[['1.2','sedentario','0/sem'],['1.375','ligero','1-2/sem'],['1.55','moderado','3-4/sem'],['1.725','alto','5+/sem']];
+// biométricos: se guardan, y si mueven el mantenimiento fuera de la banda de la meta, se PREGUNTA si ajustarla
+function setProfile(k,v){ const p=db.profile; if(p[k]===v)return; const before=maintenanceKcal(); p[k]=v; if(k==='age')p.ageAt=todayISO();
+  save(); reRender(); toast('✓ perfil guardado'); maybeRetarget(before); }
+function maybeRetarget(before){ const m=maintenanceKcal(); if(!m)return; const goal=db.profile.goal||'maintain';
+  const fresh=Math.round(m*GOAL_F[goal]/10)*10, cur=+(db.settings.goals||{}).kcal||0; if(!cur||Math.abs(fresh-cur)<=Math.max(60,m*.03))return;
+  trkAsk({title:'¿ajustar tu meta?',detail:'mantenimiento ≈ '+(before||m).toLocaleString()+' → '+m.toLocaleString()+' kcal\nmeta '+cur.toLocaleString()+' → '+fresh.toLocaleString()+' desde hoy · lo pasado no cambia',ok:'ajustar',cancel:'dejar '+cur.toLocaleString()},
+    ()=>{ const g=Object.assign({},db.settings.goals), P=+g.protein||0, F=+g.fat||0; g.kcal=fresh; g.carbs=Math.max(0,Math.round((fresh-P*4-F*9)/4));
+      db.settings.goals=g; db.goalHist=db.goalHist||{}; db.goalHist[todayISO()]=Object.assign({},g); save(); reRender(); toast('✓ meta ajustada · '+fresh.toLocaleString()+' kcal'); }); }
+// //PERFIL: hoy no existía — sexo, edad, estatura y actividad quedaban congelados desde el onboarding
+function profileSecHTML(){ const p=db.profile||{}, g=db.settings.goals||{};
+  const act=(ACT_OPTS.find(x=>+x[0]===+p.activity)||[0,'—'])[1];
+  const row=(a,k,v)=>`<div class="line lnav" data-act="${a}"><span class="k">${k}</span><span class="dots"></span><span class="v">${v}</span><span class="rchev">›</span></div>`;
+  return `<hr class="rule"/><div class="section" id="perfil"><div class="h"><span class="s">//</span>PERFIL</div></div>`
+    +row('pf_sex','sexo',p.sex==='F'?'mujer':p.sex==='M'?'hombre':'—')
+    +row('pf_age','edad',p.age?p.age+' <span class="u">años</span>':'—')
+    +row('pf_height','estatura',p.heightCm?p.heightCm+' <span class="u">cm</span>':'—')
+    +row('logweight','peso',p.weightKg?numTxt(p.weightKg)+' <span class="u">kg</span>':'—')
+    +row('pf_act','actividad',act)
+    +row('goalpick','objetivo',GOAL_L[p.goal||'maintain'])
+    +row('pf_goals','metas',g.kcal?(+g.kcal).toLocaleString()+' <span class="u">kcal</span> · P'+Math.round(g.protein||0)+' C'+Math.round(g.carbs||0)+' F'+Math.round(g.fat||0):'—'); }
 function balanceOf(kcal){ const m=maintenanceKcal(); if(!m)return null; const delta=Math.round((+kcal||0)-m); const band=Math.max(60,m*0.03); const label=delta<-band?'déficit':(delta>band?'volumen':'mantenimiento'); const col=label==='déficit'?'var(--info)':'var(--fg)'; return {maint:m,delta:delta,label:label,col:col}; }
-function openGoals(){
+function openGoals(dayArg){   // v256: desde //PERFIL se abre con hoy (antes heredaba el día que estuvieras viendo en macros)
   // Editing day-scope: PAST → edit only that day's goalHist snapshot; TODAY → update both
   // settings.goals (future default) AND goalHist[today] (so today reflects immediately);
   // FUTURE → settings.goals only (becomes default once reached).
-  const today=todayISO(); const day=curDate(); const isPast=day<today; const isFuture=day>today;
+  const today=todayISO(); const day=dayArg||curDate(); const isPast=day<today; const isFuture=day>today;
   // Source of values shown in the editor: the goal for the currently-displayed day
   const baseG=(isPast||isFuture)?Object.assign({},(db.goalHist&&db.goalHist[day])||db.settings.goals||{}):db.settings.goals;
   const g=Object.assign({},baseG);                     // local working copy
@@ -8571,7 +8635,8 @@ const GLOSS={
   lm:'MEV · mínimo efectivo · MAV · donde más se progresa · MRV · máximo recuperable. Series duras por semana (guía RP): orientan, no son reglas.',
   est:'estimado = ventana de la literatura ajustada a tu dosis (series, fallo, estiramiento) · observado = lo que muestra tu propio historial, desde 6 pares de sesiones.',
   rirmed:'RIR medio de tus series duras con RIR registrado · "% a RIR ≤1" = qué parte fue al fallo o casi.',
-  e1rm:'e1RM: el máximo estimado para 1 repetición (Epley + RIR) de tus series de trabajo. Compara días con pesos y reps distintos.'
+  e1rm:'e1RM: el máximo estimado para 1 repetición (Epley + RIR) de tus series de trabajo. Compara días con pesos y reps distintos.',
+  racha:'racha: días seguidos con comida o gym registrados a mano. Solo se corta el día sin ninguno de los dos; hoy cuenta hasta medianoche.',
 };
 const glossWrap=(t,k)=>'<span data-gloss="'+k+'">'+t+'</span>';
 function popClose(){ const g=document.getElementById('gloss'); if(g)g.remove(); window._glossEl=null; const t=document.getElementById('tsel'); if(t)t.remove(); window._tselEl=null; }
@@ -8583,7 +8648,9 @@ function trkSelect(anchor,opts,cur,onPick,o){ o=o||{}; popClose(); const app=doc
   const p=document.createElement('div'); p.id='tsel'; p.className='tsel'; p.setAttribute('role','listbox'); cur=cur==null?'':String(cur);
   if(o.title){ const h=document.createElement('div'); h.className='tselh'; h.textContent=o.title; p.appendChild(h); }
   const row=document.createElement('div'); row.className='tselr';
-  opts.forEach(v=>{ v=String(v); const b=document.createElement('button'); b.type='button'; b.className='tselo'+(v===cur?' on':''); b.textContent=v; b.setAttribute('role','option'); b.setAttribute('aria-selected',v===cur?'true':'false');
+  opts.forEach(o0=>{ const ob=(o0&&typeof o0==='object')?o0:{v:o0,t:o0}; const v=String(ob.v);   // v256: {v,t,sub} con sublínea
+    const b=document.createElement('button'); b.type='button'; b.className='tselo'+(v===cur?' on':'')+(ob.sub?' hs':''); b.textContent=String(ob.t); b.setAttribute('role','option'); b.setAttribute('aria-selected',v===cur?'true':'false');
+    if(ob.sub){ const s=document.createElement('span'); s.className='tsub'; s.textContent=ob.sub; b.appendChild(s); }
     b.addEventListener('click',ev=>{ ev.stopPropagation(); popClose(); onPick(v); }); row.appendChild(b); });
   p.appendChild(row);
   if(o.clear&&cur!==''){ const c=document.createElement('button'); c.type='button'; c.className='tselx'; c.textContent=o.clear; c.addEventListener('click',ev=>{ ev.stopPropagation(); popClose(); onPick(''); }); p.appendChild(c); }
