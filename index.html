@@ -401,6 +401,12 @@
   .ex{margin-bottom:var(--sp-card);} .ex:last-child{margin-bottom:0;}
   /* v223: el ejercicio en curso (primera serie sin ✓) lleva una guía a la izquierda — "te pierdes en cuál vas" */
   .ex.current{position:relative;}
+  /* v256 · //ESTÍMULO: silencio = en rango; una frase solo si hay algo que mover; color solo para frenar */
+  .stq{padding:var(--s3) 0; border-bottom:.5px solid var(--o10);} .stq:last-child{border-bottom:0;} .stq.u-tap:active{opacity:.7;}
+  .stqh{display:flex; align-items:baseline; justify-content:space-between; gap:var(--s3);}
+  .stqn{font-size:var(--t-data); font-weight:700; color:var(--fg); min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;} .stqv{font-size:var(--t-data); font-weight:800; color:var(--fg); white-space:nowrap;}
+  .stq .vbar{margin-top:6px;}
+  .stqc{font-size:var(--t-label); line-height:1.4; color:var(--o70); margin-top:6px;} .stqc.bad{color:var(--bad);} .stqc.warn{color:var(--warn);} .stqc.dim{color:var(--o40);}
   /* v256 · modo enfoque: solo el ejercicio en curso se lee; lo demás queda tenue (tocarlo lo vuelve el actual) */
   .wline{position:relative; display:flex; align-items:center; gap:var(--s3); width:100%; height:32px; margin:var(--s3) 0 var(--s4); padding:0; border:0; background:none; color:var(--fg); font-family:inherit; text-align:left; cursor:pointer;}
   .wline .wtn{font-size:var(--t-section); font-weight:800; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
@@ -2312,7 +2318,7 @@ function renderHome(){
     +`<div class="u-mt10 u-mb2 u-mx0"><a data-act="togglepreview" class="u-label u-o60 u-tap u-py2 u-px6 u-lsui">${state.previewDay?'[ ocultar rutina ▴ ]':'[ ver rutina ▾ ]'}</a></div>`
     +(state.previewDay?dayPreviewHTML(day):'')
     +cta
-    +volumeSection()
+    +stimulusSection()
     +`<hr class="rule"/><div class="section u-mb10"><div class="h"><span class="s">//</span>STATS</div><div class="meta" data-act="settings">[settings]</div></div><div class="u-label u-o40 u-mt-n4 u-mb6 u-mx0">mi día · hoy</div>`
     +`<div class="line stat"><span class="k">sessions · 7d</span><span class="dots"></span><span class="v">${s7.count}</span></div>`
     +`<div class="line stat"><span class="k">uptime</span><span class="dots"></span><span class="v">${uptimeDays()}d</span></div>`
@@ -2355,30 +2361,44 @@ function plannedVolumeSection(){
   return `<hr class="rule"/><div class="section u-mb10"><div class="h"><span class="s">//</span>COBERTURA</div><div class="meta">sets/músculo · por vuelta</div></div>`+rows
     +`<div class="submeta u-mt8">cobertura del split por músculo · la tensión real se mide al loguear · marca ~10 = rendimientos decrecientes</div>`;
 }
-function volumeSection(){
-  // EFFECTIVE VOLUME (volumen efectivo, no crudo): serie EFECTIVA = dura (RIR≤4) en zona productiva. T = tensión efectiva 7d (v219).
-  const {byM,freq,effM,directM,indirectM}=weeklySets(7);
-  const muscles=Object.keys(byM).sort((a,b)=>(effM[b]||0)-(effM[a]||0));
-  let rows='';
-  if(!muscles.length){ rows=`<div class="submeta u-py6 u-px0">aún sin series duras esta semana</div>`; }
-  const r1=n=>Math.round(n*10)/10; const CEIL=20, DR=10;
-  muscles.forEach(m=>{ const eff=r1(effM[m]||0), hard=r1(byM[m]);
-    // v228: marcas = MEV y MRV del músculo real (guía RP); sin guía, la marca ~10 de rendimientos decrecientes
-    const L=landmarksForLabel(m); const CE=Math.max(CEIL,L?L[2]+2:CEIL); const drPct=Math.round(DR/CE*100);
-    const st=L?volStatus(m,eff):''; const stTag=st==='under'?` <span class="vst" data-gloss="lm" title="por debajo del volumen mínimo efectivo estimado (guía RP)">bajo MEV ${L[0]}</span>`:st==='high'?` <span class="vst warn" title="entre el volumen máximo adaptativo y el máximo recuperable">cerca de MRV</span>`:st==='over'?` <span class="vst bad" title="por encima del volumen máximo recuperable estimado">sobre MRV ${L[2]}</span>`:'';
-    const marks=L?(L[0]>0?trkMark(L[0]/CE*100,'mev','MEV '+L[0]):'')+trkMark(L[2]/CE*100,'mrv','MRV '+L[2]):trkMark(drPct);
-    const mp=muscleProgress(m); const mpBadge=(mp&&mp.dir)?progBadgeFromProg(mp,'tensión efectiva del músculo · 7d vs 7d previos'):''; const mT=(mp&&mp.cur>0)?` · T ${fmtT(mp.cur)}`:'';
-    const pct=Math.min(100,Math.round(eff/CE*100));
-    const junk=r1(hard-eff); const jn=junk>0?` <span class="u-o30" title="series duras pero de baja tensión (zona ligera) — sube carga / acércate al fallo">+${junk} lig.</span>`:'';
-    const ind=r1(indirectM[m]||0), dir=r1(directM[m]||0); const brk=ind>0?`<div class="submeta u-data u-mt2 u-dim" title="directas = músculo primario (1×) · indirectas = secundario (peso parcial)">↳ ${dir} directas · ${ind} indirectas</div>`:'';
-    rows+=`<div class="vrow"><div class="vtop"><span class="vm">${escTxt(m)}${mpBadge}${stTag}</span><span class="vn">${eff} ef.${jn}${mT} · ${freq[m]||0}×/wk</span></div>`
-      +`<div class="vbar">${trkBarI('vol:'+m,pct)}${marks}</div>${brk}</div>`;
-  });
-  return `<hr class="rule"/><div class="section u-mb12"><div class="h"><span class="s">//</span>EFFECTIVE VOLUME</div><div class="meta">series efectivas/músculo · 7d</div></div>`+rows
-    +`<div class="submeta u-mt8">ef. = series duras (RIR≤4) en zona productiva (tensión real) · marcas = MEV y MRV de ese músculo (guía RP; sin guía, ~10 = rendimientos decrecientes) · T = tensión efectiva 7d (carga relativa × reps cerca del fallo) · ▲▼ = T vs 7d previos</div>`;
-}
-
-// ---------- render: workout ----------
+// ---- v256 · //ESTÍMULO (sustituye a //EFFECTIVE VOLUME) ------------------------------------------------------------
+// El dueño: "veo muchos números y rojo y verde pero no me dice nada — el enfoque es la hipertrofia, el estímulo para
+// conseguirlo". Antes cada fila traía 8 datos, 9 cifras y 3 colores con significados distintos. Ahora: SILENCIO = EN
+// RANGO. Una fila dice nombre · series efectivas · una barra con MEV y MRV; solo si hay algo que mover, una frase. El
+// color aparece únicamente para FRENAR (sobre MRV, al tope). Cero métricas nuevas: weeklySets, MUSCLES[].lm,
+// muscleWindowAgg y muscleDiag ya lo calculan todo. Que el fallo mande sobre el volumen no es capricho: si las series
+// son flojas, sumar series es el consejo equivocado (Refalo 2024, proximidad al fallo).
+const STIM={light:3};
+function stimulusRows(){
+  const {byM,effM,freq}=weeklySets(7); const t=todayISO(), d7=shiftDate(t,-6), d28=shiftDate(t,-27);
+  const r1=n=>Math.round(n*10)/10;
+  return Object.keys(byM).map(m=>{ const eff=r1(effM[m]||0), hard=r1(byM[m]||0), L=landmarksForLabel(m), c=muscleCanon(m);
+    // una etiqueta de GRUPO (p. ej. delts = frontal + lateral) no tiene exposiciones propias: usa la guía del grupo y no se juzga por "pocos datos"
+    const one=!!(c.id&&!c.group&&MUSCLES[c.id]);
+    const w1=one?muscleWindowAgg(c.id,d7,t):{rn:0,rs:0}, n28=one?muscleWindowAgg(c.id,d28,t).n:2;
+    const rir=w1.rn?w1.rs/w1.rn:null, loose=rir!=null&&rir>=3&&w1.rn>=4, light=r1(hard-eff);
+    let rank=8, txt='', cls='';
+    if(!L){ rank=9; txt='sin guía de volumen'; cls='dim'; }
+    else if(n28<2){ rank=10; txt='pocos datos'; cls='dim'; }
+    else { const [MEV,MAV,MRV]=L;
+      const fat=one&&(muscleDiag(c.id).findings||[]).some(f=>f.k==='fatigue');
+      if(eff>MRV){ rank=0; cls='bad'; txt=fat?'sobre MRV · la capacidad ya cae':'sobre MRV · ~'+r1(eff-MRV)+' series de más'; }
+      else if(eff>=MAV&&(freq[m]||0)<=1){ rank=1; cls='warn'; txt='todo en un día · repartido rinde más'; }
+      else if(eff>MAV){ rank=2; cls='warn'; txt='al tope · sostener, no sumar'; }
+      else if(eff<MEV&&loose){ rank=3; txt='flojas y pocas · aprieta antes de sumar'; }
+      else if(eff<MEV&&light>=STIM.light){ rank=4; txt='bajo MEV · ~'+Math.round(light)+' fueron ligeras'; }
+      else if(eff<MEV){ rank=5; txt='bajo MEV · le faltan ~'+Math.ceil(MEV-eff)+' series'; }
+      else if(loose){ rank=6; txt='lejos del fallo · RIR '+r1(rir)+' de media'; }
+      else if(light>=STIM.light){ rank=7; txt='~'+Math.round(light)+' series en zona ligera'; } }
+    return {m,id:one?c.id:null,eff,L,rank,txt,cls}; })
+    .sort((a,b)=>a.rank-b.rank||b.eff-a.eff); }
+function stimulusSection(){
+  const rows=stimulusRows();
+  const body=rows.length?rows.map(r=>{ const CE=r.L?r.L[2]+2:0, pct=CE?Math.min(100,Math.round(r.eff/CE*100)):0;
+    const bar=r.L?`<div class="vbar">${trkBarI('stim:'+r.m,pct)}${r.L[0]>0?trkMark(r.L[0]/CE*100,'mev','MEV '+r.L[0]):''}${trkMark(r.L[2]/CE*100,'mrv','MRV '+r.L[2])}</div>`:'';
+    return `<div class="stq${r.id?' u-tap':''}"${r.id?` data-act="muscledetail" data-id="${r.id}"`:''}><div class="stqh"><span class="stqn">${escTxt(r.m)}</span><span class="stqv">${r.eff}</span></div>${bar}${r.txt?`<div class="stqc ${r.cls}">${escTxt(r.txt)}</div>`:''}</div>`; }).join('')
+    :`<div class="submeta u-py6 u-px0">aún sin series duras esta semana</div>`;
+  return `<hr class="rule"/><div class="section u-mb12"><div class="h"><span class="s">//</span>ESTÍMULO</div><div class="meta" data-gloss="stim">series efectivas · 7 d</div></div>`+body; }
 function repsOpts(sel){ let o='<option value="">—</option>'; for(let i=1;i<=25;i++)o+=`<option ${sel==String(i)?'selected':''}>${i}</option>`; return o; }
 function rirOpts(sel,allowF){ let o='<option value="">—</option>'; if(allowF)o+=`<option ${sel==='F'?'selected':''}>F</option>`; for(let i=0;i<=5;i++)o+=`<option ${sel==String(i)?'selected':''}>${i}</option>`; return o; }
 function unitOpts(sel){ return ['kg','lbs','pla'].map(u=>`<option ${sel===u?'selected':''}>${u}</option>`).join(''); }
@@ -3261,6 +3281,40 @@ function _diagSelfCheck(){
   console.log('diag self-check OK');
 }
 // R2 · TRKToast / TRKAsk / TRKHold (DESIGN_SYSTEM.md §7.18): contrato de comportamiento, en el DOM real y limpiando después
+// v256 self-check — las garantías de esta entrega que se pueden probar sin pantalla
+function _v256SelfCheck(){
+  const A=(nm,c)=>{ if(!c) throw new Error('SELFCHECK v256: '+nm); };
+  // 1 · las partes redondeadas suman EXACTO el total (antes 5 alimentos sumaban 788 bajo un total de 786)
+  const L=[{kcal:120.4},{kcal:99.6},{kcal:300.5},{kcal:265.9}], p=kcalParts(L), tot=Math.round(L.reduce((a,x)=>a+x.kcal,0));
+  A('las kcal de los alimentos suman el total de su comida', p.reduce((a,x)=>a+x,0)===tot);
+  A('con objetivo explícito, las partes suman ese objetivo', kcalParts(L,787).reduce((a,x)=>a+x,0)===787);
+  // 2 · cambiar de meta es "desde hoy": el pasado de goalHist no se toca y volver restaura exacto
+  const real=db; try{ db=JSON.parse(JSON.stringify(real)); const t=todayISO();
+    db.profile=Object.assign({},db.profile,{sex:'M',age:26,weightKg:61,heightCm:175,activity:1.55,goal:'maintain'});
+    db.settings.goals=Object.assign({},db.settings.goals,{kcal:2405,protein:150,carbs:343,fat:48}); db.settings.goalSets={};
+    db.goalHist={'2026-01-01':{kcal:2000,protein:140,carbs:250,fat:60}}; const before=JSON.stringify(db.goalHist['2026-01-01']), g0=JSON.stringify(db.settings.goals);
+    const _s=save, _r=reRender, _t=toast; save=()=>true; reRender=()=>{}; toast=()=>null;
+    try{ applyGoal('cut');
+      A('bajar mueve kcal y carbos; proteína y grasa se quedan', db.settings.goals.kcal<2405&&db.settings.goals.protein===150&&db.settings.goals.fat===48);
+      A('la meta de hoy queda en goalHist[hoy]', db.goalHist[t]&&db.goalHist[t].kcal===db.settings.goals.kcal);
+      A('un día pasado de goalHist no cambia', JSON.stringify(db.goalHist['2026-01-01'])===before);
+      applyGoal('maintain'); A('volver a mantener restaura exacto', JSON.stringify(db.settings.goals)===g0);
+    } finally { save=_s; reRender=_r; toast=_t; }
+  } finally { db=real; }
+  // 3 · en la app instalada, guardar un archivo NUNCA usa <a download> (atrapa la app en iOS)
+  (function(){ const d1=Object.getOwnPropertyDescriptor(navigator,'standalone'), d2=Object.getOwnPropertyDescriptor(navigator,'canShare');
+    let dl=0; const ac=HTMLAnchorElement.prototype.click; HTMLAnchorElement.prototype.click=function(){ if(this.download)dl++; };
+    try{ Object.defineProperty(navigator,'standalone',{value:true,configurable:true}); Object.defineProperty(navigator,'canShare',{value:()=>false,configurable:true});
+      saveFileSafe('x.json','{}','application/json'); A('en modo app no hay descarga, hay hoja para copiar', dl===0&&!!document.getElementById('ts_txt')); closeModal();
+    } finally { HTMLAnchorElement.prototype.click=ac; try{ if(d1)Object.defineProperty(navigator,'standalone',d1); else delete navigator.standalone; }catch(_){} try{ if(d2)Object.defineProperty(navigator,'canShare',d2); else delete navigator.canShare; }catch(_){} } })();
+  // 4 · la cabecera unilateral tiene exactamente las mismas columnas que la fila (por construcción)
+  const bx=document.createElement('div'); bx.innerHTML=uniHeadHTML(false,true); const hd=bx.querySelector('.thead');
+  A('la cabecera unilateral usa el template de la fila', hd.classList.contains('gc-uni')&&hd.children.length===6&&!!bx.querySelector('.pairdone'));
+  // 5 · //ESTÍMULO ordena lo accionable primero y nunca usa verde
+  const rs=stimulusRows(); A('//ESTÍMULO va ordenado por lo que hay que mover', rs.every((r,i)=>!i||rs[i-1].rank<=r.rank));
+  A('//ESTÍMULO no pinta verde', rs.every(r=>r.cls!=='good'));
+  console.log('v256 self-check OK');
+}
 function _uiSelfCheck(){
   const A=(nm,c)=>{ if(!c) throw new Error('SELFCHECK ui: '+nm); };
   const box=()=>document.getElementById('toasts'); const before=box()?[...box().children]:[]; let pending=false;
@@ -8698,6 +8752,7 @@ const GLOSS={
   rirmed:'RIR medio de tus series duras con RIR registrado · "% a RIR ≤1" = qué parte fue al fallo o casi.',
   e1rm:'e1RM: el máximo estimado para 1 repetición (Epley + RIR) de tus series de trabajo. Compara días con pesos y reps distintos.',
   racha:'racha: días seguidos con comida o gym registrados a mano. Solo se corta el día sin ninguno de los dos; hoy cuenta hasta medianoche.',
+  stim:'series efectivas: series duras (RIR ≤ 4) en zona productiva, últimos 7 días. La barra marca MEV (mínimo efectivo) y MRV (máximo recuperable) de ese músculo, guía RP. Sin frase = en rango.',
 };
 const glossWrap=(t,k)=>'<span data-gloss="'+k+'">'+t+'</span>';
 function popClose(){ const g=document.getElementById('gloss'); if(g)g.remove(); window._glossEl=null; const t=document.getElementById('tsel'); if(t)t.remove(); window._tselEl=null; }
@@ -9040,7 +9095,7 @@ try{ idbGet('latest').then(rec=>{ if(!rec||!rec.s)return; _idbLast=rec;
       ()=>{ db=migrate(inc); if(save())toast('✓ '+got+' registros recuperados'); go('home'); }); },900); }
 }).catch(e=>{ _idbErr=e; }); }catch(_){}
 try{ growthLog(); }catch(_){}
-try{ promptIdleSession(); }catch(_){} try{ if(typeof location!=='undefined' && /[?&]selftest=1/.test(location.search)){ _identitySelfCheck(); _dropsetSelfCheck(); _baselineSelfCheck(); _variantSelfCheck(); _historyEditSelfCheck(); _idSelfCheck(); _cardioSelfCheck(); _tensionSelfCheck(); _healthSelfCheck(); _readinessSelfCheck(); _loggingSelfCheck(); _mergeSelfCheck(); _streakSelfCheck(); _chartSelfCheck(); _muscleSelfCheck(); _exProfileSelfCheck(); _recoverySelfCheck(); _diagSelfCheck(); _uiSelfCheck(); } }catch(e){ console.error(e); } try{ const _sp=new URLSearchParams(location.search); const _hasHistorical=_sp.has('stepsh')||_sp.has('weighth')||_sp.has('stepsq')||_sp.has('sleeph'); if(_hasHistorical){ const _hsp=_sp; if(history.replaceState)history.replaceState(null,'',location.pathname); setTimeout(()=>{ trkAsk({title:'importar datos históricos',detail:'este link trae pasos, peso o sueño de varios días · acepta solo si viene de tu propio Atajo de iOS',ok:'importar'},()=>{ try{ const _imp=importHealth(_hsp); if(_imp.length){ save(); render(); toast('✓ '+_imp.join(' · ')); } }catch(_){} }); },400); } else { const _imp=importHealth(_sp); if(_imp.length){ window._healthImported=_imp; if(history.replaceState)history.replaceState(null,'',location.pathname); } } }catch(_){} save(); render(); if(window._healthImported)setTimeout(()=>toast('✓ '+window._healthImported.join(' · ')),250); if(window._recoveredFromBackup)setTimeout(()=>{try{toast('⚠ se recuperó un respaldo local · revisa tus datos, podrían faltar cambios muy recientes','err');}catch(_){}},600);
+try{ promptIdleSession(); }catch(_){} try{ if(typeof location!=='undefined' && /[?&]selftest=1/.test(location.search)){ _identitySelfCheck(); _dropsetSelfCheck(); _baselineSelfCheck(); _variantSelfCheck(); _historyEditSelfCheck(); _idSelfCheck(); _cardioSelfCheck(); _tensionSelfCheck(); _healthSelfCheck(); _readinessSelfCheck(); _loggingSelfCheck(); _mergeSelfCheck(); _streakSelfCheck(); _chartSelfCheck(); _muscleSelfCheck(); _exProfileSelfCheck(); _recoverySelfCheck(); _diagSelfCheck(); _uiSelfCheck(); _v256SelfCheck(); } }catch(e){ console.error(e); } try{ const _sp=new URLSearchParams(location.search); const _hasHistorical=_sp.has('stepsh')||_sp.has('weighth')||_sp.has('stepsq')||_sp.has('sleeph'); if(_hasHistorical){ const _hsp=_sp; if(history.replaceState)history.replaceState(null,'',location.pathname); setTimeout(()=>{ trkAsk({title:'importar datos históricos',detail:'este link trae pasos, peso o sueño de varios días · acepta solo si viene de tu propio Atajo de iOS',ok:'importar'},()=>{ try{ const _imp=importHealth(_hsp); if(_imp.length){ save(); render(); toast('✓ '+_imp.join(' · ')); } }catch(_){} }); },400); } else { const _imp=importHealth(_sp); if(_imp.length){ window._healthImported=_imp; if(history.replaceState)history.replaceState(null,'',location.pathname); } } }catch(_){} save(); render(); if(window._healthImported)setTimeout(()=>toast('✓ '+window._healthImported.join(' · ')),250); if(window._recoveredFromBackup)setTimeout(()=>{try{toast('⚠ se recuperó un respaldo local · revisa tus datos, podrían faltar cambios muy recientes','err');}catch(_){}},600);
 applyDesign(); try{ if(/[?&]design\b/.test(location.search))localStorage.setItem('gymtrk_designmode','1'); if(localStorage.getItem('gymtrk_designmode')==='1')openDesignPanel(); }catch(_){}
 try{ bootScreen(()=>{ try{
   if(/[?&]wrap=1\b/.test(location.search)){ monthlyWrap(prevMonthYm(), true); return; }

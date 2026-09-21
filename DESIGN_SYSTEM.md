@@ -119,22 +119,23 @@ Todo color semántico va acompañado de otra señal (▲▼, texto, glifo) — n
 
 Familia única: **JetBrains Mono** (Google Fonts, pesos 300/400/500/700/800), fallback `ui-monospace, Menlo`.
 
+**v256 · escala única de 5 tamaños (queja del dueño: "lo veo todo como chilaquil").** Antes 9·10·11·12·13 estaban a
+1 px entre sí (razones 1.08–1.11, por debajo del ~20 % que el ojo necesita para leer jerarquía por tamaño) y cargaban
+el 87 % de las declaraciones. Mueren **13, 11 y 9**. Se decidió con la skill `ui-ux-pro-max` (perfil *Terminal CLI
+Monospace*: pocos tamaños sin intermedios) y `design:design-system` (migración con alias, cobertura por rol).
+
 | Token | px | Rol | Ejemplos |
 |---|---|---|---|
-| `--t-caption` | 9 | **solo** mayúsculas espaciadas | `.grp-label`, ejes y leyendas de gráfica, `.plbl` |
-| `--t-xs` | 10 | meta secundaria, acciones `[ ]` | `.submeta`, `.addbtn`, `.ctrls a`, estado de recuperación |
-| `--t-meta` | 11 | meta primaria, filas clave-valor, chips | `.line`, `.vn`, `.sheet h3` |
-| `--t-sm` | 12 | texto de controles, input de dato | `.b`, `.inp`, `.pick`, `.mdline` |
-| `--t-body` | 13 | cuerpo, botón primario | `.start`, `.ok`, `.pickitem` |
-| `--t-section` | 16 | `//SECCIÓN`, nombre de ejercicio, input de formulario (anti-zoom iOS) | `.section .h`, `.exhead .n`, `.field input` |
-| `--t-display` | 22 | nombre del día, valor de tile | `.wname`, `.pval` |
-| `--t-hero` | 34 | número protagonista de una vista | racha `.strk-n`, valor de detalle `.mdval` |
+| `--t-label` | 10 | etiqueta, meta, detalle, anotación | rótulos MAYÚSCULAS (`.grp-label`, `.plbl`, `//NEXT`), cabecera de tabla, `.exsub`, `sin baseline`, `.setn`, `meta: ▾`, la franja de racha |
+| `--t-data` | 12 | dato | filas clave-valor, alimentos, celdas de supps/agua, tabla de sesión, **todos los botones, chips y tabs (700)**, toast, filas de compartir |
+| `--t-section` | 16 | título · campo · glifo de control | `//SECCIÓN`, títulos de hoja y de TRKLog, nombre de ejercicio, **nombre y total de comida**, fecha de macros · inputs (anti-zoom iOS) · `‹ › ✓ ○ ↩ ··· ✕` |
+| `--t-display` | 22 | display | nombre del día, valor de tile, número del anillo de kcal, gramos de compartir comida, total de la hoja de desglose |
+| `--t-hero` | 34 | héroe | valor del detalle de métrica. Nada más. |
 
 - **Prohibidos:** 7, 7.5, 8, 9.5, 14, 15, 17–21, 23–26, 30, 36, 40. Se mapean según §20.
-- **Excepción de componente:** el número dentro de un anillo escala con el anillo (lg 26 · share 24 · banner 21).
-- **Overlays exentos:** boot, wrap (60/44/20) y escáner (40) son pantallas de un solo mensaje.
-- Micro-texto legible **≥10 px**; 9 px solo para mayúsculas espaciadas (etiquetas, ejes) y **anotaciones de dato**
-  pegadas a una fila (línea de progreso por serie, T, FC, % de drop, estado de volumen).
+- **Anillos dentro de la escala (v256):** kcal a 22, P/C/F a 16. Ya no hay excepción de componente.
+- **Exentos solo:** wrap 60/44, escáner 40 y el panel de desarrollo. Boot y wrap usan la escala en todo lo demás.
+- Micro-texto **≥10 px, siempre**. **800 nunca por debajo de 12**; 700 a 10 solo en estado semántico (▲▼ %, PR, sobre MRV).
 - Inputs de formulario en **16 px** (evita el zoom de iOS).
 
 **Peso:** 300 glifos grandes (`+` del FAB) · 400 texto · 500 (reservado, casi sin uso) · **700** énfasis, números,
@@ -159,18 +160,17 @@ la pantalla. Esta tabla es cerrada: un componente nuevo elige su fila, no un tam
 
 | Rol | Token | Peso | Notas |
 |---|---|---|---|
-| `//SECCIÓN` de pantalla | `--t-section` 16 | 800 | una sola por bloque; el subtítulo interno es `.grp-label` 9 CAPS |
-| Campo que abre teclado o picker | `--t-section` 16 | 400/700 | **siempre** 16 (anti-zoom iOS): `.field input`, `.inp`, `.pick`, selects y el renombrar en sitio |
-| Nombre de fila **navegable** (abre algo) | `--t-body` 13 | 700 | catálogo, historial, comida del log, `.pickitem`, `.nvm` |
-| Nombre de fila de **dato** | `--t-meta` 11 | 400/700 | `.line`, `.item`, `.mrow`, `.sxh` — **el 12 no existe en este rol** |
-| Valor de la fila | el de su fila | 700/800 | nunca token propio; se distingue por peso y opacidad |
-| Meta pegada a la fila | `--t-xs` 10 | 400 | 9 queda solo para MAYÚSCULAS espaciadas y anotaciones de serie |
-| Chip / badge | `--t-meta` 11 | 700 | alto 36 |
-| Tab / segmentado | `--t-meta` 11 | 700 | spec de TRKTabs (§7.18) |
-| Botón | 48 → `--t-body` 13 · ≤44 → `--t-meta` 11 | 700 | por altura, no por importancia |
-| Leyenda / ayuda / vacío | `--t-xs` 10 | 400 | una sola voz (`.submeta`, `.empty`, `.ehint`) |
-| Título de sheet | `--t-section` 16 | 800 | `.sheet h3`, `.mdhd h3` |
-| Nombre de pantalla / del día | `--t-display` 22 | 800 | `.wname`, `.dnlbl`; las flechas `‹ ›` nunca pesan más que el dato (16) |
+| `//SECCIÓN`, título de hoja, título de TRKLog | 16 | 800 | una sola por bloque |
+| Título de **entidad** (ejercicio, comida con su total) | 16 | 800 | el total de una comida SIEMPRE manda sobre sus alimentos (queja 9) |
+| Campo que abre teclado o picker | 16 | 400/700 | **siempre** 16 (anti-zoom iOS); excepción documentada: la tabla de sesión (§15) |
+| Fila navegable / fila de dato | 12 | 700 / 400 | catálogo, historial, `.line`, `.item`, `.mrow`, alimentos (nombre `--o70`, kcal `--o50`) |
+| Valor de la fila | el de su fila | 700/800 | se distingue por peso y opacidad, nunca por tamaño propio |
+| Botón · chip · tab | 12 | 700 | `.start` = `.footer .save` = `.b` = `.lact` |
+| Meta, etiqueta, ayuda, vacío | 10 | 400 | una sola voz (`.submeta`, `.empty`, `.wmeta`) |
+| Nombre del día / pantalla | 22 | 800 | `.wname`; las flechas `‹ ›` nunca pesan más que el dato que mueven |
+
+Tamaños por pantalla: gym {10,12,16,22} · sesión {10,12,16} · macros {10,12,16,22} · progreso {10,12,16,22} ·
+ajustes {10,12,16} · compartir {10,12,16,22}. El auditor reporta `escala en uso`, `tokens viejos` y `peso 800 bajo 12`.
 
 ### 4.5 Espaciado y ritmo
 
@@ -480,6 +480,11 @@ comportamiento, §19). **Ninguna pantalla implementa su propia versión**: si fa
 | **TRKWheel** | elegir un valor de una lista corta girando, estilo reloj | `trkWheel({title,opts,cur,ok,other,otherLabel},onPick)` en un sheet; `[elegir]` lee la posición real al confirmar (no depende del evento de scroll, que el segundo plano no despacha) | rueda de `scroll-snap` en CSS puro: 5 filas de 40 px, centro entre dos hairlines `--o20`, la elegida `--fg`/800; cada fila es un botón dentro de `role="radiogroup"`; tocar una fila elige directo; `other` cae a TRKPrompt para texto libre | [HIG · Pickers](https://developer.apple.com/design/human-interface-guidelines/pickers) (≈5 filas, valor centrado) · **no**: ruedas para valores nominales largos ni para sustituir listas navegables | nombre de comida (`[+ comida]`), horas y minutos del sueño |
 | **TRKSelect** | elegir un valor chico de un toque, con respuesta inmediata | `trkSelect(anchor,opts,cur,onPick,{title,clear})` (`#tsel`, se cierra con `popClose`: toque fuera, scroll o repintado) · RIR: `openRirSelect(el,hist)` sobre el botón `.pick.rirb` (mismo `data-act="setf"`/`"h_setf"` y `data-f="rir"` que el select) · `TRK_RIR=false` devuelve el `<select>` | fila F 0 1 2 3 4 5 de 44 px (orden del select que ya conocías) + `— quitar`; la actual en `--fill`; elegir (aunque sea la misma) confirma, cerrar sin elegir no cambia nada | [Interactive Selector](https://21st.dev/@minhxthanh/components/interactive-selector) · **no**: su estética ni animación | RIR de la tabla (fase B) |
 
+| **TRKLog** (v256) | registrar lo del día con UNA anatomía: supps, comidas y agua se ven igual de importantes | `logSecHTML({k,title,v,act,body,open})` · plegado en `state._lfold` (se fija una vez por día visto) | cabecera 44 px: `//TÍTULO` 16/800 · lectura 12 · `›` que gira; acción `.lact` 96×32 (44 de toque) 12/700 idéntica en las tres; filas `.lc`/`.mit` de 36 px a 12 | [Item Action List](https://21st.dev/@sean0205/components/item-action-list) · se toma la anatomía de fila con acción; no el ícono ni la tarjeta | macros: SUPPS → MEALS → WATER (orden del dueño) |
+
+**v256 · extensiones:** `toast(msg,type,{undo})` agrega `[deshacer]` (4.6 s, uno vivo a la vez; lo reversible ya no pregunta) ·
+`trkSelect` acepta `{v,t,sub}` con sublínea de 10 (meta, actividad) · TRKCal gana la variante `stripCalHTML(n,mark)` (racha en franja).
+
 La navegación (§7.10) ya cumple el patrón de [Bottom menu](https://21st.dev/community/components/yadwinder/bottom-menu/default)
 (activo que se ensancha con su etiqueta, sobre glass): sin cambio.
 
@@ -697,8 +702,10 @@ settings + sheets (detalle de métrica, perfil de ejercicio, catálogo, músculo
 
 **Skills/MCP** (criba de STYLEMAP §8, vigente): adoptar `brutalist-skill` (referencia de estilo, no generador),
 `impeccable` (audit/polish), `emil-design-eng` (movimiento), `ecc:accessibility`, `ecc:browser-qa`, Playwright/preview
-para QA visual. Solo filosofía: `minimalist-skill`, `taste-skill`, `redesign-skill`, `ecc:design-system`. **Evitar:**
-`frontend-design`, `soft-skill`, `ui-ux-pro-max`, `gpt-tasteskill`, `stitch-skill`, `imagegen-*`, **MCP `magic`/21st**.
+para QA visual. Solo filosofía: `minimalist-skill`, `taste-skill`, `redesign-skill`, `ecc:design-system`.
+**`ui-ux-pro-max` y `design:design-system`: consulta de datos, nunca generador** (v256, a pedido del dueño: su buscador
+sustentó la escala de 5 tamaños). **Evitar:** `frontend-design`, `soft-skill`, `gpt-tasteskill`, `stitch-skill`,
+`imagegen-*`, **MCP `magic`/21st**.
 
 **21st.dev.** Es un registro de componentes **React + Tailwind** (shadcn/Radix/Motion), instalación con clave de API,
 licencia por componente. Se usa **solo como catálogo de comportamientos**: *se toma la interacción, se reescribe en JS
