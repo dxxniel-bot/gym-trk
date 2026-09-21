@@ -597,35 +597,54 @@
   @keyframes blink{50%{opacity:0}}
   @media (prefers-reduced-motion:reduce){ .cur::after{animation:none;} }
   /* ===== shareable summary (mono, monochrome + green/white/red) ===== */
-  .shtitle{text-align:center; font-size:var(--t-label); color:var(--o40); letter-spacing:var(--ls-caps); text-transform:uppercase; margin:var(--s4) 0 var(--s4);}
-  .shbanner{display:flex; align-items:center; gap:var(--s5); padding:var(--s3) 6px var(--s6); border-bottom:1px solid var(--border);}
-  .shr-ring .ring.lg{width:106px; height:106px;} .shr-ring .ring.lg .num{font-size:var(--t-display); font-weight:800; letter-spacing:-.5px/*ds:exempt*/;} .shr-ring .ring.lg .of{font-size:var(--t-label); color:var(--o40); margin-top:var(--s2); letter-spacing:1px/*ds:exempt*/;}
+  /* v256 · compartir en 1:1: el cuadro de 393×393 se captura tal cual para una historia; la tarjeta de 357×357 vive
+     dentro con margen negro de 18 y NUNCA crece (fitShareCard ajusta por escalones). Las acciones van fuera. */
+  .shsq{width:calc(100% + 2 * var(--sp-px)); max-width:393px/*ds:exempt*/; aspect-ratio:1; margin:0 calc(-1 * var(--sp-px)); padding:var(--sp-px); background:var(--bg); box-sizing:border-box;}
+  .sharecard{width:100%; height:100%; display:flex; flex-direction:column; overflow:hidden; color:var(--fg);}
+  .shtop{display:flex; align-items:baseline; gap:var(--s3); line-height:1.2;}
+  .shtt{font-size:var(--t-section); font-weight:800; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .shtm{margin-left:auto; font-size:var(--t-label); color:var(--o40); white-space:nowrap;}
+  .shbody{min-height:0;}
+  .shfoot{margin-top:auto; padding-top:var(--s4); text-align:right; font-size:var(--t-data); font-weight:800; line-height:1.2; color:var(--o35);}
+  .shacts{margin-top:10px;}
+  .shmore{margin-top:var(--s2); font-size:var(--t-label); line-height:1.2; color:var(--o40);}
+  .shimgv{display:block; width:100%; height:auto; border-radius:var(--r-ctl);}
+  /* sesión: tres héroes (duración · series · ejercicios) y un bloque por ejercicio con las series NUMERADAS en rejilla,
+     la unidad pegada al peso y el RIR escrito — sin tonelaje ni tensión (pedido del dueño) */
+  .sh3{display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); align-items:baseline; margin:var(--s4) 0 var(--s5);}
+  .sh3 .sh3v{font-size:var(--t-hero); font-weight:800; letter-spacing:var(--ls-num); line-height:1; color:var(--fg); white-space:nowrap;}
+  .sh3 .sh3v .un{font-size:var(--t-data); font-weight:400; letter-spacing:0; color:var(--o40); margin:0 var(--s1);}
+  .shx + .shx{margin-top:var(--s2);}
+  .shxh{display:flex; align-items:baseline; gap:var(--s3); font-size:var(--t-data); line-height:1.2;}
+  .shxh .shxn{font-weight:800; color:var(--fg); min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .shxh .shxc{margin-left:auto; font-size:var(--t-label); color:var(--o40); white-space:nowrap;}
+  .shxs{display:grid; column-gap:var(--s2); font-size:var(--t-data); line-height:1.2;} .shxs.c3{grid-template-columns:repeat(3,minmax(0,1fr));} .shxs.c2{grid-template-columns:repeat(2,minmax(0,1fr));}
+  .shs{white-space:nowrap; overflow:hidden; color:var(--fg);}
+  .shs i{display:inline-block; min-width:3ch; margin-right:var(--s1); font-style:normal; font-size:var(--t-label); color:var(--o40);}
+  .shs b{font-weight:700;} .shs .un,.shs .x{color:var(--o40);}
+  .shs .rir{margin-left:var(--s1); font-size:var(--t-label); color:var(--o40);} .shs .rir b{margin-left:1px; color:var(--o70);}
+  .shs.dr{color:var(--o60);} .shs.dr b{font-weight:400;}
+  .sharecard[data-shlvl="1"] .shxs{font-size:var(--t-label);}   /* escalón 1: series a 10, sigue dentro de la escala */
+  /* comida: el anillo con las kcal dentro y los gramos a la derecha; cada comida con su total a 16/800 */
+  .shbanner{display:flex; align-items:center; gap:var(--s5); margin:var(--s4) 0 var(--s5);}
+  .shr-ring .ring.lg{width:106px; height:106px;} .shr-ring .ring.lg .num{font-size:var(--t-display); font-weight:800; letter-spacing:var(--ls-num);} .shr-ring .ring.lg .of{font-size:var(--t-label); color:var(--o40); margin-top:var(--s2);}
   .shr-macros{flex:1; display:flex; justify-content:space-around;}
-  .shm{text-align:center; flex:1;} .shm-g{font-size:var(--t-display); font-weight:800; letter-spacing:var(--ls-num);} .shm-g span{font-size:var(--t-data); color:var(--o40); font-weight:400; margin-left:1px;} .shm-l{font-size:var(--t-label); color:var(--o50); margin-top:6px; letter-spacing:var(--ls-ui);} .shm-p{font-size:var(--t-label); color:var(--o35); margin-top:var(--s1);}
+  .shm{text-align:center; flex:1;} .shm-g{font-size:var(--t-display); font-weight:800; letter-spacing:var(--ls-num); line-height:1;} .shm-g span{font-size:var(--t-data); color:var(--o40); font-weight:400; margin-left:var(--s1);} .shm-l{font-size:var(--t-label); color:var(--o50); margin-top:var(--s3);} .shm-p{font-size:var(--t-label); color:var(--o35); margin-top:var(--s1);}
   .shlog{margin-top:var(--s5);}
-  .sgrp{margin-bottom:var(--s5);} .sgh{display:flex; justify-content:space-between; align-items:baseline; margin-bottom:var(--s3); cursor:pointer;} .sgh .sgn{font-size:var(--t-data); font-weight:800; letter-spacing:var(--ls-ui);} .sgh .sgk{font-size:var(--t-label); color:var(--o40);} .sgh:active .sgn{color:var(--o60);}
-  .sitem{display:flex; justify-content:space-between; align-items:baseline; font-size:var(--t-data); padding:6px 0;}
-  .sitem .sn{color:var(--o50);} .sitem .sn .q{color:var(--o60); font-weight:700; margin-right:var(--s2);} .sitem .sb{font-size:var(--t-label); color:var(--o40);} .sitem .sk{color:var(--o60); font-weight:400;}
-  .shfoot{text-align:center; font-size:var(--t-data); font-weight:800; color:var(--o35); margin-top:var(--s4); letter-spacing:var(--ls-ui);}
-  /* v225 · compartir una sesión: denso, tipo terminal — una línea de cabecera y una línea de series por
-     ejercicio, con unidad, RIR, F y drops. Antes eran chips de "60 × 11" sin decir 60 de qué. */
-  /* U7 · tres lecturas arriba: el tamaño ES la jerarquía (Hevy, Strava, Whoop), el resto baja a letra chica */
-  .sh3{display:flex; gap:var(--s3); padding:var(--s2) 0 var(--s5); border-bottom:1px solid var(--border); margin-bottom:var(--s4);}
-  .sh3 .sh3c{flex:1; min-width:0;}
-  .sh3 .sh3v{font-size:var(--t-hero); font-weight:800; letter-spacing:var(--ls-num); color:var(--fg); line-height:1;}
-  .sh3 .sh3v span{font-size:var(--t-data); font-weight:400; color:var(--o40); letter-spacing:0; margin-left:var(--s1);}
-  .sh3 .sh3l{font-size:var(--t-label); letter-spacing:var(--ls-caps); text-transform:uppercase; color:var(--o35); margin-top:var(--s2);}
-  .shacts{display:flex; justify-content:flex-end; gap:var(--s5); margin-top:var(--s4);}
-  .shacts a{font-size:var(--t-label); color:var(--o60); cursor:pointer; padding:var(--s3) 0;}
-  .shhead{display:flex; flex-wrap:wrap; gap:var(--s2) 10px; font-size:var(--t-data); color:var(--o50); padding:6px 0 10px; border-bottom:1px solid var(--border); margin-bottom:var(--s4);}
-  .shhead b{color:var(--fg); font-weight:800;}
+  .sgrp + .sgrp{margin-top:var(--s3);}
+  .sgh{display:flex; align-items:baseline; gap:var(--s3); line-height:1.2;}
+  .sgh .sgn{font-size:var(--t-section); font-weight:800; color:var(--fg); min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .sgh .sgt,.sgh .sgm{font-size:var(--t-label); color:var(--o40); white-space:nowrap;} .sgh .sgm{margin-left:auto;}
+  .sgh .sgk{font-size:var(--t-section); font-weight:800; color:var(--fg); white-space:nowrap;} .sgh .sgn + .sgk{margin-left:auto;} .sgh .sgk .un{font-size:var(--t-data); font-weight:400; color:var(--o40); margin-left:var(--s1);}
+  .sharecard .sgh + .mit{margin-top:var(--s1);} .sharecard .mit{min-height:0; line-height:1.2;}
+  .sharecard[data-shlvl="1"] .sgrp .mit{display:none;}   /* escalón 1 de comida: solo los totales de cada comida */
+  /* historial: el formato compacto de una sesión (se conserva) */
   .sxr{margin-bottom:10px;}
   .sxh{display:flex; justify-content:space-between; align-items:baseline; gap:var(--s3); font-size:var(--t-data);}
   .sxh .sxn{color:var(--fg); font-weight:800; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
   .sxh .sxk{color:var(--o40); font-size:var(--t-label); white-space:nowrap;}
   .sxs{font-size:var(--t-data); color:var(--o60); margin-top:1px; line-height:1.55;}
   .sxs .dr{color:var(--o40);}
-  .shfootline{display:flex; justify-content:space-between; gap:var(--s3); font-size:var(--t-label); color:var(--o40); border-top:1px solid var(--border); margin-top:10px; padding-top:var(--s3);}
   .shbanner.shwt{justify-content:space-around; gap:var(--s3);}
   .shstat{text-align:center; flex:1;} .shstat-n{font-size:var(--t-display); font-weight:800; letter-spacing:var(--ls-num);} .shstat-l{font-size:var(--t-label); color:var(--o50); margin-top:6px; letter-spacing:var(--ls-caps); text-transform:uppercase;}
   .shr-ring.good .ring-fill{stroke:var(--good);} .shr-ring.over .ring-fill{stroke:var(--bad);}
@@ -1134,8 +1153,8 @@ async function nativeBoot(){ const fs=capP('Filesystem'); if(!fs)return;
   if(best&&dbMass(best.db)>dbMass(db)){ db=migrate(best.db); save(); render(); try{ toast('↺ datos recuperados del respaldo de la app'); }catch(_){} }
   else if(dbMass(db)>0){ nativeMirrorSoon(JSON.stringify(db)); } }
 // files in the native app: write to Documents (visible in Archivos) and open the share sheet — <a download> doesn't work in a WebView
-async function nativeShareFile(name,text){ const fs=capP('Filesystem'), sh=capP('Share'); if(!fs){ toast('⚠ no pude acceder a Archivos','err'); return; }
-  try{ await fs.writeFile({path:name,data:text,directory:'DOCUMENTS',encoding:'utf8'}); const u=await fs.getUri({path:name,directory:'DOCUMENTS'});
+async function nativeShareFile(name,text,enc){   // v256: enc='base64' para la imagen const fs=capP('Filesystem'), sh=capP('Share'); if(!fs){ toast('⚠ no pude acceder a Archivos','err'); return; }
+  try{ await fs.writeFile(Object.assign({path:name,data:text,directory:'DOCUMENTS'},enc==='base64'?{}:{encoding:'utf8'})); const u=await fs.getUri({path:name,directory:'DOCUMENTS'});
     if(sh) await sh.share({title:name,files:[u.uri]}); else toast('guardado en Archivos › gym//TRK › '+name,'ok'); }
   catch(e){ if(!/cancel/i.test(String(e&&e.message)))toast('⚠ no pude exportar · '+((e&&e.message)||''),'err'); } }
 // ---- v254 · el guardado deja de mentir -------------------------------------------------------------------------
@@ -3873,25 +3892,22 @@ function suppSecHTML(iso){
 // (queja 9: antes el total de la comida salía más chico que las kcal de sus alimentos). Solo la más reciente abre sola.
 // redondeo de resto mayor (Hamilton): los enteros de las partes suman EXACTAMENTE el total redondeado. Sin esto, cinco
 // alimentos redondeados por separado sumaban 788 bajo un total de 786.
-function kcalParts(list){ const v=list.map(m=>+m.kcal||0), tot=Math.round(v.reduce((a,x)=>a+x,0)), fl=v.map(Math.floor);
+function kcalParts(list,target){ const v=list.map(m=>+m.kcal||0), tot=target!=null?Math.round(target):Math.round(v.reduce((a,x)=>a+x,0)), fl=v.map(Math.floor);
   let rest=tot-fl.reduce((a,x)=>a+x,0); const ord=v.map((x,i)=>[x-Math.floor(x),i]).sort((a,b)=>b[0]-a[0]);
   for(let j=0;j<ord.length&&rest>0;j++,rest--)fl[ord[j][1]]++;
   for(let j=ord.length-1;j>=0&&rest<0;j--,rest++)fl[ord[j][1]]--;
   return fl; }
 function mealItemRow(m,kc){ const nm=(m.name||'').replace(/ ×[\d.]+$/,''); const exp=state.expandedMeal===m.id;
   return `<div class="mit${exp?' exp':''}" data-act="viewmeal" data-id="${m.id}" data-rk="mi:${m.id}"><span class="nm"><b class="q">${itemQtyLabel(m)}</b> ${escTxt(nm)}</span><span class="kc">${kc==null?(Math.round(m.kcal)||0):kc}</span></div>`+(exp?mealDetailInline(m):''); }
-function foodSecHTML(iso,items){
-  const byTag={}; items.forEach(m=>{(byTag[m.tag]=byTag[m.tag]||[]).push(m);});
-  const order=['breakfast','lunch','snack','dinner','drink'];
-  const _tmin=tg=>{ const mm=hm2min(mealTime(iso,tg)); return isFinite(mm)?mm:Infinity; };
-  const tags=Object.keys(byTag).sort((a,b)=>{ const A=_tmin(a),B=_tmin(b); return A!==B?A-B:(order.indexOf(a)-order.indexOf(b)); });
+function foodSecHTML(iso,items,dayKcal){
+  const DP=dayMealParts(iso,items,dayKcal), byTag=DP.byTag, tags=DP.tags;   // v256: los totales de las comidas suman exacto el anillo
   state._mealOpen=state._mealOpen||{};
   if(!state._mealOpen[iso]){ state._mealOpen[iso]={}; if(tags.length)state._mealOpen[iso][tags[tags.length-1]]=true; }
   const om=state._mealOpen[iso];
   const meals=tags.map(tag=>{ const list=byTag[tag], mt={kcal:0,protein:0,carbs:0,fat:0}; list.forEach(m=>{ for(const k in mt)mt[k]+=+m[k]||0; });
-    const op=!!om[tag], tm=mealTime(iso,tag), et=escTxt(tag), kc=Math.round(mt.kcal);
+    const op=!!om[tag], tm=mealTime(iso,tag), et=escTxt(tag), kc=DP.meal[tags.indexOf(tag)];
     const meta=[tm,Math.round(mt.protein)+'P '+Math.round(mt.carbs)+'C '+Math.round(mt.fat)+'F'].filter(Boolean).join(' · ');
-    const kp=kcalParts(list);
+    const kp=kcalParts(list,kc);
     const rows=op?`<div class="mlbody">${list.map((m,i)=>mealItemRow(m,kp[i])).join('')}<button type="button" class="mit add" data-act="addtomeal" data-tag="${et}"><span class="nm">+ food</span></button></div>`:'';
     return `<div class="mrec${op?' open':''}" data-tag="${et}" data-rk="ml:${et}"><div class="mhd"><button type="button" class="mtg" data-act="mealfold" data-tag="${et}" aria-expanded="${op}"><span class="mchev" aria-hidden="true">›</span><span class="mnm">${et}</span><span class="mmeta">${escTxt(meta)}</span></button>`
       +`<button type="button" class="mkc" data-act="mealsummary" data-tag="${et}" aria-label="desglose de ${et} · ${kc} kcal"><span data-nk="mk:${et}" data-nv="${kc}">${kc.toLocaleString()}</span></button>`
@@ -3942,7 +3958,7 @@ function renderMacros(){
     +`<div class="section"><div class="h dnavh"><a data-act="dayprev" class="dnav">‹</a><span class="dnlbl-wrap"><span class="dnlbl">${dayLabel(curDate())}</span><input type="date" class="dcal" data-act="daycal" value="${curDate()}"/></span><a data-act="daynext" class="dnav">›</a></div><div class="meta"><a data-act="share" class="u-tap">[share]</a> <a data-act="editgoals" class="u-tap u-ml8">[goals]</a></div></div>`
     +`<div class="card u-pt16 u-pb16 u-px16"><button class="hero ${open?'open':''} ${kStat}" data-act="togglemacros">${ringHTML(pct,`<div class="num" data-nk="kcal" data-nv="${Math.round(t.kcal)}">${Math.round(t.kcal).toLocaleString()}</div><div class="of">/ ${g.kcal.toLocaleString()} kcal</div>`,'lg')}<div class="hero-meta"><span class="left ${left<0?'over':'under'}">${left>=0?left+' left':Math.abs(left)+' over'}</span> · ${Math.round(pct)}% <span class="chev">▾</span></div></button>${goalSecHidden('balance')?'':(function(){var b=balanceOf(g.kcal);return b?'<div class="hbal">'+(b.label==='mantenimiento'?'en mantenimiento':'<span style="color:'+b.col+';font-weight:700">'+b.label+'</span> '+Math.abs(b.delta)+' kcal')+' · mant. ≈ '+b.maint+'</div>':'';})()}${details}</div>`
     +suppSecHTML(curDate())
-    +foodSecHTML(curDate(),items.filter(m=>!isWaterItem(m)))
+    +foodSecHTML(curDate(),items.filter(m=>!isWaterItem(m)),t.kcal)
     +waterSecHTML(curDate());   // orden del dueño: supps → meals → water al final
 }
 // ---------- render: shareable summary (gym//TRK aesthetic, horizontal banner) ----------
@@ -3978,46 +3994,134 @@ function mealGroupDetail(list){
 function mealFoodRows(items){ const kp=kcalParts(items);
   return items.map((m,i)=>{ const nm=(m.name||'').replace(/ ×[\d.]+$/,'');
     return `<div class="mit st"><span class="nm"><b class="q">${itemQtyLabel(m)}</b> ${escTxt(nm)}</span><span class="kc">${kp[i]}</span></div>`; }).join(''); }
+// ---- v256 · compartir en 1:1 (quejas 7, 8 y 11) ------------------------------------------------------------------
+// Un cuadro de 393×393 (margen negro de 18) con la tarjeta de 357×357 dentro: se captura tal cual para una historia de
+// Instagram. Las acciones (copiar texto, guardar imagen) van FUERA del cuadro. La tarjeta y el texto copiable salen del
+// MISMO modelo, así nunca dicen cosas distintas. Si algo no cabe, se ajusta por escalones medidos (fitShareCard):
+// nunca scroll, nunca más alto que ancho, nunca un tamaño fuera de la escala.
+function summaryShell(title,meta,head,body){
+  return statusBar(true)
+   +`<div class="shsq"><div class="sharecard" data-shlvl="0"><div class="shtop"><span class="shtt">${title}</span><span class="shtm">${meta||''}</span></div>${head||''}<div class="shbody">${body||''}</div><div class="shfoot">gym<span class="u-o40">//</span>TRK</div></div></div>`
+   +`<div class="secondary shacts"><button class="b" data-act="shcopy">copiar texto</button><button class="b" data-act="shimg">guardar imagen</button></div>`; }
+// ---- sesión: duración · series · ejercicios arriba (sin tonelaje ni tensión, pedido del dueño); cada serie numerada
+// con la unidad pegada al peso y su RIR escrito completo.
+function shSessModel(s){
+  const hh=Math.floor((s.durSec||0)/3600), mm=Math.floor(((s.durSec||0)%3600)/60);
+  const ok=x=>!!(x&&(x.w||x.r)&&!x._pf);
+  const exs=[]; let series=0;
+  (s.exercises||[]).forEach(e=>{ if(isCardio(e))return; const all=e.sets||[]; if(!all.some(ok))return;
+    const uni=!!e.unilateral, labels=setLabels(all,uni?2:1); let maxInt=0, drops=0; const toks=[];
+    for(let i=0;i<all.length;i+=uni?2:1){
+      const grp=uni?[all[i],all[i+1]].filter(ok).sort((a,b)=>((a.side==='L')-(b.side==='L'))):[all[i]].filter(ok);   // R antes que L, por x.side
+      grp.forEach((x,k)=>{ const lb=String(labels[i]); const n=parseFloat(lb);
+        if(!x.isDrop&&Number.isInteger(n)&&n>maxInt)maxInt=n; if(x.isDrop)drops++;
+        const r=String(x.rir==null?'':x.rir).trim().toUpperCase();
+        toks.push({ord:lb+(uni?(x.side||(k?'L':'R')):''), drop:!!x.isDrop, w:numTxt(effW(x)), unit:x.unit||e.unit||'', r:(x.r!=null&&x.r!=='')?String(x.r):'-', rir:r}); }); }
+    series+=maxInt; exs.push({name:e.name||'', series:maxInt, drops, uni, toks}); });
+  return {title:s.dayName||'sesión', meta:[fmtShort(s.date||''),s.gym||''].filter(Boolean).join(' · '),
+    dur:s.durSec?(hh?{h:hh,m:pad(mm)}:{min:mm}):null, series, exn:exs.length, exs}; }
+function shTokTxt(t){ return t.ord+' '+(t.drop?'↓':'')+t.w+t.unit+'×'+t.r+(t.rir?' RIR'+(t.rir==='F'?' F':t.rir):''); }
+function shTokHTML(t){
+  return `<span class="shs${t.drop?' dr':''}"><i>${escTxt(t.ord)}</i>${t.drop?'<span class="x">↓</span>':''}<b>${escTxt(t.w)}</b><span class="un">${escTxt(t.unit)}</span><span class="x">×</span><b>${escTxt(t.r)}</b>${t.rir?`<span class="rir">RIR<b>${escTxt(t.rir)}</b></span>`:''}</span>`; }
+function renderShareSession(id){
+  const s=(db.sessions||[]).find(x=>x.id===id)||(db.sessions||[]).filter(x=>x.type!=='rest').slice(-1)[0];
+  if(!s)return summaryShell('sesión','','',`<div class="empty">sin sesión para compartir</div>`);
+  const M=shSessModel(s), pl=(n,w)=>n+'<span class="un">'+w+(n===1?'':'s')+'</span>';
+  const head=`<div class="sh3"><div class="sh3v">${M.dur?(M.dur.h!=null?M.dur.h+'<span class="un">h</span>'+M.dur.m:M.dur.min+'<span class="un">min</span>'):'<span class="u-o40">—</span>'}</div>`
+    +`<div class="sh3v">${pl(M.series,'serie')}</div><div class="sh3v">${pl(M.exn,'ejercicio')}</div></div>`;
+  const body=M.exs.map(x=>`<div class="shx" data-n="${x.series}"><div class="shxh"><span class="shxn">${escTxt(x.name)}</span><span class="shxc">${x.series} serie${x.series===1?'':'s'}${x.drops?' +'+x.drops+'↓':''}</span></div>`
+    +`<div class="shxs ${x.uni?'c2':'c3'}">${x.toks.map(shTokHTML).join('')}</div></div>`).join('');
+  return summaryShell(escTxt(M.title),escTxt(M.meta),head,body||'<div class="empty">sin series registradas</div>'); }
+// ---- comida: el anillo con las kcal dentro y los gramos a la derecha (el formato que el dueño extrañaba); debajo las
+// comidas por hora con su TOTAL (16/800) y sus alimentos si caben. Sin "restan" arriba ni "lo que más pesó hoy".
+function shFoodModel(iso){
+  const {items,t}=macroTotals(); const food=items.filter(m=>!isWaterItem(m));
+  const P=dayMealParts(iso,food,t.kcal);
+  return {t, iso, meals:P.tags.map((tag,i)=>{ const list=P.byTag[tag], mt={protein:0,carbs:0,fat:0}; list.forEach(m=>{ for(const k in mt)mt[k]+=+m[k]||0; });
+      return {tag, time:mealTime(iso,tag), kcal:P.meal[i], P:Math.round(mt.protein), C:Math.round(mt.carbs), F:Math.round(mt.fat), items:list, parts:kcalParts(list,P.meal[i])}; }),
+    rest:P.rest}; }
 function renderShare(){
   if(state.shareType==='session')return renderShareSession(state.shareId);
   if(state.shareType==='weight')return renderShareWeight();
-  const {items,t}=macroTotals(); const g=goalsFor(curDate());
-  const kpct=g.kcal?Math.min(100,Math.round(t.kcal/g.kcal*100)):0; const kStat=macroStatus(t.kcal,g.kcal);
-  const ck=t.carbs*4, fk=t.fat*9, pk=t.protein*4; const tot=ck+fk+pk||1; const pc=k=>Math.round(k/tot*100);
+  const M=shFoodModel(curDate()), t=M.t, g=goalsFor(curDate());
+  const kpct=g.kcal?Math.min(100,Math.round(t.kcal/g.kcal*100)):0, kStat=macroStatus(t.kcal,g.kcal);
+  const ck=t.carbs*4, fk=t.fat*9, pk=t.protein*4, tot=ck+fk+pk||1, pc=k=>Math.round(k/tot*100);
   const mm=(lbl,grams,p)=>`<div class="shm"><div class="shm-g">${Math.round(grams)}<span>g</span></div><div class="shm-l">${lbl}</div><div class="shm-p">${p}%</div></div>`;
-  const banner=`<div class="shbanner">`
-    +`<div class="shr-ring ${kStat}">${ringHTML(kpct,'<div class="num">'+Math.round(t.kcal).toLocaleString()+'</div><div class="of">kcal</div>','lg')}</div>`
+  const banner=`<div class="shbanner"><div class="shr-ring ${kStat}">${ringHTML(kpct,'<div class="num">'+Math.round(t.kcal).toLocaleString()+'</div><div class="of">kcal</div>','lg')}</div>`
     +`<div class="shr-macros">${mm('protein',t.protein,pc(pk))}${mm('carbs',t.carbs,pc(ck))}${mm('fat',t.fat,pc(fk))}</div></div>`;
-  const order=['breakfast','lunch','snack','dinner','drink']; const byTag={};
-  items.forEach(m=>{(byTag[m.tag]=byTag[m.tag]||[]).push(m);});
-  let log='';
-  Object.keys(byTag).sort((a,b)=>order.indexOf(a)-order.indexOf(b)).forEach(tag=>{
-    let mk=0,mp=0,mc=0,mf=0; byTag[tag].forEach(m=>{mk+=+m.kcal||0;mp+=+m.protein||0;mc+=+m.carbs||0;mf+=+m.fat||0;});
-    log+=`<div class="sgrp"><div class="sgh" data-act="mealsummary" data-tag="${escTxt(tag)}"><span class="sgn">${escTxt(tag)}</span><span class="sgk">${Math.round(mp)}P ${Math.round(mc)}C ${Math.round(mf)}F · ${Math.round(mk)}</span></div>`
-      +mealFoodRows(byTag[tag])+`</div>`;
-  });
-  // U7 (E22): el día también abre con tres lecturas (energía · proteína · restante) y cierra con sus 3 alimentos principales
-  const left=Math.round((g.kcal||0)-t.kcal);
-  const three=`<div class="sh3">`
-    +`<div class="sh3c"><div class="sh3v">${Math.round(t.kcal).toLocaleString()}<span>/ ${(g.kcal||0).toLocaleString()}</span></div><div class="sh3l">kcal</div></div>`
-    +`<div class="sh3c"><div class="sh3v">${Math.round(t.protein)}<span>g</span></div><div class="sh3l">proteína</div></div>`
-    +`<div class="sh3c"><div class="sh3v">${left>=0?left:'+'+Math.abs(left)}</div><div class="sh3l">${left>=0?'restan':'de más'}</div></div></div>`;
-  const top3=items.slice().sort((a,b)=>(+b.kcal||0)-(+a.kcal||0)).slice(0,3);
-  const topHTML=top3.length?`<div class="shfootline"><span>lo que más pesó hoy</span><span>${Math.round(top3.reduce((a,m)=>a+(+m.kcal||0),0))} kcal</span></div>`
-    +top3.map(m=>`<div class="sxr"><div class="sxh"><span class="sxn">${escTxt((m.name||'').replace(/ ×[\d.]+$/,''))}</span><span class="sxk">${Math.round(+m.kcal||0)} kcal</span></div></div>`).join(''):'';
-  return summaryShell('resumen · '+dayLabel(curDate()), three+banner, (items.length?`<div class="shlog">${log}</div>`:`<div class="empty">sin alimentos hoy</div>`)+topHTML
-    +`<div class="shacts"><a data-act="shcopy">[copiar como texto]</a></div>`);
-}
-// unified share wrapper: caption + banner + body + gym//TRK footer (used by all shareable summaries)
-function summaryShell(caption, banner, body){
-  return statusBar(true)
-   +`<div class="sharecard"><div class="shtitle">${caption}</div>`+banner+(body||'')
-   +`<div class="shfoot">gym<span class="u-o40">//</span>TRK</div></div>`;
-}
-// v225 — el resumen de compartir era grande, con mucho hueco, y no decía nada: "60 × 11" sin unidad,
-// sin RIR y sin marcar los drops. Ahora usa el MISMO formateador que el export (unidad, RIR, F, lado,
-// drop con su %) con la densidad de //EFFECTIVE VOLUME. La unidad va una sola vez por ejercicio cuando
-// todas sus series comparten unidad, y por serie cuando no (entrenar en placas y kg el mismo día).
+  const grp=(name,time,macros,kcal,rows)=>`<div class="sgrp" data-n="1"><div class="sgh"><span class="sgn">${escTxt(name)}</span>${time?`<span class="sgt">${escTxt(time)}</span>`:''}${macros?`<span class="sgm">${macros}</span>`:''}<span class="sgk">${kcal.toLocaleString()}<span class="un">kcal</span></span></div>${rows||''}</div>`;
+  let body=M.meals.map(m=>grp(m.tag,m.time,m.P+'P '+m.C+'C '+m.F+'F',m.kcal,m.items.map((it,i)=>{ const nm=(it.name||'').replace(/ ×[\d.]+$/,'');
+    return `<div class="mit st"><span class="nm"><b class="q">${itemQtyLabel(it)}</b> ${escTxt(nm)}</span><span class="kc">${m.parts[i]}</span></div>`; }).join(''))).join('');
+  if(M.rest>0)body+=grp('supps','','',M.rest,'');
+  return summaryShell('comida',escTxt(fmtShort(curDate())),banner,body||`<div class="empty">sin alimentos este día</div>`); }
+// reparto del día: las comidas (y lo que no es comida, p. ej. suplementos con kcal) suman EXACTO lo que dice el anillo
+function dayMealParts(iso,food,dayKcal){
+  const byTag={}; food.forEach(m=>{(byTag[m.tag]=byTag[m.tag]||[]).push(m);});
+  const order=['breakfast','lunch','snack','dinner','drink'];
+  const _tmin=tg=>{ const mm=hm2min(mealTime(iso,tg)); return isFinite(mm)?mm:Infinity; };
+  const tags=Object.keys(byTag).sort((a,b)=>{ const A=_tmin(a),B=_tmin(b); return A!==B?A-B:(order.indexOf(a)-order.indexOf(b)); });
+  const sums=tags.map(tag=>byTag[tag].reduce((a,m)=>a+(+m.kcal||0),0)), mealsK=sums.reduce((a,x)=>a+x,0);
+  const restK=Math.max(0,(+dayKcal||mealsK)-mealsK);
+  const parts=kcalParts(sums.map(k=>({kcal:k})).concat([{kcal:restK}]),Math.round(+dayKcal||mealsK));
+  return {tags, byTag, meal:parts.slice(0,tags.length), rest:parts[tags.length]||0}; }
+// escalones medidos después de pintar: 0 tal cual · 1 series a 10 (sigue en la escala) / comida sin alimentos ·
+// 2 recorte de bloques del final con aviso "+N". La tarjeta nunca crece ni hace scroll.
+function fitShareCard(root){ const card=(root||document).querySelector('.sharecard'); if(!card)return;
+  const over=()=>card.scrollHeight>card.clientHeight+0.5||[...card.querySelectorAll('.shs')].some(s=>s.scrollWidth>s.clientWidth+1);
+  card.querySelectorAll('.shmore').forEach(x=>x.remove()); card.querySelectorAll('.shbody>[data-n]').forEach(x=>{ x.hidden=false; });
+  card.dataset.shlvl='0'; if(!over())return;
+  card.dataset.shlvl='1'; if(!over())return;
+  card.dataset.shlvl='2'; const body=card.querySelector('.shbody'); if(!body)return;
+  const blocks=[...body.querySelectorAll(':scope>[data-n]')], more=document.createElement('div'); more.className='shmore'; body.appendChild(more);
+  let cut=0, cutN=0; const isEx=!!body.querySelector('.shx');
+  for(let i=blocks.length-1;i>0&&over();i--){ blocks[i].hidden=true; cut++; cutN+=+(blocks[i].dataset.n||0);
+    more.textContent='+'+cut+(isEx?' ejercicio'+(cut===1?'':'s')+' · '+cutN+' serie'+(cutN===1?'':'s'):' comida'+(cut===1?'':'s'))+' · completo en copiar texto'; }
+  if(!cut)more.remove(); }
+// texto copiable = el MISMO modelo (con RIR y F; sin tonelaje, T ni "restan")
+function shareTextFor(){
+  if(state.shareType==='session'){
+    const s=(db.sessions||[]).find(x=>x.id===state.shareId)||(db.sessions||[]).filter(x=>x.type!=='rest').slice(-1)[0]; if(!s)return '';
+    const M=shSessModel(s), pl=(n,w)=>n+' '+w+(n===1?'':'s');
+    const dur=M.dur?(M.dur.h!=null?M.dur.h+'h'+M.dur.m:M.dur.min+'min'):'—';
+    const L=[]; M.exs.forEach(x=>{ L.push(x.name+' · '+pl(x.series,'serie')); L.push('  '+x.toks.map(shTokTxt).join(' · ')); });
+    return [M.title+(M.meta?' · '+M.meta:''), dur+' · '+pl(M.series,'serie')+' · '+pl(M.exn,'ejercicio'), '', ...L, '', 'gym//TRK'].join('\n'); }
+  const M=shFoodModel(curDate()), t=M.t, L=[];
+  M.meals.forEach(m=>{ L.push(m.tag+(m.time?' '+m.time:'')+' · '+m.kcal.toLocaleString()+' kcal · '+m.P+'P '+m.C+'C '+m.F+'F');
+    m.items.forEach((it,i)=>L.push('  '+itemQtyLabel(it)+' '+(it.name||'').replace(/ ×[\d.]+$/,'')+' · '+m.parts[i])); });
+  if(M.rest>0)L.push('supps · '+M.rest+' kcal');
+  return ['comida · '+fmtShort(curDate()), Math.round(t.kcal).toLocaleString()+' kcal · '+Math.round(t.protein)+'P '+Math.round(t.carbs)+'C '+Math.round(t.fat)+'F', '', ...L, '', 'gym//TRK'].join('\n'); }
+// [guardar imagen]: el cuadro de 393 dibujado en un canvas de 1080×1080 desde el DOM (sin librerías, sin tocar la CSP).
+// Monoespaciada = avance exacto, así lo que se ve en pantalla es lo que sale. Se entrega por la hoja de compartir (PNG
+// sí está permitido); si no se puede, una hoja con la imagen para mantenerla presionada. Nunca `<a download>`.
+async function shareImage(){
+  const sq=document.querySelector('.shsq'), card=sq&&sq.querySelector('.sharecard'); if(!card)return;
+  const job=toastTask('generando imagen');
+  try{ if(document.fonts&&document.fonts.ready)await document.fonts.ready;
+    const S=1080, box=sq.getBoundingClientRect(), K=S/box.width;
+    const c=document.createElement('canvas'); c.width=S; c.height=S; const x=c.getContext('2d');
+    x.fillStyle=getComputedStyle(document.body).backgroundColor||'#000'; x.fillRect(0,0,S,S);
+    // anillo (si lo hay): pista y arco con el color computado
+    card.querySelectorAll('.ring').forEach(rg=>{ const svg=rg.querySelector('svg'); if(!svg)return; const r=svg.getBoundingClientRect(); const cx=(r.left+r.width/2-box.left)*K, cy=(r.top+r.height/2-box.top)*K, rad=15.7/36*r.width*K;
+      const tr=svg.querySelector('.ring-track'), fl=svg.querySelector('.ring-fill'); x.lineWidth=1.4/36*r.width*K; x.lineCap='round';
+      x.strokeStyle=tr?getComputedStyle(tr).stroke:'#222'; x.beginPath(); x.arc(cx,cy,rad,0,Math.PI*2); x.stroke();
+      if(fl){ const frac=Math.max(0,Math.min(1,(parseFloat(fl.style.strokeDasharray)||0)/100));   // ringHTML: pathLength 100 → el primer valor ES el porcentaje
+        if(frac>0){ x.strokeStyle=getComputedStyle(fl).stroke; x.beginPath(); x.arc(cx,cy,rad,-Math.PI/2,-Math.PI/2+frac*Math.PI*2); x.stroke(); } } });
+    // texto, nodo por nodo, en su posición y con su fuente/color
+    const tw=document.createTreeWalker(card,NodeFilter.SHOW_TEXT,{acceptNode:n=>n.nodeValue.trim()&&!n.parentElement.closest('[hidden]')&&!n.parentElement.closest('svg')?NodeFilter.FILTER_ACCEPT:NodeFilter.FILTER_REJECT});
+    let n; while((n=tw.nextNode())){ const el=n.parentElement, cs=getComputedStyle(el); const rg=document.createRange(); rg.selectNodeContents(n); const rects=rg.getClientRects(); if(!rects.length)continue;
+      const fs=parseFloat(cs.fontSize), ls=parseFloat(cs.letterSpacing)||0, adv=0.6*fs+ls; x.font=cs.fontWeight+' '+(fs*K)+'px "JetBrains Mono", ui-monospace, monospace'; x.fillStyle=cs.color; x.textBaseline='middle';
+      const clip=el.getBoundingClientRect(); x.save(); x.beginPath(); x.rect((clip.left-box.left)*K,(clip.top-box.top)*K,clip.width*K,clip.height*K); x.clip();
+      let px=rects[0].left, txt=n.nodeValue.replace(/\s+/g,' '); const cy=(rects[0].top+rects[0].height/2-box.top)*K;
+      for(const ch of txt){ x.fillText(ch,(px-box.left)*K,cy); px+=adv; } x.restore(); }
+    const blob=await new Promise(r=>c.toBlob(r,'image/png')); if(!blob)throw new Error('sin imagen');
+    const name='gymtrk-'+todayISO()+'.png', file=new File([blob],name,{type:'image/png'});
+    if(NATIVE_APP){ const rd=new FileReader(); rd.onload=()=>{ nativeShareFile(name,String(rd.result).split(',')[1],'base64'); }; rd.readAsDataURL(blob); job.done('✓ imagen lista'); return; }
+    if(navigator.share&&navigator.canShare&&navigator.canShare({files:[file]})){ job.done('✓ imagen lista'); await navigator.share({files:[file],title:name}).catch(()=>{}); return; }
+    const url=URL.createObjectURL(blob);
+    openModal(`<h3>imagen lista</h3><div class="submeta u-mb8">mantén presionada la imagen → Guardar en Fotos</div><img class="shimgv" src="${url}" alt="tarjeta para compartir"/><div class="sheetbtns u-mt12"><button class="cancel" data-act="closemodal">cerrar</button></div>`);
+    job.done('✓ imagen lista');
+  }catch(e){ job.fail('⚠ no se pudo generar la imagen'); } }
+// historial: el formato compacto de una sesión (se conserva tal cual)
 function _shWR(x,showU){ return numTxt(effW(x))+(showU?escTxt(x.unit||''):'')+'×'+((x.r!=null&&x.r!=='')?escTxt(String(x.r)):'-'); }
 function _shRir(x){ const f=String(x.rir==null?'':x.rir).trim().toUpperCase(); return f===''?'':(f==='F'?' F':' RIR'+escTxt(f)); }
 function shareExLines(e){
@@ -4031,8 +4135,9 @@ function shareExLines(e){
     if(!ok(a)&&!ok(b))continue;
     let txt;
     if(step===2){
-      const sa=ok(a)?_shWR(a,showU)+_shRir(a):'', sb=ok(b)?_shWR(b,showU)+_shRir(b):'';
-      txt=(sa&&sa===sb)?('R/L '+sa):[sa?'R '+sa:'',sb?'L '+sb:''].filter(Boolean).join(' · ');
+      // v256: el lado sale de x.side — antes se asumía que el primero del par era R y salía al revés
+      const P=[a,b].filter(ok).sort((x,y)=>((x.side==='L')-(y.side==='L'))), sp=P.map(x=>_shWR(x,showU)+_shRir(x));
+      txt=(sp.length===2&&sp[0]===sp[1])?('R/L '+sp[0]):P.map((x,k)=>(x.side||(k?'L':'R'))+' '+sp[k]).join(' · ');
     } else txt=_shWR(a,showU)+_shRir(a);
     const dp=(a&&a.isDrop)?dropPctTxt(all,i):'';
     out.push((a&&a.isDrop?'↓':'')+txt+(dp?' <span class="dr">'+escTxt(dp)+'</span>':''));
@@ -4041,62 +4146,15 @@ function shareExLines(e){
 }
 // un ejercicio en el formato compacto de compartir: [bi] nombre · músculo · unidad · T (+ extra) y sus series en una línea
 function sessExBlockHTML(e,r,t,extra){ return `<div class="sxr"><div class="sxh"><span class="sxn">${latTxt(e)}${escTxt(e.name)}</span><span class="sxk">${escTxt(e.muscle||'')}${r.unit?' · '+escTxt(r.unit):''}${t||''}${extra||''}</span></div><div class="sxs">${r.lines.join(' · ')}</div></div>`; }
-function renderShareSession(id){
-  const s=(db.sessions||[]).find(x=>x.id===id)||(db.sessions||[]).filter(x=>x.type!=='rest').slice(-1)[0];
-  if(!s)return summaryShell('sesión',`<div class="empty">sin sesión para compartir</div>`,'');
-  const hh=Math.floor((s.durSec||0)/3600), mm=Math.floor(((s.durSec||0)%3600)/60);
-  const dur=s.durSec?(hh?hh+'h'+pad(mm):mm+'m'):'';
-  const tn=(function(){ try{ return sessionTension(s); }catch(_){ return []; } })();
-  let sets=0, exn=0, vol=0, body='';
-  (s.exercises||[]).forEach((e,ei)=>{
-    const r=shareExLines(e); if(!r.n)return;
-    exn++; sets+=r.n;
-    (e.sets||[]).forEach(x=>{ if(x&&!x._pf){ const rr=+x.r||0; if(rr)vol+=kgLoad(x)*rr; } });
-    const t=tn&&tn[ei]&&tn[ei].total>0?' · T '+fmtT(tn[ei].total):'';
-    body+=sessExBlockHTML(e,r,t);
-  });
-  const tot=(function(){ try{ return sessionTensionTotal(s); }catch(_){ return 0; } })();
-  // U7 (E21): arriba van TRES lecturas grandes (Hevy/Strava/Whoop: el tamaño es la jerarquía); el conteo de series
-  // y ejercicios baja a la línea chica de abajo, que es donde se lee sin competir con los números.
-  const head=`<div class="sh3">`
-    +`<div class="sh3c"><div class="sh3v">${dur||'—'}</div><div class="sh3l">duración</div></div>`
-    +`<div class="sh3c"><div class="sh3v">${vol>0?Math.round(vol).toLocaleString():'—'}<span>kg</span></div><div class="sh3l">tonelaje</div></div>`
-    +`<div class="sh3c"><div class="sh3v">${tot>0?fmtT(tot):'—'}</div><div class="sh3l">tensión</div></div></div>`;
-  const foot=`<div class="shfootline"><span>${sets} sets · ${exn} ejercicios${s.gym?' · '+escTxt(s.gym):''}</span><span>${escTxt(fmtShort(s.date||''))}</span></div>`
-    +`<div class="shacts"><a data-act="shcopy">[copiar como texto]</a></div>`;
-  return summaryShell(escTxt(s.dayName||'sesión')+' · '+(s.date||''), head, (body||'<div class="empty">sin series registradas</div>')+foot);
-}
-// U7 (E21): compartir como TEXTO monoespaciado — es la estética de la app y se pega en cualquier chat (Strong)
-function shareTextFor(){
-  if(state.shareType==='session'){
-    const s=(db.sessions||[]).find(x=>x.id===state.shareId)||(db.sessions||[]).filter(x=>x.type!=='rest').slice(-1)[0]; if(!s)return '';
-    const hh=Math.floor((s.durSec||0)/3600), mm=Math.floor(((s.durSec||0)%3600)/60); const dur=s.durSec?(hh?hh+'h'+pad(mm):mm+'m'):'';
-    const tn=(function(){ try{ return sessionTension(s); }catch(_){ return []; } })();
-    let vol=0, L=[];
-    (s.exercises||[]).forEach((e,ei)=>{ const r=shareExLines(e); if(!r.n)return;
-      (e.sets||[]).forEach(x=>{ if(x&&!x._pf){ const rr=+x.r||0; if(rr)vol+=kgLoad(x)*rr; } });
-      const t=tn&&tn[ei]&&tn[ei].total>0?' · T '+fmtT(tn[ei].total):'';
-      L.push(latTxt(e)+e.name+(r.unit?' ('+r.unit+')':'')+t); L.push('  '+r.lines.join(' · ')); });
-    const tot=(function(){ try{ return sessionTensionTotal(s); }catch(_){ return 0; } })();
-    return [ (s.dayName||'sesión')+' · '+fmtShort(s.date||''),
-      [dur||'', vol>0?Math.round(vol).toLocaleString()+' kg':'', tot>0?'T '+fmtT(tot):''].filter(Boolean).join('  ·  '),
-      '', ...L, '', 'gym//TRK' ].join('\n');
-  }
-  const {items,t}=macroTotals(); const g=goalsFor(curDate());
-  const top=items.slice().sort((a,b)=>(+b.kcal||0)-(+a.kcal||0)).slice(0,3).map(m=>'  '+(m.name||'').replace(/ ×[\d.]+$/,'')+' · '+Math.round(+m.kcal||0));
-  return ['comida · '+dayLabel(curDate()).toLowerCase(),
-    Math.round(t.kcal)+' / '+g.kcal+' kcal  ·  '+Math.round(t.protein)+'P '+Math.round(t.carbs)+'C '+Math.round(t.fat)+'F',
-    '', ...top, '', 'gym//TRK'].join('\n');
-}
 function renderShareWeight(){
   const ks=Object.keys(db.bodyweight||{}).sort(); const vals=ks.map(k=>db.bodyweight[k]);
-  if(vals.length<2)return summaryShell('peso',`<div class="empty">registra tu peso varios días<br/><span class="ehint">para compartir tu progreso</span></div>`,'');
+  if(vals.length<2)return summaryShell('peso','','',`<div class="empty">registra tu peso varios días<br/><span class="ehint">para compartir tu progreso</span></div>`);
   const cur=vals[vals.length-1], ch=Math.round((cur-vals[0])*10)/10; const goal=(db.profile&&db.profile.goal)||'maintain';
   let col='var(--o50)'; if(goal==='cut')col=ch<0?'var(--good)':ch>0?'var(--bad)':'var(--o50)'; else if(goal==='bulk')col=ch>0?'var(--good)':ch<0?'var(--bad)':'var(--o50)'; else col=Math.abs(ch)<=1?'var(--good)':'var(--warn)';
   const banner=`<div class="shbanner shwt">`
     +`<div class="shstat"><div class="shstat-n">${cur}<span class="u-data u-o40 u-w4"> kg</span></div><div class="shstat-l">actual</div></div>`
     +`<div class="shstat"><div class="shstat-n" style="color:${col}">${ch>=0?'+':''}${ch}</div><div class="shstat-l">kg · ${vals.length} reg.</div></div></div>`;
-  return summaryShell('peso corporal', banner, `<div class="shlog">${lineChart(vals.slice(-16))}</div>`);
+  return summaryShell('peso corporal',escTxt(fmtShort(ks[ks.length-1])),banner,`<div class="shlog">${lineChart(vals.slice(-16))}</div>`);
 }
 // meal-level: hora opcional por meal. El objeto meal = db.mealMeta[date][tag] = {time:'HH:MM'}. Aditivo; ausencia = sin hora (nunca asumir). La timeline referencia mealMeta[date][tag].time.
 function mealTime(date,tag){ try{ const o=((db.mealMeta||{})[date]||{})[tag]; return (o&&o.time)||''; }catch(_){ return ''; } }
@@ -5962,7 +6020,7 @@ function applyEnter(root){ const e=state._enter, p=state._pop; state._enter=null
   else if(e){ const el=root.querySelector(e.ex!=null?'.ex[data-exi="'+e.ex+'"]':'.srow[data-exi="'+e.exi+'"][data-si="'+e.si+'"],.pair[data-exi="'+e.exi+'"][data-si="'+e.si+'"]');
     if(el){ el.classList.add('enter'); if(e.scroll&&el.scrollIntoView)el.scrollIntoView({block:'center',behavior:'smooth'}); } }
   if(p){ const el=root.querySelector('.dchk[data-exi="'+p.exi+'"][data-si="'+p.si+'"],.pairdone[data-exi="'+p.exi+'"][data-si="'+p.si+'"]'); if(el)el.classList.add('pop'); } }
-function afterPaint(root,swap){ if(!root)return; try{ popClose(); }catch(_){} try{ animNums(root); }catch(_){} try{ animBars(root); }catch(_){} try{ slideTabs(root,swap); }catch(_){} try{ applyEnter(root); }catch(_){} }
+function afterPaint(root,swap){ if(!root)return; try{ popClose(); }catch(_){} if(state.screen==='share'){ try{ fitShareCard(root); if(document.fonts&&document.fonts.ready)document.fonts.ready.then(()=>fitShareCard(root)); }catch(_){} } try{ animNums(root); }catch(_){} try{ animBars(root); }catch(_){} try{ slideTabs(root,swap); }catch(_){} try{ applyEnter(root); }catch(_){} }
 // ---- R4 · TRKRow reflow (§7.18): lo que queda se reacomoda en vez de saltar ----
 // Cada fila/bloque lleva data-rk = identidad de SU objeto (serie, ejercicio) — un WeakMap en memoria, nunca se guarda.
 // reRender() mide antes de pintar y, después, anima a cada elemento desde donde estaba (FLIP). Un elemento que se mueve
@@ -6572,6 +6630,7 @@ document.getElementById('app').addEventListener('click',e=>{
     const done=()=>toast('✓ copiado como texto');
     try{ if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(txt).then(done,()=>trkPrompt({title:'copiar',label:'TEXTO',value:txt,ok:'listo'},()=>{})); }
       else trkPrompt({title:'copiar',label:'TEXTO',value:txt,ok:'listo'},()=>{}); }catch(_){ trkPrompt({title:'copiar',label:'TEXTO',value:txt,ok:'listo'},()=>{}); } }
+  else if(a==='shimg'){ shareImage(); }
   else if(a==='shareweight'){ state.shareType='weight'; go('share'); }
   else if(a==='mealsummary'){ openMealSummary(el.dataset.tag); }
   else if(a==='mealrename'){ const tag=el.dataset.tag; state.renamingTag=tag; render();
