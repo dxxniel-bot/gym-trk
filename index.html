@@ -326,7 +326,47 @@
   .hcal .cd{height:24px; display:flex; align-items:center; justify-content:center; font-size:var(--t-label); font-style:normal; color:var(--o35); cursor:default;}
   .hcal .cd.l1{color:var(--bg); font-weight:700; cursor:pointer;} .hcal .cd.t.l0::after{display:none;}
   /* inline meal detail under a tapped log item */
-  .mdmeal{padding:var(--s3) 10px 10px var(--s6); margin-bottom:var(--s1); border-left:2px solid var(--o20); animation:mdslide var(--dur-2) var(--ease-out);}
+  .mdmeal{padding:var(--s2) var(--mcol,0px) var(--s2) var(--s5); margin-bottom:var(--s1); background:var(--o10); animation:mdslide var(--dur-2) var(--ease-out);} .mdmeal .mdm{font-size:var(--t-label); color:var(--o50); padding-top:var(--s2);}
+  /* v256 · TRKLog: agua, supps y comida con el MISMO formato (Item Action List de 21st.dev, solo la anatomía) */
+  .lsec{margin-top:var(--s4);}
+  .lhd{display:flex; align-items:center; gap:var(--s3); min-height:44px;}
+  .lt{display:block; flex:1; min-width:0; height:44px; padding:0; border:0; background:none; color:inherit; font-family:inherit; text-align:left; line-height:44px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; cursor:pointer;}
+  .lt>span+span{margin-left:var(--s3);}
+  .lt .h{font-size:var(--t-section); font-weight:800; color:var(--fg);} .lt .h .s{color:var(--o50);}
+  .lt .lv{font-size:var(--t-data); color:var(--o40);} .lt .lv b{font-weight:700; color:var(--fg);}
+  .lt .lx{display:inline-block; font-size:var(--t-section); color:var(--o30); transition:transform var(--dur-2) var(--ease-out);} .lt[aria-expanded="true"] .lx{transform:rotate(90deg);}
+  .lact{position:relative; flex:0 0 auto; min-width:96px; height:32px; padding:0 var(--s4); border:1px solid var(--border); border-radius:var(--r-ctl); background:none; color:var(--fg); font-family:inherit; font-size:var(--t-data); font-weight:700; letter-spacing:var(--ls-ui); cursor:pointer;}
+  .lact::after{content:''; position:absolute; left:0; right:0; top:-6px; bottom:-6px;}
+  .lact:active{background:var(--o10);} .lact[aria-disabled="true"]{color:var(--o30); border-color:var(--o10);}
+  .lbody{padding-bottom:var(--s2);}
+  .lcg{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); column-gap:var(--s3);}
+  .lc{display:flex; align-items:center; gap:var(--s3); min-width:0; min-height:36px; padding:0 var(--s2) 0 0; border:0; border-bottom:.5px solid var(--o10); background:none; color:var(--fg); font-family:inherit; font-size:var(--t-data); text-align:left; cursor:pointer;}
+  .lc .k{flex:0 0 auto; color:var(--o40);} .lc .t{flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .lc .m{flex:0 0 auto; font-size:var(--t-label); color:var(--o40);} .lc .x{flex:0 0 auto; color:var(--o30);}
+  .lc.on{color:var(--o35);} .lc.on .k{color:var(--good);} .lc:active{background:var(--o10);}
+  .lseg{margin-bottom:var(--s2);} .lseg span i{margin-left:var(--s2); font-style:normal; font-size:var(--t-label); font-weight:400; color:var(--o50);}
+  /* comidas plegables: el total (16/800) manda sobre sus alimentos (12/400) — queja 9 */
+  .mrec{--mcol:30px;} .mrec+.mrec{border-top:.5px solid var(--o10);}
+  .mhd{display:grid; grid-template-columns:minmax(0,1fr) auto var(--mcol); align-items:center; min-height:44px;}
+  .mtg{display:block; min-width:0; height:44px; padding:0; border:0; background:none; color:inherit; font-family:inherit; text-align:left; line-height:44px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; cursor:pointer;}
+  .mchev{display:inline-block; width:var(--s5); font-size:var(--t-section); color:var(--o30); transition:transform var(--dur-2) var(--ease-out);} .mrec.open .mchev{transform:rotate(90deg);}
+  .mnm{font-size:var(--t-section); font-weight:800; color:var(--fg);}
+  .mmeta{margin-left:var(--s3); font-size:var(--t-label); color:var(--o40);}
+  .mkc{height:44px; padding:0 0 0 var(--s3); border:0; background:none; color:var(--fg); font-family:inherit; font-size:var(--t-section); font-weight:800; letter-spacing:var(--ls-num); text-align:right; cursor:pointer;}
+  .mhd .gmore{grid-column:3; width:var(--mcol); height:44px; margin:0; padding:0; text-align:right;}   /* la regla base de .gmore lo manda a la columna 4 (rejilla vieja de .ghead) */
+  .mlbody{padding-bottom:var(--s2);}
+  .mit{display:flex; align-items:center; gap:var(--s3); width:100%; min-height:36px; padding:0 var(--mcol) 0 var(--s5); border:0; background:none; color:inherit; font-family:inherit; font-size:var(--t-data); text-align:left; cursor:pointer;}
+  .mit .nm{flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--o70);} .mit .q{font-weight:700; color:var(--o70);} .mit .kc{flex:0 0 auto; color:var(--o50);}
+  .mit.add .nm{font-weight:700; color:var(--o60);} .mit:active,.mit.exp{background:var(--o10);}
+  .mit.st{padding:0; cursor:default;} .mit.st:active{background:none;}
+  /* hoja de desglose: título + hora en una línea, el total primero, radar de 132 y la lista a su lado */
+  .msh{display:flex; align-items:center; gap:var(--s4);}
+  .msum-time{height:36px; width:112px; padding:0 var(--s3); border:.5px solid var(--o20); border-radius:var(--r-sm); background:transparent; color:var(--fg); font-family:inherit; font-size:var(--t-section);}
+  .msum-tot{display:flex; align-items:baseline; gap:var(--s2); margin:var(--s4) 0 var(--s3);}
+  .msum-tot b{font-size:var(--t-display); font-weight:800; letter-spacing:var(--ls-num); line-height:1; color:var(--fg);} .msum-tot .u{font-size:var(--t-data); color:var(--o40);}
+  .msum-items{margin-top:var(--s4); border-top:.5px solid var(--o10);}
+  .toast .tundo{position:relative; margin-left:var(--s4); padding:0; border:0; background:none; color:var(--fg); font-family:inherit; font-size:var(--t-data); font-weight:700; cursor:pointer;}
+  .toast .tundo::after{content:''; position:absolute; left:calc(-1 * var(--s3)); right:calc(-1 * var(--s3)); top:calc(-1 * var(--s4)); bottom:calc(-1 * var(--s4));}
   /* DS-5 · §10: entra lo que se AGREGÓ (serie, drop, ejercicio) — nunca un re-render; el ✓ confirma con el único
      overshoot permitido; las pestañas de periodo mueven un indicador en vez de saltar */
   @keyframes rowin{from{opacity:0; transform:translateY(-4px)}} .enter{animation:rowin var(--dur-2) var(--ease-out);}
@@ -577,7 +617,7 @@
   .shbanner.shwt{justify-content:space-around; gap:var(--s3);}
   .shstat{text-align:center; flex:1;} .shstat-n{font-size:var(--t-display); font-weight:800; letter-spacing:var(--ls-num);} .shstat-l{font-size:var(--t-label); color:var(--o50); margin-top:6px; letter-spacing:var(--ls-caps); text-transform:uppercase;}
   .shr-ring.good .ring-fill{stroke:var(--good);} .shr-ring.over .ring-fill{stroke:var(--bad);}
-  .macro-rad{max-width:228px; margin:0 auto var(--s1);} .macro-rad svg{width:100%; height:auto; display:block;} .macro-rad svg text{font-family:'JetBrains Mono',ui-monospace,monospace; letter-spacing:0;} .msum-top{display:flex; gap:var(--s5); align-items:stretch; justify-content:center; margin-top:10px;} .msum-rad{flex:0 0 48%; min-width:0; align-self:stretch;} .msum-rad svg{height:100%; width:100%; display:block;} .msum-rad svg text{font-family:'JetBrains Mono',ui-monospace,monospace; letter-spacing:0;} .msum-right{flex:0 0 142px; display:flex; flex-direction:column; justify-content:center;} .msum-list{min-width:0;} .nl-row{display:flex; justify-content:space-between; align-items:baseline; gap:6px; padding:var(--s1) 0; border-bottom:1px solid var(--line); font-size:var(--t-data);} .nl-row:last-child{border-bottom:none;} .nl-k{color:var(--o50);} .nl-r{display:flex; gap:var(--s3); align-items:baseline; white-space:nowrap;} .nl-g{color:var(--o40); font-size:var(--t-data);} .nl-pct{color:var(--fill); min-width:28px; text-align:right;} .nl-hd{display:flex; justify-content:space-between; align-items:baseline; font-size:var(--t-label); letter-spacing:var(--ls-caps); text-transform:uppercase; color:var(--o35); padding:6px 0 var(--s1);} .nl-hd .nl-hi{color:var(--o50); letter-spacing:var(--ls-ui);} .msum-kcal{text-align:center; margin-top:var(--s3); font-size:var(--t-display); font-weight:400; letter-spacing:var(--ls-num); color:var(--fill);} .msum-kcal span{font-size:var(--t-label); letter-spacing:var(--ls-caps); color:var(--o40); margin-left:var(--s2);}
+  .macro-rad{max-width:228px; margin:0 auto var(--s1);} .macro-rad svg{width:100%; height:auto; display:block;} .macro-rad svg text{font-family:'JetBrains Mono',ui-monospace,monospace; letter-spacing:0;} .msum-top{display:grid; grid-template-columns:132px minmax(0,1fr); column-gap:var(--s5); align-items:start;} .msum-rad{width:132px;} .msum-rad svg{display:block; width:132px; height:132px;} .msum-rad svg text{font-family:'JetBrains Mono',ui-monospace,monospace; letter-spacing:0;} .msum-list{min-width:0;} .nl-row{display:flex; justify-content:space-between; align-items:baseline; gap:6px; padding:var(--s1) 0; border-bottom:1px solid var(--line); font-size:var(--t-data);} .nl-row:last-child{border-bottom:none;} .nl-k{color:var(--o50);} .nl-r{display:flex; gap:var(--s3); align-items:baseline; white-space:nowrap;} .nl-g{color:var(--o40); font-size:var(--t-data);} .nl-g b{font-weight:700; color:var(--fg);} .nl-pct{color:var(--o50); min-width:28px; text-align:right;} .nl-hd{display:flex; justify-content:space-between; align-items:baseline; font-size:var(--t-label); letter-spacing:var(--ls-caps); text-transform:uppercase; color:var(--o35); padding:6px 0 var(--s1);} .nl-hd .nl-hi{color:var(--o50); letter-spacing:var(--ls-ui);}
   .rad-fill{fill-opacity:.12;}
   /* ===== green / white / red status (margins & over) ===== */
   .hero.good .ring-fill{stroke:var(--good); filter:drop-shadow(0 0 4px var(--good-glow));} .hero.over .ring-fill{stroke:var(--bad); filter:drop-shadow(0 0 4px var(--bad-glow));}
@@ -3769,38 +3809,79 @@ function macroStatus(val,goal){ if(!goal)return ''; const r=val/goal; if(r>1.05)
 // (AM/PM/ENTRENO/OTROS) con etiqueta fija de 58 px y chips que envolvían: de ahí el escalonado. El momento sigue
 // visible como etiqueta dentro del riel (Habitify: el momento es estado, no estructura) y los tomados NO se
 // reordenan bajo el dedo. `[✓ todo]` marca lo pendiente de una vez (Apple Salud · Medicamentos).
-function suppStripHTML(iso){
-  const all=(db.stack||[]).filter(x=>x&&!x.archived&&isDueToday(x,iso));
-  if(!all.length)return '';
-  const ORDER=[['AM','AM'],['PM','PM'],['entreno','ENTRENO'],['otros','OTROS']];
-  const slot=it=>{ const w=it.when||[]; for(const [k] of ORDER){ if(k!=='otros'&&w.indexOf(k)>=0)return k; } return 'otros'; };  // un item con varios momentos sale en el primero (1 tick por día)
-  const done=it=>tickDone(it.ticks&&it.ticks[iso]);
-  const nDone=all.filter(done).length, pend=all.length-nDone;
-  if(state.suppOpen===undefined)state.suppOpen=pend>0;   // se fija una vez: marcar un chip no puede cerrar la tira (el bug de v226)
-  const dots=all.slice(0,8).map(it=>done(it)?'<b>●</b>':'○').join('')+(all.length>8?' …':'');
-  let rail='';
-  if(state.suppOpen){
-    ORDER.forEach(([k,lbl])=>{ const items=all.filter(it=>slot(it)===k); if(!items.length)return;
-      rail+=`<span class="spl">${lbl}</span>`+items.map(it=>{ const on=done(it); const tt=on&&it.tickTimes&&it.tickTimes[iso];
-        return `<button type="button" class="spc${on?' on':''}" data-act="suppq" data-id="${escTxt(it.id)}" data-d="${iso}" title="${on?'tomado'+(tt?' a las '+escTxt(tt):'')+' · toca para deshacer':'toca = tomado'}"><span class="k">${on?'✓':'○'}</span>${escTxt(it.name||'supp')}</button>`; }).join('');
-    });
-    if(pend)rail+=`<button type="button" class="spc all" data-act="suppall" data-d="${iso}">✓ todo</button>`;
-    rail+=`<a data-act="nav" data-screen="stack" class="spl u-tap">[administrar]</a>`;
-    rail=`<div class="sprail">${rail}</div>`;
-  }
-  return `<div class="supps"><button type="button" class="sph" data-act="suppopen" aria-expanded="${state.suppOpen?'true':'false'}"><span class="h"><span class="s u-o40">//</span>SUPPS</span><span class="spdots">${dots}</span><span class="spn">${nDone}/${all.length}</span><span class="sphx">${state.suppOpen?'▴':'▾'}</span></button>${rail}</div>`;
-}
-// agua = item de `drink` sin kcal (una bebida con calorías sigue siendo comida y se queda en el log)
+// ---- v256 · TRKLog: agua, supps y comida con el MISMO formato (queja 3) ----
+// Una sola anatomía (Item Action List de 21st.dev, solo el comportamiento): cabecera de 44 px con //TÍTULO 16/800, la
+// lectura a 12 y un › para plegar; la MISMA acción a la derecha en las tres (96×32 visible, 44 de toque, 12/700); y
+// debajo filas de 36 px a 12. Antes el agua era una sección con cinco botones de 44 px a todo el ancho y "agregar
+// comida" un enlace de 10 px: ~7.5 veces más superficie para lo secundario.
+function logSecHTML(o){ const open=!!o.open;
+  return `<section class="lsec" data-k="${o.k}" data-rk="ls:${o.k}"><div class="lhd"><button type="button" class="lt" data-act="lfold" data-k="${o.k}" aria-expanded="${open}"><span class="h"><span class="s">//</span>${o.title}</span><span class="lv">${o.v}</span><span class="lx" aria-hidden="true">›</span></button>${o.act||''}</div>${open?`<div class="lbody">${o.body||''}</div>`:''}</section>`; }
+// qué secciones están abiertas: se fija UNA vez por día visto, así marcar nunca cierra nada (el bug de v226)
+function lfoldInit(iso){ if(state._lfold&&state._lfoldD===iso)return; state._lfoldD=iso; state._lfold={water:false, supps:suppDue(iso).pend>0, food:true}; }
+// agua = item de `drink` sin kcal (una bebida con calorías sigue siendo comida y se queda en su comida)
 function isWaterItem(m){ return !!m && m.tag==='drink' && !(+m.kcal>0) && (+m.water>0); }
-// U1 (E4): el agua vive al FINAL del día con incrementos de un toque + [otro] (MFP, Yazio, Cronometer)
-function waterSectionHTML(iso){
+function waterSecHTML(iso){
   const g=goalsFor(iso)||{}; const items=(db.meals[iso]||[]).filter(isWaterItem);
-  const ml=Math.round(items.reduce((a,m)=>a+(+m.water||0),0)*1000); const goal=+g.water||0;
-  const btn=v=>`<button type="button" class="wq" data-act="water" data-ml="${v}">${v>=1000?'1 L':v}</button>`;
-  return `<div class="section u-mb10"><div class="h"><span class="s">//</span>AGUA</div><div class="meta">${(ml/1000).toFixed(1)}${goal?' / '+goal:''} L</div></div>`
-    +`<div class="wrow">${[250,500,750,1000].map(btn).join('')}<button type="button" class="wq alt" data-act="waterother">otro</button></div>`
-    +(items.length?`<div class="wlog">${items.map(m=>`<span class="wchip" data-act="waterdel" data-id="${escTxt(m.id)}" title="toca para quitarlo">${Math.round((+m.water||0)*1000)} ml</span>`).join('')}</div>`:'');
-}
+  const L=Math.round(items.reduce((a,m)=>a+(+m.water||0),0)*10)/10, goal=+g.water||0;
+  const v=`<b data-nk="lv-water" data-nv="${L}" data-nd="1">${L.toFixed(1)}</b>${goal?' / '+goal:''} L`;
+  const body=items.length?`<div class="lcg">${items.map(m=>{ const ml=Math.round((+m.water||0)*1000);
+      return `<button type="button" class="lc" data-act="waterdel" data-id="${escTxt(m.id)}" data-rk="lw:${escTxt(m.id)}" aria-label="quitar ${ml} ml"><span class="t">${ml} ml</span>${m.time?`<span class="m">${escTxt(m.time)}</span>`:''}<span class="x" aria-hidden="true">✕</span></button>`; }).join('')}</div>`
+    :`<div class="empty">no water logged</div>`;
+  return logSecHTML({k:'water',title:'WATER',v,act:`<button type="button" class="lact" data-act="waterpick">+ water</button>`,body,open:state._lfold.water}); }
+// ---- supps: el momento en pestañas (Filter Grid de 21st.dev) y una rejilla que nunca se reordena ni se desplaza de lado.
+// El riel horizontal volvía al inicio en cada toque: render() rehace el DOM y el riel nuevo nace con scrollLeft = 0.
+const SUPP_SEG=[['AM','AM'],['PM','PM'],['entreno','ENTRENO'],['otros','OTROS']];
+function suppSlot(it){ const w=(it&&it.when)||[]; for(const [k] of SUPP_SEG){ if(k!=='otros'&&w.indexOf(k)>=0)return k; } return 'otros'; }   // varios momentos → el primero (1 tick por día)
+function suppDue(iso){ const all=(db.stack||[]).filter(x=>x&&!x.archived&&isDueToday(x,iso)); const done=it=>tickDone(it.ticks&&it.ticks[iso]);
+  const n=all.filter(done).length; return {all,done,n,pend:all.length-n}; }
+// pestaña inicial: ENTRENO con sesión viva · AM antes de las 14:00 · PM después; si esa no tiene pendientes, la primera que sí
+function suppSegFor(iso,s){
+  if(state.suppSegD===iso&&state.suppSeg&&s.all.some(it=>suppSlot(it)===state.suppSeg))return state.suppSeg;
+  const keys=SUPP_SEG.map(x=>x[0]), has=k=>s.all.some(it=>suppSlot(it)===k), pendIn=k=>s.all.some(it=>suppSlot(it)===k&&!s.done(it));
+  let k=iso===todayISO()?((db.activeWork&&has('entreno'))?'entreno':(new Date().getHours()<14?'AM':'PM')):null;
+  if(!k||!pendIn(k))k=keys.find(pendIn)||keys.find(has)||'AM';
+  state.suppSeg=k; state.suppSegD=iso; return k; }
+function suppSecHTML(iso){
+  const s=suppDue(iso); if(!s.all.length)return '';
+  const seg=suppSegFor(iso,s);
+  const tabs=SUPP_SEG.filter(([k])=>s.all.some(it=>suppSlot(it)===k)).map(([k,l])=>{ const its=s.all.filter(it=>suppSlot(it)===k), d=its.filter(s.done).length;
+    return `<span class="${k===seg?'on':''}" role="tab" aria-selected="${k===seg}" data-act="suppseg" data-v="${k}">${l}<i>${d}/${its.length}</i></span>`; }).join('');
+  const cur=s.all.filter(it=>suppSlot(it)===seg), pendSeg=cur.filter(it=>!s.done(it)).length;
+  const cells=cur.map(it=>{ const on=s.done(it); const tt=on&&it.tickTimes&&it.tickTimes[iso];
+    return `<button type="button" class="lc${on?' on':''}" data-act="suppq" data-id="${escTxt(it.id)}" data-d="${iso}" aria-pressed="${on}" data-rk="sp:${escTxt(it.id)}" title="${on?'tomado'+(tt?' a las '+escTxt(tt):'')+' · toca para deshacer':'toca = tomado'}"><span class="k">${on?'✓':'○'}</span><span class="t">${escTxt(it.name||'supp')}</span></button>`; }).join('');
+  const lbl=(SUPP_SEG.find(x=>x[0]===seg)||['',''])[1];
+  const act=`<button type="button" class="lact" data-act="suppall" data-d="${iso}" data-seg="${seg}"${pendSeg?'':' aria-disabled="true"'}>✓ ${lbl}</button>`;
+  const v=`<b data-nk="lv-supps" data-nv="${s.n}">${s.n}</b> / ${s.all.length}`;
+  return logSecHTML({k:'supps',title:'SUPPS',v,act,body:`<div class="mdtabs lseg" data-tk="supps" role="tablist">${tabs}</div><div class="lcg" role="group" aria-label="${lbl}">${cells}</div>`,open:state._lfold.supps}); }
+// ---- comida: cada comida es UNA fila plegable con su total a 16/800; sus alimentos a 12/400 alineados bajo el total
+// (queja 9: antes el total de la comida salía más chico que las kcal de sus alimentos). Solo la más reciente abre sola.
+// redondeo de resto mayor (Hamilton): los enteros de las partes suman EXACTAMENTE el total redondeado. Sin esto, cinco
+// alimentos redondeados por separado sumaban 788 bajo un total de 786.
+function kcalParts(list){ const v=list.map(m=>+m.kcal||0), tot=Math.round(v.reduce((a,x)=>a+x,0)), fl=v.map(Math.floor);
+  let rest=tot-fl.reduce((a,x)=>a+x,0); const ord=v.map((x,i)=>[x-Math.floor(x),i]).sort((a,b)=>b[0]-a[0]);
+  for(let j=0;j<ord.length&&rest>0;j++,rest--)fl[ord[j][1]]++;
+  for(let j=ord.length-1;j>=0&&rest<0;j--,rest++)fl[ord[j][1]]--;
+  return fl; }
+function mealItemRow(m,kc){ const nm=(m.name||'').replace(/ ×[\d.]+$/,''); const exp=state.expandedMeal===m.id;
+  return `<div class="mit${exp?' exp':''}" data-act="viewmeal" data-id="${m.id}" data-rk="mi:${m.id}"><span class="nm"><b class="q">${itemQtyLabel(m)}</b> ${escTxt(nm)}</span><span class="kc">${kc==null?(Math.round(m.kcal)||0):kc}</span></div>`+(exp?mealDetailInline(m):''); }
+function foodSecHTML(iso,items){
+  const byTag={}; items.forEach(m=>{(byTag[m.tag]=byTag[m.tag]||[]).push(m);});
+  const order=['breakfast','lunch','snack','dinner','drink'];
+  const _tmin=tg=>{ const mm=hm2min(mealTime(iso,tg)); return isFinite(mm)?mm:Infinity; };
+  const tags=Object.keys(byTag).sort((a,b)=>{ const A=_tmin(a),B=_tmin(b); return A!==B?A-B:(order.indexOf(a)-order.indexOf(b)); });
+  state._mealOpen=state._mealOpen||{};
+  if(!state._mealOpen[iso]){ state._mealOpen[iso]={}; if(tags.length)state._mealOpen[iso][tags[tags.length-1]]=true; }
+  const om=state._mealOpen[iso];
+  const meals=tags.map(tag=>{ const list=byTag[tag], mt={kcal:0,protein:0,carbs:0,fat:0}; list.forEach(m=>{ for(const k in mt)mt[k]+=+m[k]||0; });
+    const op=!!om[tag], tm=mealTime(iso,tag), et=escTxt(tag), kc=Math.round(mt.kcal);
+    const meta=[tm,Math.round(mt.protein)+'P '+Math.round(mt.carbs)+'C '+Math.round(mt.fat)+'F'].filter(Boolean).join(' · ');
+    const kp=kcalParts(list);
+    const rows=op?`<div class="mlbody">${list.map((m,i)=>mealItemRow(m,kp[i])).join('')}<button type="button" class="mit add" data-act="addtomeal" data-tag="${et}"><span class="nm">+ food</span></button></div>`:'';
+    return `<div class="mrec${op?' open':''}" data-tag="${et}" data-rk="ml:${et}"><div class="mhd"><button type="button" class="mtg" data-act="mealfold" data-tag="${et}" aria-expanded="${op}"><span class="mchev" aria-hidden="true">›</span><span class="mnm">${et}</span><span class="mmeta">${escTxt(meta)}</span></button>`
+      +`<button type="button" class="mkc" data-act="mealsummary" data-tag="${et}" aria-label="desglose de ${et} · ${kc} kcal"><span data-nk="mk:${et}" data-nv="${kc}">${kc.toLocaleString()}</span></button>`
+      +`<button type="button" class="gmore" data-act="mealmenu" data-tag="${et}" aria-label="acciones de ${et}">···</button></div>${rows}</div>`; }).join('');
+  const n=tags.length;
+  return logSecHTML({k:'food',title:'MEALS',v:`<b>${n}</b> meal${n===1?'':'s'}`,act:`<button type="button" class="lact" data-act="newmeal">+ meal</button>`,body:meals||`<div class="empty">no meals logged</div>`,open:state._lfold.food}); }
 // un toque: pendiente → tomado (con su hora real, que nunca se pisa) · tomado/tarde → sin marcar
 function suppQuickTick(id,iso){
   const it=(db.stack||[]).find(x=>x.id===id); if(!it)return;
@@ -3838,40 +3919,15 @@ function renderMacros(){
     +intakeRow('water retention',bl.sc,100,'',`<span class="pill ${bl.label==='high'?'over':bl.label==='low'?'good':''}">${bl.label}</span>`)
     +`<div class="bltips">${bl.tips.map(tp=>`<div class="bltip">› ${tp}</div>`).join('')}</div>`;
 
-  // food log grouped by tag
-  const order=['breakfast','lunch','snack','dinner','drink']; const byTag={};
-  items.filter(m=>!isWaterItem(m)).forEach(m=>{(byTag[m.tag]=byTag[m.tag]||[]).push(m);});   // el agua tiene su propia sección al final
-  let log='';
-  // orden cronológico por hora de meal (mealMeta[date][tag].time); sin hora -> al final; tiebreak = enum
-  const _tmin=tg=>{ const mm=hm2min(mealTime(curDate(),tg)); return isFinite(mm)?mm:Infinity; };
-  const tags=Object.keys(byTag).sort((a,b)=>{ const A=_tmin(a),B=_tmin(b); return A!==B ? A-B : (order.indexOf(a)-order.indexOf(b)); });
-  if(!items.length){ log=`<div class="empty">sin comida registrada</div>`; }
-  tags.forEach(tag=>{ const list=byTag[tag];
-    const mt={kcal:0,protein:0,carbs:0,fat:0,caffeine:0,alcohol:0}; list.forEach(m=>{mt.kcal+=+m.kcal||0;mt.protein+=+m.protein||0;mt.carbs+=+m.carbs||0;mt.fat+=+m.fat||0;mt.caffeine+=+m.caffeine||0;mt.alcohol+=+m.alcohol||0;});
-    const _renaming=state.renamingTag===tag;
-    const _nameCell=_renaming
-      ? `<span class="u-aic u-iflex"><span class="hash">#</span><input id="mealrnm" class="gnmin" value="${escTxt(tag)}" onclick="event.stopPropagation()" autocomplete="off" autocapitalize="none" style="width:${Math.max(4,(tag||'').length+1)}ch"/></span>`
-      : `<span class="gnm u-tap" data-act="mealrename" data-tag="${escTxt(tag)}" title="toca para renombrar"><span class="hash">#</span>${escTxt(tag)}</span>`;
-    log+=`<div class="grp"><div class="ghead">${_nameCell}`
-      +`<span class="gmac u-tap" data-act="mealsummary" data-tag="${escTxt(tag)}">${Math.round(mt.protein)}P ${Math.round(mt.carbs)}C ${Math.round(mt.fat)}F</span>`
-      +`<span class="gkc u-tap" data-act="mealsummary" data-tag="${escTxt(tag)}">${Math.round(mt.kcal)}</span>`
-      +`<button type="button" class="gmore" data-act="mealmenu" data-tag="${escTxt(tag)}" aria-label="acciones de ${escTxt(tag)}">···</button></div>`;
-    list.forEach(m=>{ const nm=(m.name||'').replace(/ ×[\d.]+$/,''); const br=(m._food&&m._food.brand)||''; const exp=state.expandedMeal===m.id; const mp=Math.round(m.protein)||0,mc=Math.round(m.carbs)||0,mf=Math.round(m.fat)||0; const _dom=(mp+mc+mf)>0?((mp>=mc&&mp>=mf)?'p':(mc>=mf?'c':'f')):''; const _bq=(v,l,k)=>_dom===k?`<b class="u-fg">${v}${l}</b>`:`${v}${l}`; const mq=(mp+mc+mf)>0?`${_bq(mp,'P','p')} ${_bq(mc,'C','c')} ${_bq(mf,'F','f')}`:'';
-      log+=`<div class="item${exp?' exp':''}" data-act="viewmeal" data-id="${m.id}"><span class="nm"><b class="q">${itemQtyLabel(m)}</b>${escTxt(nm)}${br?' <span class="br">'+escTxt(br)+'</span>':''}</span><span class="macq">${mq}</span><span class="kc">${Math.round(m.kcal)||0}</span></div>`;
-      if(exp) log+=mealDetailInline(m);
-    });
-    log+=`<div class="gadd"><a data-act="addtomeal" data-tag="${escTxt(tag)}">[+ alimento]</a></div></div>`;   // la acción cierra el bloque de SU comida
-  });
-  log+=`<div class="newmeal"><a data-act="newmeal">[+ comida]</a></div>`;
-
+  // v256 · debajo del anillo, tres secciones idénticas (TRKLog), en el orden que pidió el dueño: SUPPS · MEALS · WATER
+  lfoldInit(curDate());
   return statusBar(false)
     +`<hr class="rule"/>`
     +`<div class="section"><div class="h dnavh"><a data-act="dayprev" class="dnav">‹</a><span class="dnlbl-wrap"><span class="dnlbl">${dayLabel(curDate())}</span><input type="date" class="dcal" data-act="daycal" value="${curDate()}"/></span><a data-act="daynext" class="dnav">›</a></div><div class="meta"><a data-act="share" class="u-tap">[share]</a> <a data-act="editgoals" class="u-tap u-ml8">[goals]</a></div></div>`
     +`<div class="card u-pt16 u-pb16 u-px16"><button class="hero ${open?'open':''} ${kStat}" data-act="togglemacros">${ringHTML(pct,`<div class="num" data-nk="kcal" data-nv="${Math.round(t.kcal)}">${Math.round(t.kcal).toLocaleString()}</div><div class="of">/ ${g.kcal.toLocaleString()} kcal</div>`,'lg')}<div class="hero-meta"><span class="left ${left<0?'over':'under'}">${left>=0?left+' left':Math.abs(left)+' over'}</span> · ${Math.round(pct)}% <span class="chev">▾</span></div></button>${goalSecHidden('balance')?'':(function(){var b=balanceOf(g.kcal);return b?'<div class="hbal">'+(b.label==='mantenimiento'?'en mantenimiento':'<span style="color:'+b.col+';font-weight:700">'+b.label+'</span> '+Math.abs(b.delta)+' kcal')+' · mant. ≈ '+b.maint+'</div>':'';})()}${details}</div>`
-    +suppStripHTML(curDate())
-    +`<div class="section u-mb10"><div class="h"><span class="s">//</span>LOG</div><div class="meta">${escTxt(dayLabel(curDate()).toLowerCase())}</div></div>`
-    +log
-    +waterSectionHTML(curDate());
+    +suppSecHTML(curDate())
+    +foodSecHTML(curDate(),items.filter(m=>!isWaterItem(m)))
+    +waterSecHTML(curDate());   // orden del dueño: supps → meals → water al final
 }
 // ---------- render: shareable summary (gym//TRK aesthetic, horizontal banner) ----------
 // display quantity: always grams/ml for weight-based units (clearer for screenshots); keep pieces for piece unit
@@ -3889,8 +3945,9 @@ function itemQtyLabel(m){ const f=m._food, u=m._unit, q=m.qty||1; const base=(f&
   if(u==='piece') return numTxt(q)+' pza'+(grams?` (${grams} ${base})`:'');
   return grams ? numTxt(q)+' ('+grams+' '+base+')' : numTxt(q)+'×'; }
 // tap a food item -> just edit / delete (no per-item nutrition; that's at meal level)
-function mealDetailInline(m){
-  return `<div class="mdmeal"><div class="mdacts"><a data-act="editmealx" data-id="${m.id}">[editar]</a><a data-act="movemeal" data-id="${m.id}">[mover]</a><a data-act="delmealx" data-id="${m.id}">[borrar]</a></div></div>`;
+function mealDetailInline(m){ const br=(m._food&&m._food.brand)||'';
+  // v256: P/C/F y la marca del alimento viven aquí, no en cada fila (la fila queda en cantidad · nombre · kcal)
+  return `<div class="mdmeal"><div class="mdm">P ${Math.round(m.protein)||0} · C ${Math.round(m.carbs)||0} · F ${Math.round(m.fat)||0}${br?' · '+escTxt(br):''}</div><div class="mdacts"><a data-act="editmealx" data-id="${m.id}">[editar]</a><a data-act="movemeal" data-id="${m.id}">[mover]</a><a data-act="delmealx" data-id="${m.id}">[borrar]</a></div></div>`;
 }
 // tap a meal header -> full nutrition breakdown of the whole meal (the set)
 function mealGroupDetail(list){
@@ -3900,9 +3957,11 @@ function mealGroupDetail(list){
   const rows=r('protein',t.protein,'g')+r('carbs',t.carbs,'g')+r('fat',t.fat,'g')+r('sugar',t.sugar,'g')+r('fiber',t.fiber,'g')+r('sodium',t.sodium,'mg')+r('potassium',t.potassium,'mg')+r('caffeine',t.caffeine,'mg')+r('alcohol',t.alcohol,'g')+r('liquid',t.water,'L');
   return `<div class="mdmeal mgd"><div class="mdtop">${Math.round(t.kcal)} kcal · ${list.length} alimento${list.length!==1?'s':''}</div><div class="mdgrid">${rows||'<span class="submeta">sin macros</span>'}</div></div>`;
 }
-function mealFoodRows(items){
-  return items.map(m=>{ const nm=(m.name||'').replace(/ ×[\d.]+$/,''); const br=(m._food&&m._food.brand)||'';
-    return `<div class="sitem"><span class="sn"><b class="q">${itemQtyLabel(m)}</b> ${escTxt(nm)}${br?` <span class="sb">${escTxt(br)}</span>`:''}</span><span class="sk">${Math.round(m.kcal)||0}</span></div>`; }).join(''); }
+// v256: los alimentos de una comida se pintan igual en macros, en la hoja de desglose y en compartir: 12/400, nunca más
+// fuertes que el total de su comida (queja 9). Aquí son filas de solo lectura.
+function mealFoodRows(items){ const kp=kcalParts(items);
+  return items.map((m,i)=>{ const nm=(m.name||'').replace(/ ×[\d.]+$/,'');
+    return `<div class="mit st"><span class="nm"><b class="q">${itemQtyLabel(m)}</b> ${escTxt(nm)}</span><span class="kc">${kp[i]}</span></div>`; }).join(''); }
 function renderShare(){
   if(state.shareType==='session')return renderShareSession(state.shareId);
   if(state.shareType==='weight')return renderShareWeight();
@@ -4034,18 +4093,19 @@ function openMealSummary(tag){
   const pk=t.protein*4, ck=t.carbs*4, fk=t.fat*9, ak=t.alcohol*7; const tot=pk+ck+fk+ak||1;
   const cal=x=>Math.round(x/tot*100);                                   // macro: % de aporte calórico de la meal
   const day=(v,gk)=>{ const goal=+_mg[gk]||0; return goal>0?Math.round(v/goal*100):0; }; // micro: % vs meta diaria
-  const row=(lbl,v,u,pct)=> Math.round(v)>0 ? `<div class="nl-row"><span class="nl-k">${lbl}</span><span class="nl-r"><span class="nl-g">${Math.round(v)} ${u}</span><span class="nl-pct">${pct}%</span></span></div>` : '';
+  const row=(lbl,v,u,pct)=> Math.round(v)>0 ? `<div class="nl-row"><span class="nl-k">${lbl}</span><span class="nl-r"><span class="nl-g"><b>${Math.round(v)}</b> ${u}</span><span class="nl-pct">${pct}%</span></span></div>` : '';
   const hd=(x,ind)=>`<div class="nl-hd"><span>${x}</span><span class="nl-hi">${ind}</span></div>`;
   const macros=row('protein',t.protein,'g',cal(pk))+row('carbs',t.carbs,'g',cal(ck))+row('fat',t.fat,'g',cal(fk))+row('alcohol',t.alcohol,'g',cal(ak));
   const micros=row('fiber',t.fiber,'g',day(t.fiber,'fiber'))+row('sugar',t.sugar,'g',day(t.sugar,'sugar'))+row('sodium',t.sodium,'mg',day(t.sodium,'sodium'))+row('potassium',t.potassium,'mg',day(t.potassium,'potassium'))+row('caffeine',t.caffeine,'mg',day(t.caffeine,'caffeine'));
   const nutList=macros+micros;
-  openModal(`<h3 class="u-flex u-aic u-gap10 u-wrap">#${escTxt(tag)}<input type="time" id="ms_time" value="${mealTime(curDate(),tag)}" title="hora de la comida (opcional)" class="u-data u-w4 u-fg u-py0 u-px8" style="height:30px;width:118px;border:.5px solid var(--o20);background:transparent;border-radius:var(--r-ctl)"/></h3>
-   <div class="msum-top"><div class="msum-rad">${mealRadar(t,_mg)}</div><div class="msum-right"><div class="msum-list">${nutList}</div><div class="msum-kcal">${Math.round(t.kcal)}<span>KCAL</span></div></div></div>
-   <div class="shlog u-mt12">${mealFoodRows(items)}</div>
-   <div class="sheetbtns u-mt12"><button class="ok" data-act="addtomeal" data-tag="${escTxt(tag)}">+ add food</button><button class="cancel" data-act="dupmeal" data-tag="${escTxt(tag)}" title="duplicar esta meal">⎘ duplicar</button><button class="cancel danger" data-act="delmealgroup" data-tag="${escTxt(tag)}" title="borrar toda la meal">✕ borrar</button></div>`);
+  // v256 (queja 9): el TOTAL va primero y es lo más grande de la hoja (22/800); antes cerraba la columna a 22/400 en
+  // --fill, después de 9 filas de nutrientes, y cada alimento se leía más fuerte que él.
+  openModal(`<h3 class="msh"><span>${escTxt(tag)}</span><input type="time" id="ms_time" class="msum-time" value="${mealTime(curDate(),tag)}" aria-label="hora de la comida (opcional)"/></h3>
+   <div class="msum-tot"><b>${Math.round(t.kcal).toLocaleString()}</b><span class="u">kcal</span></div>
+   <div class="msum-top"><div class="msum-rad">${mealRadar(t,_mg)}</div><div class="msum-list">${nutList}</div></div>
+   <div class="msum-items">${mealFoodRows(items)}</div>
+   <div class="sheetbtns u-mt12"><button class="ok" data-act="addtomeal" data-tag="${escTxt(tag)}">+ alimento</button><button class="cancel" data-act="dupmeal" data-tag="${escTxt(tag)}" title="duplicar esta comida">⎘ duplicar</button><button class="cancel danger" data-act="delmealgroup" data-tag="${escTxt(tag)}" title="borrar toda la comida">✕ borrar</button></div>`);
   const _mt=document.getElementById('ms_time'); if(_mt)_mt.onchange=()=>{ setMealTime(curDate(),tag,_mt.value||null); save(); };
-  // la gráfica SIEMPRE igual de alto que la columna derecha (tabla + kcal), manteniendo proporción del viewBox
-  (function(){ try{ const tp=document.querySelector('.msum-top'); if(!tp)return; const rt=tp.querySelector('.msum-right'), rd=tp.querySelector('.msum-rad'); if(!rt||!rd)return; const fit=function(){ const h=rt.getBoundingClientRect().height; if(h>4) rd.style.flex='0 0 '+(h*168/156).toFixed(1)+'px'; }; if(window.ResizeObserver){ new ResizeObserver(fit).observe(rt); } else { requestAnimationFrame(function(){requestAnimationFrame(fit);}); } if(document.fonts&&document.fonts.ready){ document.fonts.ready.then(fit); } }catch(_){} })();
 }
 // ---------- render: landing (log in / create account) ----------
 function renderLanding(){
@@ -6461,16 +6521,35 @@ document.getElementById('app').addEventListener('click',e=>{
   else if(a==='delmealnow'){ state._scroll=document.getElementById('view').scrollTop; const t=curDate(); db.meals[t]=(db.meals[t]||[]).filter(m=>m.id!==window._mealId); save(); closeModal(); render(); }
   else if(a==='delmealgroup'){ const tag=el.dataset.tag; const _go1=()=>{ state._scroll=document.getElementById('view').scrollTop; const t=curDate(); db.meals[t]=(db.meals[t]||[]).filter(m=>m.tag!==tag); save(); closeModal(); render(); }; if(!tag) return; return holdConfirm({title:'borrar la comida "'+tag+'"',detail:'todos sus alimentos de este día',verb:'borrar'},_go1);}
   else if(a==='editmealx'){ const id=el.dataset.id; const t=curDate(); const m=(db.meals[t]||[]).find(x=>x.id===id); if(m){ if(m._food){ openLog(m._food,{editId:m.id,qty:m.qty||1,unit:m._unit,tag:m.tag}); } else { const q=m.qty||1; const per={}; ['kcal','protein','carbs','fat','sugar','sodium','potassium','fiber','caffeine','alcohol','water'].forEach(k=>per[k]=(+m[k]||0)/q); openLog({name:(m.name||'').replace(/ ×[\d.]+$/,''),serving:m.serving||'1 serving',per},{editId:m.id,qty:q,tag:m.tag}); } } }
-  else if(a==='delmealx'){ state._scroll=document.getElementById('view').scrollTop; const id=el.dataset.id; const t=curDate(); db.meals[t]=(db.meals[t]||[]).filter(m=>m.id!==id); if(state.expandedMeal===id)state.expandedMeal=null; save(); render(); }
+  else if(a==='delmealx'){ const id=el.dataset.id, t=curDate(), arr=db.meals[t]||[], i=arr.findIndex(m=>m.id===id); if(i<0)return;
+    // v256: antes un toque en [borrar] perdía el alimento para siempre, sin preguntar ni red
+    const m=arr[i]; arr.splice(i,1); if(state.expandedMeal===id)state.expandedMeal=null; save(); reRender();
+    toast('✓ alimento borrado','ok',{undo:()=>{ (db.meals[t]=db.meals[t]||[]).splice(i,0,m); }}); }
   else if(a==='vfixkcal'){ const P=parseFloat(val('v_protein'))||0,C=parseFloat(val('v_carbs'))||0,F=parseFloat(val('v_fat'))||0; const e=document.getElementById('v_kcal'); if(e){ e.value=Math.round(P*4+C*4+F*9); e.dispatchEvent(new Event('input',{bubbles:true})); } }
   else if(a==='foodadd'){ openFoodAdd(); }
   else if(a==='suppopen'){ state.suppOpen=!state.suppOpen; reRender(); }
-  else if(a==='suppall'){ const d=el.dataset.d; (db.stack||[]).filter(x=>x&&!x.archived&&isDueToday(x,d)).forEach(it=>{ if(tickDone(it.ticks&&it.ticks[d]))return; it.ticks=it.ticks||{}; it.ticks[d]='taken'; it.tickTimes=it.tickTimes||{}; if(!it.tickTimes[d]&&d===todayISO())it.tickTimes[d]=nowHM(); it.tickEdited=it.tickEdited||{}; it.tickEdited[d]=Date.now(); }); save(); reRender(); toast('✓ suplementos marcados'); }
+  else if(a==='suppall'){ if(el.getAttribute('aria-disabled')==='true')return;
+    // v256: marca SOLO lo pendiente del momento visible, y se deshace exacto (ticks, horas y sellos de edición)
+    const d=el.dataset.d, seg=el.dataset.seg, snap=[];
+    (db.stack||[]).filter(x=>x&&!x.archived&&isDueToday(x,d)&&(!seg||suppSlot(x)===seg)).forEach(it=>{ if(tickDone(it.ticks&&it.ticks[d]))return;
+      snap.push([it,(it.ticks||{})[d],(it.tickTimes||{})[d],(it.tickEdited||{})[d]]);
+      it.ticks=it.ticks||{}; it.ticks[d]='taken'; it.tickTimes=it.tickTimes||{}; if(!it.tickTimes[d]&&d===todayISO())it.tickTimes[d]=nowHM(); it.tickEdited=it.tickEdited||{}; it.tickEdited[d]=Date.now(); });
+    save(); reRender();
+    const put=(o,k,v)=>{ if(v===undefined)delete o[k]; else o[k]=v; };
+    toast('✓ '+((SUPP_SEG.find(x=>x[0]===seg)||['',''])[1]||'todo')+' marcado · '+snap.length,'ok',{undo:()=>snap.forEach(([it,t,tt,te])=>{ put(it.ticks,d,t); put(it.tickTimes,d,tt); put(it.tickEdited,d,te); })}); }
+  else if(a==='suppseg'){ state.suppSeg=el.dataset.v; state.suppSegD=curDate(); state._enter={sel:'.lsec[data-k="supps"] .lc'}; reRender(); }
+  else if(a==='lfold'){ const k=el.dataset.k; state._lfold=state._lfold||{}; state._lfold[k]=!state._lfold[k]; if(state._lfold[k])state._enter={sel:'.lsec[data-k="'+k+'"] .lbody'}; reRender(); }
+  else if(a==='mealfold'){ const d=curDate(), tag=el.dataset.tag; state._mealOpen=state._mealOpen||{}; const om=state._mealOpen[d]=state._mealOpen[d]||{}; om[tag]=!om[tag];
+    if(om[tag])state._enter={sel:'.mrec[data-tag="'+CSS.escape(tag)+'"] .mit'}; reRender(); }
+  else if(a==='waterpick'){ trkSelect(el,['250','500','750','1 L','otro'],'',v=>{ if(v==='otro')return openDrink(); logWater(v==='1 L'?1000:+v); reRender(); },{title:'WATER · ml'}); }
   else if(a==='newmeal'){ openMealWheel(); }
   else if(a==='mealmenu'){ openMealMenu(el.dataset.tag); }
   else if(a==='water'){ logWater(+el.dataset.ml||0); reRender(); }
   else if(a==='waterother'){ openDrink(); }
-  else if(a==='waterdel'){ const id=el.dataset.id, d=curDate(); const m=(db.meals[d]||[]).find(x=>x.id===id); if(m)trkAsk({title:'quitar '+Math.round((+m.water||0)*1000)+' ml',ok:'quitar',danger:true},()=>{ db.meals[d]=(db.meals[d]||[]).filter(x=>x.id!==id); save(); reRender(); toast('✓ agua quitada'); }); }
+  else if(a==='waterdel'){ const id=el.dataset.id, d=curDate(), arr=db.meals[d]||[], i=arr.findIndex(x=>x.id===id); if(i<0)return;
+    // v256: lo reversible se quita sin preguntar y se ofrece [deshacer] (vuelve el MISMO vaso al MISMO lugar)
+    const m=arr[i]; arr.splice(i,1); save(); reRender();
+    toast('✓ agua quitada · '+Math.round((+m.water||0)*1000)+' ml','ok',{undo:()=>{ (db.meals[d]=db.meals[d]||[]).splice(i,0,m); }}); }
   else if(a==='share'){ state.shareType='food'; go('share'); }
   else if(a==='sharesession'){ state.shareType='session'; state.shareId=el.dataset.id; closeModal(); go('share'); }
   else if(a==='shcopy'){ const txt=shareTextFor(); if(!txt){ toast('⚠ nada que copiar','err'); return; }
@@ -6502,7 +6581,7 @@ document.getElementById('app').addEventListener('click',e=>{
   else if(a==='addfood'||a==='addnext'||a==='addmeal'){ openFoodAdd(nextMealTag()); }
   else if(a==='addapprox'){ openApproxMeal(); }
   else if(a==='addmealnext'){ openFoodAdd(nextAfterCurrent()); }
-  else if(a==='addtomeal'){ openFoodAdd(el.dataset.tag, true); }
+  else if(a==='addtomeal'){ const d=curDate(); state._mealOpen=state._mealOpen||{}; (state._mealOpen[d]=state._mealOpen[d]||{})[el.dataset.tag]=true; openFoodAdd(el.dataset.tag, true); }
   else if(a==='dupmeal'){ openDupMeal(el.dataset.tag); }
   else if(a==='movemeal'){ const id=el.dataset.id; const t=curDate(); const m=(db.meals[t]||[]).find(x=>x.id===id); if(m)openMoveItem(m); }
   else if(a==='addsnack'){ openFoodAdd('snack'); }
@@ -7456,8 +7535,9 @@ function openApproxMeal(preset){
     db.meals[t].push(item); save(); toast('✓ comida guardada'); closeModal(); render();
   };
 }
+// v256: cada vaso guarda su hora (campo aditivo) para mostrarla en //AGUA
 function logWater(ml){ if(!(ml>0))return; const t=curDate(); db.meals[t]=db.meals[t]||[]; snapshotGoal(t);
-  db.meals[t].push({id:uid(),tag:'drink',name:'agua',qty:1,serving:numTxt(ml)+' ml',kcal:0,protein:0,carbs:0,fat:0,sugar:0,fiber:0,sodium:0,potassium:0,caffeine:0,water:Math.round(ml/1000*1000)/1000}); save(); toast('✓ agua registrada'); }
+  db.meals[t].push(Object.assign({id:uid(),tag:'drink',name:'agua',qty:1,serving:numTxt(ml)+' ml',kcal:0,protein:0,carbs:0,fat:0,sugar:0,fiber:0,sodium:0,potassium:0,caffeine:0,water:Math.round(ml/1000*1000)/1000},t===todayISO()?{time:nowHM()}:{})); save(); toast('✓ agua registrada'); }
 function openDrink(){
   openModal(`<h3>add drink</h3>
    <div class="submeta u-mb10">agua y bebidas · suma a líquidos</div>
@@ -8435,14 +8515,23 @@ function openGoals(){
 // ---- R2 · TRK* de feedback y confirmación (DESIGN_SYSTEM.md §7.18) ----
 // TRKToast: el borde dice qué pasó (✓ → ok, ⚠ → err, resto neutro). Pila de hasta 3; éxito/neutro se van solos, un
 // error se queda hasta tocarlo; 'task' = una tarea en curso que se resuelve en el mismo toast (toastTask).
-function toast(msg,type){ try{ const s=String(msg==null?'':msg);
+// v256 · toast(msg, type, {undo}) — lo reversible se quita SIN preguntar y se ofrece [deshacer] (Animated Toast de
+// 21st.dev, solo el comportamiento). Vive 4.6 s y hay UN solo deshacer vivo: uno nuevo mata al anterior.
+let _undoToast=null;
+function toast(msg,type,opt){ try{ const s=String(msg==null?'':msg); opt=opt||{};
     const ty=type||(/^\s*(✓|\u2713)/.test(s)?'ok':/^\s*⚠/.test(s)?'err':'');
     let box=document.getElementById('toasts'); if(!box){ box=document.createElement('div'); box.id='toasts'; box.className='toasts'; box.setAttribute('aria-live','polite'); document.body.appendChild(box); }
-    const t=document.createElement('div'); t.className='toast glass-strong'+(ty?' '+ty:''); t.setAttribute('role',ty==='err'?'alert':'status'); t.textContent=s;
-    t._kill=()=>{ if(!t.isConnected||t.classList.contains('out'))return; t.classList.add('out'); setTimeout(()=>{ try{t.remove();}catch(_){} },durMs('--dur-3',280)); };
+    const t=document.createElement('div'); t.className='toast glass-strong'+(ty?' '+ty:''); t.setAttribute('role',ty==='err'?'alert':'status');
+    const tm=document.createElement('span'); tm.className='tm'; tm.textContent=s; t.appendChild(tm);
+    t._kill=()=>{ if(!t.isConnected||t.classList.contains('out'))return; t.classList.add('out'); if(_undoToast===t)_undoToast=null; setTimeout(()=>{ try{t.remove();}catch(_){} },durMs('--dur-3',280)); };
+    if(typeof opt.undo==='function'){
+      if(_undoToast)_undoToast._kill(); _undoToast=t;
+      const u=document.createElement('button'); u.type='button'; u.className='tundo'; u.textContent='[deshacer]';
+      u.addEventListener('click',ev=>{ ev.stopPropagation(); t._kill(); try{ opt.undo(); save(); reRender(); toast('✓ restaurado'); }catch(_){ toast('⚠ no se pudo deshacer','err'); } });
+      t.appendChild(u); }
     t.addEventListener('click',()=>{ if(!t.classList.contains('task'))t._kill(); });
     box.appendChild(t); while(box.children.length>3)box.firstElementChild.remove();
-    if(ty==='ok'||ty==='')setTimeout(t._kill,durMs('--toast-life',2300));
+    if(ty==='ok'||ty==='')setTimeout(t._kill,opt.undo?durMs('--toast-life-err',4600):durMs('--toast-life',2300));
     return t; }catch(_){ return null; } }
 function toastTask(msg){ const t=toast('… '+String(msg||'').replace(/^…\s*/,''),'task');
   const fin=(m,ty)=>{ if(!t)return toast(m,ty); t.className='toast glass-strong '+ty; t.setAttribute('role',ty==='err'?'alert':'status'); t.textContent=m; if(ty==='ok')setTimeout(t._kill,durMs('--toast-life',2300)); };
