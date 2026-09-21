@@ -400,7 +400,17 @@
   .mbody{border-left:1px solid var(--border); padding-left:var(--s4); margin-left:var(--s2);}
   .ex{margin-bottom:var(--sp-card);} .ex:last-child{margin-bottom:0;}
   /* v223: el ejercicio en curso (primera serie sin ✓) lleva una guía a la izquierda — "te pierdes en cuál vas" */
-  .ex.current{position:relative;} .ex.current::before{content:''; position:absolute; left:-7px; top:0; bottom:0; width:2px; background:var(--o35); border-radius:var(--r-sm);}
+  .ex.current{position:relative;}
+  /* v256 · modo enfoque: solo el ejercicio en curso se lee; lo demás queda tenue (tocarlo lo vuelve el actual) */
+  .wline{position:relative; display:flex; align-items:center; gap:var(--s3); width:100%; height:32px; margin:var(--s3) 0 var(--s4); padding:0; border:0; background:none; color:var(--fg); font-family:inherit; text-align:left; cursor:pointer;}
+  .wline .wtn{font-size:var(--t-section); font-weight:800; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .wline .wtm{margin-left:auto; font-size:var(--t-label); color:var(--o50); white-space:nowrap;} .wline .wtx{font-size:var(--t-label); color:var(--o30);}
+  .wline .wtb{position:absolute; left:0; right:0; bottom:0; margin:0;}
+  .wfocus .mbody{border-left:0; padding-left:0; margin-left:0;}
+  .wfocus .ex:not(.current){opacity:.28; cursor:pointer;} .wfocus .ex:not(.current) *{pointer-events:none;}
+  .wfocus .ex:not(.current) .exsub,.wfocus .ex:not(.current) .setprogline,.wfocus .ex:not(.current) .addrow,.wfocus .ex:not(.current) .swipehint{display:none;}
+  .wfocus .setprogline:not(.dn),.wfocus .exzones,.wfocus .exT,.wfocus .exprog,.wfocus .dgrip{display:none;}
+  .wfocus .exhd.hasgrip{grid-template-columns:minmax(0,1fr);}
   /* v224 (mockup del dueño): el encabezado va en DOS líneas —
        [bi] pushdown
        cable [+ nota]
@@ -497,11 +507,6 @@
   .restbar.on{display:flex;}
   /* v223: barra AHORA — mismo sitio que el descanso (fuera de #view, sobrevive a render()): dice en qué
      ejercicio y serie vas y un toque te lleva ahí. */
-  .nowbar{flex:0 0 auto; display:none; align-items:center; gap:var(--s3); padding: var(--s3) var(--sp-px); border-top:1px solid var(--o12); background:var(--frame); font-size:var(--t-data); cursor:pointer;}
-  .nowbar.on{display:flex;}
-  .nowbar .nl{flex:0 0 auto; color:var(--o35); font-size:var(--t-label); letter-spacing:var(--ls-caps);}
-  .nowbar .nt{color:var(--fg); font-weight:800; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
-  .nowbar .nx{flex:0 0 auto; color:var(--o50); font-size:var(--t-label); font-variant-numeric:tabular-nums;}
   .restbar .rl{color:var(--o50); font-size:var(--t-label); letter-spacing:var(--ls-ui);}
   .restbar .rt{font-weight:800; font-size:var(--t-section); font-variant-numeric:tabular-nums; min-width:52px;}
   .restbar a{position:relative; display:inline-flex; align-items:center; height:32px; padding:0 var(--s4); color:var(--o60); border:1px solid var(--border); border-radius:var(--r-ctl); cursor:pointer; font-size:var(--t-data); -webkit-user-select:none; user-select:none;}
@@ -609,22 +614,14 @@
   .shacts{margin-top:10px;}
   .shmore{margin-top:var(--s2); font-size:var(--t-label); line-height:1.2; color:var(--o40);}
   .shimgv{display:block; width:100%; height:auto; border-radius:var(--r-ctl);}
-  /* sesión: tres héroes (duración · series · ejercicios) y un bloque por ejercicio con las series NUMERADAS en rejilla,
-     la unidad pegada al peso y el RIR escrito — sin tonelaje ni tensión (pedido del dueño) */
-  .sh3{display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); align-items:baseline; margin:var(--s4) 0 var(--s5);}
-  .sh3 .sh3v{font-size:var(--t-hero); font-weight:800; letter-spacing:var(--ls-num); line-height:1; color:var(--fg); white-space:nowrap;}
-  .sh3 .sh3v .un{font-size:var(--t-data); font-weight:400; letter-spacing:0; color:var(--o40); margin:0 var(--s1);}
-  .shx + .shx{margin-top:var(--s2);}
-  .shxh{display:flex; align-items:baseline; gap:var(--s3); font-size:var(--t-data); line-height:1.2;}
-  .shxh .shxn{font-weight:800; color:var(--fg); min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
-  .shxh .shxc{margin-left:auto; font-size:var(--t-label); color:var(--o40); white-space:nowrap;}
-  .shxs{display:grid; column-gap:var(--s2); font-size:var(--t-data); line-height:1.2;} .shxs.c3{grid-template-columns:repeat(3,minmax(0,1fr));} .shxs.c2{grid-template-columns:repeat(2,minmax(0,1fr));}
-  .shs{white-space:nowrap; overflow:hidden; color:var(--fg);}
-  .shs i{display:inline-block; min-width:3ch; margin-right:var(--s1); font-style:normal; font-size:var(--t-label); color:var(--o40);}
-  .shs b{font-weight:700;} .shs .un,.shs .x{color:var(--o40);}
-  .shs .rir{margin-left:var(--s1); font-size:var(--t-label); color:var(--o40);} .shs .rir b{margin-left:1px; color:var(--o70);}
-  .shs.dr{color:var(--o60);} .shs.dr b{font-weight:400;}
-  .sharecard[data-shlvl="1"] .shxs{font-size:var(--t-label);}   /* escalón 1: series a 10, sigue dentro de la escala */
+  /* sesión: el formato de la referencia del dueño — una fila por ejercicio: #músculo · nombre · series en gris
+     "160lbs×8@0 / 160lbs×6@0". Una línea chica arriba con duración · series · ejercicios; nada de héroes. */
+  .shsum{margin:var(--s2) 0 var(--s5); font-size:var(--t-label); color:var(--o50); line-height:1.2;}
+  .srw{display:grid; grid-template-columns:64px minmax(0,1fr); column-gap:var(--s3); align-items:baseline; font-size:var(--t-data); line-height:1.5;}
+  .srw + .srw{margin-top:var(--s2);}
+  .srm{font-size:var(--t-label); color:var(--o40); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .srn{font-weight:700; color:var(--fg);} .srs1{color:var(--o50); white-space:nowrap;} .srs1.dr{color:var(--o40);} .srsep{color:var(--o20);}
+  .sharecard[data-shlvl="1"] .srb{font-size:var(--t-label);}   /* escalón 1: la fila a 10, sigue dentro de la escala */
   /* comida: el anillo con las kcal dentro y los gramos a la derecha; cada comida con su total a 16/800 */
   .shbanner{display:flex; align-items:center; gap:var(--s5); margin:var(--s4) 0 var(--s5);}
   .shr-ring .ring.lg{width:106px; height:106px;} .shr-ring .ring.lg .num{font-size:var(--t-display); font-weight:800; letter-spacing:var(--ls-num);} .shr-ring .ring.lg .of{font-size:var(--t-label); color:var(--o40); margin-top:var(--s2);}
@@ -905,7 +902,6 @@
 <body>
   <div class="frame" id="app">
     <div class="scroll" id="view"></div>
-    <div class="nowbar" id="nowbar" data-act="gonow"><span class="nl">AHORA</span><span class="nt" id="nowtxt"></span><span class="u-f1"></span><span class="nx" id="nowpos"></span></div>
     <div class="restbar" id="resttimer"><span class="rl">descanso</span><span class="rt" id="resttime">0:00</span><span class="u-f1"></span><a data-act="restminus">−15</a><a data-act="restplus">+15</a><a data-act="restskip">skip</a></div>
     <div class="footer" id="wfooter" style="display:none"><button class="abort" data-act="abort">abort</button><button class="undo" data-act="undo" title="deshacer la última serie">↩</button><button class="save" data-act="save">save session</button></div>
     <nav class="nav glass" id="nav"></nav>
@@ -3551,7 +3547,7 @@ function renderExercise(exi,ex,allowF,canReorder){
       mhtml=p; }
   }
   const _tn=isCardioEx?null:exTensionSets(db.activeWork,exi);
-  const _curCls=(state._nowT&&state._nowT.exi===exi)?' current':'';   // v223: guía del ejercicio en curso
+  const _curCls=(state._focusExi===exi)?' current':'';   // v256: modo enfoque (antes: una guía gris que solo añadía)
   const prBadge=isCardioEx?'':progBadgeHTML(ex)+exTensChip(_tn);
   const gripE=canReorder?`<span class="dgrip" data-drage="${exi}" title="mantén y arrastra · reordena dentro del músculo">⠿</span>`:'';
   let rows='';
@@ -3599,7 +3595,7 @@ function renderExercise(exi,ex,allowF,canReorder){
     });
     const add=`<div class="addrow afree"><span class="aleft"><button class="addbtn" data-act="addset" data-exi="${exi}">[+ set]</button></span><button class="addbtn aex" data-act="addex" data-exi="${exi}">[+ exercise]</button></div>`;
     rows=thead+body+add;
-    return `<div class="ex${_curCls}" data-exi="${exi}" data-rk="${rk(ex)}">${head}${rows}</div>`;
+    return `<div class="ex${_curCls}"${_curCls?'':' data-act="excur"'} data-exi="${exi}" data-rk="${rk(ex)}">${head}${rows}</div>`;
   }
   const isBwEx=ex.type==='bodyweight';
   if(isU){
@@ -3617,7 +3613,7 @@ function renderExercise(exi,ex,allowF,canReorder){
       const prevB=(prevSets&&align[p+1]!=null)?prevSets[align[p+1]]:null;
       const pBadge=pairBadgeHTML(a,b,prevA,prevB,curFatCtx[p],curFatCtx[p+1],align[p]!=null?baseFatCtx[align[p]]:null,align[p+1]!=null?baseFatCtx[align[p+1]]:null,_bl.level);
       const pInner=progLineInner(pBadge,dropPctTxt(sets,p),tensTag(pairTension(_tn,p)));
-      const progLine=pInner?`<div class="setprogline" data-exi="${exi}" data-si="${p}" data-rk="${rk(a)}p">${pInner}</div>`:`<div class="setprogline nil" data-exi="${exi}" data-si="${p}"></div>`;
+      const progLine=pInner?`<div class="setprogline${done?' dn':''}" data-exi="${exi}" data-si="${p}" data-rk="${rk(a)}p">${pInner}</div>`:`<div class="setprogline nil" data-exi="${exi}" data-si="${p}"></div>`;
       // drop set: ONLY via bottom bar [↓ drop set] — per-row ↓ removed (layout desalineaba tras insertar)
       body+=`<div class="pair ${a&&a.isDrop?'isdrop':''}" data-swipe="delset" data-exi="${exi}" data-si="${p}" data-rk="${rk(a)}">${setnHTML(labels[p],done,'done',exi,p,zSty)}<div class="prows">`
         +`<div class="srow ${gcU}"><div class="side">${escTxt(a.side||'R')}</div>${ca.w}${midA}${ca.r}${ca.rr}<span class="del u-invis">×</span></div>`
@@ -3639,7 +3635,7 @@ function renderExercise(exi,ex,allowF,canReorder){
       const prevS=(prevSets&&align[si]!=null)?prevSets[align[si]]:null;
       const sBadge=setBadgeHTML(s,prevS,curFatCtx[si],align[si]!=null?baseFatCtx[align[si]]:null,_bl.level);
       const sInner=progLineInner(sBadge,dropPctTxt(sets,si),tensTag(_tn&&_tn.per[si]));
-      const progLine=sInner?`<div class="setprogline" data-exi="${exi}" data-si="${si}" data-rk="${rk(s)}p">${sInner}</div>`:`<div class="setprogline nil" data-exi="${exi}" data-si="${si}"></div>`;
+      const progLine=sInner?`<div class="setprogline${s.done?' dn':''}" data-exi="${exi}" data-si="${si}" data-rk="${rk(s)}p">${sInner}</div>`:`<div class="setprogline nil" data-exi="${exi}" data-si="${si}"></div>`;
       const gcRow=isBwEx?'gc-free-bw':(fsOn?'gc-mach-fs':gc);
       const mid=isBwEx?c.we:(fsOn?c.we+c.u:c.u);   // v256 B1b: antes el lastre SUSTITUÍA a la unidad → 7 hijos en 8 columnas
       // setend: del only (per-row ↓ removed) — same column width for normal and isdrop rows
@@ -3651,7 +3647,7 @@ function renderExercise(exi,ex,allowF,canReorder){
     const add=hint+`<div class="addrow ${isM?'amach':'afree'}"><span class="aleft"><button class="addbtn" data-act="addset" data-exi="${exi}">[+ set]</button><button class="addbtn" data-act="dropset" data-exi="${exi}" data-si="${lastSi}">[↓ drop set]</button></span><button class="addbtn aex" data-act="addex" data-exi="${exi}">[+ exercise]</button></div>`;
     rows=thead+body+add;
   }
-  return `<div class="ex${_curCls}" data-exi="${exi}" data-rk="${rk(ex)}">${head}${rows}</div>`;
+  return `<div class="ex${_curCls}"${_curCls?'':' data-act="excur"'} data-exi="${exi}" data-rk="${rk(ex)}">${head}${rows}</div>`;
 }
 // simplified, mostly-read per-exercise renderer for the history editor: same per-set richness as the
 // live view (bodyweight chip/unit/reps/rir/side/drop/zone-color) so editing a past session is the
@@ -3757,7 +3753,10 @@ function sessionContextNote(w){
 }
 function renderWorkout(){
   const w=state.work; if(!w)return renderHome();
-  state._nowT=currentSetTarget();   // v223: dónde vas (guía del ejercicio + barra AHORA)
+  state._nowT=currentSetTarget();
+  // v256 · el ejercicio en curso es el ÚNICO legible; los demás quedan tenues y tocarlos los vuelve el actual
+  if(state._curEx!=null&&!w.exercises[state._curEx])state._curEx=null;
+  state._focusExi=state._curEx!=null?state._curEx:(state._nowT?state._nowT.exi:-1);
   const day=db.split.days.find(d=>d.id===w.dayId)||curDay();
   let total=0,done=0; w.exercises.forEach(e=>e.sets.forEach(s=>{total++; if(s.done)done++;}));
   // render in array order; a muscle header starts each contiguous run -> respects the order exercises were added/reordered
@@ -3773,14 +3772,16 @@ function renderWorkout(){
     body+=renderExercise(exi,ex,day.allowFailure, curBlkEx>1);
   });
   if(curM!==null)body+='</div></div>';
+  // v256 · modo enfoque: la cabecera se colapsa a UNA línea de 32 px (antes eran ~270 px de encabezados antes del
+  // primer campo); split, gym, recuperación y contexto quedan detrás de un toque en esa línea.
+  const pct=total?Math.round(done/total*100):0, full=!!(w.loggedAfter||state._wfull);
+  const top=w.loggedAfter?`<div class="wprog">${trkBarI('wp:live',pct)}</div>`
+    :`<button type="button" class="wline" data-act="wfull" aria-expanded="${!!state._wfull}"><span class="wtn">${escTxt(w.dayName)}</span><span class="wtm">${done}/${total} sets${w.startMs?' · '+elapsedStr(w.startMs):''}</span><span class="wtx" aria-hidden="true">${state._wfull?'▴':'▾'}</span><span class="wprog wtb">${trkBarI('wp:live',pct)}</span></button>`;
   return statusBar(true)
-    +(w.loggedAfter
-      ? `<div class="rot u-mt12"><span class="lbl">LOGGED AFTER</span><span class="n"><input type="date" value="${w.date}" max="${todayISO()}" data-act="setdate" class="inp-mini"/></span></div><div class="rot u-mt6"><span class="lbl">duración (min) · opcional</span><span class="n"><input type="number" value="${w.manualDur||''}" data-act="setdur" inputmode="numeric" placeholder="—" class="inp-mini u-tr" style="width:70px"/></span></div><div class="rot u-mt6"><span class="lbl">inicio · opcional</span><span class="n"><input type="time" value="${w.startTime||''}" data-act="setstarttime" class="inp-mini"/></span></div><div class="rot u-mt6"><span class="lbl">fin · opcional</span><span class="n"><input type="time" value="${w.endTime||''}" data-act="setendtime" class="inp-mini"/></span></div><div class="rot u-mt6"><span class="lbl">avanzar rotación</span><span class="n"><a data-act="togglenoadv" class="u-tap u-py2 u-px10 u-label" style="border:.5px solid var(--o20)">${w.noAdvance?'no':'sí'}</a></span></div>`
-      : `<div class="rot u-mt12"><span class="lbl">ROTATION - DAY ${curDayIdx()+1}/${dayCount()}${w.startMs?' · '+elapsedStr(w.startMs):''}</span><span class="n u-tap" data-act="changegym">[change gym]</span></div>`)
-    +`<div class="wprog">${trkBarI('wp:live',total?Math.round(done/total*100):0)}</div>`
-    +dayHeadHTML('NOW',escTxt(w.dayName),[escTxt(db.split.name),escTxt(day.tag),escTxt(w.gym||'')].filter(Boolean).join(' · '),'top')
-    +sessionContextNote(w)
-    +body;
+    +(w.loggedAfter?`<div class="rot u-mt12"><span class="lbl">LOGGED AFTER</span><span class="n"><input type="date" value="${w.date}" max="${todayISO()}" data-act="setdate" class="inp-mini"/></span></div><div class="rot u-mt6"><span class="lbl">duración (min) · opcional</span><span class="n"><input type="number" value="${w.manualDur||''}" data-act="setdur" inputmode="numeric" placeholder="—" class="inp-mini u-tr" style="width:70px"/></span></div><div class="rot u-mt6"><span class="lbl">inicio · opcional</span><span class="n"><input type="time" value="${w.startTime||''}" data-act="setstarttime" class="inp-mini"/></span></div><div class="rot u-mt6"><span class="lbl">fin · opcional</span><span class="n"><input type="time" value="${w.endTime||''}" data-act="setendtime" class="inp-mini"/></span></div><div class="rot u-mt6"><span class="lbl">avanzar rotación</span><span class="n"><a data-act="togglenoadv" class="u-tap u-py2 u-px10 u-label" style="border:.5px solid var(--o20)">${w.noAdvance?'no':'sí'}</a></span></div>`:'')
+    +top
+    +(full?(w.loggedAfter?'':`<div class="rot u-mt12"><span class="lbl">ROTATION - DAY ${curDayIdx()+1}/${dayCount()}${w.startMs?' · '+elapsedStr(w.startMs):''}</span><span class="n u-tap" data-act="changegym">[change gym]</span></div>`)+dayHeadHTML('NOW',escTxt(w.dayName),[escTxt(db.split.name),escTxt(day.tag),escTxt(w.gym||'')].filter(Boolean).join(' · '),'top')+sessionContextNote(w):'')
+    +`<div class="wfocus">${body}</div>`;
 }
 
 // ---------- render: macros ----------
@@ -4017,23 +4018,21 @@ function shSessModel(s){
         if(!x.isDrop&&Number.isInteger(n)&&n>maxInt)maxInt=n; if(x.isDrop)drops++;
         const r=String(x.rir==null?'':x.rir).trim().toUpperCase();
         toks.push({ord:lb+(uni?(x.side||(k?'L':'R')):''), drop:!!x.isDrop, w:numTxt(effW(x)), unit:x.unit||e.unit||'', r:(x.r!=null&&x.r!=='')?String(x.r):'-', rir:r}); }); }
-    series+=maxInt; exs.push({name:e.name||'', series:maxInt, drops, uni, toks}); });
+    series+=maxInt; exs.push({name:e.name||'', muscle:e.muscle||'', series:maxInt, drops, uni, toks}); });
   return {title:s.dayName||'sesión', meta:[fmtShort(s.date||''),s.gym||''].filter(Boolean).join(' · '),
     dur:s.durSec?(hh?{h:hh,m:pad(mm)}:{min:mm}):null, series, exn:exs.length, exs}; }
-function shTokTxt(t){ return t.ord+' '+(t.drop?'↓':'')+t.w+t.unit+'×'+t.r+(t.rir?' RIR'+(t.rir==='F'?' F':t.rir):''); }
-function shTokHTML(t){
-  return `<span class="shs${t.drop?' dr':''}"><i>${escTxt(t.ord)}</i>${t.drop?'<span class="x">↓</span>':''}<b>${escTxt(t.w)}</b><span class="un">${escTxt(t.unit)}</span><span class="x">×</span><b>${escTxt(t.r)}</b>${t.rir?`<span class="rir">RIR<b>${escTxt(t.rir)}</b></span>`:''}</span>`; }
+function shTokTxt(t){ const side=/[RL]$/.test(t.ord)?t.ord.slice(-1)+' ':''; return side+(t.drop?'↓':'')+t.w+t.unit+'×'+t.r+(t.rir?'@'+t.rir:''); }
+function shTokHTML(t){ return `<span class="srs1${t.drop?' dr':''}">${escTxt(shTokTxt(t))}</span>`; }
 function renderShareSession(id){
   const s=(db.sessions||[]).find(x=>x.id===id)||(db.sessions||[]).filter(x=>x.type!=='rest').slice(-1)[0];
   if(!s)return summaryShell('sesión','','',`<div class="empty">sin sesión para compartir</div>`);
-  const M=shSessModel(s), pl=(n,w)=>n+'<span class="un">'+w+(n===1?'':'s')+'</span>';
-  const head=`<div class="sh3"><div class="sh3v">${M.dur?(M.dur.h!=null?M.dur.h+'<span class="un">h</span>'+M.dur.m:M.dur.min+'<span class="un">min</span>'):'<span class="u-o40">—</span>'}</div>`
-    +`<div class="sh3v">${pl(M.series,'serie')}</div><div class="sh3v">${pl(M.exn,'ejercicio')}</div></div>`;
-  const body=M.exs.map(x=>`<div class="shx" data-n="${x.series}"><div class="shxh"><span class="shxn">${escTxt(x.name)}</span><span class="shxc">${x.series} serie${x.series===1?'':'s'}${x.drops?' +'+x.drops+'↓':''}</span></div>`
-    +`<div class="shxs ${x.uni?'c2':'c3'}">${x.toks.map(shTokHTML).join('')}</div></div>`).join('');
+  const M=shSessModel(s), pl=(n,w)=>n+' '+w+(n===1?'':'s');
+  const dur=M.dur?(M.dur.h!=null?M.dur.h+'h'+M.dur.m:M.dur.min+' min'):'';
+  const head=`<div class="shsum">${[dur,pl(M.series,'serie'),pl(M.exn,'ejercicio')].filter(Boolean).join(' · ')}</div>`;
+  let prevM=null;
+  const body=M.exs.map(x=>{ const m=x.muscle&&x.muscle!==prevM?'#'+x.muscle:''; prevM=x.muscle;
+    return `<div class="srw" data-n="${x.series}"><span class="srm">${escTxt(m)}</span><span class="srb"><span class="srn">${escTxt(x.name)}</span> ${x.toks.map(shTokHTML).join('<span class="srsep">&nbsp;/</span> ')}</span></div>`; }).join('');
   return summaryShell(escTxt(M.title),escTxt(M.meta),head,body||'<div class="empty">sin series registradas</div>'); }
-// ---- comida: el anillo con las kcal dentro y los gramos a la derecha (el formato que el dueño extrañaba); debajo las
-// comidas por hora con su TOTAL (16/800) y sus alimentos si caben. Sin "restan" arriba ni "lo que más pesó hoy".
 function shFoodModel(iso){
   const {items,t}=macroTotals(); const food=items.filter(m=>!isWaterItem(m));
   const P=dayMealParts(iso,food,t.kcal);
@@ -4067,13 +4066,13 @@ function dayMealParts(iso,food,dayKcal){
 // escalones medidos después de pintar: 0 tal cual · 1 series a 10 (sigue en la escala) / comida sin alimentos ·
 // 2 recorte de bloques del final con aviso "+N". La tarjeta nunca crece ni hace scroll.
 function fitShareCard(root){ const card=(root||document).querySelector('.sharecard'); if(!card)return;
-  const over=()=>card.scrollHeight>card.clientHeight+0.5||[...card.querySelectorAll('.shs')].some(s=>s.scrollWidth>s.clientWidth+1);
+  const over=()=>card.scrollHeight>card.clientHeight+0.5;
   card.querySelectorAll('.shmore').forEach(x=>x.remove()); card.querySelectorAll('.shbody>[data-n]').forEach(x=>{ x.hidden=false; });
   card.dataset.shlvl='0'; if(!over())return;
   card.dataset.shlvl='1'; if(!over())return;
   card.dataset.shlvl='2'; const body=card.querySelector('.shbody'); if(!body)return;
   const blocks=[...body.querySelectorAll(':scope>[data-n]')], more=document.createElement('div'); more.className='shmore'; body.appendChild(more);
-  let cut=0, cutN=0; const isEx=!!body.querySelector('.shx');
+  let cut=0, cutN=0; const isEx=!!body.querySelector('.srw');
   for(let i=blocks.length-1;i>0&&over();i--){ blocks[i].hidden=true; cut++; cutN+=+(blocks[i].dataset.n||0);
     more.textContent='+'+cut+(isEx?' ejercicio'+(cut===1?'':'s')+' · '+cutN+' serie'+(cutN===1?'':'s'):' comida'+(cut===1?'':'s'))+' · completo en copiar texto'; }
   if(!cut)more.remove(); }
@@ -4083,7 +4082,7 @@ function shareTextFor(){
     const s=(db.sessions||[]).find(x=>x.id===state.shareId)||(db.sessions||[]).filter(x=>x.type!=='rest').slice(-1)[0]; if(!s)return '';
     const M=shSessModel(s), pl=(n,w)=>n+' '+w+(n===1?'':'s');
     const dur=M.dur?(M.dur.h!=null?M.dur.h+'h'+M.dur.m:M.dur.min+'min'):'—';
-    const L=[]; M.exs.forEach(x=>{ L.push(x.name+' · '+pl(x.series,'serie')); L.push('  '+x.toks.map(shTokTxt).join(' · ')); });
+    const L=[]; let pm=null; M.exs.forEach(x=>{ L.push((x.muscle&&x.muscle!==pm?'#'+x.muscle+' ':'')+x.name+' '+x.toks.map(shTokTxt).join(' / ')); pm=x.muscle; });
     return [M.title+(M.meta?' · '+M.meta:''), dur+' · '+pl(M.series,'serie')+' · '+pl(M.exn,'ejercicio'), '', ...L, '', 'gym//TRK'].join('\n'); }
   const M=shFoodModel(curDate()), t=M.t, L=[];
   M.meals.forEach(m=>{ L.push(m.tag+(m.time?' '+m.time:'')+' · '+m.kcal.toLocaleString()+' kcal · '+m.P+'P '+m.C+'C '+m.F+'F');
@@ -6560,7 +6559,10 @@ document.getElementById('app').addEventListener('click',e=>{
     if(nowDone&&!w.loggedAfter){ restAudioInit(); w.restEnd=Date.now()+((db.settings.restSec||90)*1000); _restFinT=0; }
     if(nowDone){ const ts=Date.now(); if(ex.unilateral){if(ex.sets[si])ex.sets[si].doneAt=ts;if(ex.sets[si+1])ex.sets[si+1].doneAt=ts;}else ex.sets[si].doneAt=ts; }
     if(nowDone){ state._focusSet=nextSetTarget(exi,si); state._pop={exi,si}; }
+    state._curEx=ex.sets.some(s=>s&&!s.done)?exi:null;   // v256: terminado el ejercicio, el enfoque pasa solo al siguiente
     save(); reRender(); }
+  else if(a==='excur'){ state._curEx=exi; reRender(); }
+  else if(a==='wfull'){ state._wfull=!state._wfull; reRender(); }
   else if(a==='gonow'){ const t=currentSetTarget(); if(t){ const fe=document.querySelector('.setn[data-exi="'+t.exi+'"][data-si="'+t.si+'"]'); if(fe&&fe.scrollIntoView)fe.scrollIntoView({block:'center',behavior:'smooth'}); } }
   else if(a==='fs'){ const s=db.activeWork.exercises[exi].sets[si]; if(!s||s.isDrop)return; s.fsOn=!s.fsOn; if(!s.fsOn&&!s.bw)s.extraW=''; save(); reRender(); }
   else if(a==='addset'){ const ex=db.activeWork.exercises[exi]; if(isCardio(ex)){ const lt=ex.sets[ex.sets.length-1]||null; ex.sets.push(emptySet(ex,null,false,lt)); } else if(ex.unilateral){ const [s1,s2]=uniSides(ex); const lr=workSource(ex,s1)||ex.sets[ex.sets.length-2]||null, ll=workSource(ex,s2)||ex.sets[ex.sets.length-1]||null; ex.sets.push(emptySet(ex,s1,false,lr)); ex.sets.push(emptySet(ex,s2,false,ll)); } else { ex.sets.push(emptySet(ex,null,false,workSource(ex,null))); } state._enter={exi,si:ex.unilateral&&!isCardio(ex)?ex.sets.length-2:ex.sets.length-1}; save(); reRender(); }
