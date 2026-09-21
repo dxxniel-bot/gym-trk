@@ -17,7 +17,7 @@ const exemptCount = (raw.match(/\/\*ds:exempt\*\//g) || []).length;
 const args = process.argv.slice(2);
 
 // ---- escalas del sistema (DESIGN_SYSTEM.md §4) ----
-const TYPE_OK = new Set([9, 10, 11, 12, 13, 16, 22, 34]);
+const TYPE_OK = new Set([10, 12, 16, 22, 34]);   // v256: escala única 34·22·16·12·10 (mueren 13, 11 y 9)
 const RADIUS_OK = new Set(['0', '2px', '4px', '12px', '16px', '22px', '999px', '50%']); // literales tolerados solo mientras migran a token
 const SPACE_OK = new Set([0, 1, 2, 4, 6, 8, 10, 12, 16, 24, 32, 48]);   // 6 y 10 = medios pasos de componente
 const LS_OK = new Set(['0', 'normal']);   // todo lo demás va por var(--ls-*)
@@ -111,17 +111,18 @@ const distinctDur = [...new Set(durs)].sort((a, b) => a - b);
 // ---- 8 · armonía (§4.4b) y ruido (§9.1) — UX-2 ----
 // "un rol, un token": el mismo rol no puede pintarse con dos tamaños según la pantalla.
 const ruleList = [...topLevel.matchAll(/([^{}]+)\{([^{}]*)\}/g)].map(m => ({ sel: m[1].trim(), body: m[2] }));
-const TPX = { caption: 9, xs: 10, meta: 11, sm: 12, body: 13, section: 16, display: 22, hero: 34 };
+const TPX = { label: 10, data: 12, section: 16, display: 22, hero: 34, caption: 9, xs: 10, meta: 11, sm: 12, body: 13 };   // los 5 últimos ya no existen: si aparecen, es regresión
 const tokOf = body => ((body.match(/font-size\s*:\s*var\(--t-([\w-]+)\)/) || [])[1] || null);
 const ruleTok = sel => { let t = null; ruleList.forEach(r => { if (r.sel === sel) { const k = tokOf(r.body); if (k) t = k; } }); return t; };
 // tabla cerrada de §4.4b: selector → token esperado
 const ROLE_MAP = {
   section: ['section', ['.section .h', '.sheet h3', '.mdhd h3']],
-  navrow: ['body', ['.pickitem', '.nvm', '.hrow .hnm', '.exrow .exn', '.tbrow']],
-  datarow: ['meta', ['.line', '.mrow', '.item', '.sxh', '.trow']],
-  meta: ['xs', ['.submeta', '.empty', '.hrow .hmeta']],
-  chip: ['meta', ['.chip', '.spc', '.ag-chip', '.bwchip']],   // .vst es anotación pegada a su fila: 9 px permitido (§4.4),
-  tab: ['meta', ['.mdtabs span', '.toggles button']],
+  navrow: ['data', ['.pickitem', '.nvm', '.hrow .hnm', '.exrow .exn', '.tbrow']],   // v256: fila navegable = dato 12 (peso 700)
+  datarow: ['data', ['.line', '.mrow', '.item', '.sxh', '.trow']],
+  meta: ['label', ['.submeta', '.empty', '.hrow .hmeta']],
+  chip: ['data', ['.chip', '.spc', '.ag-chip', '.bwchip']],
+  tab: ['data', ['.mdtabs span', '.toggles button']],
+  entity: ['section', ['.exhead .n', '.ghead .gnm', '.ghead .gkc']],   // título de entidad: el total de una comida manda sobre sus alimentos (queja 9)
 };
 const roleMiss = [];
 Object.entries(ROLE_MAP).forEach(([rol, [want, sels]]) => sels.forEach(s => { const got = ruleTok(s); if (got && got !== want) roleMiss.push(s + ' ' + TPX[got] + '→' + TPX[want]); }));
@@ -131,6 +132,11 @@ const inputSmall = ruleList.filter(r => !INPUT_OK.includes(r.sel.trim()) && /(^|
   .map(r => ({ s: r.sel, t: tokOf(r.body) })).filter(x => x.t && TPX[x.t] < 16).map(x => x.s + ' ' + TPX[x.t]);
 // 9 px reservado a MAYÚSCULAS espaciadas: una regla con --t-caption debe declarar uppercase o --ls-caps
 const capsLower = ruleList.filter(r => tokOf(r.body) === 'caption' && !/text-transform\s*:\s*uppercase/.test(r.body) && !/var\(--ls-caps\)/.test(r.body)).map(r => r.sel);
+// v256: el 800 nunca por debajo de 12, y ningún token viejo sobrevive
+const w800small = ruleList.filter(r => { const t = tokOf(r.body); return t && TPX[t] < 12 && /font-weight\s*:\s*800/.test(r.body); }).map(r => r.sel);
+const oldTok = (html.match(/var\(--t-(body|sm|meta|xs|caption)\)/g) || []).length;
+const scaleUse = {};
+for (const m of css.matchAll(/font-size\s*:\s*var\(--t-([a-z]+)\)/g)) { const px = TPX[m[1]]; scaleUse[px] = (scaleUse[px] || 0) + 1; }
 // texto instructivo en pantalla (§9.1): pistas de gesto y leyendas impresas en cada render
 const hintCls = ['chhint', 'swipehint', 'ehint'].reduce((o, c) => (o[c] = (js.match(new RegExp('class="[^"]*\\b' + c + '\\b', 'g')) || []).length, o), {});
 hintCls.submeta = (js.match(/class="[^"]*\bsubmeta\b/g) || []).length;
@@ -165,6 +171,7 @@ else {
   console.log('P0 detectables:'); (p0.length ? p0 : ['ninguno']).forEach(x => console.log('  · ' + x));
   console.log('\nTipografía'); L('font-size literales CSS/inline', cssFS.length + ' / ' + jsFS.length); L('usos de var(--t-*)', report.fontSize.tokenUses);
   L('tamaños distintos', report.fontSize.distinct.join(' ')); L('fuera de escala', fsOff.length);
+  L('escala en uso (px ×reglas)', Object.entries(scaleUse).map(([k, v]) => k + '×' + v).join(' ')); L('tokens viejos (13/11/9)', oldTok); L('peso 800 bajo 12', w800small.length + (w800small.length ? '  [' + w800small.slice(0, 8).join(', ') + ']' : ''));
   L('pesos (valor ×usos)', Object.entries(report.weights.byValue).map(([k, v]) => k + '×' + v).join(' ')); L('letter-spacing distintos / fuera de rol', report.letterSpacing.distinct + ' / ' + lsOff.length);
   console.log('\nGeometría'); L('radios literales / fuera de escala', radiiLit.length + ' / ' + radiiOff.length + (radiiOff.length ? '  [' + report.radius.distinctOff.join(', ') + ']' : ''));
   L('espaciado px literal / fuera de escala', spaceVals.length + ' / ' + spaceOff.length); L('usos de var(--s*)', spaceTok);
