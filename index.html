@@ -85,12 +85,13 @@
   .ctrls{display:flex; gap:var(--s4); font-size:var(--t-label); margin-bottom:var(--s6);} .ctrls a{color:var(--o50); cursor:pointer; padding:var(--s4) 6px; margin:calc(-1 * var(--s4)) -6px;}
 
   /* section header (stacked label + name) */
-  .whdr{display:grid; grid-template-columns:auto 1fr; column-gap:var(--s3); row-gap:var(--s2); align-items:baseline; margin-bottom:var(--s3);}
-  .whdr .l1,.whdr .l2{grid-column:1; justify-self:end; text-align:right; font-size:var(--t-section); font-weight:800; line-height:1; letter-spacing:var(--ls-title); color:var(--o50);}
-  .whdr .l1{grid-row:1;} .whdr .l2{grid-row:2;} .whdr .l1 .s{color:var(--o50);}
-  .whdr .wname{grid-column:2; grid-row:1; font-size:var(--t-display); font-weight:800; letter-spacing:var(--ls-num); line-height:1;}
-  .whdr .wmeta{grid-column:2; grid-row:2; font-size:var(--t-label); color:var(--o50); line-height:1; letter-spacing:var(--ls-ui);}
-  .wgym{text-align:center; font-size:var(--t-label); color:var(--o40); margin-top:var(--s3);}
+  /* v256 · cabecera del día con UN solo borde (x=0) y dos tamaños: rótulo 10 MAYÚSCULAS · nombre 22/800 · una línea de meta 10.
+     Antes: rejilla auto/1fr con el rótulo en justify-self:end (el nombre se movía según cuánto midiera el rótulo), "WORKOUT"
+     de relleno, el gym centrado aparte y la recuperación centrada: 4 bordes y 7 tamaños en 9 renglones. */
+  .whdr{display:block; margin-bottom:var(--s3);}
+  .whdr .wlbl{font-size:var(--t-label); letter-spacing:var(--ls-caps); text-transform:uppercase; color:var(--o50); line-height:1.2; margin-bottom:var(--s2);} .whdr .wlbl .s{color:var(--o40);}
+  .whdr .wname{font-size:var(--t-display); font-weight:800; letter-spacing:var(--ls-num); line-height:1;}
+  .whdr .wmeta{font-size:var(--t-label); color:var(--o40); line-height:1.2; letter-spacing:var(--ls-ui); margin-top:var(--s2);}
 
   .section{display:flex; align-items:baseline; justify-content:space-between; margin-bottom:var(--sp-section);}
   .section .h{font-size:var(--t-section); font-weight:800;} .section .h .s{color:var(--o50);}
@@ -370,6 +371,8 @@
   /* hold & drag — reorder exercises within a muscle, and whole muscle blocks */
   .dgrip{display:inline-block; align-self:center; cursor:grab; color:var(--o30); font-size:var(--t-data); line-height:1; padding:var(--s2) var(--s3) var(--s2) 0; touch-action:none; -webkit-user-select:none; user-select:none; -webkit-touch-callout:none;}
   .dgrip:active{color:var(--o60); cursor:grabbing;}
+  .exhd{display:grid; grid-template-columns:minmax(0,1fr);} .exhd.hasgrip{grid-template-columns:14px minmax(0,1fr); column-gap:var(--s2);}
+  .exhd>.dgrip{align-self:start; padding:var(--s2) 0 0; margin-top:1px;} .exhdc{min-width:0;}
   .mhead .dgrip{padding:var(--s1) 6px var(--s1) 0; vertical-align:-1px;}
   .ex.dragsrc, .mgroup.dragsrc{opacity:.3;}
   body.dragging, body.dragging *{-webkit-user-select:none; user-select:none;}
@@ -426,7 +429,7 @@
   .settens{font-size:var(--t-label); font-weight:400; color:var(--o40); margin-left:6px;}
   .sethr{float:left; font-size:var(--t-label); font-weight:400; color:var(--o40); margin-left:var(--s3);}
   .hrblk{margin:var(--s2) 0 10px;}
-  .ready{text-align:center; font-size:var(--t-label); color:var(--o50); margin:6px 0 0; cursor:pointer; letter-spacing:var(--ls-ui);} .ready b{color:var(--fg); font-weight:800;} .ready .rk{letter-spacing:var(--ls-caps);} .ready .rl{color:var(--o35);} .hrsvg{display:block; width:100%; height:56px; color:var(--o60); margin-bottom:var(--s2);}
+  .ready{text-align:left; font-size:var(--t-label); color:var(--o50); margin:6px 0 0; cursor:pointer; letter-spacing:var(--ls-ui);} .ready b{color:var(--fg); font-weight:700;} .ready .rk{letter-spacing:var(--ls-caps);} .ready .rl{color:var(--o35);} .hrsvg{display:block; width:100%; height:56px; color:var(--o60); margin-bottom:var(--s2);}
   .exT{font-size:var(--t-label); font-weight:700; color:var(--o50); margin-left:6px; letter-spacing:var(--ls-ui); white-space:nowrap;}
   .del{font-size:var(--t-section); color:var(--o40); text-align:center; cursor:pointer; background:none; border:0; height:36px; line-height:36px; padding:0;}
   .pair{display:flex; align-items:center; gap:var(--s2); margin-bottom:6px;} .pair .setn{width:22px; flex:0 0 22px;} .pair .prows{flex:1;}
@@ -629,7 +632,7 @@
   /* day navigator (macros) */
   .dnavh{display:flex; align-items:center; gap:var(--s1);}
   .dnlbl-wrap{position:relative; display:inline-flex;} .dnlbl-wrap .dcal{position:absolute; inset:0; width:100%; height:100%; opacity:0; border:0; padding:0; margin:0; background:none; color:transparent; cursor:pointer; -webkit-appearance:none; appearance:none;}
-  .dnav{font-size:var(--t-display); color:var(--o50); cursor:pointer; padding:6px 10px; line-height:1; user-select:none; display:inline-flex; align-items:center; min-height:40px;} .dnav:active{color:var(--fg);}
+  .dnav{font-size:var(--t-section); color:var(--o50); cursor:pointer; padding:6px 10px; line-height:1; user-select:none; display:inline-flex; align-items:center; min-height:44px;}   /* v256: la flecha no pesa más que la fecha que mueve (22 → 16) */ .dnav:active{color:var(--fg);}
   .dnlbl{font-size:var(--t-section); font-weight:800; letter-spacing:var(--ls-ui); cursor:pointer; min-width:96px; text-align:center;}
   /* ── design mode: live spacing editor (?design=1) ── */
   .dz{position:fixed; left:8px; right:8px; bottom:8px; z-index:var(--z-dev); background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:10px var(--s4); max-height:48vh; overflow-y:auto; -webkit-overflow-scrolling:touch; box-shadow:var(--shadow-float); font-family:'JetBrains Mono',monospace;}
@@ -2188,12 +2191,14 @@ function statusBar(back){
     +`<div class="center">${fmtDate(todayISO())}<br/>${nowHM()}</div>`
     +`<div class="streak u-tap" data-act="nav" data-screen="progress" title="días seguidos registrando comida o gym">streak: <b>${streak()}</b></div></div>`;
 }
+// v256 · la cabecera del día (//NEXT, //NOW, //HISTORY, //GYM) sale de UN solo lugar: rótulo · nombre · una línea de meta.
+function dayHeadHTML(lbl,name,meta,cls){ return `<div class="whdr${cls?' '+cls:''}"><div class="wlbl"><span class="s">//</span>${lbl}</div><div class="wname">${name}</div>${meta?`<div class="wmeta">${meta}</div>`:''}</div>`; }
 function renderHome(){
   // empty state — no split yet (new account)
   if(!db.split||!db.split.days||!db.split.days.length){
     return statusBar(false)
       +`<hr class="rule"/>`
-      +`<div class="whdr"><div class="l1"><span class="s">//</span>GYM</div><div class="wname">sin split</div><div class="l2">SETUP</div><div class="wmeta">arma tu rutina para empezar</div></div>`
+      +dayHeadHTML('GYM','sin split','arma tu rutina para empezar')
       +`<div class="empty-cta">`
       +`<button class="start" data-act="newsplit">+ crear split</button>`
       +`<div class="secondary u-mt10"><button class="b" data-act="workshop">explorar splits</button><button class="b" data-act="importsplit">importar</button></div>`
@@ -2231,10 +2236,9 @@ function renderHome(){
     +`<div class="rot"><span class="lbl">ROTATION</span><span class="n"><span class="arrow" data-act="prevday">‹</span> day ${di+1}/${dayCount()}${offLabel} <span class="arrow" data-act="nextday">›</span></span></div>`
     +`<div class="segs">${segs}</div>`
     +`<div class="ctrls"><a data-act="changesplit">[change split]</a><a data-act="changegym">[change gym]</a><a data-act="history">[history]</a></div>`
-    +`<div class="whdr"><div class="l1"><span class="s">//</span>${l1}</div><div class="wname">${escTxt(day.name)}</div><div class="l2">WORKOUT</div><div class="wmeta">${escTxt(db.split.name)} · ${escTxt(day.tag)}</div></div>`
-    +`<div class="wgym">${db.activeGym} · ${day.exercises.length} exercises</div>`
+    +dayHeadHTML(l1,escTxt(day.name),[escTxt(db.split.name),escTxt(day.tag),escTxt(db.activeGym||''),day.exercises.length+' ejercicios'].filter(Boolean).join(' · '))
     +(isCurrent?readinessLineHTML(todayISO())+dayMusclesLineHTML(day):'')
-    +`<div class="u-tc u-mt10 u-mb2 u-mx0"><a data-act="togglepreview" class="u-label u-o60 u-tap u-py2 u-px6 u-lsui">${state.previewDay?'[ ocultar rutina ▴ ]':'[ ver rutina ▾ ]'}</a></div>`
+    +`<div class="u-mt10 u-mb2 u-mx0"><a data-act="togglepreview" class="u-label u-o60 u-tap u-py2 u-px6 u-lsui">${state.previewDay?'[ ocultar rutina ▴ ]':'[ ver rutina ▾ ]'}</a></div>`
     +(state.previewDay?dayPreviewHTML(day):'')
     +cta
     +volumeSection()
@@ -3493,8 +3497,11 @@ function renderExercise(exi,ex,allowF,canReorder){
   const noBaseline=!prevSets?`<span class="exprog u-o30 u-label u-ml6" title="sin sesión previa equivalente para comparar">sin baseline</span>`:'';
   // línea 1: [bi] nombre + badges · línea 2: tipo · marca · setup · nota (o [+ nota] si aún no hay)
   const noteHTML=`<span class="note${ex.note?'':' add'} u-tap" data-act="editexnote" data-exi="${exi}" title="${ex.note?'editar nota':'agregar nota'}">${ex.note?escTxt(ex.note):'[+ nota]'}</span>`;
-  const head=`<div class="exhead">${gripE}${exLatTagHead(ex)}<span class="n u-tap" data-act="editexname" data-exi="${exi}">${escTxt(ex.name)}</span>${prBadge}${noBaseline}<span class="exdel u-o35 u-tap u-data u-py2 u-px6 u-mlauto u-asc" data-act="delex" data-exi="${exi}" title="quitar de la sesión">✕</span></div>`
-   +`<div class="exsub">${variantChips(ex,{act:'editmach',exi})}${mhtml}${noteHTML}</div>`;
+  // v256 (B3): el asa vive en SU columna y las dos líneas comparten borde — [bi] sobre [cable]. Antes el asa y el
+  // corchete empujaban solo la primera línea (nombre en x≈72, marca en x≈54). [uni]/[bi] se queda AL FRENTE del
+  // nombre: es pedido explícito del dueño (21-ago), no se mueve.
+  const head=`<div class="exhd${gripE?' hasgrip':''}">${gripE}<div class="exhdc"><div class="exhead">${exLatTagHead(ex)}<span class="n u-tap" data-act="editexname" data-exi="${exi}">${escTxt(ex.name)}</span>${prBadge}${noBaseline}<span class="exdel u-o35 u-tap u-data u-py2 u-px6 u-mlauto u-asc" data-act="delex" data-exi="${exi}" title="quitar de la sesión">✕</span></div>`
+   +`<div class="exsub">${variantChips(ex,{act:'editmach',exi})}${mhtml}${noteHTML}</div></div></div>`;
   // ---- cardio branch: field grid per subtype, no drop sets, no w/r/rir ----
   if(isCardioEx){
     const fields=cardioFields(ex);
@@ -3653,8 +3660,7 @@ function renderHistoryEditor(){
   if(curM!==null)body+='</div></div>';
   return statusBar(true)
     +`<div class="wprog">${trkBarI('wp:'+s.id,total?Math.round(done/total*100):0)}</div>`
-    +`<div class="whdr top"><div class="l1"><span class="s">//</span>HISTORY</div><div class="wname">${escTxt(s.dayName||'sesión')}</div><div class="l2"></div><div class="wmeta">${escTxt(fmtDate(s.date))}${s.startTime?' · '+escTxt(s.startTime)+(s.endTime?'–'+escTxt(s.endTime):''):''}</div></div>`
-    +`<div class="wgym">${escTxt(s.gym||'')}</div>`
+    +dayHeadHTML('HISTORY',escTxt(s.dayName||'sesión'),[escTxt(fmtDate(s.date))+(s.startTime?' · '+escTxt(s.startTime)+(s.endTime?'–'+escTxt(s.endTime):''):''),escTxt(s.gym||'')].filter(Boolean).join(' · '),'top')
     +`<div class="hist-editbar"><button class="cancel" data-act="h_close">‹ cerrar</button><button class="cancel" data-act="sharesession" data-id="${s.id}">compartir</button><button class="cancel danger" data-act="h_delsession" data-id="${s.id}">borrar</button></div>`
     +`<div class="hist-compact">${body}</div>`;
 }
@@ -3697,8 +3703,7 @@ function renderWorkout(){
       ? `<div class="rot u-mt12"><span class="lbl">LOGGED AFTER</span><span class="n"><input type="date" value="${w.date}" max="${todayISO()}" data-act="setdate" class="inp-mini"/></span></div><div class="rot u-mt6"><span class="lbl">duración (min) · opcional</span><span class="n"><input type="number" value="${w.manualDur||''}" data-act="setdur" inputmode="numeric" placeholder="—" class="inp-mini u-tr" style="width:70px"/></span></div><div class="rot u-mt6"><span class="lbl">inicio · opcional</span><span class="n"><input type="time" value="${w.startTime||''}" data-act="setstarttime" class="inp-mini"/></span></div><div class="rot u-mt6"><span class="lbl">fin · opcional</span><span class="n"><input type="time" value="${w.endTime||''}" data-act="setendtime" class="inp-mini"/></span></div><div class="rot u-mt6"><span class="lbl">avanzar rotación</span><span class="n"><a data-act="togglenoadv" class="u-tap u-py2 u-px10 u-label" style="border:.5px solid var(--o20)">${w.noAdvance?'no':'sí'}</a></span></div>`
       : `<div class="rot u-mt12"><span class="lbl">ROTATION - DAY ${curDayIdx()+1}/${dayCount()}${w.startMs?' · '+elapsedStr(w.startMs):''}</span><span class="n u-tap" data-act="changegym">[change gym]</span></div>`)
     +`<div class="wprog">${trkBarI('wp:live',total?Math.round(done/total*100):0)}</div>`
-    +`<div class="whdr top"><div class="l1"><span class="s">//</span>NOW</div><div class="wname">${escTxt(w.dayName)}</div><div class="l2"></div><div class="wmeta">${escTxt(db.split.name)} · ${escTxt(day.tag)}</div></div>`
-    +`<div class="wgym">${w.gym}</div>`
+    +dayHeadHTML('NOW',escTxt(w.dayName),[escTxt(db.split.name),escTxt(day.tag),escTxt(w.gym||'')].filter(Boolean).join(' · '),'top')
     +sessionContextNote(w)
     +body;
 }
