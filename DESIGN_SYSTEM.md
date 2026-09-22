@@ -1,6 +1,6 @@
 # gym//TRK — DESIGN SYSTEM (referencia del estado actual)
 
-> Referencia del estado actual (v258). **Lee BRAND.md primero**: manda sobre este archivo. Sin historia: DESIGN_CHANGELOG.md.
+> Referencia del estado actual (v259). **Lee BRAND.md primero**: manda sobre este archivo. Sin historia: DESIGN_CHANGELOG.md.
 
 ---
 
@@ -10,7 +10,7 @@
 - `BRAND.md` dice **qué es** gym//TRK: la identidad "CMD hacker × glass moderno", las reglas B-01…B-12, el vocabulario,
   las excepciones con nombre, lo prohibido y el registro de decisiones del dueño. Si algo de aquí choca con BRAND, gana
   BRAND y el choque se anota como pregunta para el dueño.
-- **Este archivo** dice **cómo está hecho hoy** (v258) y a qué se tiene que acercar: tokens, roles, fichas de componente,
+- **Este archivo** dice **cómo está hecho hoy** (v259) y a qué se tiene que acercar: tokens, roles, fichas de componente,
   patrones, auditoría y protocolo. No guarda historia.
 - `DESIGN_CHANGELOG.md` guarda la historia (fases DS/R/UX-2, notas vNNN, diseños retirados o rechazados). **Nunca se
   implementa desde ahí.**
@@ -19,7 +19,7 @@
 acciones → la ficha del componente (§7) → tokens (§4) → §17.6 definición de terminado.
 
 **Convenciones.**
-- **Hoy** = lo que hace el código de v258. **Objetivo G2 / G3 / G4** = lo que falta y en qué fase de la ruta (plan G:
+- **Hoy** = lo que hace el código de v259. **Objetivo G2 / G3 / G4** = lo que falta y en qué fase de la ruta (plan G:
   G2 datos y sistema sin cambiar el look · G0 láminas para elegir · G3 identidad aprobada · G4 completitud). Nada marcado
   como objetivo está implementado.
 - Un nombre entre comillas invertidas (clase, token, función, selector) **existe en `index.html`**. Lo que todavía no
@@ -89,7 +89,7 @@ BRAND §5 define los siete primitivos con los que se arma toda pantalla. Aquí, 
 ## 4. Tokens
 
 Todo valor visual recurrente es un token en `:root` y se usa con `var(--…)`. **Nunca** se escribe un literal si existe su
-token (TOK-1, la revisa: ds-audit "literales"). Valores leídos de `index.html` (v258).
+token (TOK-1, la revisa: ds-audit "literales"). Valores leídos de `index.html` (v259).
 
 ### 4.1 Superficies
 
@@ -396,7 +396,7 @@ perfil tienen párrafos fijos de instrucciones; la tira de 17 tiles de Progress.
   exclamaciones ni "genial". Lo humano se reserva para errores y diagnósticos. Cuando un dato no es obvio, el *porqué* va
   en una línea ("correlación, no causa") o al glosario.
 
-**Hoy (v258) el idioma está mezclado** y la regla anterior ("lo nuevo en español salvo vecino en inglés") está en el
+**Hoy (v259) el idioma está mezclado** y la regla anterior ("lo nuevo en español salvo vecino en inglés") está en el
 changelog. Estado medido:
 - Títulos `//` en inglés: SETTINGS, HISTORY, SPLIT, STACK, PROGRESS, RECORDS, STATS, INSIGHTS, NEXT, SUPPS, MEALS, WATER.
   En español: PERFIL, SALUD, ESTÍMULO, MÚSCULOS, FUERZA, RENDIMIENTO, COBERTURA, HOY (recap).
@@ -700,7 +700,12 @@ Todo lo que pide una decisión vive en `askLayer()` (`.modal.asklayer`, `--z-pop
 reemplaza, así lo escrito abajo se conserva. Diálogos nativos (`alert`/`confirm`/`prompt`): 0 (ds-audit).
 
 #### TRKAsk
-- **Rol:** decisión reversible o de flujo. **API:** `trkAsk({title,detail,ok,cancel,danger}, onOk, onCancel)`.
+- **Rol:** decisión reversible o de flujo. **API:** `trkAsk({title,detail,ok,cancel,danger,dismiss}, onOk, onCancel)`.
+  `dismiss` (v259) = qué hace tocar fuera; sin él, tocar fuera = cancelar. Una decisión que borra algo que no se puede
+  recuperar (la sesión por recuperar) NUNCA se toma tocando fuera: `dismiss` la deja para después.
+- **Cola del arranque (v259):** `bootAsk(o, onOk, onCancel)` pone los avisos del arranque uno tras otro (sesión por
+  recuperar → respaldo más completo). Si otro aviso los tapa (`_onReplaced`), la cola se vacía: lo pendiente sigue
+  guardado y se vuelve a ofrecer en el siguiente arranque.
 - **Anatomía:** `h3` + `.submeta` + `.sheetbtns` (primario + secundario; si destruye, `.cancel.danger` + secundario).
 - **Hoy → objetivo G4:** título por defecto `'¿seguro?'` y OK destructivo que parece cancelar (VOZ-5).
 
@@ -1095,7 +1100,7 @@ Reduced-motion = instantáneo.
   (v258: antes un bucle a .01 ms parpadeaba) y los cinco `scrollIntoView` suaves usan
   `behavior:reducedMotion()?'auto':'smooth'` (X1-03).
 
-### 10.1 Registro de movimiento (todo lo que se mueve en v258)
+### 10.1 Registro de movimiento (todo lo que se mueve en v259)
 
 Leyenda de la última columna: ✓ cumple B-09 · ⚠ a revisar con el dueño · ✗ se corrige (fase).
 
@@ -1320,7 +1325,7 @@ Objetivo G4: completar la tabla con el texto exacto de cada celda vacía y una a
   en la barra de estado, con 44 de toque (`[‹ gym]`, `[‹ historial]`).
 - NAV-4: cerrar un sheet **nunca** mueve el scroll de abajo (`reRender()`, no `closeModal(); render()`). La revisa: R-SCROLL.
 
-### 14.3 Mapa por pantalla (v258)
+### 14.3 Mapa por pantalla (v259)
 
 | Pantalla (`state.screen`) | Instrumento | Cabecera | Contenido | Nav hoy | Notas |
 |---|---|---|---|---|---|
@@ -1442,6 +1447,7 @@ que crea o reemplaza una sesión se oculta mientras hay una viva.** La revisa: R
 | quitar un ejercicio del split (✕) | sin confirmación ni deshacer, a 1 del ▼ | desde el editor del ejercicio, con toast + deshacer (G2, M1-04) |
 | `rest day` · `skip day` | inmediato, sin deshacer; con sesión viva ya no existen ni corren (v258, M1-01b) | toast `✓ día saltado · sigue <día>` + `[deshacer]` (G4, M1-03) |
 | `[+ log past session]` | oculto y bloqueado con sesión viva (v258, M1-01) | ✓ |
+| recuperar una sesión al arrancar | v259: se copia antes a `gymtrk_live_pending`; solo `[recuperarla]` o `[descartar]` deciden; tocar fuera la deja para el siguiente arranque; con otra sesión viva no la pisa | ✓ |
 | `▶ continuar` una sesión pasada | v258: la original sigue en el historial hasta guardar (guardar la reemplaza, sin mover la rotación); abortar la deja intacta y restaura la rotación (M3-09) | ✓ |
 | registrar manualmente desde el escáner | v258: guarda en la comida elegida (`window._faTag` se lee antes de cerrar el sheet, M4-08) | ✓ |
 
@@ -1481,7 +1487,7 @@ quedar registrado. Antes de escribir UI se responde por escrito:
 Node puro, sin npm: `node tools/ds-audit.cjs` (con un archivo como argumento audita ese, para comparar contra la versión
 anterior). Se corre antes y después de cada cambio de UI; **ningún commit sube un contador P0 o P1** (AUD-1).
 
-**Contadores de hoy** (v258): P0 detectables · tamaños fuera de escala, escala en uso, tokens viejos, peso 800 bajo 12,
+**Contadores de hoy** (v259): P0 detectables · tamaños fuera de escala, escala en uso, tokens viejos, peso 800 bajo 12,
 pesos · letter-spacing fuera de rol · radios y espaciado fuera de escala · bordes · sombras fuera de token · colores
 literales · variables sin definir · excepciones marcadas · `style=""` total y por función · selectores repetidos (la misma
 regla propia dos veces en el nivel superior; no cuentan variantes en `@media`/`@supports` ni base + ajuste) · diálogos

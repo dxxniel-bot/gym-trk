@@ -104,10 +104,18 @@ module.exports = function rules(raw, repoDir) {
   for (const m of js.matchAll(/closeModal\(\);\s*render\(\)/g)) if (!skipped(jsA + m.index)) add('SCROLL', jsA + m.index, fnAt(jsA + m.index) + ' · ' + m[0]);
   for (const m of js.matchAll(/a===['"](sd_\w+)['"]\)\s*\{/g)) { const a = m.index + m[0].length - 1, b = js.slice(a, blockEnd(js, a) + 1); if (/(^|[^e])render\(\)/.test(b.replace(/reRender/g, ''))) add('SCROLL', jsA + m.index, m[1] + ' · render()'); }
   // ---- R-RAD / R-RADF · radios ----
+  // v259 · el valor de cada token de radio se resuelve desde :root siguiendo cadenas var() (un alias como
+  // --r-nav:var(--r-pill) antes valía 0 y escondía el hallazgo). RADV solo es el respaldo si el token no se encuentra.
   const RADV = { '--r-ctl': 12, '--r-pill': 999, '--radius': 16, '--r-sheet': 22, '--r-mark': 4, '--r-sm': 2, '--r-float': 0 };
+  const ROOTV = {}; for (const m of raw.slice(cssA, cssB).matchAll(/(--[\w-]+)\s*:\s*([^;}]+)/g)) if (!(m[1] in ROOTV)) ROOTV[m[1]] = m[2].trim();
+  const radTok = (t, d) => { const v = ROOTV[t]; if (v == null || d > 6) return { px: RADV[t] || 0, fl: t === '--r-float' };
+    const mm = v.match(/^var\((--[\w-]+)\)$/); if (mm) { const r = radTok(mm[1], (d || 0) + 1); return { px: r.px, fl: r.fl || t === '--r-float' }; }
+    return { px: parseFloat(v) || 0, fl: t === '--r-float' }; };
   rules.forEach(r => { if (r.kf) return; for (const m of r.body.matchAll(/border-radius\s*:\s*([^;]+)/g)) { const v = m[1]; if (/ds:exempt/.test(v)) continue;
-      const big = v.split(/\s+/).some(p => { const t = (p.match(/var\((--[\w-]+)\)/) || [])[1]; if (t) return (RADV[t] || 0) > 2; const x = parseFloat(p); return /px$/.test(p) && x > 2; });
-      if (!big) continue; if (CHROME.test(r.sel)) { if (!/--r-float/.test(v)) add('RADF', r.i, r.sel + ' · ' + v.trim()); } else add('RAD', r.i, r.sel + ' · ' + v.trim()); } });
+      const toks = [...v.matchAll(/var\((--[\w-]+)\)/g)].map(x => radTok(x[1], 0));
+      const big = toks.some(t => t.px > 2) || v.split(/\s+/).some(p => !/var\(/.test(p) && /px$/.test(p) && parseFloat(p) > 2);
+      const float = /--r-float/.test(v) || (toks.length && toks.every(t => t.fl));
+      if (!big) continue; if (CHROME.test(r.sel)) { if (!float) add('RADF', r.i, r.sel + ' · ' + v.trim()); } else add('RAD', r.i, r.sel + ' · ' + v.trim()); } });
   // ---- R-BLUR · backdrop-filter fuera del chrome (CSS) y la clase glass fuera de nav/sheet/toast (marcado) ----
   rules.forEach(r => { if (r.kf) return; if (/backdrop-filter\s*:\s*(?!none)/.test(r.body) && !CHROME.test(r.sel)) add('BLUR', r.i, r.sel); });
   for (const m of js.matchAll(/class="[^"]*\bglass(-strong)?\b[^"]*"/g)) { const i = jsA + m.index, f = fnAt(i); if (!/^(openModal|renderNav|toast|toastTask|trkAsk|holdConfirm|trkPrompt|trkMenu|trkSelect|trkPop|askLayer|showSaveBar)$/i.test(f) && !skipped(i)) add('BLUR', i, f + ' · ' + m[0]); }

@@ -1209,6 +1209,7 @@ async function nativeShareFile(name,text,enc){   // v256: enc='base64' para la i
 //   3. La sesión en curso se espeja SIEMPRE en su propia clave chica (unos KB), pase lo que pase con la grande.
 //   4. Mientras el guardado esté fallando hay un aviso PERMANENTE en pantalla, no un toast que se va.
 const LS_LIVE='gymtrk_live';                 // espejo de la sesión en curso (pequeño, sobrevive al cupo lleno)
+const LS_LIVE_PENDING='gymtrk_live_pending'; // v259 · espejos que se te ofrecieron para recuperar y aún no contestas
 const LS_ORPHANS=['gymtrk_db_v1_pre218','gymtrk_db_v1_premerge'];   // fotos de reparaciones ya aplicadas (v218, v224): ocupaban el 47 % del cupo. Literales porque sus constantes se declaran más abajo.
 let _saveBakT=0, _saveBakDay='';
 let _saveErr=null;                            // último error real (no "sin espacio" para todo)
@@ -1225,6 +1226,38 @@ function mirrorLive(){ try{ const w=db&&db.activeWork;
     if(w&&w.exercises&&w.exercises.length){ localStorage.setItem(LS_LIVE,JSON.stringify({t:Date.now(),w})); return; }
     if(_lastClosed){ localStorage.setItem(LS_LIVE,JSON.stringify(_lastClosed)); return; }
     localStorage.removeItem(LS_LIVE); }catch(_){} }
+// v259 · un espejo que se ofrece para recuperar se copia ANTES a su propia clave (LS_LIVE_PENDING). El save() del
+// arranque reescribe LS_LIVE con lo que haya en memoria, y antes eso borraba la sesión mientras el aviso seguía en
+// pantalla: una recarga por deploy o que iOS matara la app en ese momento = sesión perdida. Tocar fuera del aviso
+// tampoco la borra (se vuelve a ofrecer en el siguiente arranque): solo un botón decide.
+function liveSetsN(w){ return ((w&&w.exercises)||[]).reduce((n,e)=>n+((e&&e.sets)||[]).length,0); }
+function mirKey(m){ return m?((m.closed?'c:'+m.sid:'o:'+((m.w&&m.w.id)||''))+':'+(m.t||0)):''; }
+function inHistory(id){ return !!id&&(db.sessions||[]).some(s=>s&&s.id===id); }
+function mirWorthy(m){ const mine=m&&m.w; if(!mine||!liveSetsN(mine))return false;
+  if(m.closed)return !inHistory(m.sid);                     // la app dijo que la guardó pero no está
+  if(inHistory(mine.id))return false;                       // se guardó después: ya está a salvo
+  const cur=db.activeWork; if(cur&&cur.id===mine.id)return liveSetsN(mine)>liveSetsN(cur);
+  return true; }
+function livePendingRead(){ try{ const p=JSON.parse(localStorage.getItem(LS_LIVE_PENDING)||'[]'); return Array.isArray(p)?p:[]; }catch(_){ return []; } }
+function livePendingWrite(p){ try{ if(p&&p.length)localStorage.setItem(LS_LIVE_PENDING,JSON.stringify(p.slice(-3))); else localStorage.removeItem(LS_LIVE_PENDING); }catch(_){} }
+function livePendingSync(){ let pend=livePendingRead(), mir=null;
+  try{ const raw=localStorage.getItem(LS_LIVE); mir=raw?JSON.parse(raw):null; }catch(_){}
+  // v255 · si la última cerrada SÍ está en el historial, el espejo se conserva igual: `_lastClosed` vive en memoria,
+  // así que sin esto el primer save() tras recargar lo borraría y la red de seguridad duraría solo hasta la recarga.
+  if(mir&&mir.closed&&mir.w&&inHistory(mir.sid))_lastClosed=mir;
+  if(mirWorthy(mir)&&!pend.some(p=>mirKey(p)===mirKey(mir)))pend.push(mir);
+  pend=pend.filter(mirWorthy).slice(-3); livePendingWrite(pend); return pend; }
+function offerLivePending(pend,now){ (pend||[]).forEach(m=>{ const mine=m.w, n=liveSetsN(mine);
+    const drop=()=>livePendingWrite(livePendingRead().filter(p=>mirKey(p)!==mirKey(m)));
+    if(m.closed&&!_lastClosed)_lastClosed=m;               // el espejo de la cerrada sigue vivo mientras decides
+    const head=(mine.dayName||'sesión')+' · '+n+' series · '+fmtShort(mine.date||todayISO());
+    bootAsk(m.closed?{title:'falta una sesión que sí guardaste',detail:head+' · la app dijo que la guardó pero no está en tu historial\nsi tocas fuera, te la vuelvo a ofrecer',ok:'recuperarla',cancel:'descartar'}
+                    :{title:'tienes una sesión sin guardar',detail:head+' · no alcanzó a guardarse la última vez\nsi tocas fuera, te la vuelvo a ofrecer',ok:'recuperarla',cancel:'descartar'},
+      ()=>{ const cur=db.activeWork; if(cur&&cur.id!==mine.id&&liveSetsN(cur)>0){ toast('⚠ primero termina la sesión en curso','err'); return; }
+        db.activeWork=mine; if(m.closed)_lastClosed=null;
+        if(save()){ drop(); toast(m.closed?'✓ sesión recuperada · revísala y guárdala':'✓ sesión recuperada'); }
+        go('workout'); },
+      ()=>{ drop(); if(m.closed&&_lastClosed&&_lastClosed.sid===m.sid)_lastClosed=null; }, now); }); }
 // v255: que setItem no lance NO significa que quedó escrito. Se relee antes de cantar victoria.
 // Comparar SOLO la longitud no basta: si la escritura se pierde queda el valor anterior, que muchas veces mide
 // igual. Se compara una firma O(1) — longitud + 10 caracteres repartidos por toda la cadena — en vez de recorrer
@@ -1314,7 +1347,7 @@ function openStorage(){
   const rows=storageRows(), tot=storageTotal(), pct=Math.min(100,Math.round(tot/LS_QUOTA*100));
   const gTxt=growthTxt();
   const kb=b=>b>=1048576?(b/1048576).toFixed(2)+' MB':Math.round(b/1024)+' KB';
-  const nm=k=>k===LS_KEY?'tus datos':k===LS_BACKUP?'respaldo del día':k===LS_LIVE?'última sesión (caja negra)':k===LS_GROWTH?'medidor de crecimiento':LS_ORPHANS.indexOf(k)>=0?'foto vieja de una reparación':k.replace('gymtrk_','');
+  const nm=k=>k===LS_KEY?'tus datos':k===LS_BACKUP?'respaldo del día':k===LS_LIVE?'última sesión (caja negra)':k===LS_LIVE_PENDING?'sesión por recuperar':k===LS_GROWTH?'medidor de crecimiento':LS_ORPHANS.indexOf(k)>=0?'foto vieja de una reparación':k.replace('gymtrk_','');
   const orph=rows.filter(r=>LS_ORPHANS.indexOf(r.k)>=0).reduce((s,r)=>s+r.b,0);
   openModal(`<h3>espacio</h3>`
     +`<div class="line"><span class="k">usado en este navegador</span><span class="dots"></span><span class="v">${kb(tot)} <span class="u-o40 u-label">/ 5 MB</span></span></div>`
@@ -1336,7 +1369,10 @@ function openStorage(){
 // data-safety: count all data records so a restore can warn before any loss (meals + sessions + foods + bodyweight days + steps days)
 function dbMass(o){ try{ const m=Object.values((o&&o.meals)||{}).reduce((n,a)=>n+(a?a.length:0),0); return m+(((o&&o.sessions)||[]).length)+(((o&&o.foods)||[]).length)+Object.keys((o&&o.bodyweight)||{}).length+Object.keys((o&&o.steps)||{}).length+Object.keys((o&&o.sleep)||{}).length; }catch(_){ return 0; } }
 // ALWAYS ask before destructive replace (not just when shrinking) — silent imports on fresh accounts were a vector for malicious backups
-function confirmReplace(incoming,onOk){ const cur=dbMass(db), inc=dbMass(incoming);   // R2: TRKHold (reemplazar todo es irreversible)
+function confirmReplace(incoming,onOk){
+  // v259 · la base de demostración del estudio (tools/studio) jamás reemplaza tus datos, venga del archivo, del texto o de "log in"
+  if(incoming&&incoming._demo){ toast('⚠ es la demo del estudio · no se carga','err'); return; }
+  const cur=dbMass(db), inc=dbMass(incoming);   // R2: TRKHold (reemplazar todo es irreversible)
   const detail=cur===0?'se reemplazan TODOS tus datos con el respaldo':inc<cur?'el respaldo tiene MENOS datos ('+inc+') que los actuales ('+cur+') · no se puede deshacer':'se reemplazan tus '+cur+' registros por los '+inc+' del respaldo';
   holdConfirm({title:'cargar este respaldo',detail:detail,verb:'reemplazar'},onOk); }
 
@@ -3456,6 +3492,28 @@ function _uiSelfCheck(){
         _lastClosed=lcBefore;
         db.activeWork=awBefore;
       } finally { try{ if(liveBefore!=null)localStorage.setItem(LS_LIVE,liveBefore); else localStorage.removeItem(LS_LIVE); }catch(_){} } })();
+    // v259 · la sesión que se ofrece para recuperar no se borra mientras decides
+    (function(){ const liveB=localStorage.getItem(LS_LIVE), pendB=localStorage.getItem(LS_LIVE_PENDING), awB=db.activeWork, lcB=_lastClosed, qB=_bootQ.splice(0);
+      try{ _lastClosed=null; db.activeWork=null; _bootShowing=false; localStorage.removeItem(LS_LIVE_PENDING);
+        const three=[{w:'1',r:'1'},{w:'1',r:'1'},{w:'1',r:'1'}];
+        localStorage.setItem(LS_LIVE,JSON.stringify({t:1,w:{id:'stmir',dayName:'quads',exercises:[{name:'x',sets:three}]}}));
+        const p=livePendingSync(); save();
+        A('una sesión por recuperar sobrevive al save() del arranque', p.length===1&&livePendingRead().some(m=>m.w&&m.w.id==='stmir'&&liveSetsN(m.w)===3));
+        offerLivePending(p,true); const lay=document.getElementById('asklayer');
+        A('la sesión por recuperar se ofrece', !!lay&&/sin guardar/.test(lay.textContent));
+        lay.dispatchEvent(new MouseEvent('click',{bubbles:true}));      // tocar fuera
+        A('tocar fuera del aviso no borra la sesión por recuperar', livePendingRead().some(m=>m.w&&m.w.id==='stmir'));
+        closeAsk(true); _bootQ.length=0; _bootShowing=false;
+        bootAsk({title:'aviso uno'},null,null,true); bootAsk({title:'aviso dos'},null,null,true);
+        const l2=document.getElementById('asklayer');
+        A('los avisos del arranque se encolan en vez de taparse', !!l2&&/aviso uno/.test(l2.textContent)&&_bootQ.length===1);
+        l2.querySelector('[data-ask="no"]').click(); closeAsk(true); _bootQ.length=0; _bootShowing=false;
+        livePendingWrite(p); offerLivePending(p,true); const l3=document.getElementById('asklayer'); if(l3)l3.querySelector('[data-ask="no"]').click();
+        A('descartar (el botón) sí quita la sesión por recuperar', !!l3&&!livePendingRead().some(m=>m.w&&m.w.id==='stmir'));
+        A('un respaldo de demo del estudio jamás reemplaza tus datos', (()=>{ let ran=false; confirmReplace({_demo:true,split:{days:[]}},()=>{ ran=true; }); return !ran&&!document.querySelector('#asklayer .hold'); })());
+      } finally { closeAsk(true); _bootQ.length=0; qB.forEach(x=>_bootQ.push(x)); _bootShowing=false; if(_bootQ.length){ _bootShowing=true; setTimeout(_bootNext,300); }
+        db.activeWork=awB; _lastClosed=lcB;
+        try{ if(liveB!=null)localStorage.setItem(LS_LIVE,liveB); else localStorage.removeItem(LS_LIVE); if(pendB!=null)localStorage.setItem(LS_LIVE_PENDING,pendB); else localStorage.removeItem(LS_LIVE_PENDING); }catch(_){} } })();
     // v255 · una escritura que el navegador acepta pero no conserva ya NO cuenta como guardada
     (function(){ const realSet=Storage.prototype.setItem, bakBefore=localStorage.getItem(LS_BACKUP);
       // OJO: `localStorage.setItem = fn` NO sustituye el método — Storage tiene setter de propiedades con nombre,
@@ -8941,18 +8999,28 @@ function toastTask(msg){ const t=toast('… '+String(msg||'').replace(/^…\s*/,
   const fin=(m,ty)=>{ if(!t)return toast(m,ty); t.className='toast glass-strong '+ty; t.setAttribute('role',ty==='err'?'alert':'status'); t.textContent=m; if(ty==='ok')setTimeout(t._kill,durMs('--toast-life',2300)); };
   return { done:m=>fin(m||'✓ listo','ok'), fail:m=>fin(m||'⚠ no se pudo','err') }; }
 // TRKAsk / TRKHold viven en una capa propia (#asklayer, --z-pop) encima del sheet: nunca lo reemplazan.
-function askLayer(html,onDismiss){ closeAsk(true); const m=document.createElement('div'); m.className='modal asklayer'+(reducedMotion()?'':' in'); m.id='asklayer';
+function askLayer(html,onDismiss){ const prev=document.getElementById('asklayer'); if(prev&&prev._onReplaced){ try{ prev._onReplaced(); }catch(_){} } closeAsk(true); const m=document.createElement('div'); m.className='modal asklayer'+(reducedMotion()?'':' in'); m.id='asklayer';
   m.innerHTML='<div class="sheet glass-strong">'+html+'</div>';
   m.addEventListener('click',ev=>{ if(ev.target===m){ ev.stopPropagation(); closeAsk(); if(onDismiss)onDismiss(); } });
   document.getElementById('app').appendChild(m); return m; }
 function closeAsk(now){ const m=document.getElementById('asklayer'); if(!m)return; m.removeAttribute('id');
   if(now||reducedMotion()){ m.remove(); return; } m.classList.remove('in'); m.classList.add('out'); setTimeout(()=>{ try{m.remove();}catch(_){} },200); }
-// TRKAsk: decisión reversible o de flujo. o = {title, detail, ok, cancel, danger}
+// TRKAsk: decisión reversible o de flujo. o = {title, detail, ok, cancel, danger, dismiss}
+// (v259: `dismiss` = qué pasa al tocar fuera; sin él, tocar fuera = cancelar, como siempre)
 function trkAsk(o,onOk,onCancel){ const danger=!!o.danger;
   const btnOk=danger?'<button class="cancel danger" data-ask="ok">'+escTxt(o.ok||'borrar')+'</button>':'<button class="ok" data-ask="ok">'+escTxt(o.ok||'continuar')+'</button>';
-  const m=askLayer('<h3>'+escTxt(o.title||'¿seguro?')+'</h3>'+(o.detail?'<div class="submeta gap u-preline">'+escTxt(o.detail)+'</div>':'')+'<div class="sheetbtns">'+btnOk+'<button class="cancel" data-ask="no">'+escTxt(o.cancel||'cancelar')+'</button></div>',onCancel);
+  const m=askLayer('<h3>'+escTxt(o.title||'¿seguro?')+'</h3>'+(o.detail?'<div class="submeta gap u-preline">'+escTxt(o.detail)+'</div>':'')+'<div class="sheetbtns">'+btnOk+'<button class="cancel" data-ask="no">'+escTxt(o.cancel||'cancelar')+'</button></div>',o.dismiss||onCancel);
   m.addEventListener('click',ev=>{ const b=ev.target.closest&&ev.target.closest('[data-ask]'); if(!b)return; ev.stopPropagation(); closeAsk();
     if(b.dataset.ask==='ok'){ if(onOk)onOk(); } else if(onCancel)onCancel(); }); }
+// v259 · los avisos del arranque (sesión por recuperar, respaldo más completo) van en cola: uno tras otro. Antes el de
+// IndexedDB (900 ms) reemplazaba al del espejo (700 ms) sin avisar a nadie. Si otro aviso los tapa, la cola se vacía:
+// lo pendiente sigue guardado y se vuelve a ofrecer en el siguiente arranque.
+const _bootQ=[]; let _bootShowing=false;
+function bootAsk(o,onOk,onCancel,now){ _bootQ.push({o,onOk,onCancel}); if(_bootShowing)return; _bootShowing=true; if(now)_bootNext(); else setTimeout(_bootNext,700); }
+function _bootNext(){ const it=_bootQ.shift(); if(!it){ _bootShowing=false; return; }
+  const next=()=>{ if(_bootQ.length)setTimeout(_bootNext,250); else _bootShowing=false; };
+  trkAsk(Object.assign({},it.o,{dismiss:next}), ()=>{ if(it.onOk)it.onOk(); next(); }, ()=>{ if(it.onCancel)it.onCancel(); next(); });
+  const lay=document.getElementById('asklayer'); if(lay)lay._onReplaced=()=>{ _bootQ.length=0; _bootShowing=false; }; }
 // TRKHold: lo irreversible se arma sosteniendo 0.9 s ("armando 73 %"); soltar antes cancela. o = {title, detail, verb}
 function holdConfirm(o,onOk,onCancel){ const verb=o.verb||'confirmar', idle='mantén para '+verb, D=900;
   const m=askLayer('<h3>'+escTxt(o.title||'¿seguro?')+'</h3>'+(o.detail?'<div class="submeta gap u-preline">'+escTxt(o.detail)+'</div>':'')+'<button type="button" class="hold" aria-label="'+escTxt(idle)+'"><span class="hold-fill"></span><span class="hold-lbl">'+escTxt(idle)+'</span></button><div class="sheetbtns"><button class="cancel" data-ask="no">cancelar</button></div>',onCancel);
@@ -9289,35 +9357,18 @@ db=load();
 // v254 · al arrancar: suelta las fotos de reparaciones ya aplicadas (47 % del cupo) y ofrece recuperar una sesión
 // que se haya quedado sin guardar (el espejo chico de LS_LIVE sobrevive aunque la clave grande no se pueda escribir).
 try{ freeOrphanBackups(); }catch(_){}
-try{ const raw=localStorage.getItem(LS_LIVE); if(raw){ const mir=JSON.parse(raw);
-  const liveSets=w=>((w&&w.exercises)||[]).reduce((n,e)=>n+((e.sets||[]).length),0);
-  const cur=db.activeWork, mine=mir&&mir.w;
-  // v255 · el caso que le costó el entrenamiento: la sesión SE GUARDÓ (✓ verde) y luego la escritura se perdió.
-  // El espejo conserva la última cerrada, así que al arrancar se comprueba que exista de verdad en db.sessions.
-  if(mir&&mir.closed&&mine){
-    const sid=mir.sid, hay=(db.sessions||[]).some(s=>s&&s.id===sid);
-    // si SÍ está, el espejo se conserva igual: `_lastClosed` vive en memoria, así que sin esto el primer
-    // save() tras recargar lo borraría y la red de seguridad duraría solo hasta la siguiente recarga.
-    if(hay)_lastClosed=mir;
-    if(!hay&&liveSets(mine)>0){
-      _lastClosed=mir;                      // se conserva el espejo mientras el dueño decide
-      setTimeout(()=>{ trkAsk({title:'falta una sesión que sí guardaste',detail:(mine.dayName||'sesión')+' · '+liveSets(mine)+' series · '+fmtShort(mine.date||todayISO())+' · la app dijo que la guardó pero no está en tu historial',ok:'recuperarla'},
-        ()=>{ db.activeWork=mine; _lastClosed=null; if(save())toast('✓ sesión recuperada · revísala y guárdala'); go('workout'); },
-        ()=>{ _lastClosed=null; try{ localStorage.removeItem(LS_LIVE); }catch(_){} }); },700);
-    }
-  } else if(mine&&liveSets(mine)>liveSets(cur)){
-    setTimeout(()=>{ trkAsk({title:'tienes una sesión sin guardar',detail:(mine.dayName||'sesión')+' · '+liveSets(mine)+' series · '+fmtShort(mine.date||todayISO())+' · no alcanzó a guardarse la última vez',ok:'recuperarla'},
-      ()=>{ db.activeWork=mine; if(save())toast('✓ sesión recuperada'); go('workout'); },
-      ()=>{ try{ localStorage.removeItem(LS_LIVE); }catch(_){} }); },700);
-  } } }catch(_){}
+// v255 · el caso que le costó el entrenamiento: la sesión SE GUARDÓ (✓ verde) y luego la escritura se perdió; el espejo
+// conserva la última cerrada y al arrancar se comprueba que exista de verdad en db.sessions. v259 · lo que se ofrece
+// se copia antes a LS_LIVE_PENDING (livePendingSync) y los avisos van en cola (bootAsk).
+try{ offerLivePending(livePendingSync()); }catch(_){}
 // v255 · IndexedDB vive en el cupo grande (el que iOS mide en GB), así que sobrevive a que Web Storage se
 // llene o se desaloje. Si al arrancar la base local tiene MENOS registros que ese respaldo, se ofrece volver.
 try{ idbGet('latest').then(rec=>{ if(!rec||!rec.s)return; _idbLast=rec;
   let inc=null; try{ inc=JSON.parse(rec.s); }catch(_){ return; }
   if(!inc||!inc.split)return;
   const cur=dbMass(db), got=dbMass(inc);
-  if(got>cur){ setTimeout(()=>{ trkAsk({title:'hay un respaldo más completo',detail:'tu copia de seguridad interna tiene '+got+' registros y lo que quedó en este navegador tiene '+cur+' · guardada el '+fmtShort(rec.day||todayISO()),ok:'recuperarla'},
-      ()=>{ db=migrate(inc); if(save())toast('✓ '+got+' registros recuperados'); go('home'); }); },900); }
+  if(got>cur){ bootAsk({title:'hay un respaldo más completo',detail:'tu copia de seguridad interna tiene '+got+' registros y lo que quedó en este navegador tiene '+cur+' · guardada el '+fmtShort(rec.day||todayISO()),ok:'recuperarla'},
+      ()=>{ db=migrate(inc); if(save())toast('✓ '+got+' registros recuperados'); go('home'); }); }
 }).catch(e=>{ _idbErr=e; }); }catch(_){}
 try{ growthLog(); }catch(_){}
 try{ promptIdleSession(); }catch(_){} try{ if(typeof location!=='undefined' && /[?&]selftest=1/.test(location.search)){ _identitySelfCheck(); _dropsetSelfCheck(); _baselineSelfCheck(); _variantSelfCheck(); _historyEditSelfCheck(); _idSelfCheck(); _cardioSelfCheck(); _tensionSelfCheck(); _healthSelfCheck(); _readinessSelfCheck(); _loggingSelfCheck(); _mergeSelfCheck(); _streakSelfCheck(); _chartSelfCheck(); _muscleSelfCheck(); _exProfileSelfCheck(); _recoverySelfCheck(); _diagSelfCheck(); _uiSelfCheck(); _v256SelfCheck(); _v257SelfCheck(); _sessSafetyCheck(); setTimeout(_dsRenderReport,1500); } }catch(e){ console.error(e); } try{ const _sp=new URLSearchParams(location.search); const _hasHistorical=_sp.has('stepsh')||_sp.has('weighth')||_sp.has('stepsq')||_sp.has('sleeph'); if(_hasHistorical){ const _hsp=_sp; if(history.replaceState)history.replaceState(null,'',location.pathname); setTimeout(()=>{ trkAsk({title:'importar datos históricos',detail:'este link trae pasos, peso o sueño de varios días · acepta solo si viene de tu propio Atajo de iOS',ok:'importar'},()=>{ try{ const _imp=importHealth(_hsp); if(_imp.length){ save(); render(); toast('✓ '+_imp.join(' · ')); } }catch(_){} }); },400); } else { const _imp=importHealth(_sp); if(_imp.length){ window._healthImported=_imp; if(history.replaceState)history.replaceState(null,'',location.pathname); } } }catch(_){} save(); render(); if(window._healthImported)setTimeout(()=>toast('✓ '+window._healthImported.join(' · ')),250); if(window._recoveredFromBackup)setTimeout(()=>{try{toast('⚠ se recuperó un respaldo local · revisa tus datos, podrían faltar cambios muy recientes','err');}catch(_){}},600);
