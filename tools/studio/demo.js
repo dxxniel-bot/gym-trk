@@ -271,7 +271,7 @@
       activeGym: GYM, gyms: [GYM], machines, rotIdx: sessions.length,
       split, sessions, meals, foods,
       sleep, steps, bodyweight, stack,
-      mood, health, selfcheck: {}, adhoc: {}, mealTags: ['breakfast', 'lunch', 'snack', 'dinner'], lastUsed: {},
+      mood, health, adhoc: {}, mealTags: ['breakfast', 'lunch', 'snack', 'dinner'], lastUsed: {},
     };
   }
 

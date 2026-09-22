@@ -30,7 +30,7 @@ const S2=[
 ['home',W=>W.go('home')],['workout',W=>W.go('workout')],['macros',W=>W.go('macros')],['progress',W=>W.go('progress')],['history',W=>W.go('history')],['settings',W=>W.go('settings')],['splitedit',W=>W.go('splitedit')],['stack',W=>W.go('stack')],
 ['landing',W=>W.go('landing')],['login',W=>W.go('login')],['onboard',W=>W.go('onboard')],
 ['m:metric',W=>{W.go('progress');W.openMetricDetail('steps')}],['m:muscle',W=>W.openMuscleDetail('side_delts')],['m:catalog',W=>W.openExerciseDirectory()],['m:session',(W,D)=>W.openSessionEdit(lastS(D).id)],
-['m:ready',W=>W.openReadiness(W.todayISO())],['m:food',W=>W.openFoodAdd()],['m:goals',W=>W.openGoals()],['m:sleep',W=>W.openSleepLog()],['m:mood',W=>W.openMoodLog()],['m:weight',W=>W.openWeightLog()],['m:selfcheck',W=>W.openSelfcheckLog()],
+['m:ready',W=>W.openReadiness(W.todayISO())],['m:food',W=>W.openFoodAdd()],['m:goals',W=>W.openGoals()],['m:sleep',W=>W.openSleepLog()],['m:mood',W=>W.openMoodLog()],['m:weight',W=>W.openWeightLog()],['m:rhr',W=>W.openHealthNumLog('rhr')],
 ['m:profile',(W,D)=>W.openExProfile(D.split.days[0].exercises[0].name)],['m:musclemap',W=>W.openMuscleMap()],['m:exedit',W=>{W.go('splitedit');W.openExEdit(0,0)}],['m:stackedit',(W,D)=>W.openStackEdit((D.stack[0]||{}).id)],['m:stacknew',W=>W.openStackEdit(null)],
 ['m:merge',W=>W.openMergeModal()],['m:lift',(W,D)=>W.openLiftDetail(lastS(D).exercises[0].name)],['m:addex2',W=>{W.go('workout');W.openAddExStep2(0,'chest')}],['m:addexform',W=>{W.go('workout');W.openAddExForm(0,'chest')}],
 ['m:namesearch',W=>W.openNameSearch()],['m:machine',W=>{W.go('workout');W.openMachineEdit(0)}],['m:volume',W=>W.openVolumeDetail()],['m:workshop',W=>W.openWorkshop()],['m:approx',W=>W.openApproxMeal()],['m:progcfg',W=>W.openProgConfig()],

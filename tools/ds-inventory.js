@@ -50,6 +50,7 @@
     await S('sheet:metric-steps',async()=>{ window._mdRange=30; openMetricDetail('steps'); });
     await S('sheet:streak',async()=>{ openStreakSheet(); });
     await S('sheet:sleeplog',async()=>{ openSleepLog(); });
+    await S('sheet:rhrlog',async()=>{ openHealthNumLog('rhr'); });
     await S('history',async()=>{ go('history'); });
     if(last)await S('histedit',async()=>{ state._histSessId=last.id; go('histedit'); });
     await S('settings',async()=>{ go('settings'); });

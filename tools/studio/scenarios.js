@@ -129,7 +129,7 @@
     { id:'m:sleep', g:'hoja', label:'hoja · sueño (desde gym)', run(W){ W.openSleepLog(); } },
     { id:'m:mood', g:'hoja', label:'hoja · ánimo', run(W){ W.openMoodLog(); } },
     { id:'m:weight', g:'hoja', label:'hoja · peso', run(W){ W.openWeightLog(); } },
-    { id:'m:selfcheck', g:'hoja', label:'hoja · autoevaluación', run(W){ W.openSelfcheckLog(); } },
+    { id:'m:rhr', g:'hoja', label:'hoja · fc en reposo', run(W){ W.openHealthNumLog('rhr'); } },
     { id:'m:health', g:'hoja', label:'hoja · importar salud', run(W){ W.openHealthImport(); } },
     // ---------------- historial ----------------
     { id:'history', g:'pantalla', label:'historial', run(W){ W.go('history'); } },

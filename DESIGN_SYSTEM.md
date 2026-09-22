@@ -1,6 +1,6 @@
 # gym//TRK — DESIGN SYSTEM (referencia del estado actual)
 
-> Referencia del estado actual (v262). **Lee BRAND.md primero**: manda sobre este archivo. Sin historia: DESIGN_CHANGELOG.md.
+> Referencia del estado actual (v263). **Lee BRAND.md primero**: manda sobre este archivo. Sin historia: DESIGN_CHANGELOG.md.
 
 ---
 
@@ -417,7 +417,7 @@ perfil tienen párrafos fijos de instrucciones; la tira de 17 tiles de Progress.
 
 **Hoy (v262) el idioma está mezclado** y la regla anterior ("lo nuevo en español salvo vecino en inglés") está en el
 changelog. Estado medido:
-- Títulos `//` en inglés: SETTINGS, HISTORY, SPLIT, STACK, PROGRESS, RECORDS, STATS, INSIGHTS, NEXT, SUPPS, MEALS, WATER.
+- Títulos `//` en inglés: SETTINGS, HISTORY, SPLIT, STACK, PROGRESS, RECORDS, STATS, NEXT, SUPPS, MEALS, WATER.
   En español: PERFIL, SALUD, ESTÍMULO, MÚSCULOS, FUERZA, RENDIMIENTO, COBERTURA, HOY (recap).
 - Una pieza con dos idiomas: barra de estado (`streak:` junto a `meta: mantener`), barra de descanso (`descanso · skip ·
   listo`), abortar (`abort` → "abortar la sesión"), ajustes (`data`, `export file` junto a `espacio`), sheets (`guardar` +
@@ -449,7 +449,7 @@ changelog. Estado medido:
   `✓ encontrado` / `⚠ no está en OpenFoodFacts`; `… generando imagen` → `✓ imagen lista`.
 - Error: `⚠ qué pasó · qué hacer` (`⚠ pon un nombre`), nunca un diálogo nativo.
 - Reversible: `✓ alimento borrado [deshacer]`.
-- Vacío: `// sin registros · [+ acción]`.
+- Vacío: `// sin registros · [+ acción]`. En Progreso, además, **la tile activada nunca desaparece** (v263): sin dato muestra `—` + `sin registro` y ella misma es el botón de registro.
 - La revisa: ds-audit (guardados sin feedback: hoy 0; diálogos nativos: hoy 0) · R-SAVE · R-TOAST.
 
 ---
@@ -1014,7 +1014,7 @@ Instrumentación, no infografía (B-02: la gráfica existe solo cuando el texto 
 
 **Línea (GRA-1…6):**
 1. **Sin dato = hueco.** La línea se corta; nunca un 0 en el piso (`chartNums()` con `gap0` en las métricas diarias donde 0 =
-   no registraste). Un día aislado conserva su punto. El 0 real solo donde existe (auto-percepción, semanas de volumen).
+   no registraste). Un día aislado conserva su punto. El 0 real solo donde existe (semanas de volumen).
 2. Trazo `--o60` 1.4 en tiles · `--fill` 1.8 en detalle; `vector-effect: non-scaling-stroke`; puntos como trazos de largo
    cero; cada gradiente con id propio.
 3. **Detalle:** el rango normal propio (`normalBandFixed()`, p15–p85 de 90 días, un solo par por periodo) son **dos líneas
@@ -1275,7 +1275,7 @@ error `⚠ qué pasó · qué hacer`; sin conexión `⚠ sin conexión · [reint
 | Gym | cabecera `//GYM sin split` + `+ crear split`, `explorar splits`, `importar` | recuperación con "pocos datos"; "sin baseline" en series | — | — (local) |
 | Sesión | — | prefill vacío; "sin baseline" | — | guardado fallido: `.savebar` permanente + TRKAsk "no se pudo guardar" |
 | Macros | `no meals logged`, `no water logged` (inglés: G3 → español) | — | búsqueda en línea con `.fa-spin` | OpenFoodFacts falla **en silencio** y un código que no se pudo buscar sale como "no encontrado" (M4-09 → G4: `// 0 resultados` · `⚠ sin conexión · [reintentar]` · resultados) |
-| Progreso | "aún no hay datos", "sin registros en este rango", "sin volumen registrado en este rango", "aún no hay levantamientos con peso × reps" | `sin normal · N/7 d`, diagnóstico "pocos datos" | — | — |
+| Progreso | **activada = recuadro (v263):** una métrica encendida en `[config]` dibuja su tile aunque no tenga un solo dato — sin tile no hay por dónde registrarla. Vacío = `emptyTile()`: `—` + `sin registro`, y el recuadro entero abre su registro (volumen/tensión/e1rm → `loglater`; FC en reposo/HRV/energía activa → su hoja). "sin registros en este rango", "sin volumen registrado en este rango", "aún no hay levantamientos con peso × reps" | `sin normal · N/7 d`, diagnóstico "pocos datos" | — | — |
 | Historial | "sin sesiones registradas" | — | — | sesión inexistente en compartir (G4) |
 | Stack | "stack vacío", "no toca nada hoy ✓" | — | — | — |
 | Compartir | "sin sesión para compartir", "sin series registradas", "sin alimentos este día", "aún sin series con peso y reps" | — | `… generando imagen` | `⚠ no se pudo generar la imagen` |
@@ -1460,7 +1460,7 @@ que crea o reemplaza una sesión se oculta mientras hay una viva.** La revisa: R
 | quitar un alimento · quitar un vaso de agua | toast + `[deshacer]` | — |
 | guardar sesión | TRKAsk ("finalizar la sesión") + toast | — |
 | cambiar un ejercicio con series · adoptar el split · unir ejercicios · registrar sin código | TRKAsk | — |
-| borrar peso / sueño / ánimo / percepción de un día | TRKAsk | reversible → toast + `[deshacer]` (G4) |
+| borrar peso / sueño / ánimo / FC en reposo de un día | TRKAsk | reversible → toast + `[deshacer]` (G4) |
 | borrar una serie (deslizar) | inmediato; TRKAsk solo si se lleva drops con datos | toast + `[deshacer]` + menú al mantener el número (G4, M2-07) |
 | `↩` | v258: deshace el último ✓ por su hora (`doneAt`), conserva peso/reps/RIR y avisa con toast + `[deshacer]` | ✓ (M2-08) |
 | quitar un ejercicio del split (✕) | sin confirmación ni deshacer, a 1 del ▼ | desde el editor del ejercicio, con toast + deshacer (G4, M1-04) |
