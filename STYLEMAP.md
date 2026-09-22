@@ -1,3 +1,5 @@
+> **Histórico.** Reemplazado por BRAND.md + DESIGN_SYSTEM.md; no implementar desde aquí.
+
 # gym//TRK — STYLEMAP (reemplazado)
 
 > **Desde 2026-09-18 la fuente única de estilos, componentes y reglas de UI es [`DESIGN_SYSTEM.md`](DESIGN_SYSTEM.md).**

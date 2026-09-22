@@ -2,7 +2,10 @@
 // gym//TRK — auditor del sistema de diseño (DESIGN_SYSTEM.md §18). Node puro, sin dependencias ni npm.
 // Uso:  node tools/ds-audit.cjs            → reporte legible
 //       node tools/ds-audit.cjs --json     → contadores en JSON (para comparar antes/después)
-//       node tools/ds-audit.cjs --strict   → sale con código 1 si hay hallazgos P0 detectables
+//       node tools/ds-audit.cjs --strict   → sale con código 1 si hay P0 detectables o si sube un contador R-* P0/P1
+//                                            contra tools/ds-baseline.json
+//       node tools/ds-audit.cjs --list     → cada hallazgo R-* como `R-xx @ index.html:NNN · fragmento`
+//       node tools/ds-audit.cjs --write-baseline → guarda los contadores R-* actuales (conserva el bloque `render`)
 // Mide lo que se puede medir: tokens usados vs literales, valores fuera de escala, variables sin definir, pesos no
 // cargados, colores literales, reglas duplicadas, deuda de style="" por función. Lo semántico (verde decorativo,
 // glass en contenido) sigue siendo revisión humana con las capturas.
@@ -12,8 +15,8 @@ const fileArg = process.argv.slice(2).find(a => !a.startsWith('--'));   // otro 
 const FILE = fileArg ? path.resolve(fileArg) : path.join(__dirname, '..', 'index.html');
 const raw = fs.readFileSync(FILE, 'utf8');
 // las excepciones documentadas (§15) llevan /*ds:exempt*/ junto a la declaración y no cuentan como desviación
-const html = raw.replace(/[a-z-]+\s*:\s*[^;{}]*?\/\*ds:exempt\*\//g, '');
-const exemptCount = (raw.match(/\/\*ds:exempt\*\//g) || []).length;
+const html = raw.replace(/[a-z-]+\s*:\s*[^;{}]*?\/\*ds:exempt(?::[\w-]+)?\*\//g, '');
+const exemptCount = (raw.match(/\/\*ds:exempt(?::[\w-]+)?\*\//g) || []).length;
 const args = process.argv.slice(2);
 
 // ---- escalas del sistema (DESIGN_SYSTEM.md §4) ----
@@ -164,6 +167,18 @@ if (Object.keys(undefNoFallback).length) p0.push('variables sin definir y sin fa
 if (unloadedW.length) p0.push('pesos no cargados en uso: ' + [...new Set(unloadedW)].join(', ') + ' (×' + unloadedW.length + ')');
 report.P0 = p0;
 
+// ---- 9 · reglas R-* (BRAND.md §8, DESIGN_SYSTEM.md §18) ----
+const R = require('./ds-rules.cjs')(raw, path.join(__dirname, '..'));
+report.rules = R.counts;
+const BASE = path.join(__dirname, 'ds-baseline.json');
+let base = null; try { base = JSON.parse(fs.readFileSync(BASE, 'utf8')); } catch (_) {}
+const rose = base && base.static ? Object.keys(R.counts).filter(k => /P0|P1/.test(R.LEVEL[k]) && base.static[k] != null && R.counts[k] > base.static[k]) : [];
+if (args.includes('--write-baseline')) {
+  const sw = (() => { try { return (fs.readFileSync(path.join(__dirname, '..', 'sw.js'), 'utf8').match(/gymtrk-v(\d+)/) || [])[1]; } catch (_) { return null; } })();
+  const out = { generated: new Date().toISOString().slice(0, 10), version: sw ? 'v' + sw : null, static: R.counts, render: (base && base.render) || {} };
+  fs.writeFileSync(BASE, JSON.stringify(out, null, 1) + '\n'); console.log('línea base escrita: tools/ds-baseline.json (' + Object.keys(R.counts).length + ' contadores R-*)');
+}
+if (args.includes('--list')) { R.hits.slice().sort((a, b) => a.id.localeCompare(b.id) || a.line - b.line).forEach(h => console.log('R-' + h.id + ' @ ' + (h.doc ? 'DESIGN_SYSTEM.md' : path.basename(FILE)) + ':' + h.line + ' · ' + h.snip)); }
 if (args.includes('--json')) { console.log(JSON.stringify(report, null, 2)); }
 else {
   const L = (k, v) => console.log(('  ' + k).padEnd(34, '.') + ' ' + v);
@@ -188,6 +203,13 @@ else {
   L('9 px en minúsculas', capsLower.length + (capsLower.length ? '  [' + capsLower.slice(0, 8).join(', ') + (capsLower.length > 8 ? ', …' : '') + ']' : ''));
   L('texto instructivo en pantalla', Object.entries(hintCls).map(([k, v]) => k + ' ' + v).join(' · '));
   console.log('\nMás style="" por función'); topFn.forEach(([n, c]) => L(n, c));
+  console.log('\nReglas R-* (BRAND §8) · actual' + (base ? ' / línea base ' + (base.version || '') : ' (sin línea base: --write-baseline)'));
+  Object.keys(R.counts).forEach(k => L('R-' + k + ' ' + R.LEVEL[k] + ' ' + R.NAME[k], R.counts[k] + (base && base.static && base.static[k] != null ? ' / ' + base.static[k] + (R.counts[k] > base.static[k] ? '  ▲ SUBE' : R.counts[k] < base.static[k] ? '  ▼' : '') : '')));
+  if (base && base.render && Object.keys(base.render).length) console.log('  (en pantalla: ver `render` en tools/ds-baseline.json · se mide con dsSweep() en el preview)');
   console.log('');
 }
-if (args.includes('--strict') && p0.length) process.exit(1);
+if (args.includes('--strict')) {
+  if (rose.length) console.log('✗ --strict: suben ' + rose.map(k => 'R-' + k + ' (' + base.static[k] + '→' + R.counts[k] + ')').join(', '));
+  if (p0.length || rose.length) process.exit(1);
+  console.log('✓ --strict: sin P0 y ningún contador P0/P1 sube contra la línea base');
+}

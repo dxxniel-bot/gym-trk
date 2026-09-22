@@ -1,183 +1,207 @@
-# gym//TRK — DESIGN SYSTEM (constitución visual y de interacción)
+# gym//TRK — DESIGN SYSTEM (referencia del estado actual)
 
-> **Fuente única de verdad** de la estética, los componentes y las reglas de interfaz de gym//TRK.
-> Absorbe y reemplaza a `STYLEMAP.md` (queda como puntero). Toda pantalla, componente, gráfica o animación nueva
-> se construye con este documento y se audita con `tools/ds-audit.cjs` antes de desplegar.
-> Base: 2026-09-18, app v230 (`index.html`, 7,888 líneas). Se actualiza en el mismo commit que cambie el sistema.
-
-**Cómo usarlo.** §1–§3 son la identidad (qué es y qué no es). §4 son los tokens (valores cerrados). §5–§13 son las
-reglas por tema y cada componente con su función, anatomía y sí/no. §14 es el mapa por pantalla. §15–§16 las
-excepciones y lo prohibido. §17–§19 el protocolo para features nuevas, la auditoría y el tooling. §20 el estado actual
-(discrepancias y plan de corrección), que es la única parte que envejece.
-
-> **Regla de oro para cualquier IA o persona que toque la UI:** *no diseñes cada pantalla — diseña el sistema y usa el
-> sistema para construir cada pantalla.* Si una implementación necesita un valor que no existe aquí, primero decide
-> si es una necesidad funcional nueva (se agrega al sistema, documentada) o una desviación (se corrige).
+> Referencia del estado actual (v257). **Lee BRAND.md primero**: manda sobre este archivo. Sin historia: DESIGN_CHANGELOG.md.
 
 ---
 
-## 1. Definición (congelada)
+## 1. Cómo usar esta referencia
 
-**ES.** gym//TRK es un instrumento de entrenamiento monocromo, monoespaciado y denso en datos. Su lenguaje visual se
-define por etiquetas de terminal (`//`), corchetes para acciones, alineación rígida, superficies planas, color solo
-semántico, líneas finas, números como lecturas de instrumento, movimiento funcional y **honestidad visual sobre lo que
-sabe y lo que no**. El vidrio es exclusivo del chrome flotante. Cada módulo es un instrumento distinto de la misma
-familia: la función puede cambiar la composición, nunca el lenguaje.
+**Qué es cada archivo.**
+- `BRAND.md` dice **qué es** gym//TRK: la identidad "CMD hacker × glass moderno", las reglas B-01…B-12, el vocabulario,
+  las excepciones con nombre, lo prohibido y el registro de decisiones del dueño. Si algo de aquí choca con BRAND, gana
+  BRAND y el choque se anota como pregunta para el dueño.
+- **Este archivo** dice **cómo está hecho hoy** (v257) y a qué se tiene que acercar: tokens, roles, fichas de componente,
+  patrones, auditoría y protocolo. No guarda historia.
+- `DESIGN_CHANGELOG.md` guarda la historia (fases DS/R/UX-2, notas vNNN, diseños retirados o rechazados). **Nunca se
+  implementa desde ahí.**
 
-**EN.** gym//TRK is a monochromatic, monospace, data-dense training instrument: terminal-style `//` labels, bracketed
-text actions, rigid alignment, flat surfaces, semantic-only color, hairlines, numbers read like instrument readouts,
-functional motion and visible honesty about what it knows and what it doesn't. Glass is reserved for floating system
-chrome. Every module is a different instrument of the same family.
+**Orden de lectura para construir algo** (personas o agentes): BRAND → §17.2 esqueleto de pantalla → §17.3 árbol de
+acciones → la ficha del componente (§7) → tokens (§4) → §17.6 definición de terminado.
 
-Lo que transmite: precisión · dato · medición · progreso · control · sistema.
-Lo que **no** es: wellness · lujo decorativo · suavidad pastel · gamificación de casino · dashboard SaaS genérico.
+**Convenciones.**
+- **Hoy** = lo que hace el código de v257. **Objetivo G2 / G3 / G4** = lo que falta y en qué fase de la ruta (plan G:
+  G2 datos y sistema sin cambiar el look · G0 láminas para elegir · G3 identidad aprobada · G4 completitud). Nada marcado
+  como objetivo está implementado.
+- Un nombre entre comillas invertidas (clase, token, función, selector) **existe en `index.html`**. Lo que todavía no
+  existe lleva al lado "(pendiente G2)" o "(pendiente G3)".
+- Las reglas tienen un ID estable (`TOK-3`, `ACT-2`…) para citarlas en cada cambio, junto a las B-xx de BRAND. Cada una
+  dice **la revisa:** `ds-audit R-xx` (estático), `_dsRenderCheck` (en pantalla, `?selftest=1`), un self-check, o *a ojo*.
+- Medidas: los tamaños de letra van siempre por token (`--t-*`, escala 10·12·16·22·34). En las fichas de §7 las medidas
+  de caja se escriben sin unidad (son px CSS) para no confundirlas con tamaños de letra.
 
-## 2. Principios
+**Regla de oro.** *No diseñes cada pantalla: diseña el sistema y usa el sistema para construir cada pantalla.* Si una
+implementación necesita un valor que no existe aquí, primero se decide si es una necesidad funcional nueva (se agrega al
+sistema, documentada, en el mismo commit) o una desviación (se corrige).
 
-1. **Instrumento, no decoración.** Cada elemento visible tiene una función; si se puede quitar sin perder información o
-   acción, sobra.
-2. **Dato primero.** Jerarquía = tipografía (tamaño, peso, opacidad) + espacio + alineación. El color y el ícono
-   acompañan, no compiten: *dato > tipografía > ícono*.
-3. **Honestidad.** La interfaz nunca finge saber más de lo que sabe: lo estimado lleva `~`, lo sugerido va punteado
-   hasta que el dueño lo confirma, lo que no hay es un hueco o "sin dato", y nunca hay una puntuación mágica (§9).
-4. **Denso ≠ amontonado.** La densidad se logra con tipografía, columnas y alineación; no pegando cosas.
-5. **Color = estado.** Si un color no comunica bien/mal/atención/déficit, no va.
-6. **Excepción funcional, nunca estética.** Toda excepción está en §15 con su razón.
-7. **Evolución, no rediseño.** Se corrige hacia el sistema; no se cambia el "look" sin decisión del dueño.
-8. **Sus etiquetas son sagradas.** Nombres de músculos, ejercicios, comidas y splits se muestran EXACTO como él los
-   escribió; lo canónico es interno (regla vinculante v148).
-
-## 3. Jerarquía de identidad
-
-**Nivel 1 — innegociable** (si se rompe uno, la pantalla no es gym//TRK aunque use los colores):
-fondo `#000` · JetBrains Mono como única familia · jerarquía por opacidad de blanco · `//` para secciones de sistema ·
-`[acción]` para acciones de texto · `[uni]`/`[bi]` al frente del nombre = solo lateralidad (nunca unidad) · color solo
-semántico · anillos solo en macros · glass solo en chrome flotante · contenido plano · lenguaje de honestidad ·
-sin confeti, FOMO, XP ni mascotas.
-
-**Nivel 2 — sistema** (consistente; varía solo si la función lo justifica): tokens de §4, componentes de §7.
-
-**Nivel 3 — expresión contextual** (varía por módulo): tipo de gráfica, densidad, número de columnas, composición.
-
-**Prueba de los 5 segundos** para cualquier pantalla: sin leer el contenido, ¿parece gym//TRK? ¿Sin logo? ¿En escala de
-grises? ¿La jerarquía funciona sin color? Si alguna es "no", depende de la decoración.
+**Preguntas abiertas** (no se deciden aquí; se cierran con el dueño, casi todas en `tools/brand-lab.html`, G0): las de
+BRAND §10 (variante de nav, variante de primario, valor de `--r-float` (pendiente G3), panel del anillo, set de íconos
+TRK, shader, borde de campo para WCAG 1.4.11) y estas, encontradas al escribir la referencia:
+1. **Glifos en uso que BRAND no menciona:** ⬆ ⬇ ↔ (perfil de resistencia), ▦ (rango personalizado), ▢ ▣ (elegir en el
+   catálogo), ↻ ↺ (reintentar, recuperado, última vez), ↑ (flojas, ánimo), ⋯ (menú de fila del catálogo). §11.3.
+2. **Idioma de los botones de sheet** (`guardar`, `cancelar`, `borrar`): ¿son "verbos de comando" (inglés) o prosa
+   (español)? §6.2.
+3. **Movimiento de contenido que hoy pasa de 4** (reacomodo FLIP de TRKRow, barras que crecen, el ✓ con rebote): ¿se
+   quedan como continuidad o se vuelven instantáneos por B-09? §10.
+4. **La vista `la serie` de compartir un ejercicio** usa `--t-hero`: ¿choca con "nada de números gigantes" (BRAND §7)?
+   §7.19.
 
 ---
 
-## 4. Tokens (valores cerrados)
+## 2. Principios operativos
 
-Todo valor visual recurrente es un token en `:root` y se usa con `var(--…)`. **Nunca** se escribe un valor literal si
-existe su token. (Los tokens nuevos de hero, tracking, `--s7/--s8`, `--r-mark`, `--shadow-float`, movimiento y capas
-existen desde v231.)
+Lo que BRAND pide, dicho como reglas de trabajo.
+
+| ID | Regla | La revisa |
+|---|---|---|
+| PRI-1 | **Instrumento, no decoración.** Cada elemento visible tiene una función; si se puede quitar sin perder dato ni acción, sobra (BRAND B-10). | a ojo · prueba de 5 s (BRAND §8) |
+| PRI-2 | **Dato primero.** Jerarquía = opacidad > tamaño > peso (B-04), luego espacio y alineación. El color y el ícono acompañan: *dato > tipografía > glifo > ícono*. | ds-audit (escala, pesos) · a ojo |
+| PRI-3 | **Honestidad.** La interfaz nunca finge saber más de lo que sabe (§9). | self-checks del motor · a ojo |
+| PRI-4 | **Denso ≠ amontonado.** La densidad sale de tipografía, columnas y alineación, no de pegar cosas (presupuesto §5.3). | a ojo · capturas |
+| PRI-5 | **Color = estado.** Si un color no dice bien/mal/atención/déficit, no va. Si está en orden, no lleva color (B-07). | R-SEM · `_dsRenderCheck` (conteo de color, G1) |
+| PRI-6 | **Excepción funcional, nunca estética.** Toda excepción tiene id y razón (§15, BRAND §6). | R-EXEMPT |
+| PRI-7 | **Evolución con decisión.** Lo que cambia el look (radios, color, nav, anillo, idioma, íconos) solo se hace con una decisión del dueño registrada en BRAND §9. Lo demás se corrige hacia el sistema sin preguntar. | revisión del commit |
+| PRI-8 | **Sus etiquetas son sagradas** (B-12): músculos, ejercicios, comidas y splits exactamente como él los escribió; lo canónico es interno. | self-checks (`_muscleSelfCheck`) · a ojo |
+| PRI-9 | **Un componente, una versión.** Los nombres de clase se conservan (cambiarlos rompe todo); una variante es un **modificador**, nunca una clase paralela; un comportamiento transversal vive en su componente `TRK*` (§7.18) y ninguna pantalla hace el suyo. | ds-audit (selectores repetidos) · revisión |
+
+---
+
+## 3. Gramática CMD: los siete primitivos en el código
+
+BRAND §5 define los siete primitivos con los que se arma toda pantalla. Aquí, con qué están hechos hoy.
+
+| Primitivo (BRAND §5) | Hoy en el código | Notas |
+|---|---|---|
+| **Línea de prompt** (barra de estado) `u/unlxvd ▾ · 21 sep · 21:29 · streak: 12` | `statusBar()` → `.status` (`.uname`, `.center`, `.streak`, `.sgoal`) | el reloj no avanza y duplica el de iOS (M6-20, objetivo G4: quitarlo) |
+| **`//cabecera` + meta a la derecha** | `.section` (`.h` con `<span class="s">//</span>`, `.meta`) · cabecera del día `dayHeadHTML()` → `.whdr` · rótulo de grupo `.grp-label` · TRKLog `.lhd` | un `//` por sección; la meta es 10 |
+| **`clave ···· valor`** | `.line` (`.k` · `.dots` · `.v`) y su variante de detalle `.mdline` | la firma de lectura; §7.5 |
+| **Línea de registro** `#chest  bench press  160lbs×8@0 / 160lbs×6@0` | `.srw` (compartir sesión) | objetivo G2: también en historial y vista previa del día (M3-04, M1-18) |
+| **`[comando]`** | `.addbtn`, `.ctrls a`, `.section .meta`, `.fa-acts a`, `.mdacts a` | toque 44 con `.u-hit` (pendiente G2) |
+| **Rejilla de datos** (cajas de 2) | tabla de sesión: `.thead`, `.srow`, `.pair`, `.inp`, `.pick`, `.fs` | la superficie de referencia de B-05 |
+| **Medidor** `▮▮▮▮▮▮▮▯▯▯ 72%` | hoy no existe como texto; lo más cercano son las barras finas `.bar`/`.vbar`/`.wprog` | objetivo G3/G4: decidir una sola forma de medidor por uso |
+
+**Tres sigilos** (BRAND §3): `//` sistema · `[ ]` acción · `#` etiqueta del dueño (tenue). En el código: `.s` pinta el
+`//` en `--o40`/`--o50`; `#` aparece en `.srm` (compartir) y en el log de comidas.
+
+**Box-drawing** (`─ │ ┌ ┐`): permitido solo en overlays y compartir (BRAND §3). Hoy no se usa en la interfaz.
+
+---
+
+## 4. Tokens
+
+Todo valor visual recurrente es un token en `:root` y se usa con `var(--…)`. **Nunca** se escribe un literal si existe su
+token (TOK-1, la revisa: ds-audit "literales"). Valores leídos de `index.html` (v257).
 
 ### 4.1 Superficies
 
 | Token | Valor | Rol |
 |---|---|---|
 | `--bg`, `--frame` | `#000` | lienzo de toda la app |
-| `--card` | `#0d0d10` | tarjeta, input de formulario |
-| `--card2` | `#16161c` | superficie elevada (chip seleccionable, select en sheet, tooltip) |
-| `--sheet-bg` | `#0a0a0c` | fallback sólido de sheets glass |
-| `--track` | `#191920` | pista de barras y días vacíos del calendario |
-| `--faint` | `#3a3a3e` | glifos casi apagados (`.chev`, el `#` del log de comidas); legado, no usar en nuevo |
-| `--fill` / `--on-fill` | `#f3f3f4` / `#000` | fondo del botón primario / texto sobre él |
+| `--card` | `#0d0d10` | tarjeta y campo de formulario (≈1.08:1 sobre `#000`: casi no se ve) |
+| `--card2` | `#16161c` | superficie elevada: popover, chip, fantasma de arrastre, fallback de la nav |
+| `--sheet-bg` | `#0a0a0c` | fallback sólido de sheets y toasts de vidrio |
+| `--track` | `#191920` | pista de barras, día vacío del calendario, fase sin clasificar |
+| `--faint` | `#3a3a3e` | glifo casi apagado (`.chev`, `.ghead .hash`); legado, no se usa en nuevo |
+| `--fill` / `--on-fill` | `#f3f3f4` / `#000` | relleno del primario y de lo seleccionado / texto sobre él |
 
-No hay grises nuevos. Si alguien necesita `#121212`, la pregunta es "¿por qué no es `--card` o `--card2`?".
+TOK-2: no hay grises nuevos. Si alguien necesita otro, la pregunta es "¿por qué no es `--card` o `--card2`?".
 
-### 4.2 Texto por opacidad (escala cerrada)
+### 4.2 Texto por opacidad
 
-Todos son `rgba(243,243,244,α)`. Los nombres son históricos y **no** son su alfa; se documentan así y no se renombran.
+Todos son `rgba(243,243,244,α)`. **Los nombres son históricos y no son su alfa** (`--o40` = .50); se documentan así y no
+se renombran. Contraste calculado sobre `#000`.
 
-| Token | α real | Rol |
-|---|---|---|
-| `--fg` | 1 | valor primario, título, número principal |
-| `--o70` | .74 | secundario fuerte (texto dentro de chips, BW) |
-| `--o60` | .66 | secundario, acción de texto `[ ]`, link |
-| `--o50` | .56 | encabezado de sección, label de campo, `//` |
-| `--o40` | .50 | meta, caption, `.submeta` |
-| `--o35` | .46 | meta tenue, guía de ejercicio en curso |
-| `--o30` | .40 | hint, placeholder, glifo pendiente `○` |
-| `--o20` | .26 | borde de dato denso, ícono apagado |
-| `--o12` | .10 | separador, fondo de pestaña activa en la nav |
-| `--o10` | .06 | separador de lista, banda de rango normal |
-| `--line` / `--border` | .08 / .09 | divisoria de contenido / borde de tarjeta y control |
+| Token | α | Contraste | Rol |
+|---|---|---|---|
+| `--fg` | 1 | 18.9:1 | valor primario, título, número principal |
+| `--o70` | .74 | 10.1:1 | secundario fuerte (texto de alimentos, acción de diagnóstico) |
+| `--o60` | .66 | 8.1:1 | secundario, `[acción]`, clave de `.line` |
+| `--o50` | .56 | 5.9:1 | rótulo, meta de sección, `//` |
+| `--o40` | .50 | 4.9:1 | meta, caption, `.submeta` — **piso del texto** (B-11) |
+| `--o35` | .46 | 4.2:1 | solo glifos y deshabilitado (hoy también texto: objetivo G2) |
+| `--o30` | .40 | 3.4:1 | solo glifos, placeholder y deshabilitado (hoy también texto: objetivo G2) |
+| `--o20` | .26 | 2.0:1 | borde de dato denso, ícono apagado |
+| `--o12` | .10 | 1.2:1 | separador fuerte, borde superior de barras acopladas, fondo activo de la nav |
+| `--o10` | .06 | 1.1:1 | separador de lista, fondo de fila abierta o presionada |
+| `--line` / `--border` | .08 / .09 | 1.1 / 1.2:1 | divisoria de contenido / borde de tarjeta y control |
 
-**Prohibido** crear pasos nuevos (`--o15`, `--o25`, `--o55` se reemplazan por el vecino más cercano).
+- TOK-3: **prohibido crear escalones nuevos** (no existen `--o15`, `--o25`, `--o55`). Hoy queda un literal
+  `rgba(243,243,244,.035)` en la agenda (código muerto). La revisa: ds-audit (colores literales), R-OP.
+- TOK-4: **texto nunca por debajo de `--o40`** (B-11). `--o35`/`--o30` solo para glifos, placeholder y deshabilitado.
+  Hoy hay texto en `--o35`/`--o30` (`~ sugerido`, `pocos datos`, días de la semana del calendario, `[+ nota]`, filas no
+  elegidas de la rueda): objetivo G2 (T-04). La revisa: `_dsRenderCheck` txt · R-TXT.
+- Bordes y WCAG 1.4.11 (contraste de lo que no es texto, ≥3:1): `--border` 1.2:1, `--o20` 2.0:1, `--o10` 1.1:1 no llegan.
+  Es pregunta abierta de BRAND §10 (borde de campo editable); no se cambia sin su decisión.
 
 ### 4.3 Semánticos
 
-| Token | Valor | Significa | Nunca |
-|---|---|---|---|
-| `--good` | `#46c98b` | mejora, completo, en meta, fresco, "comida + gym" | adorno, "AUTO", badges, líneas decorativas |
-| `--bad` | `#e5675c` | baja, sobre el límite, destructivo | láser del escáner, decoración |
-| `--warn` | `#e3b34f` | atención, límite suave, cerca de MRV, recuperándose | categoría neutral |
-| `--info` | `#6aa6ff` | **solo** déficit calórico (única excepción cool) | cualquier otro uso |
+| Token | Valor | Contraste | Significa | Nunca |
+|---|---|---|---|---|
+| `--good` | `#46c98b` | 10.0:1 | evento bueno: ▲, PR, meta cumplida | estado estable ("fresco", "verificado", "tomado"), adorno, badges |
+| `--bad` | `#e5675c` | 6.4:1 | baja, sobre el límite, destructivo | decoración, láser, "cerrar" que guarda |
+| `--warn` | `#e3b34f` | 10.8:1 | atención, límite suave (cerca de MRV) | categoría neutral |
+| `--info` | `#6aa6ff` | 8.5:1 | **solo** déficit calórico | cualquier otro uso |
+| `--abort` | `rgba(190,110,110,.55)` | — | borde del botón `abort` del footer de sesión | cualquier otro uso. Objetivo G3: se retira (`[abort]` en `--o60` que pasa a `--bad` al sostener) |
+| `--good-glow` / `--bad-glow` | `rgba(70,201,139,.5)` / `rgba(229,103,92,.5)` | — | brillo del anillo de macros | se retiran con el brillo (objetivo G3, BRAND §4) |
 
-Todo color semántico va acompañado de otra señal (▲▼, texto, glifo) — nunca rojo/verde solo (§17).
+- TOK-5: el color semántico va **en el glifo o el número**, nunca en una frase entera, y siempre con otra señal (▲▼,
+  palabra, glifo): nunca rojo/verde solo (B-07). La revisa: R-SEM · a ojo.
+- TOK-6: **≤3 marcas de color sobre el pliegue** (B-07). La revisa: prueba de 5 s (BRAND §8).
+- Hoy se rompe "si está en orden, no lleva color": 'fresco' en `--good` (`recStateCol()`), ✓ verde de "verificado" en
+  resultados de comida, ✓ verde de "tomado" en supps (`.lc.on .k`), ✓ verde en stack, marca MRV en `--warn` fija
+  (`.vbar .mrv`), días del recap y del wrap en verde. Objetivo G3 (verde solo en eventos; 'fresco' en `--o50` con glifo).
 
 ### 4.4 Tipografía
 
-Familia única: **JetBrains Mono** (Google Fonts, pesos 300/400/500/700/800), fallback `ui-monospace, Menlo`.
+- **Familia única:** JetBrains Mono (Google Fonts), fallback `ui-monospace, Menlo, monospace` (B-04). Fuentes nuevas:
+  prohibidas.
+- **Escala única (TYP-1):** `--t-label` 10 · `--t-data` 12 · `--t-section` 16 · `--t-display` 22 · `--t-hero` 34.
+  Cualquier otro tamaño está prohibido, **también en SVG**. Exentos solo con id (§15): wrap 60/44, escáner 40, panel
+  `?design=1`. Hoy la escala en uso es 10×151 · 12×100 · 16×47 · 22×13 · 34×4 reglas; el radar de macros todavía escribe
+  `font-size="7.5"` en su SVG (objetivo G2, M4-11). La revisa: ds-audit (escala, tokens viejos) · R-SVGFS ·
+  `_dsRenderCheck` fsOff.
+- **Pesos (TYP-2):** 400 texto · 700 énfasis, números, botones y chips · 800 títulos, `//SECCIÓN`, nombre del
+  ejercicio, valores display. **600 prohibido** (no se carga; el navegador lo pinta como 700). Se cargan también 300 y
+  500 sin usarlos (hoy: 400×24, 700×57, 800×53 reglas): objetivo G2 quitarlos de la URL de la fuente. La revisa: R-FONT.
+- **Mínimos (TYP-3):** texto ≥10 siempre. **800 nunca por debajo de 12.** 700 a 10 solo en estado semántico (▲▼ %, PR,
+  sobre MRV). Campos que abren teclado o picker a 16 (anti-zoom de iOS), salvo la tabla de sesión (`table36`). La revisa:
+  ds-audit (peso 800 bajo 12, campos por debajo de 16).
+- **Tracking (TYP-4), 4 roles por token:** `--ls-caps` .2em (rótulos en MAYÚSCULAS a 10) · `--ls-title` .12em (títulos
+  en mayúsculas; hoy también `.sheet h3` y `.sph .h`) · `--ls-num` −.03em (números de 22 y 34) · `--ls-ui` .03em (botones,
+  controles y meta de interfaz) · 0 por defecto. Un rol = un valor. Hoy queda un tracking fuera de rol (`.14em` en
+  `.supps .spdots`, CSS muerto) y los exentos de wrap/boot/anillo. La revisa: ds-audit (letter-spacing fuera de rol).
+- **Interlineado (TYP-5):** hoy son literales (1 ×20, 1.2 ×9, 1.4 ×6, 1.5 y 1.6 ×3, 1.55 y 1.1 ×2, y sueltos 1.05, 1.25,
+  1.3, 1.35, 1.8; más alturas fijas de línea para centrar controles). Objetivo G2: tres tokens `--lh-tight` 1 (números
+  grandes y glifos) · `--lh-ui` 1.25 (interfaz) · `--lh-read` 1.55 (lectura, compartir, diagnóstico) (pendiente G2).
+  La revisa: R-LH.
 
-**v256 · escala única de 5 tamaños (queja del dueño: "lo veo todo como chilaquil").** Antes 9·10·11·12·13 estaban a
-1 px entre sí (razones 1.08–1.11, por debajo del ~20 % que el ojo necesita para leer jerarquía por tamaño) y cargaban
-el 87 % de las declaraciones. Mueren **13, 11 y 9**. Se decidió con la skill `ui-ux-pro-max` (perfil *Terminal CLI
-Monospace*: pocos tamaños sin intermedios) y `design:design-system` (migración con alias, cobertura por rol).
+### 4.5 Roles: tamaño × peso × tracking × interlineado
 
-| Token | px | Rol | Ejemplos |
-|---|---|---|---|
-| `--t-label` | 10 | etiqueta, meta, detalle, anotación | rótulos MAYÚSCULAS (`.grp-label`, `.plbl`, `//NEXT`), cabecera de tabla, `.exsub`, `sin baseline`, `.setn`, `meta: ▾`, la franja de racha |
-| `--t-data` | 12 | dato | filas clave-valor, alimentos, celdas de supps/agua, tabla de sesión, **todos los botones, chips y tabs (700)**, toast, filas de compartir |
-| `--t-section` | 16 | título · campo · glifo de control | `//SECCIÓN`, títulos de hoja y de TRKLog, nombre de ejercicio, **nombre y total de comida**, fecha de macros · inputs (anti-zoom iOS) · `‹ › ✓ ○ ↩ ··· ✕` |
-| `--t-display` | 22 | display | nombre del día, valor de tile, número del anillo de kcal, gramos de compartir comida, total de la hoja de desglose |
-| `--t-hero` | 34 | héroe | valor del detalle de métrica. Nada más. |
+Tabla cerrada: un componente nuevo **elige su fila, no un tamaño** (TYP-6). La revisa: ds-audit (rol con token fuera de
+tabla) · a ojo.
 
-- **Prohibidos:** 7, 7.5, 8, 9.5, 14, 15, 17–21, 23–26, 30, 36, 40. Se mapean según §20.
-- **Anillos dentro de la escala (v256):** kcal a 22, P/C/F a 16. Ya no hay excepción de componente.
-- **Exentos solo:** wrap 60/44, escáner 40 y el panel de desarrollo. Boot y wrap usan la escala en todo lo demás.
-- Micro-texto **≥10 px, siempre**. **800 nunca por debajo de 12**; 700 a 10 solo en estado semántico (▲▼ %, PR, sobre MRV).
-- Inputs de formulario en **16 px** (evita el zoom de iOS).
+| Rol | Tamaño | Peso | Tracking | Interlineado | Ejemplos hoy |
+|---|---|---|---|---|---|
+| Héroe | `--t-hero` | 800 | `--ls-num` | tight | `.mdval` (valor del detalle de métrica), marca del landing. Nada más |
+| Display | `--t-display` | 800 | `--ls-num` | tight | `.whdr .wname` (nombre del día), `.pval`, `.ring.lg .num`, `.shsn`, `.msum-tot b`, `.exbn` |
+| Sección / título | `--t-section` | 800 | 0 (`--ls-title` si va en mayúsculas) | ui | `.section .h`, `.sheet h3`, `.lt .h`, `.mnm`, `.mkc` (total de comida), `.exhead .n`, `.wline .wtn`, `.dnlbl`, `.shtt` |
+| Campo | `--t-section` | 400 / 700 | 0 | — | `.field input`, `#fa_q`, `textarea.ta`, `.slph input`, `.tselo` |
+| Glifo de control | `--t-section` | 400 | 0 | tight | `.dchk`, `.pairdone`, `.dnav`, `.lx`, `.mchev`, `.footer .undo`, `.exmore` |
+| Fila / dato | `--t-data` | 400 (valor 700/800) | 0 | ui; lectura en compartir | `.line`, `.mit`, `.lc`, `.trow`, `.srw`, `.stq`, `.inp`, `.pick` |
+| Acción: botón, chip, tab | `--t-data` | 700 | `--ls-ui` | centrado por alto | `.start` = `.footer .save` = `.lact` = `.toggles button` = `.mdtabs span`; `.secondary .b` y `.sheetbtns .cancel` van a 400 |
+| Etiqueta, meta, ayuda, vacío | `--t-label` | 400 | `--ls-caps` en MAYÚSCULAS · `--ls-ui` en meta de interfaz · 0 | ui | `.grp-label`, `.whdr .wlbl`, `.submeta`, `.empty`, `.wmeta`, `.thead .cl`, `.setn`, `.exsub .note` |
+| Estado semántico | `--t-label` | 700 | `--ls-caps` si es sigla | — | `.lpr` (PR), `.pst`, `.setprog`, `.vst` |
 
-**Peso:** 300 glifos grandes (`+` del FAB) · 400 texto · 500 (reservado, casi sin uso) · **700** énfasis, números,
-botones · **800** títulos, `//SECCIÓN`, `.whdr`, nombre del ejercicio, valores display. **600 prohibido** (no está
-cargado; el navegador lo pinta como 700).
+- El total de una comida **siempre** manda sobre sus alimentos: 16/800 contra 12/400 (decisión del dueño, v256).
+- Las flechas `‹ ›` nunca pesan más que el dato que mueven.
+- Tamaños por pantalla (hoy): gym {10,12,16,22} · sesión {10,12,16} · macros {10,12,16,22} · progreso {10,12,16,22,34 en
+  el detalle} · ajustes {10,12,16} · compartir {10,12,16,22}.
 
-**Tracking (4 roles):** `--ls-caps .2em` mayúsculas de 9–11 px (`.grp-label`, labels de campo, `ROTATION`) ·
-`--ls-title .12em` `.whdr`/títulos en mayúsculas · `--ls-num -.03em` números ≥20 px · `--ls-ui .03em` botones,
-controles y meta de interfaz · 0 por defecto. Un rol = un valor, siempre por token.
+### 4.6 Espaciado y ritmo
 
-**Números.** Son lecturas de instrumento: la unidad va separada y más tenue (`59.8` + `kg` en `--o40`, más chica);
-monoespaciado ya es tabular; decimales solo cuando informan (kg 1, porcentajes 0–1, series 1); los cambios con signo
-(`+5 · −2.5 %`) y flecha ▲▼ cuando son progreso.
-
-**Mayúsculas.** Etiquetas de sistema en MAYÚSCULAS espaciadas (`//MÚSCULOS`, `RACHA · COMIDA O GYM`); contenido en
-minúsculas (nombres, meta). Sus etiquetas conservan exactamente cómo él las escribió.
-
-### 4.4b Un rol, un token (regla de armonía, UX-2)
-
-El CSS ya está tokenizado; el problema medido no son px sueltos sino **el mismo rol pintado con 3 o 4 tokens** según
-la pantalla. Esta tabla es cerrada: un componente nuevo elige su fila, no un tamaño.
-
-| Rol | Token | Peso | Notas |
-|---|---|---|---|
-| `//SECCIÓN`, título de hoja, título de TRKLog | 16 | 800 | una sola por bloque |
-| Título de **entidad** (ejercicio, comida con su total) | 16 | 800 | el total de una comida SIEMPRE manda sobre sus alimentos (queja 9) |
-| Campo que abre teclado o picker | 16 | 400/700 | **siempre** 16 (anti-zoom iOS); excepción documentada: la tabla de sesión (§15) |
-| Fila navegable / fila de dato | 12 | 700 / 400 | catálogo, historial, `.line`, `.item`, `.mrow`, alimentos (nombre `--o70`, kcal `--o50`) |
-| Valor de la fila | el de su fila | 700/800 | se distingue por peso y opacidad, nunca por tamaño propio |
-| Botón · chip · tab | 12 | 700 | `.start` = `.footer .save` = `.b` = `.lact` |
-| Meta, etiqueta, ayuda, vacío | 10 | 400 | una sola voz (`.submeta`, `.empty`, `.wmeta`) |
-| Nombre del día / pantalla | 22 | 800 | `.wname`; las flechas `‹ ›` nunca pesan más que el dato que mueven |
-
-Tamaños por pantalla: gym {10,12,16,22} · sesión {10,12,16} · macros {10,12,16,22} · progreso {10,12,16,22} ·
-ajustes {10,12,16} · compartir {10,12,16,22}. El auditor reporta `escala en uso`, `tokens viejos` y `peso 800 bajo 12`.
-
-### 4.5 Espaciado y ritmo
-
-| Token | px | Uso |
+| Token | Valor | Uso |
 |---|---|---|
 | `--s1` | 2 | ajuste óptico |
-| `--s2` | 4 | micro (gap de íconos, entre línea y sublínea) |
+| `--s2` | 4 | micro: entre glifos, entre línea y sublínea |
 | `--s3` | 8 | interno de componente |
 | `--s4` | 12 | control, fila |
 | `--s5` | 16 | estándar entre bloques |
@@ -185,749 +209,1379 @@ ajustes {10,12,16} · compartir {10,12,16,22}. El auditor reporta `escala en uso
 | `--s7` | 32 | entre secciones grandes |
 | `--s8` | 48 | nivel pantalla |
 
-**Ritmo de página** (knobs afinados por el dueño en `?design=1`; no se cambian sin él): `--sp-py 22` · `--sp-px 18`
-(gutter horizontal) · `--sp-card 15` · `--sp-gap 12` · `--sp-section 14` · `--sp-field 12` · `--sp-row 12` ·
-`--sp-sheet 18`.
+**Ritmo de página** (perillas que afinó el dueño en `?design=1`; no se cambian sin él): `--sp-py` 22 · `--sp-px` 18
+(gutter horizontal) · `--sp-card` 15 · `--sp-gap` 12 · `--sp-section` 14 · `--sp-field` 12 · `--sp-row` 12 ·
+`--sp-sheet` 18. Tokens locales de componente: `--mcol` (columna de acciones de TRKLog) y `--hdot` (punto del rail del
+historial).
 
-Reglas: lo interno de un componente usa la escala `--s*` (con **6 y 10 como medios pasos** de componente); el ritmo de
-página usa `--sp-*`; nada de 3/5/7/9/11/13/15 px. Los márgenes **negativos que centran un punto** (el del scrub, el
-"hoy" del calendario) son geometría, no espaciado: se calculan de su tamaño y no se redondean. **Todo borde horizontal de contenido = `--sp-px`** (página, barras, nav, FAB,
-sheets); solo los overlays de pantalla completa se salen.
+- SPC-1: lo interno de un componente usa `--s*`, con **6 y 10 como medios pasos** de componente; el ritmo de página usa
+  `--sp-*`; nada de 3/5/7/9/11/13/15. La revisa: ds-audit (espaciado fuera de escala: hoy 0; 471 por token / 7 literales).
+- SPC-2: los márgenes **negativos que centran un punto** (el del scrub, el "hoy" del calendario) son geometría: se calculan
+  de su tamaño y llevan id `geom` (§15).
+- SPC-3: **todo borde horizontal de contenido = `--sp-px`** (página, barras, nav, sheets). Solo los overlays de pantalla
+  completa se salen. La revisa: a ojo · capturas.
 
-### 4.6 Radios (comunican jerarquía)
+### 4.7 Radios
 
-| Token | px | Qué |
+| Token | Valor | Hoy se usa en |
 |---|---|---|
-| `--r-sm` | 2 | datos densos: inputs de la tabla de sesión, celdas, indicadores |
-| `--r-mark` | 4 | marcas de gráfica: días del calendario, topes de barras |
-| `--r-ctl` | 12 | controles: botones, inputs y selects de formulario, toggles |
-| `--radius` | 16 | tarjetas, tiles, pestañas de periodo |
-| `--r-sheet` | 22 | sheets (esquinas inferiores; el sheet está anclado arriba) |
-| `--r-pill` | 999 | chips seleccionables, nav, toast, barras de progreso, etiquetas flotantes |
-| `50%` | — | círculos: FAB, puntos, thumbs de slider |
+| `--r-sm` | 2 | tabla de sesión (`.inp`, `.pick`, `.fs`, `.bwchip`), opciones de TRKSelect, hora del desglose, indicadores |
+| `--r-mark` | 4 | marcas de gráfica: días del calendario, hipnograma |
+| `--r-ctl` | 12 | botones, campos de formulario, toggles, `.lact`, popovers (`.tsel`, `.gloss`), `.savebar` |
+| `--radius` | 16 | tarjetas `.card`, `.grp`, `.ptile`, `.pthrow`, `.hcal`, `.ws-card` |
+| `--r-sheet` | 22 | esquinas inferiores del sheet |
+| `--r-pill` | 999 | nav y sus pestañas, toast, chips (`.chip`, `.ag-chip`), etiqueta de scrub, fantasma de arrastre, barras finas |
+| `50%` | — | puntos, thumbs, spinners, `.dots3`, punto del rail |
 
-Tabla → casi cuadrada · control → poco redondeado · tarjeta → redondeada · sheet → muy redondeado · píldora → total.
-**Prohibidos** 3/6/8/9/10/14 y los literales `999px`/`2px`/`16px` (van por token).
+- RAD-1 (hoy): prohibidos 3/6/8/9/10/14 y los literales `999px`/`2px`/`16px` (van por token). La revisa: ds-audit (radios
+  fuera de escala: hoy 0).
+- RAD-2 (**objetivo G3**, B-05, decisión del dueño 2026-09-21 "mixto con regla"): contenido 0 en reglas y 2 en cajas
+  (campos, tabla, primario, paneles); chrome flotante (nav, sheet, toast, popover) con `--r-float` (pendiente G3; 8 o 12 se
+  elige en G0); 50% solo en puntos; **fuera del contenido** `--radius`, `--r-ctl` en controles de contenido, `--r-sheet` y
+  `--r-pill` (tarjetas, chips, barras redondeadas y la cápsula de la nav se rehacen). La revisa: R-RAD.
 
-### 4.7 Bordes, sombras y efectos
+### 4.8 Bordes, sombras y efectos
 
-- **Dualidad de bordes (INTENCIONAL, no unificar):** 1px `--border` en formularios, tarjetas y controles · .5px `--o20`
-  en datos densos (tabla de sesión) · .5px `--o10` como separador de lista · **2px** solo como indicador (ejercicio en
-  curso, hoy en el calendario, posición de drop). Sin 1.5px. Punteado = sugerido/no confirmado (§9) o líder de `.line`.
-- **Sombras:** `--glass-shadow` (chrome glass) y `--shadow-float` `0 6px 22px rgba(0,0,0,.55)` para lo que
-  flota sobre contenido (FAB, popover, fantasma de arrastre, panel de diseño, marco de escritorio). Ninguna otra.
-  Un anillo `0 0 0 Npx` (contorno de "hoy", halo del punto de scrub, el velo del escáner) y un `inset` (bordes del
-  vidrio) son **bordes dibujados**, no sombras: están permitidos y el auditor no los cuenta.
-- **Sin gradientes CSS.** El único gradiente es el relleno tenue bajo la línea de las tiles de gráfica (SVG, ≤.16 α).
-- **Sin glow**, salvo la excepción documentada del estado del anillo de macros (§15).
+- BRD-1 **Dualidad de bordes (intencional, no unificar):** 1 `--border` en formularios, tarjetas y controles · .5 `--o20`
+  en datos densos (tabla de sesión) · .5 `--o10` como separador de lista · **2 solo como indicador** (posición de soltar al
+  arrastrar, pestaña activa, marco del escáner). Sin 1.5. Punteado = sugerido sin confirmar (§9) o líder de `.line`. Hoy:
+  1×56, .5×43, 2×4 reglas. La revisa: ds-audit (bordes).
+- BRD-2 **Sombras:** solo `--glass-shadow` (chrome de vidrio) y `--shadow-float` (lo que flota sobre contenido: popover,
+  fantasma de arrastre, `.savebar`, panel de diseño, marco de escritorio). Un anillo `0 0 0 Npx` (contorno de "hoy", halo
+  del scrub, velo del escáner) y un `inset` (bordes del vidrio) son **bordes dibujados**, no sombras. La revisa: ds-audit
+  (sombras fuera de token: hoy 0).
+- BRD-3 **Sin gradientes CSS.** El único gradiente es el relleno tenue bajo la línea de las tiles (SVG, ≤.16 α).
+- BRD-4 **Sin brillo.** Hoy queda el `drop-shadow` del anillo de macros (`.hero.good .ring-fill` y `.cell.good`/`.over`),
+  que además se corta en cuadrado: objetivo G3 quitarlo (BRAND §4).
 
-### 4.8 Movimiento
+### 4.9 Opacidades de estado
+
+Hoy son literales: presionado `.7` (×7), deshabilitado `.4` / `.5`, prefill `.pf` `.45`, drop `.isdrop` `.82`, ejercicio
+no activo en modo enfoque `.28`, origen del arrastre `.3`, relleno del hold `.22`, tile presionada `.85`, sugerido `.75`.
+Objetivo G2 (TOK-7): `--op-press` .7 · `--op-disabled` .4 · `--op-pf` .45 · `--op-drop` .82 · `--op-dim` .28
+(pendiente G2); lo demás se mapea al más cercano o se declara. La revisa: R-OP.
+
+### 4.10 Movimiento
 
 | Token | Valor | Uso |
 |---|---|---|
-| `--dur-1` | 120ms | tap, pressed, toggles |
-| `--dur-2` | 180ms | componentes: filas, chips, pestañas, barras que crecen |
-| `--dur-3` | 280ms | sheets, nav, toast |
-| `--dur-screen` | 140ms | fade de cambio de pantalla (existente, `viewin`) |
-| `--ease-out` | `cubic-bezier(.22,1,.36,1)` | entradas y transformaciones (sin overshoot) |
+| `--dur-1` | 120ms | tap, presionado, pop del ✓ |
+| `--dur-2` | 180ms | filas, pestañas, barras, salida de sheets y scrim |
+| `--dur-3` | 280ms | entrada de sheets, toast, conteo de números |
+| `--dur-screen` | 140ms | cambio de pantalla (`viewin`) |
+| `--ease-out` | `cubic-bezier(.22,1,.36,1)` | entradas y transformaciones, sin overshoot |
 | `--ease-in` | `cubic-bezier(.4,0,1,1)` | salidas |
-| `--toast-life` / `--toast-life-err` | 2.3s / 4.6s | cuánto vive un toast antes de salir (el de error, el doble) |
+| `--toast-life` / `--toast-life-err` | 2.3s / 4.6s | vida del toast (el de error o con deshacer, el doble) |
 
-Ninguna duración literal en el CSS: lo que no es token es un bucle funcional marcado `/*ds:exempt*/` (§15).
+- MOV-T1: ninguna duración literal en el CSS salvo los bucles con id (§15). En JS se leen con `durMs()`, que respeta la
+  unidad. Hoy quedan literales en JS: 900 del hold, 1300/5000 del arranque y el recap, 190/200 de salidas, 430 del
+  escáner, 1600 del scrub, y el easing del rebote del escáner.
+- Objetivo G2 (pendiente G2): `--mv-1` 4 (desplazamiento máximo del contenido, B-09) · `--ease-step` (`steps()` para
+  bucles de terminal) · `--dur-hold` 900ms (TRKHold).
 
-### 4.9 Capas (z-index)
+### 4.11 Capas (z)
 
-`--z-float 20` (FAB, fantasma) · `--z-nav 30` · `--z-modal 40` (scrim + sheet: **tapa la nav**) · `--z-pop 50`
-(popovers, addpop) · `--z-overlay 60` (boot, wrap) · `--z-toast 80` · `--z-dev 90` (`?design=1`).
+| Token | Valor | Quién vive ahí hoy |
+|---|---|---|
+| `--z-float` | 20 | `.dragghost` (fantasma de arrastre) |
+| `--z-nav` | 30 | `.nav` |
+| `--z-modal` | 40 | `.modal`: scrim + sheet (**tapa la nav**) |
+| `--z-pop` | 50 | capa de decisión `.modal.asklayer` (TRKAsk, TRKHold, TRKWheel, TRKMenu) · popovers `.tsel` y `.gloss` |
+| `--z-overlay` | 60 | `.bootov` (arranque, recap, wrap) · `.exsh` (compartir un ejercicio) |
+| `--z-toast` | 80 | `.toasts` · `.savebar` (aviso permanente de guardado fallido) |
+| `--z-dev` | 90 | `.dz` (panel `?design=1`) |
 
-### 4.10 Glass (solo chrome)
+- Z-1: todo z-index va por token; los únicos locales son `.mdtabs span` (1, sobre su indicador), el lienzo del shader (−1
+  dentro del overlay) y la agenda (código muerto).
+- Z-2 (objetivo G2, M6-38): una pregunta de recuperación de datos (TRKAsk, `--z-pop`) puede quedar tapada por el arranque
+  (`--z-overlay`). Prioridad: seguridad de datos > arranque > wrap > recap.
+- Scrim: hoy `rgba(0,0,0,.6)` literal en `.modal`; objetivo G2 `--scrim` (pendiente G2).
 
-`--glass-bg rgba(14,14,17,.55)` · `--glass-bg-strong .72` · `--glass-blur 18px` · `--glass-sat 1.7` · `--glass-edge`
-· `--glass-ring` · `--glass-shadow`. **Una sola definición:** las utilidades `.glass` (nav) y `.glass-strong` (sheet,
-toast) se ponen en el marcado (`<nav class="nav glass">`, `openModal`, `toast()`); el componente no repite blur, fondo,
-borde ni sombra. Ajustes por pieza con selector doble, nunca copiando el material: `.sheet.glass-strong` (solo borde
-inferior, cuelga de arriba) y `.toast.glass-strong` (se centra con transform). Fallbacks en las utilidades:
-`@supports not (backdrop-filter)` y `prefers-reduced-transparency` → sólido (`--card2` nav, `--sheet-bg` sheet/toast).
+### 4.12 Vidrio (solo chrome)
+
+`--glass-bg` `rgba(14,14,17,.55)` · `--glass-bg-strong` .72 · `--glass-blur` 18px · `--glass-sat` 1.7 · `--glass-edge`
+.14 · `--glass-edge-lo` .06 · `--glass-ring` .10 · `--glass-shadow` `0 8px 30px rgba(0,0,0,.55)`.
+
+- GLS-1 (B-01): `backdrop-filter` **solo en chrome** (nav, sheet, toast; popover en G3). Nunca en contenido. La revisa:
+  R-BLUR · `_dsRenderCheck` blur.
+- GLS-2: **una sola definición.** Las utilidades `.glass` (nav) y `.glass-strong` (sheet, toast, capa de decisión) se
+  ponen en el marcado (`<nav class="nav glass">`, `openModal()`, `askLayer()`, `toast()`); el componente no repite blur,
+  fondo, borde ni sombra. Ajustes por pieza con selector doble (`.sheet.glass-strong`: solo borde inferior porque cuelga de
+  arriba).
+- GLS-3: fallbacks en las utilidades: sin `backdrop-filter` → sólido; `prefers-reduced-transparency` → sólido sin blur
+  (`--card2` en la nav, `--sheet-bg` en sheet y toast).
+
+### 4.13 Tokens pendientes (resumen)
+
+| Token | Valor propuesto | Para qué | Fase |
+|---|---|---|---|
+| `--r-float` (pendiente G3) | 8 o 12 (G0) | radio del chrome flotante | G3 |
+| `--op-press` · `--op-disabled` · `--op-pf` · `--op-drop` · `--op-dim` (pendiente G2) | .7 · .4 · .45 · .82 · .28 | opacidades de estado | G2 |
+| `--lh-tight` · `--lh-ui` · `--lh-read` (pendiente G2) | 1 · 1.25 · 1.55 | interlineado | G2 |
+| `--nav-clear` (pendiente G2) | alto de la nav + margen + safe-area | lo que se apoya sobre la nav (toast, `.savebar`) | G2 |
+| `--mv-1` (pendiente G2) | 4 | desplazamiento máximo del contenido | G2 |
+| `--ease-step` (pendiente G2) | `steps()` | bucles de terminal | G2 |
+| `--dur-hold` (pendiente G2) | 900ms | TRKHold | G2 |
+| `--scrim` (pendiente G2) | `rgba(0,0,0,.6)` | fondo de los modales | G2 |
+| `--abort` | se retira | — | G3 |
 
 ---
 
-## 5. Layout
+## 5. Layout, rejilla en caracteres y densidad
 
-- **Marco:** 393×852 de referencia; en ≤440 px ocupa la pantalla. Contenido en `#view` (único elemento que hace
-  scroll), con `padding: --sp-py --sp-px calc(84px + safe-area)` para librar la nav flotante.
-- **Un solo eje:** todo el contenido de todas las pantallas comparte borde izquierdo y derecho (`--sp-px`). Comparadas
-  lado a lado, dos pantallas deben verse construidas sobre la misma retícula.
-- **Secciones:** `hr.rule` + `.section` (título `//` a la izquierda, meta a la derecha) → contenido. Entre secciones
+### 5.1 Marco
+
+- LAY-1: marco de referencia **393×852**; en ≤440 de ancho ocupa la pantalla (`.frame`). Se mide también a 375×812.
+- LAY-2: el contenido vive en `#view` (`.scroll`), el **único** elemento que hace scroll, con `padding: --sp-py --sp-px`
+  y abajo `calc(84 + safe-area)` para librar la nav flotante.
+- LAY-3: **un solo eje**: todo el contenido comparte borde izquierdo y derecho (`--sp-px`). Dos pantallas lado a lado se
+  ven construidas sobre la misma retícula.
+- LAY-4: secciones = `hr.rule` + `.section` (título `//` a la izquierda, meta a la derecha) → contenido. Entre secciones
   `--sp-section`/`--s6`; dentro de una sección `--s3`–`--s4`.
-- **Barras acopladas** (descanso, AHORA, footer de sesión) viven fuera de `#view`, entre el contenido y la nav, y
-  sobreviven a `render()`.
-- **Safe areas:** `env(safe-area-inset-*)` en nav, sheet, barras y overlays.
+- LAY-5: **barras acopladas** (descanso `#resttimer`, footer `#wfooter`) viven fuera de `#view`, entre el contenido y la
+  nav, y sobreviven a `render()`.
+- LAY-6: safe areas con `env(safe-area-inset-*)` en nav, sheet, barras y overlays. Hoy el toast (`.toasts`) se apoya a 84
+  sin safe-area y queda sobre la nav en iPhone: objetivo G2 con `--nav-clear` (pendiente G2).
 
-## 6. Tipografía aplicada y microcopy
+### 5.2 Rejilla en caracteres
 
-- **`//` (marcador de sistema).** Solo para secciones y módulos (`//NEXT`, `//EFFECTIVE VOLUME`, `//MÚSCULOS`,
-  `//SUPPS`), estados de sistema en vacíos (`// sin registros`) y el nombre de la app. **Nunca** en valores (`//59.8`),
-  botones (`//SAVE`) ni decoración. El `//` va en `--o40`/`--o50`, el nombre en `--fg`.
-- **Corchetes `[ ]`.** Acciones de texto (`[+ set]`, `[↓ drop set]`, `[administrar]`, `[unir]`, `[adoptar]`,
-  `[+ nota]`, `[share]`). Al frente del nombre de un ejercicio, `[uni]`/`[bi]` en la **misma fuente y tamaño que el
-  nombre** — nunca la unidad (vinculante). Etiquetas de tipo `[cable]` en la segunda línea.
-- **Tono.** Operativo y corto (`serie 2/3`, `bajo MEV 8`, `fresco · 3.1 d`), no conversacional. Ayudas en español,
-  en minúsculas, en `.submeta`. Explicar el *porqué* en una línea cuando un dato no es obvio ("correlación, no causa",
-  "estimado = guía de la literatura ajustada a tu dosis").
-- **Idioma.** La app mezcla inglés corto (acciones históricas: `start workout`, `save session`) y español (ayudas,
-  módulos nuevos). Regla: **no mezclar dentro de un mismo componente**; lo nuevo va en español salvo que el componente
-  vecino ya esté en inglés.
+JetBrains Mono avanza **0.6em** por carácter. Ancho útil a 393 = 393 − 2×18 = **357**.
+
+| Tamaño | Ancho de carácter | Columnas en 357 | Columnas en 339 (375 de pantalla) |
+|---|---|---|---|
+| 10 | 6.0 | 59 | 56 |
+| 12 | 7.2 | **49** | 47 |
+| 16 | 9.6 | 37 | 35 |
+| 22 | 13.2 | 27 | 25 |
+| 34 | 20.4 | 17 | 16 |
+
+El tracking resta columnas: `--ls-ui` a 12 deja 47; `--ls-caps` a 10 deja 44. La línea de referencia del dueño
+`#chest  bench press  160lbs×8@0 / 160lbs×6@0` mide 44 caracteres: cabe en una línea a 12. En `.srw` la columna del
+músculo ocupa 64 + 8 de separación, así que al cuerpo le quedan unas 39 columnas. **Prueba TTY** (BRAND §8): si una
+pantalla no se puede reescribir en esta rejilla sin perder un dato, no es gym//TRK.
+
+### 5.3 Presupuesto de densidad ("menos detalle")
+
+Decisión del dueño 2026-09-21: "se está haciendo muy completa y con muchos detalles" (BRAND §9, B-10).
+
+| ID | Presupuesto | La revisa |
+|---|---|---|
+| DEN-1 | **≤4 secciones sobre el pliegue** (a 393×852). | a ojo · capturas |
+| DEN-2 | **≤3 marcas de color sobre el pliegue.** | prueba de 5 s |
+| DEN-3 | **≤3 estilos de texto por bloque** (un estilo = tamaño + peso + opacidad). | a ojo |
+| DEN-4 | **Una línea de meta** por bloque. | a ojo |
+| DEN-5 | **Una idea una vez**: nada se dice dos veces en la misma pantalla, ni la misma idea con cuatro redacciones en cuatro pantallas. | a ojo |
+| DEN-6 | **Sin instrucciones impresas**: las definiciones van al glosario (`data-gloss`), las pistas de gesto se enseñan una vez (`hintSeen()`/`hintMark()`). Hoy: `swipehint` 1 · `ehint` 6 · `submeta` 114 (línea base de ds-audit "texto instructivo"). | ds-audit (texto instructivo) |
+| DEN-7 | Lo secundario vive detrás de una fila `›` o de un sheet, no en la pantalla principal. | a ojo |
+| DEN-8 | **Un primario por vista** (B-06). | R-OK |
+| DEN-9 | Toasts de **≤42 caracteres** (el error puede ocupar 2 líneas). | R-TOAST |
+
+Hoy se pasan del presupuesto: //STATS repite datos de Progress y dice "today" cinco veces; las hojas del catálogo y del
+perfil tienen párrafos fijos de instrucciones; la tira de 17 tiles de Progress. Objetivo G4 (y G3 para las tiles).
 
 ---
 
-## 7. Componentes (función · anatomía · sí/no)
+## 6. Idioma, mayúsculas y voz
 
-Los nombres de clase existentes se conservan (cambiarlos rompe todo); lo que se consolida son sus valores. Cada
-componente nuevo que sea variante de uno de estos se hace como **modificador**, nunca como clase paralela.
+### 6.1 Política (BRAND §3, decisión del dueño 2026-09-21)
 
-### 7.1 Botones — cuatro roles, nada más
+- VOZ-1 **Etiquetas de sistema en inglés:** `//SECCIONES`, la nav, los verbos de comando (`start`, `save`, `rest`,
+  `skip`) y los estados cortos. **Prosa en español:** ayudas, errores, toasts, vacíos, diagnósticos. **Un componente nunca
+  mezcla idiomas.** Las etiquetas del dueño no se traducen ni se tocan. La revisa: R-LANG.
+- VOZ-2 **Mayúsculas** solo en `//SECCIÓN`, siglas (PR, RIR, MEV, MRV) y rótulos de grupo. Todo lo demás en minúsculas,
+  **incluidas las etiquetas de campo** (hoy `.field label` va en mayúsculas: `TU NOMBRE`, `SEXO`…, objetivo G3). Cabeceras en
+  una línea (`sep 2026 · 10`). Nunca `text-transform` sobre una etiqueta del dueño (hoy `u-upper` la pone en mayúsculas en
+  la vista previa del día y en el catálogo, M1-08: objetivo G2). La revisa: a ojo · self-check de etiquetas (G2).
+- VOZ-3 **Tono:** seco, operativo, en minúsculas, de consola (`serie 2/3`, `bajo MEV · le faltan ~3 series`). Sin
+  exclamaciones ni "genial". Lo humano se reserva para errores y diagnósticos. Cuando un dato no es obvio, el *porqué* va
+  en una línea ("correlación, no causa") o al glosario.
 
-| Rol | Clases | Anatomía | Función |
-|---|---|---|---|
-| **Primario** | `.start`, `.sheetbtns .ok` | 48px · `--r-ctl` · `--fill` + `--on-fill` · 13/700 · tracking .02em | la acción principal de la vista (una por vista); `.start.ghost` = misma geometría en contorno (`--border`, texto `--fg`) para una alternativa de igual peso ("registrar a mano") |
-| **Secundario** | `.secondary .b`, `.sheetbtns .cancel`, `.toggles button` | 44px · `--r-ctl` · 1px `--border` · 12/400 · `--o60` (`.on` = relleno) | alternativas, cancelar, selector de opciones |
-| **Acción de texto** | `.addbtn`, `.ctrls a`, `.section .meta a` | texto `[ ]` 10–11 px `--o60`, zona táctil ≥44 (padding + margen negativo) | acciones frecuentes dentro de datos |
-| **Flotante** | `.fab` | 56 círculo, `--fill`, glifo 30/300, `--shadow-float` | agregar (macros) |
+**Hoy (v257) el idioma está mezclado** y la regla anterior ("lo nuevo en español salvo vecino en inglés") está en el
+changelog. Estado medido:
+- Títulos `//` en inglés: SETTINGS, HISTORY, SPLIT, STACK, PROGRESS, RECORDS, STATS, INSIGHTS, NEXT, SUPPS, MEALS, WATER.
+  En español: PERFIL, SALUD, ESTÍMULO, MÚSCULOS, FUERZA, RENDIMIENTO, COBERTURA, HOY (recap).
+- Una pieza con dos idiomas: barra de estado (`streak:` junto a `meta: mantener`), barra de descanso (`descanso · skip ·
+  listo`), abortar (`abort` → "abortar la sesión"), ajustes (`data`, `export file` junto a `espacio`), sheets (`guardar` +
+  `cancel`), vacíos en inglés (`no meals logged`, `no water logged`).
+- Para cerrar se usa `cancel`, `cancelar`, `close` y `cerrar`.
 
-Destructivo = secundario + `.danger` (`--bad`); en el footer de sesión, `abort` lleva borde `--abort`. **En barras
-acopladas** (footer de sesión) primario y secundarios miden **44**, no 48, para no robarle alto a la tabla. Un botón
-que se ve más chico que 44 (los −15/+15/skip del descanso, 32 px) extiende su zona táctil con `::after` (`inset`
-negativo), sin crecer visualmente. **No:** botones con estética propia por módulo, botones <44 px de zona táctil, pills
-como sustituto de botón, íconos sin texto en acciones importantes.
+**Lista para G3 (propuesta G1, a confirmar con el dueño; BRAND solo fija PROFILE, SETTINGS, HEALTH, STIMULUS, PROGRESS):**
+//PERFIL → //PROFILE · //SALUD → //HEALTH · //ESTÍMULO → //STIMULUS · //MÚSCULOS → //MUSCLES · //FUERZA → //STRENGTH ·
+//RENDIMIENTO → //PERFORMANCE · //COBERTURA → //COVERAGE · //ESPACIO → //STORAGE · //HOY → //TODAY. Vacíos a español
+(`// sin comidas · [+ meal]`).
 
-### 7.2 Inputs — dos familias (dualidad intencional)
+### 6.2 Palabras únicas
 
-| Familia | Clases | Anatomía | Dónde |
-|---|---|---|---|
-| **Formulario** | `.field input/select`, `#fa_q`, `textarea.ta(.sm/.md/.lg/.xl)`, `.pfsel`/`#pf_gym`/`.pfw` (perfil), `.slblk input` (sueño), `.mdcust input` (rango de fechas), `.mmrow select` | 44px · `--r-ctl` · 1px `--border` · `--card` · 16px | sheets, ajustes, onboarding, perfiles |
-| **Dato** | `.inp`, `.pick`, `.fs`, `.bwchip` | 36px · `--r-sm` · .5px `--o20` · transparente · 12px | tabla de sesión e historial ("la caja cabe su contenido") |
-| Dato mini | `.inp-mini` | alto de su texto · `--r-sm` · .5px `--o20` · transparente · 10px · padding 4/6 | campos dentro de una línea de datos (fecha/duración/horas del registro tardío) |
+- VOZ-4 **Una palabra por acción en toda la app**: una para cerrar, una para guardar, una para borrar, una para cancelar.
+  Qué idioma llevan los botones de sheet es pregunta abierta (§1).
+- VOZ-5 **El botón dice el verbo**: `borrar sesión` / `conservar`, nunca `ok`/`cancel` ni "¿seguro?". Hoy `trkAsk()` y
+  `holdConfirm()` usan `'¿seguro?'` como título por defecto y el OK destructivo de TRKAsk sale como `.cancel.danger`
+  (parece un cancelar): objetivo G4.
+- VOZ-6 **Corchetes** `[verbo objeto]` (BRAND §3): minúsculas, sin espacios internos, ≤3 palabras, nunca dentro de una
+  caja, con toque de 44. Hoy quedan `[ ver rutina ▾ ]`, `[ ocultar rutina ▴ ]` y `[tap para cerrar]` (objetivo G3:
+  `[ver rutina ›]`). La revisa: R-BRK.
 
-Label: `.field label` en mayúsculas 10 px `--o50`. **Unidad/porción siempre `<select>`, nunca texto libre**
-(vinculante). **Select dentro de una fila de lista** (`.mmrow select`, el mapeo etiqueta → músculo): geometría de
-formulario pero texto de 13 px, porque acompaña a la fila en vez de dominarla (a 16 px cortaba "grupo deltoides"); el
-viewport ya fija `maximum-scale=1`, así que iOS no hace zoom al enfocarlo. **No:** alturas 30/32/34/38, radios 8,
-sombras internas, labels flotantes, bordes de color.
+### 6.3 Vocabulario de feedback (TRKToast)
+
+- `✓ <objeto> <acción>` en español y minúscula, una línea, sin punto final: `✓ sesión guardada · 9 series`,
+  `✓ sesión actualizada`, `✓ split actualizado`, `✓ ejercicio actualizado`, `✓ perfil del ejercicio guardado`,
+  `✓ comida guardada`, `✓ metas guardadas`, `✓ peso guardado`, `✓ sueño guardado`, `✓ ajustes guardados`.
+- Tareas (`toastTask()`): `… sincronizando salud` → `✓ salud sincronizada · 12 días`; `… buscando producto` →
+  `✓ encontrado` / `⚠ no está en OpenFoodFacts`; `… generando imagen` → `✓ imagen lista`.
+- Error: `⚠ qué pasó · qué hacer` (`⚠ pon un nombre`), nunca un diálogo nativo.
+- Reversible: `✓ alimento borrado [deshacer]`.
+- Vacío: `// sin registros · [+ acción]`.
+- La revisa: ds-audit (guardados sin feedback: hoy 0; diálogos nativos: hoy 0) · R-SAVE · R-TOAST.
+
+---
+
+## 7. Componentes
+
+Una ficha por componente, siempre con los mismos campos: **Rol · Clase / API · Anatomía · Estados · Toque · Sí / No ·
+Motor TRK · Hoy → objetivo · La revisa**. La anatomía usa nombres de token.
+
+### 7.1 Acciones
+
+BRAND B-06: dos tipos de acción. `[verbo objeto]` para lo puntual y **un solo primario por vista**; una fila que termina
+en `›` para navegar. Nada más. El árbol para elegir está en §17.3.
+
+#### Primario
+- **Rol:** la razón de ser de la vista. Uno por vista.
+- **Clase / API:** `.start` (pantallas), `.sheetbtns .ok` (sheets), `.footer .save` (barra de sesión). `.start.ghost` = misma
+  geometría en contorno para una alternativa de igual peso.
+- **Anatomía:** alto 48 (44 en la barra acoplada, para no robarle alto a la tabla) · `--r-ctl` · fondo `--fill` y texto
+  `--on-fill` · `--t-data`/700 · `--ls-ui`.
+- **Estados:** presionado = opacidad `.7` (hoy literal); deshabilitado: no se usa, se oculta.
+- **Toque:** 48×ancho.
+- **Sí / No:** sí `▶ start workout`, `✓ save session`. No dos primarios en la misma vista; no un primario para
+  "cerrar" o "cancelar".
+- **Motor TRK:** —
+- **Hoy → objetivo:** hoy es un bloque blanco redondeado y hay vistas con más de uno (hoja de sesión con 3 `.ok`, //ESPACIO
+  con 2, el día del calendario con varios). **Objetivo G3** (decisión del dueño 2026-09-21, "más al estilo gymTRK"):
+  "primario gym//TRK" (clase por definir en G3) = bloque de 2, alto 48, texto de comando en minúsculas con glifo
+  (`▶ resume workout`), `--t-data`/800, presionado = invertir; variante sólida inversa o vidrio + borde, se elige en G0.
+  `rest day`, `skip day`, `abort`, `↩` y `← back` pasan a `[verbo]`.
+- **La revisa:** R-OK · R-ROLE · a ojo.
+
+#### Secundario
+- **Rol:** alternativas y cancelar dentro de un sheet o de una barra.
+- **Clase / API:** `.secondary .b`, `.sheetbtns .cancel`, `.footer .abort`, `.footer .undo`. Destructivo = `.cancel.danger`
+  (`--bad`).
+- **Anatomía:** alto 44 (48 en `.sheetbtns`) · `--r-ctl` · borde 1 `--border` · `--t-data`/400 · texto `--o60`/`--fg`.
+- **Estados:** presionado = fondo `--card2`.
+- **Toque:** 44.
+- **Sí / No:** no pills como botón universal; no botones con estética propia por módulo; no íconos sin texto en acciones
+  importantes.
+- **Hoy → objetivo:** hoy `.b` y `.cancel` **solo tienen estilo dentro de su padre** (`.secondary .b`, `.sheetbtns
+  .cancel`): fuera de él salen como botón nativo gris a 13.333 (stack, histedit, sueño, login, editor de ejercicio).
+  **Objetivo G2** (T-01): reset global de `button` y roles con selector propio. **Objetivo G3:** la mayoría de los
+  secundarios pasan a `[verbo]`.
+- **La revisa:** R-ROLE · `_dsRenderCheck` ua.
+
+#### Acción de texto `[verbo]`
+- **Rol:** acción puntual dentro de los datos (BRAND §3).
+- **Clase / API:** `.addbtn` (`[+ set]`, `[↓ drop set]`), `.ctrls a` (`[change split]`), `.section .meta` (`[settings]`),
+  `.fa-acts a`, `.mdacts a`, `.hbody .hacts a`.
+- **Anatomía:** texto `--t-label`/`--t-data` en `--o60`, sin caja; `[ ]` literales en el texto.
+- **Estados:** presionado = `--fg`.
+- **Toque:** 44×44 con `.u-hit` (pendiente G2); hoy se consigue con padding + margen negativo en algunos (`.addbtn`,
+  `.ctrls a`) y en otros no (`[share]` y `[goals]` miden 42×13).
+- **Sí / No:** sí `[+ set]` `[share]` `[‹ gym]`; no `[ + set ]` con espacios, no un corchete dentro de una caja, no más de
+  3 palabras.
+- **La revisa:** R-BRK · `_dsRenderCheck` hit.
+
+#### Acción de sección de log (`.lact`)
+- **Rol:** la acción de cada sección de TRKLog (`+ water`, `+ meal`, `✓ AM`).
+- **Anatomía:** 96×32 visible, `--r-ctl`, borde 1 `--border`, `--t-data`/700, `--ls-ui`; un `::after` lo lleva a 44 de alto.
+- **Estados:** presionado fondo `--o10`; `aria-disabled` → texto `--o30`, borde `--o10`.
+- **Hoy → objetivo:** caja con radio de control: objetivo G3 (pasa a `[verbo]` o a la forma de 2 de B-05).
+- **La revisa:** `_dsRenderCheck` hit.
+
+#### Más acciones (`.dots3`)
+- **Rol:** abrir el menú de acciones de una entidad (comida).
+- **Anatomía:** tres puntos dibujados de 3 con 3 de aire, `--o50` (`.gmore` > `.dots3`); nunca el texto `···`.
+- **Toque:** 44×44 que se mete 12 en el margen de la página.
+- **Hoy:** el catálogo usa `⋯` como texto (`.exmore`): fuera del set (§11.3).
+
+### 7.2 Campos
+
+#### Formulario
+- **Rol:** dato que se escribe en sheets, ajustes, onboarding y perfiles.
+- **Clase / API:** `.field input`, `.field select`, `#fa_q`, `textarea.ta` (`.sm/.md/.lg/.xl`), `select.pfsel`, `#pf_gym`,
+  `.pfw`, `.slblk input`, `.slph input`, `.mdcust input`, `.mmrow select`. Etiqueta `.field label`.
+- **Anatomía:** alto 44 · `--r-ctl` · borde 1 `--border` · fondo `--card` · `--t-section` (anti-zoom). `.mmrow select` va a
+  `--t-data` porque acompaña a una fila (el viewport ya bloquea el zoom).
+- **Estados:** foco con `:focus-visible` (contorno `--fg`); placeholder `--o30`.
+- **Sí / No:** **unidad y porción siempre `<select>`, nunca texto libre** (vinculante). No alturas 30/32/34/38, radio 8,
+  sombras internas, labels flotantes ni bordes de color.
+- **Hoy → objetivo:** la etiqueta va en MAYÚSCULAS (objetivo G3, VOZ-2); el borde no llega a 3:1 (pregunta BRAND §10).
+- **La revisa:** ds-audit (campos por debajo de 16: hoy 0).
+
+#### Dato (tabla de sesión)
+- **Clase / API:** `.inp` (`.inp.weight`), `.pick`, `.fs`, `.bwchip`; RIR con TRKSelect (`.pick.rirb` + `openRirSelect()`;
+  `TRK_RIR` = false vuelve al `<select>`).
+- **Anatomía:** alto 36 · `--r-sm` · .5 `--o20` · transparente · `--t-data`. "La caja cabe su contenido".
+- **Estados:** prefill `.pf` a .45 por campo hasta tocarlo; drop `.isdrop` a .82; `.fs.on` fondo `--o12`.
+- **Toque:** 36 (excepción `table36`).
+- **La revisa:** a ojo · `_dsRenderCheck` hit (con la excepción).
+
+#### Dato mini
+- **Clase:** `.inp-mini` (fecha, duración y horas del registro tardío). Alto de su texto, `--r-sm`, .5 `--o20`,
+  `--t-label`. Es la única caja por debajo de 16 fuera de la tabla (el viewport bloquea el zoom).
 
 ### 7.3 Toggles y pestañas
 
-- `.toggles` (segmentos de opción, 44 px): selección = relleno `--fill`. Lo **sugerido** va con borde punteado hasta
-  tocarse (`.pftog.sug`).
-- Pestañas de periodo/vista (`.mdtabs`): mismo alto y línea base; la selección se marca por contraste; el indicador
-  se desliza al cambiar (DS-5). **No** tarjetas por pestaña.
+#### Toggles
+- **Clase:** `.toggles button` (`.toggles.wrap`); lo **sugerido** va con borde punteado hasta tocarlo (`.pftog.sug`).
+- **Anatomía:** alto 44, `--r-ctl`, borde 1 `--border`, `--t-data`/700 `--ls-ui` en `--o50`; elegido = fondo `--fill`, texto
+  `--on-fill`.
+- **Hoy → objetivo:** radio de control en contenido → objetivo G3 (2).
 
-### 7.4 Chips y etiquetas — tres familias
+#### Pestañas (TRKTabs)
+- **Rol:** cambiar de periodo o de vista sin cambiar de pantalla.
+- **Clase / API:** `.mdtabs[data-tk]` con `<span class="on">`; el indicador `.tabind` lo pone `slideTabs()` desde
+  `afterPaint()`; sin JS, un `::after` subraya la activa.
+- **Anatomía:** separador .5 `--o10` abajo; etiquetas `--t-data`/700 `--ls-ui` en `--o50`, activa `--fg`; indicador de 2
+  `--fill` bajo la mitad central de la activa. Sin pista, sin píldora, sin tarjeta por pestaña.
+- **Movimiento:** el indicador aparece en su sitio al pintarse; **solo viaja** (posición y ancho, `--dur-2 --ease-out`)
+  cuando cambia la pestaña elegida (así "PM" ya no parpadea).
+- **Dónde:** periodos del detalle de métrica, volumen y e1RM; HOY/TODOS del stack; momentos de SUPPS (`.lseg`); vistas de
+  compartir un ejercicio.
+- **La revisa:** a ojo · self-check de UI.
+
+### 7.4 Marcas y estados
 
 | Familia | Clases | Anatomía | Función |
 |---|---|---|---|
-| **Etiqueta de dato** | `.note` (`[cable]`, `[+ nota]`), `.exp`, `.exT` | texto sin caja, 10–11 px, `--o50`; tappable con subrayado punteado | describe (tipo, T, perfil) |
-| **Estado** | `.vst`, `.setprog`, `.lpr`, `.pill` | texto 9 px **sin caja** (minúsculas; mayúsculas solo si es sigla: PR); color = semántico del estado | dice cómo está (bajo MEV, ▲+3 %, PR, retención alta) |
-| **Seleccionable** | `.chip`, `.spc`, `.ag-chip` | píldora `--r-pill`, ≥36 px de alto, `--card2` o borde .5px, 11 px | se toca para marcar/filtrar (suplementos) |
+| **Etiqueta de dato** | `.exsub .note` (`[+ nota]`), `.exrow .exp` (perfil), `.exT` (T), `.settens` | texto sin caja, `--t-label`, `--o50`; si se toca, subrayado punteado | describe (tipo, T, perfil) |
+| **Estado** | `.vst`, `.setprog`, `.lpr` (PR), `.pill`, `.pst` | texto `--t-label` **sin caja**, minúsculas salvo sigla; color = semántico del estado | dice cómo está (bajo MEV, ▲+3 %, PR) |
+| **Seleccionable** | `.chip`, `.ag-chip` | píldora `--r-pill`, alto ≥36, borde .5 o `--card2`, `--t-data` | se toca para elegir o filtrar |
 
-**No:** chips con radio 4/6/8/14, cajas alrededor de estados, más familias.
+- MRK-1: nada de cajas alrededor de un estado; nada de chips con radio 4/6/8/14; no más familias.
+- Objetivo G3: los seleccionables en píldora salen del contenido (B-05, "sin píldoras").
+- La revisa: R-RAD · a ojo.
 
-### 7.5 Filas
+### 7.5 Catálogo de filas
 
-- **`.line` — firma de la app.** Clave (`--o60`) · líder punteado (`.dots`) · valor (`--fg`). Para toda lectura
-  clave-valor (stats, detalles, perfiles). `.mdline` es su variante de detalle (12 px) y converge a `.line.lg`.
-- **Fila de lista** (`.exrow`, `.mmrow`, `.mscrow`, `.mdtr`, `.nvm`, `.pickitem`, `.hrow` — los nombres se quedan,
-  los valores convergen): padding 6–12 px (el de menú 14 para zona táctil), **separador .5px `--o10`** en todas, tap en
-  toda la fila, contenido en una línea + sublínea opcional. Dentro de una tarjeta (`.grp .item`) el separador es el
-  borde de la tarjeta (1px `--border`).
-- **Fila de volumen** (`.vrow` + `.vbar`): nombre + estado a la izquierda, lectura a la derecha, barra de 3 px con
-  marcas MEV (`--o40`) y MRV (`--warn`).
+Hoy hay más de diez clases de fila. Se agrupan en **cuatro familias**; una fila nueva elige su familia y usa su anatomía
+(ROW-1). Las clases existentes se conservan (PRI-9) y convergen a los valores de su familia.
 
-### 7.6 Encabezados
+| Familia | Anatomía | Toque | Clases de hoy |
+|---|---|---|---|
+| **A · Lectura** `clave ···· valor` | clave `--o60` · líder punteado `.dots` · valor `--fg`/700; `--t-data`; sin toque | — | `.line`, `.line.stat`, `.mdline` (variante de detalle), `.tbrow`, `.stline`, `.nl-row`, `.mdr` |
+| **B · Navegable** (termina en `›`) | nombre `--t-data` + sublínea `--t-label` opcional; `›` `--o30` al final; separador .5 `--o10` | toda la fila, ≥44 | `.line.lnav`, `.nvm` (menú, filas de ~50), `.pickitem`, `.exrow`, `.hrow`, `.mscrow`, `.mmrow`, `.trow` (con sparkline), `.mdtr`, `.stq` (si tiene detalle) |
+| **C · Registro** (una línea por registro, B-03) | `#etiqueta` tenue · nombre `--fg`/800 · datos `--o50`; interlineado de lectura | la fila, si abre algo | `.srw` (la referencia), `.sxr` (historial compacto, objetivo G2: pasa a `.srw`), `.mit` (alimento), `.sitem` (compartir comida), `.lc` (celda de supp/agua), `.seex` (ejercicio del split), `.exbr` |
+| **D · Rejilla editable** | cajas de dato de 2 en columnas fijas | cada caja | `.srow`/`.pair` con `.gc-*`, `.slph`, `.slblk` |
 
-| Componente | Anatomía | Función |
+- ROW-2: separador **.5 `--o10`** en todas las filas de lista; dentro de un grupo con borde, el separador es el borde.
+- ROW-3: una línea + sublínea opcional; lo que no cabe se corta con elipsis **salvo las etiquetas del dueño**, que no se
+  cortan (B-12; hoy `.plbl` corta nombres de ejercicio en las tiles, M5-05: objetivo G2).
+- ROW-4: una **lista de ejercicios es siempre `.srw`** (familia C). La revisa: a ojo.
+- Hoy ajustes tiene dos tipos de fila navegable (una de 23 de alto) y un interruptor que muestra `›` (M6-17): objetivo G4.
+- `.vrow`/`.vtop` (fila de volumen) y `.mrow` (fila de ingesta con barra) son filas A con una barra (§7.15).
+
+### 7.6 Cabeceras
+
+| Componente | Clase / API | Anatomía |
 |---|---|---|
-| `.status` | 10 px `--o50`; usuario 12/800 · fecha centrada · racha a la derecha | barra de estado de toda pantalla |
-| `.whdr` | `//NEXT`/`WORKOUT` 16/800 `--o50` tracking `--ls-title` + nombre del día 22/800 | **firma de las pantallas de gym. No aplanar** |
-| `.section .h` | `<span class="s">//</span>` + nombre, 16/800 | título de sección |
-| `.grp-label` | 9 px mayúsculas `--ls-caps` `--o40` | etiqueta de grupo dentro de una sección o sheet; `.grp-label.sub` (12 arriba · 4 abajo) para rótulos dentro de un detalle, en vez de márgenes en línea |
-| `.submeta` | 10 px `--o40` | ayuda/meta bajo un bloque; variantes de espacio `.gap`, `.tight`, `.flush` (DS-4) en vez de márgenes en línea |
-| `.sheet h3` | 11/800 mayúsculas `--o50` | título de sheet |
+| **Barra de estado** (línea de prompt) | `statusBar(back)` → `.status` | rejilla de 3; `u/usuario ▾` `--t-data`/800 · fecha y hora centradas `--t-label` `--o50` · `streak:` a la derecha y, en home/macros/progress/settings/stack/history, `meta: ▾` (`.sgoal`, toque 44 con `::after`) |
+| **Cabecera del día** | `dayHeadHTML(lbl,name,meta)` → `.whdr` (`.wlbl`, `.wname`, `.wmeta`) | un solo borde izquierdo: `//NEXT` `--t-label` MAYÚSCULAS `--ls-caps` · nombre `--t-display`/800 · una línea de meta `--t-label` `--o40`. Firma de las pantallas de gym; no se aplana |
+| **Sección** | `.section` (`.h` + `.s`, `.meta`) | `//` en `--o50` + nombre `--t-section`/800; meta `--t-label` `--o50` a la derecha |
+| **Rótulo de grupo** | `.grp-label` (`.sub`, `.first`) | `--t-label` `--o40` `--ls-caps` en MAYÚSCULAS |
+| **Meta / ayuda** | `.submeta` (`.gap`) | `--t-label` `--o40` |
+| **Título de sheet** | `.sheet h3` (`.sub` para el `· tag`) | `--t-section`/800 `--fg` `--ls-title` |
 
-### 7.7 Tarjetas
+- HDR-1: una cabecera por pantalla (`dayHeadHTML` o `//MÓDULO` + meta), un `//` por sección.
+- Hoy //FUERZA, //RECORDS, //MÚSCULOS y //RENDIMIENTO son `.grp-label` de 10, más débiles que sus propias filas (M5-07):
+  objetivo G2 a `.section` 16/800.
+- El `← back` de la barra de estado es una caja de 68×37: objetivo G2 `[‹ origen]` (§14.2).
 
-`.card` (y `.pfeat`, `.pthrow`, `.ptile`, `.grp`): `--card`, 1px `--border`, `--radius`, padding `--sp-card`,
-margen inferior `--sp-gap`. **Una tarjeta existe cuando** agrupa una entidad, contiene una métrica independiente o es
-un módulo autónomo. **No** una tarjeta por cada número, fila o botón (eso convierte Progreso en SaaS). **No**
-gradientes, glow, glass, colores de acento, sombras.
+### 7.7 Superficies de agrupación
 
-### 7.8 Tabla de sesión (el componente más fuerte de la identidad)
+- **Hoy:** `.card`, `.grp`, `.ptile`, `.pthrow`, `.hcal` (y `.ws-card` en el wrap): fondo `--card`, borde 1 `--border`,
+  radio `--radius`, padding `--sp-card`, margen inferior `--sp-gap`.
+- SRF-1 (sigue valiendo): una superficie existe **solo** si agrupa una entidad, contiene una métrica independiente o es un
+  módulo autónomo. Nunca una tarjeta por número, fila o botón. Sin gradiente, brillo, vidrio, acento ni sombra.
+- **Objetivo G3** (B-05): en el contenido no hay tarjetas de 16. Un grupo es un **panel** `//TÍTULO` + regla, o una caja de
+  2 cuando hace falta borde. El anillo de kcal pasa a un panel de lectura (plano o vidrio sutil, se elige en G0). Progress
+  deja la rejilla de tiles (`.pgrid`/`.ptile`) por filas TRKTrend (M5-03, requiere su visto bueno). El mes del historial y
+  su calendario dejan la caja.
+- La revisa: R-RAD · prueba de 5 s.
 
-Denso, afilado, técnico. **Jamás** glass, radios grandes ni colores decorativos.
-- Encabezado `.thead` (9 px `--o40`) · filas `.srow` en rejillas `.gc-*` (última columna 30 px = el ✓).
-- Número de serie `.setn` (1, 1.5, 2… con color de zona) · inputs de dato · `.dchk` ✓/○ (30×36) en la última
-  columna; en unilateral `.pairdone` a la derecha del par.
-- **Borrar = deslizar la fila a la derecha ≥76 px** (gesto horizontal claro; nunca desde un input); pista una vez.
-- Prefill sin confirmar `.pf` al 45 % **por campo**; al tocarlo, opacidad plena. Drop `.isdrop` al 82 %.
-- Ejercicio en curso `.ex.current` (guía 2px `--o35`) + barra **AHORA** (`.nowbar`) con serie N/M.
-- Encabezado del ejercicio en dos líneas: `[bi] nombre` (16/800) · `[tipo] marca setup nota|[+ nota]`.
-  Sin placeholders de relleno (nada de "+ machine").
+### 7.8 Tabla de sesión
+
+La pieza más gym//TRK de la app: densa, afilada, técnica. **Nunca** vidrio, radios grandes ni color decorativo.
+
+- **Rol:** registrar series en vivo y corregirlas en el historial (`.hist-compact`, mismas filas).
+- **Clase / API:** `renderExercise()`, `renderSetRow()`; cabecera `.thead` (`.cl`); filas `.srow` en rejillas
+  `.gc-free`, `.gc-mach`, `.gc-mach-fs`, `.gc-uni`, `.gc-free-bw`, `.gc-uni-bw`, `.gc-cardio` (la última columna es el ✓);
+  unilateral `.pair` con `.prows`, cabecera `uniHeadHTML()` con la misma envoltura (`.pair.phead`).
+- **Anatomía:** número de serie `.setn` (`--t-label`; 1, 1.5, 2… con color de zona; hecho `--fill`/700) · cajas de dato
+  (§7.2) · `.dchk` ✓/○ (`--t-section`, 30×36) en la última columna; en unilateral `.pairdone` a la derecha del par.
+  Encabezado del ejercicio en dos líneas: `.exhead` (`[bi] nombre`, `--t-section`/800, `[uni]`/`[bi]` con la misma fuente
+  que el nombre) · `.exsub` (`[tipo]`, marca/setup `.mch` con subrayado punteado, `[+ nota]`). Barra de acciones
+  `.addrow` con `.addbtn`. Sin rellenos ("+ machine" no existe).
+- **Estados:** prefill `.pf` por campo (gris .45 hasta tocarlo); drop `.isdrop` .82; serie hecha `.setn.done` + `.dchk.done`;
+  ejercicio en curso `.ex.current` (en modo enfoque, §7.20).
+- **Toque:** 36 (`table36`); el ✓ debe ampliar su toque con `::after` a 44×42 y 6 de separación (objetivo G2, M2-06).
+- **Sí / No:** borrar = **deslizar la fila a la derecha ≥76** (gesto horizontal claro; nunca desde un campo, el ✓ o el
+  asa); la pista se enseña una vez (`swipehint`, `hintSeen()`). No hay ✕ por fila.
+- **Motor TRK:** TRKRow (`data-rk`, `reRender()`), TRKSelect (RIR), `applyEnter()` (`.enter`, `.pop`).
+- **Hoy → objetivo G2:** borrar una serie solo deslizando no tiene alternativa ni deshacer (M2-07: toast con
+  `[deshacer]` + menú al mantener el número); `↩` borra la serie más baja con datos aunque no tenga ✓ (M2-08: pila de
+  eventos ✓); tras cada ✓ aparecen T, FC, % de drop y ▲▼ a la vez (M2-24: en vivo solo ▲▼%).
+- **La revisa:** self-checks (`_loggingSelfCheck`, `_dropsetSelfCheck`) · R-SESS · a ojo.
 
 ### 7.9 Barras acopladas
 
-`.restbar` (descanso: etiqueta + tiempo 16/800 + −15/+15/skip), `.nowbar` (AHORA), `.footer` (abort · ↩ · save
-session). Sólidas (`--frame`) con borde superior `--o12`; gutter `--sp-px`. Botones: footer 44 (`abort` borde
-`--abort` · `↩` borde `--border` · `save session` primario), descanso 32 visibles con zona táctil de 44 (`::after`).
-Fin de descanso: 3 destellos de borde `--good`.
+- **Clase:** `.restbar` (`#resttimer`: `.rl` etiqueta, `.rt` tiempo `--t-section`/800 tabular, `−15 +15 skip`) y `.footer`
+  (`#wfooter`: `.abort`, `.undo`, `.save`). Viven fuera de `#view`.
+- **Anatomía:** sólidas (`--frame`), borde superior 1 `--o12`, gutter `--sp-px`. Footer: botones de 44 (`abort` borde
+  `--abort`, `↩` borde `--border`, `save session` primario). Descanso: botones de 32 visibles con toque de 44 (`::after`).
+- **Estados:** fin de descanso `.restbar.fin`: tiempo en `--good` y 3 destellos del borde (`restdone`, id `loop`); texto
+  `listo`.
+- **Motor:** `updateRestBar()` escribe solo `textContent` cada 500 (nunca repinta); `visibilitychange` recalcula.
+- **Hoy → objetivo:** `abort` y `↩` pasan a `[verbo]` y `--abort` se retira (G3); el tiempo de `.wline` se congela durante
+  el descanso (M2-15, G2). `updateNowBar()` es código muerto (G4).
 
 ### 7.10 Navegación
 
-Píldora glass flotante (`.nav`), 3 pestañas: **progress · gym · macros**. Íconos de línea 24u trazo 1.6; la activa se
-ensancha y muestra su etiqueta (fondo `--o12`). Pertenece al chrome, no al contenido. Suplementos, músculos, split,
-historial y ajustes viven en el menú `u/…`. **No:** más de 3–4 pestañas, dock con lupa, rebote.
+- **Rol:** las tres pantallas primarias: **progress · gym · macros**. Pertenece al chrome, no al contenido.
+- **Clase / API:** `renderNav()` construye una vez `.nav.glass` con `NAVIC` (íconos SVG de línea 24, trazo 1.6) y alterna
+  `.active`; se oculta en workout, settings, splitedit, history y share. Suplementos, músculos, split, historial y ajustes
+  viven en el menú `u/…` (`.nvm`).
+- **Anatomía hoy:** cápsula de vidrio `--r-pill` flotando a 12 del borde; pestañas de solo ícono; la activa se ensancha y
+  muestra su etiqueta (`--t-data`/700, fondo `--o12`) animando `gap`, `padding` y `grid-template-columns`.
+- **Toque:** hoy 83×40 (menos de 44).
+- **Objetivo G3** (decisión del dueño 2026-09-21: "glass terminal bar", BRAND §4): cápsula de vidrio con `--r-float`
+  (pendiente G3), borde .5, sin sombra blanda; dentro, pestañas de **texto siempre visibles** (`progress  gym  macros`);
+  la activa en bloque inverso de 2 o entre `[ ]` (se elige en G0); alto ≥44; **sin animar layout**. La nav también se
+  oculta en histedit, stack y agenda (hoy se ve: T-02).
+- **No:** más de 3–4 pestañas, dock con lupa, rebote.
+- **La revisa:** R-MOTION (layout) · `_dsRenderCheck` hit · a ojo.
 
-### 7.11 Sheets y modales
+### 7.11 Sheets y capas
 
-`openModal(html, cls)`: scrim `rgba(0,0,0,.6)` + `.sheet` **glass-strong anclado arriba** (esquinas inferiores
-`--r-sheet`), padding `--sp-sheet`, máx. 80 % (`.tall` 90 vh). Título `.sheet h3`, botones `.sheetbtns`
-(primario + secundario). El contenido dentro del sheet usa el lenguaje normal (no todo es glass). `nodismiss` solo
-para decisiones obligatorias (sesión inactiva).
-- **Movimiento:** al abrir, el sheet baja desde arriba (`sheetin`, `--dur-3` `--ease-out`) y el scrim aparece
-  (`--dur-2`); al cerrar sube y se desvanece (`--dur-2` `--ease-in`). **`openModal` sobre otro sheet —o justo después de
-  `closeModal()`, el patrón `closeModal(); openX()`— es un cambio de contenido: sin animación**, así nunca hay dos
-  sheets moviéndose ni se anima un re-render.
-- **Cierre sin trampas:** `closeModal()` quita el `id` al instante (para la lógica el modal ya no existe) y deja un
-  fantasma `.modal.out` sin clics que sale en 180 ms y se borra a los 200 ms.
+- **Rol:** una tarea corta encima de la pantalla sin cambiar de pantalla.
+- **Clase / API:** `openModal(html, cls)` → `.modal` (scrim) + `.sheet.glass-strong` **anclado arriba** (evita el teclado
+  de iOS); `cls` admite `tall` (90 de alto de pantalla), `mdetail-wrap` (88) y `nodismiss` (solo decisiones obligatorias,
+  hoy la sesión inactiva de `promptIdleSession()`). `closeModal()`. Capa de decisión encima del sheet: `askLayer()` →
+  `.modal.asklayer` (§7.13).
+- **Anatomía:** scrim `rgba(0,0,0,.6)` · sheet con padding `--sp-sheet`, esquinas inferiores `--r-sheet`, máx. 80 % de
+  alto · título `.sheet h3` · botones `.sheetbtns` (primario + secundario). El contenido del sheet usa el lenguaje normal
+  (no todo es vidrio).
+- **Movimiento:** al abrir desde cero el sheet baja (`sheetin`, `--dur-3 --ease-out`) y el scrim aparece (`scrimin`,
+  `--dur-2`); al cerrar sube y se desvanece (`--dur-2 --ease-in`). **`openModal` sobre otro sheet, o justo después de
+  `closeModal()`, es cambio de contenido: sin animación.**
+- **Cierre sin trampas:** `closeModal()` quita el `id` al instante y deja un fantasma `.modal.out` sin clics que se borra a
+  los 200.
+- **Hoy → objetivo:** tocar el scrim hace `closeModal(); render()` y el scroll de abajo vuelve al inicio (T-10: 28
+  llamadas): objetivo G2 `reRender()`. Radio del sheet: objetivo G3 `--r-float` (pendiente G3). Con un sheet abierto, un
+  error va en línea bajo el campo, no en un toast bajo el teclado (G2).
+- **La revisa:** R-SCROLL · a ojo.
 
-### 7.12 Toast
+### 7.12 TRKToast
 
-Píldora glass sobre la nav, 12/700, un mensaje corto. **Borde por tipo** (DS-1): éxito `--good`, error `--bad`,
-neutro `--border`. Errores sin auto-cierre; máximo 3 apilados; `aria-live`. **No** confeti ni sonido.
+- **Rol:** decir qué pasó después de una acción; una sola voz para todo el feedback (§6.3).
+- **API:** `toast(msg, type, {undo})` (tipo `ok`/`err`/neutro, se infiere de `✓`/`⚠`) · `toastTask(msg)` → `{done, fail}`
+  para lo que tarda.
+- **Anatomía:** `.toasts` (pila `aria-live`, máximo 3, sale la más vieja) · `.toast.glass-strong` `--r-pill`, `--t-data`/700;
+  borde `--good` (`.ok`), `--bad` (`.err`, se queda hasta tocarlo, con ` ✕`), neutro; `.toast.task` en `--o70`;
+  `[deshacer]` `.tundo` con toque ampliado.
+- **Vida:** éxito/neutro `--toast-life`; con deshacer o error `--toast-life-err`; un solo deshacer vivo a la vez.
+- **Hoy → objetivo:** `bottom` 84 sin safe-area (se monta sobre la nav, M6-06) y los errores largos se cortan con elipsis
+  (M6-07): objetivo G2 (`--nav-clear` (pendiente G2), error en 2 líneas, ≤42 caracteres). Forma: objetivo G3 `--r-float`.
+  Sin confeti ni sonido.
+- **La revisa:** R-TOAST · `_uiSelfCheck`.
 
-### 7.13 Popover de agregar (FAB)
+### 7.13 Capa de decisión
 
-`.addpop`: acciones `.api` en píldoras sólidas `--fill`, escalonadas 40 ms, suben 8 px con `--dur-2` `--ease-out`
-(sin escala ni overshoot desde DS-5).
+Todo lo que pide una decisión vive en `askLayer()` (`.modal.asklayer`, `--z-pop`): **encima** del sheet actual, nunca lo
+reemplaza, así lo escrito abajo se conserva. Diálogos nativos (`alert`/`confirm`/`prompt`): 0 (ds-audit).
 
-### 7.14 Vacíos, carga y errores
+#### TRKAsk
+- **Rol:** decisión reversible o de flujo. **API:** `trkAsk({title,detail,ok,cancel,danger}, onOk, onCancel)`.
+- **Anatomía:** `h3` + `.submeta` + `.sheetbtns` (primario + secundario; si destruye, `.cancel.danger` + secundario).
+- **Hoy → objetivo G4:** título por defecto `'¿seguro?'` y OK destructivo que parece cancelar (VOZ-5).
 
-- **Vacío** `.empty`: `// ` + frase corta en `--o50` + `.ehint` con la acción. Sin ilustraciones.
-- **Carga:** texto de sistema, spinner simple o cursor `▌`; el boot (1.3 s) es la única pantalla de carga con
-  personalidad. Sin puntos que rebotan.
-- **Error:** toast `--bad` + texto que dice qué pasó y qué hacer.
+#### TRKHold
+- **Rol:** confirmar lo **irreversible** sin que un toque accidental baste. **API:** `holdConfirm({title,detail,verb}, onOk)`.
+- **Anatomía:** `.hold` alto 48, borde `--bad`, texto `--bad`; `.hold-fill` `--bad` a .22 avanza con `scaleX` en 900 lineal
+  mientras se sostiene ("armando 73 %"); soltar antes cancela; vibración corta al completar (solo Android).
+- **Dónde:** §17.4.
 
-### 7.15 Barras de progreso
+#### TRKPrompt
+- **Rol:** un campo suelto en un sheet. **API:** `trkPrompt({title,label,value,type,inputmode,hint,ok}, onSave)` (usa
+  `openModal`); `onSave` devuelve `false` para no cerrar.
 
-`.bar`/`.vbar`/`.wprog`: 3px (2px en `.wprog`), píldora, `--track` + relleno `--fill`; exceso (`.over`) en
-semántico. Barras segmentadas (celdas) permitidas para conteos discretos (DS-6).
+#### TRKWheel
+- **Rol:** elegir de una lista corta girando (nombre de comida, fase). **API:** `trkWheel({title,opts,cur,ok,other}, onPick)`.
+- **Anatomía:** `.whl` de 5 filas de 40 (`.whl-o`, `--t-section`, `--o35`; la elegida `.on` `--fg`/800) entre dos líneas
+  .5 `--o20` (`.whl-sel`); `scroll-snap` nativo; `role="radiogroup"`. Tocar una fila elige; `[elegir]` lee la posición real.
+- **Hoy → objetivo G2:** las filas no elegidas en `--o35` son texto bajo el piso (TOK-4).
 
-### 7.16 Diagnóstico (hallazgos, v234)
+#### TRKMenu
+- **Rol:** las acciones de una entidad (comida, ejercicio del catálogo). **API:** `trkMenu(título, [[etiqueta, fn], …])` →
+  filas `.nvm` con `›` en la capa de decisión.
 
-Cómo la app **sugiere** sin inventar (primer uso: //MÚSCULOS y su detalle).
-- **Anatomía** (`.dxrow`): hallazgo 12/700 con color por severidad (`.dx-bad` `--bad` · `.dx-warn` `--warn` · `.dx-info`
-  `--fg` · `.dx-ok` `--good`) · **evidencia** 10 px `--o50` con los números que lo disparan · **acción** `→ …` 10 px
-  `--o70` · separador .5px `--o10` · nota final `.submeta` ("solo aparece lo que tu historial respalda · correlación, no
-  causa"). Orden: grave → atención → sugerencia → "en orden".
-- **En una fila de lista** (`.mscdx`): solo el hallazgo principal en corto (10 px) + `+N`; nunca repite lo que ya dice un
-  estado de la misma fila (MEV/MRV) y "en orden" no ocupa renglón.
-- **Reglas de redacción:** se dispara solo con evidencia (umbrales explícitos en el código, con prueba de "ruido" en su
-  self-check) · nunca una puntuación · verbos de sugerencia ("suele", "puede aportar", "considera"), no órdenes · cita
-  cuando la regla viene de literatura · `~` si se apoya en datos sugeridos sin confirmar · sin datos suficientes dice
-  "pocos datos", no "en orden".
+### 7.14 Popovers
 
-### 7.17 Utilidades (DS-4) — la capa mínima entre componentes
+- **TRKSelect** — elegir un valor chico de un toque: `trkSelect(anchor, opts, cur, onPick, {title, clear})` → `#tsel`
+  (`.tsel`, `.tselh`, `.tselr`, `.tselo` de 44 con `--t-section`/700, elegida `.on` en `--fill`; `.tselx` para
+  "— quitar"; opción con sublínea `.tsub`). Se cierra con `popClose()`: toque fuera, scroll o repintado. Elegir (aunque sea
+  el mismo valor) confirma; cerrar sin elegir no cambia nada. Uso: RIR (`openRirSelect()`), meta y actividad.
+- **TRKPop / glosario** — texto corto anclado al término: `trkPop(anchor, text)` → `#gloss` (`.gloss`); el glosario marca
+  los términos con `data-gloss="clave"` (subrayado punteado `--o20`) y lee `GLOSS` (rir, t, cap, lm, est, rirmed, e1rm, racha,
+  stim). El listener va en captura y no dispara la acción de la fila.
+- **Anatomía común:** `--card2`, borde 1 `--border`, `--r-ctl`, `--shadow-float`, entrada `rowin`.
+- **Objetivo G3:** son chrome flotante: `--r-float` (pendiente G3), vidrio opcional.
 
-Lo que antes era `style=""` fijo es una **clase `u-` de un vocabulario cerrado**, todo por token. Sirven para el ajuste
-entre piezas (espacio entre bloques, un color de dato, una alineación), **no** para inventar componentes: si un
-conjunto de utilidades se repite como forma propia, se vuelve componente (así nacieron `.setprogline`, `.inp-mini`,
-`.gc-uni-head`, `.moodax.at/ab/al/ar`, `.start.ghost`, `.fa-em-step.off`).
+### 7.15 Barras (TRKBar)
 
-| Grupo | Clases | Valor |
-|---|---|---|
-| color | `u-fg` `u-o70` `u-o60` `u-o50` `u-o40` `u-o35` `u-o30` `u-o20` `u-good` `u-bad` `u-warn` `u-info` | la escala de §4.2–§4.3 |
-| tipo | `u-cap` `u-xs` `u-meta` `u-sm` `u-body` `u-sec` `u-disp` `u-hero` · `u-w3` `u-w4` `u-w5` `u-w7` `u-w8` | `--t-*` · pesos cargados |
-| tracking | `u-lscaps` `u-lsui` `u-lsnum` `u-ls0` · `u-upper` | los roles de §4.4 |
-| espacio | `u-m{t,b,l,r,x,y}N` · `u-p{…}N` · `u-gapN` · negativos `u-mt-nN` · `u-mlauto` | N ∈ 0 · 1 · 2 · 4 · 6 · 8 · 10 · 12 · 16 · 24 · 32 · 48 (· 96); por `--s*` salvo los medios pasos |
-| layout | `u-flex` `u-iflex` `u-block` `u-ib` `u-col` `u-wrap` `u-aic` `u-ais` `u-aib` `u-jsb` `u-jfe` `u-asc` `u-f1` `u-f0` `u-fhalf` `u-fthird` `u-min0` `u-w100` `u-wauto` `u-h100` `u-fr` `u-vam` | — |
-| texto y estado | `u-tc` `u-tr` `u-tl` `u-nowrap` `u-preline` `u-ul` `u-fsn` `u-tap` `u-dim` (.5) `u-invis` `u-sep` (separador .5 `--o10`) `u-dash` (subrayado punteado = tocable) | — |
+- **Rol:** mostrar una proporción con un solo trazo fino (volumen vs landmarks, ingesta, progreso de la sesión).
+- **Clase / API:** `.bar`, `.vbar`, `.wprog`; relleno `trkBarI(clave, pct, cls)` (con `data-bk`, acotado 0–100); marcas
+  `trkMark(pct, cls, title)` (`.mev` en `--o40`, `.mrv` en `--warn`); `animBars()` en `afterPaint()`.
+- **Anatomía:** alto 3 (2 en `.wprog`), pista `--track` + relleno `--fill`; exceso `.over` en semántico. Barras de celdas
+  permitidas para conteos discretos.
+- **Movimiento:** crece desde su ancho anterior (`--dur-2`) solo si esa clave ya estaba pintada con otro valor.
+- **Hoy → objetivo:** hoy son píldoras (`--r-pill`): objetivo G3 sin radio. Marca MRV fija en `--warn`: objetivo G3 `--o40`
+  y `--warn` solo al pasarse (M1-10).
+- **La revisa:** self-check de UI (TRKBar) · a ojo.
 
-- **Cómo ganan:** van al final del CSS como `#app .u-x` — ganan como ganaba el `style=""` que reemplazan, y un
-  `el.style.*` asignado en vivo sigue ganándoles. El bloque se **genera solo con las que se usan**.
-- **Siguen en línea (y está bien):** valores calculados en vivo (`width:${pct}%`, colores de zona, posiciones de la
-  agenda) y `display:none` inicial (el JS lo alterna y a veces lo lee); más ~25 dimensiones únicas (la cámara del
-  escáner, anchos de inputs numéricos, alturas mínimas de avisos).
-- **No:** valores fuera de la escala (no existe `u-mt14`), utilidades de color literal, dos declaraciones de la misma
-  propiedad en un elemento (una utilidad + un `style` que la pise), utilidades para lo que ya es componente.
+### 7.16 Diagnóstico
 
-### 7.18 Componentes de comportamiento `TRK*` (registro)
+Cómo la app **sugiere** sin inventar (//MÚSCULOS y su detalle).
+- **Anatomía:** `.dxrow`: hallazgo `.dxh` (`--t-data`/700, color por severidad `.dx-bad` / `.dx-warn` / `.dx-info` `--fg` /
+  `.dx-ok`) · evidencia `.dxev` (`--t-label` `--o50`, con los números que lo disparan) · acción `.dxdo` (`→ …`, `--t-label`
+  `--o70`) · separador .5 `--o10` · nota final `.dxnote`. Orden: grave → atención → sugerencia → "en orden".
+- **En una fila de lista** (`.mscdx`): solo el hallazgo principal en corto + `+N` (`.dxmore`); nunca repite lo que ya dice
+  un estado de la fila; "en orden" no ocupa renglón.
+- **Redacción (DX-1):** se dispara solo con evidencia (umbrales en `DIAG`, con prueba de ruido en `_diagSelfCheck`) · nunca
+  una puntuación · verbos de sugerencia ("suele", "puede aportar", "considera") · cita si la regla viene de literatura ·
+  `~` si se apoya en datos sugeridos · sin datos suficientes dice "pocos datos", no "en orden".
+- **Objetivo G3:** 'fresco' deja el verde; `.dx-ok` solo para eventos.
 
-§7.1–§7.17 dicen **cómo se ve** cada pieza; este registro dice **cómo se comporta**. Cada interacción transversal
-(feedback, confirmación, pestañas, filas que cambian, barras que crecen, números que cuentan, popovers, tendencias,
-calendarios, selectores) tiene UN componente, con una API, sus tokens y su referencia concreta de 21st.dev (solo el
-comportamiento, §19). **Ninguna pantalla implementa su propia versión**: si falta algo, se agrega aquí primero.
+### 7.17 Utilidades `u-`
 
-| Componente | Función | API | Tokens y anatomía | Referencia 21st · se toma / no se toma | Dónde |
-|---|---|---|---|---|---|
-| **TRKToast** | decir qué pasó después de una acción; una sola voz para todo el feedback | `toast(msg,type)` (`ok`/`err`/neutro; se infiere de `✓`/`⚠`) · `toastTask(msg)` → `{done(msg), fail(msg)}` para lo que tarda | píldora `.glass-strong` 12/700 sobre la nav · borde `--good`/`--bad`/`--glass-ring` · pila de hasta 3 (sale la más vieja) · éxito/neutro se van a los `--toast-life`, un error se queda hasta tocarlo (`✕`) · `aria-live` | [Save Changes Toast](https://21st.dev/@yadwinder/components/toast-save) (estados cargando → listo) + Sonner (pila) · **no**: iconos de color, sombras propias, barras de progreso | todo guardado (§7.18.1) y toda operación async |
-| **TRKAsk** | pedir una decisión reversible o de flujo | `trkAsk({title,detail,ok,cancel,danger},onOk,onCancel)` | sheet en capa propia (`#asklayer`, `--z-pop`) **encima** del sheet actual, nunca lo reemplaza: `h3` + `.submeta` + `.sheetbtns` (primario + secundario; si destruye, `.cancel.danger` + secundario) | — (reemplaza `confirm()` nativo) | ¿guardar sin RIR?, cambiar ejercicio con series, adoptar split, unir, borrar un registro del log |
-| **TRKHold** | confirmar lo **irreversible** sin que un toque accidental baste | `holdConfirm({title,detail,verb,back},onOk)` | sheet con botón 48 px borde `--bad`, relleno `--bad` .22 que avanza en 0.9 s mientras se sostiene ("armando 73 %"); soltar antes cancela; vibración corta al completar | patrón "Hold to Confirm" del catálogo (sin componente concreto verificado en el reporte) · **no**: círculos de progreso, color de éxito | abortar sesión, borrar sesión, borrar día del split, borrar una comida completa, borrar todos los datos |
-| **TRKTabs** | cambiar de periodo o de vista sin cambiar de pantalla | `<div class="mdtabs" data-tk="clave">` con `<span class="on">` (el nombre de clase se conserva); el indicador `.tabind` lo pone `afterPaint` y viaja si es el mismo sheet o la misma pantalla; sin JS, un `::after` subraya la activa | etiquetas 11/700 `--o50`, activa `--fg`; **indicador 2 px `--fill`** bajo la activa que desliza posición y ancho (`--dur-2 --ease-out`); sin pista ni píldora | [Vercel Tabs](https://21st.dev/@yadwinder/components/vercel-tabs) (subrayado que viaja) · **no**: píldoras, escala, gradiente | periodos del detalle de métrica, volumen y e1RM; vista hoy/todos del stack |
-| **TRKRow** | que la lista cambie sin saltos: lo nuevo entra, lo borrado sale, el resto se reacomoda | `state._enter={exi,si}\|{ex,scroll}` antes de pintar · `data-rk="${rk(obj)}"` en cada fila/bloque (identidad del objeto serie/ejercicio, `WeakMap` en memoria, nunca se guarda) · `reRender()` mide antes y reacomoda después (FLIP; lo que se mueve con su bloque no se anima dos veces) | entrada 4 px + opacidad `--dur-2` · salida hacia la derecha `--dur-2 --ease-in` · reacomodo `--dur-2 --ease-out` | [Animated Table Rows](https://21st.dev/@arunachalam/components/animated-table-rows) (entrada/salida/`layout`) · **no**: colores, hover, botón rojo, la tabla del demo | tabla de sesión, editor de historial, historial |
-| **TRKBar** | que una barra crezca desde su valor anterior cuando el dato cambia | `trkBarI(clave,pct,cls)` → el `<i data-bk>` del relleno · `trkMark(pct,cls,title)` → marca MEV/MRV/referencia · `animBars` en `afterPaint` (anima de un ancho al otro solo si esa clave ya se había pintado con otro) · en `.bar/.vbar/.wprog` | `--track` + `--fill`, estado en semántico (`.over`); transición de ancho `--dur-2 --ease-out`, solo si cambió | [Animated Progress Bar](https://21st.dev/@educlopez/components/animated-progress-bar) · **no**: colores por barra, degradados, etiquetas dentro | //EFFECTIVE VOLUME, intake de macros, //MÚSCULOS, progreso de la sesión |
-| **TRKNum** | que un número que cambia cuente hasta su valor | `data-nk` (clave) `data-nv` (valor) `data-nd` (decimales) | 280 ms, mismo formato (`toLocaleString`), solo si la clave ya estaba en pantalla con otro valor | Number Flow (§10; propio, sin dependencia) | kcal, P/C/F, racha, e1RM de //FUERZA |
-| **TRKPop** | mostrar algo corto junto a lo que lo originó | `trkPop(anchor,texto)` → popover anclado · `trkMenu(título,[[etiqueta,fn],…])` → menú en la capa de TRKAsk (en el marco del teléfono siempre es la versión sheet) · `data-gloss="clave"` + `GLOSS` para el glosario | tarjeta `--card2`, borde `--border`, `--r-ctl`, `--shadow-float`, 10 px `--o70`; cierra al tocar fuera o al hacer scroll | [Smart Popover](https://21st.dev/@efferd/components/smart-popover) (popover ↔ drawer) · **no**: flechas, glass en contenido | glosario (`data-gloss`), acciones de fila del catálogo |
-| **TRKTrend** | resumen de una serie antes de abrir su gráfica | fila `.trow` (//FUERZA): `lineChart(serie,{h:22,pad:3,noFill,noDots,margin:0,dates,tlo,thi})` con el mismo eje de 30 d en todas las filas (<2 sesiones = sin línea) · valor con `data-nk` (TRKNum) | nombre · valor (TRKNum) · Δ con ▲▼ en semántico · sparkline 30 d (trazo 1.4 `--o60`, punto final) · `›` | [Trend Card](https://21st.dev/@ravikatiyar162/components/trend-card) · **no**: la tarjeta, el índigo, la interacción de dashboard | //FUERZA, //RECORDS |
-| **TRKCal** | un mes como rejilla de días con intensidad; tocar un día lleva a ese día | `monthCalHTML(y,m,mark,{head,num})` · `mark(iso)` → `{lv:0-2, act, title}` (día sin `act` = sin toque) · la racha y el historial lo usan | pastilla `--r-mark` por día: vacío `--track`, un registro `--o60`, ambos `--good`, hoy con contorno | [GitHub Calendar](https://21st.dev/community/components/aliimam/git-hub-calendar) (día → intensidad) · **no**: el verde de GitHub, escalas de 5 tonos | racha (Progreso), mes del historial |
-| **TRKWheel** | elegir un valor de una lista corta girando, estilo reloj | `trkWheel({title,opts,cur,ok,other,otherLabel},onPick)` en un sheet; `[elegir]` lee la posición real al confirmar (no depende del evento de scroll, que el segundo plano no despacha) | rueda de `scroll-snap` en CSS puro: 5 filas de 40 px, centro entre dos hairlines `--o20`, la elegida `--fg`/800; cada fila es un botón dentro de `role="radiogroup"`; tocar una fila elige directo; `other` cae a TRKPrompt para texto libre | [HIG · Pickers](https://developer.apple.com/design/human-interface-guidelines/pickers) (≈5 filas, valor centrado) · **no**: ruedas para valores nominales largos ni para sustituir listas navegables | nombre de comida (`[+ comida]`), horas y minutos del sueño |
-| **TRKSelect** | elegir un valor chico de un toque, con respuesta inmediata | `trkSelect(anchor,opts,cur,onPick,{title,clear})` (`#tsel`, se cierra con `popClose`: toque fuera, scroll o repintado) · RIR: `openRirSelect(el,hist)` sobre el botón `.pick.rirb` (mismo `data-act="setf"`/`"h_setf"` y `data-f="rir"` que el select) · `TRK_RIR=false` devuelve el `<select>` | fila F 0 1 2 3 4 5 de 44 px (orden del select que ya conocías) + `— quitar`; la actual en `--fill`; elegir (aunque sea la misma) confirma, cerrar sin elegir no cambia nada | [Interactive Selector](https://21st.dev/@minhxthanh/components/interactive-selector) · **no**: su estética ni animación | RIR de la tabla (fase B) |
+Lo que antes era `style=""` fijo es una clase `u-` de un vocabulario cerrado, por token. Sirven para el ajuste entre
+piezas, **no** para inventar componentes: si un conjunto de utilidades se repite como forma propia, se vuelve componente.
 
-| **TRKLog** (v256) | registrar lo del día con UNA anatomía: supps, comidas y agua se ven igual de importantes | `logSecHTML({k,title,v,act,body,open})` · plegado en `state._lfold` (se fija una vez por día visto) | cabecera 44 px: `//TÍTULO` 16/800 · lectura 12 · `›` que gira; acción `.lact` 96×32 (44 de toque) 12/700 idéntica en las tres; filas `.lc`/`.mit` de 36 px a 12 | [Item Action List](https://21st.dev/@sean0205/components/item-action-list) · se toma la anatomía de fila con acción; no el ícono ni la tarjeta | macros: SUPPS → MEALS → WATER (orden del dueño) |
+| Grupo | Clases que existen |
+|---|---|
+| color | `u-fg` `u-o60` `u-o50` `u-o40` `u-o35` `u-o30` `u-o20` `u-good` `u-bad` `u-warn` |
+| tipo y peso | `u-label` `u-data` `u-sec` `u-disp` `u-hero` · `u-w4` `u-w7` `u-w8` |
+| tracking y caja | `u-lscaps` `u-lsui` `u-lsnum` `u-ls0` · `u-upper` |
+| margen | `u-mt2` `u-mt4` `u-mt6` `u-mt8` `u-mt10` `u-mt12` `u-mt16` `u-mt24` `u-mt32` · `u-mt-n2` `u-mt-n4` `u-mt-n6` `u-mt-n8` · `u-mb0` `u-mb2` `u-mb4` `u-mb6` `u-mb8` `u-mb10` `u-mb12` `u-mb16` · `u-ml4` `u-ml6` `u-ml8` `u-mlauto` · `u-mr1` `u-mr2` `u-mr8` · `u-mx0` · `u-my4` `u-my6` `u-my8` `u-my10` `u-my12` |
+| padding y gap | `u-p10` `u-pb16` `u-pr4` `u-pt16` `u-pt24` `u-pt32` `u-pt96` · `u-px0` `u-px6` `u-px8` `u-px10` `u-px16` · `u-py0` `u-py1` `u-py2` `u-py4` `u-py6` `u-py8` `u-py24` `u-py32` · `u-gap4` `u-gap8` `u-gap10` `u-gap12` |
+| layout | `u-flex` `u-iflex` `u-block` `u-col` `u-wrap` `u-aic` `u-ais` `u-aib` `u-asc` `u-jsb` `u-jfe` `u-f0` `u-f1` `u-fhalf` `u-fthird` `u-min0` `u-w100` `u-wauto` `u-h100` `u-fr` `u-vam` |
+| texto y estado | `u-tc` `u-tr` `u-nowrap` `u-preline` `u-ul` `u-tap` (solo cursor) `u-dim` `u-invis` `u-sep` `u-dash` |
 
-**v256 · extensiones:** `toast(msg,type,{undo})` agrega `[deshacer]` (4.6 s, uno vivo a la vez; lo reversible ya no pregunta) ·
-`trkSelect` acepta `{v,t,sub}` con sublínea de 10 (meta, actividad) · TRKCal gana la variante `stripCalHTML(n,mark)` (racha en franja).
+- UTL-1: van al final del CSS como `#app .u-x`: ganan como ganaba el `style=""`, y un `el.style.*` en vivo les sigue
+  ganando. El bloque se genera **solo con las que se usan**.
+- UTL-2: siguen en línea (y está bien) los valores calculados en vivo (`width:${pct}%`, colores de zona, posiciones) y el
+  `display:none` que el JS alterna. Hoy: 89 `style=""`.
+- UTL-3: no valores fuera de la escala, no color literal, no dos declaraciones de la misma propiedad en un elemento, no
+  utilidades para lo que ya es componente. No existen `u-o70`, `u-info` ni utilidades de tamaño viejas.
+- **Pendiente G2:** `.u-hit` (pendiente G2), §7.29. La revisa: ds-audit (`style=""`) · R-DOC.
+- Clases de ayuda de v156 que quedan en el CSS: `.muted` (en uso); `.t-meta`, `.t-xs`, `.muted2`, `.kc-right`, `.mt-s3`,
+  `.mt-s4`, `.mt-s5`, `.mb-s4` no aparecen en el JS (limpieza G4).
 
-**v257 · piezas nuevas y una regla que se revierte:**
-- **Compartir es VERTICAL y a altura natural** (una historia de Instagram). Se revierte el cuadro 1:1 de v256: recortaba
-  (comida perdía todos sus alimentos) y apretaba las series. Sin escalones, sin `+N`, sin bajar la letra; interlineado
-  1.5-1.6. Comida = la primera versión (1-jun) con el total de cada comida a 12/800; sesión = su referencia RECENT con
-  16 px entre ejercicios. `[guardar imagen]` = 1080 de ancho × la altura real.
-- **Compartir un ejercicio** (`openExShare`): botón SVG junto al ✕ (44×44 sin crecer la línea) → capa sólida con el MISMO
-  `renderExercise` de solo lectura, misma x y ancho; 📷 a 10 px en el margen izquierdo de la serie grabada (es contenido,
-  no ícono de UI); tocar fuera cierra. Vistas `igual · grande · la serie` desde `shExModel`. La marca vive en memoria.
-- **Más acciones** (`.dots3`): tres puntos de 3 px con 3 px de aire, `--o50`, en 44×44; nunca el texto `···`.
-- **TRKTabs:** la rayita nueva aparece en su lugar sin transición; solo viaja cuando cambia la pestaña elegida.
-- **Sueño:** fases como DURACIONES (`ph` en minutos, `+ detalles`), campos numéricos a 16; el detalle gana `FASES`:
-  columnas apiladas bajo la x de cada fecha de la gráfica + 4 filas con etiqueta y valor escritos.
+### 7.18 Registro de motores `TRK*`
 
-La navegación (§7.10) ya cumple el patrón de [Bottom menu](https://21st.dev/community/components/yadwinder/bottom-menu/default)
-(activo que se ensancha con su etiqueta, sobre glass): sin cambio.
+§7.1–§7.17 dicen cómo se ve cada pieza; este registro dice **cómo se comporta**. Cada interacción transversal tiene UN
+componente, con una API. **Ninguna pantalla implementa su propia versión**: si falta algo, se agrega aquí primero
+(TRK-1). La referencia de comportamiento de 21st.dev solo se toma como idea (§19).
 
-#### 7.18.1 Vocabulario de feedback (TRKToast)
+| Componente | Función | API | Ficha |
+|---|---|---|---|
+| **TRKToast** | feedback de toda acción | `toast()`, `toastTask()` | §7.12 |
+| **TRKAsk** · **TRKHold** · **TRKPrompt** · **TRKWheel** · **TRKMenu** | decidir, confirmar, escribir, elegir | `trkAsk()`, `holdConfirm()`, `trkPrompt()`, `trkWheel()`, `trkMenu()` sobre `askLayer()` | §7.13 |
+| **TRKSelect** · **TRKPop** | elegir de un toque · explicar un término | `trkSelect()`, `openRirSelect()`, `trkPop()`, `GLOSS`, `popClose()` | §7.14 |
+| **TRKTabs** | cambiar de vista sin cambiar de pantalla | `.mdtabs[data-tk]` + `slideTabs()` | §7.3 |
+| **TRKRow** | la lista cambia sin saltos | `data-rk` con `rk()` (identidad en memoria, nunca se guarda) · `reRender()` = `flipCapture()` + `render()` + `flipPlay()` · `state._enter` = `{exi,si}`, `{ex,scroll}` o `{sel}` | §7.8, §10 |
+| **TRKBar** | barra que crece desde su valor anterior | `trkBarI()`, `trkMark()`, `animBars()` | §7.15 |
+| **TRKNum** | número que cuenta hasta su valor | `data-nk` (clave), `data-nv` (valor), `data-nd` (decimales) + `animNums()` | §10 |
+| **TRKTrend** | resumen de una serie antes de su gráfica | fila `.trow` con `lineChart(serie, {h, pad, noFill, noDots, margin, dates})` | §8 |
+| **TRKCal** | un mes (o una franja) de días con intensidad | `monthCalHTML(y, m, mark, {head, num})`, `stripCalHTML(n, mark)`, `histCalHTML()` | §8 |
+| **TRKLog** | registrar lo del día con una sola anatomía | `logSecHTML({k, title, v, act, body, open})`, `lfoldInit()` | §7.24 |
+| **TRKRing** | el anillo de macros | `ringHTML(pct, center, size, inv)` | §7.28 |
 
-`✓ <objeto> <acción>` en español y minúscula, una línea, sin punto final. Guardar: `✓ sesión guardada · 9 series`,
-`✓ sesión actualizada`, `✓ split actualizado`, `✓ ejercicio actualizado`, `✓ perfil del ejercicio guardado`,
-`✓ comida guardada`, `✓ metas guardadas`, `✓ peso guardado`, `✓ sueño guardado`, `✓ ajustes guardados`. Tareas
-(`toastTask`): `… sincronizando salud` → `✓ salud sincronizada · 12 días`; `… buscando producto` → `✓ encontrado` /
-`⚠ no está en OpenFoodFacts`. Errores de validación: `⚠ <qué falta>` (`⚠ pon un nombre`), nunca `alert()`.
+`afterPaint(root, swap)` (al final de `render()` y de `openModal()`) es **la única vía** para animar lo que `render()`
+reconstruye: cierra popovers y aplica TRKNum, TRKBar, TRKTabs y `applyEnter()` una sola vez (TRK-2).
+
+### 7.19 Compartir
+
+Decisiones del dueño (BRAND §9): comida = la primera versión (1-jun); sesión = su vista RECENT, "nada de héroes ni
+rejillas"; compartir es **vertical, a altura natural, nunca un cuadro que recorte**.
+
+- **Rol:** una historia de Instagram con lo que hizo o comió, en el lenguaje de la app.
+- **API:** `go('share')` con `state.shareType` → `renderShare()` / `renderShareSession()`; `summaryShell(top, body)` arma la
+  pantalla: barra de estado con atrás · `.sharecard` · marca `.shfoot` · `.shacts` con `[copiar texto]` (`shareTextFor()`,
+  mismo modelo) y `[guardar imagen]` (`shareImage()`).
+- **Sesión** (`shSessModel()` → `renderShareSession()`): `.shst` con el día en `.shsn` (`--t-display`/800), fecha · gym en
+  `.shsm` (`--t-label` `--o50`) y una línea `1h26 · 18 series · 7 ejercicios` en `.shsum` (`--t-data` `--o70`). Cuerpo: una
+  fila `.srw` por ejercicio: `#músculo` (`.srm`, solo cuando cambia) · nombre `.srn` 800 · series `shTokTxt()` →
+  `160lbs×8@0 / 160lbs×6@0` (`.srs1` en `--o50`, drop `↓` en `--o40`, separador `.srsep`). Entre ejercicios `--s5`,
+  interlineado 1.6. **Sin** tonelaje, T ni tarjeta.
+- **Comida** (`shFoodModel()` → `renderShare()`): rótulo centrado `.shcap` (`// resumen · 17 sep`) · `.shbanner` con el
+  anillo (`ringHTML`, kcal dentro) y P/C/F en `.shm-g` (`--t-display`) · `.shlog`: cada comida `.sgrp` con su cabecera `.sgh`
+  (`// tag` · `P C F` · total `--t-data`/800) y **todos** sus alimentos `.sitem` (cantidad corta en negrita · nombre `--o60`
+  · marca `.sb` · kcal). Los alimentos suman exacto el total de su comida y las comidas el anillo (`dayMealParts()`,
+  `kcalParts()`).
+- **Un ejercicio** (`openExShare()`): capa sólida `.exsh` (`--z-overlay`) con tres vistas en TRKTabs: `igual` (el mismo
+  `renderExercise()` de solo lectura, misma x y ancho), `grande` (`.exbr`, una serie por línea a `--t-section`) y `la serie`
+  (`.exov` a `--t-hero`, pregunta abierta §1). Tocar una serie le pone 📷 a su izquierda en el margen (`.camon`, a
+  `--t-label`; una a la vez, en memoria con `exCamSet()`, nunca toca `db`); tocar fuera cierra. Botón `.exshr` junto al ✕
+  con `EXSH_SVG`.
+- **Imagen:** `shareImage()` dibuja en un canvas de **1080 × la altura real** (con el margen negro de la página), texto nodo
+  por nodo con el avance exacto de la mono, sin librerías; se entrega por la hoja de compartir o, si no se puede, en un sheet
+  para mantener presionada. Nunca `<a download>`.
+- **Sí / No (SHR-1…4):** vertical y a altura natural; sin escalones, sin `+N`, sin bajar la letra; interlineado 1.5–1.6;
+  nada interactivo dentro de la tarjeta; ninguna tarjeta de números gigantes ("del pito"); ningún cuadro 1:1.
+- **Hoy → objetivo:** la marca `.shfoot` va toda en `--o35` (objetivo G3: marca única, §7.30); el botón `EXSH_SVG` usa
+  viewBox 16 y trazo 1.4 como el ícono de iOS (objetivo G3: ícono TRK "share"); 📷 es emoji (objetivo G3: ícono TRK
+  "camera", excepción `camera`); si el id no existe, compartir sesión muestra la última sin avisar (G2: `// esa sesión ya no
+  existe`); `[uni]`/`[bi]` en compartir es decisión menor pendiente. `renderShareWeight()` no tiene quien lo abra (G4).
+- **La revisa:** `_v257SelfCheck` · a ojo con capturas de las 44 sesiones reales.
+
+### 7.20 Modo enfoque
+
+- **Rol:** cómo se entrena: solo el ejercicio en curso se lee.
+- **Clase:** `.wline` (botón de 32 de alto: `.wtn` día `--t-section`/800 · `.wtm` `n/N sets · tiempo` `--t-label` · `.wtx`
+  glifo · `.wtb` barra de fondo `.wprog`) · el cuerpo va en `.wfocus`: `.ex.current` se lee; los demás `.ex` a .28 y sin
+  toque salvo para volverse el actual; se ocultan `.exsub`, `.setprogline`, `.addrow`, `.swipehint`, zonas, T y asa.
+- **Movimiento:** cambios instantáneos.
+- **Hoy → objetivo G2:** con la sesión completa todo queda al .28 y desaparece `[+ exercise]` (M2-02: estado
+  `// sesión completa · [+ exercise]`); decidir qué señales de honestidad se quedan en el modo (M2-10/M2-16).
+
+### 7.21 Rotación
+
+- **Clase:** `.rot` (`.lbl` `ROTATION`, `.n` `‹ day 2/4 ›` con `.arrow`) + `.segs` (un `<i class="seg">` por día de 4 de
+  alto; el elegido `.on` en `--fill`, los demás `--track`).
+- **Hoy → objetivo:** `.seg.past` no tiene estilo (M1-19, G4: hecho `--o40`, actual `--fill`, próximo `--track`); las
+  flechas miden 18×13 (`.u-hit`, G2).
+
+### 7.22 Línea de preparación
+
+- **Clase / API:** `readinessLineHTML()` → `.ready` (`--t-label` `--o50`: `recuperación <b>43</b> · sueño 6.2h (−1.8) · …`,
+  `.rk` en `--ls-caps`, `.rl` `--o35`); toca → `openReadiness()`. Debajo, `dayMusclesLineHTML()` (músculos del día y su
+  estado).
+- **Hoy → objetivo G3** (decisión del dueño 2026-09-21, BRAND §4): la hoja de detalle muestra la puntuación en `.mdval`
+  (`--t-hero`, "43 / 100"), que BRAND prohíbe ("puntuación única en tamaño héroe"). Objetivo: `recovery ~43` en una línea
+  `--t-data`/800, sin héroe ni color de veredicto; el desglose sigue en su hoja.
+
+### 7.23 //ESTÍMULO
+
+- **Clase / API:** `stimulusSection()` / `stimulusRows()` → filas `.stq` (`.stqh` con `.stqn` nombre y `.stqv` lectura
+  `--t-data`; `.vbar` con MEV/MRV; frase `.stqc` `--t-label` `--o70`).
+- **Regla (STQ-1):** **silencio = en rango**; una frase solo si hay algo que mover (`sobre MRV · ~2 series de más`, `bajo
+  MEV · le faltan ~3 series`, `lejos del fallo · RIR 4 de media`); color solo para frenar (`.stqc.bad`/`.warn`), nunca
+  verde. Es la regla que G3 extiende a toda la app. La revisa: `_v256SelfCheck` (nunca verde, orden).
+- **Hoy → objetivo G3:** el título pasa a `//STIMULUS` (§6.1).
+
+### 7.24 TRKLog: SUPPS · MEALS · WATER
+
+Decisión del dueño 2026-09-21: macros en orden **SUPPS → MEALS → WATER**, con esos nombres.
+
+- **API:** `logSecHTML({k, title, v, act, body, open})` para las tres; plegado en `state._lfold` (se fija una vez por día
+  visto con `lfoldInit()`); `suppSecHTML()`, `foodSecHTML()`, `waterSecHTML()`.
+- **Anatomía:** `.lsec` > `.lhd` de 44: botón `.lt` (`//TÍTULO` `--t-section`/800 · lectura `.lv` `--t-data` `--o40` con TRKNum
+  · `›` `.lx` que gira) + acción `.lact`. Cuerpo `.lbody`.
+- **SUPPS:** momentos en TRKTabs (`.lseg`, `AM 2/6 · PM …`) y rejilla de 2 columnas `.lcg` de celdas `.lc` (36 de alto;
+  tomado `.on` con ✓); `✓ AM` marca lo pendiente del momento. Un toque = tomado con su hora; marcar no mueve nada.
+- **MEALS:** una `.mrec` por comida: cabecera `.mhd` de 44 (`.mtg` con `.mchev` y el nombre `.mnm` 16/800 + meta `.mmeta`
+  `hora · P C F`; total `.mkc` 16/800 que abre el desglose; `.gmore` con `.dots3` → `openMealMenu()`); alimentos `.mit` de 36
+  (`--t-data`, cantidad en negrita, kcal `--o50`); `+ food` al final.
+- **WATER:** chips de vaso `.lc` (quitar = toast con `[deshacer]`); `+ water` abre la elección de cantidad.
+- **Hoy → objetivo:** las filas tocables miden 36 (M4-07, G2: 44); vacíos en inglés (`no meals logged`, G3); el ✓ de
+  tomado va en `--good` (G3).
+
+### 7.25 Stack (suplementos, administración)
+
+- **Hoy:** `renderStack()` con TRKTabs HOY/TODOS y bloques `<details class="stk-blk">` por momento (todos abiertos); cada
+  toma es una `.line` con utilidades y dos ✓ con significados distintos, `~` para "tarde" y `ⓘ` (M6-15/16).
+- **Objetivo G4:** fila de checklist propia (línea 1 `[✓] minoxidil 5%`, línea 2 tenue `1 ml · AM · 08:12 · skin`), un solo ✓,
+  la marca de "tarde" como palabra. Los botones del stack salen hoy nativos (T-01, G2).
+
+### 7.26 Editores de entidad
+
+- **Hoy:** cada entidad tiene su sheet de edición: `openExEdit()` (ejercicio), `openExProfile()` (perfil y músculos del
+  motor, con lo sugerido punteado `.pftog.sug`), `openStackEdit()` (suplemento), `openGoals()` (metas), `openSleepLog()`
+  (sueño), el editor de máquina y el perfil de ajustes. Todos usan la familia formulario (§7.2), `.toggles` y `.sheetbtns`.
+- **Regla (ENT-1):** un editor = un sheet con `h3` · campos en el orden en que se piensan · lo sugerido punteado hasta que lo
+  toques · un primario (`guardar`) · lo destructivo al final y separado (TRKHold si es irreversible) · toast al guardar.
+- **Objetivo G2/G4:** los botones sueltos sin rol (T-01), `style=""` que quedan (`openStackEdit` 9, `openExEdit` 8), textos
+  de instrucción fijos al glosario.
+
+### 7.27 Renombrar en línea
+
+- **Clase:** `.senm` (nombre del día en el editor de split: campo transparente con línea inferior `--border`,
+  `--t-section`/800). Las comidas se renombran desde su menú.
+- **Regla:** a `--t-section` (anti-zoom); nunca cambia la etiqueta del dueño salvo que él la escriba.
+
+### 7.28 TRKRing (anillo de macros)
+
+Decisión del dueño 2026-09-21: **el anillo de kcal se queda** (única gráfica circular de la app, solo en macros y en
+compartir comida; excepción `ring`).
+- **API:** `ringHTML(pct, center, size, inv)` → `.ring` (`.lg` 132 con trazo 1.4 y número `--t-display`/800; `.md` 72 con
+  trazo 1.8 y número `--t-section`/800); `.ring-track` `--track`, `.ring-fill` `--fill`; estado `.good`/`.over` en el arco.
+  El número central cuenta con TRKNum.
+- **Hoy:** dentro de una `.card` de 16 (`.hero`), con brillo (`drop-shadow` con `--good-glow`/`--bad-glow`) que se corta en
+  cuadrado y un punto dibujado al 0 %.
+- **Objetivo G3** (BRAND §4): sin tarjeta de 16 ni brillo; panel de lectura plano o de vidrio sutil (se elige en G0); color
+  solo en el arco y en `left/over`.
+
+### 7.29 `.u-hit` (pendiente G2)
+
+- **Rol:** que todo control de texto o glifo tenga 44×44 de toque sin crecer visualmente (B-11, T-03).
+- **Anatomía propuesta:** `position:relative` + un `::after` absoluto centrado de 44×44. Obligatoria en `[verbo]`, flechas
+  del día, `[share]`/`[goals]`, el ✕ de ejercicio, celdas de racha, filas del editor de split y ajustes.
+- **Hoy:** el patrón existe suelto (`.sgoal::after`, `.lact::after`, `.restbar a::after`, `.hcnav::after`,
+  `.toast .tundo::after`); `.u-tap` solo pone el cursor. ~600 toques bajo 44 medidos.
+- **La revisa:** `_dsRenderCheck` hit (R-HIT).
+
+### 7.30 Marca gym//TRK
+
+- **Regla (BRAND §3):** `gym` y `TRK` en `--fg`/800, `//` en `--o40`, sin tracking; 22 en pantalla, 16 en overlays y pie de
+  compartir, 34 solo en el landing. Una sola variante.
+- **Hoy hay seis:** landing `--t-hero` con `//` `--o40` y cursor `.cur`; login y onboarding `--t-display` con `//` `--o50`;
+  pie de compartir `.shfoot` todo en `--o35`; arranque `.bootov .bt` al revés (`gym` tenue); wrap `.ws-kick` y `.ws-cardf`.
+- **Objetivo G3:** una clase `.mark` (pendiente G3) con sus tres tamaños por contexto.
+
+### 7.31 Íconos TRK
+
+- **Hoy:** `NAVIC` (progress, gym, macros; y stack/agenda sin uso): SVG de línea, viewBox 24, trazo 1.6, puntas
+  redondeadas, `currentColor`. `EXSH_SVG` (compartir un ejercicio): viewBox 16, trazo 1.4. Escáner y cámara: sin ícono
+  propio (📷 emoji).
+- **Objetivo G3** (decisión del dueño 2026-09-21, BRAND §4 y B-08): set propio — rejilla 24, trazo 1.6, **remates
+  cuadrados**, geometría ortogonal de consola, `currentColor`, variante sobre chip de vidrio para el chrome. Piezas: share,
+  camera, las 3 de la nav y el escáner. Se dibujan en una lámina (G0) y el dueño las aprueba; un ícono nuevo necesita su
+  aprobación.
+- Orden de preferencia (B-08): palabra > glifo del set (§11) > ícono TRK. Emoji de interfaz: 0.
+
+### 7.32 Overlays
+
+| Overlay | API | Hoy | Objetivo |
+|---|---|---|---|
+| **Arranque** | `bootScreen()` → `showOverlay(html, {ms:1300, shader:true})`; una vez por apertura (`sessionStorage`), con usuario y ≥1 sesión; tocar cierra | `.bootov` a pantalla completa; `startShader()` (WebGL, el shader de marca) de fondo al .5; líneas `.line` de estado; `[ready]` parpadeando (`.bready`); ▲▼ de `weekly vol` en verde/rojo | G3 (BRAND §4): shader con encuadre correcto (hoy se ve comprimido), apagado con reduced-motion y en segundo plano; líneas que se imprimen una a una; marca única; sin color de veredicto |
+| **Recap de las 21 h** | `snapRecap()` → `showOverlay(…, {ms:5000})`; una vez al día (`?recap=1` lo fuerza) | `//HOY · fecha` + líneas con `--good`/`--bad`; `[tap para cerrar]` | G4: evaluar (capa bloqueante cada noche) |
+| **Wrap mensual** | `wrapMonthData()` + diapositivas `.wstage` | números de 60 y 44 exentos, `.ws-card` de 16, "captura para compartir" | G4: es el formato de números grandes que el dueño rechazó ("del pito") |
+| **Escáner** | `openBarcode()` → `.scan-reticle` | marco `.frame2` de 2 con velo, línea que barre (`scanmove`), fijado en verde con rebote y ✓ de 40 | G4: idioma de botones (`look up` / `capturar` / `cancel`), rol de `capturar`, verde |
+| **Compartir un ejercicio** | `openExShare()` → `.exsh` | §7.19 | §7.19 |
 
 ---
 
-## 8. Gráficas (instrumentación, no infografía)
+## 8. Gráficas
 
-**Por módulo:** anillos radiales y radar **solo en macros** (P/C/F, composición). Todo lo demás: línea, barra, calendario
-o texto.
+Instrumentación, no infografía (B-02: la gráfica existe solo cuando el texto no alcanza). Una lectura por dato por pantalla.
 
-**Línea (`lineChart`, v227):**
-1. **Sin dato = hueco.** La línea se corta; nunca un 0 en el piso (0 real solo donde existe: auto-percepción, semanas
-   de volumen). Un día aislado conserva su punto.
-2. Trazo `--o60` 1.4 en tiles · `--fill` 1.8 en detalle; `vector-effect: non-scaling-stroke`; puntos como trazos de
-   largo cero (círculos perfectos a cualquier ancho); gradiente con id propio.
-3. **Detalle:** banda del **rango normal propio** (p15–p85 de sus 90 días previos) en `--o10` · promedio punteado con
-   pastilla · último punto con halo · 3 etiquetas Y a la derecha · 4 fechas abajo · etiquetas en HTML sobre el SVG.
-4. **Acentos solo en el estado** ("en rango / sobre / bajo"), nunca en la línea.
-5. Periodos 7D·15D·30D·3M·6M·1A + ▦ custom + ‹ › paginar · gestos: mantener y deslizar (scrub), pellizco ↔ (periodo),
-   ↕ (zoom Y), doble toque (normal).
-6. Tendencias 3·7·14·30·90 días: flecha acentuada solo si el cambio supera ~1 error estándar; mini-sparkline de la
-   media móvil 7 d.
+| Gráfica | API / clase | Dónde | Reglas | Vacía |
+|---|---|---|---|---|
+| **Línea** | `lineChart(vals, opt)`, `chartNums()` | tiles de Progress, detalle de métrica | ver abajo | "sin registros en este rango" |
+| **Sparkline** (TRKTrend) | `.trow .trsp` + `lineChart` a 22 de alto sin relleno ni puntos | //FUERZA, //RECORDS | mismo eje de 30 días en todas las filas; sin línea con <2 sesiones | la fila sin línea |
+| **Barra fina** (TRKBar) | `.bar`, `.vbar`, `.wprog` | ingesta, //ESTÍMULO, //MÚSCULOS, progreso de sesión, detalle de músculo | §7.15 | la pista sola |
+| **Columnas apiladas** | `.slfc` (FASES del sueño) | detalle de sueño | una columna por noche bajo la x de su fecha (mismo margen de eje que la línea), profundo abajo; 4 filas con etiqueta y valor escritos (`.slfr`) | sin columna |
+| **Hipnograma** | `hypnoHTML()` → `.hypno` | registro de sueño | escala de opacidad: profundo `--fg` · core `--o50` · REM `--o30` · despierto `--o12` · sin clasificar `--track`; lo no clasificado se ve, no se reparte | no se dibuja |
+| **Anillo** (TRKRing) | `ringHTML()` | macros, compartir comida | §7.28; excepción `ring` | anillo vacío (hoy con punto al 0 %: G3) |
+| **Radar** | `dayRadar()` → `.macro-rad`, `.msum-rad` | macros (detalle), desglose de comida | etiquetas SVG a `font-size="7.5"` (≈5.9 reales): objetivo G2 etiquetas HTML a 10 o quitarlo (decisión del dueño) | — |
+| **Calendario** (TRKCal) | `monthCalHTML()`, `stripCalHTML()` (racha en franja `.strk-row`), `histCalHTML()` (`.hcal`) | racha, historial | un solo blanco en opacidad (`--track` · `--o30` · `--fg`); celda cuadrada `--r-mark`; hoy con contorno `--o40`; **lunes primero** (`L M X J V S D`); sin leyenda; tocar un día lleva a ese día | días vacíos |
+| **FC** | `hrChartSVG()` → `.hrsvg` | hoja de sesión | 56 de alto, `--o60`, marca por serie | no se dibuja |
+| **Medidor de celdas** ▮▯ | — | — | primitivo de BRAND §5; hoy no existe | — |
 
-**Calendario de racha:** dos meses, una pastilla (`--r-mark`) por día: vacío `--track`, un registro `--o60`, ambos
-`--good` (el único acento), hoy con contorno; toque abre el día. **Barras de volumen:** 3 px con MEV/MRV.
+**Línea (GRA-1…6):**
+1. **Sin dato = hueco.** La línea se corta; nunca un 0 en el piso (`chartNums()` con `gap0` en las métricas diarias donde 0 =
+   no registraste). Un día aislado conserva su punto. El 0 real solo donde existe (auto-percepción, semanas de volumen).
+2. Trazo `--o60` 1.4 en tiles · `--fill` 1.8 en detalle; `vector-effect: non-scaling-stroke`; puntos como trazos de largo
+   cero; cada gradiente con id propio.
+3. **Detalle:** el rango normal propio (`normalBandFixed()`, p15–p85 de 90 días, un solo par por periodo) son **dos líneas
+   de referencia** de .5 en `--o30`, sin relleno; sin 7 días de historia dice `sin normal · N/7 d`. Promedio punteado (sin
+   pastilla dentro de la gráfica: el encabezado ya lo dice); último punto con halo; 3 etiquetas Y a la derecha y 4 fechas
+   abajo, en HTML sobre el SVG.
+4. **Acento solo en el estado** ("en rango / sobre / bajo lo normal"), nunca en la línea.
+5. Periodos `7D · 15D · 30D · 3M · 6M · 1A` + ▦ rango propio + `‹ ›` para paginar (`mdPage()`). Gestos: mantener y
+   deslizar (scrub), pellizco ↔ (periodo), ↕ (zoom vertical), doble toque (normal). `touch-action:none` solo sobre la
+   gráfica.
+6. Tendencias 3·7·14·30·90 días (`trendRows()`): flecha acentuada solo si el cambio supera ~1 error estándar; sparkline de
+   la media móvil de 7 días.
 
-**No:** gradientes en detalle, pasteles, barras gigantes redondeadas, glow, arcoíris, ejes cargados, etiquetas en cada
-punto, la escala de colores de Bevel.
+**Trazos SVG (GRA-7):** dato 1.4 (tiles, anillo grande, radar, FC) · 1.8 (detalle, anillos chicos) · referencia 1 · rejilla
+.5; íconos 1.6. La revisa: R-SVGFS.
 
-## 9. Lenguaje de honestidad (propio de gym//TRK)
+**No:** gradientes en el detalle, pasteles, barras gigantes redondeadas, brillo, arcoíris, ejes cargados, etiquetas en cada
+punto, escalas de color de otras apps, 0 falso. `miniBars()` convierte huecos en 0 y nadie lo llama (G4).
+
+---
+
+## 9. Honestidad y gramática de datos
+
+### 9.1 Señales de honestidad
 
 | Señal | Significa | Dónde |
 |---|---|---|
-| `~` antes/después de un dato | estimado o deducido | tensión con RIR supuesto, perfil sugerido, % con baja confianza |
-| borde punteado | sugerido, falta que lo confirmes | toggles de perfil, `.pftog.sug` |
-| gris 45 % (`.pf`) | prefill de la sesión anterior, no cuenta hasta confirmarlo | tabla de sesión |
+| `~` antes o después de un dato | estimado o deducido | tensión con RIR supuesto, perfil sugerido, % de baja confianza |
+| borde punteado | sugerido, falta que lo confirmes | `.pftog.sug`, deriva del split |
+| gris .45 (`.pf`) | prefill de la sesión anterior; no cuenta hasta confirmarlo | tabla de sesión |
 | hueco en la línea | no hay dato ese día | gráficas |
-| "sin baseline" / "sin guía" / "sin definir" | no hay con qué comparar / no hay evidencia | progreso, landmarks, perfiles |
+| "sin baseline" · "sin guía" · "sin definir" · `sin normal · N/7 d` | no hay con qué comparar o no hay evidencia | progreso, landmarks, perfiles, detalle |
 | "estimado" vs "observado" | literatura ajustada vs su propio historial | recuperación por músculo |
 | "correlación, no causa" | descriptivo, no diagnóstico | //RENDIMIENTO, causas de un ▼ |
 | lecturas separadas | nunca una puntuación única | //MÚSCULOS: volumen · estímulo · fatiga · recuperación |
-| hallazgo con su evidencia | una sugerencia existe solo si hay números que la respaldan, y se muestran | DIAGNÓSTICO por músculo (§7.16) |
+| hallazgo con su evidencia | una sugerencia existe solo si hay números que la respaldan, y se muestran | §7.16 |
+| `—` | sin dato | cualquier lectura |
 
-### 9.1 Qué texto se queda (UX-2)
+- HON-1: las puntuaciones existen solo en **versión mínima** (decisión del dueño 2026-09-21): `recovery ~43` en una línea y
+  `~ retention 62 · Na:K 2.1 →` como fila de diagnóstico que solo aparece fuera de rango. Hoy "water retention" es una fila
+  de ingesta con barra N/100, veredicto de color y consejos en modo orden (`bloating()`), y la recuperación sale en héroe:
+  objetivo G3.
+- HON-2: la comida aproximada guarda micronutrientes como 0 reales y no lleva `~` (falsea el Na:K): objetivo G2 (`null` y `~`).
+- HON-3: "mantenimiento real" es una estimación: objetivo G4 `~mantenimiento` + confianza.
+
+### 9.2 Qué texto se queda
 
 *Estado sí · instrucción no · definición al glosario.*
 
 | Tipo | Ejemplo | Regla |
 |---|---|---|
 | **Estado** | "sin baseline", "4/14 d", "hoy: comida + gym ✓", "sin clasificar 42 m" | se queda: es dato |
-| **Instrucción de gesto** | "mantén y desliza… pellizca ↔… doble toque" | **fuera**: el gesto se descubre tocando (NN/g: los *coach marks* fallan por saturación) |
-| **Pista de una vez** | "desliza una serie → para borrarla" | una sola vez por dispositivo (`localStorage`), nunca en cada render |
-| **Definición** | "MEV/MAV/MRV", "correlación, no causa", "estimado vs observado" | al glosario `data-gloss` (§7.18 TRKPop), que ya existe; no se imprime como párrafo fijo |
-| **Regla del sistema** | "solo se corta el día en que no registras ni comida ni gym" | al glosario; en pantalla queda solo el estado |
+| **Instrucción de gesto** | "mantén y desliza… pellizca ↔… doble toque" | **fuera**: el gesto se descubre tocando |
+| **Pista de una vez** | "desliza una serie → para borrarla" | una sola vez por dispositivo (`hintSeen()`/`hintMark()`), nunca en cada render |
+| **Definición** | "MEV/MAV/MRV", "correlación, no causa", "estimado vs observado" | al glosario `data-gloss` |
+| **Regla del sistema** | "solo se corta el día en que no registras ni comida ni gym" | al glosario; en pantalla, solo el estado |
 
-Ninguna idea se dice dos veces en la misma pantalla, ni la misma idea en cuatro pantallas con cuatro redacciones.
+### 9.3 Gramática de series, números y fechas
+
+Una forma de escribir cada tipo de dato, con su función (NUM-1). La revisa: a ojo · self-checks.
+
+| Dato | Forma | Función hoy | Estado |
+|---|---|---|---|
+| Serie (línea de registro) | `160lbs×8@0 / 160lbs×6@0` · drop `↓60lbs×9@0` · lado `R 70kg×10@2` | `shTokTxt()` desde `shExModel()` | en compartir; **objetivo G2**: historial y vista previa también (hoy `shareExLines()` escribe `60×11 RIR2 · ↓35×8 RIR0 58%`, M3-04) |
+| Conteo de series | `18 series` (series de trabajo; drops aparte; par R+L = 1) | `shExModel()` cuenta así; otras listas cuentan distinto (21 vs 18, M3-05) | `seriesOf()` (pendiente G2) |
+| Número de serie | `1, 1.5, 2, 3` (drop = .5, cadena .6/.7) | `setLabels()` | ✓ |
+| Lateralidad | `[uni]`/`[bi]` al frente, misma fuente que el nombre; nunca la unidad | `latTxt()`, `exLatTagHead()` | ✓ (B-12) |
+| Tipo de ejercicio | una sola forma (`[libre] [máquina] [smith] [cable] [bw]`, propuesta de la auditoría) | hoy 5 formas (`máquina`, `mach`, `pulley`, `machine`, `free`) en `variantChips()` y otros | `typeTag()` (pendiente G2) |
+| Carga | `effW()` (peso corporal vivo); `numTxt()` (hasta 2 decimales); `roundLoad()` (kg 2.5 · lbs 5 · pla 1); `kgLoad()` (lbs→kg, placas fuera) | ✓ | e1RM en lbs etiquetado "kg" a mano (M5-04): G2 |
+| Lectura suelta | `59.8 kg`: número `--fg`, unidad separada y tenue (`.line .v .u`, `.pval span`) | ✓ | |
+| Miles | `2,405` | `toLocaleString()` | ✓ |
+| Cambio | `▲ +3%` / `▼ −4%` con signo menos real (−) | badges de progreso | revisar que ningún cambio use `-` (G4) |
+| Macros | `48P 71C 4F` · kcal `2,178 / 2,405` | TRKLog, compartir | ✓ |
+| Hora | `09:13` | `nowHM()` | ✓ |
+| Duración | `1h26` · `42 min` · descanso `1:30` | `shSessModel()`, `elapsedStr()`, `fmtRest()` | ✓ |
+| Fecha | `17 sep` · con año `17 sep 2026` · cabecera `sep 2026 · 10` | `fmtShort()`, `fmtDate()` | ✓ |
+| Estimado | `~43` | — | ✓ |
+| Sin dato | `—` | — | ✓ |
+
+Decimales solo cuando informan: kg 1, porcentajes 0–1, series 1. Unidades por dominio: peso corporal en kg; cargas en la
+unidad de cada ejercicio (`exDisplayUnit()`); la unidad se ve en el `<select>` de cada serie y en compartir.
+
+---
 
 ## 10. Movimiento
 
-Anima **cambios de estado**: navegación entre pantallas (fade 140 ms), sheets (280 ms), filas que entran/salen
-(180 ms), pestañas (180 ms), barras que crecen (180 ms), confirmación ✓ (120 ms con el único overshoot permitido),
-números que cambian (280 ms). **Nunca** en re-renders de la misma pantalla (cada tecla re-renderiza).
-**No:** rebote, elástico, parallax, animaciones infinitas decorativas, "que se sienta premium". Pressed: opacidad o
-`scale(.98)`. `prefers-reduced-motion` reduce todo a 0.01 ms y apaga los conteos.
+**Firma (B-09): el contenido imprime, el chrome se desliza.** El contenido cambia al instante o con opacidad + ≤4 (`--mv-1`
+(pendiente G2)). Solo el chrome (nav, sheet, toast, popover) se mueve como vidrio. **Un movimiento visible por toque.**
+Reduced-motion = instantáneo.
 
-**Cómo se implementa (DS-5, v236)** — como `render()` rehace el DOM, lo que anima se marca ANTES de pintar y
-`afterPaint(root, swap)` (al final de `render()` y de `openModal`) lo aplica una sola vez:
-- **Lo que se agregó entra** (`rowin`: 4 px + opacidad, `--dur-2`): el handler pone `state._enter` = `{exi, si}` (+ serie,
-  ↓ drop, en vivo y en historial) o `{ex, scroll}` (+ ejercicio, que además queda a la vista sin saltar al inicio).
-- **El ✓ confirma** (`chkpop`, `--dur-1`, overshoot 1.18): `state._pop` = `{exi, si}` en el handler de `done`.
-- **Lo que se borra sale:** deslizar ≥76 px lleva la fila a la derecha y la desvanece (`--dur-2` `--ease-in`) y
-  entonces se borra; si el borrado se cancela, vuelve.
-- **Números que cuentan:** `data-nk` (clave) + `data-nv` (valor) (+ `data-nd` decimales) en el elemento que solo tiene el
-  número; si esa clave ya estaba en pantalla con otro valor, cuenta del anterior al nuevo con el mismo formato
-  (`toLocaleString`). Hoy: kcal del anillo, anillos P/C/F (la clave incluye el modo g/%/restante, así que cambiar de
-  modo no cuenta) y la racha.
-- **Pestañas de periodo** (`.mdtabs`, clave `data-tk`): un indicador `.tabind` que se desliza cuando el sheet se re-abre
-  encima de sí mismo (cambio de periodo); al abrir, aparece en su sitio.
+- MOV-1: se anima solo un **cambio de estado**: nunca un re-render de la misma pantalla (cada tecla re-renderiza). Lo que
+  `render()` reconstruye se anima solo por `afterPaint()` (§7.18). La revisa: R-MOTION.
+- MOV-2: solo `transform` y `opacity`. Nada de animar `width`, `height`, `top`, `left`, `padding`, `gap` ni `grid-*`.
+- MOV-3: `transition` solo en nodos que **persisten** entre renders (en un nodo que `render()` rehace, nunca se ve: X1-09).
+- MOV-4: los bucles son solo funcionales, en `steps()` o lineales, con id `loop` y `animation:none` con reduced-motion.
+- MOV-5: sin rebote, elástico, parallax, animaciones infinitas decorativas ni "que se sienta premium". Presionado:
+  opacidad o `scale(.98)`.
+- MOV-6: con reduced-motion todo es instantáneo y los bucles se vuelven un glifo quieto. Hoy la regla global
+  (`*{transition-duration:.01ms; animation-duration:.01ms}`) deja bucles que pueden parpadear y los `scrollIntoView` suaves
+  no la miran (X1-03): objetivo G2 con `smoothOr()` (pendiente G2) y `animation:none` en cada bucle.
 
-## 11. Íconos y glifos
+### 10.1 Registro de movimiento (todo lo que se mueve en v257)
 
-- **SVG** de línea, viewBox 24, trazo **1.6**, puntas redondas, `currentColor`. Una sola familia (sin mezclar relleno,
-  3D o redondeados). Las barras gruesas del ícono de código de barras son dibujo (ancho de barra), no grosor de trazo.
-- **Trazos de gráfica** (cuatro valores, nada más): **dato** 1.4 en tiles, anillo grande, radar y FC · 1.8 en detalle
-  y anillos chicos · **referencia** 1 (promedio punteado) · **rejilla** .5 (radar, cruz central).
-- **Vocabulario de glifos** (fijo): ✓ hecho · ○ pendiente · ▲▼ progreso · ⬆⬇↔ perfil de resistencia · › entra a
-  detalle · ↓ drop · ✕ quitar · ▾ desplegar · ⠿ arrastrar · ▦ rango custom · ~ estimado · ▌ cursor · ⚠ aviso.
-- **Emoji pictográficos no** (DS-3: 🗑 borrar → `✕ borrar` · 🔒 → `[fijar]`/`[fijo]` · 📸 fuera). Sus etiquetas con
-  emoji ("puh🥀") se respetan: son suyas.
+Leyenda de la última columna: ✓ cumple B-09 · ⚠ a revisar con el dueño · ✗ se corrige (fase).
 
-## 12. Estados de interacción
+**Animaciones CSS (`@keyframes`)**
 
-default · pressed (opacidad/escala .98) · focused (contorno `--o50`, visible) · selected (relleno o contraste) ·
-disabled (opacidad .4, misma estructura) · success/error (semántico + texto). Un componente **no** cambia de estética
-por estado: cambian opacidad, superficie, borde o color, nada más. En móvil no hay hover; en escritorio es sutil.
+| Animación | Disparador | Propiedad | Duración | Easing | Propósito | Reduced-motion hoy | B-09 |
+|---|---|---|---|---|---|---|---|
+| `viewin` (`.fadein`) | `go()` cambia de pantalla | opacity .4→1 · translateY 4→0 | `--dur-screen` | `--ease-out` | continuidad de pantalla | .01ms (global) | ✓ |
+| `rowin` (`.enter`, `.tsel`, `.gloss`) | lo agregado (`state._enter` → `applyEnter()`); abrir un popover | opacity 0→1 · translateY −4→0 | `--dur-2` | `--ease-out` | "esto es nuevo" | `applyEnter()` no corre; popovers .01ms | ✓ |
+| `chkpop` (`.dchk.pop`, `.pairdone.pop`) | ✓ de una serie (`state._pop`) | scale .6→1.18→1 | `--dur-1` | `--ease-out` | confirmación | no corre | ⚠ único rebote del contenido (§1) |
+| `mdslide` (`.mdmeal`) | **cada render** con el detalle de comida abierto | opacity · translateY −4 | `--dur-2` | `--ease-out` | abrir detalle | .01ms | ✗ G2: solo al abrir, vía `state._enter` (X1-02) |
+| `sheetin` / `sheetout` (`.modal.in .sheet`, `.modal.out .sheet`) | `openModal()` desde cero / `closeModal()` / capa de decisión | translateY −100%↔0 | entrada `--dur-3`, salida `--dur-2` | `--ease-out` / `--ease-in` | el chrome baja y sube | .01ms; `askLayer()` no pone `.in` | ✓ chrome |
+| `scrimin` / `scrimout` (`.modal.in`, `.modal.out`) | idem | background-color | `--dur-2` | `--ease-out` / `--ease-in` | el fondo se oscurece | .01ms | ✓ chrome |
+| `toastin` / `toastout` (`.toast`, `.toast.out`) | `toast()` / cierre | opacity · translateY 10 / 8 | `--dur-3` | `--ease-out` / `--ease-in` | el aviso llega y se va | .01ms | ✓ chrome (revisar con `--mv-1` en G3) |
+| `restdone` (`.restbar.fin`) | fin del descanso | border-top-color → `--good` | .5s × 3 (`loop`) | ease | aviso | .01ms | ✓ excepción `loop` |
+| `blink` (`.cur::after`) | landing | opacity en pasos | 1.15s infinito (`loop`) | `step-end` | cursor ▌ | `animation:none` | ✓ |
+| `blink` (`.bootov .bready`, `.wnav`) | arranque, wrap | opacity en pasos | 1.15s / 1.5s infinito | `step-end` | "listo" / "toca" | .01ms infinito (puede parpadear) | ✗ G2: `animation:none` |
+| `spin` (`.spin`, `.fa-spin`) | cargas (OpenFoodFacts, IA, OCR) | rotate 360 | .7s infinito (`loop`) | linear | cargando | .01ms infinito | ✗ G2 `animation:none`; G4 spinner de texto |
+| `scanmove` (`.scan-reticle .scl`) | escáner buscando | `top` 30%↔70% | 2s infinito | ease-in-out | "buscando" | `animation:none`, línea al centro | ⚠ anima `top` (excepción `scanner`) |
+| `bcpop` (`.scan-reticle.hit .frame2`) | código detectado | scale 1→1.06→1 | `--dur-3` | `cubic-bezier(.2,1.3,.4,1)` literal | fijado | .01ms | ✗ G4: rebote fuera de lista, easing literal |
+| `bcchk` (`.scan-reticle.hit .chk`) | código detectado | opacity · scale .4→1.15→1 | `--dur-3` | `--ease-out` | ✓ grande | .01ms | ✗ G4: rebote |
+| `wsin` (`.wstage`) | cada diapositiva del wrap | opacity · translateY 10 | `--dur-3` | `--ease-out` | pasar diapositiva | .01ms | ✗ G4 (10 > 4; el wrap es el formato rechazado) |
+| `faPop` / `faFade` | ninguno (CSS muerto desde U2) | — | — | — | — | — | G4: borrar |
 
-## 13. Accesibilidad
+**Transiciones CSS**
 
-Zona táctil ≥44 px en todo lo tocable (acciones de texto con padding + margen negativo) · contraste suficiente
-(texto de lectura ≥ `--o40`) · nunca solo rojo/verde · foco visible · `aria-live` para toasts · inputs 16 px ·
-`prefers-reduced-motion` y `prefers-reduced-transparency` respetados · gestos siempre con alternativa visible
-(deslizar para borrar tiene su pista).
+| Qué | Disparador | Propiedad | Duración | Easing | Reduced-motion | B-09 |
+|---|---|---|---|---|---|---|
+| `.nav a`, `.nav a .lbl` | cambia la pestaña activa (nodos persistentes) | gap · padding · `grid-template-columns` · background · color · opacity | `--dur-3` / `--dur-2` | `--ease-out` | .01ms | ✗ G3: anima layout; la nav nueva no lo hace |
+| `.mdtabs .tabind` (TRKTabs) | `slideTabs()` al cambiar de pestaña | transform · width | `--dur-2` | `--ease-out` | no se anima | ⚠ anima `width` del indicador |
+| `.ring-track`, `.ring-fill` | cambia el valor del anillo | stroke · stroke-dasharray · stroke-dashoffset | `--dur-3` | `--ease-out` | .01ms | ✗ G4: el nodo se rehace, no se ve (el número sí cuenta) |
+| `.chev`, `.hrow .hchev`, `.lt .lx`, `.mchev` | abrir / plegar | rotate 90° o 180° | `--dur-2` | `--ease-out` | .01ms | ✗ G4: nodo rehecho; objetivo cambio de glifo `›` ↔ `▾` instantáneo |
+| `.cell .sub`, `.cell .cap` | cambia el estado del anillo | color | `--dur-2` | ease | .01ms | ✗ G4: nodo rehecho |
+| `.ptile.tap` | presionar una tile | transform scale .98 · opacity .85 | `--dur-1` | `--ease-out` | .01ms | ✓ (las tiles salen en G3) |
+| `.bootov` / `.bootov.out` | cerrar un overlay (toque o tiempo) | opacity | `--dur-2` | `--ease-out` | .01ms | ✓ |
+| View Transition catálogo → perfil (`::view-transition-group(exname)`, root) | tocar el nombre en el catálogo | morph del nombre al título · fundido | `--dur-3` / `--dur-2` | `--ease-out` | no se usa con `reducedMotion()` | ⚠ contenido que viaja |
+
+**Motores en JS**
+
+| Motor | Disparador | Qué mueve | Duración / easing | Reduced-motion | B-09 |
+|---|---|---|---|---|---|
+| TRKNum `animNums()` | un `data-nk` ya pintado cambia de valor | el texto cuenta hasta su valor | `--dur-3` · ease-out cúbica en JS | no cuenta | ✓ (claves sin fecha en macros: al cambiar de día cuenta desde el día anterior, X1-08 → G2 `kcal:<iso>`) |
+| TRKBar `animBars()` | un `data-bk` ya pintado cambia de ancho | width (`el.animate`) | `--dur-2` · easing de `--ease-out` escrito literal | no anima | ⚠ anima `width` (§1) |
+| TRKTabs `slideTabs()` | cambia la pestaña elegida | ver transiciones | — | — | — |
+| TRKRow `flipCapture()` / `flipPlay()` vía `reRender()` | agregar, borrar o reordenar filas | translateY Δ→0 (`el.animate`) | `--dur-2` · easing literal = `--ease-out` | no anima | ⚠ contenido que se mueve más de 4 (§1) |
+| `applyEnter()` | `state._enter` / `state._pop` | clases `.enter` y `.pop`; con `{scroll}` hace `scrollIntoView` suave | — | no corre | ✓ |
+| Deslizar para borrar | arrastre horizontal ≥9 en una fila `data-swipe` | translateX sigue al dedo (máx. 140), opacity ≥.3; al soltar ≥76: sale a translateX 60% y opacity 0 y se borra; <76: vuelve | `--dur-2` · `--ease-in` / `--ease-out` (en línea) | la salida es instantánea | ✓ sigue al dedo |
+| Arrastrar para reordenar | mantener el asa `.dgrip` | `.dragghost` sigue al dedo; origen `.dragsrc` a .3; marca de 2 `--fill` donde cae; al soltar, TRKRow | directo | — | ✓ |
+| TRKHold `holdConfirm()` | mantener el botón | `.hold-fill` scaleX 0→1 + texto "armando N%" | 900 · linear | **no mira la preferencia** (es un temporizador) | ✓ temporizador |
+| Sheets `openModal()` / `closeModal()`; capa `askLayer()` / `closeAsk()` | abrir / cerrar | clases `.in` / `.out`; el fantasma se borra a los 200 | — | `askLayer()` no anima | ✓ chrome |
+| Toasts `toast()` | aviso | clase `.out` a los `--toast-life` / `--toast-life-err`; se borra a `--dur-3` | — | .01ms | ✓ chrome |
+| Arranque `bootScreen()` + `startShader()` | abrir la app | lienzo WebGL en bucle `requestAnimationFrame` (1300 y fuera) | 1300 | **no se apaga** con reduced-motion ni en segundo plano (T-11) | ✗ G3 (BRAND §4) |
+| Recap `snapRecap()` | primera apertura después de las 21 h | overlay 5000 | 5000 | .01ms | G4 |
+| Escáner | `startScan()` | bucle de decodificación (~360), pausa de 430 tras fijar, vibración 55 | — | la línea se detiene | ⚠ excepción `scanner` |
+| Scrub de gráfica | mantener y deslizar | línea punteada y punto siguen al dedo; se ocultan a los 1600 | directo | — | ✓ |
+| Pellizco de gráfica | dos dedos | cambia el periodo o el zoom vertical (se repinta el sheet; el indicador de TRKTabs viaja) | — | — | ✓ |
+| TRKWheel `trkWheel()` | girar la rueda | `scroll-snap` nativo; el marcado cambia en el evento | nativo | nativo | ✓ |
+| `scrollIntoView` suave | foco tras un ✓ (`state._focusSet`), primer RIR (`state._autoScroll`), `[+ exercise]`, ir a la serie en curso, día del historial | scroll | nativo | solo uno de cinco mira `reducedMotion()` | ✗ G2 `smoothOr()` (pendiente G2) |
+
+Hoy un ✓ dispara 4 o 5 movimientos a la vez (pop, barra, número, foco con scroll suave): objetivo G2/G4, uno visible por
+toque (X1-10).
 
 ---
 
-## 14. Mapa por pantalla (cada módulo es un instrumento)
+## 11. Glifos, íconos y emoji
 
-| Pantalla | Instrumento | Encabezado | Contenido | Nav |
+### 11.1 Diccionario `GLYPHS` (cerrado; un glifo = un significado)
+
+Espejo de BRAND §3 y de la constante `GLYPHS` de `index.html` (`'✓○▲▼⠿›‹▾▶↓✕↩~⚠▌×@/→#—'`). Cualquier otro símbolo en un
+texto de interfaz es una desviación; las etiquetas que escribe el dueño no cuentan. La revisa: R-GLY · `_dsRenderCheck`
+glyph.
+
+| Glifo | Significa | Hoy se usa en | Texto para lectores de pantalla |
+|---|---|---|---|
+| ✓ | hecho | `.dchk`, `.pairdone`, toasts de éxito, `✓ AM` | "hecho" |
+| ○ | pendiente | `.dchk` sin confirmar | "pendiente" |
+| ▲ ▼ | cambio (sube / baja) | badges de progreso, //FUERZA, detalle | "sube 3 %" / "baja 4 %" |
+| ⠿ | arrastrar / reordenar | `.dgrip`, fantasma de arrastre | "arrastrar" |
+| › | entrar / abrir detalle | `.rchev`, `.nvm-x`, `.ptchev`, `.lx`, `.mchev` | "abrir" |
+| ‹ | atrás / anterior | `.dnav`, `.hcnav`, flechas de rotación | "anterior" |
+| ▾ | desplegar / elegir | `.umcaret`, `.sgoal .cv`, `[ ver rutina ▾ ]` | "elegir" |
+| ▶ | empezar / continuar | `▶ start workout`, `▶ resume workout`, `▶ continuar` | "empezar" |
+| ↓ | drop set | `[↓ drop set]`, series de drop | "drop" |
+| ✕ | quitar | toast de error, ✕ de ejercicio, `.lc .x` | "quitar" |
+| ↩ | deshacer | `.footer .undo` | "deshacer" |
+| ~ | estimado | `~T`, `~` de sugerido | "aproximado" |
+| ⚠ | aviso | toasts de error, alimentos a revisar | "aviso" |
+| ▌ | cursor (solo arranque y vacíos) | `.cur` del landing | — |
+| × @ / → # | notación de series y datos | `160lbs×8@0 / …`, `→ acción` del diagnóstico, `#músculo` | — |
+| — | sin dato | lecturas vacías | "sin dato" |
+
+- GLY-1: **un glifo, un significado.** Hoy se rompe: `▲▼` también reordena en el editor de split y en la hoja de sesión
+  (M1-04, M3-10 → `⠿` o menú, G2/G3); `~` también significa "tomado tarde" en el stack (G4); `›` también gira para
+  desplegar en TRKLog (el significado de desplegar es `▾`; G3/G4).
+- GLY-2: los glifos llevan `aria-hidden` y el control lleva `aria-label` con la palabra (hoy VoiceOver lee "black
+  up-pointing triangle": G2, T-12).
+
+### 11.2 Puntuación tipográfica (no son glifos de interfaz)
+
+`·` separador de datos (el más usado) · `–` rango (`61.1 – 62.1 kg`) · `−` signo menos real (obligatorio en cambios) ·
+`…` tarea en curso (`… sincronizando`) · `¿ ¡` · `≤ ≥` en texto. Se escriben como texto, no como glifos. (La constante
+`GLYPHS` no los incluye; R-GLY y `_dsRenderCheck` deben tratarlos como puntuación.)
+
+### 11.3 Fuera del set, en uso hoy (se reemplazan)
+
+| En uso | Dónde | Reemplazo | Fase |
+|---|---|---|---|
+| ⓘ | ficha de un suplemento | `[?]` | G3 |
+| ⎘ | `⎘ duplicar` (comida) | `[duplicar]` | G3 |
+| ✎ | `✎ editar sets`, `✎ editar detalles…`, código de barras | `[editar]` | G3 |
+| ◦ | "comunidad" en resultados de comida | nada (solo se marca la excepción `⚠ revisa`) | G3 |
+| ▸ ▴ | resumen de bloques del stack, `▸ ver tu wrap`, `[ ocultar rutina ▴ ]`, `.wline` | `›` o nada | G3 |
+| ← | `← back`, `← regresar`, `← músculo` | `‹` | G2/G3 |
+| ✗ | "saltada" en el stack | `✕` | G3 |
+| ■ | `■ cerrar a las HH:MM` (y en rojo aunque guarda, M2-09) | texto `[cerrar a las 14:32]` en gris | G2 |
+| ⋯ | menú de fila del catálogo (`.exmore`) | `.dots3` | G3 |
+| ≈ | solo en comentarios del código | `~` | — |
+| ⬆ ⬇ ↔ ▦ ▢ ▣ ↻ ↺ ↑ | perfil de resistencia, rango personalizado, elegir en el catálogo, reintentar / recuperado / última vez, "flojas ↑" y "↑ ánimo" | **pregunta abierta** (BRAND no los menciona; §1) | G3 |
+| ● ◆ | agenda (pantalla sin acceso) | se borra con la agenda | G4 |
+| ▁ ¶ | panel `?design=1`, botón `¶ texto` de la IA | `[minimizar]`, `[texto]` | G4 |
+
+### 11.4 Íconos y emoji
+
+- ICO-1 (B-08): palabra > glifo del set > ícono TRK (§7.31). **Emoji de interfaz: 0.** Lo que el dueño escribe (🥀 en un
+  nombre) se muestra tal cual (excepción `user-label`).
+- Hoy el único emoji de interfaz es 📷 en compartir un ejercicio (objetivo G3: ícono TRK "camera", excepción `camera`).
+
+---
+
+## 12. Estados
+
+### 12.1 Estados de interacción
+
+| Estado | Cómo se ve hoy | Regla |
+|---|---|---|
+| default | — | — |
+| presionado | opacidad .7 (`:active`), fondo `--o10`/`--card2` en filas y botones, `scale(.98)` en tiles | objetivo G2 `--op-press` (pendiente G2); G4: una sola forma de presionar en `:active`; en `[verbo]` = `--fg` |
+| foco | `:focus-visible` con contorno 1.5 `--fg` y 2 de separación; `:focus` sin contorno | siempre visible con teclado; verificar en controles que no son `<button>` (G2) |
+| seleccionado | relleno `--fill` + texto `--on-fill` (toggles, TRKSelect), contraste (`.on`) | — |
+| deshabilitado | opacidad .4, `aria-disabled` en `--o30`, flechas apagadas en `--o20` | misma estructura; objetivo G2 `--op-disabled` (pendiente G2) |
+| éxito / error | semántico + texto (toast, `.savebar`) | nunca solo color |
+
+Un componente **no** cambia de estética por estado: cambian opacidad, superficie, borde o color, nada más. En móvil no hay
+hover.
+
+### 12.2 Estados por módulo
+
+Cada sección tiene su vacío `// …` y cada módulo sus finales explícitos (EST-1). Forma: `// sin registros · [+ acción]`;
+error `⚠ qué pasó · qué hacer`; sin conexión `⚠ sin conexión · [reintentar]`.
+
+| Módulo | Vacío (hoy) | Pocos datos | Cargando | Error / sin conexión |
 |---|---|---|---|---|
-| landing / login / onboard | configuración | — | `.start`, `.field`, `.toggles` | no |
-| **home (gym)** | estado actual | `.whdr` (`//NEXT`) | rotación, preparación, músculos del día, //EFFECTIVE VOLUME, //STATS | sí |
-| **workout** | registro | `.whdr.top` (`//NOW`) | tabla de sesión, AHORA, descanso, footer | no |
-| **macros** | composición | `.section .h` | anillos P/C/F, radar, //SUPPS, //LOG | sí |
-| **progress** | análisis | `.section .h` | racha + calendario, tiles, FUERZA, //RECORDS, //MÚSCULOS, //RENDIMIENTO | sí |
-| history / histedit | archivo | `.section .h` / `.whdr.top` | lista por mes; editor = tabla de sesión compacta (`.hist-compact`) | no |
-| share | resumen de datos | `.shtitle` | cabecera en una línea, un bloque por ejercicio, series en una línea | no |
-| stack (suplementos) | inventario | `.section .h` | bloques por momento (todos abiertos) | vía menú |
-| splitedit / catálogo / músculos | inventario | `.section .h` / sheet | filas, deriva del split, mapeo | no |
-| settings | utilitario | `.section .h` | `.line`, `.field`, //SALUD | no |
+| Gym | cabecera `//GYM sin split` + `+ crear split`, `explorar splits`, `importar` | recuperación con "pocos datos"; "sin baseline" en series | — | — (local) |
+| Sesión | — | prefill vacío; "sin baseline" | — | guardado fallido: `.savebar` permanente + TRKAsk "no se pudo guardar" |
+| Macros | `no meals logged`, `no water logged` (inglés: G3 → español) | — | búsqueda en línea con `.fa-spin` | OpenFoodFacts falla **en silencio** y un código que no se pudo buscar sale como "no encontrado" (M4-09 → G2: `// 0 resultados` · `⚠ sin conexión · [reintentar]` · resultados) |
+| Progreso | "aún no hay datos", "sin registros en este rango", "sin volumen registrado en este rango", "aún no hay levantamientos con peso × reps" | `sin normal · N/7 d`, diagnóstico "pocos datos" | — | — |
+| Historial | "sin sesiones registradas" | — | — | sesión inexistente en compartir (G2) |
+| Stack | "stack vacío", "no toca nada hoy ✓" | — | — | — |
+| Compartir | "sin sesión para compartir", "sin series registradas", "sin alimentos este día", "aún sin series con peso y reps" | — | `… generando imagen` | `⚠ no se pudo generar la imagen` |
+| Ajustes · salud | — | — | `… sincronizando salud` | `⚠ …` del sync; errores de permisos en el log |
+| Escáner | — | — | cámara abriendo | fallback a foto, búsqueda por nombre y tecleo |
 
-## 15. Excepciones documentadas (todas funcionales)
-
-- **Macros:** anillos radiales y radar hexagonal (composición de nutrientes); glow del anillo según estado.
-- **Workout:** tabla densa afilada (`--r-sm`, .5px), sin glass.
-- **Chrome:** glass en nav, sheets, toast.
-- **Sheets anclados arriba** (evitan el teclado de iOS; uso de meses).
-- **`--info`** azul solo para déficit calórico.
-- **Números del anillo** con escala propia; overlays (boot, wrap, escáner) fuera de la escala de tipo.
-- **`.scan-reticle`** (overlay de cámara) y `.dz` (panel de diseño, solo dev).
-- **Glifo del FAB** (`+` 30/300).
-- **Geometría atada al JS** (espaciados que el código también usa para posicionar): la columna de etiquetas Y de las
-  gráficas de detalle (40 px, `.chwrap`/`.chxs` = `.chscrub right`) y el eje de horas de la agenda (30 px, `.ag-hr i` =
-  `left:30px` en JS). **Márgenes negativos de centrado** de puntos (`.chsd` −5 px en un punto de 10, `.cd.t.l0::after`
-  −1.5 px en uno de 3).
-- **Bucles funcionales** (única animación infinita permitida): spinners de carga (700 ms), cursor `▌` y "toca para
-  seguir" (1.15–1.5 s, `step-end`), el barrido del escáner mientras busca (2 s), y los 3 destellos de fin de descanso
-  (500 ms × 3). Llevan `/*ds:exempt*/`.
-
-Las declaraciones exentas llevan el marcador **`/*ds:exempt*/`** pegado a la declaración (p. ej.
-`font-size:26px/*ds:exempt*/` en el número del anillo): el auditor las cuenta aparte y no como desviación. Marcar algo
-como exento exige que esté en esta lista.
-
-## 16. Prohibido
-
-Fuentes nuevas · gradientes CSS · neón/glow (fuera de §15) · fondos ilustrados, animados, shaders, aurora ·
-tarjetas 3D o glass en contenido · sombras decorativas · paletas pastel o arcoíris · colores de acento aleatorios ·
-color como categoría · tamaños, espacios o radios fuera de token · peso 600 · pills como botón universal ·
-tarjeta por cada dato · confeti, partículas, XP, mascotas, FOMO · renombrar sus etiquetas · anillos fuera de
-macros · puntuación única · 0 falso en gráficas · placeholders de relleno ("+ machine") · unidad en el corchete
-frontal · unidad en texto libre · animar re-renders · `style=""` fijo (usa una utilidad o un componente, §7.17) · componentes de librerías
-externas sin adaptar (§19).
+Objetivo G4: completar la tabla con el texto exacto de cada celda vacía y una acción por vacío.
 
 ---
 
-## 17. Protocolo para features nuevas
+## 13. Accesibilidad, sonido, vibración y tema
 
-**Inventario primero.** Ninguna fase arranca editando: arranca midiendo (auditor + lectura de lo que toca) y escribe la
-tabla "actual → objetivo" con valores (§20). La implementación se hace contra esa tabla; si aparece algo no previsto,
-**se agrega a la tabla con su valor antes de corregirlo** — nada se arregla "de pasada" sin quedar registrado.
+### 13.1 Decisiones de accesibilidad (lo que se sacrifica, a sabiendas)
 
-Antes de escribir UI, responder por escrito (en el plan):
-0. **¿Qué componente `TRK*` (§7.18) resuelve el comportamiento?** Si ninguno, se agrega al registro primero.
-1. **Propósito** y jerarquía de información (qué se lee primero).
-2. **Acción primaria** y secundarias.
-3. **¿Existe un componente que lo haga?** → reutilizar. **¿Es variante?** → modificador. **¿Categoría nueva?** →
-   componente nuevo agregado a §7 en el mismo commit.
-4. Tokens que usa (ninguno literal) · colores semánticos y su porqué · gráfica (si la hay: ¿cuál es la representación
-   más eficiente en lenguaje TRK?, no "¿cuál se ve bonita?").
-5. Estados: vacío, carga, error, sugerido/estimado (§9).
-6. Movimiento (si alguno, qué cambio de estado comunica).
-7. Después: `tools/ds-audit.cjs` sin regresiones + capturas a 393×852 + prueba de los 5 segundos.
+| Decisión | Criterio WCAG que se sacrifica | Por qué | Compensación |
+|---|---|---|---|
+| **Zoom bloqueado** (`maximum-scale=1, user-scalable=no`; excepción `vp-lock`) | 1.4.4 cambio de tamaño del texto | sensación de app nativa, sin zoom accidental en la serie | campos a 16; texto nunca bajo `--o40` |
+| **Texto de 10** (`--t-label`) | ninguno formal (las skills piden 11) | densidad de terminal | solo en meta y rótulos, nunca en datos que se leen en la serie |
+| **Tabla de 36** (excepción `table36`) | 2.5.5 (44, AAA); cumple 2.5.8 (24, AA) | densidad en la serie | ✓ con toque ampliado (objetivo G2: 44×42) |
+| **Bordes bajo 3:1** | 1.4.11 contraste de lo que no es texto | lenguaje de líneas finas | pregunta abierta de BRAND §10 |
+
+### 13.2 Lo que nunca se sacrifica
+
+- A11Y-1 color nunca como única señal (TOK-5).
+- A11Y-2 toasts con `aria-live` (`.toasts` polite; el error con `role="alert"`).
+- A11Y-3 foco visible (`:focus-visible`).
+- A11Y-4 reduced-motion y reduced-transparency respetados (§10, §4.12; hoy con huecos: G2).
+- A11Y-5 todo gesto tiene alternativa visible (hoy deslizar para borrar no la tiene: G2, M2-07; WCAG 2.5.1).
+- A11Y-6 toque ≥44 (B-11; hoy ~600 menores: `.u-hit` (pendiente G2)). La revisa: `_dsRenderCheck` hit.
+- A11Y-7 texto ≥ `--o40` (B-11). La revisa: `_dsRenderCheck` txt.
+- A11Y-8 roles accesibles: todo lo tocable es `<button type="button">` con `aria-label` (hoy hay un solo `role="button"` y
+  muchos controles son `span`, `i`, `div` o `a` sin `href`: G2, T-12). La revisa: R-A11Y.
+
+### 13.3 Sonido y vibración
+
+- SND-1 **Sonido solo al terminar el descanso**, con su ajuste (`settings.restBeep`): dos chirridos de 880 Hz
+  (`restNotify()`); el `AudioContext` se crea dentro del toque del ✓ (`restAudioInit()`) porque iOS lo exige. Ningún otro
+  sonido; el toast no suena.
+- SND-2 **Vibración**: `navigator.vibrate` al terminar el descanso (200), al levantar una fila para arrastrar (28), al fijar
+  un código (55) y al completar un TRKHold (30). **Safari de iOS no vibra**: en el iPhone del dueño la vibración no existe;
+  solo funciona en Android y en la app nativa. Nunca es la única señal.
+
+### 13.4 Solo modo oscuro
+
+- THM-1: la app es **solo oscura**. `prefers-color-scheme` se ignora; `theme-color` `#000`, barra de estado de iOS
+  `black`, `manifest.json` con fondo y tema `#000000`.
+
+---
+
+## 14. Navegación y pantallas
+
+### 14.1 Primarias y secundarias
+
+- NAV-1: **pantallas primarias** = las tres de la nav (progress · gym · macros): con nav y sin atrás.
+- NAV-2: **pantallas secundarias** (sesión, historial, editor de historial, compartir, stack, split, ajustes, catálogos):
+  **sin nav** y con un solo atrás. Hoy `renderNav()` oculta la nav en workout, settings, splitedit, history y share, pero
+  se ve en histedit, stack y agenda (T-02, G2).
+- NAV-3: lo secundario se abre desde una fila `›`, desde `[verbo]` o desde el menú `u/…` (`navmenu` → `.nvm`).
+
+### 14.2 Atrás
+
+- **Hoy:** `statusBar(true)` pinta `← back` (una caja de 68×37 con borde) y `data-act="leave"` siempre manda a gym: se
+  pierden el scroll y el contexto; el editor de historial tiene dos salidas distintas (`← back` → gym y `‹ cerrar` →
+  historial).
+- **Objetivo G2** (T-02): `state._from` (pendiente G2) guarda de dónde vienes con su scroll; un solo `[‹ origen]` de texto
+  en la barra de estado, con 44 de toque (`[‹ gym]`, `[‹ historial]`).
+- NAV-4: cerrar un sheet **nunca** mueve el scroll de abajo (`reRender()`, no `closeModal(); render()`). La revisa: R-SCROLL.
+
+### 14.3 Mapa por pantalla (v257)
+
+| Pantalla (`state.screen`) | Instrumento | Cabecera | Contenido | Nav hoy | Notas |
+|---|---|---|---|---|---|
+| `landing` / `login` / `onboard` | primer uso | marca | `.start`, `.field`, `.toggles` | no | M0 sin evaluar (G4): tono de venta, etiquetas en mayúsculas, `← regresar`, marca con `//` en dos opacidades |
+| `home` (gym) | estado actual | `statusBar` + rotación + `dayHeadHTML` (`//NEXT`) | línea de preparación, músculos del día, vista previa (`[ ver rutina ▾ ]`), primario, //ESTÍMULO, //STATS | sí | con sesión viva: `[+ log past session]`, `rest` y `skip` siguen visibles (P0 M1-01/M1-01b → G2) |
+| `workout` | registro | `.wline` (modo enfoque) | tabla de sesión, descanso, footer | no | §7.8, §7.20 |
+| `macros` | composición | `statusBar` + día `‹ fecha ›` | anillo en `.card`, detalle (radar, P/C/F, INTAKE, retención), SUPPS → MEALS → WATER | sí | §7.24, §7.28 |
+| `progress` | análisis | `.section` //PROGRESS | racha en franja, tiles `.ptile`, //FUERZA, //RECORDS, //MÚSCULOS, //RENDIMIENTO | sí | tiles → filas en G3 |
+| `history` | archivo | `.section` //HISTORY | mes TRKCal, rail por mes, sesión que se abre en su sitio | no | |
+| `histedit` | corrección | `dayHeadHTML` | tabla de sesión compacta (`.hist-compact`) | **sí (debería no)** | T-02 |
+| `share` | resumen | según tipo | §7.19 | no | |
+| `stack` | inventario | `.section` //STACK | TRKTabs HOY/TODOS, bloques por momento | **sí (debería no)** | §7.25 |
+| `splitedit` | inventario | `.section` //SPLIT | días (`.seday`), ejercicios (`.seex`), deriva (`.sedrift`) | no | ▲▼ para reordenar y ✕ sin deshacer (G2) |
+| `settings` | utilitario | `.section` //SETTINGS | //PERFIL, entrenamiento, //SALUD, datos (`sync data`, `espacio`, `export`, `import`, `reset data`) | no | `reset data` igual que `export` (M6-19); cinco nombres para el respaldo (M6-11) → G4 |
+| `agenda` | — | — | sin acceso desde v226 | — | código muerto (`renderAgenda()`, G4) |
+| overlays | — | — | §7.32 | — | — |
+
+---
+
+## 15. Excepciones
+
+Toda excepción es funcional y tiene **id de categoría** (BRAND §6). En el CSS se marca pegada a la declaración. Hoy el
+marcador es `/*ds:exempt*/` sin id (33 declaraciones en 29 reglas); objetivo G2: `/*ds:exempt:<id>*/` con un id de esta
+lista (R-EXEMPT). Marcar algo como exento exige que esté aquí (EXC-1).
+
+| Id | Qué exime | Usos actuales |
+|---|---|---|
+| `ring` | el anillo de kcal (macros y compartir comida): única gráfica circular | `.ring.lg .num` tracking −1px. Hoy también el brillo del anillo (`drop-shadow`, sin marca), que sale en G3 |
+| `table36` | tabla de sesión con celdas de 36 y campos a 12 (densidad en la serie); el ✓ amplía su toque con `::after` | sin marcador CSS (es la anatomía de §7.8) |
+| `boot` | shader de marca del arranque (única excepción de fondo animado) y su tipografía | `.bootov .bt` tracking .02em; `startShader()` |
+| `wrap` | overlay de un solo mensaje del wrap mensual | `.ws-big` 60 y tracking −2px · `.ws-month` 44 y −1.5px · tracking de `.wnav`, `.ws-lbl`, `.ws-sub`, `.ws-kick`, `.ws-year`, `.ws-cardh`, `.ws-cardf`, `.ws-share` (el wrap se reevalúa en G4: formato rechazado) |
+| `scanner` | overlay de cámara | `.scan-reticle .chk` 40 · `.scan-reticle .scl` (bucle, también `loop`) |
+| `loop` | bucles funcionales: única animación infinita permitida | `.restbar.fin` (3 destellos) · `.cur::after`, `.bootov .bready`, `.wnav` (`blink`) · `.spin`, `.fa-spin` (`spin`) · `.scan-reticle .scl` (`scanmove`) |
+| `geom` | geometría atada al JS o centrado óptico de puntos | `.chwrap` y `.chxs` (40 de columna de etiquetas Y = `.chscrub right`) · `.slfc` (mismo margen de eje) · `.chsd` −5 (punto de 10) · `.strk-row .cd.t.l0::after` y `.cm .cd.t.l0::after` −1.5 (punto de 3) · `.dots3` (la sombra dibuja los puntos 2 y 3) · `.ag-hr i` 30 (agenda, muerta) |
+| `vp-lock` | zoom bloqueado (§13.1) | meta viewport |
+| `camera` | ícono TRK de cámara en compartir un ejercicio (lo que el dueño pone en sus historias) | hoy `.exsh .camon::before` con el emoji 📷 (objetivo G3: ícono TRK) |
+| `user-label` | emoji dentro de las etiquetas del dueño | datos, sin marcador |
+| `dev` (propuesta G1, no está en BRAND §6) | panel `?design=1`, fuera del alcance del sistema | `.dz-h` 11 y tracking .3px · `.dz-h button` 14 |
+
+Otras excepciones funcionales sin marcador: el sheet **anclado arriba** (evita el teclado de iOS) y `--info` solo para el
+déficit calórico.
+
+---
+
+## 16. Prohibido (técnico)
+
+BRAND §7 manda (emoji de interfaz, shaders fuera del arranque, blur en contenido, píldoras y tarjetas redondeadas en
+contenido, segundo primario, color en frases, puntuación en héroe, instrucciones impresas, texto bajo `--o40`, renombrar
+etiquetas, compartir con números gigantes, confeti/XP/mascotas/FOMO, fuentes nuevas, peso 600). Además, en el código:
+
+- valores fuera de token (tamaño, espacio, radio, color, sombra, duración, z) sin id de excepción;
+- gradientes CSS (salvo el relleno SVG de las tiles), brillo, sombras decorativas;
+- `style=""` fijo (usa una utilidad o un componente);
+- animar re-renders, animar layout, `behavior:'smooth'` literal, bucles sin `animation:none` con reduced-motion;
+- `alert()`, `confirm()`, `prompt()` (se usan TRKToast, TRKAsk, TRKHold, TRKPrompt);
+- `closeModal(); render()` (se usa `reRender()`);
+- `<a download>` en la app instalada (se usa `saveFileSafe()`);
+- 0 falso en gráficas; tarjeta por cada dato; anillos fuera de macros y compartir comida;
+- placeholders de relleno ("+ machine"); la unidad en el corchete frontal; la unidad en texto libre;
+- componentes de librerías externas sin adaptar (§19).
+
+---
+
+## 17. Protocolo para implementar
+
+### 17.1 Cómo usan esto los agentes de IA
+
+1. Leen en este orden: `BRAND.md` → §17.2 → §17.3 → la ficha del componente (§7) → tokens (§4) → §17.6. **Nunca
+   implementan desde `DESIGN_CHANGELOG.md`.**
+2. Antes de crear algo, buscan un componente o motor `TRK*` que ya exista (§7.18).
+3. Usan las skills como **rúbrica de principios** (§19). Si una skill choca con BRAND, gana BRAND y lo anotan como
+   pregunta para el dueño en lugar de decidir.
+4. Citan el ID de regla (B-xx y los de esta referencia) en cada cambio y corren las herramientas antes de dar algo por
+   terminado.
+5. Nunca cambian sin aprobación del dueño lo que marca PRI-7 (look).
+
+### 17.2 Esqueleto de pantalla
+
+1. `statusBar(back)`: primarias sin atrás; secundarias con `[‹ origen]` (hoy `← back`) y sin nav.
+2. **Una** cabecera: `dayHeadHTML()` en la familia gym, o `//MÓDULO` + meta a la derecha.
+3. **≤4 secciones** (`hr.rule` + `.section`), hechas de líneas de registro (`.srw`) o de lectura (`.line`).
+4. Un vacío `// …` por sección.
+5. Como mucho **un primario**, abajo.
+6. Nada de tarjetas salvo un panel aprobado.
+
+### 17.3 Árbol de decisión de acciones
+
+- ¿Es **la** razón de ser de la vista? → **primario** (uno solo, abajo).
+- ¿Es una acción puntual dentro de los datos o secundaria? → `[verbo objeto]` + `.u-hit` (pendiente G2).
+- ¿Eliges entre opciones que se excluyen? → `.toggles`.
+- ¿Es una decisión dentro de un sheet? → `.sheetbtns` (un `.ok`).
+- ¿Es irreversible? → **TRKHold**. ¿Es reversible? → acción inmediata + toast con `[deshacer]`. ¿Cambia el flujo? →
+  **TRKAsk** (§17.4).
+- ¿Abre un detalle? → fila `.line.lnav` (o de la familia B) que termina en `›`.
+- ¿Es un dato editable? → caja de campo: formulario (44) o tabla (36).
+- ¿Es una lista de ejercicios? → **siempre** `.srw`.
+- ¿Es una lectura? → `.line` o TRKTrend, nunca una tarjeta.
+- ¿Hace falta un ícono? → primero la palabra, luego un glifo de `GLYPHS`. Un ícono TRK nuevo requiere la aprobación del
+  dueño.
+- ¿No está en el registro `TRK*`? → se agrega al registro **antes** de usarlo.
+
+### 17.4 Acciones con consecuencias
+
+Regla (CON-1): **irreversible → TRKHold · reversible → toast + `[deshacer]` · cambia el flujo → TRKAsk.** Y (CON-2): **lo
+que crea o reemplaza una sesión se oculta mientras hay una viva.** La revisa: R-SESS (`_sessSafetyCheck()`).
+
+| Acción | Hoy | Objetivo |
+|---|---|---|
+| abortar sesión | TRKHold | `[abort]` sin `--abort` (G3) |
+| borrar sesión (dos lugares), borrar día del split, borrar una comida completa, borrar un suplemento con su historial | TRKHold | — |
+| cargar un respaldo (reemplaza todo) | TRKHold (`confirmReplace()`) | — |
+| borrar todos los datos | TRKHold | `[borrar todos los datos]` en `--bad`, al final y separado (M6-19) |
+| quitar un alimento · quitar un vaso de agua | toast + `[deshacer]` | — |
+| guardar sesión | TRKAsk ("finalizar la sesión") + toast | — |
+| cambiar un ejercicio con series · adoptar el split · unir ejercicios · registrar sin código | TRKAsk | — |
+| borrar peso / sueño / ánimo / percepción de un día | TRKAsk | reversible → toast + `[deshacer]` (G4) |
+| borrar una serie (deslizar) | inmediato; TRKAsk solo si se lleva drops con datos | toast + `[deshacer]` + menú al mantener el número (G2, M2-07) |
+| `↩` | borra la serie más baja con datos, aunque no tenga ✓ ni sea del mismo ejercicio | pila de eventos ✓: quita la confirmación y conserva los valores (G2, M2-08) |
+| quitar un ejercicio del split (✕) | sin confirmación ni deshacer, a 1 del ▼ | desde el editor del ejercicio, con toast + deshacer (G2, M1-04) |
+| `rest day` · `skip day` | inmediato, sin deshacer; mueve la rotación **aunque haya sesión viva** | toast `✓ día saltado · sigue <día>` + `[deshacer]`; bloqueados con sesión viva (G2, M1-01b/M1-03) |
+| `[+ log past session]` | **reemplaza la sesión viva** (P0) | oculto con sesión viva (G2, M1-01) |
+| `▶ continuar` una sesión pasada | la saca del historial sin preguntar; abortar la borra para siempre (P0) | TRKAsk; la original sigue en el historial hasta guardar; abortar la restaura con su rotación (G2, M3-09) |
+| registrar manualmente desde el escáner | guarda en el grupo "meal" en vez de la comida elegida | tag explícito (G2, M4-08) |
+
+### 17.5 Inventario primero
+
+Ninguna fase arranca editando: arranca midiendo (auditor + lectura de lo que toca) y escribe la tabla "actual → objetivo"
+con valores. Lo no previsto **se agrega a la tabla con su valor antes de corregirlo**: nada se arregla "de pasada" sin
+quedar registrado. Antes de escribir UI se responde por escrito:
+0. ¿Qué componente `TRK*` resuelve el comportamiento? Si ninguno, se agrega al registro primero.
+1. Propósito y jerarquía (qué se lee primero).
+2. Acción primaria y secundarias (§17.3).
+3. ¿Existe un componente? → reutilizar. ¿Es variante? → modificador. ¿Categoría nueva? → ficha nueva en §7 en el mismo
+   commit.
+4. Tokens (ninguno literal), colores semánticos y su porqué, gráfica (si la hay: la representación más eficiente en
+   lenguaje TRK, no la más bonita).
+5. Estados: vacío, pocos datos, cargando, error, sin conexión, sugerido/estimado (§9, §12.2).
+6. Movimiento: qué cambio de estado comunica (§10).
+
+### 17.6 Definición de terminado
+
+- [ ] `node tools/ds-audit.cjs --strict` pasa contra la línea base (`tools/ds-baseline.json`, se guarda en G1).
+- [ ] `?selftest=1` pasa, incluidos `_dsRenderCheck` y R-SESS (`_sessSafetyCheck()`).
+- [ ] Capturas a 393×852 (y 375×812) de cada estado tocado: normal, vacío, error y reduced-motion, con
+  `localStorage.gymtrk_design` borrado.
+- [ ] La prueba de 5 segundos de BRAND §8 pasa, con conteos.
+- [ ] Ninguna etiqueta del dueño renombrada, en mayúsculas forzadas ni cortada; un idioma por componente.
+- [ ] Toda acción da feedback; lo destructivo tiene deshacer o hold.
+- [ ] La referencia se actualiza en el mismo commit y `DESIGN_CHANGELOG.md` recibe una línea.
+- [ ] Si cambia el look, hay una decisión del dueño registrada en BRAND §9.
+
+---
 
 ## 18. Auditoría
 
-**`tools/ds-audit.cjs`** (node puro, sin npm; `node tools/ds-audit.cjs`) reporta: tamaños de letra fuera de token,
-pesos no cargados, letter-spacing fuera de rol, radios y espaciados fuera de escala, colores literales fuera de token,
-variables usadas sin definir, reglas CSS duplicadas, `style=""` totales y por función, clases definidas sin uso. Se
-corre antes y después de cada cambio de UI; **ningún commit puede subir los contadores P0/P1**. Con un archivo como
-argumento audita ese (`node tools/ds-audit.cjs respaldo.html`), para comparar contra la versión anterior.
-- **Selector repetido** = el mismo selector escrito como regla propia dos veces en el nivel superior (el síntoma de
-  "parche encima de parche"). No cuentan las variantes dentro de `@media`/`@supports` ni base compartida + ajuste
-  (`.a,.b{…}` + `.a{…}`).
-- **Sombra fuera de token** = cualquier sombra con desenfoque que no sea `--glass-shadow`/`--shadow-float`; anillos
-  `0 0 0 Npx` e `inset` son bordes (§4.7).
-- **Diálogos nativos** = `alert(`/`confirm(`/`prompt(` en el código (rompen el lenguaje visual; se usan TRKToast,
-  TRKAsk, TRKHold). Objetivo 0.
-- **Guardados sin feedback** = funciones/handlers que llaman `save()` después de una acción del usuario y no terminan
-  en `toast(` (lista por nombre). Objetivo 0 en las acciones de la lista §7.18.1.
-- **Espaciado por token** = proporción de espaciados de CSS escritos como `var(--s*)`/`var(--sp-*)` frente a px
-  literales; los medios pasos 6/10 y el 1 óptico cuentan como válidos.
+### 18.1 `tools/ds-audit.cjs` (estático)
 
-**`tools/ds-diff.html`** — para refactors de CSS o de marcado que no deberían cambiar lo que se ve. Copia la versión
-anterior a `repo/_pre.html` (en `.gitignore`), sirve `repo/`, abre `/tools/ds-diff.html` y en consola `go2()` →
-`report()`: corre ~50 escenarios (pantallas y sheets) en la versión anterior y en la actual, lado a lado, y compara
-32 propiedades computadas elemento por elemento. Un refactor "exacto" debe dar cero diferencias; uno que corrige hacia
-el sistema debe dar **solo** las diferencias que se buscaban (así se verificó DS-4). La app tiene CSP sin `eval`: los
-escenarios llaman a las funciones globales del iframe, no evalúan texto.
+Node puro, sin npm: `node tools/ds-audit.cjs` (con un archivo como argumento audita ese, para comparar contra la versión
+anterior). Se corre antes y después de cada cambio de UI; **ningún commit sube un contador P0 o P1** (AUD-1).
 
-**Severidad:** **P0** identidad o bug visible (fuente/color/glass fuera de lugar, algo que no se pinta) · **P1**
-sistema (altura, radio, espaciado o variante inconsistente) · **P2** un módulo · **P3** detalle.
+**Contadores de hoy** (v257): P0 detectables · tamaños fuera de escala, escala en uso, tokens viejos, peso 800 bajo 12,
+pesos · letter-spacing fuera de rol · radios y espaciado fuera de escala · bordes · sombras fuera de token · colores
+literales · variables sin definir · excepciones marcadas · `style=""` total y por función · selectores repetidos (la misma
+regla propia dos veces en el nivel superior; no cuentan variantes en `@media`/`@supports` ni base + ajuste) · diálogos
+nativos · guardados sin feedback · espaciado por token · rol fuera de tabla · campos por debajo de 16 · texto instructivo.
+Línea base del 2026-09-21: todos en 0 salvo `style=""` 89, excepciones 33, letter-spacing fuera de rol 1, radios literales
+15 y texto instructivo (`swipehint` 1 · `ehint` 6 · `submeta` 114).
 
-**Loop QA visual** (de STYLEMAP): servir `repo/` en 4599 → 393×852 → sembrar datos (historial de demo) →
-`go('<pantalla>')` → captura → comparar antes/después. Pantallas mínimas: home, workout, macros, progress, history,
-settings + sheets (detalle de métrica, perfil de ejercicio, catálogo, músculos, suplementos).
+**Chequeos nuevos de G1** (los implementa el auditor en esta misma fase; salida `R-xx @ index.html:NNN`):
 
-## 19. Tooling y 21st.dev
+| Id | Qué mide | Nivel |
+|---|---|---|
+| R-ROLE | clase de botón sin selector propio (solo con estilo dentro de un padre) | P0 |
+| R-GLY | glifos fuera de `GLYPHS` en textos de interfaz; emoji de interfaz | P0 (emoji) / P1 |
+| R-SVGFS | `font-size` o `stroke-width` de SVG fuera de escala | P1 |
+| R-SEM | color semántico fuera de las funciones de veredicto | P1 |
+| R-SAVE | `save()` en una acción sin feedback, deshacer, TRKHold ni TRKAsk | P1 |
+| R-SCROLL | `closeModal(); render()` o `render()` en listas editables | P1 |
+| R-RAD | radio de contenido >2; flotante distinto de `--r-float` (pendiente G3) | P1 |
+| R-BLUR | `backdrop-filter` fuera del chrome | P1 |
+| R-EXEMPT | exención sin id de §15 | P1 |
+| R-MOTION | animar layout, bucle sin reduced-motion, rebote no listado, `smooth` literal, animación en un nodo que se re-renderiza | P1 (reduced-motion P0) |
+| R-DOC | clase citada en esta referencia que no existe (salvo las marcadas "pendiente"); px fuera de escala en §7; versión de la cabecera ≠ `sw.js` | P1 |
+| R-LANG | un componente que mezcla idiomas (lista de palabras por idioma) | P2 |
+| R-BRK | `[ ` con espacio o corchete dentro de una caja | P2 |
+| R-OK | más de un primario por vista | P2 |
+| R-TOAST | toast de más de 42 caracteres | P2 |
+| R-OP / R-LH | opacidades o interlineados literales | P2 |
+| R-FONT | pesos cargados sin uso | P2 |
+| R-A11Y | `data-act` en un elemento que no es botón | P2 |
 
-**Skills/MCP** (criba de STYLEMAP §8, vigente): adoptar `brutalist-skill` (referencia de estilo, no generador),
-`impeccable` (audit/polish), `emil-design-eng` (movimiento), `ecc:accessibility`, `ecc:browser-qa`, Playwright/preview
-para QA visual. Solo filosofía: `minimalist-skill`, `taste-skill`, `redesign-skill`, `ecc:design-system`.
-**`ui-ux-pro-max` y `design:design-system`: consulta de datos, nunca generador** (v256, a pedido del dueño: su buscador
-sustentó la escala de 5 tamaños; en v257: interlineado 1.5-1.75 de lectura, ≥8 px entre toques, etiqueta visible por
-campo, barra 100 % con ≤5 categorías y etiqueta directa, sin emoji como ícono estructural). **Evitar:** `frontend-design`, `soft-skill`, `gpt-tasteskill`, `stitch-skill`,
-`imagegen-*`, **MCP `magic`/21st**.
+`--strict` compara contra `tools/ds-baseline.json` (guardada **antes** de arreglar nada) y falla si sube un P0/P1.
 
-**21st.dev.** Es un registro de componentes **React + Tailwind** (shadcn/Radix/Motion), instalación con clave de API,
-licencia por componente. Se usa **solo como catálogo de comportamientos**: *se toma la interacción, se reescribe en JS
-puro con los tokens de TRK; nunca se pega un componente*. Componentes con licencia "unknown" = solo inspiración.
-Dependencias permitidas: MIT, versión fijada, cacheadas por `sw.js` (offline). Hoy **ninguna**: `number-flow` era la
-única candidata (web component sin React) y el conteo se hizo propio en DS-5 (§10); sonner, cmdk y vaul son solo-React.
+### 18.2 En pantalla
 
-**Biblioteca de referencias concretas** (reporte `21stdev ghstgpt recomendacion implementacion.md`, 2026-09-18). Cada
-fila es un componente real de 21st.dev y el componente `TRK*` (§7.18) que lo reescribe; de 21st se toma
-**estructura + interacción + comportamiento + idea de motion**, y se reconstruye con `#000`, JetBrains Mono, tokens,
-líneas y opacidades de TRK.
+- **`_dsRenderCheck()`** (en `?selftest=1`; en consola `_dsRenderReport()`): mide sobre el DOM pintado lo que el auditor
+  estático no ve — `ua` fugas de estilo del navegador (letra 13.333, fondo `rgb(240,240,240)`), `hit` toques bajo 44×44
+  contando su `::after` (R-HIT), `txt` texto bajo `--o40` (R-TXT), `fsOff` tamaños fuera de la escala (incluido SVG), `blur`
+  fuera del chrome, `glyph` glifos fuera de `GLYPHS`. Solo reporta; los umbrales viven en la línea base.
+- **R-SESS** (`_sessSafetyCheck()`): con sesión viva, `loglater`, `start`, `rest` y `skip` no cambian `activeWork.id`, no
+  mueven `rotIdx` ni agregan o quitan sesiones; continuar + abortar no borra la sesión pasada. Hoy falla a propósito
+  (documenta los P0 hasta G2) sin detener los demás self-checks.
+- **Inventario en navegador** (`tools/ds-inventory.js`, se guarda en G1): tamaños, colores→token, radios, sombras, blur,
+  tracking, animaciones, glifos y toques por pantalla, con el respaldo real del dueño.
 
-| Prio | Componente concreto | Módulo | Se toma | → TRK |
-|---|---|---|---|---|
-| A+ | [Animated Table rows](https://21st.dev/@arunachalam/components/animated-table-rows) (@arunachalam) | sesión, historial | entrada/salida y reflow de filas (`AnimatePresence` + `layout`) | TRKRow |
-| A+ | [Save Changes Toast](https://21st.dev/@yadwinder/components/toast-save) (@yadwinder) | global | estados cargando → listo; un patrón para todo guardado | TRKToast |
-| A | [Vercel Tabs](https://21st.dev/@yadwinder/components/vercel-tabs) (@yadwinder) | Progreso (periodos) | indicador lineal que viaja en posición y ancho | TRKTabs |
-| A | [Animated Tabs](https://21st.dev/@chetanverma16/components/animated-tabs) (@chetanverma16) | cambios de vista | transición entre vistas; se unifica con Vercel Tabs para no tener dos tipos de pestaña | TRKTabs |
-| A | [Animated Progress Bar](https://21st.dev/@educlopez/components/animated-progress-bar) (@educlopez) | gym, macros, progreso, músculos | la barra crece desde su valor anterior | TRKBar |
-| A | [Trend Card](https://21st.dev/@ravikatiyar162/components/trend-card) (@ravikatiyar162) | //FUERZA, //RECORDS | valor + Δ + mini tendencia como resumen antes del detalle | TRKTrend |
-| A | [Bottom menu](https://21st.dev/community/components/yadwinder/bottom-menu/default) (@yadwinder) | nav | activo que se ensancha con su etiqueta | ya cumple (§7.10) |
-| A | [Smart Popover](https://21st.dev/@efferd/components/smart-popover) (@efferd) | global | popover en pantalla ancha, sheet en móvil, misma API | TRKPop |
-| B | [GitHub Calendar](https://21st.dev/community/components/aliimam/git-hub-calendar) (@aliimam) | racha, historial | día → intensidad, tocar un día navega | TRKCal |
-| B | [Interactive Selector](https://21st.dev/@minhxthanh/components/interactive-selector) (@minhxthanh) | RIR de la tabla | respuesta inmediata al elegir | TRKSelect |
-| — | Number Flow | kcal, P/C/F, racha | conteo al cambiar | TRKNum (propio, §10) |
-| No | shining text · glow buttons · border beam · aurora/shader · tarjetas 3D · bento como estructura · glass cards · sparkles/partículas · carruseles de datos · docks con lupa | — | convierten dato en decoración o rompen monocromo/táctil | — |
+### 18.3 `tools/ds-diff.html`
 
-**Regla para cualquier agente que implemente:** *no integrar ningún componente de 21st.dev directamente. Identifica el
-componente concreto, documenta qué comportamiento se toma, elimina todo tratamiento visual incompatible, reemplaza sus
-valores por los tokens de este documento, implementa el patrón como componente `TRK*` reutilizable (§7.18) y después
-ejecuta `node tools/ds-audit.cjs`, `tools/ds-diff.html` y el loop de QA a 393×852.*
+Para refactors de CSS o de marcado que no deberían cambiar lo que se ve. Copia la versión anterior a `repo/_pre.html` (en
+`.gitignore`), sirve `repo/`, abre `/tools/ds-diff.html` y en consola `go2()` → `report()`: corre ~55 escenarios en la
+versión anterior y en la actual, lado a lado, y compara 32 propiedades computadas elemento por elemento. Un refactor exacto
+da cero diferencias; uno que corrige hacia el sistema da **solo** las que se buscaban. Rompe la caché (`?cb=`); `?a=`/`?b=`
+eligen los archivos y `report()` dice qué cargó cada lado. La app tiene CSP sin `eval`: los escenarios llaman funciones
+globales del iframe.
+
+### 18.4 Severidad
+
+**P0** pierde datos o rompe la identidad a simple vista · **P1** error serio de uso, accesibilidad o consistencia del
+sistema · **P2** deuda visible de un módulo · **P3** pulido. (Una sola leyenda para la auditoría y para el auditor.)
+
+### 18.5 Loop de QA visual
+
+Servir `repo/` en 4599 → 393×852 (y 375×812) → borrar `localStorage.gymtrk_design` → sembrar datos (el respaldo real o el
+historial de demo) → `go('<pantalla>')` → captura → comparar antes/después. Pantallas mínimas: home, workout, macros,
+progress, history, settings, stack, share + sheets (detalle de métrica, perfil de ejercicio, catálogo, músculos, sueño).
+
+### 18.6 Rúbrica de las notas 0–5
+
+Cada módulo se califica en siete ejes: **identidad · jerarquía · consistencia · usabilidad · accesibilidad · movimiento ·
+simplicidad**. Una nota se justifica con conteos o capturas, nunca de memoria.
+
+| Nota | Significa |
+|---|---|
+| 0 | ausente o roto: el eje no existe o rompe la pantalla |
+| 1 | contradice el sistema en la mayor parte de la pantalla |
+| 2 | la mitad cumple; desviaciones visibles a simple vista |
+| 3 | cumple lo principal; desviaciones puntuales listadas |
+| 4 | cumple; solo quedan detalles de pulido |
+| 5 | ejemplar: se usa como referencia para otras pantallas |
+
+Evidencia por eje: identidad = prueba de 5 s con conteos (BRAND §8) · jerarquía = tamaños y opacidades en uso vs §4.5 ·
+consistencia = componentes fuera de ficha, variantes duplicadas · usabilidad = pasos y toques para la tarea principal,
+pérdidas de datos · accesibilidad = `_dsRenderCheck` hit/txt, roles, contraste · movimiento = filas del registro §10.1 en
+✗ · simplicidad = presupuesto §5.3.
 
 ---
 
-## 20. Estado actual y plan de corrección (se actualiza por fase)
+## 19. Skills y 21st.dev
 
-**Línea base 2026-09-18 (v230):** 570 `style=""` · 342 `font-size` literales vs 31 `var(--t-*)` · 835 espaciados
-literales vs 25 `var(--s*)` · 26 tamaños de letra · 21 letter-spacings · 16 radios · 6 alturas de input · ≥10
-variantes de chip · 8 sombras · 25 duraciones · peso 600 ×10 · 3 variables sin definir.
-
-| # | Sev | Discrepancia | Corrección | Fase |
-|---|---|---|---|---|
-| 1 | P0 | `.mdetail` definido dos veces: los detalles de métrica heredan la sangría y el borde izquierdo del detalle de comida | separar en `.mdetail` (métrica) y `.mdmeal` (comida) | DS-1 |
-| 2 | P0 | `--o15` sin definir (un borde nunca se pinta); `--o25`/`--o55` solo por fallback | vecino de la escala | DS-1 |
-| 3 | P0 | peso 600 ×10 sin cargar (primario, toast, pestañas, nav) | 700 | DS-1 |
-| 4 | P0 | toast siempre verde, también en errores | `toast(msg,type)` con borde por tipo | DS-1 |
-| 5 | P0 | verde/rojo decorativo (AUTO, ↺ última vez, verificado, línea "ahora", punto de ánimo, láser) | neutro; color solo si es veredicto | DS-1 |
-| 6 | P0 | `manifest.json` #1e1e1e/#0c0c0c ≠ #000 | #000 | DS-1 |
-| 7 | P1 | 342 tamaños literales, 26 valores, 7 bajo 12 | a `--t-*` (mapeo: 7/7.5/8/9.5→9 · 14/15→13 · 17–21/23–26→16 o 22 · 30/36/40→34 · overlays exentos) | DS-2 |
-| 8 | P1 | 21 letter-spacings px/em | `--ls-caps/--ls-title/--ls-num` | DS-2 |
-| 9 | P1 | 16 radios; literales; `.mbanner` ignora `--radius` | jerarquía §4.6 | DS-3 |
-| 10 | P1 | 6 alturas y 4 radios de input | dos familias §7.2 | DS-3 |
-| 11 | P1 | ≥10 variantes de chip; `.vst` duplicado (la cajita de "bajo MEV") | tres familias §7.4 | DS-3 |
-| 12 | P1 | footer de sesión ~30 px, 10 px, sin radio | 44 px, roles §7.1 | DS-3 |
-| 13 | P1 | 8 sombras ad-hoc | `--shadow-float` + `--glass-shadow` | DS-3 |
-| 14 | P1 | gutters 16/18/26/34 | `--sp-px` | DS-2 |
-| 15 | P1 | 190 espaciados fuera de escala | escala §4.5 (knobs intactos) | DS-2 |
-| 16 | P1 | 25 duraciones; overshoot en popover; radar que respira infinito | tokens §4.8 | DS-5 |
-| 17 | P1 | 570 `style=""` (`.submeta` 89/110 y `.grp-label` 27/35 sobreescritos en línea) | clases + modificadores; meta ≤150 (solo valores calculados en vivo) | DS-4 |
-| 18 | P1 | glass copiado en 3 reglas; `.glass*` sin usar | utilidades | DS-3 |
-| 19 | P2 | la nav queda encima del scrim de los modales | capas §4.9 | DS-1 |
-| 20 | P2 | `.mdetail-wrap .sheet` nunca coincide | `.sheet.mdetail-wrap` | DS-1 |
-| 21 | P2 | sheets sin animación de entrada/salida | slide 280 ms | DS-3 |
-| 22 | P2 | balance: mantenimiento verde / volumen ámbar como categoría | neutro — la palabra es la señal (déficit azul se queda) | DS-3 |
-| 23 | P2 | 11 grosores de trazo SVG | 1.6 íconos · 1.4/1.8 gráficas | DS-3 |
-| 24 | P2 | emoji 🗑 🔒 📸 | glifo/texto | DS-3 |
-| 25 | P3 | CSS muerto (`.glass*`, utilidades v156, `.prow`, `.srowm`, `--warn-glow`) y reglas repetidas (`.nav`, `.fab`, `.grp`, `.sheet`×3, `.grp-label`, `.mdk`) | limpiar | DS-1 |
-| 26 | P3 | docs viejas: "Design language" de CLAUDE.md, comentario r13/r11, "`!important`" del modo diseño | apuntar aquí | DS-0 |
-
-**Hecho:** DS-0 (2026-09-18, documento + auditor) · **DS-1 (v231)**: #1–#6, #19, #20, tokens nuevos de §4
-(hero, tracking, `--s7/--s8`, `--r-mark`, `--shadow-float`, movimiento, capas), `--warn-glow` fuera. Auditor tras DS-1:
-**P0 detectables = 0** (antes `--o15` + peso 600 ×10).
-**DS-2 (v232)**: #7, #8, #14 y los impares de #15 en el bloque CSS — `font-size` literales en CSS **229 → 0** (240 usos
-de `var(--t-*)`, antes 31; 22 remapeos fuera de escala y 22 exenciones marcadas), 51 tracking por rol, 118
-espaciados impares al par más cercano, márgenes laterales de barras y nav a `--sp-px`. Quedan en línea (DS-4) 111
-tamaños y el espaciado de 14/18/22 que no es ritmo de página.
-**DS-3 (v233)**: #9–#13, #18, #21–#25 — radios fuera de escala **16 → 0** (literales 43 → 14, solo `50%`/`0`/2 en
-línea), sombras fuera de token **10 → 0**, selectores repetidos **18 → 0**, colores literales en CSS 18 → 4, sin bordes
-de 1.5px; inputs en dos familias (selects de sheets, horas de sueño y rango de fechas a formulario 44/r12); chips en
-tres familias (la cajita de "bajo MEV", `PR` y la retención sin caja; suplementos y chips de píldora a 36 px); footer de
-sesión a 44 (↩ deja de llevar el borde de abort) y botones del descanso con zona táctil 44; `.glass`/`.glass-strong` en
-el marcado de nav, sheet y toast; sheets que entran y salen deslizando; balance neutro salvo déficit; trazos SVG en
-cuatro valores; sin emoji pictográficos; CSS muerto fuera (`.rowend`, `.pfv`, `.pwk`, `.ptla`, `.prng`, vista previa de
-sesión, `.srowm`, `.shset`, `.mbanner`/`.mb-*`, `.prow`); FAB y fantasma de arrastre en `--z-float`; sin glow en la
-barra de intake ni en el escáner. Las utilidades v156 (`.t-meta`, `.mt-s*`…) se quedan para DS-4.
-**PT2 v234** (diagnóstico por músculo) construido ya con el sistema: componente §7.16, `.grp-label.sub` en lugar de
-márgenes en línea en el detalle de músculo.
-**DS-4 (v235)**: #17 — `style=""` **562 → 97** (72 con valores calculados en vivo + 25 dimensiones únicas y
-`display:none` que el JS alterna); tamaños de letra en línea **111 → 0** y fuera de escala 8 → 0; tracking fuera de rol
-14 → 0. Todo lo fijo pasó a utilidades `u-` (§7.17) o a componentes nuevos (`.setprogline`, `.inp-mini`,
-`.gc-uni-head`, `.moodax.at/ab/al/ar`, `.start.ghost`, `.fa-em-step.off`; `updateSetProgress` alterna `.nil` en vez de
-escribir estilos). Verificado con `tools/ds-diff.html` en 52 escenarios: **fase exacta con cero diferencias**; la fase de
-corrección cambia solo lo buscado (espaciados 3/5/9/13/14/18/26/36/50 → la escala, tracking por rol, 24→22 y 14→13 en
-tipo, las dos acciones de texto del gym sin caja). Error corregido de paso: un `style` condicional
-(`${b?' style=…':''}`) que el convertidor habría vuelto fijo → `class="k${b?' u-fg':''}"`.
-**DS-5 (v236)**: #16 + #21 cerrado — **duraciones literales en el CSS 21 → 0** (todo por `--dur-*`/`--ease-*`/`--toast-life*`;
-los bucles funcionales exentos y listados en §15); el radar ya no "respira"; el popover del FAB sin rebote; la nav se
-expande en 280 ms (antes 500 + retraso). Nuevo (§10): `afterPaint` con filas que entran, ✓ con pop, fila que sale al
-deslizar, números que cuentan (kcal, P/C/F, racha) y el indicador deslizante de periodos; `number-flow` descartado a
-favor de un conteo propio. Verificado en preview: + serie/↓ drop/+ ejercicio con `rowin` (y el ejercicio nuevo ya no
-salta al inicio), ✓ con `chkpop` solo en esa serie, un re-render sin cambios no anima nada, kcal 0 → 1,234 contando,
-indicador 104 → 4 px al cambiar de periodo, deslizar borra tras salir.
-
-**Fases DS (cerradas):** DS-0 documento y auditor · DS-1 P0 + tokens + capas · DS-2 tipografía y ritmo · DS-3
-componentes · PT2 v234 diagnóstico · DS-4 deuda en línea · DS-5 movimiento. La "capa 21st A/B" (DS-6) se reemplaza por
-la ruta R, construida sobre el registro `TRK*` (§7.18).
-
-### 20.1 Inventario v236 → ruta R (2026-09-18)
-
-Medido sobre v236 antes de tocar nada (auditor + lectura del código). Lo que DS-5 dejó sin detectar (D1) entra aquí.
-
-| # | Área | Actual (medido en v236) | Objetivo (valor) | Fase |
-|---|---|---|---|---|
-| D1 | Selectores duplicados | 2 (`.mdtabs`, `.mdtabs span`) | 0 | R1 |
-| D2 | Espaciado del CSS por token | auditor: **107 por token / 260 px literales** (sin contar 1/6/10); fuera de escala 52 (`14`×17 · `18`×13 · `22`×6 · `30`×3 · `40`×2 · `5`×3 · `1.5`×2 · `3` `7` `9` `20` `28` `34`×1) | escala por token (`2 --s1` · `4 --s2` · `8 --s3` · `12 --s4` · `16 --s5` · `24 --s6` · `32 --s7` · `48 --s8`; 6/10 medio paso; 1 óptico); 14/18/22 → `--sp-*` solo si es ritmo de página, si no 12/16/24; fuera de escala 0 | R1 |
-| D3 | Rótulos | `FUERZA · e1RM…` sin `//`; `.grp-label` con 6 combinaciones de márgenes (`u-mt4/6/12/16` + `u-mb4/6`) | `//FUERZA`; solo `.grp-label.sub` (12/4) y `.grp-label.first` (4/4) | R1 |
-| D4 | Feedback de guardado | 18 toasts en formato libre; auditor: **10 guardados sin feedback** (`saveExProfile`, `saveExEdit`, `saveSession`, `commitLog`, `ss_save`, `bw/sl/sc/sut/exn_save`) + los que no detecta por nombre (`mc_save`, metas, `dm/mv/dr/am_go`) | 0 sin feedback; vocabulario §7.18.1; pila máx. 3 | R2 |
-| D5 | Tareas async | sync de Salud, OpenFoodFacts, IA de etiqueta, exportar: sin "cargando" | `toastTask` cargando → listo/error | R2 |
-| D6 | Diálogos nativos | `alert` 36 · `confirm` 31 · `prompt` 3 | 0 (TRKHold ×6 irreversibles · TRKAsk · toast `err`/`ok` · sheet de campo) | R2 |
-| D7 | Pestañas | píldora `--card` en pista `--o12` r16 (3 sheets) | TRKTabs: subrayado 2 px `--fill` que viaja; etiquetas `--o50` → activa `--fg` | R3 |
-| D8 | Glosario | 0 términos explicables | `data-gloss` + TRKPop: RIR, T, % de capacidad, MEV/MAV/MRV, estimado/observado, RIR medio, e1RM, `~` | R3 |
-| D9 | Catálogo → perfil | salto | View Transition del nombre al título (`--dur-3`) | R3 |
-| D10 | Acciones de fila | catálogo sin historial/unir desde la fila | `⋯` → TRKPop: perfil · historial · seleccionar para unir | R3 |
-| D11 | Reacomodo de filas | al borrar/abrir, el resto salta | TRKRow `flipRows` (`--dur-2`) | R4 |
-| D12 | Historial | lista por mes | rail + fila expandible (series en línea) + mes TRKCal arriba | R5 |
-| D13 | Barras | se redibujan sin transición | TRKBar (`--dur-2`, solo si cambió) | R6 |
-| D14 | //FUERZA | texto `172 ▲5 ›` | TRKTrend con sparkline 30 d | R6 |
-| D15 | Logros | //RECORDS estático | `PR` en los récords de los últimos 7 días | R6 |
-| D16 | //MÚSCULOS detalle | 4 lecturas solo en texto | 4 TRKBar (volumen vs MRV, estímulo, fatiga, recuperación) + estado en texto | R6 |
-| D17 | RIR en la tabla | `<select>` nativo | TRKSelect (0–5, F), `<select>` de respaldo | R7 (B) |
-| D18 | `durMs` (DS-5) | leía `2.3s` como 2.3 ms (solo afectaba a un token en segundos, nuevo en R2): el toast se iba al instante | respeta la unidad (`ms`/`s`) · self-check | R2 (hallado en su verificación, antes de desplegar) |
-| D19 | Barra de recuperación (D16) | llenaba con `rec.pct` (horas ÷ punto medio de la ventana): 100 % con estado "casi", porque "fresco" empieza al FINAL de la ventana | escala = fin de la ventana (`win.hi`, lleno ⇔ fresco), marca en su inicio (`win.lo`) solo si cae dentro (0 < lo < hi), leyenda sin porcentaje; `rec.pct` y el texto de estado no cambian | R6 (hallado en su verificación, antes de desplegar) |
-| D20 | Ventana observada (v230) | los tramos abiertos del historial se leían como rango: "168–168 h" (>168) y "0–48 h" (<48) en el detalle de músculo y en el diagnóstico "antes de recuperarse" | `winTxt(lo,hi)`: `>168 h` · `<48 h` · `48–72 h`; el cálculo no cambia | R6 (hallado en su verificación, antes de desplegar) |
-| D21 | `tools/ds-diff.html` | cargaba `../_pre.html` y `../index.html` sin romper caché: el navegador puede servir copias viejas (`transferSize 0`) y comparar las versiones equivocadas — así pasó en R7 (comparó v241 contra v242) y pudo pasar en la fase exacta de R6a | iframes con `?cb=<hora>`; `?a=`/`?b=` eligen los archivos; `report()` dice qué archivo cargó cada lado y con cuántos bytes; R6a re-verificada con cargas frescas | R7 (hallado en su verificación) |
-
-**Hecho R1 (v237):** D1 duplicados 2 → 0 · D2 espaciado del CSS **107 por token / 260 literales → 360 / 0** (fase exacta
-`ds-diff` = 0 diferencias en 55 escenarios con datos reales; fase de escala: 14→12 salvo encabezado→contenido (`--sp-section`: `.grp-label`,
-`.sheet h3`, `.mdhd`, `.ws-cardh`) y el menú (→16, zona táctil); 18→16; 22→24; 30/28/34→32; 20→24; 9→10; 5/3→4; `.exprog` 7→8) ·
-D3 `//FUERZA` y `.grp-label` de 14 variantes a 3 (sección · `.sub` 12/4 · `.first` 4/4, color `--o40`). Fuera de escala 0 en todo el
-archivo; las partes fijas de los badges dinámicos (`.setprog`, `.exprog`) pasan a clase y en línea solo queda el color calculado.
-
-**Hecho R2 (v238):** D4 guardados sin feedback **10 → 0** (+7 que el auditor no ve por nombre: máquina, metas, duplicar/mover comida, agua, suplemento, toma) con el vocabulario §7.18.1; D5 la sincronización manual de Salud es una tarea visible (`… sincronizando salud` → `✓ salud sincronizada · …`/`⚠ …`; OpenFoodFacts, IA y OCR ya mostraban su carga dentro del sheet); D6 diálogos nativos **alert 36 · confirm 31 · prompt 3 → 0**: 7 irreversibles con TRKHold (abortar, borrar sesión ×2, borrar día, borrar comida completa, borrar suplemento con su historial, borrar todo) + cargar respaldo (`confirmReplace`, ×3 llamadas), 22 decisiones con TRKAsk, 36 avisos a toast (`⚠ …` se queda hasta tocarlo), 3 campos con TRKPrompt. TRKAsk/TRKHold van en una **capa propia** (`#asklayer`, `--z-pop`) encima del sheet: lo escrito abajo no se pierde. Transformación mecánica con emparejado de llaves consciente de cadenas/plantillas/regex; `saveSession` y `confirmReplace` reescritos a mano. Self-check nuevo `_uiSelfCheck` (20 en total). `ds-diff`: 0 diferencias en 55 escenarios.
-
-**Hecho R3 (v239):** D7 pestañas = TRKTabs (subrayado 2 px `--fill` que viaja, sin pista ni píldora) en métrica, volumen, e1RM y HOY/TODOS del stack (antes dos spans con color en línea); en pantallas el indicador viaja si cambias de pestaña en la misma pantalla. D8 glosario: 7 términos (`rir`, `t`, `cap`, `lm`, `est`, `rirmed`, `e1rm`) en 16 lugares (encabezado RIR ×4, chip T, badge de %, "bajo MEV" de //EFFECTIVE VOLUME, 6 líneas del detalle de músculo, e1RM de //FUERZA y //RECORDS); cierra al tocar fuera o con cualquier scroll. D9 catálogo → perfil con View Transition. D10 `⋯` por fila del catálogo → perfil · historial e1RM · seleccionar para unir. `ds-diff`: solo pestañas, cursores del glosario y los elementos nuevos.
-
-**Hecho R4 (v240):** D11 TRKRow reflow: filas (`.srow`/`.pair`), líneas de progreso, ejercicios (`.ex`) y grupos de músculo (`.mgroup`) llevan `data-rk` por identidad; `reRender()` anima el reacomodo (`--dur-2`) al agregar serie o drop, borrar serie/drop (deslizar), quitar un ejercicio, deshacer y reordenar arrastrando — esas acciones pasan de `render()` con scroll a mano a `reRender()`. Verificado: drop sobre la 1.ª serie → la de arriba quieta, el drop entra, las de abajo vienen desde −42 px y los ejercicios siguientes se mueven como bloque sin animar sus filas dos veces; al borrarlo, +42 px → 0. `ds-diff` 0 diferencias.
-**Hecho R5 (v241):** D12 historial: mini-calendario del mes arriba (TRKCal con número de día, `‹ ›` entre el primer mes con sesiones y el actual; tocar un día abre esa sesión, baja hasta ella y resalta su punto — fuera de las 80 filas abre su hoja), meses como rail (línea 1 px `--o12`, punto 7 px `--o40`, `--fg` en la sesión a la que llegaste) y cada sesión se abre en sitio con sus series en el formato de compartir (`sessExBlockHTML`, compartido con la hoja de compartir) + ▲▼% por ejercicio y `[ver / editar]` → la hoja de siempre. Abrir/cerrar pasa por `reRender` (TRKRow: lo de abajo se reacomoda) y lo abierto entra con `rowin` (`applyEnter` acepta `{sel}`). `monthCalHTML` extraído de la racha: `ds-diff` 0 diferencias en Progreso y en compartir sesión; solo cambia el historial.
-**Hecho R6 (v242):** R6a (refactor exacto, `ds-diff` 57/57 sin diferencias): TRKBar como componente — `trkBarI`/`trkMark` en //EFFECTIVE VOLUME, //MÚSCULOS, cobertura del split, barras de ingesta y progreso de sesión (vivo e historial); `animBars` en `afterPaint`; `style=""` 96 → 87. R6b: D13 las barras crecen/encogen desde su ancho anterior (verificado: ✓ de una serie → progreso de sesión 0 → 7 %); D14 //FUERZA con TRKTrend (nombre · línea de 30 días · e1RM que cuenta · Δ en `u-good/u-bad` · ›); D15 `PR` en //RECORDS para récords de los últimos 7 días (con su leyenda solo si hay alguno); D16 4 barras en el detalle de músculo (volumen con MEV/MRV · T con marca en 7d previos · series 72 h con marca en tu promedio · recuperación). D19 y D20 hallados en la verificación y corregidos antes de desplegar. `ds-diff`: solo Progreso (+26 elementos = filas TRKTrend + PR − líneas viejas) y el detalle de músculo (+21 = las 4 barras).
-**Hecho R7 (v243):** D17 el RIR de la tabla (vivo e historial) es un botón idéntico al select (40×36, letra, borde, radio, gris `.45` de sugerencia — medido) que abre TRKSelect: un toque elige y confirma solo ese campo (`setField`/`setHistField` de siempre, sin repintar en vivo ni mover el scroll); el candado del historial, el auto-scroll al primer RIR y el deslizar para borrar (ya excluía botones) siguen igual. D21 (herramienta) hallado en su verificación y corregido: `ds-diff` rompe la caché; con cargas frescas se re-verificó R6a (v241 → actual: home, macros, split, historial exactos; //MÚSCULOS 0 diferencias en 139 elementos, barra de sesión 0) y R7 (v242 → actual: 33/57 exactos y las 24 restantes exactamente −112 = las 14 celdas sin sus 8 `<option>`; la tabla sin la celda de RIR, 0 diferencias en 292 elementos).
-**Ruta completa (R0–R7, v237–v243).** D1–D21 cerradas.
-**Ruta:** R0 guideline (este documento + auditor) · R1 v237 saneamiento · R2 v238 feedback y confirmación · R3 v239
-pestañas, glosario, acciones de fila, transición · R4 v240 filas · R5 v241 historial · R6 v242 progreso · R7 v243 RIR.
-Cada una cierra con `ds-audit` sin regresiones (duplicados 0), `ds-diff`, self-checks y QA 393×852.
-
-### 20.2 Inventario v245 → ruta UX-2 (2026-09-19)
-
-Quejas de uso del dueño (voz) + investigación de 10 agentes sobre MyFitnessPal, MacroFactor, Cronometer, Yazio,
-Bevel, Whoop, Oura, Gentler Streak, Apple Salud, Hevy, Strong, Boostcamp, Strava, Streaks, Habitify, Medisafe,
-Pillow, AutoSleep, Fitbit + HIG / Material 3 / NN-g. **No hay ninguna captura de Bevel archivada en el proyecto**
-(se buscó en `projects/gym-trk/**` e `imports/`): las referencias a Bevel son solo texto.
-
-| # | Área | Actual (medido en v245) | Objetivo | Fase |
-|---|---|---|---|---|
-| E1 | Suplementos en macros | 4 filas `.spg` con etiqueta fija de 58 px y chips de 36 px con `wrap` → escalonado, justo encima del log | una línea `//SUPPS ●●○○ 2/4` desplegable, riel sin wrap, `[✓ todo]` del momento (Apple Salud, Habitify) | U1 |
-| E2 | Agregar comida | única puerta: FAB → popover de 5 → sheet | `[+ alimento]` como última fila de cada comida y `[+ comida]` al final del log (MFP) | U1 |
-| E3 | Renombrar comida | existe pero escondido dentro del `.ghead` que abre el modal, objetivo < 44 px | `[···]` por comida → renombrar · aproximada · hora · borrar, filas de 44 px | U1 |
-| E4 | Agua | 3 toques y los chips solo rellenan el input | sección `//AGUA` al final: `[250] [500] [750] [1 L]` = un toque; `[otro]` abre el campo | U1 |
-| E5 | Menú (+) | 5 píldoras; `adddrink`/`addwaterquick` duplicados; el 5.º entra sin animación | **se quita** (decisión del dueño); sus acciones viven en el log y en el sheet | U1 |
-| E6 | Nombre de comida nueva | input libre de 16 px + chips arriba del sheet | **TRKWheel** (rueda `scroll-snap`, filas 40 px, 5 visibles, radiogroup accesible) + `otro nombre…` | U2 |
-| E7 | Sheet add food | 7 tamaños en 400 px; `fsearch`/`inlineSearchOFF` código muerto | buscar → `[escanear] [aproximada] [registrar]` → resultados agrupados; 4 tamaños | U2 |
-| E8 | Acciones de item | 3 enlaces de 10 px con sangría propia, < 44 px | fila de acciones de 44 px con el vocabulario `[ ]` | U2 |
-| E9 | Tipografía | 12 choques de rol medidos | tabla §4.4b aplicada; el 12 desaparece del rol "fila de dato" | U3 |
-| E10 | Ruido | `.chhint` en 17 métricas · `.swipehint` en cada render · 4 copias de la misma nota · `.submeta` con ~120 usos de 7 tipos | política §9.1 | U3 |
-| E11 | Franja de rango | `fill:var(--o10)` contra trazo `--o60` → ratio ≈ 1.1:1, invisible | dos líneas de referencia .5 px `--o25` + etiqueta `p15–p85 · 90d` | U4 |
-| E12 | Franja en peso | `if(key!=='weight')`: nunca hay banda ni línea de estado | banda fija del periodo también en peso | U4 |
-| E13 | Franja en pasos | la banda expande el dominio Y y aplasta la línea | banda fija por periodo, sin expandir el dominio | U4 |
-| E14 | Franja: huecos y zoom | segmentos de 1 día descartados; sin `clipPath` al hacer zoom; relleno incoherente | dibujar 1 día, `clipPath`, mismo tratamiento de relleno | U4 |
-| E15 | Sin historia | < 7 días: ni banda ni aviso | `sin normal · 4/14 d` en el sitio de la etiqueta | U4 |
-| E16 | Calendario de racha | `--o60` gris + `--good` verde (la pareja rechazada), celdas de 13 px no cuadradas, leyenda con muestras | opacidad de un solo blanco (`--track` · `--o30` · `--fg`), celda cuadrada, sin leyenda | U5 |
-| E17 | Tarjeta de racha | 4 niveles tipográficos + la regla impresa en cada render | 3 niveles; la regla al glosario | U5 |
-| E18 | Semana | empieza en domingo, columnas `D L M M J V S` | lunes primero, `L M X J V S D` | U5 |
-| E19 | Sueño manual | solo horas; las fases ya se capturan en `db.health.sleep[].stages` y mueren en `asleepMin` | línea de tiempo con bloques (Pillow/Apple/Fitbit); resto `sin clasificar` visible; nunca pedir minutos y validar sumas | U6 |
-| E20 | `hours` ambiguo | sincronizado = dormido; manual = en cama; `sleepHours` los suma igual | `inBed` y `asleep` separados; procedencia explícita | U6 |
-| E21 | Compartir sesión | sin jerarquía de tarjeta | 3 lecturas en `--t-hero` (duración · tonelaje · T) + cuerpo comprimido + `[copiar como texto]` (Strong) | U7 |
-| E22 | Compartir día | resumen sin foco | energía + macros contra meta + 3 alimentos principales, misma retícula | U7 |
-
-**Línea base del auditor en v245** (contadores nuevos de U0): rol con token fuera de tabla **7** · campos por debajo de 16 px **4** (`.mmrow select` 13, `.inp` 12, `.pick` 12, `.inp-mini` 10) · 9 px en minúsculas **34** · texto instructivo: `chhint` 1 (se imprime en las 17 métricas), `swipehint` 1 (en cada render), `ehint` 7, `submeta` 114.
-
-**Hecho U1 (v246):** E1–E5. El log de macros pasa a diario (MyFitnessPal): el nombre de la comida sube de 10 a 13/800 —deja de ser el texto más chico de su propio bloque—, `[+ alimento]` cierra cada comida, `[···]` abre sus seis acciones en filas de 50 px (alimento · aproximada · desglose · renombrar · hora · borrar), `[+ comida]` al final abre **TRKWheel**, y el `(+)` flotante y su popover **se eliminan** (con ellos, la regresión de capas de v231/v244). `//SUPPS` pasa de 4 filas escalonadas a **una línea** `●●○○ 2/4` que despliega un riel horizontal sin wrap, con `[✓ todo]` y sin reordenar los chips bajo el dedo; su estado se fija una vez por render para que marcar no la cierre (el bug de v226). `//AGUA` es una sección al final del día: `[250] [500] [750] [1 L]` registran de un toque y `[otro]` abre el sheet de siempre; el agua sale del log como grupo y sus chips se quitan con confirmación. El renombrar en sitio deja de heredar 10 px (`.gnmin` a 16, sin zoom de iOS). Verificado en preview a 393×852 con toques reales: menú de 50 px, rueda en sus tres modos (girar + `[elegir]` = "pre workout", tocar fila = "lunch", `otro nombre…` = texto libre), agua 0 → 0.5 L y quitar con confirmación, `✓ todo` 15/15 sin cerrar el riel, renombrar `breakfast → desayuno` en db y en pantalla; `ds-diff` con cargas frescas: solo la pantalla de macros (+10 elementos), el resto 0 diferencias; self-checks 20/20.
-
-**Hecho U2 (v247):** E6–E8. El sheet de alimento pasa a la jerarquía buscar → atajos → resultados: la comida es una línea `a #desayuno [cambiar]` con TRKWheel (en la capa de TRKAsk, encima del sheet, sin perder lo escrito), los atajos son una fila de texto `[escanear] [aproximada] [registrar]`, los resultados van agrupados (`TUYOS` · `BÁSICOS` · `EN LÍNEA`) y el vacío es una línea en vez de un diagrama de 3 tarjetas. De 7 tamaños a 5, todos con rol. Acciones por alimento a 44 px con vocabulario `[ ]`. Código muerto fuera: `inlineSearchOFF`, `fsearch`, los 3 iconos del vacío y `pickmealtag`. `ds-diff`: solo `m:food` (−12 elementos).
-
-**Hecho U3 (v248):** E9–E10. Tabla §4.4b aplicada: título de sheet 11 → 16/800 con color `--fg`, fila navegable 12 → 13, meta 11 → 10, tabs y nav 12 → 11/700, chips 12 → 11, y los 9 px en minúsculas del log y del mapa de músculos a 10 (el 9 queda para MAYÚSCULAS y anotaciones de serie). Ruido: fuera el hint de gestos de las 17 métricas, las 4 copias de "toca una fecha para editarla", la regla impresa en la tarjeta de racha y la duplicación de "correlación, no causa"; la pista de deslizar se enseña una vez (`hintSeen`/`hintMark`) y se retira al usar el gesto o al tocarla. Auditor: rol fuera de tabla 7 → 0, campos < 16 px 4 → 0 (las 4 son excepciones de §15 con el zoom bloqueado por el viewport). `ds-diff`: solo los cambios buscados.
-
-**Hecho U4 (v249):** E11–E15. La banda deja de ser un relleno invisible (`--o10`, ratio ≈1.1:1) y pasa a **dos líneas de referencia** de .5 px en `--o30`; deja de ser rodante y de expandir el dominio (`normalBandFixed`: un par p15–p85 por periodo), el peso por fin la tiene, el relleno de área ya no depende de si hay banda, y sin 7 días de historia el detalle dice `sin normal · N/7 d`. Fuera la pastilla "prom" de dentro de la gráfica (el encabezado ya lo dice) y el dibujante de banda por tramos.
-
-**Hecho U5 (v250):** E16–E18. La racha deja el par gris + verde y pasa a **opacidad de un solo blanco** (`--track` · `--o30` · `--fg`); celda **cuadrada** de 19 px; "hoy" con anillo `--o40` en vez de blanco puro; **sin leyenda** (tres muestras de color para un dato binario son texto instructivo disfrazado, §9.1); y la semana empieza en **lunes** con columnas `L M X J V S D` en los dos calendarios que comparten `monthCalHTML`.
-
-**Hecho U6 (v251):** E19–E20. Fases del sueño a mano por **intervalos** (nunca minutos ni sumas que validar, como Apple/Fitbit/Pillow): `[+ fase]` añade filas `HH:MM – HH:MM` encadenadas, la fase se elige con TRKWheel, y encima va un **hipnograma** proporcional en escala de opacidad con la lectura `dormido · en cama · sin clasificar` — el hueco se ve, no se reparte. `hours` pasa a significar siempre **dormido** y la ventana se guarda en `inBed` (antes un bloque sincronizado y uno manual significaban cosas distintas y se sumaban igual). Los bloques manuales siguen sin `src`, así que el sync no los pisa.
-
-**Hecho U7 (v252):** E21–E22. Las tarjetas de compartir pasan a la jerarquía de Hevy/Strava/Whoop: **tres lecturas** en `--t-hero` arriba (sesión: duración · tonelaje · tensión / día: kcal vs meta · proteína · restan), cuerpo comprimido (una línea por ejercicio con `shareExLines`; los 3 alimentos que más pesaron en el día) y pie discreto con el conteo, el gym y la fecha. **`[copiar como texto]`** en ambas (Strong): bloque monoespaciado pegable, con respaldo en TRKPrompt si el navegador bloquea el portapapeles. `ds-diff`: solo las dos pantallas de compartir.\n\n**Ruta UX-2 completa (U0–U7, v246–v252).** E1–E22 cerradas.
-
-**Ruta:** U0 bases (este documento + auditor) · U1 v246 macros sin fricción · U2 v247 sheet de alimento ·
-U3 v248 una sola voz · U4 v249 señal en las gráficas · U5 v250 racha · U6 v251 sueño con fases · U7 v252 compartir.
-Cada fase cierra con `ds-audit` sin regresiones, `ds-diff` con cargas frescas, self-checks y QA 393×852 con toques
-reales. Lo no previsto se agrega a esta tabla con su valor ANTES de corregirlo.
-
-*Historial:* v33 "Luxury Terminal" · v139–v145 consolidación (48/44, `.field`, 140 ms, vacíos `//`) · v160 color ·
-v169–v176 glass en chrome · v171 headers tokenizados · v213 `.pf` · v224 encabezado de ejercicio en dos líneas ·
-v225 ✓ a la derecha y deslizar para borrar · v226 //SUPPS y calendario · v227 gráficas estilo Bevel · v228–v230
-músculos canónicos, perfil, //MÚSCULOS · **2026-09-18 este documento reemplaza a STYLEMAP.md**.
+- SKL-1: las skills (`ui-ux-pro-max`, `mobile-app-ui-design`, `mobile-design`, `design-critique`, `accessibility-review`,
+  `design:design-system`, `ux-copy`) se usan como **rúbrica de principios**: toque, contraste, estados, movimiento con
+  sentido, texto claro, datos de consulta (el buscador de `ui-ux-pro-max` sustentó la escala de 5 tamaños y el interlineado
+  de lectura). **Sus gustos estéticos no aplican**: acentos, emoji, glassmorphism en contenido, springs, celebraciones,
+  verde matrix.
+- SKL-2: **si una skill choca con BRAND, gana BRAND** y el choque se anota como pregunta para el dueño. Choques conocidos:
+  mínimo de 11 (aquí 10) · perfil "Terminal CLI" con peso 400 y tracking normal (aquí 700/800 y `--ls-caps`) · `blur-purpose`
+  contra la nav de vidrio (BRAND la conserva en el chrome) · hojas de iOS que suben desde abajo (aquí bajan desde arriba) ·
+  no bloquear el zoom (aquí `vp-lock`) · celebraciones, brillo y emoji (rechazados).
+- SKL-3: se evitan como generadores `frontend-design`, `soft-skill`, `gpt-tasteskill`, `stitch-skill`, `imagegen-*` y el
+  MCP `magic`/21st.
+- **21st.dev (SKL-4):** es un registro de componentes React + Tailwind. Se usa **solo como catálogo de comportamientos**: se
+  toma la interacción, se reescribe en JS puro con los tokens de TRK; **nunca se pega un componente**. Licencia "unknown" =
+  solo inspiración. Dependencias permitidas: MIT, versión fijada, cacheadas por `sw.js`; hoy **ninguna** (el conteo de
+  números es propio). Los candidatos de fondo para el arranque (BRAND §4) se revisan igual: solo el comportamiento, en
+  GLSL/JS puro, en `tools/brand-lab.html`.
+- **Regla para cualquier agente:** identificar el componente concreto, documentar qué comportamiento se toma, quitar todo
+  tratamiento visual incompatible, reemplazar sus valores por los tokens de este documento, implementarlo como componente
+  `TRK*` reutilizable (§7.18) y después correr `node tools/ds-audit.cjs`, `tools/ds-diff.html` y el loop de QA.

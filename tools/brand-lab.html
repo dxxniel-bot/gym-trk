@@ -1,0 +1,234 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>gym//TRK · brand lab</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700;800&display=swap" rel="stylesheet">
+<style>
+  /* Lámina de decisiones de marca (G0). NO es la app: aquí se prototipan las piezas que cambian el look para que el
+     dueño elija con capturas (BRAND.md §4 y §10). Tokens copiados de index.html :root (v257). */
+  :root{
+    --bg:#000; --fg:#f3f3f4;
+    --o70:rgba(243,243,244,.74); --o60:rgba(243,243,244,.66); --o50:rgba(243,243,244,.56); --o40:rgba(243,243,244,.5);
+    --o35:rgba(243,243,244,.46); --o30:rgba(243,243,244,.4); --o20:rgba(243,243,244,.26); --o12:rgba(243,243,244,.1); --o10:rgba(243,243,244,.06);
+    --line:rgba(243,243,244,.08); --border:rgba(243,243,244,.09); --track:#191920; --card:#0d0d10; --card2:#16161c; --fill:#f3f3f4; --on-fill:#000;
+    --good:#46c98b; --bad:#e5675c; --warn:#e3b34f;
+    --glass-bg:rgba(14,14,17,.55); --glass-bg-strong:rgba(14,14,17,.72); --glass-blur:18px; --glass-sat:1.7; --glass-edge:rgba(243,243,244,.14);
+    --t-hero:34px; --t-display:22px; --t-section:16px; --t-data:12px; --t-label:10px;
+    --ls-caps:.2em; --ls-num:-.03em; --ls-ui:.03em;
+    --s1:2px; --s2:4px; --s3:8px; --s4:12px; --s5:16px; --s6:24px; --s7:32px;
+    --r-sm:2px;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  body{background:var(--bg);color:var(--fg);font-family:"JetBrains Mono",ui-monospace,Menlo,monospace;-webkit-font-smoothing:antialiased;padding:0 18px 80px;max-width:393px;margin:0 auto;}
+  h1{font-size:var(--t-display);font-weight:800;margin:24px 0 4px;} h1 .s{color:var(--o40);}
+  .lead{font-size:var(--t-label);color:var(--o50);line-height:1.5;margin-bottom:8px;}
+  section{border-top:.5px solid var(--o20);padding:20px 0 8px;margin-top:18px;}
+  .sh{font-size:var(--t-section);font-weight:800;} .sh .s{color:var(--o40);}
+  .sm{font-size:var(--t-label);color:var(--o50);line-height:1.5;margin:4px 0 12px;}
+  .opt{margin:14px 0 6px;font-size:var(--t-label);color:var(--o60);letter-spacing:var(--ls-caps);text-transform:uppercase;}
+  .opt b{color:var(--fg);}
+  /* fondo de contenido falso para juzgar el vidrio encima */
+  .stage{position:relative;height:150px;overflow:hidden;border:.5px solid var(--o10);}
+  .stage .content{position:absolute;inset:0;padding:10px 12px;font-size:var(--t-data);line-height:1.6;color:var(--o60);}
+  .stage .content b{color:var(--fg);} .stage .content .d{color:var(--o40);}
+  .glass{background:var(--glass-bg);-webkit-backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-sat));backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-sat));border:.5px solid var(--glass-edge);}
+  /* ---- NAV ---- */
+  .nav{position:absolute;left:50%;transform:translateX(-50%);bottom:12px;display:flex;align-items:center;}
+  .nav a{display:flex;align-items:center;justify-content:center;min-width:44px;height:44px;padding:0 14px;font-size:var(--t-data);font-weight:700;color:var(--o50);letter-spacing:var(--ls-ui);cursor:pointer;}
+  .navA{border-radius:999px;padding:3px;} .navA a{border-radius:999px;} .navA a.on{background:var(--fill);color:var(--on-fill);}
+  .navB{border-radius:12px;padding:0 4px;} .navB a.on{color:var(--fg);} .navB a.on::before{content:'[';color:var(--o50);margin-right:2px;} .navB a.on::after{content:']';color:var(--o50);margin-left:2px;}
+  .navC{left:12px;right:12px;transform:none;border-radius:8px;justify-content:space-between;padding:0 6px;}
+  .navC .pr{font-size:var(--t-label);color:var(--o40);padding:0 6px;} .navC a{position:relative;} .navC a.on{color:var(--fg);}
+  .navC a.on::after{content:'';position:absolute;left:14px;right:14px;bottom:9px;height:2px;background:var(--fill);}
+  /* ---- PRIMARIO ---- */
+  .pbtn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;height:48px;border-radius:var(--r-sm);font:inherit;font-size:var(--t-data);font-weight:800;letter-spacing:var(--ls-ui);cursor:pointer;margin-bottom:8px;}
+  .pA{background:var(--fill);color:var(--on-fill);border:0;} .pA:active,.pA.press{background:var(--bg);color:var(--fg);box-shadow:inset 0 0 0 1px var(--fg);}
+  .pB{background:var(--glass-bg-strong);color:var(--fg);border:1px solid var(--fg);} .pB:active,.pB.press{background:var(--fill);color:var(--on-fill);}
+  .pB .gt{color:var(--o50);}
+  .pC{background:var(--fill);color:var(--on-fill);border:0;justify-content:flex-start;padding:0 16px;} .pC .cur{margin-left:auto;animation:blink 1.15s step-end infinite;}
+  .pC:active,.pC.press{background:var(--bg);color:var(--fg);box-shadow:inset 0 0 0 1px var(--fg);}
+  @keyframes blink{50%{opacity:0}}
+  .brk{font-size:var(--t-data);font-weight:700;color:var(--o60);display:flex;gap:18px;margin:6px 0 4px;}
+  /* ---- FLOTANTE: sheet y toast ---- */
+  .fl{position:absolute;left:12px;right:12px;padding:12px 14px;font-size:var(--t-data);}
+  .fl .t{font-weight:800;font-size:var(--t-section);margin-bottom:4px;}
+  .toast{position:absolute;left:50%;transform:translateX(-50%);bottom:12px;padding:10px 14px;font-size:var(--t-data);white-space:nowrap;}
+  /* ---- ANILLO ---- */
+  .ringwrap{display:flex;align-items:center;gap:16px;padding:14px 12px;}
+  .ring{position:relative;width:104px;height:104px;flex:0 0 auto;}
+  .ring svg{width:100%;height:100%;transform:rotate(-90deg);}
+  .ring .n{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;}
+  .ring .n b{font-size:var(--t-display);font-weight:800;letter-spacing:var(--ls-num);} .ring .n span{font-size:var(--t-label);color:var(--o40);}
+  .rmeta{font-size:var(--t-data);line-height:1.7;color:var(--o60);} .rmeta b{color:var(--fg);}
+  .panel-cur{background:var(--card);border:.5px solid var(--border);border-radius:16px;}
+  .panel-cur .ring{filter:drop-shadow(0 0 14px rgba(70,201,139,.45));}
+  .panel-flat{border-top:.5px solid var(--o20);border-bottom:.5px solid var(--o20);}
+  .panel-box{border:.5px solid var(--o20);border-radius:2px;}
+  /* ---- ÍCONOS ---- */
+  .icons{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;}
+  .ic{display:flex;flex-direction:column;align-items:center;gap:6px;padding:10px 0;font-size:var(--t-label);color:var(--o50);}
+  .ic svg{width:24px;height:24px;stroke:var(--fg);fill:none;stroke-width:1.6;}
+  .ic.old svg{stroke-linecap:round;stroke-linejoin:round;}
+  .ic.trk svg{stroke-linecap:square;stroke-linejoin:miter;}
+  .chip{width:44px;height:44px;display:flex;align-items:center;justify-content:center;border-radius:12px;}
+  .emoji{font-size:22px;line-height:24px;}
+  /* ---- SHADERS ---- */
+  .sgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .sbox{position:relative;aspect-ratio:393/852;border:.5px solid var(--o20);overflow:hidden;}
+  .sbox canvas{position:absolute;inset:0;width:100%;height:100%;opacity:.5;}
+  .sbox .bt{position:absolute;left:14px;top:46%;font-size:var(--t-section);font-weight:800;} .sbox .bt .s{color:var(--o40);}
+  .sbox .ln{position:absolute;left:14px;top:52%;font-size:9px;line-height:1.6;color:var(--o50);}
+  .scap{font-size:var(--t-label);color:var(--o60);margin-top:4px;} .scap b{color:var(--fg);}
+  /* ---- CAMPOS (WCAG 1.4.11) ---- */
+  .row{display:grid;grid-template-columns:22px 34px 1fr 44px 44px 40px 30px;gap:4px;align-items:center;margin:6px 0;}
+  .row .n{font-size:var(--t-label);color:var(--o50);text-align:center;}
+  .row .c{height:36px;border-radius:2px;display:flex;align-items:center;padding:0 8px;font-size:var(--t-data);}
+  .row .ck{text-align:center;font-size:var(--t-section);}
+  .f1 .c{border:.5px solid var(--o20);} .f2 .c{border:1px solid var(--o40);}
+  .note{font-size:var(--t-label);color:var(--o40);line-height:1.5;}
+</style>
+</head>
+<body>
+<h1>gym<span class="s">//</span>TRK · brand lab</h1>
+<p class="lead">Lámina para elegir las piezas de marca (BRAND.md §4, §10). Identidad: <b>CMD hacker × glass moderno</b> — contenido de terminal, chrome de vidrio. Cada bloque tiene opciones A/B/C; elige una por bloque.</p>
+
+<section>
+  <div class="sh"><span class="s">//</span>1 NAV</div>
+  <div class="sm">Híbrido cápsula de vidrio + barra de terminal. Texto siempre visible, sin íconos, ≥44 px, sin animar el ancho.</div>
+  <div class="opt"><b>A</b> · cápsula 999 · activa invertida</div>
+  <div class="stage"><div class="content"><b>//STIMULUS</b> <span class="d">effective sets · 7 d</span><br>delts ···················· 6.5<br><span class="d">bajo MEV · le faltan ~2 series</span><br>tricep ··················· 3.9<br>calfs ···················· 3</div>
+    <nav class="nav navA glass"><a>progress</a><a class="on">gym</a><a>macros</a></nav></div>
+  <div class="opt"><b>B</b> · barra de 12 px · activa entre [ ]</div>
+  <div class="stage"><div class="content"><b>//STIMULUS</b> <span class="d">effective sets · 7 d</span><br>delts ···················· 6.5<br><span class="d">bajo MEV · le faltan ~2 series</span><br>tricep ··················· 3.9<br>calfs ···················· 3</div>
+    <nav class="nav navB glass"><a>progress</a><a class="on">gym</a><a>macros</a></nav></div>
+  <div class="opt"><b>C</b> · barra ancha de 8 px · prompt + subrayado</div>
+  <div class="stage"><div class="content"><b>//STIMULUS</b> <span class="d">effective sets · 7 d</span><br>delts ···················· 6.5<br><span class="d">bajo MEV · le faltan ~2 series</span><br>tricep ··················· 3.9<br>calfs ···················· 3</div>
+    <nav class="nav navC glass"><span class="pr">&gt;</span><a>progress</a><a class="on">gym</a><a>macros</a><span class="pr">_</span></nav></div>
+</section>
+
+<section>
+  <div class="sh"><span class="s">//</span>2 PRIMARY</div>
+  <div class="sm">Un solo primario por vista, 2 px, texto de comando. Tócalos para ver el estado presionado. Lo demás va en [corchetes].</div>
+  <div class="opt"><b>A</b> · bloque invertido</div>
+  <button class="pbtn pA">▶ resume workout</button>
+  <div class="opt"><b>B</b> · vidrio + borde, glifo &gt;</div>
+  <button class="pbtn pB"><span class="gt">&gt;</span> save session</button>
+  <div class="opt"><b>C</b> · invertido con cursor ▌</div>
+  <button class="pbtn pC">▶ resume workout <span class="cur">▌</span></button>
+  <div class="brk"><span>[rest]</span><span>[skip]</span><span>[+ log past session]</span></div>
+</section>
+
+<section>
+  <div class="sh"><span class="s">//</span>3 FLOAT RADIUS</div>
+  <div class="sm">El radio chico solo vive en lo que flota (sheet, toast, popover). El contenido va a 2 px.</div>
+  <div class="opt"><b>A</b> · 8 px</div>
+  <div class="stage"><div class="content"><b>//MEALS</b> 4 meals<br>› breakfast <span class="d">09:13 · 48P 71C 4F</span> ········ 509<br>› lunch <span class="d">17:03 · 69P 107C 13F</span> ·········· 817</div>
+    <div class="fl glass" style="top:10px;border-radius:8px"><div class="t">sleep</div><span class="d">noche + siestas · el total del día es la suma</span></div>
+    <div class="toast glass" style="border-radius:8px">✓ sueño guardado</div></div>
+  <div class="opt"><b>B</b> · 12 px</div>
+  <div class="stage"><div class="content"><b>//MEALS</b> 4 meals<br>› breakfast <span class="d">09:13 · 48P 71C 4F</span> ········ 509<br>› lunch <span class="d">17:03 · 69P 107C 13F</span> ·········· 817</div>
+    <div class="fl glass" style="top:10px;border-radius:12px"><div class="t">sleep</div><span class="d">noche + siestas · el total del día es la suma</span></div>
+    <div class="toast glass" style="border-radius:12px">✓ sueño guardado</div></div>
+</section>
+
+<section>
+  <div class="sh"><span class="s">//</span>4 RING</div>
+  <div class="sm">El anillo se queda. ¿Sobre qué va? (el brillo recortado en cuadrado y el punto al 0 % se corrigen en todos).</div>
+  <div class="opt"><b>hoy</b> · tarjeta de 16 px + brillo</div>
+  <div class="ringwrap panel-cur" id="r0"></div>
+  <div class="opt"><b>A</b> · plano, entre dos reglas</div>
+  <div class="ringwrap panel-flat" id="r1"></div>
+  <div class="opt"><b>B</b> · caja de 2 px</div>
+  <div class="ringwrap panel-box" id="r2"></div>
+</section>
+
+<section>
+  <div class="sh"><span class="s">//</span>5 TRK ICONS</div>
+  <div class="sm">Set propio: rejilla 24, trazo 1.6, remates cuadrados, geometría de consola. Arriba los de hoy, abajo los TRK; la última fila, sobre chip de vidrio (chrome).</div>
+  <div class="opt"><b>hoy</b></div>
+  <div class="icons">
+    <div class="ic old"><svg viewBox="0 0 24 24"><polyline points="3 16 9 10 13 14 21 6"/><polyline points="15 6 21 6 21 12"/></svg>progress</div>
+    <div class="ic old"><svg viewBox="0 0 24 24"><line x1="6.5" y1="7" x2="6.5" y2="17"/><line x1="3.5" y1="9.5" x2="3.5" y2="14.5"/><line x1="17.5" y1="7" x2="17.5" y2="17"/><line x1="20.5" y1="9.5" x2="20.5" y2="14.5"/><line x1="6.5" y1="12" x2="17.5" y2="12"/></svg>gym</div>
+    <div class="ic old"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="3.4"/></svg>macros</div>
+    <div class="ic old"><svg viewBox="0 0 16 16" style="stroke-width:1.4"><path d="M8 10V1.8M5.2 4.4 8 1.6l2.8 2.8M5.6 6.8H4.2v7.4h7.6V6.8h-1.4"/></svg>share</div>
+    <div class="ic"><span class="emoji">📷</span>camera</div>
+  </div>
+  <div class="opt"><b>TRK</b></div>
+  <div class="icons" id="trk"></div>
+  <div class="opt"><b>TRK</b> · sobre chip de vidrio</div>
+  <div class="stage" style="height:74px"><div class="content d">delts ··· 6.5 · tricep ··· 3.9 · calfs ··· 3 · quads ··· 3 · abs ··· 2</div>
+    <div class="icons" id="trkchip" style="position:absolute;inset:14px 0 0;"></div></div>
+</section>
+
+<section>
+  <div class="sh"><span class="s">//</span>6 BOOT</div>
+  <div class="sm">El arranque conserva un shader de marca. <b>hoy</b> se ve comprimido: los anillos se miden contra el ancho y en vertical nunca llegan arriba ni abajo. B y C son ideas tomadas de 21st.dev (DitheredShaderBackground, Phosphor) y reescritas en GLSL propio, monocromas.</div>
+  <div class="sgrid">
+    <div><div class="sbox"><canvas data-sh="0"></canvas><div class="bt">gym<span class="s">//</span>TRK</div><div class="ln">&gt; uptime 142 d<br>&gt; last delts/push B<br>&gt; ready_</div></div><div class="scap"><b>hoy</b> · shader lines</div></div>
+    <div><div class="sbox"><canvas data-sh="1"></canvas><div class="bt">gym<span class="s">//</span>TRK</div><div class="ln">&gt; uptime 142 d<br>&gt; last delts/push B<br>&gt; ready_</div></div><div class="scap"><b>A</b> · shader lines corregido</div></div>
+    <div><div class="sbox"><canvas data-sh="2"></canvas><div class="bt">gym<span class="s">//</span>TRK</div><div class="ln">&gt; uptime 142 d<br>&gt; last delts/push B<br>&gt; ready_</div></div><div class="scap"><b>B</b> · tramado 1-bit</div></div>
+    <div><div class="sbox"><canvas data-sh="3"></canvas><div class="bt">gym<span class="s">//</span>TRK</div><div class="ln">&gt; uptime 142 d<br>&gt; last delts/push B<br>&gt; ready_</div></div><div class="scap"><b>C</b> · matriz de puntos (fósforo)</div></div>
+  </div>
+</section>
+
+<section>
+  <div class="sh"><span class="s">//</span>7 FIELD EDGE</div>
+  <div class="sm">WCAG 1.4.11 pide 3:1 para el borde de un campo editable. Hoy la tabla usa --o20 (≈2.0:1).</div>
+  <div class="opt"><b>hoy</b> · .5 px --o20</div>
+  <div class="row f1"><span class="n">1</span><span class="c" style="color:var(--o50)">FS</span><span class="c">60</span><span class="c">lbs</span><span class="c">10</span><span class="c">2</span><span class="ck">✓</span></div>
+  <div class="opt"><b>A</b> · 1 px --o40 (≈4.9:1)</div>
+  <div class="row f2"><span class="n">1</span><span class="c" style="color:var(--o50)">FS</span><span class="c">60</span><span class="c">lbs</span><span class="c">10</span><span class="c">2</span><span class="ck">✓</span></div>
+  <p class="note">Recomendado: A solo en campos que se editan; los datos de solo lectura siguen en hairline.</p>
+</section>
+
+<script>
+  // anillo (misma geometría que ringHTML: r 15.7 sobre viewBox 36, trazo 1.4)
+  const ring=(pct,glow)=>`<div class="ring"><svg viewBox="0 0 36 36"><circle cx="18" cy="18" r="15.7" fill="none" stroke="#191920" stroke-width="1.4"/><circle cx="18" cy="18" r="15.7" fill="none" stroke="#46c98b" stroke-width="1.4" stroke-linecap="round" pathLength="100" stroke-dasharray="${pct} 100"/></svg><div class="n"><b>2,178</b><span>/ 2,405 kcal</span></div></div><div class="rmeta"><b>227</b> left · 91%<br><span style="color:var(--o40)">mant. ≈ 2447</span></div>`;
+  ['r0','r1','r2'].forEach(id=>document.getElementById(id).innerHTML=ring(91));
+  // set de íconos TRK
+  const TRK={
+    progress:'<path d="M3 18h4v-6h4v3h4V8h6"/>',
+    gym:'<path d="M4 9v6M7 6v12M17 6v12M20 9v6M7 12h10"/>',
+    macros:'<circle cx="12" cy="12" r="8"/><path d="M12 4v8h8"/>',
+    share:'<path d="M9 9H5v11h14V9h-4M12 15V3M8 7l4-4 4 4"/>',
+    camera:'<path d="M3 7h4l2-3h6l2 3h4v13H3z"/><path d="M9 10h6v6H9z"/>',
+    rec:'<path d="M3 7h4l2-3h6l2 3h4v13H3z"/><path d="M9 10h6v6H9z"/><path d="M18 9.5h.01" stroke-width="2.4"/>',
+    scan:'<path d="M3 8V3h5M16 3h5v5M21 16v5h-5M8 21H3v-5M3 12h18"/>',
+    back:'<path d="M15 5l-7 7 7 7"/>'
+  };
+  const cell=(k,chip)=>`<div class="ic trk">${chip?`<span class="chip glass">`:''}<svg viewBox="0 0 24 24">${TRK[k]}</svg>${chip?'</span>':''}${chip?'':k}</div>`;
+  document.getElementById('trk').innerHTML=Object.keys(TRK).map(k=>cell(k)).join('');
+  document.getElementById('trkchip').innerHTML=['progress','gym','macros','share'].map(k=>cell(k,true)).join('');
+  // presionado de los primarios (demo)
+  document.querySelectorAll('.pbtn').forEach(b=>b.addEventListener('click',()=>{ b.classList.add('press'); setTimeout(()=>b.classList.remove('press'),260); }));
+  // shaders
+  const COMMON='precision highp float;uniform vec2 res;uniform float time;uniform float dpr;';
+  const NOISE='float h(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}float n(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(h(i),h(i+vec2(1,0)),f.x),mix(h(i+vec2(0,1)),h(i+vec2(1,1)),f.x),f.y);}float fbm(vec2 p){float v=0.,a=.5;for(int i=0;i<4;i++){v+=a*n(p);p*=2.;a*=.5;}return v;}';
+  const SH=[
+    // 0 · hoy (verbatim de index.html)
+    COMMON+'float rnd(float x){return fract(sin(x)*1e4);}void main(){vec2 uv=(gl_FragCoord.xy*2.0-res)/min(res.x,res.y);vec2 ms=vec2(4.0,2.0);vec2 ss=vec2(256.0,256.0);uv.x=floor(uv.x*ss.x/ms.x)/(ss.x/ms.x);uv.y=floor(uv.y*ss.y/ms.y)/(ss.y/ms.y);float t=time*0.06+rnd(uv.x)*0.4;float lw=0.0008;float v=0.0;for(int j=0;j<3;j++){for(int i=0;i<5;i++){v+=lw*float(i*i)/abs(fract(t-0.01*float(j)+float(i)*0.01)-length(uv));}}v=clamp(v/3.0,0.0,1.0);gl_FragColor=vec4(vec3(v),1.0);}',
+    // 1 · corregido: encuadre "cover" (se mide contra el lado largo) y celdas cuadradas
+    COMMON+'float rnd(float x){return fract(sin(x)*1e4);}void main(){vec2 uv=(gl_FragCoord.xy*2.0-res)/max(res.x,res.y);float q=128.0;uv=floor(uv*q)/q;float t=time*0.06+rnd(uv.x)*0.4;float lw=0.0008;float v=0.0;for(int j=0;j<3;j++){for(int i=0;i<5;i++){v+=lw*float(i*i)/abs(fract(t-0.01*float(j)+float(i)*0.01)-length(uv)*1.15);}}v=clamp(v/3.0,0.0,1.0);gl_FragColor=vec4(vec3(v),1.0);}',
+    // 2 · tramado 1-bit: campo de ruido lento + Bayer 4×4 en celdas de 3 px
+    COMMON+NOISE+'float b2(vec2 a){a=floor(a);return fract(a.x/2.+a.y*a.y*.75);}void main(){float P=3.0*dpr;vec2 c=floor(gl_FragCoord.xy/P);vec2 uv=(c*P*2.0-res)/max(res.x,res.y);float f=fbm(uv*1.4+vec2(0.,-time*.05))*.95-.38-length(uv)*.22+.06*sin(time*.4+uv.y*3.);float bay=b2(.5*c)*.25+b2(c);float bit=step(bay,f);gl_FragColor=vec4(vec3(bit*.7),1.0);}',
+    // 3 · matriz de puntos de fósforo: rejilla de 6 px, onda que sale del centro modulada por ruido
+    COMMON+NOISE+'void main(){float G=6.0*dpr;vec2 g=gl_FragCoord.xy/G;vec2 id=floor(g),f=fract(g)-.5;vec2 uv=(id*G*2.0-res)/max(res.x,res.y);float w=.5+.5*sin(length(uv)*9.0-time*1.3);float nz=fbm(uv*2.2+time*.04);float b=pow(w*nz,1.6)*1.8;float d=smoothstep(.34,.12,length(f));gl_FragColor=vec4(vec3(clamp(b,0.,1.)*d),1.0);}'
+  ];
+  document.querySelectorAll('canvas[data-sh]').forEach(cv=>{
+    const gl=cv.getContext('webgl',{antialias:false,alpha:false}); if(!gl)return;
+    const mk=(ty,s)=>{ const sh=gl.createShader(ty); gl.shaderSource(sh,s); gl.compileShader(sh); if(!gl.getShaderParameter(sh,gl.COMPILE_STATUS))console.error(gl.getShaderInfoLog(sh)); return sh; };
+    const p=gl.createProgram(); gl.attachShader(p,mk(gl.VERTEX_SHADER,'attribute vec2 p;void main(){gl_Position=vec4(p,0.0,1.0);}')); gl.attachShader(p,mk(gl.FRAGMENT_SHADER,SH[+cv.dataset.sh])); gl.linkProgram(p); gl.useProgram(p);
+    const b=gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER,b); gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,3,-1,-1,3]),gl.STATIC_DRAW);
+    const pl=gl.getAttribLocation(p,'p'); gl.enableVertexAttribArray(pl); gl.vertexAttribPointer(pl,2,gl.FLOAT,false,0,0);
+    const uR=gl.getUniformLocation(p,'res'), uT=gl.getUniformLocation(p,'time'), uD=gl.getUniformLocation(p,'dpr');
+    const dpr=Math.min(window.devicePixelRatio||1,2), t0=performance.now();
+    const size=()=>{ const r=cv.getBoundingClientRect(); cv.width=Math.max(1,(r.width*dpr)|0); cv.height=Math.max(1,(r.height*dpr)|0); gl.viewport(0,0,cv.width,cv.height); };
+    size(); addEventListener('resize',size);
+    const draw=()=>{ gl.uniform2f(uR,cv.width,cv.height); gl.uniform1f(uT,(performance.now()-t0)/1000+1); gl.uniform1f(uD,dpr); gl.drawArrays(gl.TRIANGLES,0,3); requestAnimationFrame(draw); };
+    draw(); });
+</script>
+</body>
+</html>

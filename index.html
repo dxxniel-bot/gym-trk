@@ -945,6 +945,10 @@
 <script>
 "use strict";
 const LS_KEY='gymtrk_db_v1';
+// BRAND.md §3 · diccionario cerrado de glifos de interfaz (un glifo = un significado). tools/ds-audit.cjs (R-GLY) lee
+// esta constante: cualquier otro símbolo no ASCII en un literal de interfaz es una desviación. Las etiquetas que el
+// dueño escribe (datos) no cuentan.
+const GLYPHS='✓○▲▼⠿›‹▾▶↓✕↩~⚠▌×@/→#—−';
 // AI vision proxy (Cloudflare Worker holding the owner's Gemini key). Empty => fall back to on-device OCR.
 // After deploying proxy/gymtrk-ai-worker.js, paste its URL here, e.g. 'https://gymtrk-ai.tucuenta.workers.dev'.
 const AI_PROXY_URL='';
@@ -3365,6 +3369,58 @@ function _v257SelfCheck(){
     A('rayita nueva sin transición', !!ind&&(!ind.getAnimations||ind.getAnimations().length===0)); } finally { box.remove(); delete _tabPos._sc257; }
   console.log('v257 self-check OK');
 }
+// ---- G1 · R-SESS: lo que CREA o REEMPLAZA una sesión jamás puede perder otra ----------------------------------------
+// Corre en una COPIA de db (el real se restaura en finally; save/go/render están neutralizados), simulando el toque real
+// sobre el dispatcher con un botón oculto. Hasta G2 documenta los bugs M1-01 (log past session reemplaza la sesión viva),
+// M1-01b (rest/skip mueven la rotación con sesión viva) y M3-09 (continuar + abortar borra la sesión pasada): reporta
+// FAIL en consola SIN abortar los demás self-checks. G2 lo vuelve una aserción dura.
+function _sessSafetyCheck(){
+  const fails=[], app=document.getElementById('app'); if(!app||!db||!db.split||!(db.split.days||[]).length)return fails;
+  const real=db, rs=state.screen, _s=save, _r=render, _rr=reRender, _g=go, _t=toast, _h=holdConfirm, _a=trkAsk, _cm=closeModal, _sg=window._swipeGuard;
+  const act=a=>{ const el=document.createElement('button'); el.type='button'; el.dataset.act=a; el.hidden=true; app.appendChild(el); try{ el.click(); } finally { el.remove(); } };
+  const clone=()=>JSON.parse(JSON.stringify(real));
+  try{
+    save=()=>true; render=()=>{}; reRender=()=>{}; go=s=>{ state.screen=s; }; toast=()=>null; closeModal=()=>{};
+    holdConfirm=(o,ok)=>{ if(ok)ok(); }; trkAsk=(o,ok)=>{ if(ok)ok(); }; window._swipeGuard=0;
+    // con sesión viva: ninguna de estas acciones puede reemplazarla ni mover la rotación
+    ['loglater','start','rest','skip'].forEach(a=>{
+      db=clone(); db.activeWork=newWorkSession(); db.activeWork.id='live_rsess'; const rot=db.rotIdx, n=(db.sessions||[]).length; state.screen='home';
+      act(a);
+      if(!db.activeWork||db.activeWork.id!=='live_rsess')fails.push(a+' con sesión viva la reemplaza');
+      if(db.rotIdx!==rot)fails.push(a+' con sesión viva mueve rotIdx '+rot+'→'+db.rotIdx);
+      if((db.sessions||[]).length!==n)fails.push(a+' con sesión viva agrega/quita sesiones ('+n+'→'+(db.sessions||[]).length+')'); });
+    // continuar una sesión pasada y abortar: la original tiene que seguir en el historial, con la rotación de antes
+    db=clone(); db.activeWork=null; const past=(db.sessions||[]).filter(x=>x.type!=='rest'&&x.exercises&&x.exercises.length).slice(-1)[0];
+    if(past){ const rot=db.rotIdx; window._sessId=past.id; state.screen='history'; act('resumesession'); act('abort');
+      if(!(db.sessions||[]).some(x=>x.id===past.id))fails.push('continuar + abortar borra la sesión pasada');
+      if(db.rotIdx!==rot)fails.push('continuar + abortar deja rotIdx movido '+rot+'→'+db.rotIdx); }
+  } finally { db=real; save=_s; render=_r; reRender=_rr; go=_g; toast=_t; holdConfirm=_h; trkAsk=_a; closeModal=_cm; window._swipeGuard=_sg; state.screen=rs; }
+  if(fails.length)console.error('R-SESS FAIL (pendiente G2): '+fails.join(' · ')); else console.log('R-SESS OK');
+  return fails; }
+// ---- G1 · _dsRenderCheck: lo que el auditor estático no ve, medido en la pantalla pintada (BRAND §8) ------------------
+// Cuenta sobre el DOM visible: fugas de estilo del navegador (letra 13.333 px, fondo rgb(240,240,240)), toques <44×44
+// (con su ::after), texto por debajo de --o40, tamaños fuera de la escala (incluido SVG), blur fuera del chrome y
+// glifos fuera de GLYPHS. Solo reporta; los umbrales viven en tools/ds-baseline.json (render) y en `--strict`.
+const DS_SCALE=[10,12,16,22,34], DS_CHROME='.nav,.modal,.toasts,.toast,.tsel,.gloss,#asklayer', DS_EXEMPT='.bootov,.scan-reticle,.dz';
+function _dsRenderCheck(root){ root=root||document.getElementById('app'); const out={ua:0,hit:0,txt:0,fsOff:0,blur:0,glyph:0,samples:{}};
+  const note=(k,s)=>{ out[k]++; const a=out.samples[k]=out.samples[k]||[]; if(a.length<6&&a.indexOf(s)<0)a.push(s); };
+  const tag=e=>e.tagName.toLowerCase()+(e.classList&&e.classList.length?'.'+[...e.classList].slice(0,2).join('.'):'');
+  const okGlyph=ch=>GLYPHS.indexOf(ch)>=0||/[a-zA-Z0-9áéíóúüñÁÉÍÓÚÜÑ¿¡·–×\s.,:;!?'"()%+\-=<>*&$_|\\\[\]{}^`]/.test(ch);
+  [...root.querySelectorAll('*')].forEach(e=>{ if(e.closest(DS_EXEMPT))return; const r=e.getBoundingClientRect(); if(!(r.width>0&&r.height>0))return;
+    const cs=getComputedStyle(e); if(cs.visibility==='hidden')return; const own=[...e.childNodes].filter(n=>n.nodeType===3&&n.nodeValue.trim()).map(n=>n.nodeValue).join('');
+    if(own){ const fs=parseFloat(cs.fontSize);
+      if(Math.abs(fs-13.333)<.01)note('ua',tag(e)+' 13.333px');
+      if(DS_SCALE.indexOf(Math.round(fs*100)/100)<0&&!e.closest('.ring,.ringc'))note('fsOff',tag(e)+' '+fs+'px');
+      const m=cs.color.match(/rgba?\(\s*[\d.]+,\s*[\d.]+,\s*[\d.]+(?:,\s*([\d.]+))?\)/), al=m&&m[1]!=null?+m[1]:1;
+      if(al<.495&&fs<=16&&!/^[\s✓○▲▼⠿›‹▾▶↓✕↩~⚠▌·—]+$/.test(own))note('txt',tag(e)+' α'+al);
+      for(const ch of own){ if(!okGlyph(ch)){ note('glyph',ch+' '+tag(e)); } } }
+    if(cs.backgroundColor==='rgb(240, 240, 240)')note('ua',tag(e)+' bg 240');
+    const bf=cs.backdropFilter||cs.webkitBackdropFilter; if(bf&&bf!=='none'&&!e.closest(DS_CHROME))note('blur',tag(e));
+    if(e.matches('button,a,input,select,textarea,[data-act],[role=button],[role=tab]')&&!(e.parentElement&&e.parentElement.closest('button,[data-act]'))){
+      let w=r.width, h=r.height; const af=getComputedStyle(e,'::after'); if(af&&af.content&&af.content!=='none'&&af.position==='absolute'){ w=Math.max(w,parseFloat(af.width)||0); h=Math.max(h,parseFloat(af.height)||0); }
+      if(w<44||h<44)note('hit',tag(e)+' '+Math.round(w)+'×'+Math.round(h)); } });
+  return out; }
+function _dsRenderReport(){ try{ const r=_dsRenderCheck(); console.log('ds-render ['+state.screen+'] ua '+r.ua+' · hit '+r.hit+' · txt '+r.txt+' · fsOff '+r.fsOff+' · blur '+r.blur+' · glyph '+r.glyph, r.samples); return r; }catch(e){ console.error('ds-render', e); } }
 function _uiSelfCheck(){
   const A=(nm,c)=>{ if(!c) throw new Error('SELFCHECK ui: '+nm); };
   const box=()=>document.getElementById('toasts'); const before=box()?[...box().children]:[]; let pending=false;
@@ -9228,7 +9284,7 @@ try{ idbGet('latest').then(rec=>{ if(!rec||!rec.s)return; _idbLast=rec;
       ()=>{ db=migrate(inc); if(save())toast('✓ '+got+' registros recuperados'); go('home'); }); },900); }
 }).catch(e=>{ _idbErr=e; }); }catch(_){}
 try{ growthLog(); }catch(_){}
-try{ promptIdleSession(); }catch(_){} try{ if(typeof location!=='undefined' && /[?&]selftest=1/.test(location.search)){ _identitySelfCheck(); _dropsetSelfCheck(); _baselineSelfCheck(); _variantSelfCheck(); _historyEditSelfCheck(); _idSelfCheck(); _cardioSelfCheck(); _tensionSelfCheck(); _healthSelfCheck(); _readinessSelfCheck(); _loggingSelfCheck(); _mergeSelfCheck(); _streakSelfCheck(); _chartSelfCheck(); _muscleSelfCheck(); _exProfileSelfCheck(); _recoverySelfCheck(); _diagSelfCheck(); _uiSelfCheck(); _v256SelfCheck(); _v257SelfCheck(); } }catch(e){ console.error(e); } try{ const _sp=new URLSearchParams(location.search); const _hasHistorical=_sp.has('stepsh')||_sp.has('weighth')||_sp.has('stepsq')||_sp.has('sleeph'); if(_hasHistorical){ const _hsp=_sp; if(history.replaceState)history.replaceState(null,'',location.pathname); setTimeout(()=>{ trkAsk({title:'importar datos históricos',detail:'este link trae pasos, peso o sueño de varios días · acepta solo si viene de tu propio Atajo de iOS',ok:'importar'},()=>{ try{ const _imp=importHealth(_hsp); if(_imp.length){ save(); render(); toast('✓ '+_imp.join(' · ')); } }catch(_){} }); },400); } else { const _imp=importHealth(_sp); if(_imp.length){ window._healthImported=_imp; if(history.replaceState)history.replaceState(null,'',location.pathname); } } }catch(_){} save(); render(); if(window._healthImported)setTimeout(()=>toast('✓ '+window._healthImported.join(' · ')),250); if(window._recoveredFromBackup)setTimeout(()=>{try{toast('⚠ se recuperó un respaldo local · revisa tus datos, podrían faltar cambios muy recientes','err');}catch(_){}},600);
+try{ promptIdleSession(); }catch(_){} try{ if(typeof location!=='undefined' && /[?&]selftest=1/.test(location.search)){ _identitySelfCheck(); _dropsetSelfCheck(); _baselineSelfCheck(); _variantSelfCheck(); _historyEditSelfCheck(); _idSelfCheck(); _cardioSelfCheck(); _tensionSelfCheck(); _healthSelfCheck(); _readinessSelfCheck(); _loggingSelfCheck(); _mergeSelfCheck(); _streakSelfCheck(); _chartSelfCheck(); _muscleSelfCheck(); _exProfileSelfCheck(); _recoverySelfCheck(); _diagSelfCheck(); _uiSelfCheck(); _v256SelfCheck(); _v257SelfCheck(); _sessSafetyCheck(); setTimeout(_dsRenderReport,1500); } }catch(e){ console.error(e); } try{ const _sp=new URLSearchParams(location.search); const _hasHistorical=_sp.has('stepsh')||_sp.has('weighth')||_sp.has('stepsq')||_sp.has('sleeph'); if(_hasHistorical){ const _hsp=_sp; if(history.replaceState)history.replaceState(null,'',location.pathname); setTimeout(()=>{ trkAsk({title:'importar datos históricos',detail:'este link trae pasos, peso o sueño de varios días · acepta solo si viene de tu propio Atajo de iOS',ok:'importar'},()=>{ try{ const _imp=importHealth(_hsp); if(_imp.length){ save(); render(); toast('✓ '+_imp.join(' · ')); } }catch(_){} }); },400); } else { const _imp=importHealth(_sp); if(_imp.length){ window._healthImported=_imp; if(history.replaceState)history.replaceState(null,'',location.pathname); } } }catch(_){} save(); render(); if(window._healthImported)setTimeout(()=>toast('✓ '+window._healthImported.join(' · ')),250); if(window._recoveredFromBackup)setTimeout(()=>{try{toast('⚠ se recuperó un respaldo local · revisa tus datos, podrían faltar cambios muy recientes','err');}catch(_){}},600);
 applyDesign(); try{ if(/[?&]design\b/.test(location.search))localStorage.setItem('gymtrk_designmode','1'); if(localStorage.getItem('gymtrk_designmode')==='1')openDesignPanel(); }catch(_){}
 try{ bootScreen(()=>{ try{
   if(/[?&]wrap=1\b/.test(location.search)){ monthlyWrap(prevMonthYm(), true); return; }
