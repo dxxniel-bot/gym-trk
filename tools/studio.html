@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<!-- la misma CSP que index.html: el <iframe srcdoc> la hereda (CONTRACT §1) -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://*.openfoodfacts.org https://cdn.jsdelivr.net https://tessdata.projectnaptha.com; worker-src 'self' blob:; object-src 'none'; base-uri 'self'" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
+<title>gym//TRK · studio</title>
+<meta name="theme-color" content="#000" />
+<meta name="robots" content="noindex" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700;800&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="studio/studio.css" />
+</head>
+<body>
+<!-- gym//TRK · estudio: vista previa de la app real en <iframe srcdoc> detrás de studio/guard.js. Nunca escribe sus
+     datos ni cambia el look de su app. Todo lo dibuja studio.js. -->
+<div id="studio" class="studio">
+  <aside id="panel" class="panel" aria-label="studio"></aside>
+  <main id="stage" class="stage" aria-label="preview">
+    <div id="stagebar" class="stagebar"></div>
+    <div id="frames" class="frames"></div>
+    <div id="insp" class="insp float" hidden></div>
+  </main>
+  <nav id="pbar" class="pbar float" aria-label="studio controls"></nav>
+  <div id="scrim" class="scrim" hidden></div>
+  <div id="toasts" class="toasts" aria-live="polite"></div>
+  <div id="alarm" class="alarm" hidden></div>
+</div>
+<noscript><p class="nojs">//STUDIO necesita JavaScript</p></noscript>
+<script src="studio/scenarios.js"></script>
+<script src="studio/knobs.js"></script>
+<script src="studio/proposals.js"></script>
+<script src="studio/demo.js"></script>
+<script src="studio/plan.js"></script>
+<script src="studio/looks.js"></script>
+<script src="studio/studio.js"></script>
+</body>
+</html>

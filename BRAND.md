@@ -73,7 +73,7 @@ pie de compartir, 34 solo en el landing. Una sola variante.
 
 **Box-drawing** (`─ │ ┌ ┐`): solo en overlays y compartir, nunca en listas del día a día.
 
-## 4. Las piezas de marca (decididas; su forma exacta se elige en `tools/brand-lab.html`)
+## 4. Las piezas de marca (decididas; su forma exacta se elige en el estudio, `tools/studio.html`)
 
 - **Nav — "glass terminal bar".** Cápsula flotante de vidrio (blur, borde .5 px, sin sombra blanda) con radio
   `--r-float`; dentro, pestañas de **texto** siempre visibles (`progress  gym  macros`); la activa en bloque inverso
@@ -147,7 +147,12 @@ caracteres sin perder un dato?
 | 2026-09-21 | Share y cámara se quedan, con íconos propios | "rediseña los iconos a que sea nuestro estilo" |
 | 2026-09-21 | Shader del arranque se queda, corregido (se ve comprimido); explorar 21st.dev | "mantener pero ajustar, la relación de aspecto lo hace ver comprimida" |
 
-## 10. Preguntas abiertas (se cierran en `tools/brand-lab.html`)
+## 10. Preguntas abiertas (se cierran en el estudio, `tools/studio.html`)
+
+Desde el 22-sep el dueño las ve **aplicadas a la app real** en el estudio (vista previa de cada pantalla con sus datos o con
+demo, en solo lectura) y guarda sus combinaciones como "looks" para dejarlas reposar antes de mandarlas; lo que manda a
+revisión llega como "hoja de elección" y cada respuesta se registra en §9 con fecha y cita. `tools/brand-lab.html` queda
+como lámina histórica.
 
 Variante de nav (cápsula 999 vs `--r-float`; activa inversa vs corchetes) · variante de primario (sólido vs vidrio) ·
 valor de `--r-float` (8 vs 12) · panel del anillo (plano vs vidrio sutil) · set de íconos TRK · shader corregido vs

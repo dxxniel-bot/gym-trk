@@ -1,6 +1,6 @@
 # gym//TRK — DESIGN SYSTEM (referencia del estado actual)
 
-> Referencia del estado actual (v260). **Lee BRAND.md primero**: manda sobre este archivo. Sin historia: DESIGN_CHANGELOG.md.
+> Referencia del estado actual (v261). **Lee BRAND.md primero**: manda sobre este archivo. Sin historia: DESIGN_CHANGELOG.md.
 
 ---
 
@@ -10,7 +10,7 @@
 - `BRAND.md` dice **qué es** gym//TRK: la identidad "CMD hacker × glass moderno", las reglas B-01…B-12, el vocabulario,
   las excepciones con nombre, lo prohibido y el registro de decisiones del dueño. Si algo de aquí choca con BRAND, gana
   BRAND y el choque se anota como pregunta para el dueño.
-- **Este archivo** dice **cómo está hecho hoy** (v260) y a qué se tiene que acercar: tokens, roles, fichas de componente,
+- **Este archivo** dice **cómo está hecho hoy** (v261) y a qué se tiene que acercar: tokens, roles, fichas de componente,
   patrones, auditoría y protocolo. No guarda historia.
 - `DESIGN_CHANGELOG.md` guarda la historia (fases DS/R/UX-2, notas vNNN, diseños retirados o rechazados). **Nunca se
   implementa desde ahí.**
@@ -19,7 +19,7 @@
 acciones → la ficha del componente (§7) → tokens (§4) → §17.6 definición de terminado.
 
 **Convenciones.**
-- **Hoy** = lo que hace el código de v260. **Objetivo G4 / G3 / G4** = lo que falta y en qué fase de la ruta (plan G:
+- **Hoy** = lo que hace el código de v261. **Objetivo G4 / G3 / G4** = lo que falta y en qué fase de la ruta (plan G:
   G2 datos y sistema sin cambiar el look · G0 láminas para elegir · G3 identidad aprobada · G4 completitud). Nada marcado
   como objetivo está implementado.
 - Un nombre entre comillas invertidas (clase, token, función, selector) **existe en `index.html`**. Lo que todavía no
@@ -33,7 +33,7 @@ acciones → la ficha del componente (§7) → tokens (§4) → §17.6 definici�
 implementación necesita un valor que no existe aquí, primero se decide si es una necesidad funcional nueva (se agrega al
 sistema, documentada, en el mismo commit) o una desviación (se corrige).
 
-**Preguntas abiertas** (no se deciden aquí; se cierran con el dueño, casi todas en `tools/brand-lab.html`, G0): las de
+**Preguntas abiertas** (no se deciden aquí; se cierran con el dueño en el estudio, `tools/studio.html`, G0): las de
 BRAND §10 (variante de nav, variante de primario, valor de `--r-float` (pendiente G3), panel del anillo, set de íconos
 TRK, shader, borde de campo para WCAG 1.4.11) y estas, encontradas al escribir la referencia:
 1. **Glifos en uso que BRAND no menciona:** ⬆ ⬇ ↔ (perfil de resistencia), ▦ (rango personalizado), ▢ ▣ (elegir en el
@@ -89,7 +89,7 @@ BRAND §5 define los siete primitivos con los que se arma toda pantalla. Aquí, 
 ## 4. Tokens
 
 Todo valor visual recurrente es un token en `:root` y se usa con `var(--…)`. **Nunca** se escribe un literal si existe su
-token (TOK-1, la revisa: ds-audit "literales"). Valores leídos de `index.html` (v260).
+token (TOK-1, la revisa: ds-audit "literales"). Valores leídos de `index.html` (v261).
 
 ### 4.1 Superficies
 
@@ -413,7 +413,7 @@ perfil tienen párrafos fijos de instrucciones; la tira de 17 tiles de Progress.
   exclamaciones ni "genial". Lo humano se reserva para errores y diagnósticos. Cuando un dato no es obvio, el *porqué* va
   en una línea ("correlación, no causa") o al glosario.
 
-**Hoy (v260) el idioma está mezclado** y la regla anterior ("lo nuevo en español salvo vecino en inglés") está en el
+**Hoy (v261) el idioma está mezclado** y la regla anterior ("lo nuevo en español salvo vecino en inglés") está en el
 changelog. Estado medido:
 - Títulos `//` en inglés: SETTINGS, HISTORY, SPLIT, STACK, PROGRESS, RECORDS, STATS, INSIGHTS, NEXT, SUPPS, MEALS, WATER.
   En español: PERFIL, SALUD, ESTÍMULO, MÚSCULOS, FUERZA, RENDIMIENTO, COBERTURA, HOY (recap).
@@ -1117,7 +1117,7 @@ Reduced-motion = instantáneo.
   (v258: antes un bucle a .01 ms parpadeaba) y los cinco `scrollIntoView` suaves usan
   `behavior:reducedMotion()?'auto':'smooth'` (X1-03).
 
-### 10.1 Registro de movimiento (todo lo que se mueve en v260)
+### 10.1 Registro de movimiento (todo lo que se mueve en v261)
 
 Leyenda de la última columna: ✓ cumple B-09 · ⚠ a revisar con el dueño · ✗ se corrige (fase).
 
@@ -1342,7 +1342,7 @@ Objetivo G4: completar la tabla con el texto exacto de cada celda vacía y una a
   en la barra de estado, con 44 de toque (`[‹ gym]`, `[‹ historial]`).
 - NAV-4: cerrar un sheet **nunca** mueve el scroll de abajo (`reRender()`, no `closeModal(); render()`). La revisa: R-SCROLL.
 
-### 14.3 Mapa por pantalla (v260)
+### 14.3 Mapa por pantalla (v261)
 
 | Pantalla (`state.screen`) | Instrumento | Cabecera | Contenido | Nav hoy | Notas |
 |---|---|---|---|---|---|
@@ -1493,7 +1493,24 @@ quedar registrado. Antes de escribir UI se responde por escrito:
 - [ ] Ninguna etiqueta del dueño renombrada, en mayúsculas forzadas ni cortada; un idioma por componente.
 - [ ] Toda acción da feedback; lo destructivo tiene deshacer o hold.
 - [ ] La referencia se actualiza en el mismo commit y `DESIGN_CHANGELOG.md` recibe una línea.
-- [ ] Si cambia el look, hay una decisión del dueño registrada en BRAND §9.
+- [ ] Si cambia el look, hay una decisión del dueño registrada en BRAND §9 **tomada en el estudio** (§17.7).
+- [ ] Si se tocó el estudio: `node tools/studio/check.cjs` pasa y su prueba de cero escrituras está en verde.
+
+### 17.7 Cambio de look = el estudio primero
+
+1. **Propuesta:** una entrada en `tools/studio/proposals.js` (`hoy | A | B | C`, CSS con su alcance `html[data-v-<id>]`,
+   tokens o parches DOM reversibles; nunca en `index.html`). `node tools/studio/check.cjs`, `__studio.measure()` en
+   localhost, commit solo de tools (sin bump) y el enlace `…/tools/studio.html?p=<id>` al dueño.
+2. **Él elige** viéndola sobre la app real (sus datos o demo), la guarda en un look, la deja reposar y la manda a revisión
+   (hoja de elección `TRK-PICK v1 …`).
+3. **Registro:** fila en BRAND §9 con fecha y su cita; la propuesta pasa a `decided`; el look enviado se sube a
+   `tools/studio/looks.js` (sin sus notas: `tools/` es público).
+4. **Implementación:** el commit de G3/G4 hornea la opción de forma nativa en `index.html`, **borra su CSS de
+   `proposals.js`** y la marca `shipped: vN`; así "hoy" del estudio pasa a ser el look nuevo. Verificación normal
+   (§17.6) y capturas de antes/después.
+
+Lo que no cambia el look (datos, sistema, tokens con su valor de hoy) no pasa por el estudio: se verifica con
+`tools/ds-diff.html` (0 diferencias).
 
 ---
 
@@ -1504,7 +1521,7 @@ quedar registrado. Antes de escribir UI se responde por escrito:
 Node puro, sin npm: `node tools/ds-audit.cjs` (con un archivo como argumento audita ese, para comparar contra la versión
 anterior). Se corre antes y después de cada cambio de UI; **ningún commit sube un contador P0 o P1** (AUD-1).
 
-**Contadores de hoy** (v260): P0 detectables · tamaños fuera de escala, escala en uso, tokens viejos, peso 800 bajo 12,
+**Contadores de hoy** (v261): P0 detectables · tamaños fuera de escala, escala en uso, tokens viejos, peso 800 bajo 12,
 pesos · letter-spacing fuera de rol · radios y espaciado fuera de escala · bordes · sombras fuera de token · colores
 literales · variables sin definir · excepciones marcadas · `style=""` total y por función · selectores repetidos (la misma
 regla propia dos veces en el nivel superior; no cuentan variantes en `@media`/`@supports` ni base + ajuste) · diálogos
@@ -1556,7 +1573,21 @@ Para refactors de CSS o de marcado que no deberían cambiar lo que se ve. Copia 
 versión anterior y en la actual, lado a lado, y compara 32 propiedades computadas elemento por elemento. Un refactor exacto
 da cero diferencias; uno que corrige hacia el sistema da **solo** las que se buscaban. Rompe la caché (`?cb=`); `?a=`/`?b=`
 eligen los archivos y `report()` dice qué cargó cada lado. La app tiene CSP sin `eval`: los escenarios llaman funciones
-globales del iframe.
+globales del iframe. Desde v260 corre **solo en localhost**, cada frame detrás del guardia del estudio (antes `live:workout`
+creaba una sesión real en el almacenamiento) y compara también interlineado, grosor y color de bordes, radio por esquina,
+opacidad, sombra, filtro, trazo, blur, outline, transición y animación (57 escenarios).
+
+### 18.7 El estudio (`tools/studio.html`)
+
+Contrato y archivos: `tools/studio/CONTRACT.md`. La app real corre en `<iframe srcdoc>` detrás de
+`tools/studio/guard.js`, que se ejecuta antes que la app: `localStorage`/`sessionStorage` en sombra (lectura real,
+escritura a memoria; getter de `window` y `Storage.prototype`), sin IndexedDB, sin service worker, sin persistencia ni
+caché, sin arranque/recap/wrap automáticos ni avisos de recuperación, exportar/importar/sync en "sandbox", y **falla
+cerrado** si algo no queda puesto. El estudio vigila el evento `storage` (una escritura desde un frame = alarma P0) y
+`[full test]` compara las firmas de todas las claves `gymtrk*` antes y después de recorrer todo. Pestañas `//SCREENS`
+(cada pantalla, hoja, overlay y aviso), `//TUNE` (tokens por rol con rango BRAND y rango "explorar"), `//PROPOSALS`
+(`hoy | A | B | C` con su medición de §8), `//LOOKS` (configuraciones guardadas con estado) y `//PLAN` (la ruta G0–G4).
+El inspector dice rol, token y usos de cualquier elemento tocado. API para agentes: `window.__studio`.
 
 ### 18.4 Severidad
 
@@ -1607,7 +1638,7 @@ pérdidas de datos · accesibilidad = `_dsRenderCheck` hit/txt, roles, contraste
   toma la interacción, se reescribe en JS puro con los tokens de TRK; **nunca se pega un componente**. Licencia "unknown" =
   solo inspiración. Dependencias permitidas: MIT, versión fijada, cacheadas por `sw.js`; hoy **ninguna** (el conteo de
   números es propio). Los candidatos de fondo para el arranque (BRAND §4) se revisan igual: solo el comportamiento, en
-  GLSL/JS puro, en `tools/brand-lab.html`.
+  GLSL/JS puro, como propuesta del estudio (`tools/studio/proposals.js`), sobre el arranque real.
 - **Regla para cualquier agente:** identificar el componente concreto, documentar qué comportamiento se toma, quitar todo
   tratamiento visual incompatible, reemplazar sus valores por los tokens de este documento, implementarlo como componente
   `TRK*` reutilizable (§7.18) y después correr `node tools/ds-audit.cjs`, `tools/ds-diff.html` y el loop de QA.

@@ -5,6 +5,15 @@
 > (2026-09-21, v257): el plan y los inventarios por fase (§20 anterior) y la guía anterior completa, para que ninguna
 > decisión ni medida se pierda.
 
+## Entregas desde la separación (una línea cada una; el detalle vive en CLAUDE.md)
+
+| fecha | versión | qué |
+|---|---|---|
+| 2026-09-22 | v258 | G2: datos (sesión viva, continuar, ↩, comidas) y sistema sin cambiar el look |
+| 2026-09-22 | v259 | F0: la sesión por recuperar ya no se borra mientras decides; cola de avisos del arranque; demo del estudio rechazada |
+| 2026-09-22 | v260 | T: tokens exactos por rol (interlineado, opacidad, líneas, trazos, radio flotante…), cero píxeles; guardia de vistas previas |
+| 2026-09-22 | v261 | S1: el estudio (`tools/studio.html`) reemplaza a `tools/brand-lab.html` para elegir el look; `sw.js` ya no guarda errores |
+
 ## Diseños rechazados por el dueño (no volver a proponer)
 
 | fecha | qué | cita |

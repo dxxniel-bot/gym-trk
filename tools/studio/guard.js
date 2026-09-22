@@ -83,9 +83,18 @@
   try{ if(W.IDBFactory){ ['open', 'deleteDatabase'].forEach(f => Object.defineProperty(W.IDBFactory.prototype, f, { value(){ throw new Error('sandbox'); }, writable: false, configurable: false })); } }catch(_){}
   try{ if(W.ServiceWorkerContainer){ Object.defineProperty(W.ServiceWorkerContainer.prototype, 'register', { value(){ return Promise.reject(new Error('sandbox')); }, writable: false, configurable: false });
       Object.defineProperty(W.ServiceWorkerContainer.prototype, 'getRegistrations', { value(){ return Promise.resolve([]); }, writable: false, configurable: false }); } }catch(_){}
+  // sin service worker en el frame: `'serviceWorker' in navigator` = false, así la app ni registra ni escucha
+  // controllerchange (una actualización recargaba el frame y el estudio perdía sus referencias)
+  try{ delete W.Navigator.prototype.serviceWorker; }catch(_){}
   try{ if(W.StorageManager){ Object.defineProperty(W.StorageManager.prototype, 'persist', { value(){ return Promise.resolve(false); }, writable: false, configurable: false }); } }catch(_){}
   try{ const noCache = { keys: () => Promise.resolve([]), match: () => Promise.resolve(undefined), has: () => Promise.resolve(false), open: () => Promise.reject(new Error('sandbox')), delete: () => Promise.resolve(false) };
     Object.defineProperty(W, 'caches', { get(){ return noCache; }, configurable: false }); }catch(_){}
+
+  // ---- movimiento reducido emulado (el estudio lo pide con cfg.rm): matchMedia responde "reduce" ----
+  if(cfg.rm){ try{ const mm = W.matchMedia.bind(W);
+    W.matchMedia = function(q){ if(/prefers-reduced-motion\s*:\s*reduce/i.test(String(q))) return { matches: true, media: String(q), onchange: null,
+        addListener(){}, removeListener(){}, addEventListener(){}, removeEventListener(){}, dispatchEvent(){ return false; } };
+      return mm(q); }; }catch(_){} }
 
   // ---- comprobación: si algo no quedó, no arranca ----
   (function verify(){
@@ -100,7 +109,7 @@
   })();
 
   // ---- API para el estudio (y para Claude en el panel de navegador) ----
-  let holdBoot = false, shaderRunner = null, patchedBoot = false;
+  let holdBoot = false, shaderRunner = null, patchedBoot = false, idleOK = false;
   function patchBoot(){ if(patchedBoot) return; patchedBoot = true;
     const so = W.showOverlay, ss = W.startShader;
     if(typeof so === 'function') W.showOverlay = function(html, o){ o = Object.assign({}, o || {}); if(holdBoot) delete o.ms; return so.call(this, html, o); };
@@ -115,8 +124,11 @@
     stress(){ const n0 = writes.n, r = {};
       const tryIt = (k, f) => { try{ f(); r[k] = 'ok'; }catch(e){ r[k] = 'err ' + String(e && e.message || e).slice(0, 60); } };
       tryIt('setItem', () => W.localStorage.setItem('gymtrk_db_v1', '{"stress":1}'));
-      tryIt('named', () => { W.localStorage.gymtrk_db_v1_bak = 'stress'; });
-      tryIt('delete', () => { delete W.localStorage.gymtrk_live; });
+      // en modo 'prototype' (sin getter de window) el acceso por nombre llegaría al objeto REAL: no se prueba. La app
+      // nunca lo usa (check.cjs lo vigila en index.html), así que ese modo sigue siendo seguro para la vista previa.
+      if(mode === 'window'){ tryIt('named', () => { W.localStorage.gymtrk_db_v1_bak = 'stress'; });
+        tryIt('delete', () => { delete W.localStorage.gymtrk_live; }); }
+      else { r.named = r.delete = 'omitido (modo prototype)'; }
       tryIt('removeItem', () => W.localStorage.removeItem('gymtrk_growth'));
       tryIt('session', () => W.sessionStorage.setItem('gymtrk_boot', 'stress'));
       tryIt('proto', () => Storage.prototype.setItem.call(realLS, 'gymtrk_db_v1', 'stress-proto'));
@@ -133,6 +145,8 @@
       SS.map.delete('gymtrk_boot'); SS.dead.add('gymtrk_boot');
       setTimeout(() => { try{ W.bootScreen(); }catch(e){ console.warn(e); } }, 220); },
     bootKill(){ holdBoot = false; try{ const o = document.getElementById('bootov'); if(o) o.click(); }catch(_){} },
+    // el aviso de inactividad (modal que no se cierra) solo sale cuando el escenario 'idle' lo pide
+    allowIdle(on){ idleOK = on !== false; },
   };
   Object.defineProperty(W, '__trk', { value: Object.freeze(api), writable: false, configurable: false });
 
@@ -144,5 +158,6 @@
       saveFileSafe: say('sandbox · no se guarda archivo'), doImport: say('sandbox · no se importa'), openSync: say('sandbox · sin sync'),
       nudgeBackup: quiet, markBackup: quiet, healthSync: say('sandbox · sin salud'), requestPersist: quiet };
     Object.keys(OUT).forEach(k => { try{ if(typeof W[k] === 'function') W[k] = OUT[k]; }catch(_){} });
+    try{ const pi = W.promptIdleSession; if(typeof pi === 'function') W.promptIdleSession = function(){ if(idleOK) return pi.apply(this, arguments); }; }catch(_){}
   });
 })();

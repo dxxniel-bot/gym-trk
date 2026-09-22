@@ -10,7 +10,9 @@ if(!/^(localhost|127\.0\.0\.1)$/.test(location.hostname)){ document.body.innerHT
 const _q=new URLSearchParams(location.search), _cb='?cb='+Date.now(), SRC={A:(_q.get('a')||'../_pre.html'),B:(_q.get('b')||'../index.html')}, _sz={};
 async function guarded(id,src){ const base=new URL('../',location.href).href, f=document.getElementById(id); f._trkCfg={};
   let t=await fetch(new URL(src+_cb,location.href).href,{cache:'no-store'}).then(r=>r.text()); _sz[id]=t.length;
-  t=t.replace(/<head([^>]*)>/i,m=>m+'<base href="'+base+'"><script src="tools/studio/guard.js'+_cb+'"><\/script>'); f.srcdoc=t; }
+  let nH=0,nS=0; t=t.replace(/<head([^>]*)>/i,m=>(nH++,m+'<base href="'+base+'"><script src="tools/studio/guard.js'+_cb+'"><\/script>'))
+   .replace(/<script>\s*"use strict";/,()=>(nS++,'<script>"use strict";if(!(window.__trk&&window.__trk.sandbox===true))throw new Error("TRK: sin guardia");'));   // sin guardia, la app no arranca
+  if(nH!==1||nS!==1)throw new Error('ds-diff: no se pudo poner el guardia en '+src); f.srcdoc=t; }
 guarded('A',SRC.A); guarded('B',SRC.B);
 function loaded(){ return Object.fromEntries(['A','B'].map(k=>[k,SRC[k]+' · '+(_sz[k]||'?')+' caracteres · guardia '+(((document.getElementById(k).contentWindow||{}).__trk||{}).mode||'NO')])); }
 // gym//TRK · diff de estilos computados (DESIGN_SYSTEM.md §18). Copia la versión anterior a repo/_pre.html (no se versiona),

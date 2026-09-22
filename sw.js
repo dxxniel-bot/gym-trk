@@ -1,4 +1,4 @@
-﻿const C = 'gymtrk-v260';
+﻿const C = 'gymtrk-v261';
 self.addEventListener('install', e => {
   e.waitUntil(
     caches.open(C).then(c => c.addAll(['./', './index.html', './manifest.json'].map(x => new Request(x, { cache: 'reload' }))))
@@ -23,9 +23,13 @@ self.addEventListener('fetch', e => {
       fetch(e.request.url, { cache: 'no-cache', credentials: 'same-origin' }).then(resp => {
         // v254: la clave de caché va SIN query — cada '?v=253' guardaba su propia copia de ~870 KB y
         // eso consumía el cupo del origen (el mismo del que vive localStorage).
-        try { const cc = resp.clone(); const key = u.origin + u.pathname; caches.open(C).then(c => c.put(key, cc)); } catch (_) {}
+        // v261: solo se guarda una respuesta buena (antes un 404/5xx pasajero de un deploy se guardaba y pisaba la copia
+        // buena: sin red, la app o el guardia del estudio salían rotos).
+        if (resp.ok && resp.type === 'basic') { try { const cc = resp.clone(); const key = u.origin + u.pathname; caches.open(C).then(c => c.put(key, cc)); } catch (_) {} }
         return resp;
-      }).catch(() => caches.match(u.origin + u.pathname).then(r => r || caches.match('./index.html')))
+      // v261: index.html solo responde a una NAVEGACIÓN sin red; un script o un JSON que falta devuelve error (antes
+      // recibía el HTML de la app y fallaba como JavaScript).
+      }).catch(() => caches.match(u.origin + u.pathname).then(r => r || (e.request.mode === 'navigate' ? caches.match('./index.html') : Response.error())))
     );
   }
 });
