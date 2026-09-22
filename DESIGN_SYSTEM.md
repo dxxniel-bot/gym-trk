@@ -1,6 +1,6 @@
 # gym//TRK — DESIGN SYSTEM (referencia del estado actual)
 
-> Referencia del estado actual (v259). **Lee BRAND.md primero**: manda sobre este archivo. Sin historia: DESIGN_CHANGELOG.md.
+> Referencia del estado actual (v260). **Lee BRAND.md primero**: manda sobre este archivo. Sin historia: DESIGN_CHANGELOG.md.
 
 ---
 
@@ -10,7 +10,7 @@
 - `BRAND.md` dice **qué es** gym//TRK: la identidad "CMD hacker × glass moderno", las reglas B-01…B-12, el vocabulario,
   las excepciones con nombre, lo prohibido y el registro de decisiones del dueño. Si algo de aquí choca con BRAND, gana
   BRAND y el choque se anota como pregunta para el dueño.
-- **Este archivo** dice **cómo está hecho hoy** (v259) y a qué se tiene que acercar: tokens, roles, fichas de componente,
+- **Este archivo** dice **cómo está hecho hoy** (v260) y a qué se tiene que acercar: tokens, roles, fichas de componente,
   patrones, auditoría y protocolo. No guarda historia.
 - `DESIGN_CHANGELOG.md` guarda la historia (fases DS/R/UX-2, notas vNNN, diseños retirados o rechazados). **Nunca se
   implementa desde ahí.**
@@ -19,11 +19,11 @@
 acciones → la ficha del componente (§7) → tokens (§4) → §17.6 definición de terminado.
 
 **Convenciones.**
-- **Hoy** = lo que hace el código de v259. **Objetivo G2 / G3 / G4** = lo que falta y en qué fase de la ruta (plan G:
+- **Hoy** = lo que hace el código de v260. **Objetivo G4 / G3 / G4** = lo que falta y en qué fase de la ruta (plan G:
   G2 datos y sistema sin cambiar el look · G0 láminas para elegir · G3 identidad aprobada · G4 completitud). Nada marcado
   como objetivo está implementado.
 - Un nombre entre comillas invertidas (clase, token, función, selector) **existe en `index.html`**. Lo que todavía no
-  existe lleva al lado "(pendiente G2)" o "(pendiente G3)".
+  existe lleva al lado "(pendiente G3)" o "(pendiente G4)".
 - Las reglas tienen un ID estable (`TOK-3`, `ACT-2`…) para citarlas en cada cambio, junto a las B-xx de BRAND. Cada una
   dice **la revisa:** `ds-audit R-xx` (estático), `_dsRenderCheck` (en pantalla, `?selftest=1`), un self-check, o *a ojo*.
 - Medidas: los tamaños de letra van siempre por token (`--t-*`, escala 10·12·16·22·34). En las fichas de §7 las medidas
@@ -74,8 +74,8 @@ BRAND §5 define los siete primitivos con los que se arma toda pantalla. Aquí, 
 | **Línea de prompt** (barra de estado) `u/unlxvd ▾ · 21 sep · 21:29 · streak: 12` | `statusBar()` → `.status` (`.uname`, `.center`, `.streak`, `.sgoal`) | el reloj no avanza y duplica el de iOS (M6-20, objetivo G4: quitarlo) |
 | **`//cabecera` + meta a la derecha** | `.section` (`.h` con `<span class="s">//</span>`, `.meta`) · cabecera del día `dayHeadHTML()` → `.whdr` · rótulo de grupo `.grp-label` · TRKLog `.lhd` | un `//` por sección; la meta es 10 |
 | **`clave ···· valor`** | `.line` (`.k` · `.dots` · `.v`) y su variante de detalle `.mdline` | la firma de lectura; §7.5 |
-| **Línea de registro** `#chest  bench press  160lbs×8@0 / 160lbs×6@0` | `.srw` (compartir sesión) | objetivo G2: también en historial y vista previa del día (M3-04, M1-18) |
-| **`[comando]`** | `.addbtn`, `.ctrls a`, `.section .meta`, `.fa-acts a`, `.mdacts a` | toque 44 con `.u-hit` (pendiente G2) |
+| **Línea de registro** `#chest  bench press  160lbs×8@0 / 160lbs×6@0` | `.srw` (compartir sesión) | objetivo G4: también en historial y vista previa del día (M3-04, M1-18) |
+| **`[comando]`** | `.addbtn`, `.ctrls a`, `.section .meta`, `.fa-acts a`, `.mdacts a` | toque 44 con `.u-hit` (pendiente G4) |
 | **Rejilla de datos** (cajas de 2) | tabla de sesión: `.thead`, `.srow`, `.pair`, `.inp`, `.pick`, `.fs` | la superficie de referencia de B-05 |
 | **Medidor** `▮▮▮▮▮▮▮▯▯▯ 72%` | hoy no existe como texto; lo más cercano son las barras finas `.bar`/`.vbar`/`.wprog` | objetivo G3/G4: decidir una sola forma de medidor por uso |
 
@@ -89,7 +89,7 @@ BRAND §5 define los siete primitivos con los que se arma toda pantalla. Aquí, 
 ## 4. Tokens
 
 Todo valor visual recurrente es un token en `:root` y se usa con `var(--…)`. **Nunca** se escribe un literal si existe su
-token (TOK-1, la revisa: ds-audit "literales"). Valores leídos de `index.html` (v259).
+token (TOK-1, la revisa: ds-audit "literales"). Valores leídos de `index.html` (v260).
 
 ### 4.1 Superficies
 
@@ -117,8 +117,8 @@ se renombran. Contraste calculado sobre `#000`.
 | `--o60` | .66 | 8.1:1 | secundario, `[acción]`, clave de `.line` |
 | `--o50` | .56 | 5.9:1 | rótulo, meta de sección, `//` |
 | `--o40` | .50 | 4.9:1 | meta, caption, `.submeta` — **piso del texto** (B-11) |
-| `--o35` | .46 | 4.2:1 | solo glifos y deshabilitado (hoy también texto: objetivo G2) |
-| `--o30` | .40 | 3.4:1 | solo glifos, placeholder y deshabilitado (hoy también texto: objetivo G2) |
+| `--o35` | .46 | 4.2:1 | solo glifos y deshabilitado (hoy también texto: objetivo G4) |
+| `--o30` | .40 | 3.4:1 | solo glifos, placeholder y deshabilitado (hoy también texto: objetivo G4) |
 | `--o20` | .26 | 2.0:1 | borde de dato denso, ícono apagado |
 | `--o12` | .10 | 1.2:1 | separador fuerte, borde superior de barras acopladas, fondo activo de la nav |
 | `--o10` | .06 | 1.1:1 | separador de lista, fondo de fila abierta o presionada |
@@ -128,7 +128,7 @@ se renombran. Contraste calculado sobre `#000`.
   `rgba(243,243,244,.035)` en la agenda (código muerto). La revisa: ds-audit (colores literales), R-OP.
 - TOK-4: **texto nunca por debajo de `--o40`** (B-11). `--o35`/`--o30` solo para glifos, placeholder y deshabilitado.
   Hoy hay texto en `--o35`/`--o30` (`~ sugerido`, `pocos datos`, días de la semana del calendario, `[+ nota]`, filas no
-  elegidas de la rueda): objetivo G2 (T-04). La revisa: `_dsRenderCheck` txt · R-TXT.
+  elegidas de la rueda): objetivo G4 (T-04). La revisa: `_dsRenderCheck` txt · R-TXT.
 - Bordes y WCAG 1.4.11 (contraste de lo que no es texto, ≥3:1): `--border` 1.2:1, `--o20` 2.0:1, `--o10` 1.1:1 no llegan.
   Es pregunta abierta de BRAND §10 (borde de campo editable); no se cambia sin su decisión.
 
@@ -157,11 +157,11 @@ se renombran. Contraste calculado sobre `#000`.
 - **Escala única (TYP-1):** `--t-label` 10 · `--t-data` 12 · `--t-section` 16 · `--t-display` 22 · `--t-hero` 34.
   Cualquier otro tamaño está prohibido, **también en SVG**. Exentos solo con id (§15): wrap 60/44, escáner 40, panel
   `?design=1`. Hoy la escala en uso es 10×151 · 12×100 · 16×47 · 22×13 · 34×4 reglas; el radar de macros todavía escribe
-  `font-size="7.5"` en su SVG (objetivo G2, M4-11). La revisa: ds-audit (escala, tokens viejos) · R-SVGFS ·
+  `font-size="7.5"` en su SVG (objetivo G4, M4-11). La revisa: ds-audit (escala, tokens viejos) · R-SVGFS ·
   `_dsRenderCheck` fsOff.
 - **Pesos (TYP-2):** 400 texto · 700 énfasis, números, botones y chips · 800 títulos, `//SECCIÓN`, nombre del
-  ejercicio, valores display. **600 prohibido** (no se carga; el navegador lo pinta como 700). Se cargan también 300 y
-  500 sin usarlos (hoy: 400×24, 700×57, 800×53 reglas): objetivo G2 quitarlos de la URL de la fuente. La revisa: R-FONT.
+  ejercicio, valores display. **600 prohibido** (no se carga; el navegador lo pinta como 700). Desde v260 la URL de la
+  fuente solo carga 400 · 700 · 800 (300 y 500 no se usaban). La revisa: R-FONT.
 - **Mínimos (TYP-3):** texto ≥10 siempre. **800 nunca por debajo de 12.** 700 a 10 solo en estado semántico (▲▼ %, PR,
   sobre MRV). Campos que abren teclado o picker a 16 (anti-zoom de iOS), salvo la tabla de sesión (`table36`). La revisa:
   ds-audit (peso 800 bajo 12, campos por debajo de 16).
@@ -169,10 +169,11 @@ se renombran. Contraste calculado sobre `#000`.
   en mayúsculas; hoy también `.sheet h3` y `.sph .h`) · `--ls-num` −.03em (números de 22 y 34) · `--ls-ui` .03em (botones,
   controles y meta de interfaz) · 0 por defecto. Un rol = un valor. Hoy queda un tracking fuera de rol (`.14em` en
   `.supps .spdots`, CSS muerto) y los exentos de wrap/boot/anillo. La revisa: ds-audit (letter-spacing fuera de rol).
-- **Interlineado (TYP-5):** hoy son literales (1 ×20, 1.2 ×9, 1.4 ×6, 1.5 y 1.6 ×3, 1.55 y 1.1 ×2, y sueltos 1.05, 1.25,
-  1.3, 1.35, 1.8; más alturas fijas de línea para centrar controles). Objetivo G2: tres tokens `--lh-tight` 1 (números
-  grandes y glifos) · `--lh-ui` 1.25 (interfaz) · `--lh-read` 1.55 (lectura, compartir, diagnóstico) (pendiente G2).
-  La revisa: R-LH.
+- **Interlineado (TYP-5, v260):** cuatro tokens con el valor que ya tenían sus sitios: `--lh-tight` 1 (números grandes y
+  glifos, 20 sitios) · `--lh-ui` 1.2 (interfaz, 9) · `--lh-read` 1.4 (lectura, 6) · `--lh-share` 1.6 (compartir, 3; lo
+  decidió el dueño en v257). Quedan literales 1.05, 1.1, 1.25, 1.3, 1.35, 1.5, 1.55 y 1.8 (12 sitios): ajustarlos a los
+  tokens cambia el look, así que es una **propuesta del estudio**, no una limpieza. Las alturas fijas de línea que centran
+  controles son geometría (no token). La revisa: R-LH.
 
 ### 4.5 Roles: tamaño × peso × tracking × interlineado
 
@@ -256,10 +257,10 @@ historial).
 
 ### 4.9 Opacidades de estado
 
-Hoy son literales: presionado `.7` (×7), deshabilitado `.4` / `.5`, prefill `.pf` `.45`, drop `.isdrop` `.82`, ejercicio
-no activo en modo enfoque `.28`, origen del arrastre `.3`, relleno del hold `.22`, tile presionada `.85`, sugerido `.75`.
-Objetivo G2 (TOK-7): `--op-press` .7 · `--op-disabled` .4 · `--op-pf` .45 · `--op-drop` .82 · `--op-dim` .28
-(pendiente G2); lo demás se mapea al más cercano o se declara. La revisa: R-OP.
+Tokens (TOK-7, v260): `--op-press` .7 (5 `:active`) · `--op-disabled` .4 · `--op-pf` .45 (prefill) · `--op-drop` .82
+(serie drop) · `--op-dim` .28 (ejercicio no activo en modo enfoque). Siguen literales (10): tile presionada `.85`,
+presionado `.6` de la agenda, `.5` de `.fa-em-step.off`/`.u-dim`, arrastre `.3`, relleno del hold `.22`, sugerido `.75`,
+`.vbar .mrv` `.7` y dos de keyframes; mapearlos a los tokens cambia el look (propuesta del estudio). La revisa: R-OP.
 
 ### 4.10 Movimiento
 
@@ -274,10 +275,10 @@ Objetivo G2 (TOK-7): `--op-press` .7 · `--op-disabled` .4 · `--op-pf` .45 · `
 | `--toast-life` / `--toast-life-err` | 2.3s / 4.6s | vida del toast (el de error o con deshacer, el doble) |
 
 - MOV-T1: ninguna duración literal en el CSS salvo los bucles con id (§15). En JS se leen con `durMs()`, que respeta la
-  unidad. Hoy quedan literales en JS: 900 del hold, 1300/5000 del arranque y el recap, 190/200 de salidas, 430 del
+  unidad (el hold lee `--dur-hold` desde v260). Hoy quedan literales en JS: 1300/5000 del arranque y el recap, 190/200 de salidas, 430 del
   escáner, 1600 del scrub, y el easing del rebote del escáner.
-- Objetivo G2 (pendiente G2): `--mv-1` 4 (desplazamiento máximo del contenido, B-09) · `--ease-step` (`steps()` para
-  bucles de terminal) · `--dur-hold` 900ms (TRKHold).
+- v260: `--mv-1` 4px (desplazamiento máximo del contenido en `rowin`, `mdslide` y `viewin`, B-09) · `--ease-step`
+  `step-end` (los 3 bucles de terminal) · `--dur-hold` 900ms (TRKHold).
 
 ### 4.11 Capas (z)
 
@@ -293,9 +294,9 @@ Objetivo G2 (TOK-7): `--op-press` .7 · `--op-disabled` .4 · `--op-pf` .45 · `
 
 - Z-1: todo z-index va por token; los únicos locales son `.mdtabs span` (1, sobre su indicador), el lienzo del shader (−1
   dentro del overlay) y la agenda (código muerto).
-- Z-2 (objetivo G2, M6-38): una pregunta de recuperación de datos (TRKAsk, `--z-pop`) puede quedar tapada por el arranque
+- Z-2 (objetivo G4, M6-38): una pregunta de recuperación de datos (TRKAsk, `--z-pop`) puede quedar tapada por el arranque
   (`--z-overlay`). Prioridad: seguridad de datos > arranque > wrap > recap.
-- Scrim: hoy `rgba(0,0,0,.6)` literal en `.modal`; objetivo G2 `--scrim` (pendiente G2).
+- Scrim: `--scrim` `rgba(0,0,0,.6)` en `.modal` (v260).
 
 ### 4.12 Vidrio (solo chrome)
 
@@ -311,19 +312,35 @@ Objetivo G2 (TOK-7): `--op-press` .7 · `--op-disabled` .4 · `--op-pf` .45 · `
 - GLS-3: fallbacks en las utilidades: sin `backdrop-filter` → sólido; `prefers-reduced-transparency` → sólido sin blur
   (`--card2` en la nav, `--sheet-bg` en sheet y toast).
 
-### 4.13 Tokens pendientes (resumen)
+### 4.13 Tokens exactos de v260 y los que faltan
 
-| Token | Valor propuesto | Para qué | Fase |
+v260 (fase T del estudio) creó cada token **con el valor de hoy** y solo lo puso donde ya se usaba ese valor: `tools/ds-diff.html`
+(que ahora compara también interlineado, grosor y color de bordes, radios por esquina, opacidad, sombra, filtro, trazo y
+blur) dio **0 diferencias en 57 escenarios** y `dsSweep` quedó idéntico a la línea base. El estudio (`tools/studio.html`)
+los mueve en vivo sin tocar la app; cambian de valor solo por decisión del dueño (BRAND §9).
+
+| Token | Valor hoy | Sitios | Rol |
 |---|---|---|---|
-| `--r-float` (pendiente G3) | 8 o 12 (G0) | radio del chrome flotante | G3 |
-| `--op-press` · `--op-disabled` · `--op-pf` · `--op-drop` · `--op-dim` (pendiente G2) | .7 · .4 · .45 · .82 · .28 | opacidades de estado | G2 |
-| `--lh-tight` · `--lh-ui` · `--lh-read` (pendiente G2) | 1 · 1.25 · 1.55 | interlineado | G2 |
-| `--nav-clear` (pendiente G2) | alto de la nav + margen + safe-area | lo que se apoya sobre la nav (toast, `.savebar`) | G2 |
-| `--mv-1` (pendiente G2) | 4 | desplazamiento máximo del contenido | G2 |
-| `--ease-step` (pendiente G2) | `steps()` | bucles de terminal | G2 |
-| `--dur-hold` (pendiente G2) | 900ms | TRKHold | G2 |
-| `--scrim` (pendiente G2) | `rgba(0,0,0,.6)` | fondo de los modales | G2 |
-| `--abort` | se retira | — | G3 |
+| `--lh-tight` · `--lh-ui` · `--lh-read` · `--lh-share` | 1 · 1.2 · 1.4 · 1.6 | 20 · 9 · 6 · 3 | interlineado (§4.1 TYP-5) |
+| `--op-press` · `--op-disabled` · `--op-pf` · `--op-drop` · `--op-dim` | .7 · .4 · .45 · .82 · .28 | 5 · 1 · 1 · 2 · 1 | opacidad de estado (§4.9) |
+| `--bw-sep` | .5px | 22 | separador de lista (`.hrow`, `.exrow`, `.mdtr`, `.u-sep`…) |
+| `--bw-box` | .5px | 15 | caja de dato (`.inp`, `.pick`, `.fs`, `.tselo`, `.chip`…) |
+| `--bw-dash` | .5px | 4 | subrayado punteado (`[data-gloss]`, `.mch`, `.u-dash`) |
+| `--bw-leader` | 1px | 2 | guía `····` de `clave ···· valor` (`.line .dots`, `.mddots`) |
+| `--bw-field` | 1px | 9 | campo de formulario (`.field input`, `#fa_q`, `textarea.ta`…) |
+| `--bw-ctl` | 1px | 17 | control (`button.b/.t/.cancel`, `.lact`, `.toggles button`, `.hold`…) |
+| `--bw-card` | 1px | 8 | tarjeta (`.card`, `.grp`, `.ptile`, `.hcal`…; G3 las retira) |
+| `--bw-rule` | 1px | 12 | regla (`.rule`, borde de `.footer`/`.restbar`, `.ghead`…) |
+| `--bw-chrome` | 1px | 8 | borde del vidrio (`.glass`, `.sheet.glass-strong`, `.tsel`, `.gloss`, `.savebar`…) |
+| `--bw-mark` · `--bw-focus` | 2px · 1.5px | 4 · 1 | marca · anillo de foco |
+| `--sw-grid` · `--sw-ref` · `--sw-data` · `--sw-data-lg` | .5 · 1 · 1.4 · 1.8 | clases `.sw-*` | trazos de gráficas (lineChart, radar, FC; la regla CSS gana al atributo) |
+| `--sw-icon` · `--sw-ring-lg` · `--sw-ring-md` | 1.6 · 1.4 · 1.8 | nav · anillos | trazos de íconos y anillos (la imagen para compartir lee el trazo computado) |
+| `--r-nav` · `--r-toast` · `--r-pop` · `--r-bar` | `var(--r-pill)` · `var(--r-pill)` · `var(--r-ctl)` · `var(--r-ctl)` | 2 · 1 · 2 · 1 | radio por pieza flotante (G3 las apunta a `--r-float` (pendiente G3); el auditor resuelve el alias y sigue contando R-RADF) |
+| `--scrim` · `--nav-clear` · `--mv-1` · `--ease-step` · `--dur-hold` | `rgba(0,0,0,.6)` · 84px · 4px · `step-end` · 900ms | 1 · 2 · 3 · 3 · JS | fondo de modal · espacio sobre la nav · desplazamiento · bucles · TRKHold |
+| `--ring-glow` · `--ring-glow-sm` | 4px · 3px | 2 · 2 | brillo del anillo (G3b lo retira) |
+
+Sin token a propósito: los bordes de 1 px de los spinners (`.spin`, `.fa-spin`) y la línea del scrub (`.chsl`), que son
+geometría. Faltan: `--r-float` (pendiente G3: 8 o 12, lo elige el dueño en el estudio; G3a) y retirar `--abort` (G3a).
 
 ---
 
@@ -396,7 +413,7 @@ perfil tienen párrafos fijos de instrucciones; la tira de 17 tiles de Progress.
   exclamaciones ni "genial". Lo humano se reserva para errores y diagnósticos. Cuando un dato no es obvio, el *porqué* va
   en una línea ("correlación, no causa") o al glosario.
 
-**Hoy (v259) el idioma está mezclado** y la regla anterior ("lo nuevo en español salvo vecino en inglés") está en el
+**Hoy (v260) el idioma está mezclado** y la regla anterior ("lo nuevo en español salvo vecino en inglés") está en el
 changelog. Estado medido:
 - Títulos `//` en inglés: SETTINGS, HISTORY, SPLIT, STACK, PROGRESS, RECORDS, STATS, INSIGHTS, NEXT, SUPPS, MEALS, WATER.
   En español: PERFIL, SALUD, ESTÍMULO, MÚSCULOS, FUERZA, RENDIMIENTO, COBERTURA, HOY (recap).
@@ -484,7 +501,7 @@ en `›` para navegar. Nada más. El árbol para elegir está en §17.3.
   `.fa-acts a`, `.mdacts a`, `.hbody .hacts a`.
 - **Anatomía:** texto `--t-label`/`--t-data` en `--o60`, sin caja; `[ ]` literales en el texto.
 - **Estados:** presionado = `--fg`.
-- **Toque:** 44×44 con `.u-hit` (pendiente G2); hoy se consigue con padding + margen negativo en algunos (`.addbtn`,
+- **Toque:** 44×44 con `.u-hit` (pendiente G4); hoy se consigue con padding + margen negativo en algunos (`.addbtn`,
   `.ctrls a`) y en otros no (`[share]` y `[goals]` miden 42×13).
 - **Sí / No:** sí `[+ set]` `[share]` `[‹ gym]`; no `[ + set ]` con espacios, no un corchete dentro de una caja, no más de
   3 palabras.
@@ -570,7 +587,7 @@ Hoy hay más de diez clases de fila. Se agrupan en **cuatro familias**; una fila
 |---|---|---|---|
 | **A · Lectura** `clave ···· valor` | clave `--o60` · líder punteado `.dots` · valor `--fg`/700; `--t-data`; sin toque | — | `.line`, `.line.stat`, `.mdline` (variante de detalle), `.tbrow`, `.stline`, `.nl-row`, `.mdr` |
 | **B · Navegable** (termina en `›`) | nombre `--t-data` + sublínea `--t-label` opcional; `›` `--o30` al final; separador .5 `--o10` | toda la fila, ≥44 | `.line.lnav`, `.nvm` (menú, filas de ~50), `.pickitem`, `.exrow`, `.hrow`, `.mscrow`, `.mmrow`, `.trow` (con sparkline), `.mdtr`, `.stq` (si tiene detalle) |
-| **C · Registro** (una línea por registro, B-03) | `#etiqueta` tenue · nombre `--fg`/800 · datos `--o50`; interlineado de lectura | la fila, si abre algo | `.srw` (la referencia), `.sxr` (historial compacto, objetivo G2: pasa a `.srw`), `.mit` (alimento), `.sitem` (compartir comida), `.lc` (celda de supp/agua), `.seex` (ejercicio del split), `.exbr` |
+| **C · Registro** (una línea por registro, B-03) | `#etiqueta` tenue · nombre `--fg`/800 · datos `--o50`; interlineado de lectura | la fila, si abre algo | `.srw` (la referencia), `.sxr` (historial compacto, objetivo G4: pasa a `.srw`), `.mit` (alimento), `.sitem` (compartir comida), `.lc` (celda de supp/agua), `.seex` (ejercicio del split), `.exbr` |
 | **D · Rejilla editable** | cajas de dato de 2 en columnas fijas | cada caja | `.srow`/`.pair` con `.gc-*`, `.slph`, `.slblk` |
 
 - ROW-2: separador **.5 `--o10`** en todas las filas de lista; dentro de un grupo con borde, el separador es el borde.
@@ -593,8 +610,8 @@ Hoy hay más de diez clases de fila. Se agrupan en **cuatro familias**; una fila
 
 - HDR-1: una cabecera por pantalla (`dayHeadHTML` o `//MÓDULO` + meta), un `//` por sección.
 - Hoy //FUERZA, //RECORDS, //MÚSCULOS y //RENDIMIENTO son `.grp-label` de 10, más débiles que sus propias filas (M5-07):
-  objetivo G2 a `.section` 16/800.
-- El `← back` de la barra de estado es una caja de 68×37: objetivo G2 `[‹ origen]` (§14.2).
+  objetivo G4 a `.section` 16/800.
+- El `← back` de la barra de estado es una caja de 68×37: objetivo G3 `[‹ origen]` (§14.2).
 
 ### 7.7 Superficies de agrupación
 
@@ -623,11 +640,11 @@ La pieza más gym//TRK de la app: densa, afilada, técnica. **Nunca** vidrio, ra
   `.addrow` con `.addbtn`. Sin rellenos ("+ machine" no existe).
 - **Estados:** prefill `.pf` por campo (gris .45 hasta tocarlo); drop `.isdrop` .82; serie hecha `.setn.done` + `.dchk.done`;
   ejercicio en curso `.ex.current` (en modo enfoque, §7.20).
-- **Toque:** 36 (`table36`); el ✓ debe ampliar su toque con `::after` a 44×42 y 6 de separación (objetivo G2, M2-06).
+- **Toque:** 36 (`table36`); el ✓ debe ampliar su toque con `::after` a 44×42 y 6 de separación (objetivo G4, M2-06).
 - **Sí / No:** borrar = **deslizar la fila a la derecha ≥76** (gesto horizontal claro; nunca desde un campo, el ✓ o el
   asa); la pista se enseña una vez (`swipehint`, `hintSeen()`). No hay ✕ por fila.
 - **Motor TRK:** TRKRow (`data-rk`, `reRender()`), TRKSelect (RIR), `applyEnter()` (`.enter`, `.pop`).
-- **Hoy → objetivo G2:** borrar una serie solo deslizando no tiene alternativa ni deshacer (M2-07: toast con
+- **Hoy → objetivo G4:** borrar una serie solo deslizando no tiene alternativa ni deshacer (M2-07: toast con
   `[deshacer]` + menú al mantener el número); `↩` borra la serie más baja con datos aunque no tenga ✓ (M2-08: pila de
   eventos ✓); tras cada ✓ aparecen T, FC, % de drop y ▲▼ a la vez (M2-24: en vivo solo ▲▼%).
 - **La revisa:** self-checks (`_loggingSelfCheck`, `_dropsetSelfCheck`) · R-SESS · a ojo.
@@ -642,7 +659,7 @@ La pieza más gym//TRK de la app: densa, afilada, técnica. **Nunca** vidrio, ra
   `listo`.
 - **Motor:** `updateRestBar()` escribe solo `textContent` cada 500 (nunca repinta); `visibilitychange` recalcula.
 - **Hoy → objetivo:** `abort` y `↩` pasan a `[verbo]` y `--abort` se retira (G3); el tiempo de `.wline` se congela durante
-  el descanso (M2-15, G2). `updateNowBar()` es código muerto (G4).
+  el descanso (M2-15, G4). `updateNowBar()` es código muerto (G4).
 
 ### 7.10 Navegación
 
@@ -723,7 +740,7 @@ reemplaza, así lo escrito abajo se conserva. Diálogos nativos (`alert`/`confir
 - **Rol:** elegir de una lista corta girando (nombre de comida, fase). **API:** `trkWheel({title,opts,cur,ok,other}, onPick)`.
 - **Anatomía:** `.whl` de 5 filas de 40 (`.whl-o`, `--t-section`, `--o35`; la elegida `.on` `--fg`/800) entre dos líneas
   .5 `--o20` (`.whl-sel`); `scroll-snap` nativo; `role="radiogroup"`. Tocar una fila elige; `[elegir]` lee la posición real.
-- **Hoy → objetivo G2:** las filas no elegidas en `--o35` son texto bajo el piso (TOK-4).
+- **Hoy → objetivo G4:** las filas no elegidas en `--o35` son texto bajo el piso (TOK-4).
 
 #### TRKMenu
 - **Rol:** las acciones de una entidad (comida, ejercicio del catálogo). **API:** `trkMenu(título, [[etiqueta, fn], …])` →
@@ -787,7 +804,7 @@ piezas, **no** para inventar componentes: si un conjunto de utilidades se repite
   `display:none` que el JS alterna. Hoy: 89 `style=""`.
 - UTL-3: no valores fuera de la escala, no color literal, no dos declaraciones de la misma propiedad en un elemento, no
   utilidades para lo que ya es componente. No existen `u-o70`, `u-info` ni utilidades de tamaño viejas.
-- **Pendiente G2:** `.u-hit` (pendiente G2), §7.29. La revisa: ds-audit (`style=""`) · R-DOC.
+- **Pendiente G4:** `.u-hit` (pendiente G4), §7.29. La revisa: ds-audit (`style=""`) · R-DOC.
 - Clases de ayuda de v156 que quedan en el CSS: `.muted` (en uso); `.t-meta`, `.t-xs`, `.muted2`, `.kc-right`, `.mt-s3`,
   `.mt-s4`, `.mt-s5`, `.mb-s4` no aparecen en el JS (limpieza G4).
 
@@ -845,7 +862,7 @@ rejillas"; compartir es **vertical, a altura natural, nunca un cuadro que recort
   nada interactivo dentro de la tarjeta; ninguna tarjeta de números gigantes ("del pito"); ningún cuadro 1:1.
 - **Hoy → objetivo:** la marca `.shfoot` va toda en `--o35` (objetivo G3: marca única, §7.30); el botón `EXSH_SVG` usa
   viewBox 16 y trazo 1.4 como el ícono de iOS (objetivo G3: ícono TRK "share"); 📷 es emoji (objetivo G3: ícono TRK
-  "camera", excepción `camera`); si el id no existe, compartir sesión muestra la última sin avisar (G2: `// esa sesión ya no
+  "camera", excepción `camera`); si el id no existe, compartir sesión muestra la última sin avisar (G4: `// esa sesión ya no
   existe`); `[uni]`/`[bi]` en compartir es decisión menor pendiente. `renderShareWeight()` no tiene quien lo abra (G4).
 - **La revisa:** `_v257SelfCheck` · a ojo con capturas de las 44 sesiones reales.
 
@@ -864,7 +881,7 @@ rejillas"; compartir es **vertical, a altura natural, nunca un cuadro que recort
 - **Clase:** `.rot` (`.lbl` `ROTATION`, `.n` `‹ day 2/4 ›` con `.arrow`) + `.segs` (un `<i class="seg">` por día de 4 de
   alto; el elegido `.on` en `--fill`, los demás `--track`).
 - **Hoy → objetivo:** `.seg.past` no tiene estilo (M1-19, G4: hecho `--o40`, actual `--fill`, próximo `--track`); las
-  flechas miden 18×13 (`.u-hit`, G2).
+  flechas miden 18×13 (`.u-hit`, G4).
 
 ### 7.22 Línea de preparación
 
@@ -898,7 +915,7 @@ Decisión del dueño 2026-09-21: macros en orden **SUPPS → MEALS → WATER**, 
   `hora · P C F`; total `.mkc` 16/800 que abre el desglose; `.gmore` con `.dots3` → `openMealMenu()`); alimentos `.mit` de 36
   (`--t-data`, cantidad en negrita, kcal `--o50`); `+ food` al final.
 - **WATER:** chips de vaso `.lc` (quitar = toast con `[deshacer]`); `+ water` abre la elección de cantidad.
-- **Hoy → objetivo:** las filas tocables miden 36 (M4-07, G2: 44); vacíos en inglés (`no meals logged`, G3); el ✓ de
+- **Hoy → objetivo:** las filas tocables miden 36 (M4-07, G4: 44); vacíos en inglés (`no meals logged`, G3); el ✓ de
   tomado va en `--good` (G3).
 
 ### 7.25 Stack (suplementos, administración)
@@ -936,7 +953,7 @@ compartir comida; excepción `ring`).
 - **Objetivo G3** (BRAND §4): sin tarjeta de 16 ni brillo; panel de lectura plano o de vidrio sutil (se elige en G0); color
   solo en el arco y en `left/over`.
 
-### 7.29 `.u-hit` (pendiente G2)
+### 7.29 `.u-hit` (pendiente G4)
 
 - **Rol:** que todo control de texto o glifo tenga 44×44 de toque sin crecer visualmente (B-11, T-03).
 - **Anatomía propuesta:** `position:relative` + un `::after` absoluto centrado de 44×44. Obligatoria en `[verbo]`, flechas
@@ -988,7 +1005,7 @@ Instrumentación, no infografía (B-02: la gráfica existe solo cuando el texto 
 | **Columnas apiladas** | `.slfc` (FASES del sueño) | detalle de sueño | una columna por noche bajo la x de su fecha (mismo margen de eje que la línea), profundo abajo; 4 filas con etiqueta y valor escritos (`.slfr`) | sin columna |
 | **Hipnograma** | `hypnoHTML()` → `.hypno` | registro de sueño | escala de opacidad: profundo `--fg` · core `--o50` · REM `--o30` · despierto `--o12` · sin clasificar `--track`; lo no clasificado se ve, no se reparte | no se dibuja |
 | **Anillo** (TRKRing) | `ringHTML()` | macros, compartir comida | §7.28; excepción `ring` | anillo vacío (hoy con punto al 0 %: G3) |
-| **Radar** | `dayRadar()` → `.macro-rad`, `.msum-rad` | macros (detalle), desglose de comida | etiquetas SVG a `font-size="7.5"` (≈5.9 reales): objetivo G2 etiquetas HTML a 10 o quitarlo (decisión del dueño) | — |
+| **Radar** | `dayRadar()` → `.macro-rad`, `.msum-rad` | macros (detalle), desglose de comida | etiquetas SVG a `font-size="7.5"` (≈5.9 reales): objetivo G4 etiquetas HTML a 10 o quitarlo (decisión del dueño) | — |
 | **Calendario** (TRKCal) | `monthCalHTML()`, `stripCalHTML()` (racha en franja `.strk-row`), `histCalHTML()` (`.hcal`) | racha, historial | un solo blanco en opacidad (`--track` · `--o30` · `--fg`); celda cuadrada `--r-mark`; hoy con contorno `--o40`; **lunes primero** (`L M X J V S D`); sin leyenda; tocar un día lleva a ese día | días vacíos |
 | **FC** | `hrChartSVG()` → `.hrsvg` | hoja de sesión | 56 de alto, `--o60`, marca por serie | no se dibuja |
 | **Medidor de celdas** ▮▯ | — | — | primitivo de BRAND §5; hoy no existe | — |
@@ -1061,12 +1078,12 @@ Una forma de escribir cada tipo de dato, con su función (NUM-1). La revisa: a o
 
 | Dato | Forma | Función hoy | Estado |
 |---|---|---|---|
-| Serie (línea de registro) | `160lbs×8@0 / 160lbs×6@0` · drop `↓60lbs×9@0` · lado `R 70kg×10@2` | `shTokTxt()` desde `shExModel()` | en compartir; **objetivo G2**: historial y vista previa también (hoy `shareExLines()` escribe `60×11 RIR2 · ↓35×8 RIR0 58%`, M3-04) |
-| Conteo de series | `18 series` (series de trabajo; drops aparte; par R+L = 1) | `shExModel()` cuenta así; otras listas cuentan distinto (21 vs 18, M3-05) | `seriesOf()` (pendiente G2) |
+| Serie (línea de registro) | `160lbs×8@0 / 160lbs×6@0` · drop `↓60lbs×9@0` · lado `R 70kg×10@2` | `shTokTxt()` desde `shExModel()` | en compartir; **objetivo G4**: historial y vista previa también (hoy `shareExLines()` escribe `60×11 RIR2 · ↓35×8 RIR0 58%`, M3-04) |
+| Conteo de series | `18 series` (series de trabajo; drops aparte; par R+L = 1) | `shExModel()` cuenta así; otras listas cuentan distinto (21 vs 18, M3-05) | `seriesOf()` (pendiente G4) |
 | Número de serie | `1, 1.5, 2, 3` (drop = .5, cadena .6/.7) | `setLabels()` | ✓ |
 | Lateralidad | `[uni]`/`[bi]` al frente, misma fuente que el nombre; nunca la unidad | `latTxt()`, `exLatTagHead()` | ✓ (B-12) |
-| Tipo de ejercicio | una sola forma (`[libre] [máquina] [smith] [cable] [bw]`, propuesta de la auditoría) | hoy 5 formas (`máquina`, `mach`, `pulley`, `machine`, `free`) en `variantChips()` y otros | `typeTag()` (pendiente G2) |
-| Carga | `effW()` (peso corporal vivo); `numTxt()` (hasta 2 decimales); `roundLoad()` (kg 2.5 · lbs 5 · pla 1); `kgLoad()` (lbs→kg, placas fuera) | ✓ | e1RM en lbs etiquetado "kg" a mano (M5-04): G2 |
+| Tipo de ejercicio | una sola forma (`[libre] [máquina] [smith] [cable] [bw]`, propuesta de la auditoría) | hoy 5 formas (`máquina`, `mach`, `pulley`, `machine`, `free`) en `variantChips()` y otros | `typeTag()` (pendiente G4) |
+| Carga | `effW()` (peso corporal vivo); `numTxt()` (hasta 2 decimales); `roundLoad()` (kg 2.5 · lbs 5 · pla 1); `kgLoad()` (lbs→kg, placas fuera) | ✓ | e1RM en lbs etiquetado "kg" a mano (M5-04): G4 |
 | Lectura suelta | `59.8 kg`: número `--fg`, unidad separada y tenue (`.line .v .u`, `.pval span`) | ✓ | |
 | Miles | `2,405` | `toLocaleString()` | ✓ |
 | Cambio | `▲ +3%` / `▼ −4%` con signo menos real (−) | badges de progreso | revisar que ningún cambio use `-` (G4) |
@@ -1085,7 +1102,7 @@ unidad de cada ejercicio (`exDisplayUnit()`); la unidad se ve en el `<select>` d
 ## 10. Movimiento
 
 **Firma (B-09): el contenido imprime, el chrome se desliza.** El contenido cambia al instante o con opacidad + ≤4 (`--mv-1`
-(pendiente G2)). Solo el chrome (nav, sheet, toast, popover) se mueve como vidrio. **Un movimiento visible por toque.**
+(pendiente G4)). Solo el chrome (nav, sheet, toast, popover) se mueve como vidrio. **Un movimiento visible por toque.**
 Reduced-motion = instantáneo.
 
 - MOV-1: se anima solo un **cambio de estado**: nunca un re-render de la misma pantalla (cada tecla re-renderiza). Lo que
@@ -1100,7 +1117,7 @@ Reduced-motion = instantáneo.
   (v258: antes un bucle a .01 ms parpadeaba) y los cinco `scrollIntoView` suaves usan
   `behavior:reducedMotion()?'auto':'smooth'` (X1-03).
 
-### 10.1 Registro de movimiento (todo lo que se mueve en v259)
+### 10.1 Registro de movimiento (todo lo que se mueve en v260)
 
 Leyenda de la última columna: ✓ cumple B-09 · ⚠ a revisar con el dueño · ✗ se corrige (fase).
 
@@ -1160,7 +1177,7 @@ Leyenda de la última columna: ✓ cumple B-09 · ⚠ a revisar con el dueño ·
 | TRKWheel `trkWheel()` | girar la rueda | `scroll-snap` nativo; el marcado cambia en el evento | nativo | nativo | ✓ |
 | `scrollIntoView` suave | foco tras un ✓ (`state._focusSet`), primer RIR (`state._autoScroll`), `[+ exercise]`, ir a la serie en curso, día del historial | scroll | nativo | los cinco miran `reducedMotion()` (v258) | ✓ |
 
-Hoy un ✓ dispara 4 o 5 movimientos a la vez (pop, barra, número, foco con scroll suave): objetivo G2/G4, uno visible por
+Hoy un ✓ dispara 4 o 5 movimientos a la vez (pop, barra, número, foco con scroll suave): objetivo G4, uno visible por
 toque (X1-10).
 
 ---
@@ -1193,10 +1210,10 @@ glyph.
 | — | sin dato | lecturas vacías | "sin dato" |
 
 - GLY-1: **un glifo, un significado.** Hoy se rompe: `▲▼` también reordena en el editor de split y en la hoja de sesión
-  (M1-04, M3-10 → `⠿` o menú, G2/G3); `~` también significa "tomado tarde" en el stack (G4); `›` también gira para
+  (M1-04, M3-10 → `⠿` o menú, G3); `~` también significa "tomado tarde" en el stack (G4); `›` también gira para
   desplegar en TRKLog (el significado de desplegar es `▾`; G3/G4).
 - GLY-2: los glifos llevan `aria-hidden` y el control lleva `aria-label` con la palabra (hoy VoiceOver lee "black
-  up-pointing triangle": G2, T-12).
+  up-pointing triangle": G4, T-12).
 
 ### 11.2 Puntuación tipográfica (no son glifos de interfaz)
 
@@ -1213,7 +1230,7 @@ glyph.
 | ✎ | `✎ editar sets`, `✎ editar detalles…`, código de barras | `[editar]` | G3 |
 | ◦ | "comunidad" en resultados de comida | nada (solo se marca la excepción `⚠ revisa`) | G3 |
 | ▸ ▴ | resumen de bloques del stack, `▸ ver tu wrap`, `[ ocultar rutina ▴ ]`, `.wline` | `›` o nada | G3 |
-| ← | `← back`, `← regresar`, `← músculo` | `‹` | G2/G3 |
+| ← | `← back`, `← regresar`, `← músculo` | `‹` | G3 |
 | ✗ | "saltada" en el stack | `✕` | G3 |
 | ■ | v258: `cerrar a las HH:MM` ya va en gris y sin ■ (M2-09) | G3: `[cerrar a las 14:32]` | ✓ |
 | ⋯ | menú de fila del catálogo (`.exmore`) | `.dots3` | G3 |
@@ -1237,10 +1254,10 @@ glyph.
 | Estado | Cómo se ve hoy | Regla |
 |---|---|---|
 | default | — | — |
-| presionado | opacidad .7 (`:active`), fondo `--o10`/`--card2` en filas y botones, `scale(.98)` en tiles | objetivo G2 `--op-press` (pendiente G2); G4: una sola forma de presionar en `:active`; en `[verbo]` = `--fg` |
-| foco | `:focus-visible` con contorno 1.5 `--fg` y 2 de separación; `:focus` sin contorno | siempre visible con teclado; verificar en controles que no son `<button>` (G2) |
+| presionado | `--op-press` .7 (`:active`), fondo `--o10`/`--card2` en filas y botones, `scale(.98)` en tiles | G4: una sola forma de presionar en `:active`; en `[verbo]` = `--fg` |
+| foco | `:focus-visible` con contorno 1.5 `--fg` y 2 de separación; `:focus` sin contorno | siempre visible con teclado; verificar en controles que no son `<button>` (G4) |
 | seleccionado | relleno `--fill` + texto `--on-fill` (toggles, TRKSelect), contraste (`.on`) | — |
-| deshabilitado | opacidad .4, `aria-disabled` en `--o30`, flechas apagadas en `--o20` | misma estructura; objetivo G2 `--op-disabled` (pendiente G2) |
+| deshabilitado | `--op-disabled` .4, `aria-disabled` en `--o30`, flechas apagadas en `--o20` | misma estructura |
 | éxito / error | semántico + texto (toast, `.savebar`) | nunca solo color |
 
 Un componente **no** cambia de estética por estado: cambian opacidad, superficie, borde o color, nada más. En móvil no hay
@@ -1255,9 +1272,9 @@ error `⚠ qué pasó · qué hacer`; sin conexión `⚠ sin conexión · [reint
 |---|---|---|---|---|
 | Gym | cabecera `//GYM sin split` + `+ crear split`, `explorar splits`, `importar` | recuperación con "pocos datos"; "sin baseline" en series | — | — (local) |
 | Sesión | — | prefill vacío; "sin baseline" | — | guardado fallido: `.savebar` permanente + TRKAsk "no se pudo guardar" |
-| Macros | `no meals logged`, `no water logged` (inglés: G3 → español) | — | búsqueda en línea con `.fa-spin` | OpenFoodFacts falla **en silencio** y un código que no se pudo buscar sale como "no encontrado" (M4-09 → G2: `// 0 resultados` · `⚠ sin conexión · [reintentar]` · resultados) |
+| Macros | `no meals logged`, `no water logged` (inglés: G3 → español) | — | búsqueda en línea con `.fa-spin` | OpenFoodFacts falla **en silencio** y un código que no se pudo buscar sale como "no encontrado" (M4-09 → G4: `// 0 resultados` · `⚠ sin conexión · [reintentar]` · resultados) |
 | Progreso | "aún no hay datos", "sin registros en este rango", "sin volumen registrado en este rango", "aún no hay levantamientos con peso × reps" | `sin normal · N/7 d`, diagnóstico "pocos datos" | — | — |
-| Historial | "sin sesiones registradas" | — | — | sesión inexistente en compartir (G2) |
+| Historial | "sin sesiones registradas" | — | — | sesión inexistente en compartir (G4) |
 | Stack | "stack vacío", "no toca nada hoy ✓" | — | — | — |
 | Compartir | "sin sesión para compartir", "sin series registradas", "sin alimentos este día", "aún sin series con peso y reps" | — | `… generando imagen` | `⚠ no se pudo generar la imagen` |
 | Ajustes · salud | — | — | `… sincronizando salud` | `⚠ …` del sync; errores de permisos en el log |
@@ -1275,7 +1292,7 @@ Objetivo G4: completar la tabla con el texto exacto de cada celda vacía y una a
 |---|---|---|---|
 | **Zoom bloqueado** (`maximum-scale=1, user-scalable=no`; excepción `vp-lock`) | 1.4.4 cambio de tamaño del texto | sensación de app nativa, sin zoom accidental en la serie | campos a 16; texto nunca bajo `--o40` |
 | **Texto de 10** (`--t-label`) | ninguno formal (las skills piden 11) | densidad de terminal | solo en meta y rótulos, nunca en datos que se leen en la serie |
-| **Tabla de 36** (excepción `table36`) | 2.5.5 (44, AAA); cumple 2.5.8 (24, AA) | densidad en la serie | ✓ con toque ampliado (objetivo G2: 44×42) |
+| **Tabla de 36** (excepción `table36`) | 2.5.5 (44, AAA); cumple 2.5.8 (24, AA) | densidad en la serie | ✓ con toque ampliado (objetivo G4: 44×42) |
 | **Bordes bajo 3:1** | 1.4.11 contraste de lo que no es texto | lenguaje de líneas finas | pregunta abierta de BRAND §10 |
 
 ### 13.2 Lo que nunca se sacrifica
@@ -1283,12 +1300,12 @@ Objetivo G4: completar la tabla con el texto exacto de cada celda vacía y una a
 - A11Y-1 color nunca como única señal (TOK-5).
 - A11Y-2 toasts con `aria-live` (`.toasts` polite; el error con `role="alert"`).
 - A11Y-3 foco visible (`:focus-visible`).
-- A11Y-4 reduced-motion y reduced-transparency respetados (§10, §4.12; hoy con huecos: G2).
-- A11Y-5 todo gesto tiene alternativa visible (hoy deslizar para borrar no la tiene: G2, M2-07; WCAG 2.5.1).
-- A11Y-6 toque ≥44 (B-11; hoy ~600 menores: `.u-hit` (pendiente G2)). La revisa: `_dsRenderCheck` hit.
+- A11Y-4 reduced-motion y reduced-transparency respetados (§10, §4.12; hoy con huecos: G4).
+- A11Y-5 todo gesto tiene alternativa visible (hoy deslizar para borrar no la tiene: G4, M2-07; WCAG 2.5.1).
+- A11Y-6 toque ≥44 (B-11; hoy ~600 menores: `.u-hit` (pendiente G4)). La revisa: `_dsRenderCheck` hit.
 - A11Y-7 texto ≥ `--o40` (B-11). La revisa: `_dsRenderCheck` txt.
 - A11Y-8 roles accesibles: todo lo tocable es `<button type="button">` con `aria-label` (hoy hay un solo `role="button"` y
-  muchos controles son `span`, `i`, `div` o `a` sin `href`: G2, T-12). La revisa: R-A11Y.
+  muchos controles son `span`, `i`, `div` o `a` sin `href`: G4, T-12). La revisa: R-A11Y.
 
 ### 13.3 Sonido y vibración
 
@@ -1313,7 +1330,7 @@ Objetivo G4: completar la tabla con el texto exacto de cada celda vacía y una a
 - NAV-1: **pantallas primarias** = las tres de la nav (progress · gym · macros): con nav y sin atrás.
 - NAV-2: **pantallas secundarias** (sesión, historial, editor de historial, compartir, stack, split, ajustes, catálogos):
   **sin nav** y con un solo atrás. Hoy `renderNav()` oculta la nav en workout, settings, splitedit, history y share, pero
-  se ve en histedit, stack y agenda (T-02, G2).
+  se ve en histedit, stack y agenda (T-02, G4).
 - NAV-3: lo secundario se abre desde una fila `›`, desde `[verbo]` o desde el menú `u/…` (`navmenu` → `.nvm`).
 
 ### 14.2 Atrás
@@ -1321,11 +1338,11 @@ Objetivo G4: completar la tabla con el texto exacto de cada celda vacía y una a
 - **Hoy:** `statusBar(true)` pinta `← back` (una caja de 68×37 con borde) y `data-act="leave"` siempre manda a gym: se
   pierden el scroll y el contexto; el editor de historial tiene dos salidas distintas (`← back` → gym y `‹ cerrar` →
   historial).
-- **Objetivo G2** (T-02): `state._from` (pendiente G2) guarda de dónde vienes con su scroll; un solo `[‹ origen]` de texto
+- **Objetivo G4** (T-02): `state._from` (pendiente G3) guarda de dónde vienes con su scroll; un solo `[‹ origen]` de texto
   en la barra de estado, con 44 de toque (`[‹ gym]`, `[‹ historial]`).
 - NAV-4: cerrar un sheet **nunca** mueve el scroll de abajo (`reRender()`, no `closeModal(); render()`). La revisa: R-SCROLL.
 
-### 14.3 Mapa por pantalla (v259)
+### 14.3 Mapa por pantalla (v260)
 
 | Pantalla (`state.screen`) | Instrumento | Cabecera | Contenido | Nav hoy | Notas |
 |---|---|---|---|---|---|
@@ -1338,7 +1355,7 @@ Objetivo G4: completar la tabla con el texto exacto de cada celda vacía y una a
 | `histedit` | corrección | `dayHeadHTML` | tabla de sesión compacta (`.hist-compact`) | **sí (debería no)** | T-02 |
 | `share` | resumen | según tipo | §7.19 | no | |
 | `stack` | inventario | `.section` //STACK | TRKTabs HOY/TODOS, bloques por momento | **sí (debería no)** | §7.25 |
-| `splitedit` | inventario | `.section` //SPLIT | días (`.seday`), ejercicios (`.seex`), deriva (`.sedrift`) | no | ▲▼ para reordenar y ✕ sin deshacer (G2) |
+| `splitedit` | inventario | `.section` //SPLIT | días (`.seday`), ejercicios (`.seex`), deriva (`.sedrift`) | no | ▲▼ para reordenar y ✕ sin deshacer (G4) |
 | `settings` | utilitario | `.section` //SETTINGS | //PERFIL, entrenamiento, //SALUD, datos (`sync data`, `espacio`, `export`, `import`, `reset data`) | no | `reset data` igual que `export` (M6-19); cinco nombres para el respaldo (M6-11) → G4 |
 | `agenda` | — | — | sin acceso desde v226 | — | código muerto (`renderAgenda()`, G4) |
 | overlays | — | — | §7.32 | — | — |
@@ -1348,7 +1365,7 @@ Objetivo G4: completar la tabla con el texto exacto de cada celda vacía y una a
 ## 15. Excepciones
 
 Toda excepción es funcional y tiene **id de categoría** (BRAND §6). En el CSS se marca pegada a la declaración. Hoy el
-marcador es `/*ds:exempt*/` sin id (33 declaraciones en 29 reglas); objetivo G2: `/*ds:exempt:<id>*/` con un id de esta
+marcador es `/*ds:exempt*/` sin id (33 declaraciones en 29 reglas); objetivo G4: `/*ds:exempt:<id>*/` con un id de esta
 lista (R-EXEMPT). Marcar algo como exento exige que esté aquí (EXC-1).
 
 | Id | Qué exime | Usos actuales |
@@ -1414,7 +1431,7 @@ etiquetas, compartir con números gigantes, confeti/XP/mascotas/FOMO, fuentes nu
 ### 17.3 Árbol de decisión de acciones
 
 - ¿Es **la** razón de ser de la vista? → **primario** (uno solo, abajo).
-- ¿Es una acción puntual dentro de los datos o secundaria? → `[verbo objeto]` + `.u-hit` (pendiente G2).
+- ¿Es una acción puntual dentro de los datos o secundaria? → `[verbo objeto]` + `.u-hit` (pendiente G4).
 - ¿Eliges entre opciones que se excluyen? → `.toggles`.
 - ¿Es una decisión dentro de un sheet? → `.sheetbtns` (un `.ok`).
 - ¿Es irreversible? → **TRKHold**. ¿Es reversible? → acción inmediata + toast con `[deshacer]`. ¿Cambia el flujo? →
@@ -1442,9 +1459,9 @@ que crea o reemplaza una sesión se oculta mientras hay una viva.** La revisa: R
 | guardar sesión | TRKAsk ("finalizar la sesión") + toast | — |
 | cambiar un ejercicio con series · adoptar el split · unir ejercicios · registrar sin código | TRKAsk | — |
 | borrar peso / sueño / ánimo / percepción de un día | TRKAsk | reversible → toast + `[deshacer]` (G4) |
-| borrar una serie (deslizar) | inmediato; TRKAsk solo si se lleva drops con datos | toast + `[deshacer]` + menú al mantener el número (G2, M2-07) |
+| borrar una serie (deslizar) | inmediato; TRKAsk solo si se lleva drops con datos | toast + `[deshacer]` + menú al mantener el número (G4, M2-07) |
 | `↩` | v258: deshace el último ✓ por su hora (`doneAt`), conserva peso/reps/RIR y avisa con toast + `[deshacer]` | ✓ (M2-08) |
-| quitar un ejercicio del split (✕) | sin confirmación ni deshacer, a 1 del ▼ | desde el editor del ejercicio, con toast + deshacer (G2, M1-04) |
+| quitar un ejercicio del split (✕) | sin confirmación ni deshacer, a 1 del ▼ | desde el editor del ejercicio, con toast + deshacer (G4, M1-04) |
 | `rest day` · `skip day` | inmediato, sin deshacer; con sesión viva ya no existen ni corren (v258, M1-01b) | toast `✓ día saltado · sigue <día>` + `[deshacer]` (G4, M1-03) |
 | `[+ log past session]` | oculto y bloqueado con sesión viva (v258, M1-01) | ✓ |
 | recuperar una sesión al arrancar | v259: se copia antes a `gymtrk_live_pending`; solo `[recuperarla]` o `[descartar]` deciden; tocar fuera la deja para el siguiente arranque; con otra sesión viva no la pisa | ✓ |
@@ -1487,7 +1504,7 @@ quedar registrado. Antes de escribir UI se responde por escrito:
 Node puro, sin npm: `node tools/ds-audit.cjs` (con un archivo como argumento audita ese, para comparar contra la versión
 anterior). Se corre antes y después de cada cambio de UI; **ningún commit sube un contador P0 o P1** (AUD-1).
 
-**Contadores de hoy** (v259): P0 detectables · tamaños fuera de escala, escala en uso, tokens viejos, peso 800 bajo 12,
+**Contadores de hoy** (v260): P0 detectables · tamaños fuera de escala, escala en uso, tokens viejos, peso 800 bajo 12,
 pesos · letter-spacing fuera de rol · radios y espaciado fuera de escala · bordes · sombras fuera de token · colores
 literales · variables sin definir · excepciones marcadas · `style=""` total y por función · selectores repetidos (la misma
 regla propia dos veces en el nivel superior; no cuentan variantes en `@media`/`@supports` ni base + ajuste) · diálogos

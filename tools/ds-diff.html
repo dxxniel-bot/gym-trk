@@ -4,15 +4,23 @@
 <script>
 // D21: cada carga rompe la caché (?cb=hora) — sin esto el navegador podía servir un _pre.html o index.html viejo y el diff
 // comparaba versiones equivocadas. ?a=… / ?b=… eligen otros archivos (p. ej. ?a=../_v241.html para re-verificar una fase).
-const _q=new URLSearchParams(location.search), _cb='?cb='+Date.now(), SRC={A:(_q.get('a')||'../_pre.html'),B:(_q.get('b')||'../index.html')};
-document.getElementById('A').src=SRC.A+_cb; document.getElementById('B').src=SRC.B+_cb;
-function loaded(){ return Object.fromEntries(['A','B'].map(k=>{ const e=performance.getEntriesByType('resource').filter(x=>x.name.indexOf(SRC[k].replace('../','/'))>=0&&x.name.indexOf(_cb)>=0).pop(); return [k,SRC[k]+(e?' · '+(e.transferSize||e.encodedBodySize)+' B'+(e.transferSize?'':' (¿caché?)'):' · sin registro')]; })); }
+// v259 · herramienta de desarrollo: solo en localhost, y cada frame corre detrás del guardia del estudio
+// (tools/studio/guard.js): antes el escenario live:workout creaba una sesión DE VERDAD en el almacenamiento.
+if(!/^(localhost|127\.0\.0\.1)$/.test(location.hostname)){ document.body.innerHTML='<p style="color:#f55;font:12px monospace;padding:16px">ds-diff solo corre en localhost</p>'; throw new Error('ds-diff: solo localhost'); }
+const _q=new URLSearchParams(location.search), _cb='?cb='+Date.now(), SRC={A:(_q.get('a')||'../_pre.html'),B:(_q.get('b')||'../index.html')}, _sz={};
+async function guarded(id,src){ const base=new URL('../',location.href).href, f=document.getElementById(id); f._trkCfg={};
+  let t=await fetch(new URL(src+_cb,location.href).href,{cache:'no-store'}).then(r=>r.text()); _sz[id]=t.length;
+  t=t.replace(/<head([^>]*)>/i,m=>m+'<base href="'+base+'"><script src="tools/studio/guard.js'+_cb+'"><\/script>'); f.srcdoc=t; }
+guarded('A',SRC.A); guarded('B',SRC.B);
+function loaded(){ return Object.fromEntries(['A','B'].map(k=>[k,SRC[k]+' · '+(_sz[k]||'?')+' caracteres · guardia '+(((document.getElementById(k).contentWindow||{}).__trk||{}).mode||'NO')])); }
 // gym//TRK · diff de estilos computados (DESIGN_SYSTEM.md §18). Copia la versión anterior a repo/_pre.html (no se versiona),
 // sirve repo/ y abre /tools/ds-diff.html; en consola: go2() y luego report(). Mismo escenario en A (antes) y B (ahora), elemento por elemento.
-const P=['color','fontSize','fontWeight','marginTop','marginBottom','marginLeft','marginRight','paddingTop','paddingBottom','paddingLeft','paddingRight','textAlign','cursor','flexGrow','flexShrink','flexBasis','minWidth','whiteSpace','textDecorationLine','cssFloat','verticalAlign','display','flexWrap','alignItems','justifyContent','columnGap','rowGap','flexDirection','fontStyle','letterSpacing','width','height'];
+const P=['color','fontSize','fontWeight','marginTop','marginBottom','marginLeft','marginRight','paddingTop','paddingBottom','paddingLeft','paddingRight','textAlign','cursor','flexGrow','flexShrink','flexBasis','minWidth','whiteSpace','textDecorationLine','cssFloat','verticalAlign','display','flexWrap','alignItems','justifyContent','columnGap','rowGap','flexDirection','fontStyle','letterSpacing','width','height',
+  // v260 (tokens exactos): lo que la tokenización de líneas, interlineado, radios, opacidad y trazos no puede mover
+  'lineHeight','borderTopWidth','borderRightWidth','borderBottomWidth','borderLeftWidth','borderTopColor','borderBottomColor','borderTopLeftRadius','borderTopRightRadius','borderBottomRightRadius','borderBottomLeftRadius','opacity','boxShadow','filter','strokeWidth','backdropFilter','outlineWidth','transitionDuration','animationName'];
 function snap(W){ W.document.getAnimations().forEach(a=>{ try{a.finish();}catch(_){} }); const out=[];
   const walk=(el,path)=>{ const cs=W.getComputedStyle(el); out.push({path,cls:el.getAttribute('class')||'',v:P.map(p=>cs[p])}); [...el.children].forEach((c,i)=>walk(c,path+'/'+c.tagName.toLowerCase()+i)); };
-  ['view','modal','nowbar','resttimer','wfooter','nav'].forEach(id=>{ const el=W.document.getElementById(id); if(el)walk(el,'#'+id); });
+  ['view','modal','nowbar','resttimer','wfooter','nav','toasts','asklayer'].forEach(id=>{ const el=W.document.getElementById(id); if(el)walk(el,'#'+id); });
   return out; }
 const food={name:'x',base:'g',per100:{kcal:100,protein:10,carbs:10,fat:2},sizes:{serving:30}};
 const lastS=D=>D.sessions[D.sessions.length-1];
@@ -37,7 +45,8 @@ const S2=[
 ['live:machine',W=>{ W.go('workout'); W.openMachineEdit(0); }]
 ];
 async function runDiff2(S){ const A=document.getElementById('A').contentWindow, B=document.getElementById('B').contentWindow; const res={};
-  const D=W=>JSON.parse(W.localStorage.getItem('gymtrk_db_v1')||'{}');
+  if(!A.__trk||!B.__trk)throw new Error('frames sin guardia: no se corre');
+  const D=W=>W.__trk.db;
   for(const [name,fn] of S){ let ea='',eb='';
     try{ try{A.closeModal()}catch(_){} fn(A,D(A)); }catch(e){ ea=e.message; }
     try{ try{B.closeModal()}catch(_){} fn(B,D(B)); }catch(e){ eb=e.message; }
