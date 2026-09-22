@@ -49,8 +49,8 @@
       items:[
         { tok:'--t-label',   l:'rótulo',   d:10, min:10, max:11, step:1, u:'px', kind:'px', x:{min:9, max:12} },
         { tok:'--t-data',    l:'dato',     d:12, min:12, max:13, step:1, u:'px', kind:'px', x:{min:11,max:14} },
-        { tok:'--t-section', l:'sección', d:16, min:16, max:18, step:1, u:'px', kind:'px', x:{min:14,max:20}, note:'también es el tamaño de los campos: bajo 16 vuelve el zoom de iOS al escribir' },
-        { tok:'--t-display', l:'display',  d:22, min:20, max:24, step:1, u:'px', kind:'px', x:{min:18,max:28},
+        { tok:'--t-section', l:'sección', d:18, min:16, max:20, step:1, u:'px', kind:'px', x:{min:14,max:20}, note:'también es el tamaño de los campos: bajo 16 vuelve el zoom de iOS al escribir' },
+        { tok:'--t-display', l:'display',  d:24, min:20, max:26, step:1, u:'px', kind:'px', x:{min:18,max:28},
           sel:'.whdr .wname,.ring.lg .num,.pval,.msum-tot b,.lkc b,.shsn,.shr-ring .ring.lg .num,.shm-g,.exbn,.shstat-n,.ws-big span,.ws-year,.u-disp' },
         { tok:'--t-hero',    l:'héroe',    d:34, min:32, max:36, step:1, u:'px', kind:'px', x:{min:26,max:44},
           sel:'.strk-n,.mdval,.exov,.u-hero' }
@@ -99,7 +99,7 @@
       items:[
         { tok:'--bw-sep',    l:'separador de lista', d:.5,  min:.5, max:1,   step:.5, u:'px', kind:'px', x:{min:0, max:2}, sel:BW.sep },
         { tok:'--bw-box',    l:'caja de dato',       d:.5,  min:.5, max:1,   step:.5, u:'px', kind:'px', x:{min:0, max:2}, sel:BW.box },
-        { tok:'--bw-dash',   l:'subrayado punteado', d:.5,  min:.5, max:1,   step:.5, u:'px', kind:'px', x:{min:0, max:2}, sel:BW.dash },
+        { tok:'--bw-dash',   l:'subrayado punteado', d:1,   min:.5, max:1,   step:.5, u:'px', kind:'px', x:{min:0, max:2}, sel:BW.dash },
         { tok:'--bw-leader', l:'guía ····',          d:1,   min:.5, max:1,   step:.5, u:'px', kind:'px', x:{min:0, max:2}, sel:BW.leader },
         { tok:'--bw-field',  l:'campo',              d:1,   min:1,  max:1.5, step:.5, u:'px', kind:'px', x:{min:.5,max:2}, sel:BW.field },
         { tok:'--bw-ctl',    l:'control',            d:1,   min:.5, max:1.5, step:.5, u:'px', kind:'px', x:{min:0, max:2}, sel:BW.ctl },
@@ -144,15 +144,18 @@
         { tok:'--r-pill',  l:'píldora · chip y barra', d:999, min:0, max:2,  step:1, u:'px', kind:'px', x:{min:0, max:999}, note:G3,
           presets:[{l:'afilado',v:0},{l:'caja',v:2},{l:'píldora',v:999}],
           sel:'.spc,.wchip,.chst,.dragghost,.chip,.bar,.wprog,.vbar,.bar>i,.wprog>i,.vbar>i,.ag-chip' },
-        { tok:'--r-sheet', l:'hoja',                   d:22,  min:8, max:12, step:1, u:'px', kind:'px', x:{min:0, max:34}, note:G3, dk:'sheetR',
+        // v262 · un solo radio para todo lo que flota (look "1": 12); hoja, nav, toast, menús y barra lo siguen como alias
+        { tok:'--r-float', l:'todo lo que flota',     d:12,  min:8, max:12, step:1, u:'px', kind:'px', x:{min:0, max:24},
+          sel:'.sheet,.nav,.toast,.tsel,.gloss,.savebar,.dragghost' },
+        { tok:'--r-sheet', l:'hoja',                   d:12,  min:8, max:12, step:1, u:'px', kind:'px', x:{min:0, max:34}, dk:'sheetR', alias:'--r-float',
           sel:'.sheet' },
-        { tok:'--r-nav',   l:'nav',                    d:999, min:8, max:12, step:1, u:'px', kind:'px', x:{min:0, max:999}, note:G3, alias:'--r-pill',
+        { tok:'--r-nav',   l:'nav',                    d:12,  min:8, max:12, step:1, u:'px', kind:'px', x:{min:0, max:999}, alias:'--r-float',
           presets:[{l:'8',v:8},{l:'12',v:12},{l:'píldora',v:999}], sel:'.nav,.nav a' },
-        { tok:'--r-toast', l:'aviso (toast)',          d:999, min:8, max:12, step:1, u:'px', kind:'px', x:{min:0, max:999}, note:G3, alias:'--r-pill',
+        { tok:'--r-toast', l:'aviso (toast)',          d:12,  min:8, max:12, step:1, u:'px', kind:'px', x:{min:0, max:999}, alias:'--r-float',
           presets:[{l:'8',v:8},{l:'12',v:12},{l:'píldora',v:999}], sel:'.toast' },
-        { tok:'--r-pop',   l:'menú flotante',          d:12,  min:8, max:12, step:1, u:'px', kind:'px', x:{min:0, max:20}, alias:'--r-ctl',
+        { tok:'--r-pop',   l:'menú flotante',          d:12,  min:8, max:12, step:1, u:'px', kind:'px', x:{min:0, max:20}, alias:'--r-float',
           sel:'.tsel,.gloss' },
-        { tok:'--r-bar',   l:'barra flotante',         d:12,  min:8, max:12, step:1, u:'px', kind:'px', x:{min:0, max:20}, alias:'--r-ctl',
+        { tok:'--r-bar',   l:'barra flotante',         d:12,  min:8, max:12, step:1, u:'px', kind:'px', x:{min:0, max:20}, alias:'--r-float',
           sel:'.savebar' }
       ],
       check(vals){ const v = reader(this.items, vals), out = [];

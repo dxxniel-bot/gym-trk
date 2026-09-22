@@ -13,6 +13,7 @@
 | 2026-09-22 | v259 | F0: la sesión por recuperar ya no se borra mientras decides; cola de avisos del arranque; demo del estudio rechazada |
 | 2026-09-22 | v260 | T: tokens exactos por rol (interlineado, opacidad, líneas, trazos, radio flotante…), cero píxeles; guardia de vistas previas |
 | 2026-09-22 | v261 | S1: el estudio (`tools/studio.html`) reemplaza a `tools/brand-lab.html` para elegir el look; `sw.js` ya no guarda errores |
+| 2026-09-22 | v262 | G0→G3: look "1" del dueño — escala 10·12·18·24·34, todo lo flotante a radio 12, anillo en vidrio sutil sin brillo, arranque de fósforo, borde de campo 1 px `--o40`, verde solo en glifo/número, `recovery ~43`, retención como fila de diagnóstico, marca única `gym//TRK`, etiquetas de sistema en inglés, subrayado punteado 1 px |
 
 ## Diseños rechazados por el dueño (no volver a proponer)
 

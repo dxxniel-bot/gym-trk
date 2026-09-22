@@ -92,7 +92,7 @@
     // retención "high": la fila solo sale fuera de rango (BRAND §4) → busca el día con comida más reciente que la tenga
     { id:'macros:high', g:'pantalla', label:'macros · retención alta', run(W, T){ macrosOn(W, T); T.state.macroOpen = true;
         const ds = Object.keys(T.db.meals || {}).filter(k => (T.db.meals[k] || []).length).sort().reverse();
-        for(const d of ds){ T.state.macroDate = d; W.render(); if($(W, '#view .mrow .pill.over')) return; }
+        for(const d of ds){ T.state.macroDate = d; W.render(); if($(W, '#view .mrow .pill.over') || $(W, '#view .mrow.mret')) return; }
         if(ds[0]){ T.state.macroDate = ds[0]; W.render(); } } },
     { id:'sheet:foodadd', g:'hoja', label:'hoja · agregar alimento', run(W, T){ macrosOn(W, T); W.openFoodAdd(); } },
     { id:'m:food', g:'hoja', label:'hoja · agregar alimento (desde gym)', run(W){ W.openFoodAdd(); } },

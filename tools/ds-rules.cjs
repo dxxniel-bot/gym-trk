@@ -74,7 +74,7 @@ module.exports = function rules(raw, repoDir) {
         if (/^@keyframes/.test(sel)) { rules.push({ sel, body, i: cssA + i, kf: true }); i = e; st = e + 1; continue; }
         rules.push({ sel, body, i: cssA + i }); i = e; st = e + 1; }
       else if (c === '}') st = i + 1; } }
-  const CHROME = /(^|[\s,>])(\.nav|\.modal|\.sheet|\.toast|\.toasts|\.tsel|\.gloss|#asklayer|\.ask|\.glass|\.glass-strong|\.exsh|\.bootov|\.dz|\.savebar)\b/;
+  const CHROME = /(^|[\s,>])(\.nav|\.modal|\.sheet|\.toast|\.toasts|\.tsel|\.gloss|#asklayer|\.ask|\.glass|\.glass-strong|\.exsh|\.bootov|\.dz|\.savebar|\.dragghost|\.ag-supp-pop)\b/;   // v262: el fantasma de arrastre y el popover de la agenda también flotan
   // clases con estilo propio (compuesto único) y pares padre→hijo
   const own = new Set(), pair = {};
   rules.forEach(r => { if (r.kf) return; r.sel.split(',').forEach(sel => { sel = sel.trim().replace(/::?[\w-]+(\([^)]*\))?/g, ''); const parts = sel.split(/\s*[\s>+~]\s*/).filter(Boolean);
@@ -93,7 +93,9 @@ module.exports = function rules(raw, repoDir) {
     add('ROLE', i, m[0]); }
   // ---- R-SVGFS ----
   const SW = new Set(['.5', '0.5', '1', '1.4', '1.6', '1.8']);
-  for (const m of raw.matchAll(/font-size="([\d.]+)"/g)) if (![10, 12, 16, 22, 34].includes(+m[1])) add('SVGFS', m.index, m[0]);
+  const TSC = []; for (const m of raw.matchAll(/--t-(?:label|data|section|display|hero)\s*:\s*([\d.]+)px/g)) TSC.push(+m[1]);   // v262: la escala se lee de :root
+  const TYPE = TSC.length ? TSC : [10, 12, 16, 22, 34];
+  for (const m of raw.matchAll(/font-size="([\d.]+)"/g)) if (!TYPE.includes(+m[1])) add('SVGFS', m.index, m[0]);
   for (const m of raw.matchAll(/stroke-width(?:=")?:?\s*"?([\d.]+)/g)) { if (m.index > cssA && m.index < cssB && raw.slice(m.index - 60, m.index).includes('/*ds:exempt')) continue; if (!SW.has(m[1])) add('SVGFS', m.index, 'stroke-width ' + m[1]); }
   // ---- R-SEM · uso de color semántico (se cuenta; --strict impide que crezca) ----
   for (const m of raw.matchAll(/var\(--(good|bad|warn|info)\)|\bu-(good|bad|warn)\b/g)) { if (m.index < cssA || m.index > cssB) { if (skipped(m.index)) continue; } add('SEM', m.index, fnAt(m.index) + ' · ' + m[0]); }

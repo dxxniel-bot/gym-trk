@@ -20,7 +20,10 @@ const exemptCount = (raw.match(/\/\*ds:exempt(?::[\w-]+)?\*\//g) || []).length;
 const args = process.argv.slice(2);
 
 // ---- escalas del sistema (DESIGN_SYSTEM.md §4) ----
-const TYPE_OK = new Set([10, 12, 16, 22, 34]);   // v256: escala única 34·22·16·12·10 (mueren 13, 11 y 9)
+// v262 · la escala se LEE de :root (--t-label/data/section/display/hero): el dueño la movió a 10·12·18·24·34 en el estudio y
+// cualquier decisión futura la vuelve a mover; antes estaba escrita aquí y el auditor seguía midiendo la escala vieja.
+const TROOT = {}; for (const m of raw.matchAll(/--t-(label|data|section|display|hero)\s*:\s*([\d.]+)px/g)) if (!(m[1] in TROOT)) TROOT[m[1]] = +m[2];
+const TYPE_OK = new Set(['label', 'data', 'section', 'display', 'hero'].map(k => TROOT[k]).filter(Boolean));
 const RADIUS_OK = new Set(['0', '2px', '4px', '12px', '16px', '22px', '999px', '50%']); // literales tolerados solo mientras migran a token
 const SPACE_OK = new Set([0, 1, 2, 4, 6, 8, 10, 12, 16, 24, 32, 48]);   // 6 y 10 = medios pasos de componente
 const LS_OK = new Set(['0', 'normal']);   // todo lo demás va por var(--ls-*)
@@ -114,7 +117,7 @@ const distinctDur = [...new Set(durs)].sort((a, b) => a - b);
 // ---- 8 · armonía (§4.4b) y ruido (§9.1) — UX-2 ----
 // "un rol, un token": el mismo rol no puede pintarse con dos tamaños según la pantalla.
 const ruleList = [...topLevel.matchAll(/([^{}]+)\{([^{}]*)\}/g)].map(m => ({ sel: m[1].trim(), body: m[2] }));
-const TPX = { label: 10, data: 12, section: 16, display: 22, hero: 34, caption: 9, xs: 10, meta: 11, sm: 12, body: 13 };   // los 5 últimos ya no existen: si aparecen, es regresión
+const TPX = Object.assign({ label: 10, data: 12, section: 16, display: 22, hero: 34, caption: 9, xs: 10, meta: 11, sm: 12, body: 13 }, TROOT);   // los 5 últimos ya no existen: si aparecen, es regresión
 const tokOf = body => ((body.match(/font-size\s*:\s*var\(--t-([\w-]+)\)/) || [])[1] || null);
 const ruleTok = sel => { let t = null; ruleList.forEach(r => { if (r.sel === sel) { const k = tokOf(r.body); if (k) t = k; } }); return t; };
 // tabla cerrada de §4.4b: selector → token esperado

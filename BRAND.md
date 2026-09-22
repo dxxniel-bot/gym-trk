@@ -24,7 +24,7 @@ Apple Health, SaaS genérico, wellness pastel, gamificación de casino (confeti,
 | **B-01** | **Dos capas.** Contenido plano sobre `#000` (terminal). Chrome flotante de vidrio (nav, sheet, toast, popover). `backdrop-filter` solo en chrome. |
 | **B-02** | **Texto primero.** Todo dato se puede escribir con caracteres; la gráfica existe solo cuando el texto no alcanza. |
 | **B-03** | **Una línea por registro.** El átomo es la fila de referencia del dueño: `#chest  bench press  160lbs×8@0 / 160lbs×6@0`. Toda lista nueva se diseña primero así. |
-| **B-04** | **Jerarquía = opacidad > tamaño > peso.** Escala única 10·12·16·22·34 (también en SVG). JetBrains Mono, única familia. |
+| **B-04** | **Jerarquía = opacidad > tamaño > peso.** Escala única 10·12·18·24·34 (también en SVG; la movió el dueño el 22-sep: sección 16→18, display 22→24). Nada de texto editable bajo 16 (zoom de iOS). JetBrains Mono, única familia. |
 | **B-05** | **Formas por capa.** Contenido: 0 en reglas, 2 px en cajas (inputs, tabla, primario, paneles). Chrome flotante: `--r-float`. 50 % solo en puntos. Sin píldoras (999) ni tarjetas de 12/16/22 en el contenido. |
 | **B-06** | **Dos tipos de acción.** `[verbo objeto]` para lo puntual. **Un solo primario por vista** (bloque gym//TRK, §4). Fila que termina en `›` para navegar. Nada más. |
 | **B-07** | **Color reduccionista.** La paleta es la opacidad del blanco. El color semántico va en el **glifo o el número**, nunca en una frase entera. ≤3 marcas de color sobre el pliegue. Si está en orden, no lleva color. |
@@ -81,15 +81,17 @@ pie de compartir, 34 solo en el landing. Una sola variante.
 - **Primario gym//TRK.** Bloque de 2 px, 48 px de alto, texto de comando en minúsculas con glifo (`▶ resume workout`,
   `✓ save session`), 12/800. Uno por vista. Presionado = invertir. (Variante sólida inversa o vidrio + borde; se elige
   en el lab.)
-- **Anillo de kcal.** Se queda (única gráfica circular de la app, solo en macros). Sin tarjeta de 16 px ni brillo
-  recortado; color solo en el arco y en `left/over`.
+- **Anillo de kcal.** Se queda (única gráfica circular de la app, solo en macros), en un **panel de vidrio sutil** (relleno
+  `--glass-bg-strong`, borde de canto `--glass-edge`, radio 12, sin blur: excepción con nombre `ring`); sin brillo ni punto
+  al 0 %; color solo en el arco y en `left/over`.
 - **Puntuaciones reduccionistas.** Existen, en mínimo: `recovery ~43` en una línea 12/800 sin héroe ni color de
   veredicto; `~ retention 62 · Na:K 2.1 →` como fila de diagnóstico que solo aparece si se sale de rango.
 - **Íconos TRK.** SVG propio: rejilla 24, trazo 1.6, remates cuadrados, geometría ortogonal de consola,
   `currentColor`. Piezas: share, camera (marca de la serie grabada, reemplaza al emoji 📷), las 3 de la nav, escáner.
   Un ícono nuevo necesita aprobación del dueño.
-- **Arranque.** Shader WebGL de marca (única excepción de fondo animado): encuadre correcto (sin comprimir), apagado con
-  reduced-motion y en segundo plano. Las líneas de estado se imprimen una a una.
+- **Arranque.** Shader WebGL de marca (única excepción de fondo animado): **matriz de puntos de fósforo** (rejilla de 6 px,
+  onda desde el centro, monocromo), encuadre cover (sin comprimir), cuadro quieto con reduced-motion y apagado en segundo
+  plano. Las líneas de estado se imprimen una a una (pendiente).
 
 ## 5. Siete primitivos (todo se arma con esto)
 
@@ -146,6 +148,8 @@ caracteres sin perder un dato?
 | 2026-09-21 | Color y puntuaciones se conservan, en versión mínima | "conserva pero hazlo lo más reduccionista posible" |
 | 2026-09-21 | Share y cámara se quedan, con íconos propios | "rediseña los iconos a que sea nuestro estilo" |
 | 2026-09-21 | Shader del arranque se queda, corregido (se ve comprimido); explorar 21st.dev | "mantener pero ajustar, la relación de aspecto lo hace ver comprimida" |
+| 2026-09-22 | **Look "1"** (elegido en el estudio, v262): todo lo que flota con radio 12; anillo en panel de vidrio sutil; arranque = matriz de fósforo; borde de campo editable 1 px `--o40`; verde solo en glifo o número; `recovery ~43`; retención = una fila de diagnóstico solo fuera de rango; marca única `gym//TRK`; etiquetas de sistema en inglés | "TRK-PICK v1 · 1 · base v261 · datos demo · 3float=B 4ring=C 6boot=C 7field=A 10green=A 12recovery=A 13retention=B 14wordmark=A 17english=A" |
+| 2026-09-22 | Escala de texto 10·12·**18·24**·34 y subrayado punteado de 1 px | tokens de la misma hoja: "--t-section 16px→18px · --t-display 22px→24px · --bw-dash 0.5px→1px" |
 
 ## 10. Preguntas abiertas (se cierran en el estudio, `tools/studio.html`)
 
@@ -154,6 +158,7 @@ demo, en solo lectura) y guarda sus combinaciones como "looks" para dejarlas rep
 revisión llega como "hoja de elección" y cada respuesta se registra en §9 con fecha y cita. `tools/brand-lab.html` queda
 como lámina histórica.
 
-Variante de nav (cápsula 999 vs `--r-float`; activa inversa vs corchetes) · variante de primario (sólido vs vidrio) ·
-valor de `--r-float` (8 vs 12) · panel del anillo (plano vs vidrio sutil) · set de íconos TRK · shader corregido vs
-candidatos de 21st.dev · borde de campo editable para contraste WCAG 1.4.11.
+Cerradas el 22-sep con el look "1" (§9): valor de `--r-float` (12), panel del anillo (vidrio sutil), shader (fósforo) y
+borde de campo (1 px `--o40`). **Siguen abiertas** (en su look quedaron en "hoy"): variante de nav, variante de primario,
+set de íconos TRK, tarjetas → paneles, `[‹ origen]`, interlineado y opacidad a la escala; y dos que §9 decidió en
+principio pero que su look dejó en "hoy": secundarios como `[verbo]` y esquinas de contenido a 0–2.

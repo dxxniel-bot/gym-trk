@@ -1,6 +1,6 @@
 # gym//TRK — DESIGN SYSTEM (referencia del estado actual)
 
-> Referencia del estado actual (v261). **Lee BRAND.md primero**: manda sobre este archivo. Sin historia: DESIGN_CHANGELOG.md.
+> Referencia del estado actual (v262). **Lee BRAND.md primero**: manda sobre este archivo. Sin historia: DESIGN_CHANGELOG.md.
 
 ---
 
@@ -10,7 +10,7 @@
 - `BRAND.md` dice **qué es** gym//TRK: la identidad "CMD hacker × glass moderno", las reglas B-01…B-12, el vocabulario,
   las excepciones con nombre, lo prohibido y el registro de decisiones del dueño. Si algo de aquí choca con BRAND, gana
   BRAND y el choque se anota como pregunta para el dueño.
-- **Este archivo** dice **cómo está hecho hoy** (v261) y a qué se tiene que acercar: tokens, roles, fichas de componente,
+- **Este archivo** dice **cómo está hecho hoy** (v262) y a qué se tiene que acercar: tokens, roles, fichas de componente,
   patrones, auditoría y protocolo. No guarda historia.
 - `DESIGN_CHANGELOG.md` guarda la historia (fases DS/R/UX-2, notas vNNN, diseños retirados o rechazados). **Nunca se
   implementa desde ahí.**
@@ -19,14 +19,14 @@
 acciones → la ficha del componente (§7) → tokens (§4) → §17.6 definición de terminado.
 
 **Convenciones.**
-- **Hoy** = lo que hace el código de v261. **Objetivo G4 / G3 / G4** = lo que falta y en qué fase de la ruta (plan G:
+- **Hoy** = lo que hace el código de v262. **Objetivo G4 / G3 / G4** = lo que falta y en qué fase de la ruta (plan G:
   G2 datos y sistema sin cambiar el look · G0 láminas para elegir · G3 identidad aprobada · G4 completitud). Nada marcado
   como objetivo está implementado.
 - Un nombre entre comillas invertidas (clase, token, función, selector) **existe en `index.html`**. Lo que todavía no
   existe lleva al lado "(pendiente G3)" o "(pendiente G4)".
 - Las reglas tienen un ID estable (`TOK-3`, `ACT-2`…) para citarlas en cada cambio, junto a las B-xx de BRAND. Cada una
   dice **la revisa:** `ds-audit R-xx` (estático), `_dsRenderCheck` (en pantalla, `?selftest=1`), un self-check, o *a ojo*.
-- Medidas: los tamaños de letra van siempre por token (`--t-*`, escala 10·12·16·22·34). En las fichas de §7 las medidas
+- Medidas: los tamaños de letra van siempre por token (`--t-*`, escala 10·12·18·24·34 desde v262). En las fichas de §7 las medidas
   de caja se escriben sin unidad (son px CSS) para no confundirlas con tamaños de letra.
 
 **Regla de oro.** *No diseñes cada pantalla: diseña el sistema y usa el sistema para construir cada pantalla.* Si una
@@ -34,8 +34,8 @@ implementación necesita un valor que no existe aquí, primero se decide si es u
 sistema, documentada, en el mismo commit) o una desviación (se corrige).
 
 **Preguntas abiertas** (no se deciden aquí; se cierran con el dueño en el estudio, `tools/studio.html`, G0): las de
-BRAND §10 (variante de nav, variante de primario, valor de `--r-float` (pendiente G3), panel del anillo, set de íconos
-TRK, shader, borde de campo para WCAG 1.4.11) y estas, encontradas al escribir la referencia:
+BRAND §10 (variante de nav, variante de primario, set de íconos TRK; el 22-sep el look "1" cerró `--r-float` = 12, panel
+del anillo de vidrio sutil, shader de fósforo y borde de campo 1 px `--o40`) y estas, encontradas al escribir la referencia:
 1. **Glifos en uso que BRAND no menciona:** ⬆ ⬇ ↔ (perfil de resistencia), ▦ (rango personalizado), ▢ ▣ (elegir en el
    catálogo), ↻ ↺ (reintentar, recuperado, última vez), ↑ (flojas, ánimo), ⋯ (menú de fila del catálogo). §11.3.
 2. **Idioma de los botones de sheet** (`guardar`, `cancelar`, `borrar`): ¿son "verbos de comando" (inglés) o prosa
@@ -89,7 +89,7 @@ BRAND §5 define los siete primitivos con los que se arma toda pantalla. Aquí, 
 ## 4. Tokens
 
 Todo valor visual recurrente es un token en `:root` y se usa con `var(--…)`. **Nunca** se escribe un literal si existe su
-token (TOK-1, la revisa: ds-audit "literales"). Valores leídos de `index.html` (v261).
+token (TOK-1, la revisa: ds-audit "literales"). Valores leídos de `index.html` (v262).
 
 ### 4.1 Superficies
 
@@ -154,7 +154,9 @@ se renombran. Contraste calculado sobre `#000`.
 
 - **Familia única:** JetBrains Mono (Google Fonts), fallback `ui-monospace, Menlo, monospace` (B-04). Fuentes nuevas:
   prohibidas.
-- **Escala única (TYP-1):** `--t-label` 10 · `--t-data` 12 · `--t-section` 16 · `--t-display` 22 · `--t-hero` 34.
+- **Escala única (TYP-1, v262 — look "1" del dueño):** `--t-label` 10 · `--t-data` 12 · `--t-section` **18** · `--t-display`
+  **24** · `--t-hero` 34. `--t-section` es también el tamaño de los campos (≥16 = sin zoom de iOS); el auditor y
+  `_dsRenderCheck` leen la escala de `:root`.
   Cualquier otro tamaño está prohibido, **también en SVG**. Exentos solo con id (§15): wrap 60/44, escáner 40, panel
   `?design=1`. Hoy la escala en uso es 10×151 · 12×100 · 16×47 · 22×13 · 34×4 reglas; el radar de macros todavía escribe
   `font-size="7.5"` en su SVG (objetivo G4, M4-11). La revisa: ds-audit (escala, tokens viejos) · R-SVGFS ·
@@ -230,15 +232,15 @@ historial).
 | `--r-mark` | 4 | marcas de gráfica: días del calendario, hipnograma |
 | `--r-ctl` | 12 | botones, campos de formulario, toggles, `.lact`, popovers (`.tsel`, `.gloss`), `.savebar` |
 | `--radius` | 16 | tarjetas `.card`, `.grp`, `.ptile`, `.pthrow`, `.hcal`, `.ws-card` |
-| `--r-sheet` | 22 | esquinas inferiores del sheet |
+| `--r-float` | 12 | **todo lo que flota** (v262, look "1"): nav y sus pestañas (−6), sheet (`--r-sheet`), toast, popovers (`.tsel`, `.gloss`), `.savebar`, fantasma de arrastre |
+| `--r-sheet` | `var(--r-float)` | esquinas inferiores del sheet |
 | `--r-pill` | 999 | nav y sus pestañas, toast, chips (`.chip`, `.ag-chip`), etiqueta de scrub, fantasma de arrastre, barras finas |
 | `50%` | — | puntos, thumbs, spinners, `.dots3`, punto del rail |
 
 - RAD-1 (hoy): prohibidos 3/6/8/9/10/14 y los literales `999px`/`2px`/`16px` (van por token). La revisa: ds-audit (radios
   fuera de escala: hoy 0).
 - RAD-2 (**objetivo G3**, B-05, decisión del dueño 2026-09-21 "mixto con regla"): contenido 0 en reglas y 2 en cajas
-  (campos, tabla, primario, paneles); chrome flotante (nav, sheet, toast, popover) con `--r-float` (pendiente G3; 8 o 12 se
-  elige en G0); 50% solo en puntos; **fuera del contenido** `--radius`, `--r-ctl` en controles de contenido, `--r-sheet` y
+  (campos, tabla, primario, paneles); chrome flotante (nav, sheet, toast, popover) con `--r-float` = 12 (hecho en v262); 50% solo en puntos; **fuera del contenido** `--radius`, `--r-ctl` en controles de contenido, `--r-sheet` y
   `--r-pill` (tarjetas, chips, barras redondeadas y la cápsula de la nav se rehacen). La revisa: R-RAD.
 
 ### 4.8 Bordes, sombras y efectos
@@ -325,7 +327,7 @@ los mueve en vivo sin tocar la app; cambian de valor solo por decisión del due�
 | `--op-press` · `--op-disabled` · `--op-pf` · `--op-drop` · `--op-dim` | .7 · .4 · .45 · .82 · .28 | 5 · 1 · 1 · 2 · 1 | opacidad de estado (§4.9) |
 | `--bw-sep` | .5px | 22 | separador de lista (`.hrow`, `.exrow`, `.mdtr`, `.u-sep`…) |
 | `--bw-box` | .5px | 15 | caja de dato (`.inp`, `.pick`, `.fs`, `.tselo`, `.chip`…) |
-| `--bw-dash` | .5px | 4 | subrayado punteado (`[data-gloss]`, `.mch`, `.u-dash`) |
+| `--bw-dash` | 1px (v262) | 4 | subrayado punteado (`[data-gloss]`, `.mch`, `.u-dash`) |
 | `--bw-leader` | 1px | 2 | guía `····` de `clave ···· valor` (`.line .dots`, `.mddots`) |
 | `--bw-field` | 1px | 9 | campo de formulario (`.field input`, `#fa_q`, `textarea.ta`…) |
 | `--bw-ctl` | 1px | 17 | control (`button.b/.t/.cancel`, `.lact`, `.toggles button`, `.hold`…) |
@@ -335,12 +337,12 @@ los mueve en vivo sin tocar la app; cambian de valor solo por decisión del due�
 | `--bw-mark` · `--bw-focus` | 2px · 1.5px | 4 · 1 | marca · anillo de foco |
 | `--sw-grid` · `--sw-ref` · `--sw-data` · `--sw-data-lg` | .5 · 1 · 1.4 · 1.8 | clases `.sw-*` | trazos de gráficas (lineChart, radar, FC; la regla CSS gana al atributo) |
 | `--sw-icon` · `--sw-ring-lg` · `--sw-ring-md` | 1.6 · 1.4 · 1.8 | nav · anillos | trazos de íconos y anillos (la imagen para compartir lee el trazo computado) |
-| `--r-nav` · `--r-toast` · `--r-pop` · `--r-bar` | `var(--r-pill)` · `var(--r-pill)` · `var(--r-ctl)` · `var(--r-ctl)` | 2 · 1 · 2 · 1 | radio por pieza flotante (G3 las apunta a `--r-float` (pendiente G3); el auditor resuelve el alias y sigue contando R-RADF) |
+| `--r-nav` · `--r-toast` · `--r-pop` · `--r-bar` | `var(--r-float)` (v262) | 2 · 1 · 2 · 1 | radio por pieza flotante; el auditor resuelve el alias |
 | `--scrim` · `--nav-clear` · `--mv-1` · `--ease-step` · `--dur-hold` | `rgba(0,0,0,.6)` · 84px · 4px · `step-end` · 900ms | 1 · 2 · 3 · 3 · JS | fondo de modal · espacio sobre la nav · desplazamiento · bucles · TRKHold |
-| `--ring-glow` · `--ring-glow-sm` | 4px · 3px | 2 · 2 | brillo del anillo (G3b lo retira) |
+| `--ring-glow` · `--ring-glow-sm` | retirados en v262 | — | el anillo ya no tiene brillo (look "1") |
 
 Sin token a propósito: los bordes de 1 px de los spinners (`.spin`, `.fa-spin`) y la línea del scrub (`.chsl`), que son
-geometría. Faltan: `--r-float` (pendiente G3: 8 o 12, lo elige el dueño en el estudio; G3a) y retirar `--abort` (G3a).
+geometría. Falta retirar `--abort` (G3a).
 
 ---
 
@@ -413,7 +415,7 @@ perfil tienen párrafos fijos de instrucciones; la tira de 17 tiles de Progress.
   exclamaciones ni "genial". Lo humano se reserva para errores y diagnósticos. Cuando un dato no es obvio, el *porqué* va
   en una línea ("correlación, no causa") o al glosario.
 
-**Hoy (v261) el idioma está mezclado** y la regla anterior ("lo nuevo en español salvo vecino en inglés") está en el
+**Hoy (v262) el idioma está mezclado** y la regla anterior ("lo nuevo en español salvo vecino en inglés") está en el
 changelog. Estado medido:
 - Títulos `//` en inglés: SETTINGS, HISTORY, SPLIT, STACK, PROGRESS, RECORDS, STATS, INSIGHTS, NEXT, SUPPS, MEALS, WATER.
   En español: PERFIL, SALUD, ESTÍMULO, MÚSCULOS, FUERZA, RENDIMIENTO, COBERTURA, HOY (recap).
@@ -693,7 +695,7 @@ La pieza más gym//TRK de la app: densa, afilada, técnica. **Nunca** vidrio, ra
 - **Cierre sin trampas:** `closeModal()` quita el `id` al instante y deja un fantasma `.modal.out` sin clics que se borra a
   los 200.
 - **Hoy (v258, T-10):** cerrar un sheet y repintar usa `closeModal(); reRender()` (28 llamadas + los handlers del
-  editor de split): el scroll de abajo se conserva. Radio del sheet: objetivo G3 `--r-float` (pendiente G3). Con un sheet abierto, un
+  editor de split): el scroll de abajo se conserva. Radio del sheet: `--r-float` (v262). Con un sheet abierto, un
   error va en línea bajo el campo, no en un toast bajo el teclado (G4).
 - **La revisa:** R-SCROLL · a ojo.
 
@@ -756,7 +758,7 @@ reemplaza, así lo escrito abajo se conserva. Diálogos nativos (`alert`/`confir
   los términos con `data-gloss="clave"` (subrayado punteado `--o20`) y lee `GLOSS` (rir, t, cap, lm, est, rirmed, e1rm, racha,
   stim). El listener va en captura y no dispara la acción de la fila.
 - **Anatomía común:** `--card2`, borde 1 `--border`, `--r-ctl`, `--shadow-float`, entrada `rowin`.
-- **Objetivo G3:** son chrome flotante: `--r-float` (pendiente G3), vidrio opcional.
+- **Hoy (v262):** son chrome flotante con `--r-float`; vidrio opcional (G3).
 
 ### 7.15 Barras (TRKBar)
 
@@ -1117,7 +1119,7 @@ Reduced-motion = instantáneo.
   (v258: antes un bucle a .01 ms parpadeaba) y los cinco `scrollIntoView` suaves usan
   `behavior:reducedMotion()?'auto':'smooth'` (X1-03).
 
-### 10.1 Registro de movimiento (todo lo que se mueve en v261)
+### 10.1 Registro de movimiento (todo lo que se mueve en v262)
 
 Leyenda de la última columna: ✓ cumple B-09 · ⚠ a revisar con el dueño · ✗ se corrige (fase).
 
@@ -1342,7 +1344,7 @@ Objetivo G4: completar la tabla con el texto exacto de cada celda vacía y una a
   en la barra de estado, con 44 de toque (`[‹ gym]`, `[‹ historial]`).
 - NAV-4: cerrar un sheet **nunca** mueve el scroll de abajo (`reRender()`, no `closeModal(); render()`). La revisa: R-SCROLL.
 
-### 14.3 Mapa por pantalla (v261)
+### 14.3 Mapa por pantalla (v262)
 
 | Pantalla (`state.screen`) | Instrumento | Cabecera | Contenido | Nav hoy | Notas |
 |---|---|---|---|---|---|
@@ -1521,7 +1523,7 @@ Lo que no cambia el look (datos, sistema, tokens con su valor de hoy) no pasa po
 Node puro, sin npm: `node tools/ds-audit.cjs` (con un archivo como argumento audita ese, para comparar contra la versión
 anterior). Se corre antes y después de cada cambio de UI; **ningún commit sube un contador P0 o P1** (AUD-1).
 
-**Contadores de hoy** (v261): P0 detectables · tamaños fuera de escala, escala en uso, tokens viejos, peso 800 bajo 12,
+**Contadores de hoy** (v262): P0 detectables · tamaños fuera de escala, escala en uso, tokens viejos, peso 800 bajo 12,
 pesos · letter-spacing fuera de rol · radios y espaciado fuera de escala · bordes · sombras fuera de token · colores
 literales · variables sin definir · excepciones marcadas · `style=""` total y por función · selectores repetidos (la misma
 regla propia dos veces en el nivel superior; no cuentan variantes en `@media`/`@supports` ni base + ajuste) · diálogos
@@ -1539,7 +1541,7 @@ Línea base del 2026-09-21: todos en 0 salvo `style=""` 89, excepciones 33, lett
 | R-SEM | color semántico fuera de las funciones de veredicto | P1 |
 | R-SAVE | `save()` en una acción sin feedback, deshacer, TRKHold ni TRKAsk | P1 |
 | R-SCROLL | `closeModal(); render()` o `render()` en listas editables | P1 |
-| R-RAD | radio de contenido >2; flotante distinto de `--r-float` (pendiente G3) | P1 |
+| R-RAD | radio de contenido >2; flotante distinto de `--r-float` | P1 |
 | R-BLUR | `backdrop-filter` fuera del chrome | P1 |
 | R-EXEMPT | exención sin id de §15 | P1 |
 | R-MOTION | animar layout, bucle sin reduced-motion, rebote no listado, `smooth` literal, animación en un nodo que se re-renderiza | P1 (reduced-motion P0) |
