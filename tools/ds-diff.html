@@ -56,7 +56,7 @@ async function runDiff2(S){ const A=document.getElementById('A').contentWindow, 
     const a=snap(A), b=snap(B); const diffs=[];
     if(a.length!==b.length){ res[name]={err:ea||eb||null, struct:'A '+a.length+' vs B '+b.length}; continue; }
     a.forEach((x,i)=>{ const y=b[i]; x.v.forEach((v,j)=>{ if(v!==y.v[j])diffs.push(x.path+' ['+y.cls+'] '+P[j]+': '+v+' → '+y.v[j]); }); });
-    res[name]={n:a.length, err:ea||eb||null, diffs:diffs.slice(0,10), nd:diffs.length}; }
+    res[name]={n:a.length, err:ea||eb||null, diffs:diffs.slice(0, +_q.get('n')||10), nd:diffs.length}; }   // v264 · ?n=… sube el tope para agregar el diff completo
   return res; }
 function go2(){ window._R2=null; window._t0=Date.now(); runDiff2(S2).then(r=>{ window._R2=r; window._t1=Date.now(); }).catch(e=>{ window._R2={fatal:e.message}; }); return 'started '+S2.length; }
 function report(){ const r=window._R2; if(!r)return 'running'; if(r.fatal)return r.fatal; return JSON.stringify({loaded:loaded(),ok:Object.entries(r).filter(([k,v])=>!v.struct&&!v.nd).map(([k,v])=>k+'('+v.n+(v.err?' ERR '+v.err.slice(0,60):'')+')').join(' '), bad:Object.fromEntries(Object.entries(r).filter(([k,v])=>v.struct||v.nd))},null,1); }

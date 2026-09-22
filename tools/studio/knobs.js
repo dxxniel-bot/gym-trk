@@ -5,7 +5,7 @@
 //   note 'hoy fuera de BRAND · G3' = hoy está fuera del rango BRAND; G3 lo trae adentro (o el dueño decide otra cosa).
 // Solo datos + checks puros: sin almacenamiento, sin red, sin DOM.
 (function(){ 'use strict';
-  const FG = '243,243,244', GL = '14,14,17';
+  const FG = '243,243,243', GL = '14,14,14';
   const G3 = 'hoy fuera de BRAND · G3';
 
   // valor → número (acepta 12, '12px', '.5', 'rgba(r,g,b,a)' → a, '120ms')
@@ -129,21 +129,21 @@
       check(vals){ const v = reader(this.items, vals);
         return v('--sw-grid') > v('--sw-data') ? 'la rejilla pesa más que el dato' : null; } },
 
-    // ---------------------------------------------------------------- radios (B-05: contenido 0–2 · flotante 8–12)
-    { g:'radios', key:'radius', rule:'B-05 · BRAND §9 "Mixto con regla"',
-      note:'contenido 0–2 (sin píldoras ni tarjetas de 12/16/22); chrome flotante 8–12 (--r-float, se elige en G0). 50 % solo en puntos. alias = hoy el token apunta a otro (var()).',
+    // ------------------------------------------------- radios (B-05 v264: una sola familia · todo control a --r-ctl 12)
+    { g:'radios', key:'radius', rule:'B-05 · BRAND §9 2026-09-22 ("que parezcan de la misma familia")',
+      note:'una sola familia: 0 en reglas y barras · 2 solo en marcas que no se tocan · 4 en marcas de gráfica · 12 en TODO control (botón, campo, celda de la tabla, chip, toggle) · 16 en tarjetas · 12 en lo que flota · 50 % solo en puntos. alias = hoy el token apunta a otro (var()).',
       items:[
-        { tok:'--r-sm',    l:'caja · contenido',       d:2,   min:0, max:2,  step:1, u:'px', kind:'px', x:{min:0, max:6},
-          sel:'.frame,button.b,button.t,button.cancel,.strk-row .cd,.msum-time,.mdtabs .tabind,.bwchip,.inp,.pick,.tselo,.fs,input[type=range].gslider,.slfc i,.wdot,.inp-mini' },
-        { tok:'--r-mark',  l:'marca de gráfica',       d:4,   min:0, max:2,  step:1, u:'px', kind:'px', x:{min:0, max:6}, note:G3,
+        { tok:'--r-sm',    l:'marca que no se toca',   d:2,   min:0, max:2,  step:1, u:'px', kind:'px', x:{min:0, max:6},
+          sel:'.frame,.strk-row .cd,.mdtabs .tabind,input[type=range].gslider,.slfc i,.slsw,.wdot' },
+        { tok:'--r-mark',  l:'marca de gráfica',       d:4,   min:2, max:6,  step:1, u:'px', kind:'px', x:{min:0, max:6},
           sel:'.cd,.hypno,.ag-blk' },
-        { tok:'--r-ctl',   l:'control · botón y campo',d:12,  min:0, max:2,  step:1, u:'px', kind:'px', x:{min:0, max:16}, note:G3,
-          sel:'.status .back,.section .meta[data-act],.start,.secondary .b,.mmrow select,select.pfsel,#pf_gym,.pfw,.wq,.mdcust input,.mdcust .b,.lact,.restbar a,.footer .abort,.footer .undo,.footer .save,.field input,.field select,.toggles button,.moodpad,.slph input,.slblk input,.sheetbtns .ok,.sheetbtns .cancel,.shimgv,#fa_q,.fa-btns .b,.fa-empty .fa-em-step,.scan-reticle .frame2,textarea.ta,.ag-supp-pop,.hold' },
-        { tok:'--radius',  l:'tarjeta',                d:16,  min:0, max:2,  step:1, u:'px', kind:'px', x:{min:0, max:30}, note:G3, dk:'radius',
+        { tok:'--r-ctl',   l:'TODO control',           d:12,  min:8, max:16, step:1, u:'px', kind:'px', x:{min:0, max:20},
+          sel:'.status .back,.section .meta[data-act],.start,.secondary .b,button.b,button.t,button.cancel,.mmrow select,select.pfsel,#pf_gym,.pfw,.wq,.mdcust input,.mdcust .b,.lact,.restbar a,.footer .abort,.footer .undo,.footer .save,.field input,.field select,.toggles button,.moodpad,.slph input,.slblk input,.sheetbtns .ok,.sheetbtns .cancel,.shimgv,#fa_q,.fa-btns .b,.fa-empty .fa-em-step,.scan-reticle .frame2,textarea.ta,.ag-supp-pop,.hold,.inp,.pick,.fs,.bwchip,.inp-mini,.tselo,.msum-time,.chip,.spc,.wchip,.ag-chip,.chst' },
+        { tok:'--radius',  l:'tarjeta',                d:16,  min:12, max:20, step:1, u:'px', kind:'px', x:{min:0, max:30}, dk:'radius',
           sel:'.pfeat,.pthrow,.ptile,.hcal,.card,.grp,.ws-card' },
-        { tok:'--r-pill',  l:'píldora · chip y barra', d:999, min:0, max:2,  step:1, u:'px', kind:'px', x:{min:0, max:999}, note:G3,
-          presets:[{l:'afilado',v:0},{l:'caja',v:2},{l:'píldora',v:999}],
-          sel:'.spc,.wchip,.chst,.dragghost,.chip,.bar,.wprog,.vbar,.bar>i,.wprog>i,.vbar>i,.ag-chip' },
+        { tok:'--r-pill',  l:'píldora · solo barras finas', d:999, min:0, max:999, step:1, u:'px', kind:'px', x:{min:0, max:999},
+          presets:[{l:'recta',v:0},{l:'píldora',v:999}],
+          sel:'.bar,.wprog,.vbar,.bar>i,.wprog>i,.vbar>i' },
         // v262 · un solo radio para todo lo que flota (look "1": 12); hoja, nav, toast, menús y barra lo siguen como alias
         { tok:'--r-float', l:'todo lo que flota',     d:12,  min:8, max:12, step:1, u:'px', kind:'px', x:{min:0, max:24},
           sel:'.sheet,.nav,.toast,.tsel,.gloss,.savebar,.dragghost' },
@@ -159,8 +159,11 @@
           sel:'.savebar' }
       ],
       check(vals){ const v = reader(this.items, vals), out = [];
-        const cont = ['--r-sm','--r-mark','--r-ctl','--radius','--r-pill'].filter(t => v(t) > 2);
-        if(cont.length) out.push('contenido > 2 px: ' + cont.join(' '));
+        if(v('--r-sm') > 2) out.push('--r-sm es para marcas que no se tocan: 0–2');
+        if(v('--r-mark') < 2 || v('--r-mark') > 6) out.push('--r-mark fuera de 2–6');
+        if(v('--r-ctl') < 8 || v('--r-ctl') > 16) out.push('todo control comparte --r-ctl: 8–16');
+        if(v('--radius') < v('--r-ctl')) out.push('la tarjeta no puede ser menos redonda que el control que envuelve');
+        const pl = v('--r-pill'); if(pl > 0 && pl < 999) out.push('--r-pill solo tapa barras finas: 0 o 999');
         const fl = ['--r-sheet','--r-nav','--r-toast','--r-pop','--r-bar'].filter(t => v(t) < 8 || v(t) > 12);
         if(fl.length) out.push('flotante fuera de 8–12: ' + fl.join(' '));
         const f = ['--r-nav','--r-toast','--r-pop','--r-bar'].map(v);
@@ -221,7 +224,7 @@
         { tok:'--glass-bg',        l:'fondo',          d:.55, min:.45, max:.7,  step:.01, u:'a',  kind:'alpha', rgb:GL, x:{min:.2, max:.9},  sel:'.glass,.glass-strong' },
         { tok:'--glass-bg-strong', l:'fondo fuerte',   d:.72, min:.6,  max:.85, step:.01, u:'a',  kind:'alpha', rgb:GL, x:{min:.3, max:.95}, sel:'.glass-strong' },
         { tok:'--glass-blur',      l:'desenfoque',     d:18,  min:12,  max:24,  step:1,   u:'px', kind:'px',             x:{min:0,  max:40},  sel:'.glass,.glass-strong' },
-        { tok:'--glass-sat',       l:'saturación',     d:1.7, min:1,   max:2,   step:.1,  u:'',   kind:'num',            x:{min:.5, max:2.5}, sel:'.glass,.glass-strong' },
+        { tok:'--glass-sat',       l:'saturación',     d:1,   min:1,   max:2,   step:.1,  u:'',   kind:'num',            x:{min:.5, max:2.5}, sel:'.glass,.glass-strong' },
         { tok:'--glass-ring',      l:'aro interior',   d:.1,  min:.06, max:.16, step:.01, u:'a',  kind:'alpha', rgb:FG, x:{min:0,  max:.3},  sel:'.glass,.glass-strong' },
         { tok:'--glass-edge',      l:'borde alto',     d:.14, min:.08, max:.2,  step:.01, u:'a',  kind:'alpha', rgb:FG, x:{min:0,  max:.35}, sel:'.glass,.glass-strong' },
         { tok:'--glass-edge-lo',   l:'borde bajo',     d:.06, min:.03, max:.1,  step:.01, u:'a',  kind:'alpha', rgb:FG, x:{min:0,  max:.2},  sel:'.glass,.glass-strong' }

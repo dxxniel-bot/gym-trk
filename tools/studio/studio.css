@@ -2,14 +2,14 @@
    opacidad, //SECCIÓN, [verbo], un solo primario, vidrio SOLO en lo flotante (barra, hoja, toasts, inspector).
    Tokens copiados de :root de index.html (v260); el estudio no los mueve: los mueve dentro de los frames. */
 :root{
-  --bg:#000; --fg:#f3f3f4; --fill:#f3f3f4; --on-fill:#000;
-  --o70:rgba(243,243,244,.74); --o60:rgba(243,243,244,.66); --o50:rgba(243,243,244,.56); --o40:rgba(243,243,244,.5);
-  --o35:rgba(243,243,244,.46); --o30:rgba(243,243,244,.4); --o20:rgba(243,243,244,.26);
-  --o12:rgba(243,243,244,.1); --o10:rgba(243,243,244,.06);
-  --line:rgba(243,243,244,.08); --border:rgba(243,243,244,.09); --track:#191920; --card:#0d0d10;
+  --bg:#000; --fg:#f3f3f3; --fill:#f3f3f3; --on-fill:#000;
+  --o70:rgba(243,243,243,.74); --o60:rgba(243,243,243,.66); --o50:rgba(243,243,243,.56); --o40:rgba(243,243,243,.5);
+  --o35:rgba(243,243,243,.46); --o30:rgba(243,243,243,.4); --o20:rgba(243,243,243,.26);
+  --o12:rgba(243,243,243,.1); --o10:rgba(243,243,243,.06);
+  --line:rgba(243,243,243,.08); --border:rgba(243,243,243,.09); --track:#191919; --card:#0d0d0d;
   --good:#46c98b; --bad:#e5675c; --warn:#e3b34f;
-  --glass-bg:rgba(14,14,17,.55); --glass-bg-strong:rgba(14,14,17,.72); --glass-blur:18px; --glass-sat:1.7;
-  --glass-edge:rgba(243,243,244,.14); --glass-ring:rgba(243,243,244,.1);
+  --glass-bg:rgba(14,14,14,.55); --glass-bg-strong:rgba(14,14,14,.72); --glass-blur:18px; --glass-sat:1.7;
+  --glass-edge:rgba(243,243,243,.14); --glass-ring:rgba(243,243,243,.1);
   --t-label:10px; --t-data:12px; --t-section:16px; --t-display:22px; --t-hero:34px;
   --ls-caps:.2em; --ls-ui:.03em;
   --s1:2px; --s2:4px; --s3:8px; --s4:12px; --s5:16px; --s6:24px;
@@ -156,7 +156,7 @@ pre.code{font:inherit; font-size:var(--t-label); color:var(--o70); white-space:p
 /* ---------- vidrio: solo lo flotante ---------- */
 .float{background:var(--glass-bg-strong); -webkit-backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-sat));
   backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-sat)); border:.5px solid var(--glass-edge); border-radius:var(--r-float);}
-@supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){ .float{background:#0a0a0c;} }
+@supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){ .float{background:#0a0a0a;} }
 .pbar{display:none;}
 .scrim{position:fixed; inset:0; background:rgba(0,0,0,.4); z-index:40;}
 .toasts{position:fixed; left:0; right:0; bottom:calc(var(--s5) + var(--safe-b)); display:flex; flex-direction:column; align-items:center; gap:var(--s3); pointer-events:none; z-index:80;}

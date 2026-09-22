@@ -78,7 +78,7 @@ iframe.srcdoc = t.replace(/<head([^>]*)>/i, m => m + '<base href="'+base+'"><scr
 ```js
 { g:'tipografía', key:'type', rule:'B-04 · TYP-1', note:'…', check?(vals)=>string|null,
   items:[ { tok:'--t-data', l:'dato', d:12, min:12, max:13, step:1, u:'px', x:{min:11,max:14},
-            kind?:'alpha'|'px'|'num'|'ms'|'raw', rgb?:'243,243,244', sel?:'.inp,.pick', presets?:[{l:'píldora',v:999}] } ] }
+            kind?:'alpha'|'px'|'num'|'ms'|'raw', rgb?:'243,243,243', sel?:'.inp,.pick', presets?:[{l:'píldora',v:999}] } ] }
 ```
 - `d` = el valor de HOY leído de `:root` de `index.html` (verificar cada uno). `min/max` = rango BRAND; `x` = rango
   "explorar" (fuera de BRAND): se permite, pero la exportación lo marca como **pregunta**. El slider cubre la unión.
@@ -88,7 +88,7 @@ iframe.srcdoc = t.replace(/<head([^>]*)>/i, m => m + '<base href="'+base+'"><scr
   `lineheight` (`--lh-*`), `lines` (los 11 `--bw-*`, con `sel` exacto de §9), `strokes` (`--sw-*`), `radius`
   (`--r-sm`, `--r-mark`, `--r-ctl`, `--radius`, `--r-pill`, `--r-sheet`, `--r-nav`, `--r-toast`, `--r-pop`, `--r-bar`;
   contenido 0–2, flotante 8–12; presets píldora), `opacity` (escalera `--o70…--o10` alpha con `check` de contraste:
-  `--o40` sobre #000 ≥ 4.5:1 — luminancia relativa WCAG de rgb(243,243,244)·a — y orden monótono; más `--op-*`),
+  `--o40` sobre #000 ≥ 4.5:1 — luminancia relativa WCAG de rgb(243,243,243)·a — y orden monótono; más `--op-*`),
   `spacing` (los 8 `--sp-*` con los rangos de `DESIGN_KNOBS` de index.html), `glass` (`--glass-bg` α, `--glass-bg-strong`
   α, `--glass-blur`, `--glass-sat`, `--glass-ring` α, `--glass-edge` α, `--glass-edge-lo` α), `motion` (`--dur-1/2/3`,
   `--dur-screen`, `--mv-1` 0–4, `--dur-hold`).

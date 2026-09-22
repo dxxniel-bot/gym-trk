@@ -246,16 +246,12 @@ ${P('opacity','A')} .pftog.sug .t.on{opacity:var(--op-press);}` }
       scenarios:['progress', 'home', 'macros', 'm:muscle', 'm:metric', 'settings'],
       options:[ { k:'hoy', label:'hoy · inglés (v262)' }, { k:'A', label:'inglés', note:'horneado en index.html en v262; su CSS de propuesta se borró' } ] },
     { id:'corners', n:18, group:'G3', title:'content corners', rule:'B-05', src:'BRAND §9',
-      question:'Afilado para datos (0–2 px), radio chico solo en lo que flota.',
-      status:'decided', decided:{ pick:'A', date:'2026-09-21', quote:'Mixto con regla' }, shipped:null,
+      question:'Implementado en v264: una sola familia de esquinas, todo control a 12 ("hoy" ya es eso).',
+      status:'shipped', decided:{ pick:'hoy', date:'2026-09-22', quote:'sigo notando inconsistencias en todos los btns, lo que ya tienen estilo recondeado que ese sea el standar · que parezcan de la misma familia' }, shipped:'v264',
       scenarios:['home', 'progress', 'macros', 'workout', 'settings', 'm:food'],
       options:[
-        { k:'hoy', label:'hoy · tarjetas 16, controles 12, chips píldora' },
-        { k:'A', label:'contenido a 2 px', note:'--radius y --r-ctl a 2 px; popovers y barra de guardado se quedan en 12 (flotan); chips a 2; barras a 0.',
-          tokens:{ '--radius':'2px', '--r-ctl':'var(--r-sm)', '--r-pop':'12px', '--r-bar':'12px' },   // --r-pop/--r-bar leían --r-ctl: se fijan a su valor de hoy
-          css: `
-${P('corners','A')} .spc, ${P('corners','A')} .wchip, ${P('corners','A')} .chst, ${P('corners','A')} .chip, ${P('corners','A')} .ag-chip{border-radius:var(--r-sm);}
-${P('corners','A')} .bar, ${P('corners','A')} .wprog, ${P('corners','A')} .vbar, ${P('corners','A')} .bar>i, ${P('corners','A')} .wprog>i, ${P('corners','A')} .vbar>i{border-radius:0;}` }
+        { k:'hoy', label:'hoy · una familia: todo control a 12, tarjetas 16 (v264)' },
+        { k:'A', label:'contenido a 2 px', note:'lo contrario de lo que eligió el dueño el 22-sep; su CSS se borró al implementarse v264.' }
       ] },
 
     { id:'keepring', n:19, group:'G3', title:'kcal ring', rule:'BRAND §4 anillo', src:'BRAND §9',

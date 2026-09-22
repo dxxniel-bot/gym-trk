@@ -10,12 +10,12 @@
   /* Lámina de decisiones de marca (G0). NO es la app: aquí se prototipan las piezas que cambian el look para que el
      dueño elija con capturas (BRAND.md §4 y §10). Tokens copiados de index.html :root (v257). */
   :root{
-    --bg:#000; --fg:#f3f3f4;
-    --o70:rgba(243,243,244,.74); --o60:rgba(243,243,244,.66); --o50:rgba(243,243,244,.56); --o40:rgba(243,243,244,.5);
-    --o35:rgba(243,243,244,.46); --o30:rgba(243,243,244,.4); --o20:rgba(243,243,244,.26); --o12:rgba(243,243,244,.1); --o10:rgba(243,243,244,.06);
-    --line:rgba(243,243,244,.08); --border:rgba(243,243,244,.09); --track:#191920; --card:#0d0d10; --card2:#16161c; --fill:#f3f3f4; --on-fill:#000;
+    --bg:#000; --fg:#f3f3f3;
+    --o70:rgba(243,243,243,.74); --o60:rgba(243,243,243,.66); --o50:rgba(243,243,243,.56); --o40:rgba(243,243,243,.5);
+    --o35:rgba(243,243,243,.46); --o30:rgba(243,243,243,.4); --o20:rgba(243,243,243,.26); --o12:rgba(243,243,243,.1); --o10:rgba(243,243,243,.06);
+    --line:rgba(243,243,243,.08); --border:rgba(243,243,243,.09); --track:#191919; --card:#0d0d0d; --card2:#161616; --fill:#f3f3f3; --on-fill:#000;
     --good:#46c98b; --bad:#e5675c; --warn:#e3b34f;
-    --glass-bg:rgba(14,14,17,.55); --glass-bg-strong:rgba(14,14,17,.72); --glass-blur:18px; --glass-sat:1.7; --glass-edge:rgba(243,243,244,.14);
+    --glass-bg:rgba(14,14,14,.55); --glass-bg-strong:rgba(14,14,14,.72); --glass-blur:18px; --glass-sat:1.7; --glass-edge:rgba(243,243,243,.14);
     --t-hero:34px; --t-display:22px; --t-section:16px; --t-data:12px; --t-label:10px;
     --ls-caps:.2em; --ls-num:-.03em; --ls-ui:.03em;
     --s1:2px; --s2:4px; --s3:8px; --s4:12px; --s5:16px; --s6:24px; --s7:32px;
@@ -187,7 +187,7 @@
 
 <script>
   // anillo (misma geometría que ringHTML: r 15.7 sobre viewBox 36, trazo 1.4)
-  const ring=(pct,glow)=>`<div class="ring"><svg viewBox="0 0 36 36"><circle cx="18" cy="18" r="15.7" fill="none" stroke="#191920" stroke-width="1.4"/><circle cx="18" cy="18" r="15.7" fill="none" stroke="#46c98b" stroke-width="1.4" stroke-linecap="round" pathLength="100" stroke-dasharray="${pct} 100"/></svg><div class="n"><b>2,178</b><span>/ 2,405 kcal</span></div></div><div class="rmeta"><b>227</b> left · 91%<br><span style="color:var(--o40)">mant. ≈ 2447</span></div>`;
+  const ring=(pct,glow)=>`<div class="ring"><svg viewBox="0 0 36 36"><circle cx="18" cy="18" r="15.7" fill="none" stroke="#191919" stroke-width="1.4"/><circle cx="18" cy="18" r="15.7" fill="none" stroke="#46c98b" stroke-width="1.4" stroke-linecap="round" pathLength="100" stroke-dasharray="${pct} 100"/></svg><div class="n"><b>2,178</b><span>/ 2,405 kcal</span></div></div><div class="rmeta"><b>227</b> left · 91%<br><span style="color:var(--o40)">mant. ≈ 2447</span></div>`;
   ['r0','r1','r2'].forEach(id=>document.getElementById(id).innerHTML=ring(91));
   // set de íconos TRK
   const TRK={

@@ -18,7 +18,7 @@
   window.dsInventory=function(){
     const app=document.getElementById('app'), R=document.documentElement, probe=document.createElement('div'); document.body.appendChild(probe);
     const toRGB=v=>{ probe.style.color=''; probe.style.color=v; return getComputedStyle(probe).color; };
-    const TOK=['--fg','--o70','--o60','--o50','--o40','--o35','--o30','--o20','--o12','--o10','--line','--border','--bg','--card','--card2','--sheet-bg','--track','--faint','--fill','--on-fill','--good','--bad','--warn','--info'];
+    const TOK=['--fg','--o70','--o60','--o50','--o40','--o35','--o30','--o20','--o12','--o10','--line','--border','--bg','--card','--card2','--sheet-bg','--track','--faint','--fill','--on-fill','--good','--bad','--warn'];
     const cmap={}; TOK.forEach(n=>{ const v=getComputedStyle(R).getPropertyValue(n).trim(); if(v){ const k=toRGB(v); if(!cmap[k])cmap[k]=n; } }); probe.remove();
     const cname=c=>(!c||c==='rgba(0, 0, 0, 0)'||c==='transparent')?null:(cmap[c]||('RAW '+c));
     const inc=(o,k)=>{ o[k]=(o[k]||0)+1; }, cls=e=>e.tagName.toLowerCase()+(e.classList&&e.classList.length?'.'+[...e.classList].slice(0,2).join('.'):'');

@@ -1,6 +1,6 @@
 # gym//TRK — DESIGN SYSTEM (referencia del estado actual)
 
-> Referencia del estado actual (v263). **Lee BRAND.md primero**: manda sobre este archivo. Sin historia: DESIGN_CHANGELOG.md.
+> Referencia del estado actual (v264). **Lee BRAND.md primero**: manda sobre este archivo. Sin historia: DESIGN_CHANGELOG.md.
 
 ---
 
@@ -97,17 +97,17 @@ token (TOK-1, la revisa: ds-audit "literales"). Valores leídos de `index.html` 
 |---|---|---|
 | `--bg`, `--frame` | `#000` | lienzo de toda la app |
 | `--card` | `#0d0d10` | tarjeta y campo de formulario (≈1.08:1 sobre `#000`: casi no se ve) |
-| `--card2` | `#16161c` | superficie elevada: popover, chip, fantasma de arrastre, fallback de la nav |
-| `--sheet-bg` | `#0a0a0c` | fallback sólido de sheets y toasts de vidrio |
-| `--track` | `#191920` | pista de barras, día vacío del calendario, fase sin clasificar |
-| `--faint` | `#3a3a3e` | glifo casi apagado (`.chev`, `.ghead .hash`); legado, no se usa en nuevo |
-| `--fill` / `--on-fill` | `#f3f3f4` / `#000` | relleno del primario y de lo seleccionado / texto sobre él |
+| `--card2` | `#161616` | superficie elevada: popover, chip, fantasma de arrastre, fallback de la nav |
+| `--sheet-bg` | `#0a0a0a` | fallback sólido de sheets y toasts de vidrio |
+| `--track` | `#191919` | pista de barras, día vacío del calendario, fase sin clasificar |
+| `--faint` | `#3a3a3a` | glifo casi apagado (`.chev`, `.ghead .hash`); legado, no se usa en nuevo |
+| `--fill` / `--on-fill` | `#f3f3f3` / `#000` | relleno del primario y de lo seleccionado / texto sobre él |
 
-TOK-2: no hay grises nuevos. Si alguien necesita otro, la pregunta es "¿por qué no es `--card` o `--card2`?".
+TOK-2 (v264): **todo negro elevado es R=G=B** — los grises tenían el azul 2-7 puntos arriba (matiz 240°) y el vidrio lo amplificaba con `saturate(1.7)`; hoy la saturación del vidrio es 1 y no queda ni un `244`. No hay grises nuevos. Si alguien necesita otro, la pregunta es "¿por qué no es `--card` o `--card2`?".
 
 ### 4.2 Texto por opacidad
 
-Todos son `rgba(243,243,244,α)`. **Los nombres son históricos y no son su alfa** (`--o40` = .50); se documentan así y no
+Todos son `rgba(243,243,243,α)`. **Los nombres son históricos y no son su alfa** (`--o40` = .50); se documentan así y no
 se renombran. Contraste calculado sobre `#000`.
 
 | Token | α | Contraste | Rol |
@@ -125,7 +125,7 @@ se renombran. Contraste calculado sobre `#000`.
 | `--line` / `--border` | .08 / .09 | 1.1 / 1.2:1 | divisoria de contenido / borde de tarjeta y control |
 
 - TOK-3: **prohibido crear escalones nuevos** (no existen `--o15`, `--o25`, `--o55`). Hoy queda un literal
-  `rgba(243,243,244,.035)` en la agenda (código muerto). La revisa: ds-audit (colores literales), R-OP.
+  `rgba(243,243,243,.035)` en la agenda (código muerto). La revisa: ds-audit (colores literales), R-OP.
 - TOK-4: **texto nunca por debajo de `--o40`** (B-11). `--o35`/`--o30` solo para glifos, placeholder y deshabilitado.
   Hoy hay texto en `--o35`/`--o30` (`~ sugerido`, `pocos datos`, días de la semana del calendario, `[+ nota]`, filas no
   elegidas de la rueda): objetivo G4 (T-04). La revisa: `_dsRenderCheck` txt · R-TXT.
@@ -139,7 +139,6 @@ se renombran. Contraste calculado sobre `#000`.
 | `--good` | `#46c98b` | 10.0:1 | evento bueno: ▲, PR, meta cumplida | estado estable ("fresco", "verificado", "tomado"), adorno, badges |
 | `--bad` | `#e5675c` | 6.4:1 | baja, sobre el límite, destructivo | decoración, láser, "cerrar" que guarda |
 | `--warn` | `#e3b34f` | 10.8:1 | atención, límite suave (cerca de MRV) | categoría neutral |
-| `--info` | `#6aa6ff` | 8.5:1 | **solo** déficit calórico | cualquier otro uso |
 | `--abort` | `rgba(190,110,110,.55)` | — | borde del botón `abort` del footer de sesión | cualquier otro uso. Objetivo G3: se retira (`[abort]` en `--o60` que pasa a `--bad` al sostener) |
 | `--good-glow` / `--bad-glow` | `rgba(70,201,139,.5)` / `rgba(229,103,92,.5)` | — | brillo del anillo de macros | se retiran con el brillo (objetivo G3, BRAND §4) |
 
@@ -226,22 +225,28 @@ historial).
 
 ### 4.7 Radios
 
+**Una sola familia (v264, B-05 reescrita por el dueño):** "lo que ya tienen estilo redondeado, que ese sea el estándar…
+que parezcan de la misma familia".
+
 | Token | Valor | Hoy se usa en |
 |---|---|---|
-| `--r-sm` | 2 | tabla de sesión (`.inp`, `.pick`, `.fs`, `.bwchip`), opciones de TRKSelect, hora del desglose, indicadores |
-| `--r-mark` | 4 | marcas de gráfica: días del calendario, hipnograma |
-| `--r-ctl` | 12 | botones, campos de formulario, toggles, `.lact`, popovers (`.tsel`, `.gloss`), `.savebar` |
-| `--radius` | 16 | tarjetas `.card`, `.grp`, `.ptile`, `.pthrow`, `.hcal`, `.ws-card` |
-| `--r-float` | 12 | **todo lo que flota** (v262, look "1"): nav y sus pestañas (−6), sheet (`--r-sheet`), toast, popovers (`.tsel`, `.gloss`), `.savebar`, fantasma de arrastre |
+| `--r-sm` | 2 | **solo marcas que no se tocan**: marco de escritorio, celdas de la franja de racha, indicador de pestaña, pistas de `range`, barras del hipnograma corto, interruptor de sueño, punto de agua |
+| `--r-mark` | 4 | marcas de gráfica: días del calendario, hipnograma, bloque de agenda |
+| `--r-ctl` | 12 | **TODO control**: primario `.start`, botones de hoja (`button.b/.t/.cancel`, `.sheetbtns`), campos y selects, toggles, `.lact`, `.restbar a`, `.hold`, celdas de la tabla de series (`.inp`, `.pick`, `.fs`, `.bwchip`, `.inp-mini`), opciones de TRKSelect (`.tselo`), hora del desglose y **los chips** (`.chip`, `.spc`, `.wchip`, `.ag-chip`, `.chst`) |
+| `--radius` | 16 | tarjetas `.card`, `.grp`, `.ptile`, `.pfeat`, `.pthrow`, `.hcal`, `.ws-card` |
+| `--r-float` | 12 | **todo lo que flota** (v262, look "1"): nav y sus pestañas (−6), sheet (`--r-sheet`), toast, popovers (`.tsel`, `.gloss`), `.savebar`, fantasma de arrastre, panel de `?design` |
 | `--r-sheet` | `var(--r-float)` | esquinas inferiores del sheet |
-| `--r-pill` | 999 | nav y sus pestañas, toast, chips (`.chip`, `.ag-chip`), etiqueta de scrub, fantasma de arrastre, barras finas |
+| `--r-pill` | 999 | **única píldora que queda**: la tapa de las barras finas ≤6 px (`.bar`, `.wprog`, `.vbar`) |
 | `50%` | — | puntos, thumbs, spinners, `.dots3`, punto del rail |
 
-- RAD-1 (hoy): prohibidos 3/6/8/9/10/14 y los literales `999px`/`2px`/`16px` (van por token). La revisa: ds-audit (radios
-  fuera de escala: hoy 0).
-- RAD-2 (**objetivo G3**, B-05, decisión del dueño 2026-09-21 "mixto con regla"): contenido 0 en reglas y 2 en cajas
-  (campos, tabla, primario, paneles); chrome flotante (nav, sheet, toast, popover) con `--r-float` = 12 (hecho en v262); 50% solo en puntos; **fuera del contenido** `--radius`, `--r-ctl` en controles de contenido, `--r-sheet` y
-  `--r-pill` (tarjetas, chips, barras redondeadas y la cápsula de la nav se rehacen). La revisa: R-RAD.
+- RAD-1: prohibidos 3/6/8/9/10/14 y cualquier literal en píxeles (todo va por token). La revisa: ds-audit (radios fuera
+  de escala: hoy 0).
+- RAD-2 (v264, **B-05**, decisión del dueño 2026-09-22): el conjunto permitido es **0 · 2 · 4 · 12 · 16**, más 50 % en
+  puntos y la píldora solo en las barras finas; el 16 solo dentro de una tarjeta; lo que flota, en `--r-float` (y sus
+  controles, en `--r-ctl`). **R-RAD ya no tolera un número de gracia: la línea base es 0.** La revisa: R-RAD / R-RADF.
+- ¿Un control de 36 px a 12 se ve sobre-redondeado? No: `.restbar a` y `.lact` llevan meses a 32 px con radio 12
+  (ratio .375) y los de 36 px quedan en .333. Si alguna vez la tabla densa pide menos, el escape es la derivación que ya
+  usa `.nav a`: `max(var(--r-sm), calc(var(--r-ctl) - 4px))` — pero eso sería **familia nueva** y la decide el dueño.
 
 ### 4.8 Bordes, sombras y efectos
 
@@ -1384,8 +1389,7 @@ lista (R-EXEMPT). Marcar algo como exento exige que esté aquí (EXC-1).
 | `user-label` | emoji dentro de las etiquetas del dueño | datos, sin marcador |
 | `dev` (propuesta G1, no está en BRAND §6) | panel `?design=1`, fuera del alcance del sistema | `.dz-h` 11 y tracking .3px · `.dz-h button` 14 |
 
-Otras excepciones funcionales sin marcador: el sheet **anclado arriba** (evita el teclado de iOS) y `--info` solo para el
-déficit calórico.
+Otras excepciones funcionales sin marcador: el sheet **anclado arriba** (evita el teclado de iOS).
 
 ---
 

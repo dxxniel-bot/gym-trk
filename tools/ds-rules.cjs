@@ -8,7 +8,7 @@ const LEVEL = { ROLE: 'P0', GLYE: 'P0', SVGFS: 'P1', SEM: 'P1', GLY: 'P1', SAVE:
   EXEMPT: 'P1', MOTION: 'P1', DOC: 'P1', RADF: 'P2', LANG: 'P2', BRK: 'P2', OK: 'P2', TOAST: 'P2', OP: 'P2', LH: 'P2', FONT: 'P2', A11Y: 'P2' };
 const NAME = { ROLE: 'botón sin estilo propio (cae al del navegador)', GLYE: 'emoji en la interfaz', SVGFS: 'SVG fuera de escala (font-size / stroke-width)',
   SEM: 'color semántico (conteo; no debe crecer)', GLY: 'glifo fuera de GLYPHS', SAVE: 'save() sin feedback', SCROLL: 'render() que salta el scroll',
-  RAD: 'radio >2 px en el contenido', RADF: 'radio flotante ≠ --r-float', BLUR: 'blur fuera del chrome', EXEMPT: 'ds:exempt sin categoría',
+  RAD: 'radio fuera de la familia (0 · 2 marcas · 4 gráficas · 12 control · 16 tarjeta)', RADF: 'radio flotante ≠ --r-float', BLUR: 'blur fuera del chrome', EXEMPT: 'ds:exempt sin categoría',
   MOTION: 'movimiento de layout / bucle / smooth', DOC: 'la guía cita algo que no existe', LANG: 'componente con dos idiomas', BRK: '[ corchete ] con espacios',
   OK: 'más de un primario por plantilla', TOAST: 'toast de más de 42 caracteres', OP: 'opacidad literal', LH: 'interlineado literal', FONT: 'peso cargado sin uso',
   A11Y: 'data-act en un elemento que no es botón' };
@@ -113,11 +113,23 @@ module.exports = function rules(raw, repoDir) {
   const radTok = (t, d) => { const v = ROOTV[t]; if (v == null || d > 6) return { px: RADV[t] || 0, fl: t === '--r-float' };
     const mm = v.match(/^var\((--[\w-]+)\)$/); if (mm) { const r = radTok(mm[1], (d || 0) + 1); return { px: r.px, fl: r.fl || t === '--r-float' }; }
     return { px: parseFloat(v) || 0, fl: t === '--r-float' }; };
+  // v264 · B-05 reescrita por el dueño ("lo que ya tienen estilo redondeado, que ese sea el estándar… que parezcan de la
+  // misma familia"): la regla ya no tolera un número de gracia, exige la familia. Permitidos tras resolver el token:
+  // 0 (reglas y barras finas) · 2 marcas que no se tocan · 4 marcas de gráfica · 12 todo control · 16 tarjetas.
+  const RAD_OK = new Set([0, 2, 4, 12, 16]);
+  const PILL_OK = /^(\.bar|\.wprog|\.vbar)(>i)?$/;                                     // única píldora: la tapa de las barras ≤6 px
+  const CARD = /(^|[\s,>])(\.card|\.grp|\.ptile|\.pthrow|\.hcal|\.ws-card|\.pfeat)\b/;   // 16 solo en una tarjeta
   rules.forEach(r => { if (r.kf) return; for (const m of r.body.matchAll(/border-radius\s*:\s*([^;]+)/g)) { const v = m[1]; if (/ds:exempt/.test(v)) continue;
+      const chrome = CHROME.test(r.sel), id = chrome ? 'RADF' : 'RAD';
       const toks = [...v.matchAll(/var\((--[\w-]+)\)/g)].map(x => radTok(x[1], 0));
-      const big = toks.some(t => t.px > 2) || v.split(/\s+/).some(p => !/var\(/.test(p) && /px$/.test(p) && parseFloat(p) > 2);
-      const float = /--r-float/.test(v) || (toks.length && toks.every(t => t.fl));
-      if (!big) continue; if (CHROME.test(r.sel)) { if (!float) add('RADF', r.i, r.sel + ' · ' + v.trim()); } else add('RAD', r.i, r.sel + ' · ' + v.trim()); } });
+      const lit = v.trim().split(/\s+/).filter(p => !/var\(/.test(p) && /^[\d.]+px$/.test(p) && parseFloat(p) > 0);
+      if (lit.length) { add(id, r.i, r.sel + ' · literal ' + lit.join(' ')); continue; }        // todo píxel va por token
+      if (toks.some(t => t.px > 100)) { if (!r.sel.split(',').every(x => PILL_OK.test(x.replace(/\s+/g, '')))) add(id, r.i, r.sel + ' · píldora ' + v.trim()); continue; }
+      const off = toks.filter(t => !RAD_OK.has(t.px));
+      if (off.length) { add(id, r.i, r.sel + ' · ' + v.trim()); continue; }                      // valor fuera de la familia
+      if (!toks.some(t => t.px > 2)) continue;                                                   // marcas: nada que revisar
+      if (chrome) { if (!(toks.every(t => t.fl) || /--r-float|--r-ctl/.test(v))) add('RADF', r.i, r.sel + ' · ' + v.trim()); continue; }
+      if (/--radius/.test(v) && !CARD.test(r.sel)) add('RAD', r.i, r.sel + ' · 16 fuera de una tarjeta'); } });
   // ---- R-BLUR · backdrop-filter fuera del chrome (CSS) y la clase glass fuera de nav/sheet/toast (marcado) ----
   rules.forEach(r => { if (r.kf) return; if (/backdrop-filter\s*:\s*(?!none)/.test(r.body) && !CHROME.test(r.sel)) add('BLUR', r.i, r.sel); });
   for (const m of js.matchAll(/class="[^"]*\bglass(-strong)?\b[^"]*"/g)) { const i = jsA + m.index, f = fnAt(i); if (!/^(openModal|renderNav|toast|toastTask|trkAsk|holdConfirm|trkPrompt|trkMenu|trkSelect|trkPop|askLayer|showSaveBar)$/i.test(f) && !skipped(i)) add('BLUR', i, f + ' · ' + m[0]); }

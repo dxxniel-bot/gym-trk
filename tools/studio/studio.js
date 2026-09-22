@@ -61,7 +61,7 @@ const SENT = arr(window.TRK_LOOKS).filter(l => l && typeof l === 'object');
 const LOOK_ST = ['borrador', 'en reposo', 'enviado', 'aprobado', 'implementado'];
 const PRIM = '.start:not(.ghost),.sheetbtns .ok,.footer .save,button.ok';   // .start.ghost es secundario (#13)
 const COLOR_TOK = ['--fg', '--o70', '--o60', '--o50', '--o40', '--o35', '--o30', '--o20', '--o12', '--o10', '--line', '--border', '--bg',
-  '--card', '--card2', '--sheet-bg', '--track', '--faint', '--fill', '--on-fill', '--good', '--bad', '--warn', '--info'];
+  '--card', '--card2', '--sheet-bg', '--track', '--faint', '--fill', '--on-fill', '--good', '--bad', '--warn'];
 const FS_TOK = ['--t-label', '--t-data', '--t-section', '--t-display', '--t-hero'];
 const LH_TOK = ['--lh-tight', '--lh-ui', '--lh-read', '--lh-share'];
 const R_TOK = ['--r-sm', '--r-mark', '--r-ctl', '--radius', '--r-pill', '--r-sheet', '--r-nav', '--r-toast', '--r-pop', '--r-bar', '--r-float'];
@@ -165,7 +165,7 @@ const kHi = it => Math.max(it.max, it.x && it.x.max != null ? it.x.max : it.max)
 function kDec(it){ const s = String(it.step || 1); return s.indexOf('.') >= 0 ? s.split('.')[1].length : 0; }
 function kFmt(it, v){ if(it.kind === 'raw') return String(v);
   const n = +(+v).toFixed(kDec(it));
-  if(it.kind === 'alpha') return 'rgba(' + (it.rgb || '243,243,244') + ',' + n + ')';
+  if(it.kind === 'alpha') return 'rgba(' + (it.rgb || '243,243,243') + ',' + n + ')';
   return n + (it.u || ''); }
 function kParse(it, s){ if(it.kind === 'raw') return String(s); if(typeof s === 'number') return s; s = String(s);
   if(it.kind === 'alpha'){ const m = s.match(/,\s*([\d.]+)\s*\)\s*$/); return m ? +m[1] : parseFloat(s); }
@@ -467,7 +467,7 @@ function inspect(fr, el){ if(!el || el.nodeType !== 1) return; const W = fr.W, d
   let box = d.getElementById('trk-insp');
   if(!box){ box = d.createElement('div'); box.id = 'trk-insp'; d.body.appendChild(box); }
   Object.assign(box.style, { position: 'fixed', left: b.left + 'px', top: b.top + 'px', width: b.width + 'px', height: b.height + 'px',
-    outline: '1.5px dashed rgba(243,243,244,.9)', outlineOffset: '1px', pointerEvents: 'none', zIndex: '2147483647', background: 'rgba(243,243,244,.06)' });
+    outline: '1.5px dashed rgba(243,243,243,.9)', outlineOffset: '1px', pointerEvents: 'none', zIndex: '2147483647', background: 'rgba(243,243,243,.06)' });
   const px = v => Math.round(parseFloat(v) * 100) / 100;
   const fs = cs.fontSize, fsT = tokByValue(W, FS_TOK, 'fontSize', fs, px);
   let lhT = [], lhTxt = cs.lineHeight;

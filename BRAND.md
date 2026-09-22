@@ -25,7 +25,7 @@ Apple Health, SaaS genérico, wellness pastel, gamificación de casino (confeti,
 | **B-02** | **Texto primero.** Todo dato se puede escribir con caracteres; la gráfica existe solo cuando el texto no alcanza. |
 | **B-03** | **Una línea por registro.** El átomo es la fila de referencia del dueño: `#chest  bench press  160lbs×8@0 / 160lbs×6@0`. Toda lista nueva se diseña primero así. |
 | **B-04** | **Jerarquía = opacidad > tamaño > peso.** Escala única 10·12·18·24·34 (también en SVG; la movió el dueño el 22-sep: sección 16→18, display 22→24). Nada de texto editable bajo 16 (zoom de iOS). JetBrains Mono, única familia. |
-| **B-05** | **Formas por capa.** Contenido: 0 en reglas, 2 px en cajas (inputs, tabla, primario, paneles). Chrome flotante: `--r-float`. 50 % solo en puntos. Sin píldoras (999) ni tarjetas de 12/16/22 en el contenido. |
+| **B-05** | **Una sola familia de esquinas** (la reescribió el dueño el 22-sep: "que parezcan de la misma familia"). Reglas y barras a 0. `--r-sm` 2 px **solo** en marcas que no se tocan. `--r-mark` 4 px en marcas de gráfica. **Todo control —botón, campo, celda de la tabla de series, chip, toggle— a `--r-ctl` 12.** Tarjetas a `--radius` 16. Chrome flotante a `--r-float` 12. 50 % solo en puntos. Única píldora que queda: la tapa de las barras finas ≤6 px (`.bar`, `.wprog`, `.vbar`). |
 | **B-06** | **Dos tipos de acción.** `[verbo objeto]` para lo puntual. **Un solo primario por vista** (bloque gym//TRK, §4). Fila que termina en `›` para navegar. Nada más. |
 | **B-07** | **Color reduccionista.** La paleta es la opacidad del blanco. El color semántico va en el **glifo o el número**, nunca en una frase entera. ≤3 marcas de color sobre el pliegue. Si está en orden, no lleva color. |
 | **B-08** | **Íconos TRK.** Palabra > glifo del set (§3) > ícono TRK (SVG propio, §4). **Emoji de interfaz: 0.** Lo que el dueño escribe (🥀 en un nombre) se muestra tal cual. |
@@ -150,6 +150,8 @@ caracteres sin perder un dato?
 | 2026-09-21 | Shader del arranque se queda, corregido (se ve comprimido); explorar 21st.dev | "mantener pero ajustar, la relación de aspecto lo hace ver comprimida" |
 | 2026-09-22 | **Look "1"** (elegido en el estudio, v262): todo lo que flota con radio 12; anillo en panel de vidrio sutil; arranque = matriz de fósforo; borde de campo editable 1 px `--o40`; verde solo en glifo o número; `recovery ~43`; retención = una fila de diagnóstico solo fuera de rango; marca única `gym//TRK`; etiquetas de sistema en inglés | "TRK-PICK v1 · 1 · base v261 · datos demo · 3float=B 4ring=C 6boot=C 7field=A 10green=A 12recovery=A 13retention=B 14wordmark=A 17english=A" |
 | 2026-09-22 | Escala de texto 10·12·**18·24**·34 y subrayado punteado de 1 px | tokens de la misma hoja: "--t-section 16px→18px · --t-display 22px→24px · --bw-dash 0.5px→1px" |
+| 2026-09-22 | **Una sola familia de esquinas** (v264): todo control —botón, campo, celda de la tabla, chip, toggle— a `--r-ctl` 12; tarjetas 16; la píldora sobrevive solo en las barras finas. Reescribe B-05, que pedía lo contrario, y R-RAD deja de tolerar 45 casos | "sigo notando inconsistencias en todos los btns, lo que ya tienen estilo recondeado que ese sea el standar… que parezcan de la misma familia" |
+| 2026-09-22 | **Negro de verdad** (v264): todo negro elevado pasa a R=G=B (`--card`, `--card2`, `--track`, `--faint`, `--sheet-bg`, el vidrio) y la saturación del vidrio baja de 1.7 a 1; se retira `--info` y el balance calórico deja de llevar color | "hay screens que tienen un tint como azulado en lugar de ser negro" |
 
 ## 10. Preguntas abiertas (se cierran en el estudio, `tools/studio.html`)
 
@@ -160,5 +162,6 @@ como lámina histórica.
 
 Cerradas el 22-sep con el look "1" (§9): valor de `--r-float` (12), panel del anillo (vidrio sutil), shader (fósforo) y
 borde de campo (1 px `--o40`). **Siguen abiertas** (en su look quedaron en "hoy"): variante de nav, variante de primario,
-set de íconos TRK, tarjetas → paneles, `[‹ origen]`, interlineado y opacidad a la escala; y dos que §9 decidió en
-principio pero que su look dejó en "hoy": secundarios como `[verbo]` y esquinas de contenido a 0–2.
+set de íconos TRK, tarjetas → paneles, `[‹ origen]`, interlineado y opacidad a la escala, y los secundarios como
+`[verbo]` (decidido en principio, su look lo dejó en "hoy"). El 22-sep también se cerraron, al revés de lo que decía
+la guía: las esquinas (una sola familia, todo control a 12) y el tinte de los negros (R=G=B, vidrio sin saturar).

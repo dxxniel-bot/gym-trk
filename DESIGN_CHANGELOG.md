@@ -15,6 +15,7 @@
 | 2026-09-22 | v261 | S1: el estudio (`tools/studio.html`) reemplaza a `tools/brand-lab.html` para elegir el look; `sw.js` ya no guarda errores |
 | 2026-09-22 | v262 | G0→G3: look "1" del dueño — escala 10·12·18·24·34, todo lo flotante a radio 12, anillo en vidrio sutil sin brillo, arranque de fósforo, borde de campo 1 px `--o40`, verde solo en glifo/número, `recovery ~43`, retención como fila de diagnóstico, marca única `gym//TRK`, etiquetas de sistema en inglés, subrayado punteado 1 px |
 | 2026-09-22 | v263 | fuera la auto-percepción estética (4 métricas, //INSIGHTS y su dato) · una métrica activada dibuja su recuadro aunque esté vacío, y desde él se registra · FC en reposo, HRV y energía activa con registro manual que el sync no pisa |
+| 2026-09-22 | v264 | negro de verdad: los negros elevados pasan a R=G=B y el vidrio deja de saturar (1.7→1); fuera `--info` y el color del balance · una sola familia de esquinas: todo control a 12 (botones de hoja, tabla de series, chips), tarjetas 16, píldora solo en las barras finas; B-05 reescrita y R-RAD 45→0 |
 
 ## Diseños rechazados por el dueño (no volver a proponer)
 
