@@ -1,0 +1,32 @@
+# Publica la app en https://gymtrk.app desde el repo espejo dxxniel-bot/gymtrk-app.
+# Solo corre ALLÁ (el `if` de abajo): en dxxniel-bot/gym-trk se salta, y github.io/gym-trk sigue publicándose como
+# siempre, sin redirigir (una sola copia con dominio propio haría que github.io redirija y la app del ícono de la
+# pantalla de inicio arrancaría vacía: otro origen = otro almacenamiento).
+# El dominio vive en Settings → Pages del espejo (con despliegue por Actions no hace falta archivo CNAME).
+name: pages · gymtrk.app
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: pages-gymtrk-app
+  cancel-in-progress: true
+jobs:
+  deploy:
+    if: github.repository == 'dxxniel-bot/gymtrk-app'
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: .
+      - id: deployment
+        uses: actions/deploy-pages@v4
