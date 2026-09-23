@@ -1106,6 +1106,13 @@ function seedPrev(){
 // ---------- persistence ----------
 let db;
 const LS_BACKUP='gymtrk_db_v1_bak';
+// v265 · identidad del almacén, sello de recencia y diario de arranque (ver load() e idbBootCheck())
+const LS_SID='gymtrk_sid', LS_BOOTLOG='gymtrk_bootlog', LS_ACKDROP='gymtrk_ackdrop';
+let _seqFloor=0, _sid=null, _bootJ=null, _needRescue=false;
+// v265 · sandbox de los self-checks: con `?selftest=1` la suite corre sobre bases de juguete y nada llega a disco
+// (writeDb escribe a una lista y los respaldos solo se anotan). Antes `_mergeSelfCheck` escribía su base de juguete en
+// gymtrk_db_v1 y en IndexedDB.
+let _sbx=false, _sbxFail=false; const _sbxWrites=[], _sbxIdb=[];
 // Ask the browser to NOT evict our data on inactivity (key for iOS Safari).
 // v255: la respuesta SÍ se guarda. Llevaba meses pidiéndose y tirándose a la basura, así que nunca supimos
 // si estábamos protegidos del desalojo por presión de disco. Ahora se ve en //ESPACIO.
@@ -1117,20 +1124,38 @@ function requestPersist(){
       }).catch(()=>{}); } }catch(e){}
   try{ if(navigator.storage&&navigator.storage.estimate)navigator.storage.estimate().then(e=>{ _estim=e; }).catch(()=>{}); }catch(e){}
 }
-function load(){
-  // try primary, then redundant backup — recover the larger/valid one
-  let main=null, bak=null;
-  try{ const r=localStorage.getItem(LS_KEY); if(r)main=JSON.parse(r); }catch(e){}
-  try{ const r=localStorage.getItem(LS_BACKUP); if(r)bak=JSON.parse(r); }catch(e){}
-  let d=null;
-  // prefer whichever has more data (handles iOS Safari edge case where a stale snapshot lands in LS_KEY while LS_BACKUP holds newer)
-  if(main&&main.profile&&bak&&bak.profile){ d=(dbMass(bak)>dbMass(main))?bak:main; if(d===bak){window._recoveredFromBackup=true; console.warn('recovered from backup (had more data)');} }
-  else if(main&&main.profile)d=main;
-  else if(bak&&bak.profile){ d=bak; window._recoveredFromBackup=true; console.warn('recovered from backup'); }
-  else d=main||bak;
-  if(!d)return seed();
-  return migrate(d);
-}
+// ---- v265 · el arranque elige la copia por RECENCIA, no por masa ----------------------------------------------
+// Hasta v264 load() se quedaba con `_bak` si tenía MÁS registros que la principal, y `_bak` se reescribía en cada
+// apertura: si en una apertura borrabas más de lo que agregabas (un alimento duplicado, un vaso de agua), el
+// siguiente arranque revertía TODA esa apertura —series incluidas— y el save() del arranque la volvía permanente.
+// Ahora cada save() sella `_meta.seq` (monótono en este almacén) y manda la más reciente. dbMass() ya no elige: solo
+// sirve para avisar de un derrumbe.
+function seqOf(d){ return (d&&d._meta&&+d._meta.seq)||0; }
+function readCopy(raw){ if(raw==null)return {st:'absent'};
+  let d=null; try{ d=JSON.parse(raw); }catch(_){ return {st:'parse',len:raw.length}; }
+  if(!d||typeof d!=='object')return {st:'parse',len:raw.length};
+  if(!d.profile)return {st:'noprofile',len:raw.length,d:d,seq:seqOf(d)};
+  return {st:'ok',len:raw.length,d:d,seq:seqOf(d),mass:dbMass(d)}; }
+function pickBootCopy(m,b){
+  if(m.st==='ok'&&b.st==='ok')return b.seq>m.seq?{d:b.d,which:'bak',why:'copia del día más reciente'}:{d:m.d,which:'main',why:'principal'};
+  if(m.st==='ok')return {d:m.d,which:'main',why:'principal'};
+  if(b.st==='ok')return {d:b.d,which:'bak',why:'principal '+m.st};
+  if(m.d||b.d)return {d:m.d||b.d,which:m.d?'main':'bak',why:'sin perfil'};
+  return {d:null,which:'seed',why:'sin datos · '+m.st}; }
+function isStandalone(){ try{ return !!((window.matchMedia&&matchMedia('(display-mode: standalone)').matches)||navigator.standalone===true); }catch(_){ return false; } }
+function isIOS(){ try{ return /iP(hone|ad|od)/.test(navigator.userAgent||''); }catch(_){ return false; } }
+function bootCtx(){ return {app:NATIVE_APP?'nativa':isStandalone()?'ícono':'navegador',ios:isIOS(),persisted:_persisted,quota:(_estim&&_estim.quota)||null,usage:(_estim&&_estim.usage)||null,sw:!!(navigator.serviceWorker&&navigator.serviceWorker.controller)}; }
+function load(){ const J=_bootJ={t:Date.now(),flags:[]};
+  let rm=null, rb=null;
+  try{ rm=localStorage.getItem(LS_KEY); }catch(e){ J.lsErr=String((e&&e.message)||e); }
+  try{ rb=localStorage.getItem(LS_BACKUP); }catch(_){}
+  const m=readCopy(rm), b=readCopy(rb), p=pickBootCopy(m,b);
+  const cp=c=>({st:c.st,len:c.len||0,seq:c.seq||0,mass:c.mass||0});
+  J.main=cp(m); J.bak=cp(b); J.chosen=p.which; J.why=p.why; J.loadedSeq=p.d?seqOf(p.d):0;   // el save() del arranque sube el sello: se compara con este
+  _seqFloor=Math.max(m.seq||0,b.seq||0);
+  if(p.which==='bak')window._recoveredFromBackup=true;
+  if(!p.d){ _needRescue=true; return seed(); }
+  return migrate(p.d); }
 // one-time repair for the 2026-08 uid() collision (see uid() comment above): iOS clamped
 // performance.now() to 1ms resolution, so a tight sync loop (migrate()'s own id backfill,
 // SPLIT_TEMPLATES, importIronlogSplit) minted the SAME id for every exercise created in one tick —
@@ -1147,7 +1172,7 @@ function fixDuplicateExIds(d){
   (d.split&&d.split.days||[]).forEach(day=>(day.exercises||[]).forEach(e=>{ if(e&&e.id) counts[e.id]=(counts[e.id]||0)+1; }));
   const dupIds=new Set(Object.keys(counts).filter(k=>counts[k]>1));
   if(dupIds.size){
-    try{ const s=JSON.stringify(d); localStorage.setItem(LS_BACKUP,s); }catch(_){}
+    try{ idbSnap('idfix',d); }catch(_){}   // v265 · la foto previa va a IndexedDB, no al cupo de 5 MB
     (d.split.days||[]).forEach(day=>{ (day.exercises||[]).forEach(e=>{ if(e&&e.id&&dupIds.has(e.id)) e.id='e'+uid(); }); });
     (d.sessions||[]).forEach(s=>{ (s.exercises||[]).forEach(e=>{
       if(e && e.exId!=null && dupIds.has(e.exId)){
@@ -1185,7 +1210,7 @@ function _idSelfCheck(){
   A('gated: a second call is a no-op once _idfix is set', JSON.stringify(fx)===before);
   console.log('id self-check OK');
 }
-function migrate(d){ if(!d.version){d.version=1;} if(!d.meals||typeof d.meals!=='object'||Array.isArray(d.meals))d.meals={}; if(!Array.isArray(d.foods))d.foods=[]; d.foods=d.foods.map(f=>(f&&f.per100)?f:asCanonical(f)); if(!Array.isArray(d.sessions))d.sessions=[]; if(!d.split||typeof d.split!=='object')d.split={name:'',days:[]}; if(!Array.isArray(d.split.days))d.split.days=[]; d.split.days.forEach(day=>{ if(!Array.isArray(day.exercises))day.exercises=[]; day.exercises.forEach(e=>{ if(e&&!e.id)e.id='e'+uid(); }); }); fixDuplicateExIds(d); fixLeakedFullStack(d); d.health=healthShape((d.health&&typeof d.health==='object'&&!Array.isArray(d.health))?d.health:{}); if(!d.steps||typeof d.steps!=='object')d.steps={}; if(!d.machines||typeof d.machines!=='object')d.machines={}; if(!d.exCat||typeof d.exCat!=='object')d.exCat={}; if(!d.muscleMap||typeof d.muscleMap!=='object')d.muscleMap={}; if(!d.muscleNames||typeof d.muscleNames!=='object')d.muscleNames={}; if(!d.bodyweight||typeof d.bodyweight!=='object')d.bodyweight={}; if(!d.sleep||typeof d.sleep!=='object')d.sleep={}; if(!d.mood||typeof d.mood!=='object')d.mood={}; if('selfcheck' in d)delete d.selfcheck;/* v263 · la auto-percepción estética se retira: el dato se borra una vez y no vuelve (boot, respaldo, log in, sync y archivo pasan por aquí) */ if(!d.adhoc||typeof d.adhoc!=='object')d.adhoc={}; if(!Array.isArray(d.mealTags))d.mealTags=['breakfast','lunch','snack','dinner']; if(!Array.isArray(d.stack))d.stack=[]; if(!d.lastUsed||typeof d.lastUsed!=='object')d.lastUsed={}; if(!d.settings||typeof d.settings!=='object')d.settings={goals:seed().settings.goals}; if(d.settings&&d.settings.goals&&d.settings.goals.alcohol==null)d.settings.goals.alcohol=(d.profile&&d.profile.sex==='F')?14:28; if(d.settings&&d.settings.restSec==null)d.settings.restSec=90; if(d.settings&&d.settings.restBeep==null)d.settings.restBeep=true; if(d.settings&&d.settings.goals&&d.settings.goals.sleep==null)d.settings.goals.sleep=8; if(d.profile&&!d.profile.since){ try{ const _cd=[]; (d.sessions||[]).forEach(s=>{if(s.date)_cd.push(s.date);}); Object.keys(d.meals||{}).forEach(k=>_cd.push(k)); Object.keys(d.bodyweight||{}).forEach(k=>_cd.push(k)); if(_cd.length)d.profile.since=_cd.sort()[0]; }catch(_){} }
+function migrate(d){ if(!d.version){d.version=1;} if(!d._meta||typeof d._meta!=='object')d._meta={seq:0,t:0}; if(!d.meals||typeof d.meals!=='object'||Array.isArray(d.meals))d.meals={}; if(!Array.isArray(d.foods))d.foods=[]; d.foods=d.foods.map(f=>(f&&f.per100)?f:asCanonical(f)); if(!Array.isArray(d.sessions))d.sessions=[]; if(!d.split||typeof d.split!=='object')d.split={name:'',days:[]}; if(!Array.isArray(d.split.days))d.split.days=[]; d.split.days.forEach(day=>{ if(!Array.isArray(day.exercises))day.exercises=[]; day.exercises.forEach(e=>{ if(e&&!e.id)e.id='e'+uid(); }); }); fixDuplicateExIds(d); fixLeakedFullStack(d); d.health=healthShape((d.health&&typeof d.health==='object'&&!Array.isArray(d.health))?d.health:{}); if(!d.steps||typeof d.steps!=='object')d.steps={}; if(!d.machines||typeof d.machines!=='object')d.machines={}; if(!d.exCat||typeof d.exCat!=='object')d.exCat={}; if(!d.muscleMap||typeof d.muscleMap!=='object')d.muscleMap={}; if(!d.muscleNames||typeof d.muscleNames!=='object')d.muscleNames={}; if(!d.bodyweight||typeof d.bodyweight!=='object')d.bodyweight={}; if(!d.sleep||typeof d.sleep!=='object')d.sleep={}; if(!d.mood||typeof d.mood!=='object')d.mood={}; if('selfcheck' in d)delete d.selfcheck;/* v263 · la auto-percepción estética se retira: el dato se borra una vez y no vuelve (boot, respaldo, log in, sync y archivo pasan por aquí) */ if(!d.adhoc||typeof d.adhoc!=='object')d.adhoc={}; if(!Array.isArray(d.mealTags))d.mealTags=['breakfast','lunch','snack','dinner']; if(!Array.isArray(d.stack))d.stack=[]; if(!d.lastUsed||typeof d.lastUsed!=='object')d.lastUsed={}; if(!d.settings||typeof d.settings!=='object')d.settings={goals:seed().settings.goals}; if(d.settings&&d.settings.goals&&d.settings.goals.alcohol==null)d.settings.goals.alcohol=(d.profile&&d.profile.sex==='F')?14:28; if(d.settings&&d.settings.restSec==null)d.settings.restSec=90; if(d.settings&&d.settings.restBeep==null)d.settings.restBeep=true; if(d.settings&&d.settings.goals&&d.settings.goals.sleep==null)d.settings.goals.sleep=8; if(d.profile&&!d.profile.since){ try{ const _cd=[]; (d.sessions||[]).forEach(s=>{if(s.date)_cd.push(s.date);}); Object.keys(d.meals||{}).forEach(k=>_cd.push(k)); Object.keys(d.bodyweight||{}).forEach(k=>_cd.push(k)); if(_cd.length)d.profile.since=_cd.sort()[0]; }catch(_){} }
   // recompute alcohol for old meal items logged before alcohol was in MACROKEYS
   try{ Object.values(d.meals||{}).forEach(arr=>arr.forEach(m=>{ if(m.alcohol==null){ if(m._food&&m._food.per100&&m._food.per100.alcohol&&m._unit){ m.alcohol=computeNutrients(m._food,m._unit,m.qty||1).alcohol; } else m.alcohol=0; } })); }catch(e){}
   // goalHist: snapshot of intake goals at the moment of first logging that day (history is FROZEN — past days never re-read the current goal)
@@ -1205,7 +1230,7 @@ const NATIVE_APP=(function(){ try{ return !!(window.Capacitor&&Capacitor.isNativ
 function capP(n){ try{ return (NATIVE_APP&&window.Capacitor&&Capacitor.Plugins&&Capacitor.Plugins[n])||null; }catch(_){ return null; } }
 function withTO(p,ms){ return Promise.race([p,new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),ms||20000))]); }
 let _mirrorT=null, _mirrorSeq=0, _mirrorBusy=false, _mirrorPending=null;
-function nativeMirrorSoon(s){ _mirrorPending=s; clearTimeout(_mirrorT); _mirrorT=setTimeout(nativeMirrorFlush,1500); }
+function nativeMirrorSoon(s){ if(_sbx)return; _mirrorPending=s; clearTimeout(_mirrorT); _mirrorT=setTimeout(nativeMirrorFlush,1500); }
 async function nativeMirrorFlush(){ const fs=capP('Filesystem'); if(!fs||_mirrorBusy||!_mirrorPending)return; _mirrorBusy=true; const s=_mirrorPending; _mirrorPending=null;
   try{ _mirrorSeq++; const file=(_mirrorSeq%2)?'db_A.json':'db_B.json';
     await withTO(fs.writeFile({path:file,data:'{"_seq":'+_mirrorSeq+',"_savedMs":'+Date.now()+',"db":'+s+'}',directory:'LIBRARY',encoding:'utf8'}),15000); }
@@ -1216,7 +1241,8 @@ async function nativeBoot(){ const fs=capP('Filesystem'); if(!fs)return;
   const a=await read('db_A.json'), b=await read('db_B.json');
   const best=[a,b].filter(x=>x&&x.db&&x.db.profile).sort((x,y)=>(y._savedMs||0)-(x._savedMs||0))[0];
   _mirrorSeq=Math.max((a&&a._seq)||0,(b&&b._seq)||0);
-  if(best&&dbMass(best.db)>dbMass(db)){ db=migrate(best.db); save(); render(); try{ toast('↺ datos recuperados del respaldo de la app'); }catch(_){} }
+  // v265 · el archivo manda solo si es más reciente (sello) o si la base local está vacía; nunca por tener más registros
+  if(best&&(seqOf(best.db)>seqOf(db)||!(db&&db.profile&&db.profile.username))){ db=migrate(best.db); save(); render(); try{ toast('↺ datos recuperados del respaldo de la app'); }catch(_){} }
   else if(dbMass(db)>0){ nativeMirrorSoon(JSON.stringify(db)); } }
 // files in the native app: write to Documents (visible in Archivos) and open the share sheet — <a download> doesn't work in a WebView
 async function nativeShareFile(name,text,enc){   // v256: enc='base64' para la imagen const fs=capP('Filesystem'), sh=capP('Share'); if(!fs){ toast('⚠ no pude acceder a Archivos','err'); return; }
@@ -1234,7 +1260,6 @@ async function nativeShareFile(name,text,enc){   // v256: enc='base64' para la i
 const LS_LIVE='gymtrk_live';                 // espejo de la sesión en curso (pequeño, sobrevive al cupo lleno)
 const LS_LIVE_PENDING='gymtrk_live_pending'; // v259 · espejos que se te ofrecieron para recuperar y aún no contestas
 const LS_ORPHANS=['gymtrk_db_v1_pre218','gymtrk_db_v1_premerge'];   // fotos de reparaciones ya aplicadas (v218, v224): ocupaban el 47 % del cupo. Literales porque sus constantes se declaran más abajo.
-let _saveBakT=0, _saveBakDay='';
 let _saveErr=null;                            // último error real (no "sin espacio" para todo)
 function lsBytes(k){ try{ const v=localStorage.getItem(k); return v?v.length*2:0; }catch(_){ return 0; } }   // WebKit cuenta UTF-16
 // borra las fotos de reparaciones ya aplicadas (v218 y v224). Devuelve los bytes liberados.
@@ -1286,23 +1311,35 @@ function offerLivePending(pend,now){ (pend||[]).forEach(m=>{ const mine=m.w, n=l
 // igual. Se compara una firma O(1) — longitud + 10 caracteres repartidos por toda la cadena — en vez de recorrer
 // 1.26 MB en cada guardado (save() corre en cada tecla).
 function lsSig(s){ const n=s.length; let o=n+':'; for(let i=0;i<9;i++)o+=s.charCodeAt(Math.floor(n*i/9))+','; return o+s.charCodeAt(n-1); }
-function writeDb(s){ try{ localStorage.setItem(LS_KEY,s);
+function writeDb(s){ if(_sbx){ _sbxWrites.push(s.length); if(_sbxFail){ _saveErr=new Error('sandbox: escritura fallida'); return false; } return true; }
+  try{ localStorage.setItem(LS_KEY,s);
     const back=localStorage.getItem(LS_KEY);
     if(back===null||lsSig(back)!==lsSig(s)){ _saveErr=new Error('la escritura no quedó en disco (releídos '+(back?back.length:0)+' de '+s.length+' caracteres)'); return false; }
     return true; }catch(e){ _saveErr=e; return false; } }
-function save(){ bumpIdx();
+// ---- v265 · guardar con retardo, ✓ honesto y respaldos que no dependen de localStorage ------------------------
+// save() corría en CADA tecla (JSON de 1.3 MB + escritura + relectura + dos copias completas en IndexedDB). Los campos
+// ahora llaman a saveSoon(): una sola escritura 600 ms después de la última tecla. La sesión viva se sigue espejando al
+// instante (mirrorLive) y flushSave() escribe lo pendiente al salir de la app, al cambiar de pantalla o antes de recargar.
+let _saveT=null;
+function saveSoon(){ bumpIdx(); mirrorLive(); if(_saveT)clearTimeout(_saveT); _saveT=setTimeout(()=>{ _saveT=null; save(); },600); }
+function flushSave(){ if(!_saveT)return true; clearTimeout(_saveT); _saveT=null; return save(); }
+function savedToast(msg){ const ok=save(); if(ok)toast(msg); else toast('⚠ no se guardó · '+(saveErrTxt()||'error'),'err'); return ok; }
+function stampMeta(){ if(!db)return; if(!db._meta||typeof db._meta!=='object')db._meta={seq:0,t:0};
+  const n=Math.max(+db._meta.seq||0,_seqFloor)+1; db._meta.seq=n; db._meta.t=Date.now(); _seqFloor=n; }
+let _idbForceNext=false;   // un solo uso: el siguiente respaldo a IndexedDB no espera el freno de 30 s
+function save(){ if(_saveT){ clearTimeout(_saveT); _saveT=null; }
+  bumpIdx(); stampMeta();
   let s=''; try{ s=JSON.stringify(db); }catch(e){ _saveErr=e; saveFailed(); return false; }
   let ok=writeDb(s);
-  if(!ok){ const freed=freeOrphanBackups(); try{ localStorage.removeItem(LS_BACKUP); }catch(_){}   // autorrescate: suelta lo prescindible y reintenta
+  if(!ok&&!_sbx){ const freed=freeOrphanBackups(); try{ localStorage.removeItem(LS_BACKUP); }catch(_){}   // autorrescate: suelta lo prescindible y reintenta
     ok=writeDb(s);
     if(ok&&freed>0){ try{ toast('✓ espacio liberado · '+Math.round(freed/1024)+' KB'); }catch(_){} } }
   mirrorLive();                                  // pase lo que pase con la grande, la sesión viva queda a salvo
-  if(NATIVE_APP&&ok)nativeMirrorSoon(s);
-  if(ok){ _saveErr=null; saveOK();
-    const day=todayISO(), now=performance.now();
-    if(_saveBakDay!==day&&now-_saveBakT>4000){ _saveBakDay=day; _saveBakT=now; try{ localStorage.setItem(LS_BACKUP,s); }catch(_){} }   // v254: una copia al día, no cada 4 s
-    idbBackup(s,!!_lastClosed);            // v255: copia en IndexedDB (sin el techo de 5 MB); sin freno al cerrar una sesión
-  } else saveFailed();
+  // v265 · los respaldos ya NO dependen de que localStorage escriba: con el cupo lleno es justo cuando hacen falta.
+  // `_lastClosed` ya no fuerza (desde v255 forzaba dos copias completas en IndexedDB por tecla).
+  if(NATIVE_APP)nativeMirrorSoon(s);
+  idbBackup(s,!ok||_idbForceNext); _idbForceNext=false;
+  if(ok){ _saveErr=null; saveOK(); } else saveFailed();
   return ok; }
 // aviso PERMANENTE mientras no se pueda guardar (el toast se iba y dejaba a la app fallando en silencio)
 function saveFailed(){ try{ let b=document.getElementById('savebar');
@@ -1320,28 +1357,136 @@ function saveErrTxt(){ if(!_saveErr)return ''; const n=(_saveErr.name||''), m=(_
 // (el almacén primario sigue siendo localStorage hasta la migración completa), pero eso ya saca la copia de
 // seguridad del bote que se llena.
 const IDB_NAME='gymtrk', IDB_STORE='backups';
-let _idb=null, _idbErr=null, _idbLast=null, _idbT=0;
-function idbOpen(){ if(_idb)return _idb;
-  _idb=new Promise((res,rej)=>{ try{ if(!self.indexedDB)return rej(new Error('sin IndexedDB'));
-      const r=indexedDB.open(IDB_NAME,1);
+let _idbErr=null, _idbLast=null, _idbT=0, _idbErrT=0, _idbOkT=0;
+// v265 · el arranque RETIENE el respaldo hasta decidir qué copia manda: antes el save() del arranque pisaba `latest`
+// y la copia buena quedaba solo en un `day-*` sin pantalla para volver a ella.
+let _idbHold=true, _idbHeld=null, _idbTrail=null, _idbTrailS=null, _idbPruneDay='';
+const _idbConns={};
+function idbOpen(name){ name=name||IDB_NAME; if(_idbConns[name])return _idbConns[name];
+  const p=new Promise((res,rej)=>{ try{ if(!self.indexedDB)return rej(new Error('sin IndexedDB'));
+      const r=indexedDB.open(name,1);
       r.onupgradeneeded=()=>{ const d=r.result; if(!d.objectStoreNames.contains(IDB_STORE))d.createObjectStore(IDB_STORE); };
-      r.onsuccess=()=>res(r.result); r.onerror=()=>rej(r.error||new Error('no abre'));
-      r.onblocked=()=>rej(new Error('bloqueada'));
+      r.onsuccess=()=>{ const d=r.result;
+        // v265 · iOS cierra la conexión tras el segundo plano; antes quedaba cacheada muerta y los respaldos fallaban callados
+        d.onclose=()=>{ if(_idbConns[name]===p)delete _idbConns[name]; };
+        d.onversionchange=()=>{ try{ d.close(); }catch(_){} if(_idbConns[name]===p)delete _idbConns[name]; };
+        res(d); };
+      r.onerror=()=>rej(r.error||new Error('no abre')); r.onblocked=()=>rej(new Error('bloqueada'));
     }catch(e){ rej(e); } });
-  _idb.catch(()=>{ _idb=null; });
-  return _idb; }
-function idbPut(key,val){ return idbOpen().then(d=>new Promise((res,rej)=>{
-  const t=d.transaction(IDB_STORE,'readwrite'); t.objectStore(IDB_STORE).put(val,key);
-  t.oncomplete=()=>res(true); t.onerror=()=>rej(t.error); t.onabort=()=>rej(t.error||new Error('abortada')); })); }
-function idbGet(key){ return idbOpen().then(d=>new Promise((res,rej)=>{
-  const t=d.transaction(IDB_STORE,'readonly'); const q=t.objectStore(IDB_STORE).get(key);
-  q.onsuccess=()=>res(q.result); q.onerror=()=>rej(q.error); })); }
-// respaldo a IndexedDB. `force` para los momentos que importan (cerrar una sesión); si no, con freno de 30 s.
-function idbBackup(s,force){ const now=Date.now();
-  if(!force&&now-_idbT<30000)return; _idbT=now;
-  try{ const rec={t:now, day:todayISO(), mass:dbMass(db), s:s};
-    idbPut('latest',rec).then(()=>{ _idbErr=null; _idbLast=rec; return idbPut('day-'+rec.day,rec); }).catch(e=>{ _idbErr=e; });
-  }catch(e){ _idbErr=e; } }
+  _idbConns[name]=p; p.catch(()=>{ if(_idbConns[name]===p)delete _idbConns[name]; });
+  return p; }
+// una transacción, con un reintento si la conexión cacheada ya estaba cerrada
+function idbTx(mode,fn,name,retried){ return idbOpen(name).then(d=>new Promise((res,rej)=>{ let t=null, q=null;
+    try{ t=d.transaction(IDB_STORE,mode); q=fn(t.objectStore(IDB_STORE)); }catch(e){ return rej(e); }
+    t.oncomplete=()=>{ let v; try{ v=q?q.result:undefined; }catch(_){} res(v); }; t.onerror=()=>rej(t.error); t.onabort=()=>rej(t.error||new Error('abortada')); }))
+  .catch(e=>{ const k=String((e&&e.name)||'')+' '+String((e&&e.message)||'');
+    if(!retried&&/InvalidState|Unknown|TransactionInactive|clos/i.test(k)){ delete _idbConns[name||IDB_NAME]; return idbTx(mode,fn,name,true); }
+    throw e; }); }
+function idbGet(key,name){ return idbTx('readonly',st=>st.get(key),name); }
+function idbPut(key,val,name){ return idbTx('readwrite',st=>st.put(val,key),name).then(()=>true); }
+function idbDel(key,name){ return idbTx('readwrite',st=>st.delete(key),name).then(()=>true); }
+// copias completas: `latest`, `day-AAAA-MM-DD`, `lsbak-*` (el viejo _bak), `pre-<motivo>-<t>` y `offer-<t>`. Un índice
+// (`idx`) guarda fecha, registros, sello y tamaño de cada una para listarlas sin cargar 1.3 MB por copia.
+const COPY_RE=/^(day-|lsbak-|pre-|offer-)/;
+function copyMeta(rec){ return {t:rec.t||0,day:rec.day||'',mass:rec.mass||0,seq:rec.seq||0,len:(rec.s||'').length}; }
+function idbPutCopy(key,rec,name){ const meta=copyMeta(rec);
+  return idbTx('readwrite',st=>{ st.put(rec,key); const q=st.get('idx'); q.onsuccess=()=>{ const ix=q.result||{}; ix[key]=meta; st.put(ix,'idx'); }; return q; },name); }
+function idbDelCopies(keys,name){ if(!keys||!keys.length)return Promise.resolve();
+  return idbTx('readwrite',st=>{ keys.forEach(k=>st.delete(k)); const q=st.get('idx'); q.onsuccess=()=>{ const ix=q.result||{}; keys.forEach(k=>{ delete ix[k]; }); st.put(ix,'idx'); }; return q; },name); }
+function idbRebuildIdx(name){ const ix={};
+  return idbTx('readwrite',st=>{ const c=st.openCursor(); c.onsuccess=()=>{ const cur=c.result; if(cur){ const k=String(cur.key); if((k==='latest'||COPY_RE.test(k))&&cur.value&&cur.value.s)ix[k]=copyMeta(cur.value); cur.continue(); } else st.put(ix,'idx'); }; return null; },name).then(()=>ix); }
+function idbIdx(name){ return idbGet('idx',name).then(ix=>ix||idbRebuildIdx(name)); }
+// poda: los 14 días más recientes + el primero de cada mes durante 6 meses; ofertas y fotos previas, 60 días
+function pruneList(ix,today){ const DAY=86400000, t0=new Date(today+'T12:00:00').getTime(), out=[];
+  const days=Object.keys(ix).filter(k=>/^day-\d{4}-\d{2}-\d{2}$/.test(k)).sort().reverse();
+  const keep=new Set(days.slice(0,14)), first={};
+  days.slice().reverse().forEach(k=>{ const ym=k.slice(4,11); if(!first[ym])first[ym]=k; });
+  Object.keys(first).forEach(ym=>{ const k=first[ym]; if(t0-new Date(k.slice(4)+'T12:00:00').getTime()<=183*DAY)keep.add(k); });
+  days.forEach(k=>{ if(!keep.has(k))out.push(k); });
+  Object.keys(ix).forEach(k=>{ if(/^(lsbak-|pre-|offer-)/.test(k)){ const t=ix[k]&&ix[k].t; if(t&&t0-t>60*DAY)out.push(k); } });
+  return out; }
+function idbPruneSoon(){ const d=todayISO(); if(_idbPruneDay===d)return; _idbPruneDay=d;
+  idbIdx().then(ix=>idbDelCopies(pruneList(ix,d))).catch(()=>{ _idbPruneDay=''; }); }
+// respaldo a IndexedDB: `force` cuando importa (cerrar sesión, recuperar, localStorage fallando); si no, freno de 30 s
+// con una escritura final (antes lo del último medio minuto no llegaba nunca si no volvías a guardar)
+function idbBackup(s,force){ if(_sbx){ _sbxIdb.push({force:!!force,len:s.length}); return; }
+  if(_idbHold){ _idbHeld=s; return; }
+  const now=Date.now();
+  if(!force&&now-_idbT<30000){ _idbTrailS=s; if(!_idbTrail)_idbTrail=setTimeout(()=>{ _idbTrail=null; const x=_idbTrailS; _idbTrailS=null; if(x)idbBackup(x,true); },30000-(now-_idbT)); return; }
+  if(_idbTrail){ clearTimeout(_idbTrail); _idbTrail=null; _idbTrailS=null; }
+  _idbT=now;
+  let rec=null; try{ rec={t:now,day:todayISO(),mass:dbMass(db),seq:seqOf(db),sid:_sid,s:s}; }catch(e){ _idbErr=e; _idbErrT=now; return; }
+  idbPutCopy('latest',rec).then(()=>idbPutCopy('day-'+rec.day,rec))
+    .then(()=>{ _idbErr=null; _idbOkT=Date.now(); _idbLast={t:rec.t,day:rec.day,mass:rec.mass,seq:rec.seq}; idbPruneSoon(); })
+    .catch(e=>{ _idbErr=e; _idbErrT=Date.now(); }); }
+function idbReleaseHold(){ if(!_idbHold)return; _idbHold=false; const s=_idbHeld; _idbHeld=null; if(s)idbBackup(s,true); }
+// foto completa antes de algo que reemplaza la base (adoptar, restaurar, rescatar, borrar todo, reparar)
+function idbSnap(kind,d){ if(_sbx)return Promise.resolve();
+  try{ const s=typeof d==='string'?d:JSON.stringify(d), o=typeof d==='string'?null:d, t=Date.now();
+    return idbPutCopy('pre-'+kind+'-'+t,{t:t,day:todayISO(),mass:o?dbMass(o):0,seq:o?seqOf(o):0,sid:_sid,s:s}).catch(()=>{}); }catch(_){ return Promise.resolve(); } }
+// el viejo `_bak` sale de localStorage (1.29 MB del cupo): se copia a IndexedDB, se relee, y solo si cuadra se borra
+function migrateLsBak(J){ let raw=null; try{ raw=localStorage.getItem(LS_BACKUP); }catch(_){}
+  if(raw==null)return Promise.resolve();
+  const c=readCopy(raw), key='lsbak-'+todayISO();
+  return idbPutCopy(key,{t:Date.now(),day:todayISO(),mass:c.mass||0,seq:c.seq||0,sid:_sid,s:raw}).then(()=>idbGet(key))
+    .then(back=>{ if(back&&back.s&&lsSig(back.s)===lsSig(raw)){ try{ localStorage.removeItem(LS_BACKUP); }catch(_){} J.flags.push('bakMoved'); } else J.flags.push('bakMoveMismatch'); })
+    .catch(()=>{ J.flags.push('bakMoveFail'); }); }
+// v265 · qué hacer con la copia interna al arrancar. Recencia primero; la masa solo detecta un derrumbe.
+function bootDecision(o){
+  if(o.localSeed)return 'adopt-empty';
+  if(o.iseq>o.lseq)return (o.sameSid&&o.imass>=o.lmass*0.5)?'adopt':'offer';
+  if(o.lmass<o.imass*0.5&&o.imass-o.lmass>=10)return 'massdrop';
+  return 'none'; }
+function hhmm(t){ try{ return t?new Date(t).toTimeString().slice(0,5):''; }catch(_){ return ''; } }
+function offerCopy(key,meta){ bootAsk({title:'hay una versión más reciente de tus datos',detail:'copia interna del '+fmtShort(meta.day||todayISO())+' '+hhmm(meta.t)+' · '+(meta.mass||0)+' registros · ahora tienes '+dbMass(db)+'\nsi tocas fuera, te la vuelvo a ofrecer',ok:'recuperarla',cancel:'mantener esta'},
+  ()=>restoreCopy(key,'✓ versión recuperada'), ()=>{ idbDelCopies([key]).catch(()=>{}); }); }
+function restoreCopy(key,msg){ return idbGet(key).then(rec=>{ let inc=null; try{ inc=JSON.parse(rec&&rec.s); }catch(_){}
+    if(!inc||!inc.profile){ toast('⚠ esa copia no se puede leer','err'); return; }
+    return idbSnap('restore',db).then(()=>{ db=migrate(inc); _idbForceNext=true; savedToast(msg||'✓ copia restaurada'); if(/^offer-/.test(key))idbDelCopies([key]).catch(()=>{}); closeModal(); go('home'); }); })
+  .catch(e=>toast('⚠ no pude leer la copia · '+((e&&e.message)||''),'err')); }
+function currentVersion(){ try{ if(!self.caches||!caches.keys)return Promise.resolve(''); return caches.keys().then(ks=>{ const v=ks.filter(k=>/^gymtrk-v\d+$/.test(k)).map(k=>+k.slice(8)).sort((a,b)=>b-a)[0]; return v?'v'+v:''; }); }catch(_){ return Promise.resolve(''); } }
+function writeJournal(J){ try{ localStorage.setItem(LS_BOOTLOG,JSON.stringify(J)); }catch(_){}
+  return idbGet('journal').then(a=>{ a=Array.isArray(a)?a:[]; a.push(J); return idbPut('journal',a.slice(-60)); }).catch(()=>{}); }
+// v265 · el arranque decide con la copia interna y deja escrito POR QUÉ arrancó como arrancó (diario de arranque)
+async function idbBootCheck(){ const J=_bootJ||(_bootJ={t:Date.now(),flags:[]}); J.flags=J.flags||[];
+  try{
+    let rec=null, idbSid=null;
+    try{ const r=await Promise.all([idbGet('latest'),idbGet('sid')]); rec=r[0]; idbSid=r[1]||null;
+      J.idb={st:rec&&rec.s?'ok':'empty',seq:(rec&&rec.seq)||0,mass:(rec&&rec.mass)||0,t:(rec&&rec.t)||0}; }
+    catch(e){ J.idb={st:'err',err:String((e&&e.message)||e)}; _idbErr=e; _idbErrT=Date.now(); }
+    let lsSid=null; try{ lsSid=localStorage.getItem(LS_SID); }catch(_){}
+    if(!lsSid&&idbSid){ J.flags.push('lsWiped'); lsSid=idbSid; }
+    else if(!lsSid&&!idbSid){ J.flags.push('newStore'); lsSid='s'+uid(); }
+    else if(lsSid&&idbSid&&lsSid!==idbSid)J.flags.push('sidMismatch');
+    _sid=lsSid; try{ localStorage.setItem(LS_SID,lsSid); }catch(_){}
+    if(!idbSid&&J.idb.st!=='err')idbPut('sid',lsSid).catch(()=>{});
+    J.sid={ls:lsSid,idb:idbSid};
+    await migrateLsBak(J);
+    let inc=null; if(rec&&rec.s){ try{ inc=JSON.parse(rec.s); }catch(_){ J.idb.st='parse'; } }
+    const localSeed=!(db&&db.profile&&db.profile.username), lseq=(J.loadedSeq!=null?J.loadedSeq:seqOf(db)), lmass=dbMass(db);
+    if(rec&&rec.seq)_seqFloor=Math.max(_seqFloor,+rec.seq||0);
+    J.local={seq:lseq,mass:lmass,seed:localSeed};
+    if(!NATIVE_APP&&isIOS()&&!isStandalone()&&localSeed)J.flags.push('safariEmpty');
+    const incOk=!!(inc&&inc.profile&&inc.profile.username);
+    let dec='none';
+    if(incOk){ const iseq=+rec.seq||seqOf(inc), imass=rec.mass!=null?rec.mass:dbMass(inc);
+      _seqFloor=Math.max(_seqFloor,iseq);
+      if(iseq>lseq)J.flags.push('idbNewer');
+      dec=bootDecision({localSeed,lseq,lmass,iseq,imass,sameSid:!!idbSid&&idbSid===lsSid});
+      if(dec==='adopt'&&Date.now()-J.t>5000)dec='offer'; }   // si ya pasó el arranque, puede que ya estés editando: se pregunta
+    J.decision=dec;
+    if(dec==='adopt-empty'||dec==='adopt'){
+      if(dec==='adopt')await idbSnap('adopt',db);
+      db=migrate(inc); _idbForceNext=true; idbReleaseHold(); save(); if(dec==='adopt-empty')go('home'); else render();
+      toast(dec==='adopt'?'✓ se recuperó tu versión más reciente':'✓ datos recuperados de la copia interna');
+    } else if(dec==='offer'){ const key='offer-'+rec.t; await idbPutCopy(key,rec).catch(()=>{}); offerCopy(key,{t:rec.t,day:rec.day,mass:rec.mass}); }
+    else if(dec==='massdrop'){ let ack=null; try{ ack=localStorage.getItem(LS_ACKDROP); }catch(_){}
+      if(String(rec.t)!==ack)bootAsk({title:'tu base tiene muchos menos registros',detail:'ahora '+lmass+' · tu copia del '+fmtShort(rec.day||todayISO())+' tiene '+rec.mass+'\nsi borraste a propósito, ignóralo · si no, revisa tus copias',ok:'ver copias',cancel:'está bien'},
+        ()=>openStorage(), ()=>{ try{ localStorage.setItem(LS_ACKDROP,String(rec.t)); }catch(_){} }); }
+    // ofertas de arranques anteriores que siguen sin contestar
+    try{ const ix=await idbIdx(); Object.keys(ix).filter(k=>/^offer-/.test(k)&&!(dec==='offer'&&k==='offer-'+rec.t)).sort().slice(-1).forEach(k=>offerCopy(k,ix[k])); }catch(_){}
+  }catch(e){ J.err=String((e&&e.message)||e); }
+  finally{ idbReleaseHold(); J.ctx=bootCtx(); try{ J.v=await currentVersion(); }catch(_){} writeJournal(J); } }
 // el ritmo de crecimiento, para avisar con meses de anticipación y no cuando ya no se puede escribir
 const LS_GROWTH='gymtrk_growth';
 function growthLog(){ let g=[]; try{ g=JSON.parse(localStorage.getItem(LS_GROWTH)||'[]')||[]; }catch(_){ g=[]; }
@@ -1370,7 +1515,7 @@ function openStorage(){
   const rows=storageRows(), tot=storageTotal(), pct=Math.min(100,Math.round(tot/LS_QUOTA*100));
   const gTxt=growthTxt();
   const kb=b=>b>=1048576?(b/1048576).toFixed(2)+' MB':Math.round(b/1024)+' KB';
-  const nm=k=>k===LS_KEY?'tus datos':k===LS_BACKUP?'respaldo del día':k===LS_LIVE?'última sesión (caja negra)':k===LS_LIVE_PENDING?'sesión por recuperar':k===LS_GROWTH?'medidor de crecimiento':LS_ORPHANS.indexOf(k)>=0?'foto vieja de una reparación':k.replace('gymtrk_','');
+  const nm=k=>k===LS_KEY?'tus datos':k===LS_BACKUP?'respaldo viejo (se muda a IndexedDB)':k===LS_SID?'identidad del almacén':k===LS_BOOTLOG?'último arranque':k===LS_ACKDROP?'aviso visto':k===LS_LIVE?'última sesión (caja negra)':k===LS_LIVE_PENDING?'sesión por recuperar':k===LS_GROWTH?'medidor de crecimiento':LS_ORPHANS.indexOf(k)>=0?'foto vieja de una reparación':k.replace('gymtrk_','');
   const orph=rows.filter(r=>LS_ORPHANS.indexOf(r.k)>=0).reduce((s,r)=>s+r.b,0);
   openModal(`<h3>espacio</h3>`
     +`<div class="line"><span class="k">usado en este navegador</span><span class="dots"></span><span class="v">${kb(tot)} <span class="u-o40 u-label">/ 5 MB</span></span></div>`
@@ -1380,15 +1525,111 @@ function openStorage(){
     +(gTxt?`<div class="submeta u-mb8">${escTxt(gTxt)}</div>`:'')
     +`<div class="grp-label sub">PROTECTION</div>`
     +`<div class="stline"><span class="stk">almacenamiento persistente</span><span class="stv">${_persisted===null?'—':_persisted?'sí':'NO'}</span></div>`
-    +`<div class="stline"><span class="stk">respaldo en IndexedDB</span><span class="stv">${_idbLast?fmtShort(_idbLast.day):(_idbErr?'falla':'—')}</span></div>`
+    +`<div class="stline"><span class="stk">respaldo en IndexedDB</span><span class="stv">${escTxt(idbStatusTxt())}</span></div>`
     +(_estim&&_estim.quota?`<div class="stline"><span class="stk">cupo del navegador (no es el de arriba)</span><span class="stv">${kb(_estim.usage||0)} / ${kb(_estim.quota)}</span></div>`:'')
     +(_persisted===false?`<div class="submeta u-mb8 u-warn">sin persistencia, el navegador puede borrar todo si el iPhone se queda sin espacio · exporta seguido</div>`:'')
     +`<div class="grp-label sub">STORAGE</div>`
     +rows.map(r=>`<div class="stline"><span class="stk">${escTxt(nm(r.k))}</span><span class="stv">${kb(r.b)}</span></div>`).join('')
+    +`<div class="grp-label sub">COPIES</div><div id="st_copies"><div class="submeta">cargando…</div></div>`
+    +`<div class="grp-label sub">BOOT LOG</div><div id="st_boot"><div class="submeta">cargando…</div></div>`
+    +`<div class="u-tr u-mt8"><a data-act="stdiag" class="u-tap u-o60 u-data">[copiar diagnóstico]</a></div>`
     +`<div class="sheetbtns u-mt12">${orph?`<button class="ok" data-act="stfree">liberar ${kb(orph)}</button>`:''}<button class="ok" data-act="bakshare">guardar respaldo</button><button class="cancel" data-act="closemodal">cerrar</button></div>`
     +`<div class="submeta u-mt8">"guardar respaldo" abre la hoja de iOS: elige Archivos y la carpeta que quieras. Último: ${daysSinceBackup()>=999?'nunca':'hace '+daysSinceBackup()+' d'}.</div>`
     +(orph?`<div class="submeta u-mt8">las "fotos viejas" son copias que dejaron dos reparaciones ya aplicadas (2026-08 y 2026-09); nada las lee.</div>`:''));
+  fillStorageAsync();
 }
+// v265 · //ESPACIO: el estado real de IndexedDB, las copias internas con [restaurar] y [lo que falta], y el diario
+function idbStatusTxt(){ if(_idbErr&&_idbErrT>=_idbOkT)return 'falla desde '+hhmm(_idbErrT)+(_idbLast?' · último bueno '+fmtShort(_idbLast.day):'');
+  return _idbLast?fmtShort(_idbLast.day)+' '+hhmm(_idbLast.t):(_idbHold?'arrancando…':'—'); }
+function copyLabel(k){ return k==='latest'?'la última':/^day-/.test(k)?'del día':/^lsbak-/.test(k)?'respaldo viejo':/^offer-/.test(k)?'ofrecida':/^pre-adopt/.test(k)?'antes de adoptar':/^pre-restore/.test(k)?'antes de restaurar':/^pre-rescue/.test(k)?'antes de rescatar':/^pre-reset/.test(k)?'antes de borrar todo':/^pre-idfix/.test(k)?'antes de reparar':/^pre-/.test(k)?'foto previa':k; }
+function copyRowsHTML(ix){ const kb=b=>b>=1048576?(b/1048576).toFixed(2)+' MB':Math.round(b/1024)+' KB';
+  const ks=Object.keys(ix).filter(k=>k==='latest'||COPY_RE.test(k)).sort((a,b)=>((ix[b]&&ix[b].t)||0)-((ix[a]&&ix[a].t)||0)).slice(0,20);
+  if(!ks.length)return '<div class="submeta">sin copias todavía</div>';
+  return ks.map(k=>{ const m=ix[k]||{}; return '<div class="stline"><span class="stk">'+escTxt(copyLabel(k))+' · '+(m.day?fmtShort(m.day):'—')+' '+hhmm(m.t)+'</span><span class="stv">'+(m.mass||0)+' reg · '+kb((m.len||0)*2)+'</span></div>'
+    +'<div class="u-tr u-mb6"><a data-act="stmissing" data-k="'+escTxt(k)+'" class="u-tap u-o60 u-data">[lo que falta]</a><a data-act="strestore" data-k="'+escTxt(k)+'" class="u-tap u-o60 u-data u-ml8">[restaurar]</a></div>'; }).join(''); }
+function bootLogHTML(a){ a=Array.isArray(a)?a.slice(-10).reverse():[]; if(!a.length)return '<div class="submeta">sin arranques registrados todavía</div>';
+  return a.map(J=>{ const fl=(J.flags||[]).filter(f=>f!=='bakMoved');
+    return '<div class="stline"><span class="stk">'+fmtShort(todayISO(new Date(J.t||0)))+' '+hhmm(J.t)+' · '+escTxt((J.ctx&&J.ctx.app)||'?')+(J.v?' · '+escTxt(J.v):'')+'</span><span class="stv">'+escTxt(J.chosen||'?')+(J.decision&&J.decision!=='none'?' · '+escTxt(J.decision):'')+(fl.length?' · '+escTxt(fl.join(' ')):'')+'</span></div>'; }).join(''); }
+function fillStorageAsync(){
+  idbIdx().then(ix=>{ const el=document.getElementById('st_copies'); if(el)el.innerHTML=copyRowsHTML(ix||{}); })
+    .catch(e=>{ const el=document.getElementById('st_copies'); if(el)el.innerHTML='<div class="submeta">⚠ IndexedDB no responde · '+escTxt((e&&e.message)||'')+'</div>'; });
+  idbGet('journal').then(a=>{ const el=document.getElementById('st_boot'); if(el)el.innerHTML=bootLogHTML(a); })
+    .catch(()=>{ const el=document.getElementById('st_boot'); if(el)el.innerHTML='<div class="submeta">—</div>'; }); }
+// [lo que falta]: lo que una copia tiene y tu base no (por id y por día). Solo AGREGA: nunca cambia ni borra lo tuyo.
+function missingFrom(inc,cur){ const out={sessions:[],meals:[],days:[]};
+  const ids=new Set((cur.sessions||[]).map(s=>s&&s.id)); (inc.sessions||[]).forEach(s=>{ if(s&&s.id&&!ids.has(s.id))out.sessions.push(s); });
+  Object.keys(inc.meals||{}).forEach(d=>{ const have=new Set((((cur.meals||{})[d])||[]).map(m=>m&&m.id)); (inc.meals[d]||[]).forEach(m=>{ if(m&&m.id&&!have.has(m.id))out.meals.push({d:d,m:m}); }); });
+  ['bodyweight','steps','sleep'].forEach(f=>{ const have=cur[f]||{}; Object.keys(inc[f]||{}).forEach(d=>{ if(!Object.prototype.hasOwnProperty.call(have,d))out.days.push({f:f,d:d,v:inc[f][d]}); }); });
+  return out; }
+function applyMissing(mi){ db.sessions=db.sessions||[];
+  mi.sessions.forEach(s=>{ let i=db.sessions.findIndex(x=>String(x.date||'')>String(s.date||'')); if(i<0)i=db.sessions.length; db.sessions.splice(i,0,s); });
+  mi.meals.forEach(o=>{ db.meals=db.meals||{}; (db.meals[o.d]=db.meals[o.d]||[]).push(o.m); });
+  mi.days.forEach(o=>{ db[o.f]=db[o.f]||{}; db[o.f][o.d]=o.v; }); }
+function openMissingFrom(key){ idbGet(key).then(rec=>{ let inc=null; try{ inc=JSON.parse(rec&&rec.s); }catch(_){}
+    if(!inc){ toast('⚠ esa copia no se puede leer','err'); return; }
+    const mi=missingFrom(migrate(inc),db), n=mi.sessions.length+mi.meals.length+mi.days.length;
+    if(!n){ toast('esa copia no tiene nada que te falte'); return; }
+    const lines=[].concat(mi.sessions.slice(0,12).map(s=>fmtShort(s.date||todayISO())+' · '+(s.dayName||s.type||'sesión')+' · '+((s.exercises||[]).length)+' ejercicios'),
+      mi.meals.slice(0,12).map(o=>fmtShort(o.d)+' · '+(o.m.name||'alimento')+(o.m.kcal?' · '+Math.round(o.m.kcal)+' kcal':'')),
+      mi.days.slice(0,12).map(o=>fmtShort(o.d)+' · '+({bodyweight:'peso',steps:'pasos',sleep:'sueño'}[o.f])));
+    trkAsk({title:'lo que esta copia tiene y tu base no',detail:mi.sessions.length+' sesiones · '+mi.meals.length+' alimentos · '+mi.days.length+' días de peso, pasos o sueño\n'+lines.join('\n')+(n>lines.length?'\n…':'')+'\nse agregan a lo que ya tienes · no se cambia ni se borra nada',ok:'agregarlos',cancel:'cerrar'},
+      ()=>{ idbSnap('rescue',db).then(()=>{ applyMissing(mi); bumpIdx(); _idbForceNext=true; if(savedToast('✓ recuperados · '+n+' registros')){ closeModal(); go('home'); } }); }); })
+  .catch(e=>toast('⚠ no pude leer la copia · '+((e&&e.message)||''),'err')); }
+function copyText(txt,okMsg){ const done=()=>toast(okMsg||'✓ copiado'); const fb=()=>trkPrompt({title:'copiar',label:'TEXTO',value:txt,ok:'listo'},()=>{});
+  try{ if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(txt).then(done,fb); return; } }catch(_){} fb(); }
+function copyDiag(){ Promise.all([idbGet('journal').catch(()=>null),idbIdx().catch(()=>null)]).then(r=>{
+    copyText(JSON.stringify({v:(_bootJ&&_bootJ.v)||'',now:new Date().toISOString(),ctx:bootCtx(),ls:storageRows(),idb:{okT:_idbOkT,err:_idbErr?String(_idbErr.message||_idbErr):null,errT:_idbErrT,last:_idbLast},copies:r[1],journal:(r[0]||[]).slice(-15)},null,1),'✓ diagnóstico copiado'); }); }
+// v265 · self-check del almacenamiento (síncrono, dentro del sandbox): elección por recencia, decisión de arranque,
+// poda, guardado con retardo, ✓ honesto y respaldos que no dependen de localStorage
+function _storageSelfCheck(){ const A=(n,c)=>{ if(!c)throw new Error('SELFCHECK storage: '+n); };
+  const mk=(seq,n)=>JSON.stringify({profile:{username:'t'},_meta:{seq:seq},sessions:Array.from({length:n},(_,i)=>({id:'s'+i})),meals:{}});
+  let p=pickBootCopy(readCopy(mk(9,1)),readCopy(mk(3,40)));
+  A('la principal más reciente gana aunque la copia del día pese más', p.which==='main');
+  p=pickBootCopy(readCopy(mk(3,1)),readCopy(mk(9,1))); A('la copia del día gana solo si es más reciente', p.which==='bak');
+  p=pickBootCopy(readCopy('no-es-json'),readCopy(mk(2,5))); A('principal corrupta → la copia del día, con su motivo', p.which==='bak'&&/parse/.test(p.why));
+  p=pickBootCopy(readCopy(null),readCopy(null)); A('sin nada → semilla', p.which==='seed'&&!p.d);
+  p=pickBootCopy(readCopy(JSON.stringify({profile:{username:'t'},sessions:[{},{}]})),readCopy(JSON.stringify({profile:{username:'t'},sessions:[{},{},{},{}]})));
+  A('bases sin sello (anteriores a v265): gana la principal, nunca la que pesa más', p.which==='main');
+  const D=o=>bootDecision(Object.assign({localSeed:false,lseq:4,lmass:50,iseq:4,imass:50,sameSid:true},o));
+  A('base vacía + copia interna → se adopta sola', D({localSeed:true,lseq:0,lmass:0})==='adopt-empty');
+  A('mismo almacén, copia más reciente y sin derrumbe → se adopta', D({iseq:5,imass:49})==='adopt');
+  A('copia más reciente pero con derrumbe → se ofrece', D({iseq:5,imass:10})==='offer');
+  A('copia de otro almacén → se ofrece, nunca sola', D({iseq:5,sameSid:false})==='offer');
+  A('local más reciente con menos registros (borraste) → nada', D({lseq:9,lmass:40,iseq:5,imass:45})==='none');
+  A('derrumbe grande en la local → avisa', D({lseq:9,lmass:10,iseq:5,imass:80})==='massdrop');
+  const today='2026-09-23', ix={latest:{t:1}}; for(let i=0;i<40;i++)ix['day-'+shiftDate(today,-i)]={t:1};
+  ix['day-2026-01-03']={t:1}; ix['offer-1']={t:new Date('2026-06-01T12:00:00').getTime()}; ix['pre-adopt-2']={t:new Date('2026-09-20T12:00:00').getTime()};
+  const del=pruneList(ix,today), left=Object.keys(ix).filter(k=>del.indexOf(k)<0);
+  A('la poda deja 14 días + el primero de cada mes reciente', left.filter(k=>/^day-/.test(k)).length===16&&left.indexOf('day-2026-09-01')>=0&&left.indexOf('day-2026-08-15')>=0);
+  A('la poda quita lo viejo y nunca `latest`', del.indexOf('day-2026-01-03')>=0&&del.indexOf('offer-1')>=0&&left.indexOf('pre-adopt-2')>=0&&left.indexOf('latest')>=0);
+  const w0=_sbxWrites.length; for(let i=0;i<10;i++)saveSoon();
+  A('10 teclas no escriben 10 veces', _sbxWrites.length===w0);
+  A('flushSave escribe una sola vez lo pendiente', flushSave()===true&&_sbxWrites.length===w0+1);
+  A('sin nada pendiente, flushSave no escribe', flushSave()===true&&_sbxWrites.length===w0+1);
+  const s1=seqOf(db); save(); A('cada guardado sube el sello de recencia', seqOf(db)===s1+1);
+  A('guardado normal: IndexedDB con freno, sin forzar', _sbxIdb.length>0&&_sbxIdb[_sbxIdb.length-1].force===false);
+  const lc=_lastClosed; _lastClosed={t:1,closed:true,sid:'x',w:{exercises:[]}}; save(); const f1=_sbxIdb[_sbxIdb.length-1].force; _lastClosed=lc;
+  A('_lastClosed ya no fuerza cada guardado', f1===false);
+  const box=document.getElementById('toasts'), i0=_sbxIdb.length; let ok=true; _sbxFail=true; try{ ok=savedToast('✓ prueba'); }finally{ _sbxFail=false; }
+  const last=box&&box.lastElementChild;
+  A('si localStorage falla, el ✓ no sale: sale ⚠ no se guardó', ok===false&&!!last&&/no se guardó/.test(last.textContent));
+  A('si localStorage falla, IndexedDB igual recibe la copia y sin esperar el freno', _sbxIdb.length===i0+1&&_sbxIdb[i0].force===true);
+  if(last)last.remove(); save();
+  console.log('storage self-check OK'); }
+// v265 · IndexedDB de verdad, en una base aparte (gymtrk_selftest) que se borra al terminar: índice, lectura,
+// reconexión tras cerrar la conexión cacheada (lo que iOS hace en segundo plano) y borrado con su índice
+async function _idbSelfCheck(){ const N='gymtrk_selftest', A=(n,c)=>{ if(!c)throw new Error('SELFCHECK idb: '+n); };
+  try{
+    await idbPutCopy('day-2026-09-01',{t:1,day:'2026-09-01',mass:3,seq:4,s:'{"a":1}'},N);
+    const ix=await idbIdx(N); A('el índice registra la copia', !!ix['day-2026-09-01']&&ix['day-2026-09-01'].seq===4);
+    const r=await idbGet('day-2026-09-01',N); A('lee lo que escribió', !!r&&r.s==='{"a":1}');
+    const d=await idbOpen(N); d.close();
+    await idbPut('k','v',N); A('tras cerrarse la conexión, reconecta y escribe', (await idbGet('k',N))==='v');
+    await idbDelCopies(['day-2026-09-01'],N); const ix2=await idbIdx(N);
+    A('borrar quita la copia y su índice', !ix2['day-2026-09-01']&&!(await idbGet('day-2026-09-01',N)));
+    console.log('idb self-check OK');
+  }catch(e){ console.error(e); }
+  finally{ try{ const d=await idbOpen(N); d.close(); }catch(_){} try{ delete _idbConns[N]; indexedDB.deleteDatabase(N); }catch(_){} } }
 // data-safety: count all data records so a restore can warn before any loss (meals + sessions + foods + bodyweight days + steps days)
 function dbMass(o){ try{ const m=Object.values((o&&o.meals)||{}).reduce((n,a)=>n+(a?a.length:0),0); return m+(((o&&o.sessions)||[]).length)+(((o&&o.foods)||[]).length)+Object.keys((o&&o.bodyweight)||{}).length+Object.keys((o&&o.steps)||{}).length+Object.keys((o&&o.sleep)||{}).length; }catch(_){ return 0; } }
 // ALWAYS ask before destructive replace (not just when shrinking) — silent imports on fresh accounts were a vector for malicious backups
@@ -1917,7 +2158,7 @@ function saveExProfile(){ const ctx=window._exProf; if(!ctx)return; const m=docu
     if(!prim){ const r=exCatRec(nm); if(r)delete r.targets; }
     else { const secs=[]; m.querySelectorAll('select[data-sec]').forEach(s=>{ const w=m.querySelector('input[data-secw="'+s.dataset.sec+'"]'); if(s.value&&s.value!==prim)secs.push({id:s.value,w:Math.max(0,Math.min(1,parseFloat(w&&w.value)||0.5))}); });
       setExCat(nm,{targets:[{id:prim,w:1}].concat(secs)}); } }
-  save(); toast('✓ perfil del ejercicio guardado'); closeProfileBack(ctx.back); }
+  savedToast('✓ perfil del ejercicio guardado'); closeProfileBack(ctx.back); }
 function closeProfileBack(back){ window._exProf=null; if(back==='catalog')openExerciseDirectory(); else if(back==='muscles')openMuscleMap(); else { closeModal(); reRender(); } }
 // ---------- v230 · RECUPERACIÓN por músculo (estimada → observada) y tablero //MÚSCULOS ----------
 // PT2: "la recuperación debería ser individual, no un número fijo". Cada músculo canónico arranca con una
@@ -3548,7 +3789,7 @@ function _uiSelfCheck(){
         db.activeWork=awB; _lastClosed=lcB;
         try{ if(liveB!=null)localStorage.setItem(LS_LIVE,liveB); else localStorage.removeItem(LS_LIVE); if(pendB!=null)localStorage.setItem(LS_LIVE_PENDING,pendB); else localStorage.removeItem(LS_LIVE_PENDING); }catch(_){} } })();
     // v255 · una escritura que el navegador acepta pero no conserva ya NO cuenta como guardada
-    (function(){ const realSet=Storage.prototype.setItem, bakBefore=localStorage.getItem(LS_BACKUP);
+    (function(){ const realSet=Storage.prototype.setItem, bakBefore=localStorage.getItem(LS_BACKUP), sbx0=_sbx; _sbx=false;   // v265 · este prueba el disco de verdad (con tu base real, no una de juguete)
       // OJO: `localStorage.setItem = fn` NO sustituye el método — Storage tiene setter de propiedades con nombre,
       // así que eso crea una CLAVE llamada "setItem". Hay que parchear el prototipo.
       try{ Storage.prototype.setItem=function(k,v){ if(this===localStorage&&k===LS_KEY)return; return realSet.call(this,k,v); };
@@ -3556,6 +3797,7 @@ function _uiSelfCheck(){
         A('si la escritura no queda en disco, save() devuelve false', save()===false&&/no quedó en disco/.test(saveErrTxt()));
       } finally { delete db._sctest; Storage.prototype.setItem=realSet; try{ if(bakBefore!=null)localStorage.setItem(LS_BACKUP,bakBefore); localStorage.removeItem('setItem'); }catch(_){} saveOK(); }
       A('restaurada la escritura, save() vuelve a guardar de verdad', save()===true&&localStorage.getItem(LS_KEY).length===JSON.stringify(db).length);
+      _sbx=sbx0;
     })();
     A('el medidor cuenta en UTF-16, como el navegador', lsBytes(LS_KEY)>0&&lsBytes(LS_KEY)===(localStorage.getItem(LS_KEY)||'').length*2);
     A('TRKBar: ancho acotado a 0-100 con su clave', /data-bk="k" style="width:100%"/.test(trkBarI('k',140))&&/style="width:0%"/.test(trkBarI('k',-5))&&/class="over"/.test(trkBarI('',50,'over')));
@@ -4503,6 +4745,7 @@ function renderLanding(){
     <div class="submeta" style="margin:0 auto 48px;max-width:280px">tu tracker simple, todo en uno. registra tu entreno y tu comida en segundos.</div>
     <button class="start" data-act="lcreate">empezar →</button>
     <div class="submeta u-mt32">¿ya usabas la app en otro dispositivo?<br/><a data-act="llogin" class="u-o60 u-tap u-ul">restaurar respaldo</a></div>
+    ${(!NATIVE_APP&&isIOS()&&!isStandalone())?'<div class="submeta u-mt16">¿ya la usas desde el ícono de tu pantalla de inicio? ábrela desde ahí · Safari guarda sus datos aparte</div>':''}
   </div>`;
 }
 function renderLogin(){
@@ -5161,7 +5404,7 @@ function openWeightLog(){ const ks=Object.keys(db.bodyweight||{}).sort(); const 
    <div class="field row2"><div><label>PESO (kg)</label><input id="bw_kg" type="number" inputmode="decimal" value="${last||''}" placeholder="ej. 72.5"/></div><div><label>FECHA</label><input id="bw_date" type="date" value="${todayISO()}" max="${todayISO()}"/></div></div>
    <div class="sheetbtns u-mb6"><button class="ok" id="bw_save">guardar</button><button class="cancel" data-act="closemodal">cerrar</button></div>
    ${recent.length?`<div class="grp-label sub">RECENT LOGS</div>`+rows+``:''}`);
-  document.getElementById('bw_save').onclick=()=>{ const v=parseFloat(val('bw_kg')); const d=val('bw_date')||todayISO(); if(!v||v<=0){ toast('⚠ pon un peso válido','err'); return; } db.bodyweight=db.bodyweight||{}; db.bodyweight[d]=Math.round(v*10)/10; const allk=Object.keys(db.bodyweight).sort(); if(allk.length&&db.profile)db.profile.weightKg=db.bodyweight[allk[allk.length-1]]; save(); toast('✓ peso guardado'); closeModal(); reRender(); };
+  document.getElementById('bw_save').onclick=()=>{ const v=parseFloat(val('bw_kg')); const d=val('bw_date')||todayISO(); if(!v||v<=0){ toast('⚠ pon un peso válido','err'); return; } db.bodyweight=db.bodyweight||{}; db.bodyweight[d]=Math.round(v*10)/10; const allk=Object.keys(db.bodyweight).sort(); if(allk.length&&db.profile)db.profile.weightKg=db.bodyweight[allk[allk.length-1]]; savedToast('✓ peso guardado'); closeModal(); reRender(); };
 }
 // v263 · FC en reposo, HRV y energía activa se teclean: una métrica activada siempre tiene por dónde registrarse.
 // Viven donde ya vivían (db.health.daily[fecha]) con marca de origen por campo, como los pasos: lo tecleado gana y
@@ -5183,7 +5426,7 @@ function openHealthNumLog(key){ const C=HLOG[key]; if(!C)return; const h=H();
   document.getElementById('hl_save').onclick=()=>{ const v=parseFloat(val('hl_v')); const d=val('hl_date')||todayISO();
     if(!isFinite(v)||v<C.min||v>C.max){ toast('⚠ pon un número entre '+C.min+' y '+C.max,'err'); return; }
     const hh=H(); const day=hh.daily[d]||(hh.daily[d]={}); day.src=day.src||{}; C.set(day,v); day.src[C.fld]='manual';
-    save(); toast('✓ '+C.t+' · guardado'); closeModal(); reRender(); };
+    savedToast('✓ '+C.t+' · guardado'); closeModal(); reRender(); };
   load(todayISO());
 }
 // mood — circumplejo 2D: db.mood{'YYYY-MM-DD':{x:energía 0-10, y:valencia 0-10, label, ts}}. Legacy: número 1-10 = valencia.
@@ -5330,7 +5573,7 @@ function openSleepLog(){
         out.push(o); } } }
       else { const mh=Math.round((+b.hours)*10)/10; if(mh>0&&mh<24)out.push({date:d,type:'nocturno',hours:mh}); } });
     if(!out.length){ toast('⚠ agrega un bloque: dormir + despertar, o las horas','err'); return; }
-    db.sleep=db.sleep||{}; db.sleep[d]=out; save(); toast('✓ sueño guardado'); closeModal(); reRender();
+    db.sleep=db.sleep||{}; db.sleep[d]=out; savedToast('✓ sueño guardado'); closeModal(); reRender();
   };
   load(todayISO());
 }
@@ -5842,7 +6085,7 @@ function openSuppTime(id, iso){ iso=iso||todayISO(); const it=(db.stack||[]).fin
     if(v) it.tickTimes[iso]=v; else delete it.tickTimes[iso];
     if(!tickState(it.ticks&&it.ticks[iso])){ it.ticks=it.ticks||{}; it.ticks[iso]='taken'; } // fijar hora en día sin marcar = loguear taken
     it.tickEdited=it.tickEdited||{}; it.tickEdited[iso]=Date.now();
-    save(); toast('✓ hora de la toma guardada'); closeModal(); reRender(); };
+    savedToast('✓ hora de la toma guardada'); closeModal(); reRender(); };
 }
 // ---------- render: agenda (día 24h) ----------
 function curAgendaDate(){ return state.agendaDate||todayISO(); }
@@ -6082,7 +6325,7 @@ function openStackEdit(id, presetCat){
     if(_fEl&&_se&&_se.forms){ it.elem=_se.elem; it.form=_fEl.value; it.compoundMg=parseFloat(val('se_dose'))||null; it.elementalMg=elementalMg(it.compoundMg,_se,it.form); }
     else { delete it.elem; delete it.form; delete it.compoundMg; delete it.elementalMg; }
     if(isNew){ db.stack=db.stack||[]; db.stack.push(it); }
-    save(); toast('✓ suplemento guardado'); closeModal(); reRender();
+    savedToast('✓ suplemento guardado'); closeModal(); reRender();
   };
   if(!isNew){
     root.querySelector('#se_del').onclick=()=>{
@@ -6128,7 +6371,7 @@ function openAdhocLog(){
     if(elem){ entry.elem=elem; entry.form=form; entry.compoundMg=compoundMg; entry.elementalMg=elemMg; }
     if(Object.keys(nutr).length) entry.nutr=nutr;
     db.adhoc=db.adhoc||{}; db.adhoc[d]=db.adhoc[d]||[]; db.adhoc[d].push(entry);
-    save(); toast('✓ toma registrada'); closeModal(); reRender();
+    savedToast('✓ toma registrada'); closeModal(); reRender();
   };
 }
 
@@ -6392,7 +6635,7 @@ function nextSetTarget(exi,si){
     for(let j=0;j<e2.sets.length;j+=st2){ if(e2.sets[j]&&!e2.sets[j].done)return {exi:k,si:j}; } }
   return null;
 }
-function go(screen){ state._trans=(state.screen!==screen); state.screen=screen; if(screen==='macros') state.macroDate=todayISO(); render(); }
+function go(screen){ flushSave(); state._trans=(state.screen!==screen); state.screen=screen; if(screen==='macros') state.macroDate=todayISO(); render(); }
 
 // ---------- rest timer (between sets) ----------
 // state lives in db.activeWork.restEnd (epoch ms) → persisted by save(), survives re-renders, reloads and iOS kills.
@@ -6634,7 +6877,7 @@ function setField(exi,si,f,val,skipMirror){ const w=db.activeWork; if(!w)return;
   try{updateProgBadge(exi);}catch(_){}
   // refresh per-set zone colors for the edited set + every propagated _pf set
   try{ const w2=db.activeWork; if(w2&&w2.exercises[exi])w2.exercises[exi].sets.forEach((_,j)=>{ updateSetZone(exi,j); updateSetProgress(exi,j); }); }catch(_){}
-  save(); }
+  saveSoon(); }
 // v226 — borrar una serie es DESLIZARLA A LA DERECHA (el ✓ se quedó con la última columna). La lógica
 // de borrado sale del dispatcher para que el gesto y cualquier otro disparador usen exactamente la misma:
 // una serie de trabajo se lleva consigo los drops que le cuelgan, y solo pregunta si esos drops tienen datos.
@@ -6896,7 +7139,7 @@ document.getElementById('app').addEventListener('click',e=>{
   else if(a==='ss_save'){ const s=db.sessions.find(x=>x.id===window._sessId); if(s){ const dt=document.getElementById('ss_date'); if(dt)s.date=dt.value;
     // corregir el gym: save() → bumpIdx() recalcula baselines y ▲▼ contra el historial del gym correcto
     const gs=document.getElementById('ss_gym'); if(gs&&gs.value!==s.gym){ s.gym=gs.value||undefined; }
-    const sst=document.getElementById('ss_start'); if(sst)s.startTime=sst.value||null; const set=document.getElementById('ss_end'); if(set)s.endTime=set.value||null; if(s.startTime&&s.endTime){let d=hm2min(s.endTime)-hm2min(s.startTime);if(d<0)d+=1440;s.durSec=d*60;} save(); toast('✓ sesión actualizada'); closeModal(); reRender(); } }
+    const sst=document.getElementById('ss_start'); if(sst)s.startTime=sst.value||null; const set=document.getElementById('ss_end'); if(set)s.endTime=set.value||null; if(s.startTime&&s.endTime){let d=hm2min(s.endTime)-hm2min(s.startTime);if(d<0)d+=1440;s.durSec=d*60;} savedToast('✓ sesión actualizada'); closeModal(); reRender(); } }
   else if(a==='ss_del'){ holdConfirm({title:'borrar esta sesión',detail:'sale del historial y deja de contar para volumen, progreso y recuperación',verb:'borrar'},()=>{ db.sessions=db.sessions.filter(x=>x.id!==window._sessId); save(); closeModal(); reRender(); }); }
   else if(a==='resumesession'){
     // "jamás perder una sesión" (feedback del dueño, 2026-08-03) — ANY past session is resumable, not
@@ -7066,11 +7309,14 @@ document.getElementById('app').addEventListener('click',e=>{
   else if(a==='pf_height'){ trkWheel({title:'estatura · cm',opts:Array.from({length:76},(_,i)=>String(140+i)),cur:String(db.profile.heightCm||'')},v=>setProfile('heightCm',+v)); }
   else if(a==='pf_act'){ trkSelect(el,ACT_OPTS.map(x=>({v:x[0],t:x[1],sub:x[2]})),String(db.profile.activity||''),v=>setProfile('activity',+v),{title:'actividad · entrenos por semana'}); }
   else if(a==='pf_goals'){ openGoals(todayISO()); }
+  else if(a==='strestore'){ const k=el.dataset.k; idbIdx().then(ix=>{ const m=(ix||{})[k]||{}; holdConfirm({title:'restaurar esta copia',detail:(m.mass||0)+' registros · '+(m.day?fmtShort(m.day):'')+' '+hhmm(m.t)+' · ahora tienes '+dbMass(db)+'\ntu base actual se guarda antes como copia',verb:'restaurar'},()=>restoreCopy(k,'✓ copia restaurada')); }).catch(()=>toast('⚠ IndexedDB no responde','err')); }
+  else if(a==='stmissing'){ openMissingFrom(el.dataset.k); }
+  else if(a==='stdiag'){ copyDiag(); }
   else if(a==='stfree'){ const f=freeOrphanBackups(); closeModal(); if(f>0){ toast('✓ '+Math.round(f/1024)+' KB liberados'); if(!_saveErr||save())saveOK(); } else toast('no había nada que liberar'); }
   else if(a==='exportmd'){ exportMarkdown(db); }
   else if(a==='import'){ doImport(); }
   else if(a==='sync'){ openSync(); }
-  else if(a==='reset'){ holdConfirm({title:'borrar TODOS los datos',detail:'sesiones, comidas, split y ajustes de este dispositivo · exporta un respaldo antes',verb:'borrar todo'},()=>{ localStorage.removeItem(LS_KEY); try{localStorage.removeItem(LS_BACKUP);}catch(_){} try{ localStorage.removeItem(LS_LIVE); freeOrphanBackups(); }catch(_){} _saveBakT=0; db=seed(); save(); go('home'); }); }
+  else if(a==='reset'){ holdConfirm({title:'borrar TODOS los datos',detail:'sesiones, comidas, split y ajustes de este dispositivo · queda una copia interna por si fue un error',verb:'borrar todo'},()=>{ idbSnap('reset',db).then(()=>idbDel('latest')).catch(()=>{}); localStorage.removeItem(LS_KEY); try{localStorage.removeItem(LS_BACKUP);}catch(_){} try{ localStorage.removeItem(LS_LIVE); localStorage.removeItem(LS_LIVE_PENDING); localStorage.removeItem(LS_GROWTH); freeOrphanBackups(); }catch(_){} db=seed(); save(); go('home'); }); }
   else if(a==='restminus'){ const w=db.activeWork; if(w&&w.restEnd){ w.restEnd-=15000; save(); updateRestBar(); } }
   else if(a==='restplus'){ const w=db.activeWork; if(w&&w.restEnd){ w.restEnd+=15000; save(); updateRestBar(); } }
   else if(a==='restskip'){ const w=db.activeWork; if(w){ w.restEnd=null; _restFinT=0; save(); updateRestBar(); } }
@@ -7152,9 +7398,9 @@ document.getElementById('app').addEventListener('change',e=>{
 document.getElementById('app').addEventListener('input',e=>{
   const hsf=e.target.closest('[data-act="h_setf"]'); if(hsf&&hsf.tagName==='INPUT'){ setHistField(+hsf.dataset.exi,+hsf.dataset.si,hsf.dataset.f,hsf.value); return; }
   const sf=e.target.closest('[data-act="setf"]'); if(sf&&sf.tagName==='INPUT'){ setField(+sf.dataset.exi,+sf.dataset.si,sf.dataset.f,sf.value,sf.dataset.f==='w'); return; }
-  const sn=e.target.closest('[data-act="sd_name"]'); if(sn){ db.split.days[+sn.dataset.di].name=sn.value; save(); return; }
-  const sp=e.target.closest('[data-act="sd_splitname"]'); if(sp){ db.split.name=sp.value; save(); return; }
-  const ssf=e.target.closest('[data-act="ss_f"]'); if(ssf){ const s=db.sessions.find(x=>x.id===window._sessId); if(s){ const st=s.exercises[+ssf.dataset.ei].sets[+ssf.dataset.si]; if(st){ st[ssf.dataset.f]=ssf.value; save(); } } return; }
+  const sn=e.target.closest('[data-act="sd_name"]'); if(sn){ db.split.days[+sn.dataset.di].name=sn.value; saveSoon(); return; }
+  const sp=e.target.closest('[data-act="sd_splitname"]'); if(sp){ db.split.name=sp.value; saveSoon(); return; }
+  const ssf=e.target.closest('[data-act="ss_f"]'); if(ssf){ const s=db.sessions.find(x=>x.id===window._sessId); if(s){ const st=s.exercises[+ssf.dataset.ei].sets[+ssf.dataset.si]; if(st){ st[ssf.dataset.f]=ssf.value; saveSoon(); } } return; }
 });
 function openExEdit(di,ei,liveExi){
   const live=(liveExi!=null&&db.activeWork)?db.activeWork.exercises[liveExi]:null;
@@ -7285,7 +7531,7 @@ function saveExEdit(){
   // and the instance id is preserved across edits — this only ever writes to THIS day's exercise, never others.
   if(ei<0){ db.split.days[di].exercises.push(Object.assign({id:'e'+uid()},ex)); }
   else { const prev=db.split.days[di].exercises[ei]||{}; db.split.days[di].exercises[ei]=Object.assign({},prev,ex,{id:prev.id||('e'+uid())}); }
-  save(); toast('✓ ejercicio actualizado'); closeModal(); reRender();
+  savedToast('✓ ejercicio actualizado'); closeModal(); reRender();
 }
 
 function importIronlogSplit(d){
@@ -7347,7 +7593,7 @@ function openExName(exi){ const w=db.activeWork; if(!w)return; const ex=w.exerci
    <div class="field"><label>NOMBRE</label><input id="exn_in" value="${(ex.name||'').replace(/"/g,'&quot;')}" autocomplete="off"/></div>
    <div class="sheetbtns"><button class="ok" id="exn_save">guardar</button><button class="cancel" data-act="closemodal">cancel</button></div>`);
   const inp=document.getElementById('exn_in'); if(inp){inp.focus();}
-  document.getElementById('exn_save').onclick=()=>{ const v=val('exn_in'); if(v){ ex.name=v; save(); toast('✓ nombre actualizado'); } closeModal(); reRender(); };
+  document.getElementById('exn_save').onclick=()=>{ const v=val('exn_in'); if(v){ ex.name=v; savedToast('✓ nombre actualizado'); } closeModal(); reRender(); };
 }
 // shared exercise-mapping for a live work session → its persisted shape (used by both the manual
 // save and the idle auto-finalize, so the two paths can never drift apart).
@@ -7439,7 +7685,7 @@ function promptIdleSession(){
 // own). Never touches db.activeWork, so a live workout in progress elsewhere is unaffected.
 function setHistField(exi,si,f,val){
   const s=(db.sessions||[]).find(x=>x.id===state._histSessId); if(!s)return; const ex=s.exercises[exi]; const st=ex&&ex.sets[si]; if(!st)return;
-  st[f]=val; pfClearField(st,f); save();
+  st[f]=val; pfClearField(st,f); saveSoon();
 }
 
 // ---------- modals ----------
@@ -8004,12 +8250,12 @@ function openApproxMeal(preset){
     const item={id:uid(), tag:tag, name:'Comida aproximada', qty:1, serving:'porción', approx:true};
     MACROKEYS.forEach(k=>item[k]=(k==='kcal'||k==='protein'||k==='carbs'||k==='fat')?nut[k]:null); item.water=0;
     item._food={base:'g',per100:food.per100,sizes:food.sizes,servingLabel:'porción',name:food.name,brand:''}; item._unit='serving';
-    db.meals[t].push(item); save(); toast('✓ comida guardada'); closeModal(); reRender();
+    db.meals[t].push(item); savedToast('✓ comida guardada'); closeModal(); reRender();
   };
 }
 // v256: cada vaso guarda su hora (campo aditivo) para mostrarla en //AGUA
 function logWater(ml){ if(!(ml>0))return; const t=curDate(); db.meals[t]=db.meals[t]||[]; snapshotGoal(t);
-  db.meals[t].push(Object.assign({id:uid(),tag:'drink',name:'agua',qty:1,serving:numTxt(ml)+' ml',kcal:0,protein:0,carbs:0,fat:0,sugar:0,fiber:0,sodium:0,potassium:0,caffeine:0,water:Math.round(ml/1000*1000)/1000},t===todayISO()?{time:nowHM()}:{})); save(); toast('✓ agua registrada'); }
+  db.meals[t].push(Object.assign({id:uid(),tag:'drink',name:'agua',qty:1,serving:numTxt(ml)+' ml',kcal:0,protein:0,carbs:0,fat:0,sugar:0,fiber:0,sodium:0,potassium:0,caffeine:0,water:Math.round(ml/1000*1000)/1000},t===todayISO()?{time:nowHM()}:{})); savedToast('✓ agua registrada'); }
 function openDrink(){
   openModal(`<h3>add drink</h3>
    <div class="submeta u-mb10">agua y bebidas · suma a líquidos</div>
@@ -8853,7 +9099,7 @@ function commitLog(saveToDb){
   const apply=m=>{ m.tag=L.tag; m.name=f.name+(qty!==1?' ×'+numTxt(qty):''); m.qty=qty; m.serving=unitLabel; MACROKEYS.forEach(k=>m[k]=nut[k]); m.water=nut.water; m._food={id:foodId,base:f.base,per100:f.per100,sizes:f.sizes,servingLabel:f.servingLabel,name:f.name,brand:f.brand||'',barcode:bc}; m._unit=unit; };
   if(L.editId){ const m=(db.meals[t]||[]).find(x=>x.id===L.editId); if(m){ apply(m); save(); closeModal(); reRender(); return; } }
   const item={id:uid()}; apply(item); db.meals[t].push(item);
-  save(); toast('✓ comida guardada'); closeModal(); reRender();
+  savedToast('✓ comida guardada'); closeModal(); reRender();
 }
 // maintenance (TDEE) from profile via Mifflin-St Jeor × activity — same basis as onboarding
 // effective activity multiplier from REAL behavior (last 14d training freq + 7d avg steps); falls back to the profile choice
@@ -9013,7 +9259,7 @@ function openGoals(dayArg){   // v256: desde //PERFIL se abre con hoy (antes her
     ['sugar','fiber','caffeine','alcohol','sleep'].forEach(k=>{ const v=parseFloat(val('g_'+k)); if(!isNaN(v))g[k]=v; });   // Na/K/water are AUTO from derivedActivity()
     if(isPast){ db.goalHist=db.goalHist||{}; db.goalHist[day]=g; }            // past: only this day
     else { Object.assign(db.settings.goals, g); db.goalHist=db.goalHist||{}; db.goalHist[day]=Object.assign({},db.settings.goals); } // present/future: update current goal AND today/that-day's snapshot
-    save(); toast('✓ metas guardadas'); closeModal(); reRender(); };
+    savedToast('✓ metas guardadas'); closeModal(); reRender(); };
   const grc=document.getElementById('g_recalc'); if(grc)grc.onclick=()=>{ if(!db.profile||!db.profile.weightKg){ toast('⚠ completa tu perfil primero (ajustes › perfil)','err'); return; } const _go14=()=>{
     const fresh=recalcGoals(db.profile);
     if(isPast){ db.goalHist=db.goalHist||{}; db.goalHist[day]=fresh; }
@@ -9200,7 +9446,7 @@ function openDupMeal(tag){
     const nt=(val('dm_tag')||tag).trim()||tag; const nd=val('dm_date')||src;
     db.meals[nd]=db.meals[nd]||[]; snapshotGoal(nd);
     items.forEach((m,i)=>{ const cp=JSON.parse(JSON.stringify(m)); cp.id=uid()+'_'+i; cp.tag=nt; db.meals[nd].push(cp); });
-    save(); toast('✓ comida duplicada'); closeModal(); state.macroDate=nd; render();
+    savedToast('✓ comida duplicada'); closeModal(); state.macroDate=nd; render();
   };
 }
 // move a single item to another meal (existing tag) or a new one
@@ -9412,17 +9658,12 @@ try{ freeOrphanBackups(); }catch(_){}
 // conserva la última cerrada y al arrancar se comprueba que exista de verdad en db.sessions. v259 · lo que se ofrece
 // se copia antes a LS_LIVE_PENDING (livePendingSync) y los avisos van en cola (bootAsk).
 try{ offerLivePending(livePendingSync()); }catch(_){}
-// v255 · IndexedDB vive en el cupo grande (el que iOS mide en GB), así que sobrevive a que Web Storage se
-// llene o se desaloje. Si al arrancar la base local tiene MENOS registros que ese respaldo, se ofrece volver.
-try{ idbGet('latest').then(rec=>{ if(!rec||!rec.s)return; _idbLast=rec;
-  let inc=null; try{ inc=JSON.parse(rec.s); }catch(_){ return; }
-  if(!inc||!inc.split)return;
-  const cur=dbMass(db), got=dbMass(inc);
-  if(got>cur){ bootAsk({title:'hay un respaldo más completo',detail:'tu copia de seguridad interna tiene '+got+' registros y lo que quedó en este navegador tiene '+cur+' · guardada el '+fmtShort(rec.day||todayISO()),ok:'recuperarla'},
-      ()=>{ db=migrate(inc); if(save())toast('✓ '+got+' registros recuperados'); go('home'); }); }
-}).catch(e=>{ _idbErr=e; }); }catch(_){}
+// v265 · IndexedDB vive en el cupo grande (el que iOS mide en GB). idbBootCheck() decide con recencia qué copia manda,
+// adopta sola solo si es seguro (base vacía, o el mismo almacén con una copia más reciente y sin derrumbe) y deja el
+// diario de arranque. Mientras decide, los respaldos se retienen para no pisar `latest`.
+try{ withTO(idbBootCheck(),12000).catch(()=>idbReleaseHold()); }catch(_){ idbReleaseHold(); }
 try{ growthLog(); }catch(_){}
-try{ promptIdleSession(); }catch(_){} try{ if(typeof location!=='undefined' && /[?&]selftest=1/.test(location.search)){ _identitySelfCheck(); _dropsetSelfCheck(); _baselineSelfCheck(); _variantSelfCheck(); _historyEditSelfCheck(); _idSelfCheck(); _cardioSelfCheck(); _tensionSelfCheck(); _healthSelfCheck(); _readinessSelfCheck(); _loggingSelfCheck(); _mergeSelfCheck(); _streakSelfCheck(); _chartSelfCheck(); _muscleSelfCheck(); _exProfileSelfCheck(); _recoverySelfCheck(); _diagSelfCheck(); _uiSelfCheck(); _v256SelfCheck(); _v257SelfCheck(); _sessSafetyCheck(); setTimeout(_dsRenderReport,1500); } }catch(e){ console.error(e); } try{ const _sp=new URLSearchParams(location.search); const _hasHistorical=_sp.has('stepsh')||_sp.has('weighth')||_sp.has('stepsq')||_sp.has('sleeph'); if(_hasHistorical){ const _hsp=_sp; if(history.replaceState)history.replaceState(null,'',location.pathname); setTimeout(()=>{ trkAsk({title:'importar datos históricos',detail:'este link trae pasos, peso o sueño de varios días · acepta solo si viene de tu propio Atajo de iOS',ok:'importar'},()=>{ try{ const _imp=importHealth(_hsp); if(_imp.length){ save(); render(); toast('✓ '+_imp.join(' · ')); } }catch(_){} }); },400); } else { const _imp=importHealth(_sp); if(_imp.length){ window._healthImported=_imp; if(history.replaceState)history.replaceState(null,'',location.pathname); } } }catch(_){} save(); render(); if(window._healthImported)setTimeout(()=>toast('✓ '+window._healthImported.join(' · ')),250); if(window._recoveredFromBackup)setTimeout(()=>{try{toast('⚠ se recuperó un respaldo local · revisa tus datos, podrían faltar cambios muy recientes','err');}catch(_){}},600);
+try{ promptIdleSession(); }catch(_){} try{ if(typeof location!=='undefined' && /[?&]selftest=1/.test(location.search)){ const _rawMain=(()=>{ try{ return localStorage.getItem(LS_KEY); }catch(_){ return null; } })(), _rawLive=(()=>{ try{ return localStorage.getItem(LS_LIVE); }catch(_){ return null; } })(), _lc0=_lastClosed; _sbx=true; try{ _identitySelfCheck(); _dropsetSelfCheck(); _baselineSelfCheck(); _variantSelfCheck(); _historyEditSelfCheck(); _idSelfCheck(); _cardioSelfCheck(); _tensionSelfCheck(); _healthSelfCheck(); _readinessSelfCheck(); _loggingSelfCheck(); _mergeSelfCheck(); _streakSelfCheck(); _chartSelfCheck(); _muscleSelfCheck(); _exProfileSelfCheck(); _recoverySelfCheck(); _diagSelfCheck(); _uiSelfCheck(); _v256SelfCheck(); _v257SelfCheck(); _sessSafetyCheck(); _storageSelfCheck(); } finally{ _sbx=false; _lastClosed=_lc0; try{ if(_rawLive==null)localStorage.removeItem(LS_LIVE); else localStorage.setItem(LS_LIVE,_rawLive); }catch(_){} } let _rawAfter=null; try{ _rawAfter=localStorage.getItem(LS_KEY); }catch(_){} const _same=(()=>{ if(_rawAfter===_rawMain)return true; try{ const a=JSON.parse(_rawAfter), b=JSON.parse(_rawMain); return !!a&&!!b&&((a.profile||{}).username===(b.profile||{}).username)&&((a.sessions||[]).length===(b.sessions||[]).length)&&(JSON.stringify(a.split)===JSON.stringify(b.split)); }catch(_){ return false; } })(); if(!_same)console.error(new Error('SELFCHECK sandbox: una base de juguete llegó a tu disco')); else console.log('sandbox self-check OK'); setTimeout(()=>{ _idbSelfCheck(); },800); setTimeout(_dsRenderReport,1500); } }catch(e){ console.error(e); } try{ const _sp=new URLSearchParams(location.search); const _hasHistorical=_sp.has('stepsh')||_sp.has('weighth')||_sp.has('stepsq')||_sp.has('sleeph'); const _hk=['steps','stepsh','weight','weighth','stepsq','sleep','sleeph'].some(k=>_sp.has(k)); if(_hk&&!(db.profile&&db.profile.username)){ if(_bootJ)_bootJ.flags.push('urlImportEmpty'); if(history.replaceState)history.replaceState(null,'',location.pathname); setTimeout(()=>{ try{ toast('⚠ ese enlace abrió Safari, no tu app','err'); }catch(_){} },600); } else if(_hasHistorical){ const _hsp=_sp; if(history.replaceState)history.replaceState(null,'',location.pathname); setTimeout(()=>{ trkAsk({title:'importar datos históricos',detail:'este link trae pasos, peso o sueño de varios días · acepta solo si viene de tu propio Atajo de iOS',ok:'importar'},()=>{ try{ const _imp=importHealth(_hsp); if(_imp.length){ save(); render(); toast('✓ '+_imp.join(' · ')); } }catch(_){} }); },400); } else { const _imp=importHealth(_sp); if(_imp.length){ window._healthImported=_imp; if(history.replaceState)history.replaceState(null,'',location.pathname); } } }catch(_){} save(); render(); if(window._healthImported)setTimeout(()=>toast('✓ '+window._healthImported.join(' · ')),250); if(window._recoveredFromBackup)setTimeout(()=>{try{toast('⚠ se recuperó un respaldo local · revisa tus datos, podrían faltar cambios muy recientes','err');}catch(_){}},600);
 applyDesign(); try{ if(/[?&]design\b/.test(location.search))localStorage.setItem('gymtrk_designmode','1'); if(localStorage.getItem('gymtrk_designmode')==='1')openDesignPanel(); }catch(_){}
 try{ bootScreen(()=>{ try{
   if(/[?&]wrap=1\b/.test(location.search)){ monthlyWrap(prevMonthYm(), true); return; }
@@ -9437,6 +9678,9 @@ setInterval(()=>{try{updateRestBar();}catch(_){}} ,500);
 // on returning from background (iOS freezes timers, so a phone backgrounded overnight is caught the
 // moment it wakes) — recompute the rest timer, and ask about an idle session instead of closing it.
 document.addEventListener('visibilitychange',()=>{ if(!document.hidden){ try{updateRestBar();}catch(_){} try{promptIdleSession();}catch(_){} } });
+// v265 · lo pendiente de saveSoon() se escribe antes de que iOS congele o cierre la app
+document.addEventListener('visibilitychange',()=>{ if(document.hidden){ try{ flushSave(); }catch(_){} } });
+window.addEventListener('pagehide',()=>{ try{ flushSave(); }catch(_){} }); window.addEventListener('beforeunload',()=>{ try{ flushSave(); }catch(_){} }); document.addEventListener('freeze',()=>{ try{ flushSave(); }catch(_){} });
 // Service worker with AUTO-UPDATE: when a new version is found, activate it and reload once.
 // Fixes iOS PWA serving stale cached builds from the home-screen icon.
 if(NATIVE_APP){ (async()=>{ try{ await nativeBoot(); }catch(_){}
@@ -9461,7 +9705,7 @@ else if('serviceWorker' in navigator){
     }).catch(()=>{});
     let reloaded=false;
     navigator.serviceWorker.addEventListener('controllerchange',()=>{
-      if(reloaded)return; reloaded=true; location.reload();
+      if(reloaded)return; reloaded=true; try{ flushSave(); }catch(_){} location.reload();
     });
   });
 }

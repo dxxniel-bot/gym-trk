@@ -4,10 +4,10 @@
 'use strict';
 const fs = require('fs'), path = require('path');
 
-const LEVEL = { ROLE: 'P0', GLYE: 'P0', SVGFS: 'P1', SEM: 'P1', GLY: 'P1', SAVE: 'P1', SCROLL: 'P1', RAD: 'P1', BLUR: 'P1',
+const LEVEL = { ROLE: 'P0', GLYE: 'P0', SVGFS: 'P1', SEM: 'P1', GLY: 'P1', SAVE: 'P1', TOASTOK: 'P1', SCROLL: 'P1', RAD: 'P1', BLUR: 'P1',
   EXEMPT: 'P1', MOTION: 'P1', DOC: 'P1', RADF: 'P2', LANG: 'P2', BRK: 'P2', OK: 'P2', TOAST: 'P2', OP: 'P2', LH: 'P2', FONT: 'P2', A11Y: 'P2' };
 const NAME = { ROLE: 'botón sin estilo propio (cae al del navegador)', GLYE: 'emoji en la interfaz', SVGFS: 'SVG fuera de escala (font-size / stroke-width)',
-  SEM: 'color semántico (conteo; no debe crecer)', GLY: 'glifo fuera de GLYPHS', SAVE: 'save() sin feedback', SCROLL: 'render() que salta el scroll',
+  SEM: 'color semántico (conteo; no debe crecer)', GLY: 'glifo fuera de GLYPHS', SAVE: 'save() sin feedback', TOASTOK: '✓ sin revisar si save() guardó', SCROLL: 'render() que salta el scroll',
   RAD: 'radio fuera de la familia (0 · 2 marcas · 4 gráficas · 12 control · 16 tarjeta)', RADF: 'radio flotante ≠ --r-float', BLUR: 'blur fuera del chrome', EXEMPT: 'ds:exempt sin categoría',
   MOTION: 'movimiento de layout / bucle / smooth', DOC: 'la guía cita algo que no existe', LANG: 'componente con dos idiomas', BRK: '[ corchete ] con espacios',
   OK: 'más de un primario por plantilla', TOAST: 'toast de más de 42 caracteres', OP: 'opacidad literal', LH: 'interlineado literal', FONT: 'peso cargado sin uso',
@@ -100,8 +100,10 @@ module.exports = function rules(raw, repoDir) {
   // ---- R-SEM · uso de color semántico (se cuenta; --strict impide que crezca) ----
   for (const m of raw.matchAll(/var\(--(good|bad|warn|info)\)|\bu-(good|bad|warn)\b/g)) { if (m.index < cssA || m.index > cssB) { if (skipped(m.index)) continue; } add('SEM', m.index, fnAt(m.index) + ' · ' + m[0]); }
   // ---- R-SAVE · handlers que guardan sin feedback ----
-  const FB = /\b(toast|toastTask|holdConfirm|trkAsk|undo|openModal|closeModal|go|nudgeBackup)\(/;
+  const FB = /\b(toast|toastTask|savedToast|holdConfirm|trkAsk|undo|openModal|closeModal|go|nudgeBackup)\(/;
   for (const m of js.matchAll(/a===['"]([\w-]+)['"]\)\s*\{/g)) { const a = m.index + m[0].length - 1, b = js.slice(a, blockEnd(js, a) + 1); if (/\bsave\(\)/.test(b) && !FB.test(b) && !/reRender\(\)|render\(\)/.test(b)) add('SAVE', jsA + m.index, m[1]); }
+  // ---- R-TOASTOK · v265: un ✓ pegado a un save() que no se revisa (se usa savedToast, que avisa ⚠ si no guardó) ----
+  for (const m of js.matchAll(/\bsave\(\);\s*toast\(\s*['"`]✓/g)) add('TOASTOK', jsA + m.index, fnAt(jsA + m.index));
   // ---- R-SCROLL ----
   for (const m of js.matchAll(/closeModal\(\);\s*render\(\)/g)) if (!skipped(jsA + m.index)) add('SCROLL', jsA + m.index, fnAt(jsA + m.index) + ' · ' + m[0]);
   for (const m of js.matchAll(/a===['"](sd_\w+)['"]\)\s*\{/g)) { const a = m.index + m[0].length - 1, b = js.slice(a, blockEnd(js, a) + 1); if (/(^|[^e])render\(\)/.test(b.replace(/reRender/g, ''))) add('SCROLL', jsA + m.index, m[1] + ' · render()'); }
