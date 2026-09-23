@@ -447,7 +447,13 @@
   .wfocus .mbody{border-left:0; padding-left:0; margin-left:0;}
   .wfocus .ex:not(.current){opacity:var(--op-dim); cursor:pointer;} .wfocus .ex:not(.current) *{pointer-events:none;}
   .wfocus .ex:not(.current) .exsub,.wfocus .ex:not(.current) .setprogline,.wfocus .ex:not(.current) .addrow,.wfocus .ex:not(.current) .swipehint{display:none;}
-  .wfocus .setprogline:not(.dn),.wfocus .exzones,.wfocus .exT,.wfocus .exprog,.wfocus .dgrip{display:none;}
+  .wfocus .setprogline:not(.dn),.wfocus .exzones,.wfocus .exT,.wfocus .exprog{display:none;}
+  /* v266 · en enfoque vuelve el ⠿ del ejercicio actual (y el del músculo): va en el margen para no mover el nombre, con
+     un área de toque de 44 px de alto; los ejercicios tenues no lo muestran. La marca de destino se ve al 100 %. */
+  .wfocus .ex:not(.current) .dgrip{display:none;}
+  .wfocus .ex.current .exhd{position:relative;}
+  .wfocus .ex.current .exhd>.dgrip{position:absolute; left:calc(-1 * var(--sp-px)); top:calc(-1 * var(--s3)); width:var(--sp-px); height:44px; margin:0; padding:var(--s3) 0 0; display:flex; justify-content:center;}
+  body.dragging .wfocus .ex.dropbefore,body.dragging .wfocus .ex.dropafter{opacity:1;}
   .wfocus .exhd.hasgrip{grid-template-columns:minmax(0,1fr);}
   /* v224 (mockup del dueño): el encabezado va en DOS líneas —
        [bi] pushdown
@@ -1185,6 +1191,19 @@ function fixDuplicateExIds(d){
   }
   d._idfix=true;
 }
+// v266 · higiene de datos 1 · los ejercicios marcados BILATERALES (unilateral:false) arrastraban un lado suelto: una L en la
+// 1.ª serie de todos los bilaterales del 03-ago (la colisión de uid()) que seedSets copió sesión tras sesión, y pares R/L
+// que dejó cambiar la lateralidad en vivo sin re-sembrar. Medido en el respaldo del dueño: 21 series en pushdown, incline
+// press, chest press, pantorrilla y leg ext, todas con pesos de bilateral (chest press R 110 × 10 · L 120 × 5; unilateral
+// serían ~55). Ese lado hacía que el catálogo dijera [uni], que el baseline no encontrara el historial (chest press "sin
+// pesos") y que //VOLUME contara esas series como un par. Se quita el lado; nada más cambia. Foto previa en IndexedDB.
+// Idempotente por `_dataVer`; los lados de ejercicios SIN marca (unilaterales de verdad, 134 series) no se tocan.
+function fixStraySides(d){ if((+d._dataVer||0)>=1)return 0;
+  const bad=e=>!!e&&e.unilateral===false&&String(e.type||'').toLowerCase()!=='cardio'&&(e.sets||[]).some(s=>s&&s.side);
+  const all=[].concat(...(d.sessions||[]).map(s=>s.exercises||[]), (d.activeWork&&d.activeWork.exercises)||[]);
+  let n=0; if(all.some(bad)){ try{ idbSnap('data1',JSON.stringify(d)); }catch(_){}
+    all.forEach(e=>{ if(!bad(e))return; e.sets.forEach(s=>{ if(s&&s.side){ s.side=null; n++; } }); }); }
+  d._dataVer=1; d._dataLog=Object.assign({},d._dataLog,{v1:{t:Date.now(),sides:n}}); return n; }
 // ids self-check — the 2026-08 root cause. Operates on a standalone fixture (fixDuplicateExIds takes
 // its target as a plain param, no db swap needed): duplicate id across TWO different days (mirrors
 // the real bug, which crossed day boundaries) + an ambiguous same-name pair within one day (must fall
@@ -1210,7 +1229,7 @@ function _idSelfCheck(){
   A('gated: a second call is a no-op once _idfix is set', JSON.stringify(fx)===before);
   console.log('id self-check OK');
 }
-function migrate(d){ if(!d.version){d.version=1;} if(!d._meta||typeof d._meta!=='object')d._meta={seq:0,t:0}; if(!d.meals||typeof d.meals!=='object'||Array.isArray(d.meals))d.meals={}; if(!Array.isArray(d.foods))d.foods=[]; d.foods=d.foods.map(f=>(f&&f.per100)?f:asCanonical(f)); if(!Array.isArray(d.sessions))d.sessions=[]; if(!d.split||typeof d.split!=='object')d.split={name:'',days:[]}; if(!Array.isArray(d.split.days))d.split.days=[]; d.split.days.forEach(day=>{ if(!Array.isArray(day.exercises))day.exercises=[]; day.exercises.forEach(e=>{ if(e&&!e.id)e.id='e'+uid(); }); }); fixDuplicateExIds(d); fixLeakedFullStack(d); d.health=healthShape((d.health&&typeof d.health==='object'&&!Array.isArray(d.health))?d.health:{}); if(!d.steps||typeof d.steps!=='object')d.steps={}; if(!d.machines||typeof d.machines!=='object')d.machines={}; if(!d.exCat||typeof d.exCat!=='object')d.exCat={}; if(!d.muscleMap||typeof d.muscleMap!=='object')d.muscleMap={}; if(!d.muscleNames||typeof d.muscleNames!=='object')d.muscleNames={}; if(!d.bodyweight||typeof d.bodyweight!=='object')d.bodyweight={}; if(!d.sleep||typeof d.sleep!=='object')d.sleep={}; if(!d.mood||typeof d.mood!=='object')d.mood={}; if('selfcheck' in d)delete d.selfcheck;/* v263 · la auto-percepción estética se retira: el dato se borra una vez y no vuelve (boot, respaldo, log in, sync y archivo pasan por aquí) */ if(!d.adhoc||typeof d.adhoc!=='object')d.adhoc={}; if(!Array.isArray(d.mealTags))d.mealTags=['breakfast','lunch','snack','dinner']; if(!Array.isArray(d.stack))d.stack=[]; if(!d.lastUsed||typeof d.lastUsed!=='object')d.lastUsed={}; if(!d.settings||typeof d.settings!=='object')d.settings={goals:seed().settings.goals}; if(d.settings&&d.settings.goals&&d.settings.goals.alcohol==null)d.settings.goals.alcohol=(d.profile&&d.profile.sex==='F')?14:28; if(d.settings&&d.settings.restSec==null)d.settings.restSec=90; if(d.settings&&d.settings.restBeep==null)d.settings.restBeep=true; if(d.settings&&d.settings.goals&&d.settings.goals.sleep==null)d.settings.goals.sleep=8; if(d.profile&&!d.profile.since){ try{ const _cd=[]; (d.sessions||[]).forEach(s=>{if(s.date)_cd.push(s.date);}); Object.keys(d.meals||{}).forEach(k=>_cd.push(k)); Object.keys(d.bodyweight||{}).forEach(k=>_cd.push(k)); if(_cd.length)d.profile.since=_cd.sort()[0]; }catch(_){} }
+function migrate(d){ if(!d.version){d.version=1;} if(!d._meta||typeof d._meta!=='object')d._meta={seq:0,t:0}; if(!d.meals||typeof d.meals!=='object'||Array.isArray(d.meals))d.meals={}; if(!Array.isArray(d.foods))d.foods=[]; d.foods=d.foods.map(f=>(f&&f.per100)?f:asCanonical(f)); if(!Array.isArray(d.sessions))d.sessions=[]; if(!d.split||typeof d.split!=='object')d.split={name:'',days:[]}; if(!Array.isArray(d.split.days))d.split.days=[]; d.split.days.forEach(day=>{ if(!Array.isArray(day.exercises))day.exercises=[]; day.exercises.forEach(e=>{ if(e&&!e.id)e.id='e'+uid(); }); }); fixDuplicateExIds(d); fixLeakedFullStack(d); fixStraySides(d); d.health=healthShape((d.health&&typeof d.health==='object'&&!Array.isArray(d.health))?d.health:{}); if(!d.steps||typeof d.steps!=='object')d.steps={}; if(!d.machines||typeof d.machines!=='object')d.machines={}; if(!d.exCat||typeof d.exCat!=='object')d.exCat={}; if(!d.muscleMap||typeof d.muscleMap!=='object')d.muscleMap={}; if(!d.muscleNames||typeof d.muscleNames!=='object')d.muscleNames={}; if(!d.bodyweight||typeof d.bodyweight!=='object')d.bodyweight={}; if(!d.sleep||typeof d.sleep!=='object')d.sleep={}; if(!d.mood||typeof d.mood!=='object')d.mood={}; if('selfcheck' in d)delete d.selfcheck;/* v263 · la auto-percepción estética se retira: el dato se borra una vez y no vuelve (boot, respaldo, log in, sync y archivo pasan por aquí) */ if(!d.adhoc||typeof d.adhoc!=='object')d.adhoc={}; if(!Array.isArray(d.mealTags))d.mealTags=['breakfast','lunch','snack','dinner']; if(!Array.isArray(d.stack))d.stack=[]; if(!d.lastUsed||typeof d.lastUsed!=='object')d.lastUsed={}; if(!d.settings||typeof d.settings!=='object')d.settings={goals:seed().settings.goals}; if(d.settings&&d.settings.goals&&d.settings.goals.alcohol==null)d.settings.goals.alcohol=(d.profile&&d.profile.sex==='F')?14:28; if(d.settings&&d.settings.restSec==null)d.settings.restSec=90; if(d.settings&&d.settings.restBeep==null)d.settings.restBeep=true; if(d.settings&&d.settings.goals&&d.settings.goals.sleep==null)d.settings.goals.sleep=8; if(d.profile&&!d.profile.since){ try{ const _cd=[]; (d.sessions||[]).forEach(s=>{if(s.date)_cd.push(s.date);}); Object.keys(d.meals||{}).forEach(k=>_cd.push(k)); Object.keys(d.bodyweight||{}).forEach(k=>_cd.push(k)); if(_cd.length)d.profile.since=_cd.sort()[0]; }catch(_){} }
   // recompute alcohol for old meal items logged before alcohol was in MACROKEYS
   try{ Object.values(d.meals||{}).forEach(arr=>arr.forEach(m=>{ if(m.alcohol==null){ if(m._food&&m._food.per100&&m._food.per100.alcohol&&m._unit){ m.alcohol=computeNutrients(m._food,m._unit,m.qty||1).alcohol; } else m.alcohol=0; } })); }catch(e){}
   // goalHist: snapshot of intake goals at the moment of first logging that day (history is FROZEN — past days never re-read the current goal)
@@ -1579,6 +1598,28 @@ function copyText(txt,okMsg){ const done=()=>toast(okMsg||'✓ copiado'); const 
   try{ if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(txt).then(done,fb); return; } }catch(_){} fb(); }
 function copyDiag(){ Promise.all([idbGet('journal').catch(()=>null),idbIdx().catch(()=>null)]).then(r=>{
     copyText(JSON.stringify({v:(_bootJ&&_bootJ.v)||'',now:new Date().toISOString(),ctx:bootCtx(),ls:storageRows(),idb:{okT:_idbOkT,err:_idbErr?String(_idbErr.message||_idbErr):null,errT:_idbErrT,last:_idbLast},copies:r[1],journal:(r[0]||[]).slice(-15)},null,1),'✓ diagnóstico copiado'); }); }
+// v266 · self-check de lateralidad y del foco al reordenar (en el sandbox; la base se restaura)
+function _lateralitySelfCheck(){ const A=(n,c)=>{ if(!c)throw new Error('SELFCHECK laterality: '+n); }; const real=db, st0={c:state._curEx,f:state._focusExi};
+  try{
+    const S=(side,w)=>({side:side,w:String(w),r:'5',rir:'1',unit:'lbs'});
+    const fx={profile:{username:'t'},split:{name:'',days:[]},sessions:[
+      {id:'a',date:'2026-08-11',exercises:[{name:'chest press',type:'machine',unilateral:false,sets:[S('R',110),S('L',120),S(null,100)]}]},
+      {id:'b',date:'2026-08-12',exercises:[{name:'db row',type:'free',sets:[S('R',50),S('L',50)]}]}]};
+    A('la higiene quita los lados de un bilateral marcado', fixStraySides(fx)===2&&fx.sessions[0].exercises[0].sets.every(s=>!s.side));
+    A('los unilaterales sin marca conservan su lado', fx.sessions[1].exercises[0].sets[0].side==='R');
+    A('la higiene corre una sola vez', fixStraySides(fx)===0&&fx._dataVer===1);
+    db=migrate({profile:{username:'t'},split:{name:'',days:[]},sessions:[{id:'c',date:'2026-09-07',exercises:[{name:'chest press',type:'machine',unilateral:false,sets:[S('R',110),S('L',110)]}]}]});
+    A('migrate() la aplica (y chest press deja de salir [uni] en el catálogo)', knownExercises().find(x=>x.name==='chest press').unilateral===false);
+    A('un bilateral nunca siembra un lado', emptySet({unilateral:false,type:'machine'},'L',false,null).side===null&&emptySet({unilateral:true,type:'free'},'L',false,null).side==='L');
+    const ex={name:'curl',type:'free',unilateral:false,startSide:'R',sets:[Object.assign(S(null,30),{done:true}),Object.assign(S(null,30),{done:true})]};
+    restructureLat(ex,true,{}); A('bi → uni: cada serie con dato queda R y su L sale sugerida', ex.sets.length===4&&ex.sets[0].side==='R'&&ex.sets[1].side==='L'&&ex.sets[1]._pf===true&&ex.sets[1].w==='30');
+    restructureLat(ex,false,{}); A('uni → bi: las series pierden el lado y la sugerida sin tocar se va', ex.sets.length===2&&ex.sets.every(s=>!s.side));
+    const xs=['a','b','c','d']; state._focusExi=1; state._curEx=null; let fo=keepFocus(xs); xs.splice(3,0,xs.splice(1,1)[0]); fo();
+    A('al reordenar, el foco sigue al mismo ejercicio', xs[state._curEx]==='b');
+    state._focusExi=state._curEx; fo=keepFocus(xs); xs.splice(0,1); fo(); A('al quitar otro de arriba, el foco no salta', xs[state._curEx]==='b');
+    state._focusExi=state._curEx; fo=keepFocus(xs); xs.splice(state._curEx,1); fo(); A('si se quita el que estaba en foco, el foco se suelta', state._curEx===null);
+  } finally { db=real; state._curEx=st0.c; state._focusExi=st0.f; bumpIdx(); }
+  console.log('laterality self-check OK'); }
 // v265 · self-check del almacenamiento (síncrono, dentro del sandbox): elección por recencia, decisión de arranque,
 // poda, guardado con retardo, ✓ honesto y respaldos que no dependen de localStorage
 function _storageSelfCheck(){ const A=(n,c)=>{ if(!c)throw new Error('SELFCHECK storage: '+n); };
@@ -1676,7 +1717,7 @@ function emptySet(ex,side,isDrop,src){
     if(src){ ['minutes','distance','speed','incline','resistance','rpm','level','floors','strokeRate','calories','hr','intensity'].forEach(k=>{ if(src[k]!=null&&src[k]!=='')s[k]=src[k]; }); s._pf=true; }
     return s;
   }
-  const s={w:'',r:'',rir:'',unit:(ex&&ex.unit)||db.settings.unit||'lbs',side:side||null,fsOn:!!(ex&&ex.useFS)&&!isDrop,extraW:'',isDrop:!!isDrop,done:false};
+  const s={w:'',r:'',rir:'',unit:(ex&&ex.unit)||db.settings.unit||'lbs',side:(side&&!(ex&&ex.unilateral===false))?side:null,fsOn:!!(ex&&ex.useFS)&&!isDrop,extraW:'',isDrop:!!isDrop,done:false};
   if(ex&&ex.type==='bodyweight'){ s.bw=true; s.unit='kg'; const bwk=Object.keys(db.bodyweight||{}).sort(); if(bwk.length)s.w=String(db.bodyweight[bwk[bwk.length-1]]); }
   // isDrop is copied from src UNLESS the caller explicitly forced isDrop:false (addset does this on
   // purpose — a newly added set is ALWAYS a plain working set, never inheriting drop-ness from its
@@ -1708,7 +1749,7 @@ function seedSets(ex,fallbackN,ctx){
   const gym=ctx.gym||(db.activeWork&&db.activeWork.gym)||db.activeGym||null;
   const base=baselineSetsFor({exId:ex.exId||null,dayId:ctx.dayId||null,gym,name:String(ex.name||'').toLowerCase().trim(),variant:variantKey(ex),occ:ctx.occ||0,nSame:ctx.nSame||1,orderIdx:ctx.orderIdx||0});
   const last=base.sets;
-  if(last&&last.length) return last.map(s=>emptySet(ex,s.side||null,!!s.isDrop,s));
+  if(last&&last.length) return last.map(s=>emptySet(ex,uniOf(ex)?(s.side||null):null,!!s.isDrop,s));   // v266 · el lado solo en unilaterales
   const n=Math.max(1,fallbackN||(typeof ex.sets==='number'?ex.sets:2)); const out=[];
   // cardio never uses unilateral R/L pairs — one row per bout
   if(ex&&String(ex.type||'').toLowerCase()==='cardio'){ for(let i=0;i<n;i++) out.push(emptySet(ex,null,false,null)); return out; }
@@ -4255,6 +4296,10 @@ function sessionContextNote(w){
   if(!parts.length)return '';
   return `<div class="submeta u-mt4 u-mb0 u-mx0 u-o40">${escTxt(parts.join(' · '))}</div>`;
 }
+// v266 · el ejercicio en foco se recuerda por OBJETO mientras se mueve la lista: keepFocus(xs) captura el que está en foco
+// y devuelve una función que, tras mover o quitar, vuelve a apuntar a él (o suelta el foco si ya no está).
+function keepFocus(xs){ const i=state._focusExi!=null?state._focusExi:state._curEx, o=(i!=null&&i>=0)?xs[i]:null;
+  return ()=>{ const j=o?xs.indexOf(o):-1; state._curEx=j>=0?j:null; }; }
 function renderWorkout(){
   const w=state.work; if(!w)return renderHome();
   state._nowT=currentSetTarget();
@@ -7188,7 +7233,7 @@ document.getElementById('app').addEventListener('click',e=>{
     save(); reRender(); }
   else if(a==='delset'){ delSetLive(exi,si); }
   else if(a==='exshare'){ openExShare(exi); }
-  else if(a==='delex'){ const w=db.activeWork; if(w&&w.exercises[exi]){ trkAsk({title:'quitar "'+((w.exercises[exi].name)||'este ejercicio')+'" de la sesión',detail:'lo registrado en ese ejercicio se descarta · tu split no cambia',ok:'quitar',danger:true},()=>{ w.exercises.splice(exi,1); save(); reRender(); }); } }
+  else if(a==='delex'){ const w=db.activeWork; if(w&&w.exercises[exi]){ trkAsk({title:'quitar "'+((w.exercises[exi].name)||'este ejercicio')+'" de la sesión',detail:'lo registrado en ese ejercicio se descarta · tu split no cambia',ok:'quitar',danger:true},()=>{ const fo=keepFocus(w.exercises); w.exercises.splice(exi,1); fo(); save(); reRender(); }); } }
   else if(a==='addex'){ openAddExercise(exi); }
   else if(a==='axmus'){ const c=window._axCtx||{}; openAddExStep2(c.afterExi, el.dataset.v, c.replaceExi); }
   else if(a==='axpick'){ const c=window._axCtx||{}; const x=(window._axList||[])[+el.dataset.i]; if(x){ if(c.replaceExi!=null)replaceExFromKnown(c.replaceExi,x); else addExFromKnown(c.afterExi,x); } }
@@ -7369,12 +7414,13 @@ document.getElementById('app').addEventListener('click',e=>{
     d.idx=idx; if(before)before.classList.add('dropbefore'); else if(els.length)els[els.length-1].classList.add('dropafter');
   }
   function end(){ const cur=d; cleanup(); if(!cur||!cur.live)return; const w=db.activeWork; if(!w)return; const xs=w.exercises; let changed=false;
+    const fo=keepFocus(xs);   // v266 · el foco sigue al mismo ejercicio
     if(cur.kind==='ex'){ const b=cur.blk, len=b.end-b.start, p=cur.exi-b.start; let q=Math.max(0,Math.min(len, cur.idx==null?len:cur.idx)); const fin=q>p?q-1:q;
       if(fin!==p){ const it=xs.splice(cur.exi,1)[0]; xs.splice(b.start+fin,0,it); changed=true; } }
     else { const bs=curBlocks(), m=cur.mg; let q=Math.max(0,Math.min(bs.length, cur.idx==null?bs.length:cur.idx)); const fin=q>m?q-1:q;
       if(fin!==m){ const slices=bs.map(b=>xs.slice(b.start,b.end)); const order=bs.map((_,i)=>i); order.splice(m,1); order.splice(fin,0,m);
         const flat=[]; order.forEach(i=>{ for(const it of slices[i])flat.push(it); }); xs.length=0; for(const it of flat)xs.push(it); changed=true; } }
-    if(changed){ save(); reRender(); }
+    if(changed){ fo(); save(); reRender(); }
   }
   function cleanup(){ document.removeEventListener('touchmove',move); document.removeEventListener('touchend',end); document.removeEventListener('touchcancel',end);
     document.removeEventListener('mousemove',move); document.removeEventListener('mouseup',end);
@@ -7513,9 +7559,11 @@ function saveExEdit(){
     // update metadata IN PLACE — keep logged sets + the unilateral structure of the live session intact.
     // by default this change lives ONLY in today's session; the split stays untouched unless opted in below.
     const typeChanged=lx.type!==ex.type || (isCardioT&&lx.cardioSub!==ex.cardioSub);
+    const latChanged=!isCardioT&&!typeChanged&&(!!lx.unilateral)!==(!!ex.unilateral);
     lx.name=ex.name; lx.muscle=ex.muscle; lx.muscles=ex.muscles; lx.type=ex.type; lx.machine=ex.machine; lx.assisted=ex.assisted; lx.weighted=ex.weighted; lx.cardioSub=ex.cardioSub; lx.unilateral=ex.unilateral; lx.startSide=ex.startSide;
     // switching into/out of cardio reseeds the set bag (field shapes differ)
     if(typeChanged){ lx.sets=seedSets(lx,Array.isArray(lx.sets)?Math.max(1,lx.sets.length):ex.sets,{dayId:w.dayId,orderIdx:liveExi}); }
+    else if(latChanged){ restructureLat(lx,!!ex.unilateral,{dayId:w.dayId,orderIdx:liveExi}); }
     const toSplit=document.getElementById('ee_tosplit');
     if(toSplit && toSplit.checked){
       const di2=(db.split.days||[]).findIndex(d=>d.id===w.dayId);
@@ -7597,6 +7645,14 @@ function openExName(exi){ const w=db.activeWork; if(!w)return; const ex=w.exerci
 }
 // shared exercise-mapping for a live work session → its persisted shape (used by both the manual
 // save and the idle auto-finalize, so the two paths can never drift apart).
+// v266 · cambiar bi ↔ uni en vivo: hacia uni, cada serie con dato queda del primer lado y su pareja sale sugerida (gris);
+// hacia bi, las series pierden el lado (ninguna se borra); sin nada registrado, se vuelve a sembrar.
+function restructureLat(ex,toUni,ctx){ ex.unilateral=!!toUni; const has=s=>!!s&&!s._pf&&(s.done||(+s.w>0)||(+s.r>0));
+  if(!(ex.sets||[]).some(has)){ ex.sets=seedSets(ex,Math.max(1,(ex.sets||[]).length),ctx); return; }
+  if(!toUni){ ex.sets=ex.sets.filter(s=>has(s)||!s._pf); ex.sets.forEach(s=>{ s.side=null; }); return; }
+  const a=ex.startSide==='L'?'L':'R', b=a==='L'?'R':'L', out=[];
+  ex.sets.forEach(s=>{ if(!has(s))return; s.side=a; out.push(s); out.push(emptySet(ex,b,!!s.isDrop,s)); });
+  ex.sets=out; }
 function mapWorkExercises(w){
   return w.exercises.map(e=>{const r=machineRec(w.gym,e); return {exId:e.exId||null,name:e.name,muscle:e.muscle,muscles:Array.isArray(e.muscles)?e.muscles.slice():undefined,type:e.type,unilateral:e.unilateral,startSide:e.startSide,assisted:e.assisted,weighted:e.weighted,cardioSub:e.cardioSub,unit:e.unit,note:e.note||'',machine:r.na?'':r.brand,setup:r.na?'':r.setup,sets:e.sets.filter(setPersistable)};});
 }
@@ -7721,7 +7777,7 @@ function knownExercises(){
     if(Array.isArray(e.muscles)&&e.muscles.length) o.muscles=e.muscles.slice();  // remember primary+secondary muscles
     if(e.sets!=null && typeof e.sets==='number') o.sets = e.sets;
     if(fromSets && Array.isArray(e.sets) && e.sets.length){
-      if(e.sets.some(x=>x.side)) o.unilateral=true;  // detect uni from actual logged sets
+      o.unilateral=uniOf(e);   // v266 · la bandera manda (antes cualquier serie con lado lo volvía [uni])
       const lastUnit=(e.sets[e.sets.length-1]||{}).unit; if(lastUnit) o.unit=lastUnit;
     }
   };
@@ -7983,6 +8039,8 @@ function replaceExFromKnown(exi,x){
   // fresh exId, never the old one or null (Bloque 3.2) — a replacement is a genuinely different
   // exercise: it must not inherit the old one's history, but it still gets ITS OWN going forward.
   ex.exId='e'+uid(); ex.name=x.name; ex.muscle=x.muscle||((x.muscles&&x.muscles[0]&&x.muscles[0].name)||'other'); ex.muscles=x.muscles; ex.type=x.type||'free'; ex.machine=x.machine||''; ex.unilateral=!!x.unilateral; ex.startSide=x.startSide||'R'; ex.assisted=!!x.assisted; ex.weighted=!!x.weighted; ex.note='';
+  // v266 · unidad, full stack y subtipo de cardio salen del ejercicio elegido, no del que se reemplaza
+  ex.unit=x.unit||db.settings.unit||'lbs'; ex.useFS=!!x.useFS; if(x.cardioSub)ex.cardioSub=x.cardioSub; else delete ex.cardioSub;
   ex.sets=seedSets(ex,(typeof x.sets==='number'?x.sets:2),{dayId:w.dayId,orderIdx:exi});
   save(); closeModal(); reRender();
 }; if((ex.sets||[]).some(s=>s&&!s._pf&&(s.done||(+s.w>0)||(+s.r>0)))) return trkAsk({title:'cambiar "'+(ex.name||'este ejercicio')+'"',detail:'ya registraste series · cambiar de ejercicio las descarta',ok:'cambiar',danger:true},_go10); return _go10();}
@@ -8037,7 +8095,8 @@ function openAddExForm(afterExi,muscle,replaceExi){
     // REPLACE mode (entró por "cambiar ejercicio"): sobreescribe el ejercicio actual en su lugar + re-siembra series
     if(replaceExi!=null && w && w.exercises[replaceExi]){ const ex=w.exercises[replaceExi];
       const _go11=()=>{
-      Object.assign(ex,meta); delete ex.muscles; ex.sets=seedSets(ex,+val('fx_sets')||1,{dayId:w.dayId,orderIdx:replaceExi}); save(); closeModal(); reRender(); return; }; if((ex.sets||[]).some(s=>s&&!s._pf&&(s.done||(+s.w>0)||(+s.r>0)))) return trkAsk({title:'cambiar "'+(ex.name||'este ejercicio')+'"',detail:'ya registraste series · cambiar las descarta',ok:'cambiar',danger:true},_go11); return _go11();}
+      Object.keys(ex).forEach(k=>{ delete ex[k]; }); Object.assign(ex,meta);   // v266 · nada del ejercicio anterior (unidad, full stack, asistido, lastre)
+      ex.sets=seedSets(ex,+val('fx_sets')||1,{dayId:w.dayId,orderIdx:replaceExi}); save(); closeModal(); reRender(); return; }; if((ex.sets||[]).some(s=>s&&!s._pf&&(s.done||(+s.w>0)||(+s.r>0)))) return trkAsk({title:'cambiar "'+(ex.name||'este ejercicio')+'"',detail:'ya registraste series · cambiar las descarta',ok:'cambiar',danger:true},_go11); return _go11();}
     // INSERT mode: agrega DESPUÉS del ejercicio ancla (o al final)
     const newEx=Object.assign({},meta,{sets:[]}); let insertAt;
     if(afterExi!=null && afterExi>=0 && afterExi<w.exercises.length){ insertAt=afterExi+1; w.exercises.splice(insertAt,0,newEx); }
@@ -9663,7 +9722,7 @@ try{ offerLivePending(livePendingSync()); }catch(_){}
 // diario de arranque. Mientras decide, los respaldos se retienen para no pisar `latest`.
 try{ withTO(idbBootCheck(),12000).catch(()=>idbReleaseHold()); }catch(_){ idbReleaseHold(); }
 try{ growthLog(); }catch(_){}
-try{ promptIdleSession(); }catch(_){} try{ if(typeof location!=='undefined' && /[?&]selftest=1/.test(location.search)){ const _rawMain=(()=>{ try{ return localStorage.getItem(LS_KEY); }catch(_){ return null; } })(), _rawLive=(()=>{ try{ return localStorage.getItem(LS_LIVE); }catch(_){ return null; } })(), _lc0=_lastClosed; _sbx=true; try{ _identitySelfCheck(); _dropsetSelfCheck(); _baselineSelfCheck(); _variantSelfCheck(); _historyEditSelfCheck(); _idSelfCheck(); _cardioSelfCheck(); _tensionSelfCheck(); _healthSelfCheck(); _readinessSelfCheck(); _loggingSelfCheck(); _mergeSelfCheck(); _streakSelfCheck(); _chartSelfCheck(); _muscleSelfCheck(); _exProfileSelfCheck(); _recoverySelfCheck(); _diagSelfCheck(); _uiSelfCheck(); _v256SelfCheck(); _v257SelfCheck(); _sessSafetyCheck(); _storageSelfCheck(); } finally{ _sbx=false; _lastClosed=_lc0; try{ if(_rawLive==null)localStorage.removeItem(LS_LIVE); else localStorage.setItem(LS_LIVE,_rawLive); }catch(_){} } let _rawAfter=null; try{ _rawAfter=localStorage.getItem(LS_KEY); }catch(_){} const _same=(()=>{ if(_rawAfter===_rawMain)return true; try{ const a=JSON.parse(_rawAfter), b=JSON.parse(_rawMain); return !!a&&!!b&&((a.profile||{}).username===(b.profile||{}).username)&&((a.sessions||[]).length===(b.sessions||[]).length)&&(JSON.stringify(a.split)===JSON.stringify(b.split)); }catch(_){ return false; } })(); if(!_same)console.error(new Error('SELFCHECK sandbox: una base de juguete llegó a tu disco')); else console.log('sandbox self-check OK'); setTimeout(()=>{ _idbSelfCheck(); },800); setTimeout(_dsRenderReport,1500); } }catch(e){ console.error(e); } try{ const _sp=new URLSearchParams(location.search); const _hasHistorical=_sp.has('stepsh')||_sp.has('weighth')||_sp.has('stepsq')||_sp.has('sleeph'); const _hk=['steps','stepsh','weight','weighth','stepsq','sleep','sleeph'].some(k=>_sp.has(k)); if(_hk&&!(db.profile&&db.profile.username)){ if(_bootJ)_bootJ.flags.push('urlImportEmpty'); if(history.replaceState)history.replaceState(null,'',location.pathname); setTimeout(()=>{ try{ toast('⚠ ese enlace abrió Safari, no tu app','err'); }catch(_){} },600); } else if(_hasHistorical){ const _hsp=_sp; if(history.replaceState)history.replaceState(null,'',location.pathname); setTimeout(()=>{ trkAsk({title:'importar datos históricos',detail:'este link trae pasos, peso o sueño de varios días · acepta solo si viene de tu propio Atajo de iOS',ok:'importar'},()=>{ try{ const _imp=importHealth(_hsp); if(_imp.length){ save(); render(); toast('✓ '+_imp.join(' · ')); } }catch(_){} }); },400); } else { const _imp=importHealth(_sp); if(_imp.length){ window._healthImported=_imp; if(history.replaceState)history.replaceState(null,'',location.pathname); } } }catch(_){} save(); render(); if(window._healthImported)setTimeout(()=>toast('✓ '+window._healthImported.join(' · ')),250); if(window._recoveredFromBackup)setTimeout(()=>{try{toast('⚠ se recuperó un respaldo local · revisa tus datos, podrían faltar cambios muy recientes','err');}catch(_){}},600);
+try{ promptIdleSession(); }catch(_){} try{ if(typeof location!=='undefined' && /[?&]selftest=1/.test(location.search)){ const _rawMain=(()=>{ try{ return localStorage.getItem(LS_KEY); }catch(_){ return null; } })(), _rawLive=(()=>{ try{ return localStorage.getItem(LS_LIVE); }catch(_){ return null; } })(), _lc0=_lastClosed; _sbx=true; try{ _identitySelfCheck(); _dropsetSelfCheck(); _baselineSelfCheck(); _variantSelfCheck(); _historyEditSelfCheck(); _idSelfCheck(); _cardioSelfCheck(); _tensionSelfCheck(); _healthSelfCheck(); _readinessSelfCheck(); _loggingSelfCheck(); _mergeSelfCheck(); _streakSelfCheck(); _chartSelfCheck(); _muscleSelfCheck(); _exProfileSelfCheck(); _recoverySelfCheck(); _diagSelfCheck(); _uiSelfCheck(); _v256SelfCheck(); _v257SelfCheck(); _sessSafetyCheck(); _storageSelfCheck(); _lateralitySelfCheck(); } finally{ _sbx=false; _lastClosed=_lc0; try{ if(_rawLive==null)localStorage.removeItem(LS_LIVE); else localStorage.setItem(LS_LIVE,_rawLive); }catch(_){} } let _rawAfter=null; try{ _rawAfter=localStorage.getItem(LS_KEY); }catch(_){} const _same=(()=>{ if(_rawAfter===_rawMain)return true; try{ const a=JSON.parse(_rawAfter), b=JSON.parse(_rawMain); return !!a&&!!b&&((a.profile||{}).username===(b.profile||{}).username)&&((a.sessions||[]).length===(b.sessions||[]).length)&&(JSON.stringify(a.split)===JSON.stringify(b.split)); }catch(_){ return false; } })(); if(!_same)console.error(new Error('SELFCHECK sandbox: una base de juguete llegó a tu disco')); else console.log('sandbox self-check OK'); setTimeout(()=>{ _idbSelfCheck(); },800); setTimeout(_dsRenderReport,1500); } }catch(e){ console.error(e); } try{ const _sp=new URLSearchParams(location.search); const _hasHistorical=_sp.has('stepsh')||_sp.has('weighth')||_sp.has('stepsq')||_sp.has('sleeph'); const _hk=['steps','stepsh','weight','weighth','stepsq','sleep','sleeph'].some(k=>_sp.has(k)); if(_hk&&!(db.profile&&db.profile.username)){ if(_bootJ)_bootJ.flags.push('urlImportEmpty'); if(history.replaceState)history.replaceState(null,'',location.pathname); setTimeout(()=>{ try{ toast('⚠ ese enlace abrió Safari, no tu app','err'); }catch(_){} },600); } else if(_hasHistorical){ const _hsp=_sp; if(history.replaceState)history.replaceState(null,'',location.pathname); setTimeout(()=>{ trkAsk({title:'importar datos históricos',detail:'este link trae pasos, peso o sueño de varios días · acepta solo si viene de tu propio Atajo de iOS',ok:'importar'},()=>{ try{ const _imp=importHealth(_hsp); if(_imp.length){ save(); render(); toast('✓ '+_imp.join(' · ')); } }catch(_){} }); },400); } else { const _imp=importHealth(_sp); if(_imp.length){ window._healthImported=_imp; if(history.replaceState)history.replaceState(null,'',location.pathname); } } }catch(_){} save(); render(); if(window._healthImported)setTimeout(()=>toast('✓ '+window._healthImported.join(' · ')),250); if(window._recoveredFromBackup)setTimeout(()=>{try{toast('⚠ se recuperó un respaldo local · revisa tus datos, podrían faltar cambios muy recientes','err');}catch(_){}},600);
 applyDesign(); try{ if(/[?&]design\b/.test(location.search))localStorage.setItem('gymtrk_designmode','1'); if(localStorage.getItem('gymtrk_designmode')==='1')openDesignPanel(); }catch(_){}
 try{ bootScreen(()=>{ try{
   if(/[?&]wrap=1\b/.test(location.search)){ monthlyWrap(prevMonthYm(), true); return; }

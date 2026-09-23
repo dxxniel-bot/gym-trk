@@ -17,6 +17,7 @@
 | 2026-09-22 | v263 | fuera la auto-percepción estética (4 métricas, //INSIGHTS y su dato) · una métrica activada dibuja su recuadro aunque esté vacío, y desde él se registra · FC en reposo, HRV y energía activa con registro manual que el sync no pisa |
 | 2026-09-22 | v264 | negro de verdad: los negros elevados pasan a R=G=B y el vidrio deja de saturar (1.7→1); fuera `--info` y el color del balance · una sola familia de esquinas: todo control a 12 (botones de hoja, tabla de series, chips), tarjetas 16, píldora solo en las barras finas; B-05 reescrita y R-RAD 45→0 |
 | 2026-09-23 | v265 | almacenamiento: el arranque elige por recencia (no por masa), `_bak` sale a IndexedDB, respaldos independientes de localStorage, diario de arranque y //ESPACIO con copias, `[restaurar]`, `[lo que falta]` y BOOT LOG; el ✓ solo sale si guardó |
+| 2026-09-23 | v266 | ⠿ de vuelta en modo enfoque (en el margen, el foco sigue al ejercicio); la lateralidad la decide la bandera (chest press `[bi]` con pesos); higiene de datos 1: 21 lados sueltos fuera |
 
 ## Diseños rechazados por el dueño (no volver a proponer)
 
