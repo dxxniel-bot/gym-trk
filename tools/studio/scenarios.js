@@ -8,7 +8,8 @@
 // Sesión en vivo: `live:true` → run() se asegura de que haya una (W.newWorkSession(), solo en memoria; lo que la app
 // guarde lo absorbe el guardia). La que crea el estudio se recuerda (WeakSet) y los escenarios sin `live` la quitan,
 // para que el resto de las pantallas se vean como en los datos cargados. Nunca se toca una sesión real del dueño
-// salvo para mostrarla; el aviso de inactividad usa una sesión propia "vieja" y luego se devuelve la original.
+// salvo para mostrarla; el aviso de inactividad (una sesión propia "vieja") y el FS de la tabla (`own:true`) arman la suya
+// y luego se devuelve la original.
 // run() nunca lanza: si algo falla devuelve {ok:false, err} (y lo deja en consola).
 (function(){ 'use strict';
   const MINE = new WeakSet(), STALE = new WeakSet(), ORIG = new WeakMap();
@@ -39,13 +40,26 @@
     if(!w){ w = W.newWorkSession(); MINE.add(w); T.db.activeWork = w; }
     return w; }
   function calm(W, T){ const w = T.db.activeWork; if(w && MINE.has(w)){ restore(W, T); try{ W.render(); }catch(_){} } }
-  // sesión propia con la última actividad hace 25 min (sessionIdleEnd lee doneAt, resumedAt y lastTouch)
-  function staleLive(W, T){ const cur = T.db.activeWork;
+  // sesión PROPIA y desechable (escenarios `own`): la del dueño se aparta en ORIG y el siguiente escenario en vivo la devuelve
+  function ownLive(W, T){ const cur = T.db.activeWork;
     if(cur && !MINE.has(cur)) ORIG.set(W, cur);
-    const w = W.newWorkSession(), past = Date.now() - 25 * 60 * 1000;
+    const w = W.newWorkSession(); MINE.add(w); STALE.add(w); T.db.activeWork = w; return w; }
+  // sesión propia con la última actividad hace 25 min (sessionIdleEnd lee doneAt, resumedAt y lastTouch)
+  function staleLive(W, T){ const w = ownLive(W, T), past = Date.now() - 25 * 60 * 1000;
     (w.exercises || []).forEach(e => (e.sets || []).forEach(s => { if(s && s.doneAt) s.doneAt = past - 60000; }));
     w.startMs = past - 20 * 60 * 1000; w.resumedAt = 0; w.lastTouch = past; w.loggedAfter = false;
-    MINE.add(w); STALE.add(w); T.db.activeWork = w; return w; }
+    return w; }
+  // v267 · FS de la tabla: al frente, un ejercicio de máquina bilateral (el de la sesión o uno genérico) con una serie SIN
+  // full stack y otra CON (caja fina apagada · celda invertida encendida). Solo en la sesión propia, nunca en la del dueño.
+  const MACH = ['machine', 'cable', 'smith', 'pulley'];
+  function fsLive(W, T){ const w = ownLive(W, T), exs = w.exercises || (w.exercises = []);
+    const i = exs.findIndex(e => e && MACH.indexOf(e.type) >= 0 && !e.unilateral);
+    const ex = i >= 0 ? exs.splice(i, 1)[0] : { exId:null, name:'chest press', muscle:'chest', type:'machine', unilateral:false, unit:'lbs', note:'', sets:[] };
+    const mk = (fs, r, rir) => Object.assign(W.emptySet(ex, null, false), { w:'100', r:String(r), rir:String(rir), fsOn:fs, extraW:fs ? '10' : '' });
+    ex.sets = [mk(false, 10, 2), mk(true, 8, 1)];
+    exs.unshift(ex); return w; }
+  // la nav se construye una vez (renderNav): se vacía para que la pestaña activa salga de cero
+  const navOn = (W, go) => { const n = W.document.getElementById('nav'); if(n) n.dataset.built = ''; go(); };
 
   // ---- recap: snapRecap() solo sale después de las 21 h y una vez al día (la clave la fija el guardia y el estudio no
   // toca almacenamiento), así que aquí se arma con la MISMA lógica y el mismo marcado, sin la compuerta ----
@@ -71,6 +85,7 @@
     { id:'live:workout', g:'sesión', label:'sesión · desde inicio', live:true, run(W){ W.go('home'); click(W, '[data-act="start"],[data-act="resume"]'); W.go('workout'); } },
     { id:'live:exedit', g:'sesión', label:'sesión · editar ejercicio', live:true, run(W){ W.go('workout'); W.openExEdit(0, 0, 0); } },
     { id:'live:machine', g:'sesión', label:'sesión · máquina', live:true, run(W){ W.go('workout'); W.openMachineEdit(0); } },
+    { id:'workout:fs', g:'sesión', label:'sesión · FS apagado y encendido', own:true, run(W, T){ fsLive(W, T); T.state._curEx = null; W.go('workout'); } },
     { id:'rest', g:'sesión', label:'sesión · descanso corriendo', live:true, run(W, T){ W.go('workout'); const w = T.db.activeWork;
         if(w){ if(!RESTED.has(w)) RESTED.set(w, w.restEnd == null ? null : w.restEnd); w.restEnd = Date.now() + 150 * 1000; }   // 2:30, no vence mientras se mira
         W.updateRestBar(); } },
@@ -87,6 +102,7 @@
     { id:'m:workshop', g:'hoja', label:'hoja · plantillas', run(W){ W.openWorkshop(); } },
     // ---------------- macros ----------------
     { id:'macros', g:'pantalla', label:'macros', run(W, T){ macrosOn(W, T); } },
+    { id:'nav:macros', g:'pantalla', label:'nav · macros activa', run(W, T){ navOn(W, () => macrosOn(W, T)); } },
     // el detalle (anillos, INTAKE, retención) solo se pinta con state.macroOpen
     { id:'macros:open', g:'pantalla', label:'macros · detalle', run(W, T){ macrosOn(W, T); T.state.macroOpen = true; W.render(); } },
     // retención "high": la fila solo sale fuera de rango (BRAND §4) → busca el día con comida más reciente que la tenga
@@ -112,6 +128,7 @@
     { id:'m:goals', g:'hoja', label:'hoja · metas', run(W){ W.openGoals(); } },
     // ---------------- progreso ----------------
     { id:'progress', g:'pantalla', label:'progreso', run(W){ W.go('progress'); } },
+    { id:'nav:progress', g:'pantalla', label:'nav · progress activa', run(W){ navOn(W, () => W.go('progress')); } },
     { id:'sheet:metric-steps', g:'hoja', label:'hoja · métrica · pasos 30D', run(W){ W.go('progress'); mdRange(W, 30); W.openMetricDetail('steps'); } },
     { id:'m:metric', g:'hoja', label:'hoja · métrica · pasos 7D', run(W){ W.go('progress'); mdRange(W, 7); W.openMetricDetail('steps'); } },
     { id:'sheet:streak', g:'hoja', label:'hoja · racha', run(W){ W.openStreakSheet(); } },
@@ -185,11 +202,11 @@
     { id:'toast:undo', g:'aviso', label:'aviso · con deshacer', run(W){ W.toast('✓ alimento borrado', 'ok', { undo:noop }); } },
     { id:'toast:task', g:'aviso', label:'aviso · en curso', run(W){ W.toastTask('generando imagen'); } },
     { id:'savebar', g:'aviso', label:'aviso · no se está guardando', run(W){ W.saveFailed(); } },
-    { id:'idle', g:'aviso', label:'aviso · sesión inactiva', async run(W, T){ staleLive(W, T); W.go('workout'); await wait(40); if(T.allowIdle) T.allowIdle(true); try{ W.promptIdleSession(); } finally { if(T.allowIdle) T.allowIdle(false); } } },
+    { id:'idle', g:'aviso', label:'aviso · sesión inactiva', own:true, async run(W, T){ staleLive(W, T); W.go('workout'); await wait(40); if(T.allowIdle) T.allowIdle(true); try{ W.promptIdleSession(); } finally { if(T.allowIdle) T.allowIdle(false); } } },
   ];
 
-  // envoltura: sesión en vivo según `live`, y nunca lanza
-  const wrapRun = s => { const fn = s.run, live = !!s.live, own = s.id === 'idle';
+  // envoltura: sesión en vivo según `live` (`own` = el escenario arma su propia sesión), y nunca lanza
+  const wrapRun = s => { const fn = s.run, live = !!s.live, own = !!s.own;
     return async function(W, T){ try{
         if(s.id !== 'rest') unrest(T);
         if(!own){ if(live) ensureLive(W, T); else calm(W, T); }

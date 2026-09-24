@@ -22,9 +22,12 @@ const args = process.argv.slice(2);
 // ---- escalas del sistema (DESIGN_SYSTEM.md §4) ----
 // v262 · la escala se LEE de :root (--t-label/data/section/display/hero): el dueño la movió a 10·12·18·24·34 en el estudio y
 // cualquier decisión futura la vuelve a mover; antes estaba escrita aquí y el auditor seguía midiendo la escala vieja.
-const TROOT = {}; for (const m of raw.matchAll(/--t-(label|data|section|display|hero)\s*:\s*([\d.]+)px/g)) if (!(m[1] in TROOT)) TROOT[m[1]] = +m[2];
-const TYPE_OK = new Set(['label', 'data', 'section', 'display', 'hero'].map(k => TROOT[k]).filter(Boolean));
-const RADIUS_OK = new Set(['0', '2px', '4px', '12px', '16px', '22px', '999px', '50%']); // literales tolerados solo mientras migran a token
+// v267 · + --t-field (16, solo lo editable: con menos el iPhone hace zoom al enfocar); la escala es 10·12·14·20·28.
+const TROOT = {}; for (const m of raw.matchAll(/--t-(label|data|section|display|hero|field)\s*:\s*([\d.]+)px/g)) if (!(m[1] in TROOT)) TROOT[m[1]] = +m[2];
+const TYPE_OK = new Set(['label', 'data', 'section', 'display', 'hero', 'field'].map(k => TROOT[k]).filter(Boolean));
+// literales tolerados solo mientras migran a token · v267: los valores salen de los tokens de radio de :root (antes fijos 2·4·12·16·22)
+const RROOT = {}; for (const m of raw.matchAll(/(--(?:r-[\w-]+|radius))\s*:\s*([\d.]+px)/g)) if (!(m[1] in RROOT)) RROOT[m[1]] = m[2];
+const RADIUS_OK = new Set(['0', '50%', '999px', ...Object.values(RROOT)]);
 const SPACE_OK = new Set([0, 1, 2, 4, 6, 8, 10, 12, 16, 24, 32, 48]);   // 6 y 10 = medios pasos de componente
 const LS_OK = new Set(['0', 'normal']);   // todo lo demás va por var(--ls-*)
 
@@ -117,9 +120,10 @@ const distinctDur = [...new Set(durs)].sort((a, b) => a - b);
 // ---- 8 · armonía (§4.4b) y ruido (§9.1) — UX-2 ----
 // "un rol, un token": el mismo rol no puede pintarse con dos tamaños según la pantalla.
 const ruleList = [...topLevel.matchAll(/([^{}]+)\{([^{}]*)\}/g)].map(m => ({ sel: m[1].trim(), body: m[2] }));
-const TPX = Object.assign({ label: 10, data: 12, section: 16, display: 22, hero: 34, caption: 9, xs: 10, meta: 11, sm: 12, body: 13 }, TROOT);   // los 5 últimos ya no existen: si aparecen, es regresión
+const TPX = Object.assign({ label: 10, data: 12, section: 14, display: 20, hero: 28, field: 16, caption: 9, xs: 10, meta: 11, sm: 12, body: 13 }, TROOT);   // los 5 últimos ya no existen: si aparecen, es regresión
 const tokOf = body => ((body.match(/font-size\s*:\s*var\(--t-([\w-]+)\)/) || [])[1] || null);
-const ruleTok = sel => { let t = null; ruleList.forEach(r => { if (r.sel === sel) { const k = tokOf(r.body); if (k) t = k; } }); return t; };
+// v267 · también cuenta un selector que va dentro de una lista (`.field input,.field select{…}`)
+const ruleTok = sel => { let t = null; ruleList.forEach(r => { if (r.sel === sel || r.sel.split(',').some(x => x.trim() === sel)) { const k = tokOf(r.body); if (k) t = k; } }); return t; };
 // tabla cerrada de §4.4b: selector → token esperado
 const ROLE_MAP = {
   section: ['section', ['.section .h', '.sheet h3', '.mdhd h3']],
@@ -129,13 +133,15 @@ const ROLE_MAP = {
   chip: ['data', ['.chip', '.spc', '.ag-chip', '.bwchip']],
   tab: ['data', ['.mdtabs span', '.toggles button']],
   entity: ['section', ['.exhead .n', '.ghead .gnm', '.ghead .gkc']],   // título de entidad: el total de una comida manda sobre sus alimentos (queja 9)
+  field: ['field', ['.field input', '#fa_q', 'textarea.ta']],   // v267: todo lo editable a --t-field 16 (fuera de la escala de lectura)
 };
 const roleMiss = [];
 Object.entries(ROLE_MAP).forEach(([rol, [want, sels]]) => sels.forEach(s => { const got = ruleTok(s); if (got && got !== want) roleMiss.push(s + ' ' + TPX[got] + '→' + TPX[want]); }));
-// campos que abren teclado/picker por debajo de 16 px (zoom de iOS, §4.4)
+// campos que abren teclado/picker por debajo de --t-field (16 px, zoom de iOS, §4.4)
+const FIELD_PX = TPX.field || 16;
 const INPUT_OK = ['.inp', '.inp-mini', '.pick', '.mmrow select'];   // §15: tabla de sesión y mapa de músculos — el viewport bloquea el zoom de iOS
 const inputSmall = ruleList.filter(r => !INPUT_OK.includes(r.sel.trim()) && /(^|[\s,.#])(input|select|textarea)\b|\.inp\b|\.pick\b/.test(r.sel))
-  .map(r => ({ s: r.sel, t: tokOf(r.body) })).filter(x => x.t && TPX[x.t] < 16).map(x => x.s + ' ' + TPX[x.t]);
+  .map(r => ({ s: r.sel, t: tokOf(r.body) })).filter(x => x.t && TPX[x.t] < FIELD_PX).map(x => x.s + ' ' + TPX[x.t]);
 // 9 px reservado a MAYÚSCULAS espaciadas: una regla con --t-caption debe declarar uppercase o --ls-caps
 const capsLower = ruleList.filter(r => tokOf(r.body) === 'caption' && !/text-transform\s*:\s*uppercase/.test(r.body) && !/var\(--ls-caps\)/.test(r.body)).map(r => r.sel);
 // v256: el 800 nunca por debajo de 12, y ningún token viejo sobrevive
@@ -202,7 +208,7 @@ else {
   L('espaciado CSS token / px literal', spTok + ' / ' + spLit);
   console.log('\nArmonía (§4.4b) y ruido (§9.1)');
   L('rol con token fuera de tabla', roleMiss.length + (roleMiss.length ? '  [' + roleMiss.join(', ') + ']' : ''));
-  L('campos por debajo de 16 px', inputSmall.length + (inputSmall.length ? '  [' + inputSmall.join(', ') + ']' : ''));
+  L('campos por debajo de ' + FIELD_PX + ' px', inputSmall.length + (inputSmall.length ? '  [' + inputSmall.join(', ') + ']' : ''));
   L('9 px en minúsculas', capsLower.length + (capsLower.length ? '  [' + capsLower.slice(0, 8).join(', ') + (capsLower.length > 8 ? ', …' : '') + ']' : ''));
   L('texto instructivo en pantalla', Object.entries(hintCls).map(([k, v]) => k + ' ' + v).join(' · '));
   console.log('\nMás style="" por función'); topFn.forEach(([n, c]) => L(n, c));

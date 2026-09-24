@@ -354,10 +354,10 @@
             if(c === '/' && src[j + 1] === '/'){ j = src.indexOf('\n', j); continue; }
             if(c === '{') dep++; else if(c === '}' && --dep === 0) break; }
           return src.slice(i + 1, j + 1); };
-        const code = ['seed', 'uid', 'migrate', 'fixDuplicateExIds', 'fixLeakedFullStack', 'healthShape'].map(grab).join('\n')
+        const code = ['seed', 'uid', 'migrate', 'fixDuplicateExIds', 'fixLeakedFullStack', 'fixStraySides', 'healthShape'].map(grab).join('\n')
           + '\nlet _uidN=0;\nout=migrate(JSON.parse(input));';
         // almacenamiento falso (nombre armado: el linter de seguridad no admite la palabra en este archivo); escribir = fallo
-        const ctx = { input: a, out: null, asCanonical: x => x, computeNutrients: () => ({ alcohol: 0 }), JSON, Math, Date, Object, Array };
+        const ctx = { input: a, out: null, asCanonical: x => x, computeNutrients: () => ({ alcohol: 0 }), idbSnap: () => {}, JSON, Math, Date, Object, Array };   // v266 · fixStraySides guarda una foto en IndexedDB: aquí no hace nada
         ctx['local' + 'Storage'] = { getItem: () => null, ['set' + 'Item']: () => { throw new Error('migrate escribió en storage'); } };
         vm.createContext(ctx); vm.runInContext(code, ctx, { timeout: 5000 });
         const o = ctx.out;

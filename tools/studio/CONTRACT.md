@@ -59,12 +59,14 @@ iframe.srcdoc = t.replace(/<head([^>]*)>/i, m => m + '<base href="'+base+'"><scr
 ## 3 · `window.TRK_SCENARIOS` — scenarios.js
 
 ```js
-{ id:'home', g:'pantalla'|'hoja'|'sesión'|'compartir'|'overlay'|'aviso', label:'gym · inicio', run(W,T){…}, live?:true }
+{ id:'home', g:'pantalla'|'hoja'|'sesión'|'compartir'|'overlay'|'aviso', label:'gym · inicio', run(W,T){…}, live?:true, own?:true }
 ```
 - `run(W,T)`: `W` = window del frame, `T = W.__trk` (`T.db`, `T.state`). Puede ser `async`. El estudio antes de cada uno
   hace: `W.closeExShare()`, `W.closeModal()`, `W.closeAsk(true)`, `T.bootKill()`, `W.go('home')` (en try).
 - `live:true` = necesita sesión en curso: `if(!T.db.activeWork){ T.db.activeWork = W.newWorkSession(); }` (en memoria; el
   guardia absorbe lo que se guarde).
+- `own:true` = el escenario arma su PROPIA sesión (aviso de inactividad, `workout:fs`): la del dueño se aparta y el siguiente
+  escenario la devuelve; nunca se modifica una sesión real.
 - Cubrir TODO: las 57 de `tools/ds-diff.html` (S2) + las 16 de `tools/ds-inventory.js` + arranque (`T.bootPreview(null,
   true)`), wrap (`W.monthlyWrap(W.prevMonthYm(), true)`), recap (forzar vía la lógica de `snapRecap` si es posible),
   aviso de inactividad (`W.promptIdleSession()` con una sesión en curso "vieja"), toasts (`W.toast('✓ guardado')`,
@@ -84,14 +86,16 @@ iframe.srcdoc = t.replace(/<head([^>]*)>/i, m => m + '<base href="'+base+'"><scr
   "explorar" (fuera de BRAND): se permite, pero la exportación lo marca como **pregunta**. El slider cubre la unión.
 - `kind:'alpha'` → el token es `rgba(rgb, a)` y el control mueve `a` (escalera `--o*`, vidrio).
 - `sel` = selectores donde vive ese token (para el inspector y para "dónde se ve").
-- Grupos (key): `type` (5 tamaños; `check`: label<data<section<display<hero y 800 nunca bajo 12), `tracking` (4),
+- Grupos (key): `type` (5 tamaños de la escala 10·12·14·20·28 + `--t-field` 16 solo en editables; `check`:
+  label<data<section<display<hero, 800 nunca bajo 12 y campo nunca bajo 16), `tracking` (4),
   `lineheight` (`--lh-*`), `lines` (los 11 `--bw-*`, con `sel` exacto de §9), `strokes` (`--sw-*`), `radius`
-  (`--r-sm`, `--r-mark`, `--r-ctl`, `--radius`, `--r-pill`, `--r-sheet`, `--r-nav`, `--r-toast`, `--r-pop`, `--r-bar`;
-  contenido 0–2, flotante 8–12; presets píldora), `opacity` (escalera `--o70…--o10` alpha con `check` de contraste:
+  (`--r-sm`, `--r-mark`, `--r-ctl`, `--radius`, `--r-pill`, `--r-float`, `--r-sheet`, `--r-nav`, `--r-toast`, `--r-pop`,
+  `--r-bar`; familia v267 "terminal sobrio": control y tarjeta ≤ 4 (hoy 4), marcas 2, gráficas 4, flotante 6–12 (hoy 8) y
+  nunca menos redondo que el contenido; presets píldora), `opacity` (escalera `--o70…--o10` alpha con `check` de contraste:
   `--o40` sobre #000 ≥ 4.5:1 — luminancia relativa WCAG de rgb(243,243,243)·a — y orden monótono; más `--op-*`),
   `spacing` (los 8 `--sp-*` con los rangos de `DESIGN_KNOBS` de index.html), `glass` (`--glass-bg` α, `--glass-bg-strong`
   α, `--glass-blur`, `--glass-sat`, `--glass-ring` α, `--glass-edge` α, `--glass-edge-lo` α), `motion` (`--dur-1/2/3`,
-  `--dur-screen`, `--mv-1` 0–4, `--dur-hold`).
+  `--dur-screen`, `--mv-1` 0–4, `--dur-hold`, `--dur-blink` del `>` de la nav).
 - `TRK_KNOBS.locked = ['fuente JetBrains Mono', 'pesos 400·700·800', 'escala de espacio --s1…--s8', 'colores semánticos', 'capas z']`
   (se muestran, no se mueven).
 
@@ -121,7 +125,10 @@ iframe.srcdoc = t.replace(/<head([^>]*)>/i, m => m + '<base href="'+base+'"><scr
   flotante (8/12), 4 panel del anillo, 5 íconos TRK, 6 arranque (hoy + A corregido + B tramado + C fósforo), 7 borde de
   campo. Lote G3 (`group:'G3'`): tarjetas → `//TÍTULO` + regla o caja de 2 px; secundarios `[verbo]`; verde solo en el
   glifo o el número; `[‹ origen]`; `recovery ~43`; retención reducida; marca única `gym//TRK`; interlineado y opacidad a
-  la escala; etiquetas de sistema en inglés (decidido); esquinas de contenido a 0–2 (decidido); anillo (decidido: se queda).
+  la escala; etiquetas de sistema en inglés (decidido); esquinas de contenido (v264: control 12; v267: control y tarjeta a 4,
+  flotante a 8, "4 px, suave"); anillo (decidido: se queda). Lote v267 "terminal sobrio" (`shipped v267`, sin CSS): 1 nav
+  (opción D, `>` que parpadea), 2 primario, 9 secundarios `[verbo]`, 18 esquinas, 20 `type` (14·20), 21 `fields` (caja fina
+  de 16), 22 `toggles` (`[elegida]`).
 
 ## 6 · `window.TRK_DEMO` — demo.js
 
@@ -137,8 +144,9 @@ sale con 1 si algo falta.
 { updated:'2026-09-22', note:'…', phases:[ { id:'G3a', title:'chrome', version:'v261', status:'hecho'|'en curso'|'por decidir'|'pendiente',
     items:[ { id:'nav', text:'nav elegida (texto, ≥44, sin animar columnas)', status:'por decidir', proposal:'nav', audit:'RADF 9→0' } ] } ] }
 ```
-Fases: G1 (hecho), G2/v258 (hecho), F0/v259 (hecho), T/v260 (hecho), S1 estudio (en curso), G0 decisiones, G3a–d, G4a–c
-(del plan aprobado). `proposal` enlaza a TRK_PROPOSALS.
+Fases: G1 (hecho), G2/v258 (hecho), F0/v259 (hecho), T/v260 (hecho), S1 estudio (hecho), G0 decisiones, TS/v267 terminal
+sobrio (hecho), P1/v268 primer arranque, AC/v269 · v270 cuentas, TR/v271 tour, G3a–d y G4a–c sin versión fija (del plan
+aprobado). `proposal` enlaza a TRK_PROPOSALS.
 
 ## 8 · Núcleo — studio.js / studio.html / studio.css
 

@@ -43,22 +43,26 @@
   };
 
   const K = [
-    // ---------------------------------------------------------------- tipografía (B-04 · escala 10·12·16·22·34)
-    { g:'tipografía', key:'type', rule:'B-04 · TYP-1',
-      note:'una sola escala 10·12·16·22·34; orden obligatorio rótulo < dato < sección < display < héroe; 800 nunca bajo 12 (el 800 vive en --t-data).',
+    // ---------------------------------------------------------------- tipografía (B-04 · escala 10·12·14·20·28 + campo 16, v267)
+    { g:'tipografía', key:'type', rule:'B-04 · TYP-1 · BRAND §9 2026-09-23 ("14 · 20, más compacto")',
+      note:'una sola escala 10·12·14·20·28; orden obligatorio rótulo < dato < sección < display < héroe; 800 nunca bajo 12 (el 800 vive en --t-data). --t-field 16 va aparte y SOLO en lo editable: con menos de 16 el iPhone hace zoom al enfocar.',
       items:[
         { tok:'--t-label',   l:'rótulo',   d:10, min:10, max:11, step:1, u:'px', kind:'px', x:{min:9, max:12} },
         { tok:'--t-data',    l:'dato',     d:12, min:12, max:13, step:1, u:'px', kind:'px', x:{min:11,max:14} },
-        { tok:'--t-section', l:'sección', d:18, min:16, max:20, step:1, u:'px', kind:'px', x:{min:14,max:20}, note:'también es el tamaño de los campos: bajo 16 vuelve el zoom de iOS al escribir' },
-        { tok:'--t-display', l:'display',  d:24, min:20, max:26, step:1, u:'px', kind:'px', x:{min:18,max:28},
+        { tok:'--t-section', l:'sección', d:14, min:12, max:16, step:1, u:'px', kind:'px', x:{min:12,max:18} },
+        { tok:'--t-display', l:'display',  d:20, min:18, max:24, step:1, u:'px', kind:'px', x:{min:16,max:26},
           sel:'.whdr .wname,.ring.lg .num,.pval,.msum-tot b,.lkc b,.shsn,.shr-ring .ring.lg .num,.shm-g,.exbn,.shstat-n,.ws-big span,.ws-year,.u-disp' },
-        { tok:'--t-hero',    l:'héroe',    d:34, min:32, max:36, step:1, u:'px', kind:'px', x:{min:26,max:44},
-          sel:'.strk-n,.mdval,.exov,.u-hero' }
+        { tok:'--t-hero',    l:'héroe',    d:28, min:24, max:34, step:1, u:'px', kind:'px', x:{min:22,max:44},
+          sel:'.strk-n,.mdval,.exov,.u-hero' },
+        { tok:'--t-field',   l:'campo editable', d:16, min:16, max:18, step:1, u:'px', kind:'px', x:{min:14,max:20},
+          note:'solo casillas, selects y textarea; bajo 16 vuelve el zoom de iOS al escribir',
+          sel:'input,select,textarea,.field input,.field select,#fa_q,textarea.ta,.mdcust input,.slph input,.slblk input,select.pfsel,#pf_gym,.pfw,.msum-time,.gnmin,.senm' }
       ],
       check(vals){ const v = reader(this.items, vals), out = [];
         const o = ['--t-label','--t-data','--t-section','--t-display','--t-hero'].map(v);
         for(let i = 1; i < o.length; i++) if(!(o[i-1] < o[i])){ out.push('orden roto: rótulo < dato < sección < display < héroe'); break; }
         if(v('--t-data') < 12) out.push('800 bajo 12: --t-data lleva peso 800 (.uname, .streak…)');
+        if(v('--t-field') < 16) out.push('campo bajo 16: el iPhone hace zoom al enfocar (--t-field ≥ 16)');
         return out.length ? out.join(' · ') : null; } },
 
     // ---------------------------------------------------------------- tracking (em)
@@ -72,7 +76,7 @@
         { tok:'--ls-num',   l:'número grande',       d:-.03, min:-.05,max:0,   step:.01, u:'em', kind:'num', x:{min:-.08,max:.02},
           sel:'.whdr .wname,.strk-n,.mdval,.pval,.mkc,.msum-tot b,.shr-ring .ring.lg .num,.shm-g,.exov,.shstat-n,.u-lsnum' },
         { tok:'--ls-ui',    l:'texto de control',    d:.03,  min:0,   max:.05, step:.01, u:'em', kind:'num', x:{min:-.02,max:.1},
-          sel:'.whdr .wmeta,.start,.secondary .b,button.b,.vst,.wq,.pthl span,.mdtabs span,.lact,.dragghost,.thead .cl,.ready,.exT,.restbar .rl,.footer .save,.toggles button,.moodax,.nav a,.nav a .lbl>span,.shm-l,.nl-hd .nl-hi,.fa-btns .b,.fa-empty .fa-em-step .lb,.dnlbl,.hold,.u-lsui' }
+          sel:'.whdr .wmeta,.start,.secondary .b,button.b,.vst,.wq,.pthl span,.mdtabs span,.lact,.dragghost,.thead .cl,.ready,.exT,.restbar .rl,.footer .save,.toggles button,.moodax,.nav a,.shm-l,.nl-hd .nl-hi,.fa-btns .b,.fa-empty .fa-em-step .lb,.dnlbl,.hold,.u-lsui' }
       ] },
 
     // ---------------------------------------------------------------- interlineado
@@ -122,50 +126,55 @@
         { tok:'--sw-ref',     l:'línea de referencia', d:1,   min:.5, max:1.5, step:.1, u:'', kind:'num', x:{min:.3,max:2},   sel:'.sw-ref' },
         { tok:'--sw-data',    l:'dato',                d:1.4, min:1.2,max:2,   step:.1, u:'', kind:'num', x:{min:.8,max:3},   sel:'.sw-data' },
         { tok:'--sw-data-lg', l:'dato grande',         d:1.8, min:1.4,max:2.4, step:.1, u:'', kind:'num', x:{min:1, max:3.5}, sel:'.sw-data-lg' },
-        { tok:'--sw-icon',    l:'ícono',               d:1.6, min:1.4,max:2,   step:.1, u:'', kind:'num', x:{min:1, max:2.5}, sel:'.nav a .ic svg' },
+        { tok:'--sw-icon',    l:'ícono',               d:1.6, min:1.4,max:2,   step:.1, u:'', kind:'num', x:{min:1, max:2.5},
+          note:'sin uso desde v267: la nav es de texto; queda para el set de íconos TRK (propuesta 5)' },
         { tok:'--sw-ring-lg', l:'anillo grande',       d:1.4, min:1,  max:2.4, step:.1, u:'', kind:'num', x:{min:.6,max:4},   sel:'.ring.lg .ring-track,.ring.lg .ring-fill' },
         { tok:'--sw-ring-md', l:'anillo mediano',      d:1.8, min:1.2,max:2.8, step:.1, u:'', kind:'num', x:{min:.8,max:4},   sel:'.ring.md .ring-track,.ring.md .ring-fill' }
       ],
       check(vals){ const v = reader(this.items, vals);
         return v('--sw-grid') > v('--sw-data') ? 'la rejilla pesa más que el dato' : null; } },
 
-    // ------------------------------------------------- radios (B-05 v264: una sola familia · todo control a --r-ctl 12)
-    { g:'radios', key:'radius', rule:'B-05 · BRAND §9 2026-09-22 ("que parezcan de la misma familia")',
-      note:'una sola familia: 0 en reglas y barras · 2 solo en marcas que no se tocan · 4 en marcas de gráfica · 12 en TODO control (botón, campo, celda de la tabla, chip, toggle) · 16 en tarjetas · 12 en lo que flota · 50 % solo en puntos. alias = hoy el token apunta a otro (var()).',
+    // ------------------------------------------------- radios (B-05 v267 "terminal sobrio": contenido afilado a 4, lo que flota a 8)
+    { g:'radios', key:'radius', rule:'B-05 · BRAND §9 2026-09-23 ("4 px, suave")',
+      note:'una sola familia, afilada: 0 en reglas y barras · 2 solo en marcas que no se tocan · 4 en marcas de gráfica · 4 en TODO control (botón, campo, celda de la tabla, chip, toggle) y en tarjetas · 8 en lo que flota (nav, hoja, aviso, popover) · 50 % solo en puntos. alias = hoy el token apunta a otro (var()).',
       items:[
         { tok:'--r-sm',    l:'marca que no se toca',   d:2,   min:0, max:2,  step:1, u:'px', kind:'px', x:{min:0, max:6},
           sel:'.frame,.strk-row .cd,.mdtabs .tabind,input[type=range].gslider,.slfc i,.slsw,.wdot' },
         { tok:'--r-mark',  l:'marca de gráfica',       d:4,   min:2, max:6,  step:1, u:'px', kind:'px', x:{min:0, max:6},
           sel:'.cd,.hypno,.ag-blk' },
-        { tok:'--r-ctl',   l:'TODO control',           d:12,  min:8, max:16, step:1, u:'px', kind:'px', x:{min:0, max:20},
-          sel:'.status .back,.section .meta[data-act],.start,.secondary .b,button.b,button.t,button.cancel,.mmrow select,select.pfsel,#pf_gym,.pfw,.wq,.mdcust input,.mdcust .b,.lact,.restbar a,.footer .abort,.footer .undo,.footer .save,.field input,.field select,.toggles button,.moodpad,.slph input,.slblk input,.sheetbtns .ok,.sheetbtns .cancel,.shimgv,#fa_q,.fa-btns .b,.fa-empty .fa-em-step,.scan-reticle .frame2,textarea.ta,.ag-supp-pop,.hold,.inp,.pick,.fs,.bwchip,.inp-mini,.tselo,.msum-time,.chip,.spc,.wchip,.ag-chip,.chst' },
-        { tok:'--radius',  l:'tarjeta',                d:16,  min:12, max:20, step:1, u:'px', kind:'px', x:{min:0, max:30}, dk:'radius',
+        { tok:'--r-ctl',   l:'TODO control',           d:4,   min:0, max:4,  step:1, u:'px', kind:'px', x:{min:0, max:16},
+          // v267: los [verbo] (.b, .cancel, abort, ↩, [‹ back]) y las opciones (.t, .toggles) ya no tienen caja ni radio
+          sel:'.section .meta[data-act],.start,.mmrow select,select.pfsel,#pf_gym,.pfw,.wq,.mdcust input,.lact,.restbar a,.footer .save,.field input,.field select,.moodpad,.slph input,.slblk input,.sheetbtns .ok,.shimgv,#fa_q,.fa-btns .b,.fa-empty .fa-em-step,.scan-reticle .frame2,textarea.ta,.ag-supp-pop,.hold,.inp,.pick,.fs,.bwchip,.inp-mini,.tselo,.msum-time,.chip,.spc,.wchip,.ag-chip,.chst' },
+        { tok:'--radius',  l:'tarjeta',                d:4,   min:0, max:4,  step:1, u:'px', kind:'px', x:{min:0, max:20}, dk:'radius',
           sel:'.pfeat,.pthrow,.ptile,.hcal,.card,.grp,.ws-card' },
         { tok:'--r-pill',  l:'píldora · solo barras finas', d:999, min:0, max:999, step:1, u:'px', kind:'px', x:{min:0, max:999},
           presets:[{l:'recta',v:0},{l:'píldora',v:999}],
           sel:'.bar,.wprog,.vbar,.bar>i,.wprog>i,.vbar>i' },
-        // v262 · un solo radio para todo lo que flota (look "1": 12); hoja, nav, toast, menús y barra lo siguen como alias
-        { tok:'--r-float', l:'todo lo que flota',     d:12,  min:8, max:12, step:1, u:'px', kind:'px', x:{min:0, max:24},
+        // v262 · un solo radio para todo lo que flota; v267 lo baja de 12 a 8. Hoja, nav, toast, menús y barra lo siguen como alias
+        { tok:'--r-float', l:'todo lo que flota',     d:8,   min:6, max:12, step:1, u:'px', kind:'px', x:{min:0, max:24},
           sel:'.sheet,.nav,.toast,.tsel,.gloss,.savebar,.dragghost' },
-        { tok:'--r-sheet', l:'hoja',                   d:12,  min:8, max:12, step:1, u:'px', kind:'px', x:{min:0, max:34}, dk:'sheetR', alias:'--r-float',
+        { tok:'--r-sheet', l:'hoja',                   d:8,   min:6, max:12, step:1, u:'px', kind:'px', x:{min:0, max:34}, dk:'sheetR', alias:'--r-float',
           sel:'.sheet' },
-        { tok:'--r-nav',   l:'nav',                    d:12,  min:8, max:12, step:1, u:'px', kind:'px', x:{min:0, max:999}, alias:'--r-float',
-          presets:[{l:'8',v:8},{l:'12',v:12},{l:'píldora',v:999}], sel:'.nav,.nav a' },
-        { tok:'--r-toast', l:'aviso (toast)',          d:12,  min:8, max:12, step:1, u:'px', kind:'px', x:{min:0, max:999}, alias:'--r-float',
+        { tok:'--r-nav',   l:'nav',                    d:8,   min:6, max:12, step:1, u:'px', kind:'px', x:{min:0, max:999}, alias:'--r-float',
+          presets:[{l:'8',v:8},{l:'12',v:12},{l:'píldora',v:999}], sel:'.nav' },
+        { tok:'--r-toast', l:'aviso (toast)',          d:8,   min:6, max:12, step:1, u:'px', kind:'px', x:{min:0, max:999}, alias:'--r-float',
           presets:[{l:'8',v:8},{l:'12',v:12},{l:'píldora',v:999}], sel:'.toast' },
-        { tok:'--r-pop',   l:'menú flotante',          d:12,  min:8, max:12, step:1, u:'px', kind:'px', x:{min:0, max:20}, alias:'--r-float',
+        { tok:'--r-pop',   l:'menú flotante',          d:8,   min:6, max:12, step:1, u:'px', kind:'px', x:{min:0, max:20}, alias:'--r-float',
           sel:'.tsel,.gloss' },
-        { tok:'--r-bar',   l:'barra flotante',         d:12,  min:8, max:12, step:1, u:'px', kind:'px', x:{min:0, max:20}, alias:'--r-float',
+        { tok:'--r-bar',   l:'barra flotante',         d:8,   min:6, max:12, step:1, u:'px', kind:'px', x:{min:0, max:20}, alias:'--r-float',
           sel:'.savebar' }
       ],
       check(vals){ const v = reader(this.items, vals), out = [];
         if(v('--r-sm') > 2) out.push('--r-sm es para marcas que no se tocan: 0–2');
         if(v('--r-mark') < 2 || v('--r-mark') > 6) out.push('--r-mark fuera de 2–6');
-        if(v('--r-ctl') < 8 || v('--r-ctl') > 16) out.push('todo control comparte --r-ctl: 8–16');
-        if(v('--radius') < v('--r-ctl')) out.push('la tarjeta no puede ser menos redonda que el control que envuelve');
+        const hi = ['--r-ctl','--radius'].filter(t => v(t) > 4);
+        if(hi.length) out.push('contenido afilado: control y tarjeta ≤ 4 (' + hi.join(' ') + ')');
         const pl = v('--r-pill'); if(pl > 0 && pl < 999) out.push('--r-pill solo tapa barras finas: 0 o 999');
-        const fl = ['--r-sheet','--r-nav','--r-toast','--r-pop','--r-bar'].filter(t => v(t) < 8 || v(t) > 12);
-        if(fl.length) out.push('flotante fuera de 8–12: ' + fl.join(' '));
+        const cmax = Math.max(v('--r-ctl'), v('--radius'));
+        const lo = ['--r-float','--r-sheet','--r-nav','--r-toast','--r-pop','--r-bar'].filter(t => v(t) < cmax);
+        if(lo.length) out.push('lo que flota no puede ser menos redondo que el contenido: ' + lo.join(' '));
+        const fl = ['--r-sheet','--r-nav','--r-toast','--r-pop','--r-bar'].filter(t => v(t) < 6 || v(t) > 12);
+        if(fl.length) out.push('flotante fuera de 6–12: ' + fl.join(' '));
         const f = ['--r-nav','--r-toast','--r-pop','--r-bar'].map(v);
         if(f.some(n => n !== f[0])) out.push('el chrome flotante no comparte un solo radio (--r-float)');
         return out.length ? out.join(' · ') : null; } },
@@ -240,12 +249,14 @@
       items:[
         { tok:'--dur-1',      l:'rápido · toque',       d:120, min:80,  max:160,  step:20, u:'ms', kind:'ms', x:{min:0,  max:300},  sel:'.ptile.tap,.dchk.pop,.pairdone.pop' },
         { tok:'--dur-2',      l:'medio · entrar',       d:180, min:140, max:240,  step:20, u:'ms', kind:'ms', x:{min:0,  max:400},
-          sel:'.chev,.cell .sub,.cell .cap,.hrow .hchev,.lt .lx,.mchev,.enter,.mdtabs .tabind,.tsel,.modal.in,.modal.out,.modal.out .sheet,.nav a,.nav a .lbl,.bootov,.gloss' },
+          sel:'.chev,.cell .sub,.cell .cap,.hrow .hchev,.lt .lx,.mchev,.enter,.mdtabs .tabind,.tsel,.modal.in,.modal.out,.modal.out .sheet,.nav a,.bootov,.gloss' },
         { tok:'--dur-3',      l:'lento · chrome',       d:280, min:220, max:360,  step:20, u:'ms', kind:'ms', x:{min:0,  max:600},
-          sel:'.ring-track,.ring-fill,.modal.in .sheet,.nav a,.nav a .lbl,.fa-empty .fa-em-step,.fa-empty .fa-em-arr,.scan-reticle.hit .frame2,.scan-reticle.hit .chk,.wstage,.toast,.toast.out' },
+          sel:'.ring-track,.ring-fill,.modal.in .sheet,.fa-empty .fa-em-step,.fa-empty .fa-em-arr,.scan-reticle.hit .frame2,.scan-reticle.hit .chk,.wstage,.toast,.toast.out' },
         { tok:'--dur-screen', l:'cambio de pantalla',   d:140, min:100, max:200,  step:20, u:'ms', kind:'ms', x:{min:0,  max:400},  sel:'.fadein' },
         { tok:'--mv-1',       l:'desplazamiento',       d:4,   min:0,   max:4,    step:1,  u:'px', kind:'px', x:{min:0,  max:12},   sel:'.enter' },
-        { tok:'--dur-hold',   l:'mantener para confirmar', d:900, min:700, max:1200, step:20, u:'ms', kind:'ms', x:{min:400,max:2000}, sel:'.hold' }
+        { tok:'--dur-hold',   l:'mantener para confirmar', d:900, min:700, max:1200, step:20, u:'ms', kind:'ms', x:{min:400,max:2000}, sel:'.hold' },
+        // v267 · el > de la pestaña activa (step-end: aparece y desaparece, no se desvanece); reduced-motion = fijo
+        { tok:'--dur-blink',  l:'parpadeo del > (nav)',  d:1100, min:900, max:1400, step:100, u:'ms', kind:'ms', x:{min:500,max:2000}, sel:'.nav a.active' }
       ],
       check(vals){ const v = reader(this.items, vals), out = [];
         if(v('--mv-1') > 4) out.push('desplazamiento > 4 px: el contenido ya no "imprime" (B-09)');

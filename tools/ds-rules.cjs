@@ -8,7 +8,7 @@ const LEVEL = { ROLE: 'P0', GLYE: 'P0', SVGFS: 'P1', SEM: 'P1', GLY: 'P1', SAVE:
   EXEMPT: 'P1', MOTION: 'P1', DOC: 'P1', RADF: 'P2', LANG: 'P2', BRK: 'P2', OK: 'P2', TOAST: 'P2', OP: 'P2', LH: 'P2', FONT: 'P2', A11Y: 'P2' };
 const NAME = { ROLE: 'botón sin estilo propio (cae al del navegador)', GLYE: 'emoji en la interfaz', SVGFS: 'SVG fuera de escala (font-size / stroke-width)',
   SEM: 'color semántico (conteo; no debe crecer)', GLY: 'glifo fuera de GLYPHS', SAVE: 'save() sin feedback', TOASTOK: '✓ sin revisar si save() guardó', SCROLL: 'render() que salta el scroll',
-  RAD: 'radio fuera de la familia (0 · 2 marcas · 4 gráficas · 12 control · 16 tarjeta)', RADF: 'radio flotante ≠ --r-float', BLUR: 'blur fuera del chrome', EXEMPT: 'ds:exempt sin categoría',
+  RAD: 'radio fuera de la familia (0 · 2 marcas · 4 control, tarjeta y gráfica · 8 solo lo que flota)', RADF: 'radio flotante ≠ --r-float', BLUR: 'blur fuera del chrome', EXEMPT: 'ds:exempt sin categoría',
   MOTION: 'movimiento de layout / bucle / smooth', DOC: 'la guía cita algo que no existe', LANG: 'componente con dos idiomas', BRK: '[ corchete ] con espacios',
   OK: 'más de un primario por plantilla', TOAST: 'toast de más de 42 caracteres', OP: 'opacidad literal', LH: 'interlineado literal', FONT: 'peso cargado sin uso',
   A11Y: 'data-act en un elemento que no es botón' };
@@ -56,7 +56,7 @@ module.exports = function rules(raw, repoDir) {
   // ---- GLYPHS y R-GLY / R-GLYE ----
   const G = (js.match(/const GLYPHS='([^']*)'/) || [])[1] || '';
   const OKCH = /[áéíóúüñÁÉÍÓÚÜÑ¿¡·–—×…’‘“”°²³µ ‑]/;           // letras y puntuación tipográfica
-  const VIZ = /[▁▂▃▄▅▆▇█▮▯─│┌┐└┘├┤┬┴┼]/;                        // medidores y box-drawing (BRAND §3)
+  const VIZ = /[▁▂▃▄▅▆▇█▮▯▏▎▍▋▊▉▖▘▝▗░▒▓─│┌┐└┘├┤┬┴┼]/;          // medidores, bloques de progreso/spinner (v267) y box-drawing (BRAND §3)
   uiLits.forEach(l => { for (const ch of l.t) { const cp = ch.codePointAt(0); if (cp < 127 || OKCH.test(ch) || VIZ.test(ch) || G.indexOf(ch) >= 0) continue;
     const emoji = cp >= 0x1F000 || cp === 0xFE0F || (cp >= 0x2600 && cp <= 0x27BF && /[☀-➿]/.test(ch) && !/[✓✕▶]/.test(ch));
     add(emoji ? 'GLYE' : 'GLY', l.i, ch + '  ' + l.t.slice(0, 50)); } });
@@ -74,6 +74,8 @@ module.exports = function rules(raw, repoDir) {
         if (/^@keyframes/.test(sel)) { rules.push({ sel, body, i: cssA + i, kf: true }); i = e; st = e + 1; continue; }
         rules.push({ sel, body, i: cssA + i }); i = e; st = e + 1; }
       else if (c === '}') st = i + 1; } }
+  // el cuerpo de cada regla llega SIN comentarios (espacios del mismo largo): la marca /*ds:exempt…*/ de una declaración se lee del crudo
+  const declRaw = (r, m) => raw.slice(r.i + 1 + m.index, r.i + 1 + m.index + m[0].length);
   const CHROME = /(^|[\s,>])(\.nav|\.modal|\.sheet|\.toast|\.toasts|\.tsel|\.gloss|#asklayer|\.ask|\.glass|\.glass-strong|\.exsh|\.bootov|\.dz|\.savebar|\.dragghost|\.ag-supp-pop)\b/;   // v262: el fantasma de arrastre y el popover de la agenda también flotan
   // clases con estilo propio (compuesto único) y pares padre→hijo
   const own = new Set(), pair = {};
@@ -93,8 +95,8 @@ module.exports = function rules(raw, repoDir) {
     add('ROLE', i, m[0]); }
   // ---- R-SVGFS ----
   const SW = new Set(['.5', '0.5', '1', '1.4', '1.6', '1.8']);
-  const TSC = []; for (const m of raw.matchAll(/--t-(?:label|data|section|display|hero)\s*:\s*([\d.]+)px/g)) TSC.push(+m[1]);   // v262: la escala se lee de :root
-  const TYPE = TSC.length ? TSC : [10, 12, 16, 22, 34];
+  const TSC = []; for (const m of raw.matchAll(/--t-(?:label|data|section|display|hero|field)\s*:\s*([\d.]+)px/g)) TSC.push(+m[1]);   // v262: la escala se lee de :root (v267: + --t-field)
+  const TYPE = TSC.length ? TSC : [10, 12, 14, 20, 28];
   for (const m of raw.matchAll(/font-size="([\d.]+)"/g)) if (!TYPE.includes(+m[1])) add('SVGFS', m.index, m[0]);
   for (const m of raw.matchAll(/stroke-width(?:=")?:?\s*"?([\d.]+)/g)) { if (m.index > cssA && m.index < cssB && raw.slice(m.index - 60, m.index).includes('/*ds:exempt')) continue; if (!SW.has(m[1])) add('SVGFS', m.index, 'stroke-width ' + m[1]); }
   // ---- R-SEM · uso de color semántico (se cuenta; --strict impide que crezca) ----
@@ -110,37 +112,43 @@ module.exports = function rules(raw, repoDir) {
   // ---- R-RAD / R-RADF · radios ----
   // v259 · el valor de cada token de radio se resuelve desde :root siguiendo cadenas var() (un alias como
   // --r-nav:var(--r-pill) antes valía 0 y escondía el hallazgo). RADV solo es el respaldo si el token no se encuentra.
-  const RADV = { '--r-ctl': 12, '--r-pill': 999, '--radius': 16, '--r-sheet': 22, '--r-mark': 4, '--r-sm': 2, '--r-float': 0 };
+  const RADV = { '--r-ctl': 4, '--r-pill': 999, '--radius': 4, '--r-sheet': 8, '--r-mark': 4, '--r-sm': 2, '--r-float': 8,   // v267: valores reales
+    '--r-nav': 8, '--r-toast': 8, '--r-pop': 8, '--r-bar': 8 };
   const ROOTV = {}; for (const m of raw.slice(cssA, cssB).matchAll(/(--[\w-]+)\s*:\s*([^;}]+)/g)) if (!(m[1] in ROOTV)) ROOTV[m[1]] = m[2].trim();
   const radTok = (t, d) => { const v = ROOTV[t]; if (v == null || d > 6) return { px: RADV[t] || 0, fl: t === '--r-float' };
     const mm = v.match(/^var\((--[\w-]+)\)$/); if (mm) { const r = radTok(mm[1], (d || 0) + 1); return { px: r.px, fl: r.fl || t === '--r-float' }; }
     return { px: parseFloat(v) || 0, fl: t === '--r-float' }; };
-  // v264 · B-05 reescrita por el dueño ("lo que ya tienen estilo redondeado, que ese sea el estándar… que parezcan de la
-  // misma familia"): la regla ya no tolera un número de gracia, exige la familia. Permitidos tras resolver el token:
-  // 0 (reglas y barras finas) · 2 marcas que no se tocan · 4 marcas de gráfica · 12 todo control · 16 tarjetas.
-  const RAD_OK = new Set([0, 2, 4, 12, 16]);
+  // v267 · "terminal sobrio" (B-05, el dueño 23-sep: "4 px, suave"). Dos familias, las dos resueltas desde :root:
+  // contenido = 0 (reglas y barras finas) · --r-sm (marcas que no se tocan) · --r-mark (gráficas) · --r-ctl (todo control) ·
+  // --radius (tarjetas); chrome = lo mismo + --r-float y sus alias (nav, hojas, avisos, popovers). El chrome se revisa ANTES
+  // del filtro de familia (si no, el 8 de --r-float salía fuera de familia) y --r-float en contenido es hallazgo.
+  // Ya no hay "16 solo en tarjeta": las tarjetas son 4 como los controles.
+  const pxOf = t => radTok(t, 0).px;
+  const RAD_OK = new Set([0, pxOf('--r-ctl'), pxOf('--radius'), pxOf('--r-mark'), pxOf('--r-sm')]);   // contenido
+  const RADF_OK = new Set([...RAD_OK, pxOf('--r-float')]);                                            // chrome
   const PILL_OK = /^(\.bar|\.wprog|\.vbar)(>i)?$/;                                     // única píldora: la tapa de las barras ≤6 px
-  const CARD = /(^|[\s,>])(\.card|\.grp|\.ptile|\.pthrow|\.hcal|\.ws-card|\.pfeat)\b/;   // 16 solo en una tarjeta
-  rules.forEach(r => { if (r.kf) return; for (const m of r.body.matchAll(/border-radius\s*:\s*([^;]+)/g)) { const v = m[1]; if (/ds:exempt/.test(v)) continue;
+  rules.forEach(r => { if (r.kf) return; for (const m of r.body.matchAll(/border-radius\s*:\s*([^;]+)/g)) { const v = m[1]; if (/ds:exempt/.test(declRaw(r, m))) continue;
       const chrome = CHROME.test(r.sel), id = chrome ? 'RADF' : 'RAD';
       const toks = [...v.matchAll(/var\((--[\w-]+)\)/g)].map(x => radTok(x[1], 0));
       const lit = v.trim().split(/\s+/).filter(p => !/var\(/.test(p) && /^[\d.]+px$/.test(p) && parseFloat(p) > 0);
       if (lit.length) { add(id, r.i, r.sel + ' · literal ' + lit.join(' ')); continue; }        // todo píxel va por token
       if (toks.some(t => t.px > 100)) { if (!r.sel.split(',').every(x => PILL_OK.test(x.replace(/\s+/g, '')))) add(id, r.i, r.sel + ' · píldora ' + v.trim()); continue; }
-      const off = toks.filter(t => !RAD_OK.has(t.px));
-      if (off.length) { add(id, r.i, r.sel + ' · ' + v.trim()); continue; }                      // valor fuera de la familia
-      if (!toks.some(t => t.px > 2)) continue;                                                   // marcas: nada que revisar
-      if (chrome) { if (!(toks.every(t => t.fl) || /--r-float|--r-ctl/.test(v))) add('RADF', r.i, r.sel + ' · ' + v.trim()); continue; }
-      if (/--radius/.test(v) && !CARD.test(r.sel)) add('RAD', r.i, r.sel + ' · 16 fuera de una tarjeta'); } });
+      if (chrome) {                                                                              // flota: --r-float (o alias) o un valor de contenido
+        const content = r.sel.split(',').filter(x => !CHROME.test(x));
+        if (content.length && toks.some(t => t.fl)) add('RAD', r.i, content.join(',').trim() + ' · --r-float en contenido');
+        if (toks.some(t => !(RAD_OK.has(t.px) || (t.fl && RADF_OK.has(t.px))))) add('RADF', r.i, r.sel + ' · ' + v.trim());
+        continue; }
+      if (toks.some(t => t.fl)) { add('RAD', r.i, r.sel + ' · --r-float en contenido'); continue; }   // el 8 es solo de lo que flota
+      if (toks.some(t => !RAD_OK.has(t.px))) add('RAD', r.i, r.sel + ' · ' + v.trim()); } });  // valor fuera de la familia
   // ---- R-BLUR · backdrop-filter fuera del chrome (CSS) y la clase glass fuera de nav/sheet/toast (marcado) ----
   rules.forEach(r => { if (r.kf) return; if (/backdrop-filter\s*:\s*(?!none)/.test(r.body) && !CHROME.test(r.sel)) add('BLUR', r.i, r.sel); });
   for (const m of js.matchAll(/class="[^"]*\bglass(-strong)?\b[^"]*"/g)) { const i = jsA + m.index, f = fnAt(i); if (!/^(openModal|renderNav|toast|toastTask|trkAsk|holdConfirm|trkPrompt|trkMenu|trkSelect|trkPop|askLayer|showSaveBar)$/i.test(f) && !skipped(i)) add('BLUR', i, f + ' · ' + m[0]); }
-  // ---- R-EXEMPT ----
+  // ---- R-EXEMPT · solo la marca SIN categoría (`/*ds:exempt:loop*/` y demás ids de §15 no cuentan) ----
   for (const m of raw.matchAll(/\/\*ds:exempt\*\//g)) add('EXEMPT', m.index, raw.slice(Math.max(0, m.index - 50), m.index));
   // ---- R-MOTION ----
   rules.forEach(r => { if (r.kf) { if (/scale\(\s*1\.\d*[1-9]|scale\(\s*[2-9]/.test(r.body)) add('MOTION', r.i, r.sel + ' · rebote'); return; }
     for (const m of r.body.matchAll(/transition\s*:\s*([^;]+)/g)) if (/\b(width|height|top|left|padding|gap|grid-template-columns|grid-template-rows|margin)\b/.test(m[1])) add('MOTION', r.i, r.sel + ' · transition ' + m[1].trim().slice(0, 40));
-    for (const m of r.body.matchAll(/animation\s*:\s*([^;]+)/g)) if (/infinite/.test(m[1]) && !/ds:exempt/.test(m[1])) add('MOTION', r.i, r.sel + ' · infinite'); });
+    for (const m of r.body.matchAll(/animation\s*:\s*([^;]+)/g)) if (/infinite/.test(m[1]) && !/\/\*ds:exempt:loop\*\//.test(declRaw(r, m))) add('MOTION', r.i, r.sel + ' · infinite'); });   // v267: solo el bucle con categoría (`loop`, DESIGN_SYSTEM §15) queda permitido; el /*ds:exempt*/ sin id sigue contando aquí y en R-EXEMPT
   for (const m of js.matchAll(/behavior\s*:\s*['"]smooth['"]/g)) if (!skipped(jsA + m.index)) add('MOTION', jsA + m.index, fnAt(jsA + m.index) + ' · smooth');
   // ---- R-OK · más de un primario (.ok / .start) en la misma función ----
   const okBy = {}; for (const m of js.matchAll(/class="(?:[^"]*\s)?(ok|start)(?:\s[^"]*)?"/g)) { const i = jsA + m.index; if (skipped(i)) continue; const f = fnAt(i); (okBy[f] = okBy[f] || []).push(i); }
@@ -171,6 +179,10 @@ module.exports = function rules(raw, repoDir) {
         for (const x of t.matchAll(/--([a-z][\w-]{0,30}[a-z0-9])(?![\w-]|\*)/g)) if (!tokDefined.has(x[1]) && /^(t|o|s|r|z|dur|ease|ls|sp|glass|op|lh|mv|nav|good|bad|warn|info|fg|bg|card|fill|track|line|border|faint|sheet|scrim|abort)\b/.test(x[1])) hits.push({ id: 'DOC', line: k + 1, snip: 'DESIGN_SYSTEM.md · --' + x[1] + ' no existe', doc: true }); } });
     const v1 = (ds.match(/estado actual \(v(\d+)\)/) || [])[1], v2 = (sw.match(/gymtrk-v(\d+)/) || [])[1];
     if (v1 && v2 && v1 !== v2) hits.push({ id: 'DOC', line: 1, snip: 'DESIGN_SYSTEM.md dice v' + v1 + ', sw.js es v' + v2, doc: true });
+  } catch (_) {}
+  // v267 · la versión visible (APP_V, la que dice el arranque) contra el caché de sw.js: un deploy sin subir las dos miente
+  try { const sw = fs.readFileSync(path.join(repoDir, 'sw.js'), 'utf8'), am = raw.match(/const APP_V\s*=\s*['"]v(\d+)['"]/), v2 = (sw.match(/gymtrk-v(\d+)/) || [])[1];
+    if (am && v2 && am[1] !== v2) hits.push({ id: 'DOC', line: lineOf(am.index), snip: 'index.html APP_V es v' + am[1] + ', sw.js es v' + v2 });
   } catch (_) {}
   const counts = {}; Object.keys(LEVEL).forEach(k => counts[k] = 0); hits.forEach(h => counts[h.id]++);
   return { hits, counts, LEVEL, NAME };
