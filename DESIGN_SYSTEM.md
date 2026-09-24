@@ -1,6 +1,6 @@
 # gym//TRK — DESIGN SYSTEM (referencia del estado actual)
 
-> Referencia del estado actual (v271). **Lee BRAND.md primero**: manda sobre este archivo. Sin historia: DESIGN_CHANGELOG.md.
+> Referencia del estado actual (v272). **Lee BRAND.md primero**: manda sobre este archivo. Sin historia: DESIGN_CHANGELOG.md.
 
 ---
 
@@ -143,7 +143,7 @@ se renombran. Contraste calculado sobre `#000`.
 |---|---|---|---|---|
 | `--good` | `#46c98b` | 10.0:1 | evento bueno: ▲, PR, meta cumplida | estado estable ("fresco", "verificado", "tomado"), adorno, badges |
 | `--bad` | `#e5675c` | 6.4:1 | baja, sobre el límite, destructivo | decoración, láser, "cerrar" que guarda |
-| `--warn` | `#e3b34f` | 10.8:1 | atención, límite suave (cerca de MRV) | categoría neutral |
+| `--warn` | `#e3b34f` | 10.8:1 | atención, límite suave (el `⚠` de un hallazgo, la banda de σ ≥30 junto al nombre) | categoría neutral, marcas de la barra de σ |
 | `--abort` | `rgba(190,110,110,.55)` | — | corchetes de `[abort]` en el footer de sesión (v267; antes su borde) | cualquier otro uso. Objetivo G3: se retira (`[abort]` en `--o60` que pasa a `--bad` al sostener) |
 | `--good-glow` / `--bad-glow` | `rgba(70,201,139,.5)` / `rgba(229,103,92,.5)` | — | brillo del anillo de macros | se retiran con el brillo (objetivo G3, BRAND §4) |
 
@@ -151,8 +151,9 @@ se renombran. Contraste calculado sobre `#000`.
   palabra, glifo): nunca rojo/verde solo (B-07). La revisa: R-SEM · a ojo.
 - TOK-6: **≤3 marcas de color sobre el pliegue** (B-07). La revisa: prueba de 5 s (BRAND §8).
 - Hoy se rompe "si está en orden, no lleva color": 'fresco' en `--good` (`recStateCol()`), ✓ verde de "verificado" en
-  resultados de comida, ✓ verde de "tomado" en supps (`.lc.on .k`), ✓ verde en stack, marca MRV en `--warn` fija
-  (`.vbar .mrv`), días del recap y del wrap en verde. Objetivo G3 (verde solo en eventos; 'fresco' en `--o50` con glifo).
+  resultados de comida, ✓ verde de "tomado" en supps (`.lc.on .k`), ✓ verde en stack, días del recap y del wrap en verde.
+  Objetivo G3 (verde solo en eventos; 'fresco' en `--o50` con glifo). La marca MRV fija en `--warn` salió con MEV/MRV en
+  v272: las marcas de la barra de σ son neutras (`--o40`, §7.15).
 
 ### 4.4 Tipografía
 
@@ -173,8 +174,7 @@ se renombran. Contraste calculado sobre `#000`.
 - **Pesos (TYP-2):** 400 texto · 700 énfasis, números, botones y chips · 800 títulos, `//SECCIÓN`, nombre del
   ejercicio, valores display. **600 prohibido** (no se carga; el navegador lo pinta como 700). Desde v260 la URL de la
   fuente solo carga 400 · 700 · 800 (300 y 500 no se usaban). La revisa: R-FONT.
-- **Mínimos (TYP-3):** texto ≥10 siempre. **800 nunca por debajo de 12.** 700 a 10 solo en estado semántico (▲▼ %, PR,
-  sobre MRV). Campos que abren teclado o picker a `--t-field` (14 desde v269), salvo la tabla de sesión (`table36`, 12).
+- **Mínimos (TYP-3):** texto ≥10 siempre. **800 nunca por debajo de 12.** 700 a 10 solo en estado semántico (▲▼ %, PR). Campos que abren teclado o picker a `--t-field` (14 desde v269), salvo la tabla de sesión (`table36`, 12).
   La revisa: ds-audit (peso 800 bajo 12, campos por debajo de `--t-field`: el auditor lee el valor de `:root`).
 - **Tracking (TYP-4), 4 roles por token:** `--ls-caps` .2em (rótulos en MAYÚSCULAS a 10) · `--ls-title` .12em (títulos
   en mayúsculas; hoy también `.sheet h3` y `.sph .h`) · `--ls-num` −.03em (números de `--t-display` y `--t-hero`) · `--ls-ui` .03em (botones,
@@ -281,7 +281,7 @@ tarjeta 16, flotante 12).
 Tokens (TOK-7, v260): `--op-press` .7 (5 `:active`) · `--op-disabled` .4 · `--op-pf` .45 (prefill) · `--op-drop` .82
 (serie drop) · `--op-dim` .28 (ejercicio no activo en modo enfoque). Siguen literales (10): tile presionada `.85`,
 presionado `.6` de la agenda, `.5` de `.fa-em-step.off`/`.u-dim`, arrastre `.3`, relleno del hold `.22`, sugerido `.75`,
-`.vbar .mrv` `.7` y dos de keyframes; mapearlos a los tokens cambia el look (propuesta del estudio). La revisa: R-OP.
+`.vbar .mrv` `.7` (sin uso desde v272) y dos de keyframes; mapearlos a los tokens cambia el look (propuesta del estudio). La revisa: R-OP.
 
 ### 4.10 Movimiento
 
@@ -437,11 +437,11 @@ perfil tienen párrafos fijos de instrucciones; la tira de 17 tiles de Progress.
 - VOZ-1 **Etiquetas de sistema en inglés:** `//SECCIONES`, la nav, los verbos de comando (`start`, `save`, `rest`,
   `skip`) y los estados cortos. **Prosa en español:** ayudas, errores, toasts, vacíos, diagnósticos. **Un componente nunca
   mezcla idiomas.** Las etiquetas del dueño no se traducen ni se tocan. La revisa: R-LANG.
-- VOZ-2 **Mayúsculas** solo en `//SECCIÓN`, siglas (PR, RIR, MEV, MRV) y rótulos de grupo. Todo lo demás en minúsculas,
+- VOZ-2 **Mayúsculas** solo en `//SECCIÓN`, siglas (PR, RIR) y rótulos de grupo. Todo lo demás en minúsculas,
   **incluidas las etiquetas de campo** (hoy `.field label` va en mayúsculas: `TU NOMBRE`, `SEXO`…, objetivo G3). Cabeceras en
   una línea (`sep 2026 · 10`). Nunca `text-transform` sobre una etiqueta del dueño (v258: la vista previa del día y el catálogo la
   muestran tal cual como `#etiqueta`, M1-08). La revisa: a ojo.
-- VOZ-3 **Tono:** seco, operativo, en minúsculas, de consola (`serie 2/3`, `bajo MEV · le faltan ~3 series`). Sin
+- VOZ-3 **Tono:** seco, operativo, en minúsculas, de consola (`serie 2/3`, `mucho fallo · 40% a F/RIR 0`). Sin
   exclamaciones ni "genial". Lo humano se reserva para errores y diagnósticos. Cuando un dato no es obvio, el *porqué* va
   en una línea ("correlación, no causa") o al glosario.
 
@@ -628,8 +628,8 @@ en `›` para navegar. Nada más. El árbol para elegir está en §17.3.
 
 | Familia | Clases | Anatomía | Función |
 |---|---|---|---|
-| **Etiqueta de dato** | `.exsub .note` (`[+ nota]`), `.exrow .exp` (perfil), `.exT` (T), `.settens` | texto sin caja, `--t-label`, `--o50`; si se toca, subrayado punteado | describe (tipo, T, perfil) |
-| **Estado** | `.vst`, `.setprog`, `.lpr` (PR), `.pill`, `.pst` | texto `--t-label` **sin caja**, minúsculas salvo sigla; color = semántico del estado | dice cómo está (bajo MEV, ▲+3 %, PR) |
+| **Etiqueta de dato** | `.exsub .note` (`[+ nota]`), `.exrow .exp` (perfil), `.exT` (σ del ejercicio, `~σ 2.6`), `.settens` (σ de la serie, `σ0.98`), `.exzones` (`obj RIR 1–2`) | texto sin caja, `--t-label`, `--o50`; si se toca, subrayado punteado | describe (tipo, σ, perfil, RIR objetivo) |
+| **Estado** | `.vst`, `.setprog`, `.lpr` (PR), `.pill`, `.pst` | texto `--t-label` **sin caja**, minúsculas salvo sigla; color = semántico del estado | dice cómo está (debajo del mínimo, ▲+3 %, PR) |
 | **Seleccionable** | `.chip`, `.spc`, `.wchip`, `.ag-chip` | caja `--r-ctl` 4, alto ≥36, borde .5 o `--card2`, `--t-data` | se toca para elegir o filtrar |
 
 - MRK-1: nada de cajas alrededor de un estado; nada de chips con otro radio que `--r-ctl`; no más familias.
@@ -693,11 +693,16 @@ La pieza más gym//TRK de la app: densa, afilada, técnica. **Nunca** vidrio, ra
 - **Clase / API:** `renderExercise()`, `renderSetRow()`; cabecera `.thead` (`.cl`); filas `.srow` en rejillas
   `.gc-free`, `.gc-mach`, `.gc-mach-fs`, `.gc-uni`, `.gc-free-bw`, `.gc-uni-bw`, `.gc-cardio` (la última columna es el ✓);
   unilateral `.pair` con `.prows`, cabecera `uniHeadHTML()` con la misma envoltura (`.pair.phead`).
-- **Anatomía:** número de serie `.setn` (`--t-label`; 1, 1.5, 2… con color de zona; hecho `--fill`/700) · cajas de dato
-  (§7.2) · `.dchk` ✓/○ (`--t-section`, 30×36) en la última columna; en unilateral `.pairdone` a la derecha del par.
-  Encabezado del ejercicio en dos líneas: `.exhead` (`[bi] nombre`, `--t-section`/800, `[uni]`/`[bi]` con la misma fuente
-  que el nombre) · `.exsub` (`[tipo]`, marca/setup `.mch` con subrayado punteado, `[+ nota]`). Barra de acciones
-  `.addrow` con `.addbtn`. Sin rellenos ("+ machine" no existe).
+- **Anatomía:** número de serie `.setn` (`--t-label`; 1, 1.5, 2…; hecho `--fill`/700; **sin color de zona desde v272**:
+  salía de reps + RIR, no de la carga) · cajas de dato (§7.2) · `.dchk` ✓/○ (`--t-section`, 30×36) en la última columna;
+  en unilateral `.pairdone` a la derecha del par. Encabezado del ejercicio en dos líneas: `.exhead` (`[bi] nombre`,
+  `--t-section`/800, `[uni]`/`[bi]` con la misma fuente que el nombre; detrás, `obj RIR 1–2` en `.exzones` y la σ del
+  ejercicio `σ 2.6` en `.exT`) · `.exsub` (`[tipo]`, marca/setup `.mch` con subrayado punteado, `[+ nota]`). Barra de
+  acciones `.addrow` con `.addbtn`. Sin rellenos ("+ machine" no existe).
+- **RIR objetivo (v272):** `progBadgeHTML()` escribe `obj RIR X` con el peso relativo de la primera serie de trabajo
+  (`rirTargetTxt(I)`: <55 % de tu 1RM `RIR 0–1` · 55–70 % `RIR 1–2` · 70–85 % `RIR 2` · ≥85 % `RIR 2–3`), `--t-label`
+  `--o50`, sin color. Reemplaza al contador de zonas `N✓ N↑ N↓`. Por serie, tras el ✓, la σ de esa serie `σ0.98`
+  (`tensTag()`, `.settens`; `~` si el RIR es estimado).
 - **Estados:** prefill `.pf` por campo (gris .45 hasta tocarlo); drop `.isdrop` .82; serie hecha `.setn.done` + `.dchk.done`;
   ejercicio en curso `.ex.current` (en modo enfoque, §7.20).
 - **Toque:** 36 (`table36`); el ✓ debe ampliar su toque con `::after` a 44×42 y 6 de separación (objetivo G4, M2-06).
@@ -706,7 +711,7 @@ La pieza más gym//TRK de la app: densa, afilada, técnica. **Nunca** vidrio, ra
 - **Motor TRK:** TRKRow (`data-rk`, `reRender()`), TRKSelect (RIR), `applyEnter()` (`.enter`, `.pop`).
 - **Hoy → objetivo G4:** borrar una serie solo deslizando no tiene alternativa ni deshacer (M2-07: toast con
   `[deshacer]` + menú al mantener el número); `↩` borra la serie más baja con datos aunque no tenga ✓ (M2-08: pila de
-  eventos ✓); tras cada ✓ aparecen T, FC, % de drop y ▲▼ a la vez (M2-24: en vivo solo ▲▼%).
+  eventos ✓); tras cada ✓ aparecen σ, FC, % de drop y ▲▼ a la vez (M2-24: en vivo solo ▲▼%).
 - **La revisa:** self-checks (`_loggingSelfCheck`, `_dropsetSelfCheck`) · R-SESS · a ojo.
 
 ### 7.9 Barras acopladas
@@ -819,35 +824,55 @@ reemplaza, así lo escrito abajo se conserva. Diálogos nativos (`alert`/`confir
   el mismo valor) confirma; cerrar sin elegir no cambia nada. Uso: RIR (`openRirSelect()`), meta y actividad.
 - **TRKPop / glosario** — texto corto anclado al término: `trkPop(anchor, text)` → `#gloss` (`.gloss`); el glosario marca
   los términos con `data-gloss="clave"` (subrayado punteado `--o20`) y lee `GLOSS` (rir, t, cap, lm, est, rirmed, e1rm, racha,
-  stim). El listener va en captura y no dispara la acción de la fila.
+  stim). El listener va en captura y no dispara la acción de la fila. Desde v272 (las claves no cambian): `t` = **σ**
+  (series efectivas, 1.0 = una serie al fallo con ≥30 % de tu 1RM; RIR 1–2 da ~90 % con mucha menos fatiga; `~` = RIR
+  estimado) · `lm` = **zona objetivo** 10–20 σ por músculo y semana (<4 casi no estimula, >20 poco, >30 muy poco;
+  Pelland 2026) · `stim` = σ de 7 días por músculo real, marcas en 10 y 20. Ya no define MEV/MAV/MRV ni la guía RP.
 - **Anatomía común:** `--card2`, borde 1 `--border`, `--r-pop` (= `--r-float` 8), `--shadow-float`, entrada `rowin`; sus
   opciones (`.tselo`) son controles a `--r-ctl` 4.
 - **Hoy (v267):** son chrome flotante a 8; vidrio opcional (G3).
 
 ### 7.15 Barras (TRKBar)
 
-- **Rol:** mostrar una proporción con un solo trazo fino (volumen vs landmarks, ingesta, progreso de la sesión).
+- **Rol:** mostrar una proporción con un solo trazo fino (σ contra su zona objetivo, ingesta, progreso de la sesión).
 - **Clase / API:** `.bar`, `.vbar`, `.wprog`; relleno `trkBarI(clave, pct, cls)` (con `data-bk`, acotado 0–100); marcas
-  `trkMark(pct, cls, title)` (`.mev` en `--o40`, `.mrv` en `--warn`); `animBars()` en `afterPaint()`.
+  `trkMark(pct, cls, title)` (por defecto `.mev`, 1 px en `--o40`; el nombre es histórico); `animBars()` en `afterPaint()`.
+  **Barra de σ (v272):** `sigBarHTML(clave, σ)` — escala hasta max(30, σ × 1.1) y dos marcas **neutras** `.mev` en 10 y
+  20 (la zona objetivo, `SIG_BANDS`); la usan //STIMULUS, //MUSCLES y el detalle de músculo. `.mrv` (`--warn`) ya no la
+  emite nadie (CSS muerto).
 - **Anatomía:** alto 3 (2 en `.wprog`), pista `--track` + relleno `--fill`; exceso `.over` en semántico. Barras de celdas
   permitidas para conteos discretos.
 - **Movimiento:** crece desde su ancho anterior (`--dur-2`) solo si esa clave ya estaba pintada con otro valor.
-- **Hoy → objetivo:** son píldoras (`--r-pill`), la única que B-05 conserva (≤6 px). Marca MRV fija en `--warn`: objetivo G3 `--o40`
-  y `--warn` solo al pasarse (M1-10).
+- **Hoy → objetivo:** son píldoras (`--r-pill`), la única que B-05 conserva (≤6 px). M1-10 (marca MRV fija en `--warn`)
+  quedó resuelto en v272 al salir MEV/MRV: ninguna marca lleva color; pasarse de 30 σ lo dice la etiqueta junto al nombre.
 - **La revisa:** self-check de UI (TRKBar) · a ojo.
 
 ### 7.16 Diagnóstico
 
-Cómo la app **sugiere** sin inventar (//MÚSCULOS y su detalle).
+Cómo la app **sugiere** sin inventar (//STIMULUS, //MUSCLES y el detalle de músculo).
 - **Anatomía:** `.dxrow`: hallazgo `.dxh` (`--t-data`/700, color por severidad `.dx-bad` / `.dx-warn` / `.dx-info` `--fg` /
   `.dx-ok`) · evidencia `.dxev` (`--t-label` `--o50`, con los números que lo disparan) · acción `.dxdo` (`→ …`, `--t-label`
   `--o70`) · separador .5 `--o10` · nota final `.dxnote`. Orden: grave → atención → sugerencia → "en orden".
 - **En una fila de lista** (`.mscdx`): solo el hallazgo principal en corto + `+N` (`.dxmore`); nunca repite lo que ya dice
-  un estado de la fila; "en orden" no ocupa renglón.
+  un estado de la fila (en //MUSCLES `low` y `high` no salen: la banda ya va junto al nombre); "en orden" no ocupa renglón.
+- **Reglas (`diagnoseMuscle()`, umbrales en `DIAG`; v272 quita `mrv`/`mev` y suma las de σ, `tension-v2.md` §4):**
+  - grave: `fatigue` — más series, RIR más bajo y capacidad ≤ −3 % en 14 d, sin nada del día que lo explique.
+  - atención: `early` (entrenado antes de su ventana y rindió menos) · `context` (la baja coincidió con sueño, comida, FC
+    o carga) · `failure` (>25 % de ≥6 series a F o RIR 0 en 7 d) · `heavyF` (F con ≥75 % de tu 1RM en un compuesto
+    pesado) · `high` (σ >30 en 7 d) · `sequence` (2.º ejercicio tras uno al fallo) · `regress` (un ejercicio suyo
+    retrocede, `exStatus()`).
+  - sugerencia: `session` (una sesión >10 σ) · `far` (RIR medio ≥3; RIR 1–2 rinde ~90 % de una serie al fallo) ·
+    `lightFar` (<50 % de tu 1RM y RIR ≥3) · `r30` (series de más de 30 reps) · `low` (σ <4 dos semanas seguidas) ·
+    `legRec` (≥2 F en compuestos de pierna hace menos de 48 h) · `plateau` (un ejercicio suyo estancado) · `sleep` (rinde
+    menos tras dormir <6 h) · `length` (sin trabajo en estiramiento).
+  - Sin hallazgos: `ok` "en orden" con lo verificado (`σ en zona objetivo`, capacidad, descanso dentro de su ventana);
+    con menos de 2 exposiciones en 28 d, "pocos datos".
 - **Redacción (DX-1):** se dispara solo con evidencia (umbrales en `DIAG`, con prueba de ruido en `_diagSelfCheck`) · nunca
   una puntuación · verbos de sugerencia ("suele", "puede aportar", "considera") · cita si la regla viene de literatura ·
   `~` si se apoya en datos sugeridos · sin datos suficientes dice "pocos datos", no "en orden".
-- **Objetivo G3:** 'fresco' deja el verde; `.dx-ok` solo para eventos.
+- **Objetivo G3:** 'fresco' deja el verde; `.dx-ok` solo para eventos. En //MUSCLES (`.mscdx.dx-warn`) y en el
+  detalle (`.dxh`) la frase entera todavía lleva el color de su severidad; //STIMULUS ya lo pone solo en el `⚠`
+  (`dxGlyph()`, v272, B-07).
 
 ### 7.17 Utilidades `u-`
 
@@ -913,7 +938,7 @@ rejillas"; compartir es **vertical, a altura natural, nunca un cuadro que recort
   duración con `fmtDur()` desde v271, antes `1h26`). Cuerpo: una
   fila `.srw` por ejercicio: `#músculo` (`.srm`, solo cuando cambia) · nombre `.srn` 800 · series `shTokTxt()` →
   `160lbs×8@0 / 160lbs×6@0` (`.srs1` en `--o50`, drop `↓` en `--o40`, separador `.srsep`). Entre ejercicios `--s5`,
-  interlineado 1.6. **Sin** tonelaje, T ni tarjeta.
+  interlineado 1.6. **Sin** tonelaje, σ ni tarjeta.
 - **Comida** (`shFoodModel()` → `renderShare()`): rótulo centrado `.shcap` (`// resumen · 17 sep`) · `.shbanner` con el
   anillo (`ringHTML`, kcal dentro) y P/C/F en `.shm-g` (`--t-display`) · `.shlog`: cada comida `.sgrp` con su cabecera `.sgh`
   (`// tag` · `P C F` · total `--t-data`/800) y **todos** sus alimentos `.sitem` (cantidad corta en negrita · nombre `--o60`
@@ -943,7 +968,8 @@ rejillas"; compartir es **vertical, a altura natural, nunca un cuadro que recort
 - **Rol:** cómo se entrena: solo el ejercicio en curso se lee.
 - **Clase:** `.wline` (botón de 32 de alto: `.wtn` día `--t-section`/800 · `.wtm` `n/N sets · tiempo` `--t-label` · `.wtx`
   glifo · `.wtb` barra de fondo `.wprog`) · el cuerpo va en `.wfocus`: `.ex.current` se lee; los demás `.ex` a .28 y sin
-  toque salvo para volverse el actual; se ocultan `.exsub`, `.setprogline`, `.addrow`, `.swipehint`, zonas, T y asa.
+  toque salvo para volverse el actual; se ocultan `.exsub`, `.setprogline`, `.addrow`, `.swipehint`, la σ (`.exT`), el %
+  (`.exprog`) y el asa. El ejercicio en curso conserva `obj RIR 1–2` (`.exzones`, v272; antes el contador de zonas).
 - **Movimiento:** cambios instantáneos.
 - **Hoy (v258, M2-02):** con la sesión completa el enfoque se queda en el último ejercicio, así `[+ exercise]` sigue a
   la vista. Pendiente G4: decidir qué señales de honestidad se quedan en el modo (M2-10/M2-16).
@@ -967,14 +993,54 @@ rejillas"; compartir es **vertical, a altura natural, nunca un cuadro que recort
   (`--t-hero`, "43 / 100"), que BRAND prohíbe ("puntuación única en tamaño héroe"). Objetivo: `recovery ~43` en una línea
   `--t-data`/800, sin héroe ni color de veredicto; el desglose sigue en su hoja.
 
-### 7.23 //ESTÍMULO
+### 7.23 //STIMULUS y //MUSCLES (σ)
 
-- **Clase / API:** `stimulusSection()` / `stimulusRows()` → filas `.stq` (`.stqh` con `.stqn` nombre y `.stqv` lectura
-  `--t-data`; `.vbar` con MEV/MRV; frase `.stqc` `--t-label` `--o70`).
-- **Regla (STQ-1):** **silencio = en rango**; una frase solo si hay algo que mover (`sobre MRV · ~2 series de más`, `bajo
-  MEV · le faltan ~3 series`, `lejos del fallo · RIR 4 de media`); color solo para frenar (`.stqc.bad`/`.warn`), nunca
-  verde. Es la regla que G3 extiende a toda la app. La revisa: `_v256SelfCheck` (nunca verde, orden).
-- **Hoy → objetivo G3:** el título pasa a `//STIMULUS` (§6.1).
+Decisión del dueño 2026-09-24 (BRAND §9, v272): σ en lugar de la T de v219 y fuera las "series efectivas" contra MEV/MAV/MRV
+de la guía RP ("esa madre realmente no sirve"). El modelo vive en `contexto/tension-v2.md` §3 y §6.
+
+- **σ (motor):** `setSigma(s, ref)` → `{t: S, I, est, k, C}`. **S** = estímulo de la serie en series efectivas (1 = una
+  serie al fallo), según el peso relativo I (`refE1RMFor(…, histOnly)`; sin 1RM, compuerta por reps al fallo `sigGr()`) y
+  la reserva efectiva `kEfOf()` (sesgo del RIR anotado: RIR 0 = 0.5; más reserva si la serie pasa de 20 reps). **C** =
+  costo de fatiga (1 = una serie a RIR 2; más al fallo y en compuestos de pierna, `LEG_COMPOUND`). Perillas en `SIG`;
+  `setTension`/`setFatigueCost` quedan como alias y `exTensionSets()` ya usa `setSigma`. Por sesión y músculo la σ satura
+  desde 10 (`sigSat()`); la semana suma esas σ (`muscleWindowAgg().Ts`).
+- **//STIMULUS (gym):** `stimulusSection()` / `stimulusRows()` → cabecera `//STIMULUS` con meta `σ · 7 d`
+  (`data-gloss="stim"`) y una fila `.stq` por **músculo real** (canónico, mostrado con su etiqueta vía `muscleLabel()`):
+  `.stqh` con `.stqn` nombre y `.stqv` `σ 12.4` (`--t-data`/800) · `sigBarHTML()` (marcas neutras en 10 y 20) · frase
+  `.stqc` (`--t-label` `--o70`). Tocar la fila abre `openMuscleDetail()`.
+- **Arriba, solo si toca (v272):** 1) con `fatigueFlag()`, una fila `⚠ fatiga acumulada ›` —`bench press · pulldown
+  bajando · carga +24 % · ¿una semana ligera?`— que abre `openDeloadInfo()`: hoja que **ofrece** (nunca impone) 5–7 días,
+  series −30 a −50 %, RIR +2, los mismos ejercicios y días, con el porqué de Coleman 2024 ("una semana ligera no te hace
+  crecer más, y una semana sin entrenar no te quita músculo"). 2) si `failure` sale en 3 o más músculos es un hábito, no un
+  músculo: se dice **una vez** (`⚠ mucho fallo en N músculos` · `X% de sus series a F o RIR 0 · deja 1–2 reps en
+  reserva…`) y sale de cada fila.
+- **Regla (STQ-1):** la fila dice el hallazgo principal de `muscleDiag()` (sin `length` ni `sleep`, §7.16) o, si no hay
+  nada que mover, solo su banda de σ (`SIG_BANDS`: <4 `debajo del mínimo` · 4–10 `rinde mucho por serie` · 10–20 `zona
+  objetivo` · 20–30 `cada serie aporta poco` · >30 `muy poco extra`; Pelland 2026), sin glifo ni color. **El color va
+  solo en el `⚠`** (`dxGlyph(sev)`, `--bad`/`--warn`; B-07), nunca en la frase y nunca verde. Orden: lo que hay que mover
+  primero, después σ de mayor a menor. Es la regla que G3 extiende a toda la app. La revisa: `_v256SelfCheck` (nunca
+  verde, orden).
+- **//MUSCLES (progreso):** `musclesSectionHTML()` → `.grp-label` `//MUSCLES · σ · recuperación` y una fila `.mscrow` por
+  músculo con actividad en 28 d, de mayor a menor σ: `.mscn` nombre (con su banda en `.vst` solo si σ <4 o ≥20; `.vst.warn`
+  desde 30) · `.mscv` `σ 12.4 · 9 series · RIR 1.8` · `sigBarHTML()` · `.mscrec` recuperación · `.mscdx` el hallazgo
+  principal (§7.16).
+- **Detalle de músculo** (`openMuscleDetail(id)`; lecturas separadas, nunca una puntuación): DIAGNOSIS (§7.16) ·
+  **VOLUME · 7 días** (barra de σ, `σ · estímulo` con su banda y ▲▼ vs 7 d previos, series duras, directas · indirectas,
+  sesiones, `zona objetivo · 10–20 σ por semana · Pelland 2026`) · **STIMULUS · 7 días** (RIR medio y % a RIR ≤1, `al
+  fallo o RIR 0` en %, `sesión más cargada` en σ, longitud, perfil) · **FATIGUE · 72 h** (el costo C de las últimas 72 h
+  contra su promedio por 72 h de 4 semanas, barra con marca en tu promedio: `alto` · `normal` · `bajo`) · RECOVERY ·
+  PERFORMANCE. El pie define σ ("1 = una serie al fallo") y costo ("1 = una serie a RIR 2").
+- **Estado del ejercicio (v272):** `exStatus(exHistKey(ex))` — `exHistKey` = nombre + variante (las filas viejas sin tipo
+  se pliegan a la única variante con tipo); `exSeries()` = un punto por sesión con `sessE1RM()` (series de trabajo con RIR
+  o F y ≤15 reps al fallo, pesos de confianza, media de las 2 mejores) en la unidad de la vez más reciente y, en
+  máquina/polea/smith, del mismo gym; Theil–Sen sobre ln e1RM con ventana de 4/8/12 semanas según cuánto llevas con el
+  ejercicio (crece hasta 16 hasta juntar 6 sesiones en 4 semanas o más; perillas `EXST`). Estados `progresando` ·
+  `estable` · `estancado` · `retrocediendo` · `pocos datos`; `exStatusTxt()` → `progresando · +1.8 %/sem · 9 sesiones en
+  8 sem`. Lo leen el detalle de e1RM (línea `estado`), el diagnóstico (`regress`/`plateau`) y `fatigueFlag()` (≥2
+  retrocediendo en ~10 días **y** carga de la semana >20 % sobre su media de 4 semanas o >25 % de las series a F/RIR 0).
+- **Recuperación:** `recoveryEstimate()` toma la dosis del costo C (+25 % con ≥2 F en compuestos de pierna).
+- **La revisa:** `_tensionSelfCheck` (tabla de calibración de σ) · `_exStatusSelfCheck` · `_diagSelfCheck` ·
+  `_v256SelfCheck` (§18.2).
 
 ### 7.24 TRKLog: SUPPS · MEALS · WATER
 
@@ -1212,7 +1278,8 @@ quitar… acomodar tu orden y ya después confirmar… como una screen de widget
 - **Datos:** `db.settings.progLayout` = `{v:1, order, hidden}` (viaja en respaldos y sync). Se crea una vez desde la
   config vieja de este teléfono (`localStorage` `gymtrk_progress_metrics_config`; `tdee` hereda el on/off de `kcal`).
   Registro cerrado `PROG_KEYS` (weight · volume · tension · e1rm · steps · water · sleep · rhr · hrv · kcalact · kcal ·
-  tdee) + `consistency` (la franja de racha, siempre arriba cuando se ve); nombres en `PROG_LBL`. `tdee`
+  tdee) + `consistency` (la franja de racha, siempre arriba cuando se ve); nombres en `PROG_LBL` (`tension` = `estímulo σ`
+  desde v272: la tile dice `σ · wk` y la clave interna sigue siendo `tension`, así los layouts guardados no cambian). `tdee`
   (mantenimiento real) es tile propia desde v269 (antes colgaba de `kcal`).
 - **API:** `progLayout()` · `progMetrics(ed)` · `progGridHTML(T, ed)` (cada tile se arma con su clave y el orden lo pone
   el layout) · `progEditStart()` · `progPlace(k, destino, después)` · `progMove(k, ±1)` · `progGripMenu(k)` ·
@@ -1315,7 +1382,7 @@ Instrumentación, no infografía (B-02: la gráfica existe solo cuando el texto 
 |---|---|---|---|---|
 | **Línea** | `lineChart(vals, opt)`, `chartNums()` | tiles de Progress, detalle de métrica | ver abajo | "sin registros en este rango" |
 | **Sparkline** (TRKTrend) | `.trow .trsp` + `lineChart` a 22 de alto sin relleno ni puntos | //FUERZA, //RECORDS | mismo eje de 30 días en todas las filas; sin línea con <2 sesiones | la fila sin línea |
-| **Barra fina** (TRKBar) | `.bar`, `.vbar`, `.wprog` | ingesta, //ESTÍMULO, //MÚSCULOS, progreso de sesión, detalle de músculo | §7.15 | la pista sola |
+| **Barra fina** (TRKBar) | `.bar`, `.vbar`, `.wprog` | ingesta, //STIMULUS, //MUSCLES, progreso de sesión, detalle de músculo | §7.15 | la pista sola |
 | **Columnas apiladas** | `.slfc` (FASES del sueño) | detalle de sueño | una columna por noche bajo la x de su fecha (mismo margen de eje que la línea), profundo abajo; 4 filas con etiqueta y valor escritos (`.slfr`) | sin columna |
 | **Hipnograma** | `hypnoHTML()` → `.hypno` | registro de sueño | escala de opacidad: profundo `--fg` · core `--o50` · REM `--o30` · despierto `--o12` · sin clasificar `--track`; lo no clasificado se ve, no se reparte | no se dibuja |
 | **Anillo** (TRKRing) | `ringHTML()` | macros, compartir comida | §7.28; excepción `ring` | anillo vacío (hoy con punto al 0 %: G3) |
@@ -1355,15 +1422,15 @@ punto, escalas de color de otras apps, 0 falso. `miniBars()` convierte huecos en
 
 | Señal | Significa | Dónde |
 |---|---|---|
-| `~` antes o después de un dato | estimado o deducido | tensión con RIR supuesto, perfil sugerido, % de baja confianza, vista previa de metas del perfil mientras edad/peso/estatura son los de ejemplo (v268) |
+| `~` antes o después de un dato | estimado o deducido | σ con RIR estimado (`~σ 2.6`), perfil sugerido, % de baja confianza, vista previa de metas del perfil mientras edad/peso/estatura son los de ejemplo (v268) |
 | `▖ verbo… 3s` · `[█░] 42%` | algo trabaja; la barra solo si el avance es real | TRKSpin · TRKProgress (§7.33) |
 | borde punteado | sugerido, falta que lo confirmes | `.pftog.sug`, deriva del split |
 | gris .45 (`.pf`) | prefill de la sesión anterior; no cuenta hasta confirmarlo | tabla de sesión |
 | hueco en la línea | no hay dato ese día | gráficas |
-| "sin baseline" · "sin guía" · "sin definir" · `sin normal · N/7 d` | no hay con qué comparar o no hay evidencia | progreso, landmarks, perfiles, detalle |
+| "sin baseline" · "sin definir" · `pocos datos · 3/6 sesiones…` · `sin normal · N/7 d` | no hay con qué comparar o no hay evidencia | progreso, estado del ejercicio (v272), perfiles, detalle |
 | "estimado" vs "observado" | literatura ajustada vs su propio historial | recuperación por músculo |
 | "correlación, no causa" | descriptivo, no diagnóstico | //RENDIMIENTO, causas de un ▼ |
-| lecturas separadas | nunca una puntuación única | //MÚSCULOS: volumen · estímulo · fatiga · recuperación |
+| lecturas separadas | nunca una puntuación única | detalle de músculo: volumen (σ) · estímulo · fatiga (costo C) · recuperación |
 | hallazgo con su evidencia | una sugerencia existe solo si hay números que la respaldan, y se muestran | §7.16 |
 | `—` | sin dato | cualquier lectura |
 
@@ -1385,7 +1452,7 @@ punto, escalas de color de otras apps, 0 falso. `miniBars()` convierte huecos en
 | **Estado** | "sin baseline", "4/14 d", "hoy: comida + gym ✓", "sin clasificar 42 min" | se queda: es dato |
 | **Instrucción de gesto** | "mantén y desliza… pellizca ↔… doble toque" | **fuera**: el gesto se descubre tocando |
 | **Pista de una vez** | "desliza una serie → para borrarla" | una sola vez por dispositivo (`hintSeen()`/`hintMark()`), nunca en cada render |
-| **Definición** | "MEV/MAV/MRV", "correlación, no causa", "estimado vs observado" | al glosario `data-gloss` |
+| **Definición** | "σ", "zona objetivo 10–20", "correlación, no causa", "estimado vs observado" | al glosario `data-gloss` |
 | **Regla del sistema** | "solo se corta el día en que no registras ni comida ni gym" | al glosario; en pantalla, solo el estado |
 
 ### 9.3 Gramática de series, números y fechas
@@ -1399,7 +1466,7 @@ Una forma de escribir cada tipo de dato, con su función (NUM-1). La revisa: a o
 | Número de serie | `1, 1.5, 2, 3` (drop = .5, cadena .6/.7) | `setLabels()` | ✓ |
 | Lateralidad | `[uni]`/`[bi]` al frente, misma fuente que el nombre; nunca la unidad | `latTxt()`, `exLatTagHead()` | ✓ (B-12) |
 | Tipo de ejercicio | una sola forma (`[libre] [máquina] [smith] [cable] [bw]`, propuesta de la auditoría) | hoy 5 formas (`máquina`, `mach`, `pulley`, `machine`, `free`) en `variantChips()` y otros | `typeTag()` (pendiente G4) |
-| Carga | `effW()` (peso corporal vivo); `numTxt()` (hasta 2 decimales); `roundLoad()` (kg 2.5 · lbs 5 · pla 1); `kgLoad()` (lbs→kg, placas fuera) | ✓ | e1RM en lbs etiquetado "kg" a mano (M5-04): G4 |
+| Carga | `effW()` (peso corporal vivo); `numTxt()` (hasta 2 decimales); `roundLoad()` (kg 2.5 · lbs 5 · pla 1); `kgLoad()` (lbs→kg, placas fuera) | ✓ | v272: el detalle de e1RM (`liftE1Series()`/`openLiftDetail()`) va en la unidad real de la vez más reciente (`lbs`, `placas`), sin drops ni sugerencias; la tile de e1RM todavía dice `kg` (M5-04): G4 |
 | Lectura suelta | `59.8 kg`: número `--fg`, unidad separada y tenue (`.line .v .u`, `.pval span`) | ✓ | |
 | Peso corporal (v269) | en la unidad que elegiste para pesarte (`db.settings.bwUnit`, kg por defecto): `131.8 lbs` o `59.8 kg`, 1 decimal | `bwU()` (unidad) · `bwShow(kg)` (para mostrar) · `bwParse(texto)` (para guardar, siempre en kg; en lbs con 0.01 de precisión, así 160 lbs se relee exacto) | ✓ registro de peso, tile, detalle de métrica, throwback, wrap mensual, //PROFILE |
 | Miles | `2,405` | `toLocaleString()` | ✓ |
@@ -1425,7 +1492,8 @@ porque mucha gente se pesa en kg y carga en lbs): **peso corporal** en `db.setti
 **pesas del gym** en `db.settings.unit` (la unidad por defecto de un ejercicio nuevo); cada carga va en la unidad de su
 ejercicio (`exDisplayUnit()`), visible en el `<select>` de cada serie y en compartir. Las dos se eligen en //PROFILE
 (`peso corporal en ›`, `pesas del gym en ›`, con TRKSelect) y en el primer perfil, antes de teclear un peso (§7.34).
-Todavía en kg fijo: la tile de e1RM y el `peso … kg/Nd` del mantenimiento real (M5-04, G4).
+Todavía en kg fijo: la tile de e1RM (su detalle ya va en la unidad real desde v272) y el `peso … kg/Nd` del mantenimiento
+real (M5-04, G4).
 
 ---
 
@@ -1523,7 +1591,7 @@ toque (X1-10).
 
 ### 11.1 Diccionario `GLYPHS` (cerrado; un glifo = un significado)
 
-Espejo de BRAND §3 y de la constante `GLYPHS` de `index.html` (`'✓○▲▼⠿›‹▾▶↓✕↩~⚠▌×@/→#—−'`). Desde v268 la acompaña
+Espejo de BRAND §3 y de la constante `GLYPHS` de `index.html` (`'✓○▲▼⠿›‹▾▶↓✕↩~⚠▌×@/→#—−σ'`; σ desde v272). Desde v268 la acompaña
 `GLYPHS_VIZ` (`'▖▘▝▗░▒▓█▏▎▍▋▊▉─│┌┐└┘├┤┬┴┼'`): los cuadros del spinner y los bloques del medidor, que solo viven en
 TRKSpin y TRKProgress, y el box-drawing, reservado a overlays y compartir (hoy sin uso). Cualquier otro símbolo en un texto de interfaz es
 una desviación; las etiquetas que escribe el dueño no cuentan. La revisa: R-GLY (el auditor acepta esos bloques desde
@@ -1542,11 +1610,12 @@ v267) · `_dsRenderCheck` glyph (acepta `GLYPHS_VIZ` desde v268).
 | ↓ | drop set | `[↓ drop set]`, series de drop | "drop" |
 | ✕ | quitar | toast de error, ✕ de ejercicio, `.lc .x` | "quitar" |
 | ↩ | deshacer | `.footer .undo` | "deshacer" |
-| ~ | estimado | `~T`, `~` de sugerido | "aproximado" |
+| ~ | estimado | `~σ`, `~` de sugerido | "aproximado" |
 | ⚠ | aviso | toasts de error, alimentos a revisar | "aviso" |
 | ▌ | cursor (solo arranque y vacíos) | `.cur` del landing, `.bcur` de `ready▌` en el arranque (v268); dentro de un medidor `[…]` es media celda | — |
 | × @ / → # | notación de series y datos | `160lbs×8@0 / …`, `→ acción` del diagnóstico, `#músculo` | — |
 | — | sin dato | lecturas vacías | "sin dato" |
+| σ | estímulo en series efectivas (1 = una serie al fallo; v272, reemplaza a la T) | `σ0.98` por serie (`.settens`), `σ 2.6` por ejercicio (`.exT`), //STIMULUS, //MUSCLES, tile `σ · wk`, historial, hoja de sesión, export | "estímulo" |
 | `>` | aquí / activo (ASCII, fuera de `GLYPHS`) | `.nav a.active::before` (v267); prompt del arranque `> loading gym tracker` y la fila con foco del perfil `.obk::before` (v268) | `aria-current="page"` |
 | ▖ ▘ ▝ ▗ | trabajando (`GLYPHS_VIZ`, v268) | TRKSpin `.tsg` (§7.33) | `role="status"` con el verbo |
 | █ ░ (+ octavos ▏▎▍▋▊▉) | medidor (`GLYPHS_VIZ`, v268) | TRKProgress `.tprog` (§7.33) | `role="progressbar"` con `aria-valuenow` |
@@ -1624,7 +1693,7 @@ hacer`; sin conexión `⚠ sin conexión · [reintentar]`.
 | Gym | cabecera `//GYM sin split` + `+ crear split`, `explorar splits`, `importar` | recuperación con "pocos datos"; "sin baseline" en series | — | — (local) |
 | Sesión | — | prefill vacío; "sin baseline" | — | guardado fallido: `.savebar` permanente + TRKAsk "no se pudo guardar" |
 | Macros | `no meals logged`, `no water logged` (inglés: G3 → español); sin suplementos, la invitación de //SUPPS (§7.36) | — | `▖ buscando en línea… 3s` (TRKSpin); OCR `leyendo [██████▍░░░] 42%` (TRKProgress) | OpenFoodFacts falla **en silencio** y un código que no se pudo buscar sale como "no encontrado" (M4-09 → G4: `// 0 resultados` · `⚠ sin conexión · [reintentar]` · resultados) |
-| Progreso | **visible = recuadro (v263; desde v269 "visible" = no quitada en el modo editar, §7.35):** una tile visible se dibuja aunque no tenga un solo dato — sin tile no hay por dónde registrarla. Vacío = `emptyTile()`: `—` + `sin registro`, y el recuadro entero abre su registro (volumen/tensión/e1rm → `loglater`; FC en reposo/HRV/energía activa → su hoja). "sin registros en este rango", "sin volumen registrado en este rango", "aún no hay levantamientos con peso × reps" | `sin normal · N/7 d`, diagnóstico "pocos datos" | — | — |
+| Progreso | **visible = recuadro (v263; desde v269 "visible" = no quitada en el modo editar, §7.35):** una tile visible se dibuja aunque no tenga un solo dato — sin tile no hay por dónde registrarla. Vacío = `emptyTile()`: `—` + `sin registro`, y el recuadro entero abre su registro (volumen/σ/e1rm → `loglater`; FC en reposo/HRV/energía activa → su hoja). "sin registros en este rango", "sin volumen registrado en este rango", "aún no hay levantamientos con peso × reps" | `sin normal · N/7 d`, diagnóstico "pocos datos" | — | — |
 | Historial | "sin sesiones registradas" | — | — | sesión inexistente en compartir (G4) |
 | Stack | "stack vacío", "no toca nada hoy ✓" | — | — | — |
 | Compartir | "sin sesión para compartir", "sin series registradas", "sin alimentos este día", "aún sin series con peso y reps" | — | `▖ generando imagen… 1s` (toast de tarea) | `⚠ no se pudo generar la imagen` |
@@ -1701,10 +1770,10 @@ Objetivo G4: completar la tabla con el texto exacto de cada celda vacía y una a
 |---|---|---|---|---|---|
 | `landing` / `login` | primer uso | marca | `.start`, `.field`, `.toggles` | no | M0 sin evaluar (G4): tono de venta, etiquetas en mayúsculas, `← regresar`, marca con `//` en dos opacidades |
 | `onboard` | primer uso (perfil) | `[‹ atrás]` (`.obback`) + `.obh` `gym//TRK//PROFILE` + una línea | filas de terminal `.obr` (clave `.obk` + control; `.obi`, toggles), unidades primero, listas `.toggles.oblist` con su descripción, vista previa `.obprev`, `▶ empezar` | no | v268 · v269, §7.34: la fila con foco lleva `>`; Enter salta al siguiente campo; guardar es aditivo |
-| `home` (gym) | estado actual | `statusBar` + rotación + `dayHeadHTML` (`//NEXT`) | línea de preparación, músculos del día, vista previa (`[ ver rutina ▾ ]`), primario, `[rest day]` `[skip day]` (o `hoy: descanso ✓`, §7.37), //ESTÍMULO, //STATS | sí | con sesión viva solo existe `▶ resume workout` (v258, M1-01/M1-01b) |
+| `home` (gym) | estado actual | `statusBar` + rotación + `dayHeadHTML` (`//NEXT`) | línea de preparación, músculos del día, vista previa (`[ ver rutina ▾ ]`), primario, `[rest day]` `[skip day]` (o `hoy: descanso ✓`, §7.37), //STIMULUS (σ por músculo y, si toca, la fila de fatiga acumulada, §7.23), //STATS | sí | con sesión viva solo existe `▶ resume workout` (v258, M1-01/M1-01b) |
 | `workout` | registro | `.wline` (modo enfoque) | tabla de sesión, descanso, footer | no | §7.8, §7.20 |
 | `macros` | composición | `statusBar` + día `‹ fecha ›` | anillo en `.card`, detalle (radar, P/C/F, `[ver gramos \| ver %]`, INTAKE, retención), SUPPS (o su invitación) → MEALS (`[+ food]` en cada cabecera) → WATER | sí | §7.24, §7.28, §7.36 |
-| `progress` | análisis | `.section` //PROGRESS + `[edit]` | racha en franja, tiles `.ptile` en el orden de `db.settings.progLayout`, //FUERZA, //RECORDS, //MÚSCULOS, //RENDIMIENTO | sí (no mientras se edita) | modo editar §7.35; tiles → filas en G3 |
+| `progress` | análisis | `.section` //PROGRESS + `[edit]` | racha en franja, tiles `.ptile` en el orden de `db.settings.progLayout`, //FUERZA, //RECORDS, //MUSCLES (σ, §7.23), //RENDIMIENTO | sí (no mientras se edita) | modo editar §7.35; tiles → filas en G3 |
 | `history` | archivo | `.section` //HISTORY | mes TRKCal, rail por mes, sesión que se abre en su sitio | no | |
 | `histedit` | corrección | `dayHeadHTML` | tabla de sesión compacta (`.hist-compact`) | no (v267) | |
 | `share` | resumen | según tipo | §7.19 | no | |
@@ -1947,10 +2016,20 @@ Línea base del 2026-09-21: todos en 0 salvo `style=""` 89, excepciones 33, lett
   alimento** — `macroLineHTML()` pone en `<b>` la fuente principal por kcal (pollo → `P 31`, aguacate → `F 15`) y un
   alimento sin macros no lleva línea · **cancel no loguea** — con un alimento guardado y con uno nuevo (que además trae la
   fila `guardar en mis alimentos` en sí), `[cancel]` deja la comida igual.
+- **σ y estado del ejercicio (v272, en `?selftest=1`):** `_tensionSelfCheck` se reescribió como la tabla de calibración
+  de `tension-v2.md` §3 (imprime `sigma self-check OK`): 8 reps al 75 % con F/0/1/2/3/4 → S 1.00 · .98 · .96 · .91 · .87 ·
+  .83 y C 2.19 · 1.40 · 1.25 · 1.00 · .80 · .64; 20 al 40 % al fallo = 1 serie; 50 reps a RIR 0 no es fallo (S .42 ·
+  C 2.72); 7×3RM ≈ 1.4× 3×10RM; RIR vacío, sin 1RM, carga mínima, pierna al fallo, saturación por sesión (10 → 10 ·
+  20 → 15.5) y `rirTargetTxt()`. `_exStatusSelfCheck` (nuevo): progresando, estancado, retrocediendo y pocos datos; la
+  serie en la unidad de la vez más reciente sin mezclar; una fila vieja sin tipo es el mismo ejercicio; `fatigueFlag()`
+  con 2 ejercicios bajando y >25 % a RIR 0, y no con uno solo. `_diagSelfCheck` y `_muscleSelfCheck` ya no prueban
+  MEV/MRV ni landmarks.
 - **Inventario en navegador** (`tools/ds-inventory.js`, se guarda en G1): tamaños, colores→token, radios, sombras, blur,
-  tracking, animaciones, glifos y toques por pantalla, con el respaldo real del dueño. **`dsSweep()` de hoy** (v271, 393×852,
+  tracking, animaciones, glifos y toques por pantalla, con el respaldo real del dueño. **`dsSweep()` de hoy** (v272, 393×852,
   su respaldo, sin sesión viva; es la línea base `render` de `tools/ds-baseline.json`): ua 0 · hit 713 · txt 133 · fsOff 0
-  · blur 0 · glyph 67 · rad 0 (v270: hit 715; −1 en `macros` y −1 en `sheet:foodadd`).
+  · blur 0 · glyph 72 · rad 0 (v271: glyph 67; el +5 es la etiqueta del dueño `puh🥀` —un ejercicio suyo— que ahora sale
+  en una fila de diagnóstico de //MUSCLES: +1 en `progress` y en cada hoja que el barrido abre encima, `sheet:metric-steps`,
+  `sheet:streak`, `sheet:sleeplog`, `sheet:rhrlog`. Es texto del dueño, no un glifo de interfaz, B-08).
 
 ### 18.3 `tools/ds-diff.html`
 

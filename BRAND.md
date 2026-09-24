@@ -56,7 +56,7 @@ toque de 44 px (`.u-hit`). Ej.: `[+ set]` `[share]` `[‹ gym]` `[borrar sesión
 | ⚠ | aviso | ▌ | cursor (solo arranque y vacíos) |
 | × @ / → # | notación de series y datos | — | sin dato |
 | `>` | aquí / activo (pestaña de la nav, prompt del arranque, fila con foco) | ▖ ▘ ▝ ▗ | trabajando: `▖ buscando… 3s` |
-| █ ░ | medidor de progreso: `[██████▍░░░] 42%` (octavos ▏…▉ en el borde) | | |
+| █ ░ | medidor de progreso: `[██████▍░░░] 42%` (octavos ▏…▉ en el borde) | σ | estímulo en series efectivas (1 = una serie al fallo; v272) |
 
 Los de trabajo y medidor (con el box-drawing) viven en `GLYPHS_VIZ` y solo en dos componentes: el spinner de texto, cuando
 no se sabe cuánto falta, y el medidor, cuando el avance es real. Nada de anillos que giran.
@@ -67,7 +67,7 @@ Los demás glifos del set llegan de la fuente con un subconjunto propio (`&text=
 Fuera del set (se reemplazan): ⓘ → `[?]` · ⎘ → `[duplicar]` · ✎ → `[editar]` · ≈ → `~` · ◦ ▸ ▴ → `›`/nada ·
 ← → `‹` · ✗ → `✕` · ■ → texto. ▲▼ nunca para reordenar (eso es ⠿).
 
-**Mayúsculas.** Solo `//SECCIÓN`, siglas (PR, RIR, MEV, MRV) y rótulos de grupo. Todo lo demás en minúsculas, incluidas
+**Mayúsculas.** Solo `//SECCIÓN`, siglas (PR, RIR) y rótulos de grupo. Todo lo demás en minúsculas, incluidas
 las etiquetas de campo. Cabeceras en una línea (`sep 2026 · 10`).
 
 **Idioma (decisión 2026-09-21).** Etiquetas de sistema en **inglés** (`//PROFILE`, `//SETTINGS`, `//HEALTH`,
@@ -120,7 +120,7 @@ pie de compartir, 34 solo en el landing. Una sola variante.
 
 ```
 u/unlxvd ▾          21 sep · 21:29          streak: 12        ← línea de prompt (barra de estado)
-//STIMULUS                          effective sets · 7 d     ← //cabecera + meta a la derecha
+//STIMULUS                                       σ · 7 d     ← //cabecera + meta a la derecha
 peso ······························ 61 kg  ▼ −0.4           ← clave ···· valor
 #chest  bench press  160lbs×8@0 / 160lbs×6@0                 ← línea de registro
 [+ set]  [↓ drop set]  [share]                               ← [comando]
@@ -196,6 +196,8 @@ caracteres sin perder un dato?
 | 2026-09-24 | **Atajo de Salud: pega todo** (v270): un solo Atajo copia pasos, peso, sueño con fases, FC en reposo, HRV y energía; la app lo pega con un toque (`health · paste` en //STATS, `[pegar de Salud]` en //HEALTH) y la receta explica que aún no somos app nativa. Lo tecleado a mano gana | "hay que ver la forma de generar un shortcut en general para que a la hora de pegar la información se pegue lo del peso, se pegue lo de los pasos, se pegue lo del HRV, se pegue lo de la frecuencia cardíaca en reposo, o sea, literalmente todo" |
 | 2026-09-24 | **Meals sin trampas** (v271): `cancel` en la hoja de loguear **nunca** registra el alimento (vuelve a la búsqueda o cierra; un alimento nuevo decide aparte `guardar en mis alimentos [sí] no`) · `[+ food]` sube a la cabecera de cada comida, con sus corchetes, a la derecha entre el nombre y el total · el nombre de la comida manda y el total queda segundo (`--o70`/700) · cada alimento vuelve a llevar su línea `P 31 · C 2 · F 1` con la fuente principal (por kcal) en blanco negrita, sin color | "a pesar de que le doy cancelar se me agrega a la meal ese alimento que no quería agregar" · "el add food se pierde mucho… yo le añadiría los corchetes y lo pondría igual del lado derecho de la meal" · "el nombre de la meal y el total de calorías… destaca más… las calorías totales que es el nombre de la meal" · "le hace falta lo que antes tenía de que por alimento poner sus macros y en highlight como que su fuente principal" · elección: "Blanco en negrita, sin color" |
 | 2026-09-24 | **Duraciones en h y min** (v271): `45 min` · `5 h 12 min` · `2 d 4 h` en toda la app (sueño, recuperación, sesión, agenda, recap, wrap, exportar); nunca horas decimales; el eje de una gráfica en horas redondas (`7 h`) y el descanso sigue `m:ss`. Reescribe el `1h26` de §3 | "hoy dormí 5.2 horas, pero ese 0.2 horas no me dice nada. así que hay que manejar horas y minutos, hay que manejar las unidades correspondientes de las cosas" |
+| 2026-09-24 | **σ en lugar de la T y fuera MEV/MRV y la guía RP** (v272, modelo de `contexto/tension-v2.md` §3 y §6): el estímulo se mide en **σ** (series efectivas, 1 = una serie al fallo) según el peso relativo y la cercanía al fallo; el fallo cuesta aparte (costo C) y más de 30 reps cuenta como poco estímulo y mucha fatiga. //STIMULUS y //MUSCLES dan σ de 7 días por músculo real contra la **zona objetivo 10–20** (marcas neutras en 10 y 20; bandas <4 · 4–10 · 10–20 · 20–30 · >30, Pelland 2026); una frase solo si hay algo que mover y el color solo en el `⚠` (B-07). En el entreno, `obj RIR 1–2` según el peso reemplaza al contador de zonas. σ entra a `GLYPHS` | "me parece bien" · "el tema de las series efectivas y del mínimo volumen recuperable y esa madre y de la GRP, esa madre realmente no sirve" · "sí el volumen importa, pero no volumen basura, o sea volumen de repeticiones cercanas al fallo" · "si entrenas a 50 repeticiones RIR cero… es más bien fatiga cardiovascular" |
+| 2026-09-24 | **Estado de cada ejercicio y fatiga acumulada** (v272): cada ejercicio dice `progresando` · `estable` · `estancado` · `retrocediendo` (o `pocos datos` con menos de 6 sesiones en 4 semanas), por la tendencia de su e1RM en la unidad real; con 2 o más retrocediendo en ~10 días y la semana cargada (+20 %) o con mucho fallo (>25 % a F o RIR 0), //STIMULUS **ofrece** una semana ligera — nunca la impone | "cuantificar si se está estancando, si se está progresando, si se está retrocediendo… acumulando fatiga" |
 
 ## 10. Preguntas abiertas (se cierran en el estudio, `tools/studio.html`)
 

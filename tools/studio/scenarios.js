@@ -1,7 +1,7 @@
 // gym//TRK · estudio · ESCENARIOS (tools/studio/scenarios.js) — contrato: tools/studio/CONTRACT.md §3
 // Cada escenario abre una pantalla, hoja, overlay o aviso de la app REAL dentro del frame (detrás de guard.js).
 //   { id, g, label, run(W,T), live? }   W = window del frame · T = W.__trk (T.db, T.state)
-// Fuentes: las 56 de tools/ds-diff.html (S2; allá D era la db → aquí T.db; v269 sin m:mood) + las 16 de dsSweep (tools/ds-inventory.js,
+// Fuentes: las 60 de tools/ds-diff.html (S2; allá D era la db → aquí T.db; v269 sin m:mood; v272 + home:stimulus y m:deload) + las 16 de dsSweep (tools/ds-inventory.js,
 // sus ids son la línea base de tools/ds-baseline.json) + los nuevos de §3. Un id aparece una sola vez.
 // Orden = como se recorre la app: gym (inicio, sesión) · macros · progreso · historial · ajustes · hojas sueltas ·
 // compartir · overlays · avisos.
@@ -29,6 +29,11 @@
   // macros en el último día con comida (dsSweep); curDate() de la app lee state.macroDate
   // macroOpen vuelve a false: runIn no lo reinicia y 'macros:open' lo deja abierto
   const macrosOn = (W, T) => { T.state.macroOpen = false; W.go('macros'); const d = foodDay(T); if(d){ T.state.macroDate = d; W.render(); } return d; };
+  // v272 · lleva #view (el contenedor con scroll de la app) a una sección: su regla arriba, sin scrollIntoView (ese también
+  // movería la página del estudio). Solo posición de scroll; render() la vuelve a 0 en el siguiente go()
+  const toSection = (W, s) => { const v = W.document.getElementById('view'), e = $(W, '#view ' + s); if(!v || !e) return false;
+    const sec = e.closest('.section') || e, hr = sec.previousElementSibling, top = (hr && hr.classList.contains('rule')) ? hr : sec;
+    v.scrollTop += top.getBoundingClientRect().top - v.getBoundingClientRect().top; return true; };
   // rango de la hoja de métrica, como el toque [7D]/[30D] de la app (MD_LBL)
   const mdRange = (W, d) => { W._mdRange = d; W._mdCustom = null; W._mdEnd = null; W._mdShowCustom = false; };
   const firstMeal = (W, T) => { const d = macrosOn(W, T); return d ? (T.db.meals[d] || [])[0] || null : null; };
@@ -111,6 +116,10 @@
     { id:'home', g:'pantalla', label:'gym · inicio', run(W){ W.go('home'); } },
     // v269 · rest day = descanso PROGRAMADO: se registra sin mover el split ('rest today ✓ [undo rest] [skip day]')
     { id:'home:rest', g:'pantalla', label:'gym · hoy descanso', run(W, T){ restDay(W, T); } },
+    // v272 · //STIMULUS = σ de 7 días por músculo REAL (etiquetas del dueño), barra con marcas neutras en 10 y 20, una frase
+    // solo si hay algo que mover y el color solo en el ⚠. Arriba, una vez: fatiga acumulada (→ m:deload) y "mucho fallo en
+    // N músculos" si sale en 3 o más. Meta 'σ · 7 d'. Fuera las "series efectivas" contra MEV/MRV de la guía RP
+    { id:'home:stimulus', g:'pantalla', label:'gym · //STIMULUS (σ 7 d)', run(W){ W.go('home'); toSection(W, '[data-gloss="stim"]'); } },
     { id:'workout', g:'sesión', label:'sesión · tabla', live:true, run(W){ W.go('workout'); } },
     { id:'live:workout', g:'sesión', label:'sesión · desde inicio', live:true, run(W){ W.go('home'); click(W, '[data-act="start"],[data-act="resume"]'); W.go('workout'); } },
     { id:'live:exedit', g:'sesión', label:'sesión · editar ejercicio', live:true, run(W){ W.go('workout'); W.openExEdit(0, 0, 0); } },
@@ -126,6 +135,10 @@
     { id:'m:addexform', g:'sesión', label:'sesión · + ejercicio · nuevo', live:true, run(W){ W.go('workout'); W.openAddExForm(0, 'chest'); } },
     { id:'m:ready', g:'hoja', label:'hoja · disposición de hoy', run(W, T){ W.openReadiness(W.todayISO());   // sin datos de hoy → el último día entrenado
         if(!$(W, '#modal')){ const s = lastTrain(T); if(s) W.openReadiness(s.date); } } },
+    // v272 · fatiga acumulada: la semana ligera que se OFRECE (5–7 días, series −30 a −50 %, RIR +2, los mismos ejercicios;
+    // Coleman 2024). Se abre directo: la fila ⚠ de //STIMULUS solo sale con fatigueFlag() (≥2 ejercicios retrocediendo en
+    // ~10 días y carga o fallo altos); sin ella la hoja trae la receta sin la línea de qué viene bajando. Solo lectura
+    { id:'m:deload', g:'hoja', label:'hoja · fatiga acumulada', run(W){ W.go('home'); W.openDeloadInfo(); } },
     { id:'m:gympick', g:'hoja', label:'hoja · elegir gym', run(W){ W.openGymPicker(); } },
     { id:'m:sched', g:'hoja', label:'hoja · agenda del día', run(W){ W.openScheduleModal(0); } },
     { id:'m:adhoc', g:'hoja', label:'hoja · sesión suelta', run(W){ W.openAdhocLog(); } },
@@ -181,6 +194,9 @@
     { id:'m:calday', g:'hoja', label:'hoja · día del calendario (comida + gym)', run(W, T){ const ses = new Set((T.db.sessions || []).filter(s => s.type !== 'rest').map(s => s.date));
         const both = Object.keys(T.db.meals || {}).filter(d => (T.db.meals[d] || []).length && ses.has(d)).sort().pop();
         W.openCalDay(both || W.todayISO()); } },
+    // v272 · el detalle del músculo, el volumen, el levantamiento y la sesión guardada hablan en σ: VOLUME (barra 10/20,
+    // 'σ · estímulo' con su banda), STIMULUS (RIR medio, % a F o RIR 0), FATIGUE = costo C en 72 h; e1RM en su unidad real
+    // con la línea 'estado' (progresando · estable · estancado · retrocediendo)
     { id:'m:muscle', g:'hoja', label:'hoja · músculo', run(W){ W.openMuscleDetail('side_delts'); } },
     { id:'m:musclemap', g:'hoja', label:'hoja · mapa de músculos', run(W){ W.openMuscleMap(); } },
     { id:'m:volume', g:'hoja', label:'hoja · volumen', run(W){ W.openVolumeDetail(); } },

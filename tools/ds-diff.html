@@ -27,7 +27,11 @@ function snap(W){ W.document.getAnimations().forEach(a=>{ try{a.finish();}catch(
 const food={name:'x',base:'g',per100:{kcal:100,protein:10,carbs:10,fat:2},sizes:{serving:30}};
 const lastS=D=>D.sessions[D.sessions.length-1];
 const S2=[
-['home',W=>W.go('home')],['workout',W=>W.go('workout')],['macros',W=>W.go('macros')],['progress',W=>W.go('progress')],['history',W=>W.go('history')],['settings',W=>W.go('settings')],['splitedit',W=>W.go('splitedit')],['stack',W=>W.go('stack')],
+['home',W=>W.go('home')],
+// v272 · //STIMULUS en σ: home con #view desplazado hasta la sección (el snap no ve el scroll: mismo DOM que home, va por
+// paridad con los ids del estudio) · m:deload: la hoja de fatiga acumulada (en un _pre.html anterior a v272 no existe: ERR en A)
+['home:stimulus',W=>{ W.go('home'); const v=W.document.getElementById('view'), e=W.document.querySelector('#view [data-gloss="stim"]'); if(v&&e)v.scrollTop+=e.getBoundingClientRect().top-v.getBoundingClientRect().top; }],
+['workout',W=>W.go('workout')],['macros',W=>W.go('macros')],['progress',W=>W.go('progress')],['history',W=>W.go('history')],['settings',W=>W.go('settings')],['splitedit',W=>W.go('splitedit')],['stack',W=>W.go('stack')],
 // v271 · macros con el detalle abierto (macros:open del estudio) y el toque real de [ver %]; sale siempre de gramos → %.
 // Deja macroOpen y macroPct encendidos para lo que sigue (igual en A y B)
 ['macros:unit',W=>{ const S=W.__trk.state; S.macroPct=false; S.macroOpen=false; W.go('macros'); const t=W.document.querySelector('#view [data-act="togglemacros"]'); if(t)t.click(); else { S.macroOpen=true; W.render(); } const u=W.document.querySelector('#view [data-act="toggleMacroUnit"]'); if(u)u.click(); }],
@@ -36,7 +40,7 @@ const S2=[
 ['m:ready',W=>W.openReadiness(W.todayISO())],['m:food',W=>W.openFoodAdd()],['m:goals',W=>W.openGoals()],['m:sleep',W=>W.openSleepLog()],['m:weight',W=>W.openWeightLog()],['m:rhr',W=>W.openHealthNumLog('rhr')],
 ['m:profile',(W,D)=>W.openExProfile(D.split.days[0].exercises[0].name)],['m:musclemap',W=>W.openMuscleMap()],['m:exedit',W=>{W.go('splitedit');W.openExEdit(0,0)}],['m:stackedit',(W,D)=>W.openStackEdit((D.stack[0]||{}).id)],['m:stacknew',W=>W.openStackEdit(null)],
 ['m:merge',W=>W.openMergeModal()],['m:lift',(W,D)=>W.openLiftDetail(lastS(D).exercises[0].name)],['m:addex2',W=>{W.go('workout');W.openAddExStep2(0,'chest')}],['m:addexform',W=>{W.go('workout');W.openAddExForm(0,'chest')}],
-['m:namesearch',W=>W.openNameSearch()],['m:machine',W=>{W.go('workout');W.openMachineEdit(0)}],['m:volume',W=>W.openVolumeDetail()],['m:workshop',W=>W.openWorkshop()],['m:approx',W=>W.openApproxMeal()],['m:progcfg',W=>{W.go('progress');W.openProgConfig()}],
+['m:namesearch',W=>W.openNameSearch()],['m:machine',W=>{W.go('workout');W.openMachineEdit(0)}],['m:volume',W=>W.openVolumeDetail()],['m:deload',W=>{ W.go('home'); W.openDeloadInfo(); }],['m:workshop',W=>W.openWorkshop()],['m:approx',W=>W.openApproxMeal()],['m:progcfg',W=>{W.go('progress');W.openProgConfig()}],
 ['m:adhoc',W=>W.openAdhocLog()],['m:import',W=>W.openImportSplit()],['m:gympick',W=>W.openGymPicker()],['m:sched',W=>W.openScheduleModal(0)],['m:drink',W=>W.openDrink()],['m:text',W=>W.openTextParse()],['m:health',W=>W.openHealthImport()],['m:mealcode',W=>W.openMealCode()],
 ['m:verify',W=>W.openVerify(food,{})],['m:log',(W,D)=>W.openLog((D.foods||[])[0]||food,{isNew:true})],
 // v271 · alimento guardado: sin fila "guardar en mis alimentos" y [cancel] que cierra (ya no loguea)

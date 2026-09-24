@@ -170,7 +170,7 @@ ${P('lh','A')} .sxs, ${P('lh','A')} .fa-empty, ${P('lh','A')} .empty{line-height
       scenarios:['progress', 'splitedit', 'm:food', 'm:goals', 'm:profile'],
       options:[
         { k:'hoy', label:'hoy · literales' },
-        { k:'A', label:'a los tokens de estado', note:'No se tocan las marcas (MRV .7, relleno de mantener .22; el shader del arranque ya usa --op-dim desde v268) ni el subtexto de la opción elegida. La opción sugerida del perfil (.75) pasa a .7, no a .45: bajo --o40 no se lee. :active y arrastre solo se ven al tocar.',
+        { k:'A', label:'a los tokens de estado', note:'No se tocan las marcas (las de 10 y 20 σ de v272 son neutras: --o40 sin opacidad suelta, ya no hay MRV .7; relleno de mantener .22; el shader del arranque ya usa --op-dim desde v268) ni el subtexto de la opción elegida. La opción sugerida del perfil (.75) pasa a .7, no a .45: bajo --o40 no se lee. :active y arrastre solo se ven al tocar.',
           css: `
 ${P('opacity','A')} .ptile.tap:active, ${P('opacity','A')} .ag-mk.supp:active{opacity:var(--op-press);}
 ${P('opacity','A')} .ex.dragsrc, ${P('opacity','A')} .mgroup.dragsrc{opacity:var(--op-dim);}

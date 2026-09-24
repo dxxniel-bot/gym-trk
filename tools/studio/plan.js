@@ -11,7 +11,7 @@
 
   window.TRK_PLAN = {
     updated: '2026-09-24',
-    note: 'ruta de la guía: G1 y G2 hechos, F0 y T preparan el estudio; G0 se decide aquí, TS (v267) hornea el "terminal sobrio", P1 (v268) el primer arranque, v269 y v270 (salud por Atajo) lo que pediste el 24-sep y v271 comida y unidades; en el orden que aprobaste siguen σ v2 y estado del progreso (v272), split: cómo entrenas (v273), progreso por ejercicio (v274), suplementos con marca y frasco (v275), macros: laboratorio y carrusel (v276), configuración paso a paso (v277), cuentas (v278), Pro y anuncios (v279) y tour (v280). G3 y G4 completan la identidad sin versión fija. Cada entrega borra el CSS de su propuesta y la marca shipped.',
+    note: 'ruta de la guía: G1 y G2 hechos, F0 y T preparan el estudio; G0 se decide aquí, TS (v267) hornea el "terminal sobrio", P1 (v268) el primer arranque, v269 y v270 (salud por Atajo) lo que pediste el 24-sep, v271 comida y unidades y v272 σ v2 y estado del progreso; en el orden que aprobaste siguen split: cómo entrenas (v273), progreso por ejercicio (v274), suplementos con marca y frasco (v275), macros: laboratorio y carrusel (v276), configuración paso a paso (v277), cuentas (v278), Pro y anuncios (v279) y tour (v280). G3 y G4 completan la identidad sin versión fija. Cada entrega borra el CSS de su propuesta y la marca shipped.',
     phases: [
 
       P('G1', 'guía', null, 'hecho', [
@@ -129,11 +129,15 @@
         I('units', 'duraciones en h y min en toda la app: 5 h 12 min en lugar de 5.2 h (sueño, recuperación, sesión, agenda, recap, export); el descanso sigue en m:ss', 'hecho'),
       ]),
 
-      P('V272', 'σ v2 y estado del progreso', 'v272', 'pendiente', [
-        I('sigma', 'σ en lugar de T y fuera MEV/MRV y la guía RP', 'pendiente'),
-        I('state', 'estado por ejercicio: progresando · estable · estancado · retrocediendo', 'pendiente'),
-        I('fatigue', 'fatiga acumulada y descarga opcional', 'pendiente'),
-        I('e1rm', 'e1RM honesto por unidad', 'pendiente'),
+      P('V272', 'σ v2 y estado del progreso', 'v272', 'hecho', [
+        I('sigma', 'σ en lugar de T: estímulo por serie según qué tan cerca del fallo (RIR 0 declarado cuenta 0.5, sin 1RM se usan las reps); fuera MEV/MRV y la guía RP ("esa madre realmente no sirve"); bandas por semana 4 · 10 · 20 · 30 (Pelland 2026) con marcas neutras en 10 y 20', 'hecho'),
+        I('stimulus', '//STIMULUS y //MUSCLES en σ de 7 días por músculo real: una frase solo si hay algo que mover, color solo en el ⚠, "mucho fallo" una vez arriba si sale en 3 o más músculos', 'hecho'),
+        I('diag', 'diagnóstico nuevo: mucho fallo, fallo pesado en básicos, sesión cargada, series de más de 30 reps ("más bien fatiga cardiovascular"), piernas sin recuperar', 'hecho'),
+        I('state', 'estado por ejercicio: progresando · estable · estancado · retrocediendo (tendencia del e1RM en 4 a 16 semanas; pocos datos lo dice)', 'hecho'),
+        I('fatigue', 'fatiga acumulada: ≥2 ejercicios bajando y carga o fallo altos → se ofrece una semana ligera (5–7 días, −30 a −50 % series, RIR +2); nunca se impone', 'hecho'),
+        I('e1rm', 'e1RM honesto: en su unidad real (lbs o placas, ya no "kg" sobre libras), sin drops ni sugerencias, con su línea de estado', 'hecho', { audit: 'M5-04' }),
+        I('rir', 'en la sesión, "obj RIR" según la carga relativa en lugar del conteo por zonas; los números de serie ya no se pintan', 'hecho'),
+        I('check', 'self-checks: tabla de calibración de σ, estado por ejercicio, diagnóstico y músculos', 'hecho', { audit: 'glyph 67→72 (etiqueta del dueño)' }),
       ]),
 
       P('V273', 'split: cómo entrenas', 'v273', 'pendiente', [
@@ -246,7 +250,7 @@
         I('maint', '~mantenimiento con confianza', 'pendiente', { audit: 'HON-3 · M5-06' }),
         I('minus', 'signo − real en los cambios', 'pendiente'),
         I('radar', 'radar 7.5 px → 10 o barras', 'pendiente', { audit: 'M4-11' }),
-        I('e1rm', 'e1RM en lbs sin kg escrito a mano; uni y bi aparte', 'pendiente', { audit: 'M5-04' }),
+        I('e1rm', 'e1RM en lbs sin kg escrito a mano (unidad real · v272); uni y bi aparte', 'en curso', { audit: 'M5-04' }),
         I('focusmode', 'señales honestas del modo enfoque', 'pendiente', { audit: 'M2-10 · M2-16' }),
         I('first', 'M0 primer uso', 'pendiente', { audit: 'M0' }),
       ]),
