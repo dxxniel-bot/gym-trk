@@ -155,6 +155,7 @@
   .line{display:flex; align-items:baseline; gap:10px; font-size:var(--t-data); padding:var(--s2) 0;}
   .line .k{color:var(--o60);} .line .dots{flex:1; border-bottom:var(--bw-leader) dotted var(--line); transform:translateY(-3px);} .line .v{color:var(--fg);}
   .line.stat .k{color:var(--o50);} .line.stat .v{font-weight:700;}
+  .line.stat.tap{cursor:pointer;}   /* v270 · el renglón entero se toca (antes solo el número); mismo alto que sus vecinos */
   .vrow{margin-bottom:var(--s4);} .vtop{display:flex;justify-content:space-between;align-items:baseline;font-size:var(--t-data);margin-bottom:6px;} .vm{color:var(--fg);} .vn{color:var(--o50);font-size:var(--t-label);} .vd{color:var(--o40);}
   /* v228 · landmarks reales en //EFFECTIVE VOLUME + pantalla de músculos */
   .vbar .mrv{position:absolute;top:-1px;width:1px;height:5px;background:var(--warn);opacity:.7;}
@@ -330,7 +331,7 @@
   .mdv{color:var(--fg); white-space:nowrap; text-align:right;}
   .mdsub{color:var(--o40); font-size:var(--t-label); margin-left:6px;}
   /* v269 · //PROGRESS en modo editar (widgets): − arriba a la izquierda (20 visibles, 44 de toque), ⠿ arriba a la derecha
-     (arrastra; tocarlo abre mover antes/después/quitar), barra abajo con + add · cancel · ✓ listo. Sin temblor (B-09). */
+     (arrastra; tocarlo abre mover antes/después/quitar), barra abajo con + add · cancel · ✓ done. Sin temblor (B-09). */
   .ptile.ed,.pwide.ed{position:relative; -webkit-touch-callout:none;} .ptile.ed{border-color:var(--o40);} .ptile.ed .ptchev{visibility:hidden;} .pwide.ed>*:not(.pdel){pointer-events:none;}
   .pdel{position:absolute; left:-6px; top:-6px; z-index:1; width:20px; height:20px; padding:0; border:0; border-radius:50%; background:var(--fg); color:var(--on-fill); font-family:inherit; font-size:var(--t-data); font-weight:800; line-height:var(--lh-tight); display:flex; align-items:center; justify-content:center; cursor:pointer;} .pdel::after{content:''; position:absolute; inset:-12px;}
   .pgrip{position:absolute; right:0; top:0; width:44px; height:44px; display:flex; align-items:flex-start; justify-content:flex-end; padding:var(--s3) var(--s3) 0 0; color:var(--o50); font-size:var(--t-section); line-height:var(--lh-tight); touch-action:none; cursor:grab;}
@@ -396,6 +397,8 @@
   .mdmeal{padding:var(--s2) var(--mcol,0px) var(--s2) var(--s5); margin-bottom:var(--s1); background:var(--o10);}   /* G2 · X1-02: entra solo al abrirse (state._enter); antes re-animaba en cada toque cercano */ .mdmeal .mdm{font-size:var(--t-label); color:var(--o50); padding-top:var(--s2);}
   /* v256 · TRKLog: agua, supps y comida con el MISMO formato (Item Action List de 21st.dev, solo la anatomía) */
   .lsec{margin-top:var(--s4);}
+  .hpst{display:grid; grid-template-columns:2ch 1fr; gap:var(--s3); font-size:var(--t-data); color:var(--o70); line-height:var(--lh-read); margin-bottom:var(--s3);} .hpst .hpn{color:var(--o40); font-weight:700;} .hpst b{color:var(--fg);} .hpst code,.hpfmt{font-family:inherit; color:var(--fg);}
+  .hpfmt{white-space:pre; overflow-x:auto; font-size:var(--t-label); line-height:var(--lh-read); padding:var(--s3); border:var(--bw-box) solid var(--o20); border-radius:var(--r-ctl); margin:0 0 var(--s4);}
   .empty.supempty{text-align:left; padding:var(--s2) 0 var(--s3); line-height:var(--lh-read);}
   .lsmore{flex:0 0 auto; width:44px; height:44px; margin-right:calc(-1 * var(--s4)); padding:0 var(--s4) 0 0; display:flex; align-items:center; justify-content:flex-end; background:none; border:0; color:var(--o50); cursor:pointer;}
   .lhd{display:flex; align-items:center; gap:var(--s3); min-height:44px;}
@@ -1040,7 +1043,7 @@
 
 <script>
 "use strict";
-const APP_V='v269';   // versión visible (arranque); R-DOC la compara con sw.js y con DESIGN_SYSTEM.md línea 3
+const APP_V='v270';   // versión visible (arranque); R-DOC la compara con sw.js y con DESIGN_SYSTEM.md línea 3
 const LS_KEY='gymtrk_db_v1';
 // BRAND.md §3 · diccionario cerrado de glifos de interfaz (un glifo = un significado). tools/ds-audit.cjs (R-GLY) lee
 // esta constante: cualquier otro símbolo no ASCII en un literal de interfaz es una desviación. Las etiquetas que el
@@ -2776,8 +2779,9 @@ function renderHome(){
     +`<hr class="rule"/><div class="section u-mb10"><div class="h"><span class="s">//</span>STATS</div><div class="meta" data-act="settings">[settings]</div></div><div class="u-label u-o40 u-mt-n4 u-mb6 u-mx0">mi día · hoy</div>`
     +`<div class="line stat"><span class="k">sessions · 7d</span><span class="dots"></span><span class="v">${s7.count}</span></div>`
     +`<div class="line stat"><span class="k">uptime</span><span class="dots"></span><span class="v">${uptimeDays()}d</span></div>`
-    +`<div class="line stat"><span class="k">steps · today</span><span class="dots"></span><span class="v u-tap" data-act="editsteps">${(db.steps&&db.steps[todayISO()])?db.steps[todayISO()].toLocaleString():'— tap'}</span></div>`
-    +`<div class="line stat"><span class="k">sleep · last night</span><span class="dots"></span><span class="v u-tap" data-act="logsleep">${(db.sleep&&db.sleep[todayISO()])?sleepHours(db.sleep[todayISO()])+' h':'— tap'}</span></div>`;
+    +`<div class="line stat tap" role="button" tabindex="0" data-act="editsteps"><span class="k">steps · today</span><span class="dots"></span><span class="v">${(db.steps&&db.steps[todayISO()])?db.steps[todayISO()].toLocaleString():'— tap'}</span></div>`
+    +`<div class="line stat tap" role="button" tabindex="0" data-act="logsleep"><span class="k">sleep · last night</span><span class="dots"></span><span class="v">${(db.sleep&&db.sleep[todayISO()])?sleepHours(db.sleep[todayISO()])+' h':'— tap'}</span></div>`
+    +`<div class="line stat tap" role="button" tabindex="0" data-act="healthpaste"><span class="k">health · paste</span><span class="dots"></span><span class="v">${H().shortcut.lastPaste?hpAgo(H().shortcut.lastPaste)+(Date.now()-H().shortcut.lastPaste>18*3600000?' · tap':''):'— tap'}</span></div>`;
 }
 // read-only preview of what starting this day would actually produce (without starting the workout)
 // — uses daySource(), the SAME source newWorkSession() seeds from, so this preview can never promise
@@ -3889,6 +3893,32 @@ function _v268SelfCheck(){ const A=(nm,c)=>{ if(!c) throw new Error('SELFCHECK v
   } finally { db=real; state.screen=rs; try{ box.remove(); }catch(_){} }
   console.log('v268 self-check OK'); }
 // v269 · ánimo fuera (con foto), rest ≠ skip, macros sin brinco, suplementos con invitación, cámara, //PROGRESS editable, unidades
+function _healthPasteSelfCheck(){ const A=(nm,c)=>{ if(!c) throw new Error('SELFCHECK Atajo de Salud: '+nm); };
+  const T=['trk2','steps 2026-09-20 5.000','pasos 2026-09-20 3,200','weight 2026-09-21 150 lb','rhr 2026-09-21 55 lpm','hrv 2026-09-21 40','hrv 2026-09-21 60 ms','hrv 2026-09-21 50',
+    'act 2026-09-21 2092 kJ','bas 2026-09-21 1.650','fat 2026-09-21 0,142','sleep 2026-09-20T22:30:00-06:00 2026-09-21T07:00:00-06:00 En cama',
+    'sleep 2026-09-20T23:00:00-06:00 2026-09-21T02:00:00-06:00 Núcleo','sleep 2026-09-21T02:00:00-06:00 2026-09-21T03:00:00-06:00 Profundo',
+    'sleep 2026-09-21T02:30:00-06:00 2026-09-21T03:30:00-06:00 REM','sleep 2026-09-21T03:30:00-06:00 2026-09-21T06:30:00-06:00 Sueño principal','esto no es un dato'].join('\n');
+  const r=parseHealthPaste(T); A('lee el formato trk2', r&&r.payload&&r.payload.platform==='shortcut');
+  const dy=k=>r.payload.daily.find(x=>x.date===k)||{}; const b=r.payload.body.find(x=>x.date==='2026-09-21')||{};
+  A('suma pasos del día (miles con punto o coma)', dy('2026-09-20').steps===8200);
+  A('HRV del día = mediana', dy('2026-09-21').hrv===50&&dy('2026-09-21').hrvKind==='sdnn');
+  A('kJ → kcal y miles en la energía en reposo', dy('2026-09-21').activeKcal===500&&dy('2026-09-21').basalKcal===1650);
+  A('lb → kg y grasa 0,142 → 14.2 %', Math.abs(b.kg-68.04)<0.01&&b.fat===14.2);
+  A('una sola noche, sin "en cama" y sin minutos dobles', r.payload.sleep.length===1&&Math.round(asleepMin(r.payload.sleep[0]))===450);
+  A('texto que no es del Atajo → null', parseHealthPaste('hola')===null&&parseHealthPaste('steps 2026-09-20 100')===null);
+  A('una línea con encabezado sí vale', !!parseHealthPaste('trk2\nsteps 2026-09-20 100'));
+  const real=db;
+  try{ db=JSON.parse(JSON.stringify(real)); db.health={v:1,sessHR:{}}; db.bodyweight={'2026-09-21':70}; db.steps={}; db.sleep={};
+    A('una base vieja gana la forma nueva', !!(H().src.weight&&H().shortcut));
+    H().src.weight['2026-09-21']='manual'; healthPasteApply(T);
+    A('el peso tecleado gana', db.bodyweight['2026-09-21']===70);
+    A('pasos al registro del día', db.steps['2026-09-20']===8200);
+    A('marca el Atajo como en uso', H().shortcut.setup===true&&H().shortcut.lastPaste>0);
+    delete H().src.weight['2026-09-21']; healthPasteApply(T);
+    A('sin tecleo, el Atajo pone el peso', Math.abs(db.bodyweight['2026-09-21']-68.04)<0.01);
+    A('pegar dos veces no duplica', db.steps['2026-09-20']===8200&&Object.keys(H().sleep).length===1);
+  } finally { db=real; }
+  console.log('health paste self-check OK'); }
 function _v269SelfCheck(){ const A=(nm,c)=>{ if(!c) throw new Error('SELFCHECK v269: '+nm); };
   // 1 · ánimo: migrate lo borra y deja constancia; un respaldo viejo también
   const d1=migrate({profile:{username:'x'},mood:{'2026-09-01':{x:5,y:7,label:'contento'}},split:{days:[]}});
@@ -5384,9 +5414,9 @@ function performanceInsights(){ const rows=[];
 function healthShape(h){ h=h||{}; h.v=h.v||1;
   ['sources','daily','sleep','workouts','sessHR','readiness'].forEach(k=>{ if(!h[k]||typeof h[k]!=='object'||Array.isArray(h[k]))h[k]={}; });
   if(!h.sync||typeof h.sync!=='object')h.sync={};
-  if(!h.src||typeof h.src!=='object')h.src={}; if(!h.src.steps)h.src.steps={}; if(!h.src.sleep)h.src.sleep={};
+  if(!h.src||typeof h.src!=='object')h.src={}; if(!h.src.steps)h.src.steps={}; if(!h.src.sleep)h.src.sleep={}; if(!h.src.weight)h.src.weight={}; if(!h.shortcut||typeof h.shortcut!=='object')h.shortcut={};
   if(!Array.isArray(h.log))h.log=[]; return h; }
-function H(){ if(!db.health||db.health.v==null||!db.health.sessHR)db.health=healthShape(db.health); return db.health; }
+function H(){ const h=db.health; if(!h||h.v==null||!h.sessHR||!h.shortcut||!h.src||!h.src.weight)db.health=healthShape(h); return db.health; }
 function healthLog(msg,lvl){ const h=H(); h.log.push({t:Date.now(),lvl:lvl||'info',msg:String(msg).slice(0,200)}); if(h.log.length>50)h.log.splice(0,h.log.length-50); }
 function isNative(){ try{ return !!(window.Capacitor&&Capacitor.isNativePlatform&&Capacitor.isNativePlatform()); }catch(_){ return false; } }
 function isoOfMs(ms){ return todayISO(new Date(ms)); }
@@ -5454,6 +5484,11 @@ function ingestHealth(p,opts){ opts=opts||{}; const h=H(); const out={daily:0,sl
     if(+r.hrv>0&&d.src.hrv!=='manual'){ d.hrv={v:Math.round(+r.hrv*10)/10,kind:r.hrvKind==='rmssd'?'rmssd':'sdnn'}; d.src.hrv=r.src||plat; }
     if(+r.steps>0&&+r.steps<200000&&h.src.steps[r.date]!=='manual'){ db.steps=db.steps||{}; db.steps[r.date]=Math.round(+r.steps); h.src.steps[r.date]=plat; }
     out.daily++; });
+  // v270 · peso y grasa corporal: lo tecleado a mano gana (h.src.weight[fecha]==='manual'); el perfil toma el último peso
+  (p.body||[]).forEach(r=>{ if(!r||!/^\d{4}-\d{2}-\d{2}$/.test(r.date||''))return;
+    if(+r.kg>=20&&+r.kg<=400&&h.src.weight[r.date]!=='manual'){ db.bodyweight=db.bodyweight||{}; db.bodyweight[r.date]=Math.round(+r.kg*100)/100; h.src.weight[r.date]=r.src||plat; out.body=(out.body||0)+1; }
+    if(+r.fat>0&&+r.fat<80){ const d=h.daily[r.date]||(h.daily[r.date]={}); d.src=d.src||{}; if(d.src.fat!=='manual'){ d.fat=Math.round(+r.fat*10)/10; d.src.fat=r.src||plat; } } });
+  if(out.body){ const ks=Object.keys(db.bodyweight).sort(); if(ks.length&&db.profile)db.profile.weightKg=db.bodyweight[ks[ks.length-1]]; }
   const byDay={}; (p.sleep||[]).forEach(r=>{ if(!r||!(r.endMs>r.startMs))return; const k=isoOfMs(r.endMs); (byDay[k]=byDay[k]||[]).push(r); });
   Object.keys(byDay).forEach(day=>{
     const segs=byDay[day].sort((a,b)=>a.startMs-b.startMs).map(r=>({startMs:r.startMs,endMs:r.endMs,stages:Array.isArray(r.stages)?r.stages.filter(x=>Array.isArray(x)&&x[1]>x[0]):[],src:r.src||plat}));
@@ -5568,7 +5603,7 @@ function healthSettingsHTML(){ const h=H(); const nat=isNative();
   s+=L('último sync', agoTxt(h.sync.lastRun));
   if(srcs)s+=L('fuentes', srcs);
   s+=L('datos', Object.keys(h.daily).length+' días · '+Object.keys(h.sleep).length+' noches · '+Object.keys(h.workouts).length+' entrenos · FC en '+Object.keys(h.sessHR).length+' sesiones');
-  s+=`<div class="cta"><div class="secondary">${nat?(h.enabled?'<button class="b" data-act="healthnative">sincronizar ahora</button>':'<button class="b" data-act="healthconnect">conectar Salud</button>')+(h.platform==='android'?'<button class="b" data-act="healthhc">Health Connect</button>':''):''}<button class="b" data-act="healthjson">importar JSON de salud</button><button class="b" data-act="healthsync">atajo (pasos/peso/sueño)</button></div></div>`;
+  s+=`<div class="cta"><div class="secondary">${nat?(h.enabled?'<button class="b" data-act="healthnative">sincronizar ahora</button>':'<button class="b" data-act="healthconnect">conectar Salud</button>')+(h.platform==='android'?'<button class="b" data-act="healthhc">Health Connect</button>':''):''}<button class="b" data-act="healthpaste">pegar de Salud</button><button class="b" data-act="shortcutsetup">cómo armar el Atajo</button><button class="b" data-act="healthjson">importar JSON</button></div></div>`;
   if(h.log.length)s+=`<div class="submeta u-mt8 u-preline">${h.log.slice(-5).reverse().map(x=>escTxt(new Date(x.t).toLocaleString().slice(0,16)+' · '+(x.lvl==='err'?'⚠ ':'')+x.msg)).join('\n')}</div>`;
   return s; }
 // session sheet: HR over the session with a tick per set + summary
@@ -5588,21 +5623,84 @@ function hrTag(x){ if(!x||x.peak==null)return ''; const t=(x.pre!=null?x.pre+'�
 function importHealth(sp){ const msg=[];
   if(sp.has('steps')){ const n=parseInt(sp.get('steps'),10); if(!isNaN(n)&&n>=0&&n<200000){ db.steps=db.steps||{}; db.steps[todayISO()]=n; H().src.steps[todayISO()]='shortcut'; msg.push(n.toLocaleString()+' pasos · hoy'); } }
   if(sp.has('stepsh')){ db.steps=db.steps||{}; const c=importPairs(sp.get('stepsh'),(k,v)=>{ const n=parseInt(v,10); if(isNaN(n)||n<0||n>=200000)return false; db.steps[k]=n; return true; }); if(c)msg.push(c+' días de pasos'); }
-  if(sp.has('weight')){ const w=parseFloat(sp.get('weight')); if(w>=20&&w<=400){ db.bodyweight=db.bodyweight||{}; db.bodyweight[todayISO()]=Math.round(w*10)/10; if(db.profile)db.profile.weightKg=Math.round(w*10)/10; msg.push((Math.round(w*10)/10)+' kg · hoy'); } }
+  if(sp.has('weight')){ const w=parseFloat(sp.get('weight')); if(w>=20&&w<=400){ db.bodyweight=db.bodyweight||{}; if(H().src.weight[todayISO()]==='manual'){ msg.push('peso de hoy: se queda el tuyo'); } else { db.bodyweight[todayISO()]=Math.round(w*10)/10; H().src.weight[todayISO()]='shortcut'; if(db.profile)db.profile.weightKg=Math.round(w*10)/10; } if(false)msg.push((Math.round(w*10)/10)+' kg · hoy'); } }
   if(sp.has('weighth')){ db.bodyweight=db.bodyweight||{}; const c=importPairs(sp.get('weighth'),(k,v)=>{ const w=parseFloat(v); if(!(w>=20&&w<=400))return false; db.bodyweight[k]=Math.round(w*10)/10; return true; }); if(c){ const ks=Object.keys(db.bodyweight).sort(); if(ks.length&&db.profile)db.profile.weightKg=db.bodyweight[ks[ks.length-1]]; msg.push(c+' registros de peso'); } }
   if(sp.has('stepsq')){ const arr=(sp.get('stepsq')||'').split(','); const N=arr.length; let end=sp.get('qend'); const _tst=end&&/^\d{4}-\d{2}-\d{2}$/.test(end)?new Date(end+'T12:00:00'):null; if(!_tst||isNaN(_tst.getTime()))end=todayISO(); db.steps=db.steps||{}; let c=0; for(let i=0;i<N;i++){ const n=parseInt(arr[i],10); if(isNaN(n)||n<0||n>=200000)continue; const d=shiftDate(end,-(N-1-i)); if(!/^\d{4}-\d{2}-\d{2}$/.test(d))continue; db.steps[d]=n; c++; } if(c)msg.push(c+' días de pasos'); }
   if(sp.has('sleep')){ const v=parseSleepVal(sp.get('sleep'), todayISO()); if(v!=null){ db.sleep=db.sleep||{}; db.sleep[todayISO()]=v; msg.push(sleepHours(v)+' h de sueño · hoy'); } }
   if(sp.has('sleeph')){ db.sleep=db.sleep||{}; const c=importPairs(sp.get('sleeph'),(k,val)=>{ const v=parseSleepVal(val,k); if(v==null)return false; db.sleep[k]=v; return true; }); if(c)msg.push(c+' días de sueño'); }
   return msg; }
+// ---------- v270 · Atajo de Salud: pegar todo de un toque ----------
+// Una web no puede leer Apple Salud: un Atajo de iOS arma un texto línea por línea y lo copia; aquí se pega de un toque
+// (iOS muestra su burbuja "Pegar"). Formato (tolerante: comas decimales, separador de miles, unidades, español/inglés):
+//   trk2
+//   steps 2026-09-22 8200          weight 2026-09-23 61.2 kg      rhr 2026-09-23 55      hrv 2026-09-23 48.2 ms
+//   act 2026-09-23 520 kcal        bas 2026-09-23 1650            fat 2026-09-23 14.2 %
+//   sleep 2026-09-22T23:10:00-06:00 2026-09-23T07:02:00-06:00 Núcleo
+const SHORTCUT_URL='';   // enlace de iCloud del Atajo, cuando el dueño lo arme una vez y lo comparta
+const HP_KEY={steps:'steps',pasos:'steps',weight:'weight',peso:'weight',rhr:'rhr',fcr:'rhr',hrv:'hrv',vfc:'hrv',act:'act',activa:'act',bas:'bas',basal:'bas',reposo:'bas',fat:'fat',grasa:'fat',sleep:'sleep',sueno:'sleep','sueño':'sleep'};
+function hpStage(x){ x=String(x||'').trim().toLowerCase(); if(/\brem\b/.test(x))return 'rem'; if(/profund|deep/.test(x))return 'deep'; if(/despiert|awake/.test(x))return 'awake';
+  if(/cama|bed/.test(x))return 'inBed'; if(/n[uú]cleo|core|princip|b[aá]sic|ligero|light/.test(x))return 'core'; return 'asleep'; }
+function hpNum(v,big){ let t=String(v==null?'':v).replace(/\s/g,''); if(!t)return NaN;
+  if(big){ if(/^\d{1,3}([.,]\d{3})+$/.test(t))t=t.replace(/[.,]/g,''); else if(/^\d{1,3}(,\d{3})+\.\d+$/.test(t))t=t.replace(/,/g,''); else if(/^\d{1,3}(\.\d{3})+,\d+$/.test(t))t=t.replace(/\./g,''); }
+  return parseFloat(t.replace(',','.')); }
+function hpDate(x){ x=String(x||'').trim(); let m=x.match(/^(\d{4})-(\d{2})-(\d{2})/); if(m)return m[1]+'-'+m[2]+'-'+m[3]; m=x.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/); if(m)return m[3]+'-'+pad(+m[2])+'-'+pad(+m[1]); return null; }
+function parseHealthPaste(text){ const lines=String(text||'').split(/\r?\n|;/).map(l=>l.trim()).filter(Boolean); if(!lines.length)return null;
+  const hdr=/^trk2\b/i.test(lines[0]); const acc={steps:{},weight:{},rhr:{},hrv:{},act:{},bas:{},fat:{}}, sleep=[]; let n=0;
+  lines.forEach(l=>{ const m=l.match(/^([a-zñáéíóúü]+)\s+(.+)$/i); if(!m)return; const k=HP_KEY[m[1].toLowerCase()]; if(!k)return;
+    if(k==='sleep'){ const q=m[2].match(/^(\S+)\s+(\S+)\s+(.+)$/); if(!q)return; const a=Date.parse(q[1]), b=Date.parse(q[2]), st=hpStage(q[3]);
+      if(isFinite(a)&&isFinite(b)&&b>a&&st&&b-a<16*3600000){ sleep.push([a,b,st]); n++; } return; }
+    const q=m[2].match(/^(\S+)\s+(\d[\d.,\s]*?)\s*(\D*)$/); if(!q)return; const d=hpDate(q[1]); if(!d)return;
+    let v=hpNum(q[2],k==='steps'||k==='act'||k==='bas'); const u=(q[3]||'').trim().toLowerCase(); if(!isFinite(v)||v<=0)return;
+    if(k==='weight'&&/^(lb|libra)/.test(u))v=v*LB; if((k==='act'||k==='bas')&&u==='kj')v=v/4.184; if(k==='fat'&&v<=1)v=v*100;
+    (acc[k][d]=acc[k][d]||[]).push(v); n++; });
+  if(!n||(!hdr&&n<2))return null;
+  const sum=a=>a.reduce((x,y)=>x+y,0), last=a=>a[a.length-1], med=a=>{ const b=a.slice().sort((x,y)=>x-y), i=b.length>>1; return b.length%2?b[i]:(b[i-1]+b[i])/2; };
+  const daily={}, D=d=>daily[d]||(daily[d]={date:d,src:'shortcut'});
+  Object.keys(acc.steps).forEach(d=>{ D(d).steps=Math.round(sum(acc.steps[d])); });
+  Object.keys(acc.act).forEach(d=>{ D(d).activeKcal=Math.round(sum(acc.act[d])); });
+  Object.keys(acc.bas).forEach(d=>{ D(d).basalKcal=Math.round(sum(acc.bas[d])); });
+  Object.keys(acc.rhr).forEach(d=>{ D(d).rhr=Math.round(last(acc.rhr[d])); });
+  Object.keys(acc.hrv).forEach(d=>{ D(d).hrv=Math.round(med(acc.hrv[d])*10)/10; D(d).hrvKind='sdnn'; });
+  const body=[]; const bd=new Set(Object.keys(acc.weight).concat(Object.keys(acc.fat)));
+  bd.forEach(d=>{ const w=acc.weight[d], ft=acc.fat[d]; body.push({date:d,kg:w?Math.round(last(w)*100)/100:null,fat:ft?Math.round(last(ft)*10)/10:null,src:'shortcut'}); });
+  // sueño: los tramos se agrupan en noches (hueco de más de 60 min = otro bloque, igual que el sync nativo); "en cama" sale si hay
+  // fases; si dos fuentes (iPhone + reloj) se enciman, cada minuto cuenta una vez
+  sleep.sort((x,y)=>x[0]-y[0]); const blocks=[]; sleep.forEach(sg=>{ const b=blocks[blocks.length-1]; if(b&&sg[0]-b.endMs<=60*60000){ b.endMs=Math.max(b.endMs,sg[1]); b.stages.push(sg); } else blocks.push({startMs:sg[0],endMs:sg[1],stages:[sg],src:'shortcut'}); });
+  blocks.forEach(b=>{ if(!b.stages.every(x=>x[2]==='inBed'))b.stages=b.stages.filter(x=>x[2]!=='inBed');
+    let end=0; const st=[]; b.stages.sort((x,y)=>x[0]-y[0]).forEach(x=>{ const a=Math.max(x[0],end); if(x[1]>a){ st.push([a,x[1],x[2]]); end=x[1]; } else end=Math.max(end,x[1]); });
+    b.stages=st; if(st.length){ b.startMs=st[0][0]; b.endMs=st[st.length-1][1]; } });
+  const days=new Set(Object.keys(daily).concat(body.map(b=>b.date)).concat(blocks.map(b=>isoOfMs(b.endMs))));
+  const have=[acc.steps,acc.weight,acc.rhr,acc.hrv,acc.act,acc.bas].map(o=>Object.keys(o).length>0);
+  const lbl=['pasos','peso','FC','HRV','energía','reposo'].filter((x,i)=>have[i]).concat(blocks.length?['sueño']:[]);
+  return {payload:{v:1,platform:'shortcut',daily:Object.values(daily),body,sleep:blocks}, days:days.size, labels:lbl, summary:days.size+' días · '+lbl.join(' ')}; }
+function hpAgo(ms){ const m=Math.round((Date.now()-ms)/60000); return m<60?Math.max(1,m)+' min':m<2880?Math.round(m/60)+' h':Math.round(m/1440)+' d'; }
+function healthPasteApply(t){ const r=parseHealthPaste(t); if(!r)return null; ingestHealth(r.payload); const h=H(); h.shortcut=Object.assign({},h.shortcut,{setup:true,lastPaste:Date.now(),lastSummary:r.summary}); return r; }
+function healthPasteNow(){ const done=t=>{ t=String(t||''); const r=healthPasteApply(t); if(r){ savedToast('✓ Salud · '+r.days+(r.days===1?' día':' días')); reRender(); return; }
+    let msg=[]; try{ const q=t.trim().replace(/^\?/,''); if(/stepsh=|weighth=|stepsq=|sleeph=|(^|&)steps=|(^|&)weight=|(^|&)sleep=/.test(q))msg=importHealth(new URLSearchParams(q)); }catch(_){}
+    if(msg.length){ savedToast('✓ '+msg.join(' · ')); reRender(); return; } openHealthImport(); };
+  try{ if(navigator.clipboard&&navigator.clipboard.readText)navigator.clipboard.readText().then(done,()=>openHealthImport()); else openHealthImport(); }catch(_){ openHealthImport(); } }
+function openShortcutSetup(){ const h=H(), sc=h.shortcut||{};
+  const st=(n,t)=>'<div class="hpst"><span class="hpn">'+n+'</span><span>'+t+'</span></div>';
+  openModal('<h3>Atajo de Salud</h3><div class="submeta u-mb10">aún no somos app nativa: el iPhone no deja a una web leer Salud. Un Atajo copia tus datos (peso, pasos, sueño, FC en reposo, HRV, energía) y aquí los pegas con un toque.'+(sc.lastPaste?' · último: '+escTxt(agoTxt(sc.lastPaste)):'')+'</div>'
+    +(SHORTCUT_URL?'<a class="start u-mb10" href="'+SHORTCUT_URL+'" target="_blank" rel="noopener">▶ instalar atajo</a>':'')
+    +'<div class="grp-label">ARMARLO · UNA VEZ · ~5 MIN</div>'
+    +st(1,'Atajos → <b>+</b> → <b>Buscar muestras de Salud</b> (Find Health Samples): <b>Pasos</b> · últimos 7 días · agrupar por <b>día</b>.')
+    +st(2,'<b>Repetir con cada elemento</b> → dentro, un <b>Texto</b>: <code>steps</code> + Fecha de inicio (formato ISO 8601, sin hora) + Valor, separados por espacio.')
+    +st(3,'Después de "Fin de repetir": <b>Combinar texto</b> con <b>nueva línea</b>.')
+    +st(4,'Repite 1–3 con: Peso → <code>weight</code> · FC en reposo → <code>rhr</code> · Variabilidad de la FC → <code>hrv</code> · Energía activa → <code>act</code> · Energía en reposo → <code>bas</code> (las dos energías agrupadas por día).')
+    +st(5,'Sueño: <b>Análisis del sueño</b> · últimos 2 días → Texto <code>sleep</code> + Fecha de inicio + Fecha de finalización (ISO 8601 con hora) + Valor.')
+    +st(6,'Un <b>Texto</b> final que empiece con <code>trk2</code> y debajo cada texto combinado → <b>Copiar al portapapeles</b>.')
+    +st(7,'Automatización: <b>Hora del día</b> 7:30 → ejecutar de inmediato. Luego abre gym//TRK y toca <b>[pegar de Salud]</b>.')
+    +'<div class="grp-label u-mt12">ASÍ SE VE LO COPIADO</div><pre class="hpfmt">trk2\nsteps 2026-09-22 8200\nweight 2026-09-23 61.2 kg\nrhr 2026-09-23 55\nhrv 2026-09-23 48\nact 2026-09-23 520\nsleep 2026-09-22T23:10 2026-09-23T07:02 Núcleo</pre>'
+    +'<div class="sheetbtns"><button class="ok" data-act="healthpaste">pegar ahora</button><button class="cancel" data-act="closemodal">cerrar</button></div>'); }
 function healthSync(){
   if(NATIVE_APP){ healthSyncNative('manual'); return; }
-  function go(t){ t=(t||"").trim(); if(t.charAt(0)==="?")t=t.slice(1); var msg=[]; try{ if(/stepsh=|weighth=|stepsq=|sleeph=|(^|&)steps=|(^|&)weight=|(^|&)sleep=/.test(t)) msg=importHealth(new URLSearchParams(t)); }catch(_){} if(msg.length){ save(); render(); setTimeout(function(){ toast("\u2713 "+msg.join(" \u00b7 ")); },120); } else { openHealthImport(); } }
-  try{ if(navigator.clipboard&&navigator.clipboard.readText){ navigator.clipboard.readText().then(go,function(){ openHealthImport(); }); } else { openHealthImport(); } }catch(_){ openHealthImport(); }
+  healthPasteNow();
 }
 function openHealthImport(){
-  openModal('<h3>importar de Salud</h3><div class="submeta u-mb10">corre tu Atajo (copia los datos), regresa y pega abajo. acepta pasos, peso y/o sueño.</div><textarea id="hi_txt" class="ta md" placeholder="stepsh=2026-05-30:8200,...   weighth=2026-05-15:81.2,...   sleeph=2026-05-30:7.5@23:30-07:00,..."></textarea><button class="b u-w100 u-my8 u-mx0" id="hi_paste">pegar del portapapeles</button><div class="sheetbtns"><button class="ok" id="hi_go">importar</button><button class="cancel" data-act="closemodal">cancel</button></div>');
+  openModal('<h3>pegar de Salud</h3><div class="submeta u-mb10">corre tu Atajo (copia los datos), regresa y pega abajo · peso, pasos, sueño, FC, HRV y energía · <a class="u-ul u-tap" role="button" tabindex="0" data-act="shortcutsetup">cómo armarlo</a></div><textarea id="hi_txt" class="ta md" placeholder="trk2\nsteps 2026-09-22 8200\nweight 2026-09-23 61.2 kg\nsleep 2026-09-22T23:10 2026-09-23T07:02 Núcleo"></textarea><button class="b u-w100 u-my8 u-mx0" id="hi_paste">pegar del portapapeles</button><div class="sheetbtns"><button class="ok" id="hi_go">importar</button><button class="cancel" data-act="closemodal">cancel</button></div>');
   var p=document.getElementById("hi_paste"); if(p)p.onclick=function(){ try{ navigator.clipboard.readText().then(function(t){ var e=document.getElementById("hi_txt"); if(e)e.value=t; },function(){ toast('pega a mano: mantén presionado el cuadro y elige Pegar'); }); }catch(_){ toast('pega a mano: mantén presionado el cuadro y elige Pegar'); } };
-  var g=document.getElementById("hi_go"); if(g)g.onclick=function(){ var txt=(val("hi_txt")||"").trim(); if(txt.charAt(0)==="?")txt=txt.slice(1); var msg=[]; try{ msg=importHealth(new URLSearchParams(txt)); }catch(_){} if(msg.length){ save(); closeModal(); reRender(); setTimeout(function(){ toast("\u2713 "+msg.join(" \u00b7 ")); },120); } else { toast('⚠ no reconocí datos · formato stepsh=fecha:valor o weighth=fecha:kg','err'); } };
+  var g=document.getElementById("hi_go"); if(g)g.onclick=function(){ var _r=healthPasteApply(val("hi_txt")||""); if(_r){ savedToast('✓ Salud · '+_r.days+(_r.days===1?' día':' días')); closeModal(); reRender(); return; } var txt=(val("hi_txt")||"").trim(); if(txt.charAt(0)==="?")txt=txt.slice(1); var msg=[]; try{ msg=importHealth(new URLSearchParams(txt)); }catch(_){} if(msg.length){ save(); closeModal(); reRender(); setTimeout(function(){ toast("\u2713 "+msg.join(" \u00b7 ")); },120); } else { toast('⚠ no reconocí datos · formato stepsh=fecha:valor o weighth=fecha:kg','err'); } };
 }
 function openWeightLog(){ const ks=Object.keys(db.bodyweight||{}).sort(); const last=ks.length?db.bodyweight[ks[ks.length-1]]:((db.profile&&db.profile.weightKg)||'');
   const recent=ks.slice(-8).reverse();
@@ -5611,7 +5709,7 @@ function openWeightLog(){ const ks=Object.keys(db.bodyweight||{}).sort(); const 
    <div class="field row2"><div><label>PESO (${bwU()})</label><input id="bw_kg" type="number" inputmode="decimal" value="${last?bwShow(last):''}" placeholder="${bwU()==='lbs'?'ej. 160':'ej. 72.5'}"/></div><div><label>FECHA</label><input id="bw_date" type="date" value="${todayISO()}" max="${todayISO()}"/></div></div>
    <div class="sheetbtns u-mb6"><button class="ok" id="bw_save">guardar</button><button class="cancel" data-act="closemodal">cerrar</button></div>
    ${recent.length?`<div class="grp-label sub">RECENT LOGS</div>`+rows+``:''}`);
-  document.getElementById('bw_save').onclick=()=>{ const v=bwParse(val('bw_kg')); const d=val('bw_date')||todayISO(); if(!v){ toast('⚠ pon un peso válido','err'); return; } db.bodyweight=db.bodyweight||{}; db.bodyweight[d]=v; const allk=Object.keys(db.bodyweight).sort(); if(allk.length&&db.profile)db.profile.weightKg=db.bodyweight[allk[allk.length-1]]; savedToast('✓ peso guardado'); closeModal(); reRender(); };
+  document.getElementById('bw_save').onclick=()=>{ const v=bwParse(val('bw_kg')); const d=val('bw_date')||todayISO(); if(!v){ toast('⚠ pon un peso válido','err'); return; } db.bodyweight=db.bodyweight||{}; db.bodyweight[d]=v; H().src.weight[d]='manual'; const allk=Object.keys(db.bodyweight).sort(); if(allk.length&&db.profile)db.profile.weightKg=db.bodyweight[allk[allk.length-1]]; savedToast('✓ peso guardado'); closeModal(); reRender(); };
 }
 // v263 · FC en reposo, HRV y energía activa se teclean: una métrica activada siempre tiene por dónde registrarse.
 // Viven donde ya vivían (db.health.daily[fecha]) con marca de origen por campo, como los pasos: lo tecleado gana y
@@ -6183,7 +6281,7 @@ function renderProgress(){
   out+=musclesSectionHTML();
   const _pins=performanceInsights(); if(_pins.length){ out+=`<hr class="rule"/><div class="grp-label">//PERFORMANCE · correlaciones</div><div class="u-label u-o40 u-mt-n4 u-mb6 u-mx0">qué coincide con sesiones de más o menos capacidad · correlación, no causa</div>`; _pins.forEach(function(x){ out+=`<div class="line"><span class="k">${escTxt(x.variable)}</span><span class="dots"></span><span class="v" style="color:${x.r>0?'var(--good)':'var(--bad)'}">${x.r>0?'▲':'▼'} capacidad<span class="u-o40 u-label"> · r=${Math.round(Math.abs(x.r)*100)/100} (${x.n} sesiones)</span></span></div>`; }); }
   if(_ed)return out+`<div class="pedbar"><button type="button" class="b" data-act="progadd">+ add</button><button type="button" class="b" data-act="progcancel">cancel</button><button type="button" class="start pedok" data-act="progdone">✓ done</button></div>`;
-  out+='<div class="u-tc u-mt16 u-mb2 u-mx0"><a data-act="healthsync" class="u-data u-o60 u-tap">↻ sync de Salud (pasos/peso)</a></div>';
+  out+='<div class="u-tc u-mt16 u-mb2 u-mx0"><a data-act="healthpaste" class="u-data u-o60 u-tap">↻ pegar de Salud</a></div>';
   return out;
 }
 // v269 · la hoja on/off se reemplaza por el modo editar de //PROGRESS (el dueño: "que aparezca el signo de más para agregar,
@@ -7466,6 +7564,8 @@ document.getElementById('app').addEventListener('click',e=>{
   else if(a==='progconfig'||a==='progedit'||a==='progmtog'){ progEditStart(); }
   else if(a==='pf_bwu'){ trkSelect(el,['kg','lbs'],bwU(),v=>{ db.settings.bwUnit=v; savedToast('✓ peso corporal en '+v); reRender(); },{title:'peso corporal en'}); }
   else if(a==='pf_liftu'){ trkSelect(el,['lbs','kg'],db.settings.unit||'lbs',v=>{ db.settings.unit=v; savedToast('✓ pesas nuevas en '+v); reRender(); },{title:'pesas del gym en · para ejercicios nuevos'}); }
+  else if(a==='healthpaste'){ closeModal(); healthPasteNow(); }
+  else if(a==='shortcutsetup'){ openShortcutSetup(); }
   else if(a==='progdel'){ const e=state.progEdit, k=el.dataset.k; if(e&&e.hidden.indexOf(k)<0){ e.hidden.push(k); reRender(); } }
   else if(a==='progadd'){ openProgAdd(); }
   else if(a==='progaddk'){ const e=state.progEdit, k=el.dataset.k; if(e){ e.hidden=e.hidden.filter(x=>x!==k); if(k!=='consistency'){ e.order=e.order.filter(x=>x!==k); e.order.push(k); } } closeModal(); reRender(); }
@@ -9922,7 +10022,7 @@ try{ offerLivePending(livePendingSync()); }catch(_){}
 // diario de arranque. Mientras decide, los respaldos se retienen para no pisar `latest`.
 try{ withTO(idbBootCheck(),12000).catch(()=>idbReleaseHold()); }catch(_){ idbReleaseHold(); }
 try{ growthLog(); }catch(_){}
-try{ promptIdleSession(); }catch(_){} try{ if(typeof location!=='undefined' && /[?&]selftest=1/.test(location.search)){ const _rawMain=(()=>{ try{ return localStorage.getItem(LS_KEY); }catch(_){ return null; } })(), _rawLive=(()=>{ try{ return localStorage.getItem(LS_LIVE); }catch(_){ return null; } })(), _lc0=_lastClosed; _sbx=true; try{ _identitySelfCheck(); _dropsetSelfCheck(); _baselineSelfCheck(); _variantSelfCheck(); _historyEditSelfCheck(); _idSelfCheck(); _cardioSelfCheck(); _tensionSelfCheck(); _healthSelfCheck(); _readinessSelfCheck(); _loggingSelfCheck(); _mergeSelfCheck(); _streakSelfCheck(); _chartSelfCheck(); _muscleSelfCheck(); _exProfileSelfCheck(); _recoverySelfCheck(); _diagSelfCheck(); _uiSelfCheck(); _v256SelfCheck(); _v257SelfCheck(); _sessSafetyCheck(); _storageSelfCheck(); _lateralitySelfCheck(); _v268SelfCheck(); _v269SelfCheck(); } finally{ _sbx=false; _lastClosed=_lc0; try{ if(_rawLive==null)localStorage.removeItem(LS_LIVE); else localStorage.setItem(LS_LIVE,_rawLive); }catch(_){} } let _rawAfter=null; try{ _rawAfter=localStorage.getItem(LS_KEY); }catch(_){} const _same=(()=>{ if(_rawAfter===_rawMain)return true; try{ const a=JSON.parse(_rawAfter), b=_rawMain==null?JSON.parse(JSON.stringify(db)):JSON.parse(_rawMain);   /* v267 · almacén vacío: se compara contra la base real en memoria */ return !!a&&!!b&&((a.profile||{}).username===(b.profile||{}).username)&&((a.sessions||[]).length===(b.sessions||[]).length)&&(JSON.stringify(a.split)===JSON.stringify(b.split)); }catch(_){ return false; } })(); if(!_same)console.error(new Error('SELFCHECK sandbox: una base de juguete llegó a tu disco')); else console.log('sandbox self-check OK'); setTimeout(()=>{ _idbSelfCheck(); },800); setTimeout(_dsRenderReport,1500); } }catch(e){ console.error(e); } try{ const _sp=new URLSearchParams(location.search); const _hasHistorical=_sp.has('stepsh')||_sp.has('weighth')||_sp.has('stepsq')||_sp.has('sleeph'); const _hk=['steps','stepsh','weight','weighth','stepsq','sleep','sleeph'].some(k=>_sp.has(k)); if(_hk&&!(db.profile&&db.profile.username)){ if(_bootJ)_bootJ.flags.push('urlImportEmpty'); if(history.replaceState)history.replaceState(null,'',location.pathname); setTimeout(()=>{ try{ toast('⚠ ese enlace abrió Safari, no tu app','err'); }catch(_){} },600); } else if(_hasHistorical){ const _hsp=_sp; if(history.replaceState)history.replaceState(null,'',location.pathname); setTimeout(()=>{ trkAsk({title:'importar datos históricos',detail:'este link trae pasos, peso o sueño de varios días · acepta solo si viene de tu propio Atajo de iOS',ok:'importar'},()=>{ try{ const _imp=importHealth(_hsp); if(_imp.length){ save(); render(); toast('✓ '+_imp.join(' · ')); } }catch(_){} }); },400); } else { const _imp=importHealth(_sp); if(_imp.length){ window._healthImported=_imp; if(history.replaceState)history.replaceState(null,'',location.pathname); } } }catch(_){} save(); render(); if(window._healthImported)setTimeout(()=>toast('✓ '+window._healthImported.join(' · ')),250); if(window._recoveredFromBackup)setTimeout(()=>{try{toast('⚠ se recuperó un respaldo local · revisa tus datos, podrían faltar cambios muy recientes','err');}catch(_){}},600);
+try{ promptIdleSession(); }catch(_){} try{ if(typeof location!=='undefined' && /[?&]selftest=1/.test(location.search)){ const _rawMain=(()=>{ try{ return localStorage.getItem(LS_KEY); }catch(_){ return null; } })(), _rawLive=(()=>{ try{ return localStorage.getItem(LS_LIVE); }catch(_){ return null; } })(), _lc0=_lastClosed; _sbx=true; try{ _identitySelfCheck(); _dropsetSelfCheck(); _baselineSelfCheck(); _variantSelfCheck(); _historyEditSelfCheck(); _idSelfCheck(); _cardioSelfCheck(); _tensionSelfCheck(); _healthSelfCheck(); _readinessSelfCheck(); _loggingSelfCheck(); _mergeSelfCheck(); _streakSelfCheck(); _chartSelfCheck(); _muscleSelfCheck(); _exProfileSelfCheck(); _recoverySelfCheck(); _diagSelfCheck(); _uiSelfCheck(); _v256SelfCheck(); _v257SelfCheck(); _sessSafetyCheck(); _storageSelfCheck(); _lateralitySelfCheck(); _v268SelfCheck(); _v269SelfCheck(); _healthPasteSelfCheck(); } finally{ _sbx=false; _lastClosed=_lc0; try{ if(_rawLive==null)localStorage.removeItem(LS_LIVE); else localStorage.setItem(LS_LIVE,_rawLive); }catch(_){} } let _rawAfter=null; try{ _rawAfter=localStorage.getItem(LS_KEY); }catch(_){} const _same=(()=>{ if(_rawAfter===_rawMain)return true; try{ const a=JSON.parse(_rawAfter), b=_rawMain==null?JSON.parse(JSON.stringify(db)):JSON.parse(_rawMain);   /* v267 · almacén vacío: se compara contra la base real en memoria */ return !!a&&!!b&&((a.profile||{}).username===(b.profile||{}).username)&&((a.sessions||[]).length===(b.sessions||[]).length)&&(JSON.stringify(a.split)===JSON.stringify(b.split)); }catch(_){ return false; } })(); if(!_same)console.error(new Error('SELFCHECK sandbox: una base de juguete llegó a tu disco')); else console.log('sandbox self-check OK'); setTimeout(()=>{ _idbSelfCheck(); },800); setTimeout(_dsRenderReport,1500); } }catch(e){ console.error(e); } try{ const _sp=new URLSearchParams(location.search); const _hasHistorical=_sp.has('stepsh')||_sp.has('weighth')||_sp.has('stepsq')||_sp.has('sleeph'); const _hk=['steps','stepsh','weight','weighth','stepsq','sleep','sleeph'].some(k=>_sp.has(k)); if(_hk&&!(db.profile&&db.profile.username)){ if(_bootJ)_bootJ.flags.push('urlImportEmpty'); if(history.replaceState)history.replaceState(null,'',location.pathname); setTimeout(()=>{ try{ toast('⚠ ese enlace abrió Safari, no tu app','err'); }catch(_){} },600); } else if(_hasHistorical){ const _hsp=_sp; if(history.replaceState)history.replaceState(null,'',location.pathname); setTimeout(()=>{ trkAsk({title:'importar datos históricos',detail:'este link trae pasos, peso o sueño de varios días · acepta solo si viene de tu propio Atajo de iOS',ok:'importar'},()=>{ try{ const _imp=importHealth(_hsp); if(_imp.length){ save(); render(); toast('✓ '+_imp.join(' · ')); } }catch(_){} }); },400); } else { const _imp=importHealth(_sp); if(_imp.length){ window._healthImported=_imp; if(history.replaceState)history.replaceState(null,'',location.pathname); } } }catch(_){} save(); render(); if(window._healthImported)setTimeout(()=>toast('✓ '+window._healthImported.join(' · ')),250); if(window._recoveredFromBackup)setTimeout(()=>{try{toast('⚠ se recuperó un respaldo local · revisa tus datos, podrían faltar cambios muy recientes','err');}catch(_){}},600);
 applyDesign(); try{ if(/[?&]design\b/.test(location.search))localStorage.setItem('gymtrk_designmode','1'); if(localStorage.getItem('gymtrk_designmode')==='1')openDesignPanel(); }catch(_){}
 try{ bootScreen(()=>{ try{
   if(/[?&]wrap=1\b/.test(location.search)){ monthlyWrap(prevMonthYm(), true); return; }

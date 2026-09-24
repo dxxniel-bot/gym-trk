@@ -113,17 +113,20 @@
         I('check', '_v269SelfCheck: ánimo purgado, recovery sin ánimo, rest/unrest/skip, cámara, widgets de progreso, unidad corporal ida y vuelta', 'hecho'),
       ]),
 
-      P('V270a', 'configuración paso a paso', 'v270a', 'pendiente', [
+      P('V270', 'salud por Atajo', 'v270', 'hecho', [
+        I('shortcut', 'Atajo de Salud: pega todo de un toque (pasos, peso y grasa, sueño con fases, FC en reposo, HRV, energía) en formato trk2; lo tecleado gana; receta de 7 pasos que explica que aún no somos app nativa ("literalmente todo")', 'hecho'),
+        I('stats', '//STATS: health · paste y renglones tocables de 44 (.line.stat.tap)', 'hecho', { audit: 'hit 714→715' }),
+        I('check', '_healthPasteSelfCheck: miles, mediana HRV, kJ, lb, grasa, noche sin minutos dobles, texto ajeno, peso tecleado gana, idempotente', 'hecho'),
+        I('url', 'SHORTCUT_URL: enlace de iCloud cuando el dueño arme el Atajo una vez en su iPhone', 'pendiente'),
+      ]),
+
+      P('V271a', 'configuración paso a paso', 'v271a', 'pendiente', [
         I('setup', 'crear cuenta como configuración paso a paso (reemplaza el formulario de perfil de una sola pantalla)', 'pendiente', { proposal: 'fields' }),
       ]),
 
-      P('V270b', 'cuentas', 'v270b', 'pendiente', [
+      P('V271b', 'cuentas', 'v271b', 'pendiente', [
         I('records', 'capa de registros, sombra en IndexedDB v2 y código muerto', 'pendiente'),
         I('sync', 'pantallas de cuenta en el estilo nuevo, sync con Supabase y //ACCOUNT', 'pendiente'),
-      ]),
-
-      P('V271', 'salud por Atajo', 'v271', 'pendiente', [
-        I('shortcut', 'Health Shortcut: el Atajo de iOS manda los datos de Salud a la app web', 'pendiente'),
       ]),
 
       P('V272', 'tensión v2', 'v272', 'pendiente', [

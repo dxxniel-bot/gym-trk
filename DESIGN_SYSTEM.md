@@ -1,6 +1,6 @@
 # gym//TRK — DESIGN SYSTEM (referencia del estado actual)
 
-> Referencia del estado actual (v269). **Lee BRAND.md primero**: manda sobre este archivo. Sin historia: DESIGN_CHANGELOG.md.
+> Referencia del estado actual (v270). **Lee BRAND.md primero**: manda sobre este archivo. Sin historia: DESIGN_CHANGELOG.md.
 
 ---
 
@@ -1257,6 +1257,33 @@ Day sí es saltar el día del split". Antes los dos avanzaban la rotación.
   este día del split`), pero en el iPhone no se ven: si hace falta, van al glosario (`data-gloss`, G4).
 - **La revisa:** `_v269SelfCheck` (rest registra y no mueve el split, no duplica, quitar lo borra, skip sí mueve) ·
   R-SESS.
+
+### 7.38 Atajo de Salud: pegar todo de un toque (`parseHealthPaste()`, v270)
+
+- **Por qué existe:** una web no puede leer Apple Salud. Un Atajo de iOS arma un texto y lo copia; la app lo pega. Pega
+  **todo**: pasos, peso (y grasa), sueño con fases, FC en reposo, HRV y energía activa/en reposo.
+- **Formato `trk2`:** una línea por dato, `clave fecha valor [unidad]`; el sueño es `sleep inicio fin fase`.
+  - Claves en inglés o español (`steps/pasos`, `weight/peso`, `rhr`, `hrv`, `act`, `bas`, `fat/grasa`, `sleep/sueño`).
+  - Tolerante: coma decimal, separador de miles solo en pasos y energía, lb → kg, kJ → kcal, grasa 0.142 → 14.2 %.
+  - Por día: pasos y energía se suman, FC y peso toman el último, HRV la mediana (`sdnn`).
+  - Sueño: los tramos se juntan en noches (hueco > 60 min = otra noche, igual que el sync nativo); `en cama` sale si hay
+    fases; si dos fuentes se enciman, cada minuto cuenta una vez. Fases en español (MX/ES) e inglés (`hpStage`).
+  - Sin encabezado `trk2` pide al menos 2 líneas válidas (así un texto cualquiera no se importa).
+- **Lo tecleado gana:** `ingestHealth` suma `body[]`; el peso que registras a mano queda `H().src.weight[fecha]='manual'`
+  y el Atajo no lo pisa. El formato viejo de URL (`?steps=…`) sigue entrando por `importHealth`.
+- **Entradas:** //STATS en gym `health · paste ···· 3 min` (con más de 18 h: `· tap`) · //HEALTH en ajustes
+  `[pegar de Salud] [cómo armar el Atajo] [importar JSON]` · el enlace `↻ pegar de Salud` al final de //PROGRESS.
+- **Pegar = 2 toques:** `healthPasteNow()` lee el portapapeles dentro del toque (iOS muestra su burbuja "Pegar"); si no hay
+  permiso o el texto no es del Atajo, abre la hoja `pegar de Salud` con la casilla.
+- **La receta** (`openShortcutSetup()`): 7 pasos numerados (`.hpst`: número `--o40`, texto `--o70`, acciones del iPhone en
+  `--fg`/700), el ejemplo de lo copiado en `.hpfmt` (caja fina `--o20`, radio `--r-ctl`) y `pegar ahora` como primario.
+  Explica en una línea que aún no somos app nativa. `SHORTCUT_URL` (vacío hoy) muestra `▶ instalar atajo` cuando el dueño
+  comparta el Atajo por iCloud.
+- **Renglones tocables de //STATS:** `.line.stat.tap` = el renglón entero es el botón (antes solo el número), con el
+  mismo alto que sus vecinos: `steps · today`, `sleep · last night`, `health · paste`. **Hoy → objetivo:** siguen bajo 44 de
+  alto como todo //STATS (B-11); subirlos a 44 solo a ellos deja el bloque disparejo (probado en v270 y revertido).
+- **La revisa:** `_healthPasteSelfCheck` (suma de pasos con miles, mediana de HRV, kJ, lb, grasa, una noche sin minutos
+  dobles, texto ajeno → nada, peso tecleado gana, pegar dos veces no duplica, base vieja gana la forma nueva).
 
 ---
 
