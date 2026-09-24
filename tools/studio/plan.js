@@ -10,8 +10,8 @@
   const I = (id, text, status, extra) => Object.assign({ id, text, status }, extra || {});
 
   window.TRK_PLAN = {
-    updated: '2026-09-23',
-    note: 'ruta de la guía: G1 y G2 hechos, F0 y T preparan el estudio; G0 se decide aquí, TS (v267) hornea el "terminal sobrio" y P1 (v268) el primer arranque; siguen cuentas (v269 · v270) y tour (v271). G3 y G4 completan la identidad sin versión fija. Cada entrega borra el CSS de su propuesta y la marca shipped.',
+    updated: '2026-09-24',
+    note: 'ruta de la guía: G1 y G2 hechos, F0 y T preparan el estudio; G0 se decide aquí, TS (v267) hornea el "terminal sobrio", P1 (v268) el primer arranque y v269 lo que pediste el 24-sep; siguen configuración paso a paso (v270a), cuentas (v270b), salud por Atajo (v271), tensión v2 (v272), Pro y anuncios (v273) y tour (v274). G3 y G4 completan la identidad sin versión fija. Cada entrega borra el CSS de su propuesta y la marca shipped.',
     phases: [
 
       P('G1', 'guía', null, 'hecho', [
@@ -70,7 +70,7 @@
         I('primary', 'primario gym//TRK: bloque invertido de 44 (v267)', 'hecho', { proposal: 'primary' }),
         I('float', 'radio flotante --r-float: 12 (look "1", 22-sep) → 8 con las esquinas de 4 (23-sep)', 'hecho', { proposal: 'float' }),
         I('ring', 'panel del anillo: vidrio sutil (look "1")', 'hecho', { proposal: 'ring' }),
-        I('icons', 'set de íconos TRK (share, camera, nav, escáner)', 'por decidir', { proposal: 'icons' }),
+        I('icons', 'set de íconos TRK (share, escáner; la cámara ya es la de video con REC · v269, la nav es de texto · v267)', 'por decidir', { proposal: 'icons' }),
         I('boot', 'shader del arranque: matriz de fósforo (look "1")', 'hecho', { proposal: 'boot' }),
         I('field', 'borde de campo editable 1 px --o40 (look "1")', 'hecho', { proposal: 'field' }),
         I('log', 'registrar lo elegido en BRAND §9 y cerrar BRAND §10', 'pendiente'),
@@ -101,12 +101,40 @@
         I('check', '_v268SelfCheck: barra, ticker que se detiene, cola bajo el arranque y empezar en sandbox', 'hecho'),
       ]),
 
-      P('AC', 'cuentas', 'v269 · v270', 'pendiente', [
-        I('records', 'v269 · capa de registros, sombra en IndexedDB v2 y código muerto', 'pendiente'),
-        I('sync', 'v270 · pantallas de cuenta en el estilo nuevo, sync con Supabase y //ACCOUNT', 'pendiente'),
+      P('V269', 'lo que pediste el 24-sep', 'v269', 'hecho', [
+        I('mood', 'fuera el ánimo: hoja, tile, fila de //STATS y su peso en recovery (sueño .35 · FC reposo .25 · HRV .20 · carga .25 · comida .15); migrate() borra el dato con foto pre-data2 en IndexedDB ("te había dicho de que quitaras lo del mood")', 'hecho'),
+        I('rest', 'rest day = descanso programado: se registra sin mover el split (mañana sigue el mismo día) y se quita con [undo rest] (en inicio: rest today ✓); skip day salta el día del split; los dos con deshacer', 'hecho', { audit: 'R-SESS' }),
+        I('ring', 'panel del anillo: sin barra de scroll (el ancho ya no brinca) y reglas a sangre con 16 arriba y abajo; [ver gramos|ver %] a la derecha', 'hecho', { proposal: 'ring' }),
+        I('supps', 'cuenta nueva: //SUPPS arriba de las comidas con [+ supp] y ··· → [ignorar por ahora] (vuelve en ajustes)', 'hecho'),
+        I('camera', 'serie grabada: cámara de video con punto REC rojo, fija; fuera el 📷', 'hecho', { proposal: 'camera', audit: 'R-GLYE 4→2' }),
+        I('progedit', '//PROGRESS en modo widgets: [edit] o mantener 0.5 s, − quitar, ⠿ arrastrar, [+ add], [cancel], ✓ done; se guarda en settings.progLayout y viaja con los respaldos', 'hecho', { proposal: 'progedit' }),
+        I('units', 'peso corporal con su propia unidad (kg por defecto) aparte de las pesas del gym: //PROFILE, registro, tile, detalle, throwback y wrap', 'hecho'),
+        I('onboard', 'perfil: [‹ atrás], unidades primero, actividad y objetivo en lista con su descripción fija, casillas de 36 y letra de campo 14 app-wide', 'hecho', { proposal: 'fields' }),
+        I('check', '_v269SelfCheck: ánimo purgado, recovery sin ánimo, rest/unrest/skip, cámara, widgets de progreso, unidad corporal ida y vuelta', 'hecho'),
       ]),
 
-      P('TR', 'tour por sección', 'v271', 'pendiente', [
+      P('V270a', 'configuración paso a paso', 'v270a', 'pendiente', [
+        I('setup', 'crear cuenta como configuración paso a paso (reemplaza el formulario de perfil de una sola pantalla)', 'pendiente', { proposal: 'fields' }),
+      ]),
+
+      P('V270b', 'cuentas', 'v270b', 'pendiente', [
+        I('records', 'capa de registros, sombra en IndexedDB v2 y código muerto', 'pendiente'),
+        I('sync', 'pantallas de cuenta en el estilo nuevo, sync con Supabase y //ACCOUNT', 'pendiente'),
+      ]),
+
+      P('V271', 'salud por Atajo', 'v271', 'pendiente', [
+        I('shortcut', 'Health Shortcut: el Atajo de iOS manda los datos de Salud a la app web', 'pendiente'),
+      ]),
+
+      P('V272', 'tensión v2', 'v272', 'pendiente', [
+        I('sigma', 'σ tensión v2: segunda versión del motor de tensión', 'pendiente'),
+      ]),
+
+      P('V273', 'Pro y anuncios', 'v273', 'pendiente', [
+        I('pro', 'plan Pro y anuncios (cobro en la web primero)', 'pendiente'),
+      ]),
+
+      P('V274', 'tour por sección', 'v274', 'pendiente', [
         I('tour', 'tour por sección para cuentas nuevas, con [saltar]; va después de las cuentas y viaja con ellas', 'pendiente'),
       ]),
 
@@ -134,7 +162,7 @@
         I('labels', '//etiquetas de sistema en inglés (la lista del estudio) · v262', 'hecho', { proposal: 'english', audit: 'LANG 11→0 · T-05' }),
         I('fieldlbl', 'etiquetas de campo en minúsculas (el perfil nuevo ya las usa · v268)', 'en curso', { audit: 'VOZ-2' }),
         I('back', '[‹ origen] con state._from y su scroll', 'pendiente', { proposal: 'back', audit: 'T-02 · BRK 1→0' }),
-        I('glyphs', 'glifos fuera del set → GLYPHS; 📷 → ícono TRK', 'pendiente', { audit: 'GLY 46→0 · GLYE 4→0 · T-09' }),
+        I('glyphs', 'glifos fuera del set → GLYPHS; el 📷 ya es la cámara de video con REC · v269', 'en curso', { proposal: 'camera', audit: 'GLY 46→0 · GLYE 4→2→0 · T-09' }),
         I('green', 'verde solo en el glifo o el número; fresco sin verde · v262', 'hecho', { proposal: 'green', audit: 'T-08 · SEM ↓' }),
         I('recovery', 'recovery ~43 en una línea, sin héroe ni color de veredicto · v262', 'hecho', { proposal: 'recovery', audit: 'T-07 · M5-01' }),
         I('retention', 'retención como fila de diagnóstico solo fuera de rango · v262', 'hecho', { proposal: 'retention', audit: 'M4-01' }),
@@ -149,13 +177,13 @@
         I('lines', 'líneas del arranque impresas una a una (visibilidad, sin movimiento) · v268', 'hecho', { proposal: 'boot' }),
       ]),
 
-      P('G4a', 'interacción', null, 'pendiente', [
+      P('G4a', 'interacción', null, 'en curso', [
         I('hit', '.u-hit: toque de 44 en [comandos]', 'pendiente', { audit: 'T-03 · A11Y-6 · hit 747→meta' }),
         I('floor', 'piso de texto --o40', 'pendiente', { audit: 'T-04 · txt 132→0' }),
         I('opsnap', 'opacidades sueltas a la escalera', 'pendiente', { proposal: 'opacity', audit: 'R-OP ↓' }),
         I('ask', 'textos por defecto de TRKAsk/Hold (nada de ¿seguro?)', 'pendiente', { audit: 'VOZ-5' }),
         I('inline', 'errores en línea dentro del sheet', 'pendiente'),
-        I('undo', 'deshacer para registros del día, rest/skip y el deslizar', 'pendiente', { audit: 'M2-07 · M1-03' }),
+        I('undo', 'deshacer para registros del día, rest/skip (hecho en v269) y el deslizar', 'en curso', { audit: 'M2-07 · M1-03' }),
         I('check', 'toque del ✓ ampliado a 44×42', 'pendiente', { audit: 'M2-06' }),
         I('rows', 'filas TRKLog tocables a 44', 'pendiente', { audit: 'M4-07' }),
       ]),

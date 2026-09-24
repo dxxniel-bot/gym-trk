@@ -1,7 +1,7 @@
 // gym//TRK · estudio · ESCENARIOS (tools/studio/scenarios.js) — contrato: tools/studio/CONTRACT.md §3
 // Cada escenario abre una pantalla, hoja, overlay o aviso de la app REAL dentro del frame (detrás de guard.js).
 //   { id, g, label, run(W,T), live? }   W = window del frame · T = W.__trk (T.db, T.state)
-// Fuentes: las 57 de tools/ds-diff.html (S2; allá D era la db → aquí T.db) + las 16 de dsSweep (tools/ds-inventory.js,
+// Fuentes: las 56 de tools/ds-diff.html (S2; allá D era la db → aquí T.db; v269 sin m:mood) + las 16 de dsSweep (tools/ds-inventory.js,
 // sus ids son la línea base de tools/ds-baseline.json) + los nuevos de §3. Un id aparece una sola vez.
 // Orden = como se recorre la app: gym (inicio, sesión) · macros · progreso · historial · ajustes · hojas sueltas ·
 // compartir · overlays · avisos.
@@ -10,6 +10,10 @@
 // para que el resto de las pantallas se vean como en los datos cargados. Nunca se toca una sesión real del dueño
 // salvo para mostrarla; el aviso de inactividad (una sesión propia "vieja") y el FS de la tabla (`own:true`) arman la suya
 // y luego se devuelve la original.
+// v269 · cambios TEMPORALES en memoria (`later`): un escenario que necesita otra forma de los datos (cuenta sin
+// suplementos, hoy de descanso) APARTA lo que estorba en T.db —misma referencia, misma posición— y deja cómo devolverlo;
+// el siguiente escenario lo devuelve antes de correr. Nada se borra ni se reescribe; lo que la app guarde en medio lo
+// absorbe el guardia.
 // run() nunca lanza: si algo falla devuelve {ok:false, err} (y lo deja en consola).
 (function(){ 'use strict';
   const MINE = new WeakSet(), STALE = new WeakSet(), ORIG = new WeakMap();
@@ -32,6 +36,29 @@
   // ---- descanso: restEnd solo en memoria; se devuelve el valor previo al salir del escenario 'rest' ----
   const RESTED = new WeakMap();
   function unrest(T){ const w = T.db.activeWork; if(w && RESTED.has(w)){ w.restEnd = RESTED.get(w); RESTED.delete(w); } }
+
+  // ---- v269 · cambios temporales en memoria: W → [deshacer]; se deshacen en orden inverso al empezar el siguiente ----
+  const UNDO = new WeakMap();
+  const later = (W, fn) => { const a = UNDO.get(W) || []; a.push(fn); UNDO.set(W, a); };
+  function undoAll(W){ const a = UNDO.get(W); if(!a) return; UNDO.delete(W);
+    for(let i = a.length - 1; i >= 0; i--){ try{ a[i](); }catch(e){ try{ console.warn('escenario · deshacer', e); }catch(_){} } }
+    try{ W.bumpIdx(); }catch(_){} }   // cachés del motor (sesiones, recuperación…) con los datos devueltos
+  // cuenta sin suplementos: el stack entero se aparta (la invitación solo sale con el stack VACÍO y sin suppHide)
+  function noSupps(W, T){ const db = T.db, st = db.stack, set = db.settings || {}, had = Object.prototype.hasOwnProperty.call(set, 'suppHide'), hv = set.suppHide;
+    db.stack = []; if(had) delete set.suppHide;
+    later(W, () => { if(T.db !== db) return; db.stack = st; if(had) set.suppHide = hv; }); }
+  // hoy de descanso: se apartan la sesión viva (con una en curso la app no deja marcar descanso) y lo entrenado hoy
+  // ("hoy ya entrenaste"); luego el toque real de [rest day]. Al salir: fuera ese descanso y todo vuelve a su lugar.
+  function restDay(W, T){ const db = T.db, t = W.todayISO(), w = db.activeWork;
+    if(w){ db.activeWork = null; later(W, () => { if(T.db === db && db.activeWork == null) db.activeWork = w; }); }
+    const ss = db.sessions || [], out = [];
+    for(let i = ss.length - 1; i >= 0; i--){ const s = ss[i]; if(s && s.type !== 'rest' && s.date === t && (s.exercises || []).length){ out.push([i, s]); ss.splice(i, 1); } }
+    if(out.length){ try{ W.bumpIdx(); }catch(_){} later(W, () => { if(T.db !== db) return; out.slice().reverse().forEach(([i, s]) => db.sessions.splice(Math.min(i, db.sessions.length), 0, s)); }); }
+    T.state.selDay = null; W.go('home');
+    if(W.restToday()) return;   // un descanso real de hoy se queda como está
+    const n0 = (db.sessions || []).length; click(W, '#view [data-act="rest"]');
+    const r = db.sessions.length > n0 ? db.sessions[db.sessions.length - 1] : null;
+    if(r && r.type === 'rest') later(W, () => { if(T.db === db) db.sessions = db.sessions.filter(x => x !== r); }); }
 
   // ---- sesión en vivo en memoria ----
   function restore(W, T){ T.db.activeWork = ORIG.has(W) ? ORIG.get(W) : null; ORIG.delete(W); }
@@ -81,6 +108,8 @@
   const L = [
     // ---------------- gym ----------------
     { id:'home', g:'pantalla', label:'gym · inicio', run(W){ W.go('home'); } },
+    // v269 · rest day = descanso PROGRAMADO: se registra sin mover el split ('rest today ✓ [undo rest] [skip day]')
+    { id:'home:rest', g:'pantalla', label:'gym · hoy descanso', run(W, T){ restDay(W, T); } },
     { id:'workout', g:'sesión', label:'sesión · tabla', live:true, run(W){ W.go('workout'); } },
     { id:'live:workout', g:'sesión', label:'sesión · desde inicio', live:true, run(W){ W.go('home'); click(W, '[data-act="start"],[data-act="resume"]'); W.go('workout'); } },
     { id:'live:exedit', g:'sesión', label:'sesión · editar ejercicio', live:true, run(W){ W.go('workout'); W.openExEdit(0, 0, 0); } },
@@ -103,8 +132,13 @@
     // ---------------- macros ----------------
     { id:'macros', g:'pantalla', label:'macros', run(W, T){ macrosOn(W, T); } },
     { id:'nav:macros', g:'pantalla', label:'nav · macros activa', run(W, T){ navOn(W, () => macrosOn(W, T)); } },
-    // el detalle (anillos, INTAKE, retención) solo se pinta con state.macroOpen
-    { id:'macros:open', g:'pantalla', label:'macros · detalle', run(W, T){ macrosOn(W, T); T.state.macroOpen = true; W.render(); } },
+    // el detalle (anillos, INTAKE, retención) solo se pinta con state.macroOpen: macrosOn lo deja cerrado y aquí va el
+    // mismo toque que la app, [data-act="togglemacros"] (si el botón no está, se abre por state). v269: reglas a sangre
+    // con 16 arriba y abajo, [ver gramos|ver %] a la derecha y sin barra de scroll (el ancho ya no brinca al abrir)
+    { id:'macros:open', g:'pantalla', label:'macros · detalle', run(W, T){ macrosOn(W, T);
+        if(!click(W, '#view [data-act="togglemacros"]')){ T.state.macroOpen = true; W.render(); } } },
+    // v269 · cuenta sin suplementos: //SUPPS arriba de las comidas invita a registrarlos ([+ supp] · ··· → ignorar por ahora)
+    { id:'m:supps-empty', g:'pantalla', label:'macros · sin suplementos (invitación)', run(W, T){ noSupps(W, T); macrosOn(W, T); } },
     // retención "high": la fila solo sale fuera de rango (BRAND §4) → busca el día con comida más reciente que la tenga
     { id:'macros:high', g:'pantalla', label:'macros · retención alta', run(W, T){ macrosOn(W, T); T.state.macroOpen = true;
         const ds = Object.keys(T.db.meals || {}).filter(k => (T.db.meals[k] || []).length).sort().reverse();
@@ -141,10 +175,13 @@
     { id:'m:lift', g:'hoja', label:'hoja · levantamiento', run(W, T){ const s = lastTrain(T) || lastAny(T); const e = s && (s.exercises || [])[0]; if(e) W.openLiftDetail(e.name); } },
     { id:'m:catalog', g:'hoja', label:'hoja · catálogo de ejercicios', run(W){ W._mgSel = []; W.openExerciseDirectory(); } },
     { id:'m:profile', g:'hoja', label:'hoja · perfil del ejercicio', run(W, T){ const e = firstEx(T); if(e) W.openExProfile(e.name); } },
-    { id:'m:progcfg', g:'hoja', label:'hoja · métricas visibles', run(W){ W.openProgConfig(); } },
+    // v269 · //PROGRESS en modo widgets ([edit] o mantener 0.5 s una tile): − quitar, ⠿ arrastrar, [+ add] [cancel] ✓ done.
+    // openProgConfig() conserva el nombre y ya no abre una hoja: entra al modo (solo desde progress). Salir = go() a otra
+    // pantalla o [cancel]; nada se guarda hasta ✓ done (y lo que se guarde lo absorbe el guardia)
+    { id:'prog:edit', g:'pantalla', label:'progreso · editar (widgets)', run(W){ W.go('progress'); W.openProgConfig(); } },
+    { id:'m:progcfg', g:'hoja', label:'hoja · agregar a progreso', run(W){ W.go('progress'); W.openProgConfig(); W.openProgAdd(); } },
     { id:'sheet:sleeplog', g:'hoja', label:'hoja · sueño', run(W){ W.go('progress'); W.openSleepLog(); } },
     { id:'m:sleep', g:'hoja', label:'hoja · sueño (desde gym)', run(W){ W.openSleepLog(); } },
-    { id:'m:mood', g:'hoja', label:'hoja · ánimo', run(W){ W.openMoodLog(); } },
     { id:'m:weight', g:'hoja', label:'hoja · peso', run(W){ W.openWeightLog(); } },
     { id:'m:rhr', g:'hoja', label:'hoja · fc en reposo', run(W){ W.openHealthNumLog('rhr'); } },
     { id:'m:health', g:'hoja', label:'hoja · importar salud', run(W){ W.openHealthImport(); } },
@@ -172,15 +209,23 @@
     { id:'m:textsheet', g:'hoja', label:'hoja · guardar como texto', run(W){ W.openTextSheet('gymtrk-respaldo.json', '{"version":1,"profile":{"username":"demo"},"sessions":[],"meals":{}}', noop); } },
     { id:'landing', g:'pantalla', label:'entrada', run(W){ W.go('landing'); } },
     { id:'login', g:'pantalla', label:'entrada · iniciar', run(W){ W.go('login'); } },
-    // v268 · filas de terminal (.ob/.obr): clave en minúsculas, > en la fila con foco, vista previa de kcal y proteína
+    // v268 · filas de terminal (.ob/.obr): clave en minúsculas, > en la fila con foco, vista previa de kcal y proteína ·
+    // v269: [‹ atrás] arriba, unidades primero (te pesas en · pesas gym), actividad y objetivo en lista vertical con su
+    // descripción fija, casillas de 36 y letra de campo 14
     { id:'onboard', g:'pantalla', label:'entrada · crear perfil', run(W){ W.go('onboard'); } },
     // ---------------- compartir ----------------
     { id:'m:shareday', g:'compartir', label:'compartir · el día (botón)', run(W){ W.go('macros'); click(W, '[data-act="share"],[data-act="sharemacros"]'); } },
     { id:'share:food', g:'compartir', label:'compartir · el día', run(W, T){ T.state.shareType = 'food'; const d = foodDay(T); if(d) T.state.macroDate = d; W.go('share'); } },
     { id:'share:session', g:'compartir', label:'compartir · sesión', run(W, T){ const s = lastTrain(T); T.state.shareType = 'session'; T.state.shareId = s ? s.id : null; W.go('share'); } },
     { id:'share:weight', g:'compartir', label:'compartir · peso', run(W, T){ T.state.shareType = 'weight'; W.go('share'); } },
-    // toca la primera serie (si aún no hay una: tocarla otra vez la quitaría): la marca de cámara (📷 hoy, cámara TRK en icons A) solo sale con una serie elegida
+    // toca la primera serie (si aún no hay una: tocarla otra vez la quitaría): la marca (v269: cámara de video con punto
+    // REC rojo, .camic a la izquierda de la serie) solo sale con una serie elegida. La marca vive en state._cam, no en db
     { id:'popup:exshare', g:'compartir', label:'compartir · ejercicio', live:true, run(W){ W.go('workout'); W.openExShare(0); if(!$(W, '.exsh .camon')) click(W, '.exsh [data-camsi]'); } },
+    // v269 · la cámara de video con REC en la 1.ª serie: se toca salvo que ya la tenga (otro toque la quitaría; si estaba
+    // en otra serie, se mueve aquí). Solo state._cam: nada de db
+    { id:'exsh:cam', g:'compartir', label:'compartir · ejercicio · cámara REC', live:true, run(W){ W.go('workout'); W.openExShare(0);
+        const r = $(W, '.exsh [data-camsi]');
+        if(r && !r.classList.contains('camon')) r.click(); } },
     // ---------------- overlays ----------------
     // v268 · "loading gym tracker" en cada apertura: el guardia pide la variante completa (shader, db/split/última sesión,
     // barra, ready▌ en ~0.95 s) o la corta (~0.5 s, sin shader: '> resuming <día> · set n/N' con la sesión en curso).
@@ -213,6 +258,7 @@
   // envoltura: sesión en vivo según `live` (`own` = el escenario arma su propia sesión), y nunca lanza
   const wrapRun = s => { const fn = s.run, live = !!s.live, own = !!s.own;
     return async function(W, T){ try{
+        undoAll(W);
         if(s.id !== 'rest') unrest(T);
         if(!own){ if(live) ensureLive(W, T); else calm(W, T); }
         await fn.call(s, W, T);

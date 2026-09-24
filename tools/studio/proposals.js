@@ -25,7 +25,7 @@
   }
 
   // ---------- íconos TRK (brand-lab §5: rejilla 24, trazo 1.6, remates cuadrados, currentColor) ----------
-  // v267 · la nav es de texto (sin .ic ni NAVIC): el set ya solo toca [compartir] del ejercicio y la cámara
+  // v267 · la nav es de texto (sin .ic ni NAVIC) · v269 · la cámara es la de video con REC (propuesta 23): el set ya solo toca [compartir]
   const TRK = {
     share: '<path d="M9 9H5v11h14V9h-4M12 15V3M8 7l4-4 4 4"/>'
   };
@@ -39,9 +39,7 @@
       const s = d.createElement('span'); s.className = 'trkp-ic'; s.setAttribute('data-trk-patch', ''); s.innerHTML = trkSvg('share', 16);
       old.classList.add('trkp-old'); b.appendChild(s); });
   }
-  // cámara TRK como máscara (el 📷 vive en CSS: .exsh .camon::before). Sin '#' ni colores de la paleta: la máscara solo usa alfa.
-  const CAM_MASK = 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'black\' stroke-width=\'1.6\' stroke-linecap=\'square\' stroke-linejoin=\'miter\'%3E%3Cpath vector-effect=\'non-scaling-stroke\' d=\'M3 7h4l2-3h6l2 3h4v13H3z\'/%3E%3Cpath vector-effect=\'non-scaling-stroke\' d=\'M9 10h6v6H9z\'/%3E%3C/svg%3E")';
-
+  // v269 · la cámara de la serie grabada ya no es parte de esta propuesta: se decidió aparte (propuesta 23 · camera)
 
   // v267 · nav (1), primario (2) y secundarios (9) se hornearon en index.html: su CSS de propuesta y sus ayudas se borraron
 
@@ -77,16 +75,15 @@
       scenarios:['macros', 'macros:open', 'share:food'],
       options:[ { k:'hoy', label:'hoy · vidrio sutil (v262)' }, { k:'C', label:'vidrio sutil', note:'horneado en index.html en v262; su CSS de propuesta se borró' } ] },
     { id:'icons', n:5, group:'G0', title:'TRK icons', rule:'B-08 · BRAND §4 íconos', src:'brand-lab §5',
-      question:'¿Cambiamos los íconos por el set TRK (rejilla 24, trazo 1.6, remates cuadrados)? Aplica a [compartir] del ejercicio y a la marca de la serie grabada (el 📷 pasa a cámara TRK). La nav ya no lleva íconos desde v267.',
+      question:'¿Cambiamos los íconos por el set TRK (rejilla 24, trazo 1.6, remates cuadrados)? Aplica a [compartir] del ejercicio (y al escáner). La marca de la serie grabada ya se decidió en v269 (cámara de video con REC, propuesta 23) y la nav no lleva íconos desde v267.',
       status:'open', decided:null, shipped:null,
       scenarios:['workout', 'live:workout', 'popup:exshare'],
       options:[
-        { k:'hoy', label:'hoy · trazo redondo + 📷' },
-        { k:'A', label:'set TRK', note:'Compartir y cámara; la nav es de texto desde v267.',
+        { k:'hoy', label:'hoy · trazo redondo' },
+        { k:'A', label:'set TRK', note:'Compartir del ejercicio; la nav es de texto desde v267 y la cámara es la de v269.',
           css: `
 ${P('icons','A')} .exshr svg.trkp-old{display:none;}
-${P('icons','A')} .exshr .trkp-ic{display:inline-flex;}
-${P('icons','A')} .exsh .camon::before{content:''; display:block; width:14px; height:14px; background:currentColor; -webkit-mask:${CAM_MASK} center/contain no-repeat; mask:${CAM_MASK} center/contain no-repeat;}`,
+${P('icons','A')} .exshr .trkp-ic{display:inline-flex;}`,
           dom: patchIcons }
       ] },
 
@@ -202,20 +199,20 @@ ${P('opacity','A')} .pftog.sug .t.on{opacity:var(--op-press);}` }
 
     // ---- v267 "terminal sobrio" (23-sep): decididas en la conversación y horneadas; sin CSS de propuesta ----
     { id:'type', n:20, group:'G3', title:'type scale', rule:'B-04 · TYP-1', src:'BRAND §9',
-      question:'Implementado en v267: escala 10·12·14·20·28 y --t-field 16 solo en lo editable ("hoy" ya es eso). Antes 10·12·18·24·34: "fuentes muy grandes para lo que son".',
+      question:'Implementado en v267: escala 10·12·14·20·28 y --t-field aparte, solo en lo editable (16 en v267, 14 desde v269: propuesta 21) ("hoy" ya es eso). Antes 10·12·18·24·34: "fuentes muy grandes para lo que son".',
       status:'shipped', decided:{ pick:'A', date:'2026-09-23', quote:'14 · 20, más compacto' }, shipped:'v267',
       scenarios:['home', 'progress', 'macros', 'm:metric', 'onboard', 'share:session'],
       options:[
-        { k:'hoy', label:'hoy · 10·12·14·20·28 + campo 16 (v267)' },
+        { k:'hoy', label:'hoy · 10·12·14·20·28 + campo 14 (v269)' },
         { k:'A', label:'14 · 20, más compacto', note:'horneado en index.html en v267 (--t-section 18→14, --t-display 24→20, --t-hero 34→28, --t-field 16 nuevo: con menos de 16 el iPhone hace zoom al enfocar)' }
       ] },
     { id:'fields', n:21, group:'G3', title:'fields', rule:'B-11 · WCAG 1.4.11 · BRAND §4', src:'BRAND §9',
-      question:'Implementado en v267: la casilla es una caja fina (1 px --o40, sin relleno, radio 4, 16 px) y con foco el borde sube a --fg ("hoy" ya es eso).',
+      question:'Implementado en v267: la casilla es una caja fina (1 px --o40, sin relleno, radio 4) y con foco el borde sube a --fg. v269 (24-sep): la letra de campo baja a 14 en toda la app y las casillas del perfil a 36 de alto ("hoy" ya es eso).',
       status:'shipped', decided:{ pick:'A', date:'2026-09-23', quote:'el redondeado en general... de los botones, de las casillas de escribir, siento que es demasiado' }, shipped:'v267',
       scenarios:['onboard', 'login', 'm:food', 'm:weight', 'm:goals', 'm:sleep'],
       options:[
-        { k:'hoy', label:'hoy · caja fina de 16 px (v267)' },
-        { k:'A', label:'caja fina, sin relleno', note:'horneado en index.html en v267 en .field, #fa_q, textarea.ta, .mdcust, sueño, perfil del ejercicio, .msum-time, .gnmin y .senm; sin CSS de propuesta' }
+        { k:'hoy', label:'hoy · caja fina, letra 14, perfil a 36 (v269)' },
+        { k:'A', label:'caja fina, sin relleno', note:'horneado en index.html en v267 en .field, #fa_q, textarea.ta, .mdcust, sueño, perfil del ejercicio, .msum-time, .gnmin y .senm. v269: --t-field 16→14 (maximum-scale=1: sin zoom de iOS) y .obi 44→36, por "el formulario para profile... está muy gordo, está muy alto, o sea, la casilla está muy grande, el texto adentro de las casillas también"; sin CSS de propuesta' }
       ] },
     { id:'toggles', n:22, group:'G3', title:'toggles', rule:'B-06 · BRAND §3 corchetes', src:'BRAND §9',
       question:'Implementado en v267: las opciones no llevan caja; la elegida va [entre corchetes] en --fg/700 y las demás en --o50. Los corchetes apagados guardan su lugar: nada se mueve al elegir ("hoy" ya es eso).',
@@ -224,6 +221,24 @@ ${P('opacity','A')} .pftog.sug .t.on{opacity:var(--op-press);}` }
       options:[
         { k:'hoy', label:'hoy · [elegida] sin caja (v267)' },
         { k:'A', label:'[elegida]', note:'horneado en index.html en v267 (antes: cada opción elegida era un bloque blanco lleno, "tosco, todo muy gordo"); .toggles.wrap = 2 columnas a la izquierda; la sugerida del perfil lleva subrayado punteado. Sin CSS de propuesta' }
+      ] },
+
+    // ---- v269 (24-sep): encargos del dueño, horneados; sin CSS de propuesta ----
+    { id:'camera', n:23, group:'G3', title:'camera', rule:'B-08 · BRAND §4 íconos · GLYPHS', src:'BRAND §9',
+      question:'Implementado en v269: la serie que grabaste lleva una cámara de video con un punto rojo de REC, fija (sin parpadear), a la izquierda de la serie marcada; el 📷 salió ("hoy" ya es eso).',
+      status:'shipped', decided:{ pick:'A', date:'2026-09-24', quote:'en lugar del emoji de la cámara de fotografía sea una cámara de video... una señalización roja como de que está grabando' }, shipped:'v269',
+      scenarios:['exsh:cam', 'popup:exshare'],
+      options:[
+        { k:'hoy', label:'hoy · cámara de video + REC (v269)' },
+        { k:'A', label:'cámara de video con REC', note:'horneado en index.html en v269 (CAM_SVG: trazo currentColor 1.4, punto REC en --bad, .camic de 16 px en el margen izquierdo de la serie .camon); el 📷 salió del CSS y de los textos (R-GLYE 4→2). Sin CSS de propuesta' }
+      ] },
+    { id:'progedit', n:24, group:'G3', title:'progress edit', rule:'B-06 · BRAND §4 · un solo primario', src:'BRAND §9',
+      question:'Implementado en v269: //PROGRESS se acomoda como una pantalla de widgets: [edit] (o mantener 0.5 s una tile) → − en cada tile para quitar, ⠿ para arrastrar, [+ add] para volver a poner, [cancel] descarta y ✓ done confirma ("hoy" ya es eso). Antes: una hoja de activar y desactivar.',
+      status:'shipped', decided:{ pick:'A', date:'2026-09-24', quote:'en configuración de activar y desactivar, preferiría que fueran otro de edit para poder que aparezca el signo de más para agregar, signo de menos en cada elemento para quitar... acomodar tu orden y ya después confirmar... como una screen de widgets' }, shipped:'v269',
+      scenarios:['prog:edit', 'm:progcfg', 'progress'],
+      options:[
+        { k:'hoy', label:'hoy · modo widgets (v269)' },
+        { k:'A', label:'modo edit tipo widgets', note:'horneado en index.html en v269 (db.settings.progLayout {order, hidden}, viaja con respaldos y sync; hereda una vez la config vieja del teléfono). En edición la nav se oculta; − (.pdel) arriba a la izquierda con toque de 44, ⠿ (.pgrip) arriba a la derecha; tocar ⠿ sin mover abre [mover antes] [mover después] [quitar]; barra fija .pedbar con ✓ done como único primario. Sin CSS de propuesta' }
       ] }
   ];
 

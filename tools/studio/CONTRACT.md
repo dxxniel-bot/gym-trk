@@ -68,12 +68,24 @@ iframe.srcdoc = t.replace(/<head([^>]*)>/i, m => m + '<base href="'+base+'"><scr
   guardia absorbe lo que se guarde).
 - `own:true` = el escenario arma su PROPIA sesión (aviso de inactividad, `workout:fs`): la del dueño se aparta y el siguiente
   escenario la devuelve; nunca se modifica una sesión real.
-- Cubrir TODO: las 57 de `tools/ds-diff.html` (S2) + las 16 de `tools/ds-inventory.js` + arranque (`T.bootPreview(null,
+- **Cambios temporales en memoria** (v269, `later(W, deshacer)` en scenarios.js): cuando un escenario necesita otra forma
+  de los datos, APARTA lo que estorba en `T.db` (misma referencia, misma posición) y registra cómo devolverlo; el siguiente
+  escenario lo deshace antes de correr (en orden inverso) y llama `W.bumpIdx()`. Nada se borra ni se reescribe; lo que la
+  app guarde en medio lo absorbe el guardia. Hoy: `m:supps-empty` (el stack entero y `suppHide` se apartan: la invitación
+  de //SUPPS solo sale con el stack vacío) y `home:rest` (se apartan la sesión viva y lo entrenado hoy, luego el toque real
+  de `[data-act="rest"]`; al salir se quita ese descanso). Un descanso real de hoy se deja como está.
+- Cubrir TODO: las 56 de `tools/ds-diff.html` (S2; v269 sin `m:mood`) + las 16 de `tools/ds-inventory.js` + arranque (`T.bootPreview(null,
   true, false)` y el corto `boot:short` con `true` y `live`), wrap (`W.monthlyWrap(W.prevMonthYm(), true)`), recap (forzar vía la lógica de `snapRecap` si es posible),
   aviso de inactividad (`W.promptIdleSession()` con una sesión en curso "vieja"), toasts (`W.toast('✓ guardado')`,
   `W.toast('⚠ error de prueba','err')`, con deshacer), `W.trkAsk({...})`, `W.holdConfirm({...})`, barra de guardado
   fallido (`W.saveFailed()` si existe), compartir un ejercicio (`W.openExShare(0)` con sesión en curso), `trkMenu`,
   `trkWheel`, `trkSelect`. Cada función debe existir en `index.html` (verificarlo con grep); si no, no se incluye.
+- v269: `prog:edit` (`W.go('progress'); W.openProgConfig()` → modo widgets; `openProgConfig` ya no abre hoja y solo actúa
+  desde progress), `m:progcfg` (el mismo modo + `W.openProgAdd()`, la hoja `+ add`), `macros:open` (el toque real de
+  `[data-act="togglemacros"]` en el frame; sin el botón, `T.state.macroOpen`), `m:supps-empty`, `home:rest` y `exsh:cam`
+  (compartir ejercicio con la cámara de video + REC en la 1.ª `[data-camsi]`, sin volver a tocarla si ya la tiene; la marca
+  vive en `state._cam`, no en `db`). Fuera `m:mood` (se retiró el ánimo). Total v269: 104 escenarios (`m:machine` de S2
+  vive aquí como `live:machine`).
 - Etiquetas cortas en español: `gym · inicio`, `macros`, `hoja · agregar alimento`, `sesión · tabla`, `arranque`…
 
 ## 4 · `window.TRK_KNOBS` — knobs.js
@@ -87,8 +99,9 @@ iframe.srcdoc = t.replace(/<head([^>]*)>/i, m => m + '<base href="'+base+'"><scr
   "explorar" (fuera de BRAND): se permite, pero la exportación lo marca como **pregunta**. El slider cubre la unión.
 - `kind:'alpha'` → el token es `rgba(rgb, a)` y el control mueve `a` (escalera `--o*`, vidrio).
 - `sel` = selectores donde vive ese token (para el inspector y para "dónde se ve").
-- Grupos (key): `type` (5 tamaños de la escala 10·12·14·20·28 + `--t-field` 16 solo en editables; `check`:
-  label<data<section<display<hero, 800 nunca bajo 12 y campo nunca bajo 16), `tracking` (4),
+- Grupos (key): `type` (5 tamaños de la escala 10·12·14·20·28 + `--t-field` 14 solo en editables —16 en v267, 14 desde
+  v269: rango BRAND 14–16, explorar 12–20—; `check`: label<data<section<display<hero, 800 nunca bajo 12 y campo nunca
+  bajo 14), `tracking` (4),
   `lineheight` (`--lh-*`), `lines` (los 11 `--bw-*`, con `sel` exacto de §9), `strokes` (`--sw-*`), `radius`
   (`--r-sm`, `--r-mark`, `--r-ctl`, `--radius`, `--r-pill`, `--r-float`, `--r-sheet`, `--r-nav`, `--r-toast`, `--r-pop`,
   `--r-bar`; familia v267 "terminal sobrio": control y tarjeta ≤ 4 (hoy 4), marcas 2, gráficas 4, flotante 6–12 (hoy 8) y
@@ -129,14 +142,17 @@ iframe.srcdoc = t.replace(/<head([^>]*)>/i, m => m + '<base href="'+base+'"><scr
   la escala; etiquetas de sistema en inglés (decidido); esquinas de contenido (v264: control 12; v267: control y tarjeta a 4,
   flotante a 8, "4 px, suave"); anillo (decidido: se queda). Lote v267 "terminal sobrio" (`shipped v267`, sin CSS): 1 nav
   (opción D, `>` que parpadea), 2 primario, 9 secundarios `[verbo]`, 18 esquinas, 20 `type` (14·20), 21 `fields` (caja fina
-  de 16), 22 `toggles` (`[elegida]`).
+  de 16), 22 `toggles` (`[elegida]`). Lote v269 (24-sep, `shipped v269`, sin CSS): 23 `camera` (cámara de video con punto
+  REC en `--bad`; la propuesta 5 `icons` ya solo toca `[compartir]`), 24 `progedit` (//PROGRESS en modo widgets) y la nota
+  de 21 `fields` (letra de campo 14 app-wide, casillas del perfil de 36).
 
 ## 6 · `window.TRK_DEMO` — demo.js
 
 `TRK_DEMO.build(todayDate?) → objeto db` (JSON) que la app acepta tal cual (`migrate()` sin errores): `_demo:true`,
 usuario `demo`, split push/pull/legs genérico (ids estables únicos), ~10 semanas de sesiones con drop set, unilateral y
-cardio, comidas genéricas por día, agua, 2 suplementos, sueño, pasos y peso corporal; fechas relativas a hoy (racha y
-"hoy" siempre con datos). PRNG con semilla fija. Nada del dueño. `node tools/studio/demo.js --check` valida la forma y
+cardio, comidas genéricas por día, agua, 2 suplementos, sueño, pasos y peso corporal; sin ánimo (v269: `migrate()` lo
+purga con `purgeMood`, que el `--check` también extrae); fechas relativas a hoy (racha y "hoy" siempre con datos). PRNG con
+semilla fija. Nada del dueño. `node tools/studio/demo.js --check` valida la forma y
 sale con 1 si algo falta.
 
 ## 7 · `window.TRK_PLAN` — plan.js
@@ -146,7 +162,8 @@ sale con 1 si algo falta.
     items:[ { id:'nav', text:'nav elegida (texto, ≥44, sin animar columnas)', status:'por decidir', proposal:'nav', audit:'RADF 9→0' } ] } ] }
 ```
 Fases: G1 (hecho), G2/v258 (hecho), F0/v259 (hecho), T/v260 (hecho), S1 estudio (hecho), G0 decisiones, TS/v267 terminal
-sobrio (hecho), P1/v268 primer arranque (hecho), AC/v269 · v270 cuentas, TR/v271 tour, G3a–d y G4a–c sin versión fija (del plan
+sobrio (hecho), P1/v268 primer arranque (hecho), V269 lo del 24-sep (hecho), V270a configuración paso a paso, V270b cuentas,
+V271 salud por Atajo, V272 tensión v2 (σ), V273 Pro y anuncios, V274 tour, G3a–d y G4a–c sin versión fija (del plan
 aprobado). `proposal` enlaza a TRK_PROPOSALS.
 
 ## 8 · Núcleo — studio.js / studio.html / studio.css
@@ -190,16 +207,17 @@ aprobado). `proposal` enlaza a TRK_PROPOSALS.
 
 ## 9 · Selectores de las líneas (`--bw-*`) — de la tokenización v260
 
-- `--bw-sep` .5: `.mmrow,.mscrow,.dxrow,.stline,.mdtr,.trow+.trow,.mdtabs,.mdstats,.hrow,.hist-rail .hitem,.lc,.mrec+.mrec,.msum-items,.stq,.exrow,.senm,.pickitem,.nvm,.ws-h,.u-sep,.whl-sel`
-- `--bw-box` .5: `.spc,.wq,.wchip,.chst,.msum-time,.sedrift,.mgbar,.bwchip,.inp,.pick,.tselo,.fs,.chip,.moodpad,.inp-mini`
+- `--bw-sep` .5: `.mmrow,.mscrow,.dxrow,.stline,.mdtr,.trow+.trow,.mdtabs,.mdstats,.hrow,.hist-rail .hitem,.lc,.mrec+.mrec,.msum-items,.stq,.exrow,.senm,.pickitem,.nvm,.ws-h,.u-sep,.whl-sel,.pedbar`
+- `--bw-box` .5: `.spc,.wq,.wchip,.chst,.msum-time,.sedrift,.mgbar,.bwchip,.inp,.pick,.tselo,.fs,.chip,.inp-mini`
 - `--bw-dash` .5: `.exsub .mch,.exhead .mch,[data-gloss],.u-dash`
 - `--bw-leader` 1: `.line .dots,.mddots`
-- `--bw-field` 1: `.mmrow select,select.pfsel,#pf_gym,.pfw,.mdcust input,.field input,.field select,.slph input,.slblk input,#fa_q,textarea.ta,.gnmin`
+- `--bw-field` 1: `.mmrow select,select.pfsel,#pf_gym,.pfw,.mdcust input,.field input,.field select,.slph input,.slblk input,#fa_q,textarea.ta,.gnmin,.obi`
 - `--bw-ctl` 1: `.status .back,.secondary .b,button.b,button.t,button.cancel,.mdcust .b,.lact,.restbar a,.footer .abort,.footer .undo,.toggles button,.sheetbtns .cancel,.fa-btns .b,.fa-empty .fa-em-step,.start.ghost,.hold,.ag-chip`
 - `--bw-card` 1: `.pfeat,.pthrow,.ptile,.hcal,.card,.grp,.ws-card,.ag-blk`
 - `--bw-rule` 1: `.rule,.footer,.restbar,.stk-blk,.ghead,.grp .item,.shbanner,.nl-row,.mbody,.seday`
 - `--bw-chrome` 1: `.glass,.glass-strong,.sheet.glass-strong,.tsel,.gloss,.savebar,.dragghost`
-- `--bw-mark` 2: `.moodpt,.scan-reticle .frame2` · `--bw-focus` 1.5: `:focus-visible`
+- `--bw-mark` 2: `.scan-reticle .frame2,.ptile.dropbefore,.ptile.dropafter` (v269: + la barra de soltar del modo
+  widgets) · `--bw-focus` 1.5: `:focus-visible`
 
 ## 10 · check.cjs (node, sin npm)
 

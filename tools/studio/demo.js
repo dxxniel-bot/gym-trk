@@ -241,17 +241,6 @@
     const machines = { [GYM]: {} };
     split.days.forEach(d => d.exercises.forEach(e => { if(e.type === 'machine') machines[GYM]['#' + e.id] = { brand: 'selectorizada', setup: 'asiento ' + ri(2, 6), na: false }; }));
 
-    // ---- ánimo: circumplejo de la app (db.mood{fecha:{x energía 0-10, y valencia 0-10, label, ts}}), ~2 de cada 3 días en 30 ----
-    // etiqueta = moodLabel() de index.html (mismo anillo de 8 y mismas franjas) para que la hoja y la tile lean igual
-    const RING = ['alerta', 'motivado', 'contento', 'tranquilo', 'aletargado', 'agotado', 'decaído', 'ansioso'];
-    const moodLbl = (x, y) => { const dx = x - 5, dy = y - 5; if(Math.hypot(dx, dy) < 1.5) return 'neutral';
-      let a = Math.atan2(dy, dx) * 180 / Math.PI; if(a < 0) a += 360; const i = a / 45, lo = Math.floor(i) % 8, hi = (lo + 1) % 8, f = i - Math.floor(i);
-      return f < 0.25 ? RING[lo] : f > 0.75 ? RING[hi] : RING[lo] + ' · ' + RING[hi]; };
-    const mood = {};
-    for(let k = 29; k >= 0; k--){ if(k && R() < 0.33) continue;
-      const x = r1(rnd(3.5, 8.5)), y = r1(rnd(4, 8.8)), d = dayAt(k);
-      mood[iso(d)] = { x, y, label: moodLbl(x, y), ts: new Date(d.getFullYear(), d.getMonth(), d.getDate(), 21, ri(0, 59)).getTime() }; }
-
     // ---- salud: la forma de healthShape() con días de ingestHealth() (pasos · FC reposo · energía activa, sin HRV: la
     // pulsera del dueño no la da) · 30 días, fuente sintética. db.steps sigue siendo lo que leen las tiles de pasos ----
     const hDaily = {}, hSrc = {};
@@ -271,7 +260,7 @@
       activeGym: GYM, gyms: [GYM], machines, rotIdx: sessions.length,
       split, sessions, meals, foods,
       sleep, steps, bodyweight, stack,
-      mood, health, adhoc: {}, mealTags: ['breakfast', 'lunch', 'snack', 'dinner'], lastUsed: {},
+      health, adhoc: {}, mealTags: ['breakfast', 'lunch', 'snack', 'dinner'], lastUsed: {},
     };
   }
 
@@ -320,8 +309,7 @@
     A(db.steps && db.steps[today] > 0, 'pasos hoy');
     A(Object.keys(db.bodyweight || {}).length >= 20, 'peso corporal ≥ 20 registros');
     A(db.rotIdx === S.length, 'rotIdx = sesiones guardadas');
-    const mo = Object.keys(db.mood || {});
-    A(mo.length >= 10 && mo.every(d => { const o = db.mood[d]; return o && typeof o.x === 'number' && typeof o.y === 'number' && o.label; }), 'ánimo ≥ 10 días con x/y/label');
+    A(!('mood' in db), 'sin ánimo (v269 lo retiró: migrate() lo borra)');
     const h = db.health || {};
     A(h.v === 1 && ['sources', 'daily', 'sleep', 'workouts', 'sessHR', 'readiness', 'sync'].every(k => h[k] && typeof h[k] === 'object' && !Array.isArray(h[k])) && h.src && h.src.steps && Array.isArray(h.log), 'health con la forma de healthShape()');
     A(h.daily && h.daily[today] && h.daily[today].rhr > 0, 'health.daily hoy con FC reposo');
@@ -354,10 +342,10 @@
             if(c === '/' && src[j + 1] === '/'){ j = src.indexOf('\n', j); continue; }
             if(c === '{') dep++; else if(c === '}' && --dep === 0) break; }
           return src.slice(i + 1, j + 1); };
-        const code = ['seed', 'uid', 'migrate', 'fixDuplicateExIds', 'fixLeakedFullStack', 'fixStraySides', 'healthShape'].map(grab).join('\n')
+        const code = ['seed', 'uid', 'migrate', 'fixDuplicateExIds', 'fixLeakedFullStack', 'fixStraySides', 'purgeMood', 'healthShape'].map(grab).join('\n')
           + '\nlet _uidN=0;\nout=migrate(JSON.parse(input));';
         // almacenamiento falso (nombre armado: el linter de seguridad no admite la palabra en este archivo); escribir = fallo
-        const ctx = { input: a, out: null, asCanonical: x => x, computeNutrients: () => ({ alcohol: 0 }), idbSnap: () => {}, JSON, Math, Date, Object, Array };   // v266 · fixStraySides guarda una foto en IndexedDB: aquí no hace nada
+        const ctx = { input: a, out: null, asCanonical: x => x, computeNutrients: () => ({ alcohol: 0 }), idbSnap: () => {}, JSON, Math, Date, Object, Array };   // v266 · fixStraySides (y v269 purgeMood) guardan una foto en IndexedDB: aquí no hace nada
         ctx['local' + 'Storage'] = { getItem: () => null, ['set' + 'Item']: () => { throw new Error('migrate escribió en storage'); } };
         vm.createContext(ctx); vm.runInContext(code, ctx, { timeout: 5000 });
         const o = ctx.out;
@@ -365,6 +353,7 @@
           P.push('migrate() perdió datos');
         const ids = []; o.split.days.forEach(d => d.exercises.forEach(e => ids.push(e.id)));
         if(ids.join() !== db.split.days.map(d => d.exercises.map(e => e.id).join()).join()) P.push('migrate() re-acuñó ids del split');
+        if('mood' in o) P.push('migrate() dejó pasar db.mood (v269 lo purga)');
         mig = 'migrate() real: ok · goalHist ' + Object.keys(o.goalHist || {}).length + ' días';
       }
     }catch(e){ P.push('migrate() falló: ' + (e && e.message || e)); }

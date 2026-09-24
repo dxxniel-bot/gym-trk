@@ -29,23 +29,23 @@
 
   // ---- selectores de las líneas (§9, exactos) ----
   const BW = {
-    sep: '.mmrow,.mscrow,.dxrow,.stline,.mdtr,.trow+.trow,.mdtabs,.mdstats,.hrow,.hist-rail .hitem,.lc,.mrec+.mrec,.msum-items,.stq,.exrow,.senm,.pickitem,.nvm,.ws-h,.u-sep,.whl-sel',
-    box: '.spc,.wq,.wchip,.chst,.msum-time,.sedrift,.mgbar,.bwchip,.inp,.pick,.tselo,.fs,.chip,.moodpad,.inp-mini',
+    sep: '.mmrow,.mscrow,.dxrow,.stline,.mdtr,.trow+.trow,.mdtabs,.mdstats,.hrow,.hist-rail .hitem,.lc,.mrec+.mrec,.msum-items,.stq,.exrow,.senm,.pickitem,.nvm,.ws-h,.u-sep,.whl-sel,.pedbar',
+    box: '.spc,.wq,.wchip,.chst,.msum-time,.sedrift,.mgbar,.bwchip,.inp,.pick,.tselo,.fs,.chip,.inp-mini',
     dash: '.exsub .mch,.exhead .mch,[data-gloss],.u-dash',
     leader: '.line .dots,.mddots',
-    field: '.mmrow select,select.pfsel,#pf_gym,.pfw,.mdcust input,.field input,.field select,.slph input,.slblk input,#fa_q,textarea.ta,.gnmin',
+    field: '.mmrow select,select.pfsel,#pf_gym,.pfw,.mdcust input,.field input,.field select,.slph input,.slblk input,#fa_q,textarea.ta,.gnmin,.obi',
     ctl: '.status .back,.secondary .b,button.b,button.t,button.cancel,.mdcust .b,.lact,.restbar a,.footer .abort,.footer .undo,.toggles button,.sheetbtns .cancel,.fa-btns .b,.fa-empty .fa-em-step,.start.ghost,.hold,.ag-chip',
     card: '.pfeat,.pthrow,.ptile,.hcal,.card,.grp,.ws-card,.ag-blk',
     rule: '.rule,.footer,.restbar,.stk-blk,.ghead,.grp .item,.shbanner,.nl-row,.mbody,.seday',
     chrome: '.glass,.glass-strong,.sheet.glass-strong,.tsel,.gloss,.savebar,.dragghost',
-    mark: '.moodpt,.scan-reticle .frame2',
+    mark: '.scan-reticle .frame2,.ptile.dropbefore,.ptile.dropafter',   // v269: + la barra de soltar del modo widgets
     focus: ':focus-visible'
   };
 
   const K = [
-    // ---------------------------------------------------------------- tipografía (B-04 · escala 10·12·14·20·28 + campo 16, v267)
-    { g:'tipografía', key:'type', rule:'B-04 · TYP-1 · BRAND §9 2026-09-23 ("14 · 20, más compacto")',
-      note:'una sola escala 10·12·14·20·28; orden obligatorio rótulo < dato < sección < display < héroe; 800 nunca bajo 12 (el 800 vive en --t-data). --t-field 16 va aparte y SOLO en lo editable: con menos de 16 el iPhone hace zoom al enfocar.',
+    // ---------------------------------------------------------------- tipografía (B-04 · escala 10·12·14·20·28 + campo 14, v269)
+    { g:'tipografía', key:'type', rule:'B-04 · TYP-1 · BRAND §9 2026-09-23 ("14 · 20, más compacto") · 2026-09-24 (casillas 14)',
+      note:'una sola escala 10·12·14·20·28; orden obligatorio rótulo < dato < sección < display < héroe; 800 nunca bajo 12 (el 800 vive en --t-data). --t-field va aparte, solo en lo editable: 14 desde v269 ("la casilla está muy grande, el texto adentro de las casillas también"); el viewport lleva maximum-scale=1, así el iPhone no hace zoom al enfocar, y la tabla de series ya usa 12 a diario.',
       items:[
         { tok:'--t-label',   l:'rótulo',   d:10, min:10, max:11, step:1, u:'px', kind:'px', x:{min:9, max:12} },
         { tok:'--t-data',    l:'dato',     d:12, min:12, max:13, step:1, u:'px', kind:'px', x:{min:11,max:14} },
@@ -54,15 +54,15 @@
           sel:'.whdr .wname,.ring.lg .num,.pval,.msum-tot b,.lkc b,.shsn,.shr-ring .ring.lg .num,.shm-g,.exbn,.shstat-n,.ws-big span,.ws-year,.u-disp' },
         { tok:'--t-hero',    l:'héroe',    d:28, min:24, max:34, step:1, u:'px', kind:'px', x:{min:22,max:44},
           sel:'.strk-n,.mdval,.exov,.u-hero' },
-        { tok:'--t-field',   l:'campo editable', d:16, min:16, max:18, step:1, u:'px', kind:'px', x:{min:14,max:20},
-          note:'solo casillas, selects y textarea; bajo 16 vuelve el zoom de iOS al escribir',
-          sel:'input,select,textarea,.field input,.field select,#fa_q,textarea.ta,.mdcust input,.slph input,.slblk input,select.pfsel,#pf_gym,.pfw,.msum-time,.gnmin,.senm' }
+        { tok:'--t-field',   l:'campo editable', d:14, min:14, max:16, step:1, u:'px', kind:'px', x:{min:12,max:20},
+          note:'solo casillas, selects y textarea; 16→14 en v269 (sin zoom de iOS: maximum-scale=1)',
+          sel:'input,select,textarea,.field input,.field select,#fa_q,textarea.ta,.mdcust input,.slph input,.slblk input,select.pfsel,#pf_gym,.pfw,.msum-time,.gnmin,.senm,.obi' }
       ],
       check(vals){ const v = reader(this.items, vals), out = [];
         const o = ['--t-label','--t-data','--t-section','--t-display','--t-hero'].map(v);
         for(let i = 1; i < o.length; i++) if(!(o[i-1] < o[i])){ out.push('orden roto: rótulo < dato < sección < display < héroe'); break; }
         if(v('--t-data') < 12) out.push('800 bajo 12: --t-data lleva peso 800 (.uname, .streak…)');
-        if(v('--t-field') < 16) out.push('campo bajo 16: el iPhone hace zoom al enfocar (--t-field ≥ 16)');
+        if(v('--t-field') < 14) out.push('campo bajo 14: la casilla deja de leerse como lo editable (--t-field ≥ 14; la tabla de series va aparte a 12)');
         return out.length ? out.join(' · ') : null; } },
 
     // ---------------------------------------------------------------- tracking (em)
@@ -76,7 +76,7 @@
         { tok:'--ls-num',   l:'número grande',       d:-.03, min:-.05,max:0,   step:.01, u:'em', kind:'num', x:{min:-.08,max:.02},
           sel:'.whdr .wname,.strk-n,.mdval,.pval,.mkc,.msum-tot b,.shr-ring .ring.lg .num,.shm-g,.exov,.shstat-n,.u-lsnum' },
         { tok:'--ls-ui',    l:'texto de control',    d:.03,  min:0,   max:.05, step:.01, u:'em', kind:'num', x:{min:-.02,max:.1},
-          sel:'.whdr .wmeta,.start,.secondary .b,button.b,.vst,.wq,.pthl span,.mdtabs span,.lact,.dragghost,.thead .cl,.ready,.exT,.restbar .rl,.footer .save,.toggles button,.moodax,.nav a,.shm-l,.nl-hd .nl-hi,.fa-btns .b,.fa-empty .fa-em-step .lb,.dnlbl,.hold,.u-lsui' }
+          sel:'.whdr .wmeta,.start,.secondary .b,button.b,.vst,.wq,.pthl span,.mdtabs span,.lact,.dragghost,.thead .cl,.ready,.exT,.restbar .rl,.footer .save,.toggles button,.nav a,.shm-l,.nl-hd .nl-hi,.fa-btns .b,.fa-empty .fa-em-step .lb,.dnlbl,.hold,.u-lsui' }
       ] },
 
     // ---------------------------------------------------------------- interlineado
@@ -84,11 +84,11 @@
       note:'interlineado por rol: apretado (números) ≤ interfaz ≤ lectura ≤ compartir.',
       items:[
         { tok:'--lh-tight', l:'apretado · números', d:1,   min:1,    max:1.1, step:.05, u:'', kind:'num', x:{min:.9, max:1.2},
-          sel:'.whdr .wname,.ring-center,.gmore,.strk-n,.ptchev,.pval,.hrow .hchev,.msum-tot b,.dgrip,.setn,.dchk,.rirb,.lk,.semv span,.shm-g,.exsh .camon::before,.dnav,.ws-big,.ws-month,.ag-mk .mg' },
+          sel:'.whdr .wname,.ring-center,.gmore,.strk-n,.ptchev,.pval,.hrow .hchev,.msum-tot b,.dgrip,.setn,.dchk,.rirb,.lk,.semv span,.shm-g,.pdel,.pgrip,.dnav,.ws-big,.ws-month,.ag-mk .mg' },
         { tok:'--lh-ui',    l:'interfaz',           d:1.2, min:1.15, max:1.3, step:.05, u:'', kind:'num', x:{min:1,  max:1.5},
           sel:'.sgoal,.whdr .wlbl,.whdr .wmeta,.strk-h,.hrow .hnm,.shtop,.shfoot,.shsn,.exbn' },
         { tok:'--lh-read',  l:'lectura',            d:1.4, min:1.35, max:1.5, step:.05, u:'', kind:'num', x:{min:1.2,max:1.7},
-          sel:'.status .center,.dxev,.dxdo,.strk-sub,.stqc,.bltip' },
+          sel:'.status .center,.dxev,.dxdo,.strk-sub,.stqc,.bltip,.empty.supempty,.toggles.oblist .obd' },
         { tok:'--lh-share', l:'compartir',          d:1.6, min:1.4,  max:1.7, step:.05, u:'', kind:'num', x:{min:1.2,max:2},
           sel:'.strk-side,.srw,.exbr' }
       ],
@@ -144,7 +144,7 @@
           sel:'.cd,.hypno,.ag-blk' },
         { tok:'--r-ctl',   l:'TODO control',           d:4,   min:0, max:4,  step:1, u:'px', kind:'px', x:{min:0, max:16},
           // v267: los [verbo] (.b, .cancel, abort, ↩, [‹ back]) y las opciones (.t, .toggles) ya no tienen caja ni radio
-          sel:'.section .meta[data-act],.start,.mmrow select,select.pfsel,#pf_gym,.pfw,.wq,.mdcust input,.lact,.restbar a,.footer .save,.field input,.field select,.moodpad,.slph input,.slblk input,.sheetbtns .ok,.shimgv,#fa_q,.fa-btns .b,.fa-empty .fa-em-step,.scan-reticle .frame2,textarea.ta,.ag-supp-pop,.hold,.inp,.pick,.fs,.bwchip,.inp-mini,.tselo,.msum-time,.chip,.spc,.wchip,.ag-chip,.chst' },
+          sel:'.section .meta[data-act],.start,.mmrow select,select.pfsel,#pf_gym,.pfw,.wq,.mdcust input,.lact,.restbar a,.footer .save,.field input,.field select,.obi,.slph input,.slblk input,.sheetbtns .ok,.shimgv,#fa_q,.fa-btns .b,.fa-empty .fa-em-step,.scan-reticle .frame2,textarea.ta,.ag-supp-pop,.hold,.inp,.pick,.fs,.bwchip,.inp-mini,.tselo,.msum-time,.chip,.spc,.wchip,.ag-chip,.chst' },
         { tok:'--radius',  l:'tarjeta',                d:4,   min:0, max:4,  step:1, u:'px', kind:'px', x:{min:0, max:20}, dk:'radius',
           sel:'.pfeat,.pthrow,.ptile,.hcal,.card,.grp,.ws-card' },
         { tok:'--r-pill',  l:'píldora · solo barras finas', d:999, min:0, max:999, step:1, u:'px', kind:'px', x:{min:0, max:999},
@@ -201,7 +201,7 @@
         { tok:'--op-drop',     l:'serie drop',          d:.82, min:.7, max:.9, step:.01, u:'', kind:'num', x:{min:.5, max:1},
           sel:'.srow.isdrop,.pair.isdrop' },
         { tok:'--op-dim',      l:'ejercicio fuera de foco', d:.28, min:.2, max:.4, step:.01, u:'', kind:'num', x:{min:.1, max:.6},
-          sel:'.wfocus .ex:not(.current)' }
+          sel:'.wfocus .ex:not(.current),.ptile.dragsrc' }
       ],
       check(vals){ const v = reader(this.items, vals), out = [];
         const c = contrast(v('--o40'));
