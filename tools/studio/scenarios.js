@@ -1,7 +1,8 @@
 // gym//TRK · estudio · ESCENARIOS (tools/studio/scenarios.js) — contrato: tools/studio/CONTRACT.md §3
 // Cada escenario abre una pantalla, hoja, overlay o aviso de la app REAL dentro del frame (detrás de guard.js).
 //   { id, g, label, run(W,T), live? }   W = window del frame · T = W.__trk (T.db, T.state)
-// Fuentes: las 60 de tools/ds-diff.html (S2; allá D era la db → aquí T.db; v269 sin m:mood; v272 + home:stimulus y m:deload) + las 16 de dsSweep (tools/ds-inventory.js,
+// Fuentes: las 60 de tools/ds-diff.html (S2; allá D era la db → aquí T.db; v269 sin m:mood; v272 + home:stimulus y m:deload;
+// v273 + splitedit:schedule, splitedit:weekly, home:planrest y workout:rpe) + las 16 de dsSweep (tools/ds-inventory.js,
 // sus ids son la línea base de tools/ds-baseline.json) + los nuevos de §3. Un id aparece una sola vez.
 // Orden = como se recorre la app: gym (inicio, sesión) · macros · progreso · historial · ajustes · hojas sueltas ·
 // compartir · overlays · avisos.
@@ -13,7 +14,7 @@
 // v269 · cambios TEMPORALES en memoria (`later`): un escenario que necesita otra forma de los datos (cuenta sin
 // suplementos, hoy de descanso) APARTA lo que estorba en T.db —misma referencia, misma posición— y deja cómo devolverlo;
 // el siguiente escenario lo devuelve antes de correr. Nada se borra ni se reescribe; lo que la app guarde en medio lo
-// absorbe el guardia.
+// absorbe el guardia. v273: también el plan de cómo entrenas (db.split.plan) y la escala de esfuerzo (db.split.metric).
 // run() nunca lanza: si algo falla devuelve {ok:false, err} (y lo deja en consola).
 (function(){ 'use strict';
   const MINE = new WeakSet(), STALE = new WeakSet(), ORIG = new WeakMap();
@@ -31,9 +32,14 @@
   const macrosOn = (W, T) => { T.state.macroOpen = false; W.go('macros'); const d = foodDay(T); if(d){ T.state.macroDate = d; W.render(); } return d; };
   // v272 · lleva #view (el contenedor con scroll de la app) a una sección: su regla arriba, sin scrollIntoView (ese también
   // movería la página del estudio). Solo posición de scroll; render() la vuelve a 0 en el siguiente go()
-  const toSection = (W, s) => { const v = W.document.getElementById('view'), e = $(W, '#view ' + s); if(!v || !e) return false;
+  // (v273: `s` también puede ser el elemento de la sección)
+  const toSection = (W, s) => { const v = W.document.getElementById('view'), e = typeof s === 'string' ? $(W, '#view ' + s) : s; if(!v || !e) return false;
     const sec = e.closest('.section') || e, hr = sec.previousElementSibling, top = (hr && hr.classList.contains('rule')) ? hr : sec;
     v.scrollTop += top.getBoundingClientRect().top - v.getBoundingClientRect().top; return true; };
+  // v273 · la sección //SCHEDULE del editor del split: la cabecera que va justo antes de la fila `modo` (sin data-gloss propio)
+  const schedSec = W => { const b = $(W, '#view [data-act="sp_mode"]'), ln = b && b.closest('.line'), sec = ln && ln.previousElementSibling;
+    return sec && sec.classList.contains('section') ? sec : null; };
+  const splitEdit = W => { W.go('splitedit'); const s = schedSec(W); if(s) toSection(W, s); };
   // rango de la hoja de métrica, como el toque [7D]/[30D] de la app (MD_LBL)
   const mdRange = (W, d) => { W._mdRange = d; W._mdCustom = null; W._mdEnd = null; W._mdShowCustom = false; };
   const firstMeal = (W, T) => { const d = macrosOn(W, T); return d ? (T.db.meals[d] || [])[0] || null : null; };
@@ -52,18 +58,53 @@
   function noSupps(W, T){ const db = T.db, st = db.stack, set = db.settings || {}, had = Object.prototype.hasOwnProperty.call(set, 'suppHide'), hv = set.suppHide;
     db.stack = []; if(had) delete set.suppHide;
     later(W, () => { if(T.db !== db) return; db.stack = st; if(had) set.suppHide = hv; }); }
-  // hoy de descanso: se apartan la sesión viva (con una en curso la app no deja marcar descanso) y lo entrenado hoy
-  // ("hoy ya entrenaste"); luego el toque real de [rest day]. Al salir: fuera ese descanso y todo vuelve a su lugar.
-  function restDay(W, T){ const db = T.db, t = W.todayISO(), w = db.activeWork;
+  // se apartan la sesión viva y lo entrenado hoy (con `rest`, también un descanso ya marcado hoy); al salir todo vuelve a
+  // su lugar y a su posición
+  function asideToday(W, T, rest){ const db = T.db, t = W.todayISO(), w = db.activeWork;
     if(w){ db.activeWork = null; later(W, () => { if(T.db === db && db.activeWork == null) db.activeWork = w; }); }
     const ss = db.sessions || [], out = [];
-    for(let i = ss.length - 1; i >= 0; i--){ const s = ss[i]; if(s && s.type !== 'rest' && s.date === t && (s.exercises || []).length){ out.push([i, s]); ss.splice(i, 1); } }
-    if(out.length){ try{ W.bumpIdx(); }catch(_){} later(W, () => { if(T.db !== db) return; out.slice().reverse().forEach(([i, s]) => db.sessions.splice(Math.min(i, db.sessions.length), 0, s)); }); }
+    for(let i = ss.length - 1; i >= 0; i--){ const s = ss[i]; if(s && s.date === t && (s.type === 'rest' ? !!rest : (s.exercises || []).length)){ out.push([i, s]); ss.splice(i, 1); } }
+    if(out.length){ try{ W.bumpIdx(); }catch(_){} later(W, () => { if(T.db !== db) return; out.slice().reverse().forEach(([i, s]) => db.sessions.splice(Math.min(i, db.sessions.length), 0, s)); }); } }
+  // v273 · una propiedad del split (plan de cómo entrenas, escala de esfuerzo) cambia solo mientras se mira: al salir vuelve
+  // su valor tal cual, o se quita si no existía
+  function tempSplit(W, T, key, val){ const sp = T.db.split; if(!sp) return false;
+    const had = Object.prototype.hasOwnProperty.call(sp, key), prev = sp[key]; sp[key] = val;
+    later(W, () => { if(T.db.split !== sp) return; if(had) sp[key] = prev; else delete sp[key]; }); return true; }
+  const hasPlan = W => typeof W.planDay === 'function' && typeof W.splitPlan === 'function';
+  // hoy de descanso: se apartan la sesión viva (con una en curso la app no deja marcar descanso) y lo entrenado hoy
+  // ("hoy ya entrenaste"); luego el toque real de [rest day]. Al salir: fuera ese descanso y todo vuelve a su lugar.
+  function restDay(W, T){ const db = T.db, t = W.todayISO();
+    asideToday(W, T, false);
+    // v273 · si hoy toca descanso por tu plan o es día sin gym, la app no ofrece [rest day] (eso es home:planrest): el
+    // plan pasa a diario y sin hoy bloqueado SOLO mientras se mira, para poder dar el toque real
+    if(hasPlan(W) && W.planDay(t).rest){ const P = W.splitPlan(), dw = W.dowOf(t);
+      tempSplit(W, T, 'plan', Object.assign({}, P, { mode:'daily', blocked:P.blocked.filter(d => d !== dw) })); }
     T.state.selDay = null; W.go('home');
     if(W.restToday()) return;   // un descanso real de hoy se queda como está
     const n0 = (db.sessions || []).length; click(W, '#view [data-act="rest"]');
     const r = db.sessions.length > n0 ? db.sessions[db.sessions.length - 1] : null;
     if(r && r.type === 'rest') later(W, () => { if(T.db === db) db.sessions = db.sessions.filter(x => x !== r); }); }
+  // v273 · hoy toca descanso POR TU PLAN ('hoy toca descanso · tu plan N on / M off · siguiente: … [entrenar igual]', sin
+  // primario): se apartan la sesión viva, lo entrenado hoy y un descanso ya marcado, y el plan pasa a rotativo. El plan es
+  // adaptativo (cuenta los días entrenados de verdad justo antes), así que se busca el on/off que con TU historia da
+  // descanso hoy: primero el tuyo si ya es rotativo, luego 3/1 (el del dueño), y así. Con la demo (ayer sin entreno, 2 días
+  // seguidos antes) sale 1 on / 2 off. Si ninguno lo da, hoy queda sin gym ('<día> sin gym'). Todo vuelve al salir.
+  function planRest(W, T){ const sp = T.db.split, t = W.todayISO();
+    asideToday(W, T, true); T.state.selDay = null;
+    if(!sp || !(sp.days || []).length || !hasPlan(W)){ W.go('home'); return; }
+    const P0 = W.splitPlan(), dw = W.dowOf(t), bl = P0.blocked.filter(d => d !== dw);
+    const tries = (P0.mode === 'cycle' ? [[P0.on, P0.off]] : []).concat([[3, 1], [2, 1], [1, 1], [1, 2], [2, 2], [3, 2], [1, 3], [2, 3], [3, 3]]);
+    tempSplit(W, T, 'plan', null); let ok = false;
+    for(const [on, off] of tries){ sp.plan = { mode:'cycle', on, off, blocked:bl.slice() }; const pd = W.planDay(t); if(pd.rest && pd.why === 'plan'){ ok = true; break; } }
+    if(!ok) sp.plan = { mode:'cycle', on:P0.on, off:P0.off, blocked:bl.concat([dw]) };
+    W.go('home'); }
+  // v273 · días fijos: una rutina (o descanso) por día de la semana. Se arma como el toque real de [días fijos] (tus días
+  // en orden desde el lunes, saltando los días sin gym: defaultWeek), o se deja tu semana si ya la tienes
+  function weeklyPlan(W, T){ const sp = T.db.split; if(!sp || !(sp.days || []).length || !hasPlan(W)) return;
+    const P0 = W.splitPlan(), p = { mode:'weekly', on:P0.on, off:P0.off, week:{}, blocked:P0.blocked.slice() };
+    tempSplit(W, T, 'plan', p);
+    p.week = (P0.mode === 'weekly' && Object.keys(P0.week).length) ? Object.assign({}, P0.week) : W.defaultWeek();
+    T.state.selDay = null; }
 
   // ---- sesión en vivo en memoria ----
   function restore(W, T){ T.db.activeWork = ORIG.has(W) ? ORIG.get(W) : null; ORIG.delete(W); }
@@ -116,6 +157,9 @@
     { id:'home', g:'pantalla', label:'gym · inicio', run(W){ W.go('home'); } },
     // v269 · rest day = descanso PROGRAMADO: se registra sin mover el split ('rest today ✓ [undo rest] [skip day]')
     { id:'home:rest', g:'pantalla', label:'gym · hoy descanso', run(W, T){ restDay(W, T); } },
+    // v273 · hoy toca descanso por TU PLAN (rotativo adaptativo) o por ser día sin gym: una línea 'hoy toca descanso · tu plan
+    // N on / M off · siguiente: mañana · <día>' y [entrenar igual], sin primario; ese día no rompe la racha
+    { id:'home:planrest', g:'pantalla', label:'gym · hoy toca descanso (plan)', run(W, T){ planRest(W, T); } },
     // v272 · //STIMULUS = σ de 7 días por músculo REAL (etiquetas del dueño), barra con marcas neutras en 10 y 20, una frase
     // solo si hay algo que mover y el color solo en el ⚠. Arriba, una vez: fatiga acumulada (→ m:deload) y "mucho fallo en
     // N músculos" si sale en 3 o más. Meta 'σ · 7 d'. Fuera las "series efectivas" contra MEV/MRV de la guía RP
@@ -125,6 +169,11 @@
     { id:'live:exedit', g:'sesión', label:'sesión · editar ejercicio', live:true, run(W){ W.go('workout'); W.openExEdit(0, 0, 0); } },
     { id:'live:machine', g:'sesión', label:'sesión · máquina', live:true, run(W){ W.go('workout'); W.openMachineEdit(0); } },
     { id:'workout:fs', g:'sesión', label:'sesión · FS apagado y encendido', own:true, run(W, T){ fsLive(W, T); T.state._curEx = null; W.go('workout'); } },
+    // v273 · split en RPE: la sesión congela su escala al nacer (newWorkSession), así que es una sesión PROPIA con la escala
+    // puesta solo mientras se mira; luego el toque real en el RIR/RPE de la 1.ª serie: F 10 9.5 9 8.5 8 7.5 7 6 5 en dos
+    // filas de 44 (sin F si el split no la usa), cabecera 'rpe', se guarda como RIR = 10 − RPE. La sesión del dueño no se toca
+    { id:'workout:rpe', g:'sesión', label:'sesión · RPE (selector 10 … 5)', own:true, run(W, T){ tempSplit(W, T, 'metric', 'rpe'); ownLive(W, T); T.state._curEx = null; W.go('workout');
+        click(W, '#view .rirb[data-m="rpe"]') || click(W, '#view .rirb'); } },
     { id:'rest', g:'sesión', label:'sesión · descanso corriendo', live:true, run(W, T){ W.go('workout'); const w = T.db.activeWork;
         if(w){ if(!RESTED.has(w)) RESTED.set(w, w.restEnd == null ? null : w.restEnd); w.restEnd = Date.now() + 150 * 1000; }   // 2:30, no vence mientras se mira
         W.updateRestBar(); } },
@@ -224,6 +273,12 @@
     { id:'m:navmenu', g:'hoja', label:'hoja · menú (desde usuario)', run(W){ W.go('home'); click(W, '[data-act="navmenu"]'); } },
     { id:'m:nav', g:'hoja', label:'hoja · menú', run(W){ W.openNavMenu(); } },
     { id:'splitedit', g:'pantalla', label:'ajustes · editar split', run(W){ W.go('splitedit'); } },
+    // v273 · //SCHEDULE antes que los días (el editor desplazado hasta ahí): modo [diario] días fijos rotativo (on 1–6 · off
+    // 1–3), días sin gym L M X J V S D en su propia línea, el ciclo real ('ciclo real · 8 días (6 de entreno + 2 de
+    // descanso) · sin gym: dom'), intensidad [RIR] RPE y fallo (F) [sí] no. //COVERAGE ya va en sets por semana
+    { id:'splitedit:schedule', g:'pantalla', label:'ajustes · split · //SCHEDULE', run(W){ splitEdit(W); } },
+    // días fijos: una fila por día de la semana con [su rutina] → trkMenu (descanso o un día del split); sin gym = 'sin gym'
+    { id:'splitedit:weekly', g:'pantalla', label:'ajustes · split · días fijos', run(W, T){ weeklyPlan(W, T); splitEdit(W); } },
     { id:'m:exedit', g:'hoja', label:'hoja · editar ejercicio del split', run(W){ W.go('splitedit'); W.openExEdit(0, 0); } },
     { id:'m:merge', g:'hoja', label:'hoja · unir ejercicios', run(W){ const ks = W.knownExercises().slice(0, 2).map(e => W.nameKey(e.name)); W._mgSel = ks; W.openMergeModal(); } },
     { id:'m:import', g:'hoja', label:'hoja · importar split', run(W){ W.openImportSplit(); } },

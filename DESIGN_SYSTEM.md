@@ -1,6 +1,6 @@
 # gym//TRK — DESIGN SYSTEM (referencia del estado actual)
 
-> Referencia del estado actual (v272). **Lee BRAND.md primero**: manda sobre este archivo. Sin historia: DESIGN_CHANGELOG.md.
+> Referencia del estado actual (v273). **Lee BRAND.md primero**: manda sobre este archivo. Sin historia: DESIGN_CHANGELOG.md.
 
 ---
 
@@ -437,7 +437,7 @@ perfil tienen párrafos fijos de instrucciones; la tira de 17 tiles de Progress.
 - VOZ-1 **Etiquetas de sistema en inglés:** `//SECCIONES`, la nav, los verbos de comando (`start`, `save`, `rest`,
   `skip`) y los estados cortos. **Prosa en español:** ayudas, errores, toasts, vacíos, diagnósticos. **Un componente nunca
   mezcla idiomas.** Las etiquetas del dueño no se traducen ni se tocan. La revisa: R-LANG.
-- VOZ-2 **Mayúsculas** solo en `//SECCIÓN`, siglas (PR, RIR) y rótulos de grupo. Todo lo demás en minúsculas,
+- VOZ-2 **Mayúsculas** solo en `//SECCIÓN`, siglas (PR, RIR, RPE) y rótulos de grupo. Todo lo demás en minúsculas,
   **incluidas las etiquetas de campo** (hoy `.field label` va en mayúsculas: `TU NOMBRE`, `SEXO`…, objetivo G3). Cabeceras en
   una línea (`sep 2026 · 10`). Nunca `text-transform` sobre una etiqueta del dueño (v258: la vista previa del día y el catálogo la
   muestran tal cual como `#etiqueta`, M1-08). La revisa: a ojo.
@@ -481,8 +481,8 @@ changelog. Estado medido:
   verbo va en gerundio y en minúscula; los puntos suspensivos los pone el componente (el mensaje no los trae) y los
   segundos aparecen solos a partir de 1 s.
 - Error: `⚠ qué pasó · qué hacer` (`⚠ pon un nombre`), nunca un diálogo nativo.
-- Reversible: `✓ alimento borrado [deshacer]`. v269: `✓ descanso · mañana: <día> [deshacer]`, `✓ saltado · sigue <día>
-  [deshacer]`, `supps ocultos · vuelven en ajustes [deshacer]`; sin deshacer (se revierten con su propio control):
+- Reversible: `✓ alimento borrado [deshacer]`. v269: `✓ descanso · sigue <día> · mañana [deshacer]` (forma de v273),
+  `✓ saltado · sigue <día> [deshacer]`, `supps ocultos · vuelven en ajustes [deshacer]`; sin deshacer (se revierten con su propio control):
   `✓ descanso quitado`, `✓ supps de vuelta en macros`, `✓ progreso acomodado`, `✓ peso corporal en lbs`.
 - Vacío: `// sin registros · [+ acción]`. En Progreso, además, **la tile visible nunca desaparece por falta de datos**
   (v263): sin dato muestra `—` + `sin registro` y ella misma es el botón de registro; solo sale de la rejilla si la quitas
@@ -529,7 +529,7 @@ en `›` para navegar. Nada más. El árbol para elegir está en §17.3.
   (`gap` 0 / `--s4`). `.footer .abort` pinta sus corchetes en `--abort`; `.footer .undo` va a `--t-section` (glifo ↩).
 - **Estados:** presionado = texto `--fg`.
 - **Toque:** 44 de alto × su ancho.
-- **Sí / No:** sí `[rest day]` `[skip day]` `[undo rest]` `[cancelar]` (qué hace cada uno en gym: §7.37). **La etiqueta nunca trae sus propios corchetes** (los pone el
+- **Sí / No:** sí `[rest day]` `[skip day]` `[undo rest]` `[entrenar igual]` `[cancelar]` (qué hace cada uno en gym: §7.37). **La etiqueta nunca trae sus propios corchetes** (los pone el
   CSS: `[unir]` escrito en un `button.b` sale `[[unir]]`; en v267 se quitaron de `+ toma puntual`, `adoptar` y `unir`). No
   cajas, no pills, no botones con estética propia por módulo, no íconos sin texto en acciones importantes.
 - **Hoy:** decidido en principio el 21-sep y enviado en v267. `button{font-family:inherit}` sigue (T-01): fuera de su
@@ -703,6 +703,11 @@ La pieza más gym//TRK de la app: densa, afilada, técnica. **Nunca** vidrio, ra
   (`rirTargetTxt(I)`: <55 % de tu 1RM `RIR 0–1` · 55–70 % `RIR 1–2` · 70–85 % `RIR 2` · ≥85 % `RIR 2–3`), `--t-label`
   `--o50`, sin color. Reemplaza al contador de zonas `N✓ N↑ N↓`. Por serie, tras el ✓, la σ de esa serie `σ0.98`
   (`tensTag()`, `.settens`; `~` si el RIR es estimado).
+- **RIR o RPE (v273, §7.39):** la columna se titula `rir` o `rpe` (`.cl` con `data-gloss` igual; `_icM` lo fija
+  `renderExercise()`/`renderHistExercise()` con la escala de la sesión). La celda (`.pick.rirb`) guarda RIR en
+  `data-v` y muestra `rirShow(v, m)` (RIR 1.5 → `8.5` en RPE; `F` sigue `F`); lleva `data-m` (escala) y `data-nf` (sin F)
+  para `openRirSelect()`. La escala viene de la sesión (`sessIctx()`: `w.metric` congelado; la F, del split), nunca del
+  día: una sesión vieja en RIR se sigue leyendo en RIR aunque el split pase a RPE.
 - **Estados:** prefill `.pf` por campo (gris .45 hasta tocarlo); drop `.isdrop` .82; serie hecha `.setn.done` + `.dchk.done`;
   ejercicio en curso `.ex.current` (en modo enfoque, §7.20).
 - **Toque:** 36 (`table36`); el ✓ debe ampliar su toque con `::after` a 44×42 y 6 de separación (objetivo G4, M2-06).
@@ -818,13 +823,16 @@ reemplaza, así lo escrito abajo se conserva. Diálogos nativos (`alert`/`confir
 
 ### 7.14 Popovers
 
-- **TRKSelect** — elegir un valor chico de un toque: `trkSelect(anchor, opts, cur, onPick, {title, clear})` → `#tsel`
+- **TRKSelect** — elegir un valor chico de un toque: `trkSelect(anchor, opts, cur, onPick, {title, clear, wrap})` → `#tsel`
   (`.tsel`, `.tselh`, `.tselr`, `.tselo` de 44 con `--t-section`/700, elegida `.on` en `--fill`; `.tselx` para
   "— quitar"; opción con sublínea `.tsub`). Se cierra con `popClose()`: toque fuera, scroll o repintado. Elegir (aunque sea
-  el mismo valor) confirma; cerrar sin elegir no cambia nada. Uso: RIR (`openRirSelect()`), meta y actividad.
+  el mismo valor) confirma; cerrar sin elegir no cambia nada. Uso: RIR/RPE (`openRirSelect()`), meta y actividad.
+  **`wrap` (v273):** `.tselr.wrap` envuelve a filas de 5 (`.tselo` `flex:1 0 calc(20% − --s2)`), todas de 44; lo usa el
+  RPE, que no cabe en una: `F 10 9.5 9 8.5` / `8 7.5 7 6 5` (título `RPE · 10 = no salía otra`). El RIR sigue en una
+  fila `F 0 1 2 3 4 5` (`RIR · reps en reserva`). Con `allowF` en `false` ninguno ofrece F.
 - **TRKPop / glosario** — texto corto anclado al término: `trkPop(anchor, text)` → `#gloss` (`.gloss`); el glosario marca
-  los términos con `data-gloss="clave"` (subrayado punteado `--o20`) y lee `GLOSS` (rir, t, cap, lm, est, rirmed, e1rm, racha,
-  stim). El listener va en captura y no dispara la acción de la fila. Desde v272 (las claves no cambian): `t` = **σ**
+  los términos con `data-gloss="clave"` (subrayado punteado `--o20`) y lee `GLOSS` (rir, rpe (v273), t, cap, lm, est,
+  rirmed, e1rm, racha, stim). El listener va en captura y no dispara la acción de la fila. Desde v272 (las claves no cambian): `t` = **σ**
   (series efectivas, 1.0 = una serie al fallo con ≥30 % de tu 1RM; RIR 1–2 da ~90 % con mucha menos fatiga; `~` = RIR
   estimado) · `lm` = **zona objetivo** 10–20 σ por músculo y semana (<4 casi no estimula, >20 poco, >30 muy poco;
   Pelland 2026) · `stim` = σ de 7 días por músculo real, marcas en 10 y 20. Ya no define MEV/MAV/MRV ni la guía RP.
@@ -978,6 +986,11 @@ rejillas"; compartir es **vertical, a altura natural, nunca un cuadro que recort
 
 - **Clase:** `.rot` (`.lbl` `ROTATION`, `.n` `‹ day 2/4 ›` con `.arrow`) + `.segs` (un `<i class="seg">` por día de 4 de
   alto; el elegido `.on` en `--fill`, los demás `--track`).
+- **Con plan (v273, §7.39):** la etiqueta suma el ciclo real en rotativo (`‹ day 4/6 · 8 d ›`, `cycleLen()`) o el día de
+  la semana en días fijos (`‹ day 2/6 · lun ›`: hoy en el día actual, la próxima fecha en uno futuro); en diario no
+  cambia. `+Nd` de un día
+  futuro cuenta días de calendario hasta su fecha real (`nextDateForDay()` + `daysUntil()`, con descansos del plan y días
+  sin gym; antes la resta de índices), y el `.ics` de `openScheduleModal()` propone esa misma fecha.
 - **Hoy → objetivo:** `.seg.past` no tiene estilo (M1-19, G4: hecho `--o40`, actual `--fill`, próximo `--track`); las
   flechas miden 18×13 (`.u-hit`, G4).
 
@@ -1329,8 +1342,16 @@ Decisión del dueño 2026-09-24 (BRAND §9): "Rest Day no es para saltar, es par
 Day sí es saltar el día del split". Antes los dos avanzaban la rotación.
 
 - **`[rest day]`** (`rest`): registra `{type:'rest'}` con la fecha de hoy y **sin `dayId`**; **no mueve `db.rotIdx`**
-  (mañana toca el mismo día del split). Toast `✓ descanso · mañana: <día>` + `[deshacer]`. No corre si hoy ya entrenaste
-  (`trainedToday()`: `⚠ hoy ya entrenaste`) ni dos veces el mismo día (`restToday()`). Cuenta para la racha (§8, TRKCal).
+  (mañana toca el mismo día del split). Toast `✓ descanso · sigue <día> · mañana` + `[deshacer]` (v273: el día y la
+  fecha salen de `planForecast()`, así cuentan los descansos del plan y los días sin gym; antes `✓ descanso · mañana:
+  <día>`). No corre si hoy ya entrenaste (`trainedToday()`: `⚠ hoy ya entrenaste`) ni dos veces el mismo día
+  (`restToday()`). Cuenta para la racha (§8, TRKCal); desde v273 también los descansos del plan y los días sin gym (§7.39).
+- **Hoy toca descanso (v273):** si `planDay(hoy)` es descanso y hoy no entrenaste ni registraste descanso, el CTA del día
+  actual cambia: **sin primario**, una línea `.restplan` (`--t-data` `--o70`, interlineado de lectura) `hoy toca descanso
+  · jueves sin gym` (bloqueado) o `hoy toca descanso · tu plan 3 on / 1 off` (plan), `· siguiente: mañana · <día>`
+  (`planForecast()`), y debajo `[entrenar igual]` (`button.b`, `data-act="start"`: la sesión arranca normal). No se
+  registra nada: ese descanso ya cuenta para la racha por el plan.
+- **Días fijos (v273):** no hay `[skip day]` (el día lo decide el calendario); `[rest day]` sigue.
 - **Con el descanso puesto**, la fila `.secondary` de gym dice `rest today ✓` (`.restok`, `--t-data` `--fg`, 44 de
   alto) · `[undo rest]` (`unrest`, toast `✓ descanso quitado`) · `[skip day]`.
 - **`[skip day]`** (`skip`): avanza la rotación un día, sin registrar nada. Toast `✓ saltado · sigue <día>` + `[deshacer]`
@@ -1371,6 +1392,71 @@ Day sí es saltar el día del split". Antes los dos avanzaban la rotación.
   alto como todo //STATS (B-11); subirlos a 44 solo a ellos deja el bloque disparejo (probado en v270 y revertido).
 - **La revisa:** `_healthPasteSelfCheck` (suma de pasos con miles, mediana de HRV, kJ, lb, grasa, una noche sin minutos
   dobles, texto ajeno → nada, peso tecleado gana, pegar dos veces no duplica, base vieja gana la forma nueva).
+
+### 7.39 //SCHEDULE: cómo entrenas (`scheduleBlockHTML()`, v273)
+
+Decisiones del dueño 2026-09-24 (BRAND §9): "antes de todo poner si se entrena a diario, si se entrena, qué días on, qué
+días off"; "deshabilitar tal día, por ejemplo domingo… ningún gimnasio abre los domingos"; "todos los lunes se hace esta
+rutina"; "rotativo… tres días on, uno off"; "mi split actual realmente sería un split de ocho días, pues que lo calcule
+bien"; "yo utilizo el RIR, pero… mi amigo utiliza el RPE". Su regla para el domingo bloqueado en 3/1: "tiene que ser
+adaptativo… si no se entrena = descanso".
+
+- **Rol:** decir cómo se reparte el split en el calendario y en qué escala se mide la intensidad, antes de editar los días.
+- **Dónde:** editor de split (`renderSplitEdit()`), **primero**: nombre del split → //SCHEDULE → //COVERAGE → días. Sin
+  días en el split no sale.
+- **Datos (aditivos; sin `plan` = diario, el comportamiento de siempre):**
+  - `db.split.plan` = `{mode, on, off, week, blocked}` — `mode` `'daily'` (la rotación de siempre) · `'weekly'` (días
+    fijos) · `'cycle'` (rotativo); `on` y `off` (el editor ofrece 1–6 y 1–3; `splitPlan()` acota y pone 3/1 por
+    defecto); `week` =
+    `{getDay: dayId}` (0 = domingo; lo que falta es descanso); `blocked` = `[getDay]` (días sin gym).
+  - `db.split.metric` `'rir'` (por defecto) o `'rpe'` (`splitMetric()`); `db.split.allowF` (`false` quita la F;
+    `splitAllowF()`).
+  - Cada sesión **congela** su escala: `metric:'rpe'` en `newWorkSession()`, `saveSession()` y `finalizeIdleSession()`;
+    sin campo = RIR (todas las sesiones viejas). Lo guardado siempre es RIR. Cambiar a RPE no reescribe nada.
+  - `usetpl` (plantillas) conserva `plan`, `metric` y `allowF`. `day.tag`, `day.metric` y `day.allowFailure` siguen en el
+    disco pero ya nadie los lee para mostrar: la etiqueta sale de `intensityTag()` y la F de `splitAllowF()` (vía
+    `sessIctx()`).
+- **Anatomía:** `.section` `//SCHEDULE` con meta `cómo entrenas`. Cada ajuste es una fila A (§7.5) `.line.sch`: clave
+  `--o60` · líder `.dots` · toggles a la derecha (`.toggles` sin `gap`, `button.t` de 44, la elegida `[entre corchetes]`
+  §7.3); alto mínimo 44, centrada.
+  1. `modo ···· [diario] días fijos rotativo` (`sp_mode`).
+  2. Rotativo: `días on ···· 1 2 [3] 4 5 6` (`sp_on`) y `días off ···· [1] 2 3` (`sp_off`).
+  3. Días fijos: un renglón por día de la semana, lunes primero (`DOW_ORDER`), clave con el nombre largo (`DOW_LONG`) y a
+     la derecha `[push A]` o `[descanso]` (`button.b`, `sp_wday`) → TRKMenu con el día como título: `descanso` y los días
+     del split. Un día bloqueado dice `sin gym` (`.v` `--o40`, sin toque). Al pasar a días fijos con la semana vacía,
+     `defaultWeek()` pone tus días en orden desde el lunes, saltando los días sin gym.
+  4. `días sin gym` — la clave sola en su línea y debajo `.toggles.dow` a todo el ancho (`space-between`): `L M X J V S D`
+     (`DOW_INI`), cada una `button.t` de 44 con `aria-pressed` y `aria-label` con el día largo (`sp_block`). Bloquear un
+     día le quita su rutina de la semana.
+  5. Resumen `.submeta` (`planSummary()`): `ciclo real · 8 días (6 de entreno + 2 de descanso) · sin gym: dom` y, solo en
+     rotativo, `· si un día no entrenas, cuenta como descanso`; días fijos: `semana · 5 de entreno + 2 de descanso`;
+     diario: `diario · 6 días seguidos`.
+  6. `intensidad ···· [RIR] RPE` (`sp_metric`) y `fallo (F) ···· [sí] no` (`sp_allowf`).
+- **Motor:** `planDay(iso)` → `{rest:true, why:'blocked'}` · `{rest:true, why:'plan'}` · `{rest:false, idx}`.
+  - Bloqueado siempre es descanso. Días fijos: la rutina de ese día de la semana o descanso.
+  - **Rotativo adaptativo:** cuenta los días entrenados de verdad justo antes (`trainedDates()`, sesiones con ejercicios);
+    tras `on` seguidos toca descanso; un día sin entrenar **es** descanso y no pide otro después (tras 3 entrenados y 1
+    sin entrenar, se entrena). Diario: nunca descansa por plan.
+  - `cycleLen()`: rotativo N + off × ⌈N/on⌉ (6 días a 3/1 = 8) · días fijos 7 · diario N. `planForecast(n)` simula los
+    próximos entrenos (hoy no cuenta si ya entrenaste o descansaste); `nextDateForDay(i)` y `daysUntil(iso)` dan la fecha
+    real de un día del split. En días fijos `curDayIdx()` = el próximo día de la semana con rutina.
+- **//COVERAGE (debajo, `plannedVolumeSection()`):** sets por músculo **por semana** con el ciclo real (sets del split × 7
+  / `cycleLen()`): `11.4 sets/sem`, meta `sets/músculo · por semana`, pie `cobertura planeada con tu ciclo de 8 días · el
+  estímulo real (σ) se mide al loguear · marca 10`. Antes `sets/vuelta`.
+- **Racha:** con plan (no diario) o días sin gym, los descansos del plan y los días bloqueados cuentan (bit 4 en
+  `activityDays()`, solo días pasados sin otro registro); un día de entreno que faltó la sigue rompiendo. En diario sin
+  días bloqueados nada cambia.
+- **Estados:** el modo elegido decide qué filas salen (rotativo: on/off · días fijos: la semana · diario: ninguna extra).
+  Cada cambio guarda y repinta con `reRender()` (sin salto de scroll).
+- **Toque:** todo ≥44 (toggles, `[día]`, `L M X J V S D`); `_dsRenderCheck` en el editor no suma toques chicos en ningún
+  modo.
+- **Sí / No:** sí un solo bloque antes de los días, en filas `clave ···· opción`; no un asistente de varios pasos, no un
+  calendario para planear, no fechas: el plan es una regla. No se registran descansos por adelantado: el descanso del
+  plan se deduce.
+- **La revisa:** `_scheduleSelfCheck` (6 días a 3/1 = 8; tras 3 seguidos toca descanso; tras el descanso se entrena; un
+  día sin entrenar es descanso y no pide otro; el pronóstico salta el descanso; día sin gym; la racha con y sin plan;
+  días fijos: índice, descanso y ciclo 7; RPE 8.5 ↔ RIR 1.5 y la F se queda; etiqueta calculada) · a ojo a 393×852 en los
+  tres modos.
 
 ---
 
@@ -1464,6 +1550,7 @@ Una forma de escribir cada tipo de dato, con su función (NUM-1). La revisa: a o
 | Serie (línea de registro) | `160lbs×8@0 / 160lbs×6@0` · drop `↓60lbs×9@0` · lado `R 70kg×10@2` | `shTokTxt()` desde `shExModel()` | en compartir; **objetivo G4**: historial y vista previa también (hoy `shareExLines()` escribe `60×11 RIR2 · ↓35×8 RIR0 58%`, M3-04) |
 | Conteo de series | `18 series` (series de trabajo; drops aparte; par R+L = 1) | `shExModel()` cuenta así; otras listas cuentan distinto (21 vs 18, M3-05) | `seriesOf()` (pendiente G4) |
 | Número de serie | `1, 1.5, 2, 3` (drop = .5, cadena .6/.7) | `setLabels()` | ✓ |
+| Intensidad (v273) | se **guarda** en RIR (`F`, 0–5, medios); se **lee** en la escala de la sesión: RIR `@2` · `RIR 2` · ` · RIR2`, RPE = 10 − RIR `@8` · `RPE 8` · ` · RPE8` (medios de 7 a 10; `F` queda `F`); la sigla va en MAYÚSCULAS, la cabecera de columna en minúsculas (`rir`/`rpe`) | `rpeToRir()` (para guardar) · `rirShow(v, m)` (para mostrar) · `_icM` (tabla) · `_shM` (compartir `shTokTxt()`/`exShRir()`, historial `_shRir()`) · export `.md` con `s.metric` · `intensityTag()` → `@ RIR · F` / `@ RPE` (cabecera del día, `.ics`) | ✓ en tabla, selector, compartir, historial y export; el `title` del ▲▼ (`setBadgeHTML()`) usa la escala del split, no la de la sesión |
 | Lateralidad | `[uni]`/`[bi]` al frente, misma fuente que el nombre; nunca la unidad | `latTxt()`, `exLatTagHead()` | ✓ (B-12) |
 | Tipo de ejercicio | una sola forma (`[libre] [máquina] [smith] [cable] [bw]`, propuesta de la auditoría) | hoy 5 formas (`máquina`, `mach`, `pulley`, `machine`, `free`) en `variantChips()` y otros | `typeTag()` (pendiente G4) |
 | Carga | `effW()` (peso corporal vivo); `numTxt()` (hasta 2 decimales); `roundLoad()` (kg 2.5 · lbs 5 · pla 1); `kgLoad()` (lbs→kg, placas fuera) | ✓ | v272: el detalle de e1RM (`liftE1Series()`/`openLiftDetail()`) va en la unidad real de la vez más reciente (`lbs`, `placas`), sin drops ni sugerencias; la tile de e1RM todavía dice `kg` (M5-04): G4 |
@@ -1770,7 +1857,7 @@ Objetivo G4: completar la tabla con el texto exacto de cada celda vacía y una a
 |---|---|---|---|---|---|
 | `landing` / `login` | primer uso | marca | `.start`, `.field`, `.toggles` | no | M0 sin evaluar (G4): tono de venta, etiquetas en mayúsculas, `← regresar`, marca con `//` en dos opacidades |
 | `onboard` | primer uso (perfil) | `[‹ atrás]` (`.obback`) + `.obh` `gym//TRK//PROFILE` + una línea | filas de terminal `.obr` (clave `.obk` + control; `.obi`, toggles), unidades primero, listas `.toggles.oblist` con su descripción, vista previa `.obprev`, `▶ empezar` | no | v268 · v269, §7.34: la fila con foco lleva `>`; Enter salta al siguiente campo; guardar es aditivo |
-| `home` (gym) | estado actual | `statusBar` + rotación + `dayHeadHTML` (`//NEXT`) | línea de preparación, músculos del día, vista previa (`[ ver rutina ▾ ]`), primario, `[rest day]` `[skip day]` (o `hoy: descanso ✓`, §7.37), //STIMULUS (σ por músculo y, si toca, la fila de fatiga acumulada, §7.23), //STATS | sí | con sesión viva solo existe `▶ resume workout` (v258, M1-01/M1-01b) |
+| `home` (gym) | estado actual | `statusBar` + rotación + `dayHeadHTML` (`//NEXT`) | línea de preparación, músculos del día, vista previa (`[ ver rutina ▾ ]`), primario, `[rest day]` `[skip day]` (o `hoy: descanso ✓`, §7.37; en un descanso del plan o día sin gym, `.restplan` + `[entrenar igual]` sin primario, v273), //STIMULUS (σ por músculo y, si toca, la fila de fatiga acumulada, §7.23), //STATS | sí | con sesión viva solo existe `▶ resume workout` (v258, M1-01/M1-01b) |
 | `workout` | registro | `.wline` (modo enfoque) | tabla de sesión, descanso, footer | no | §7.8, §7.20 |
 | `macros` | composición | `statusBar` + día `‹ fecha ›` | anillo en `.card`, detalle (radar, P/C/F, `[ver gramos \| ver %]`, INTAKE, retención), SUPPS (o su invitación) → MEALS (`[+ food]` en cada cabecera) → WATER | sí | §7.24, §7.28, §7.36 |
 | `progress` | análisis | `.section` //PROGRESS + `[edit]` | racha en franja, tiles `.ptile` en el orden de `db.settings.progLayout`, //FUERZA, //RECORDS, //MUSCLES (σ, §7.23), //RENDIMIENTO | sí (no mientras se edita) | modo editar §7.35; tiles → filas en G3 |
@@ -1778,7 +1865,7 @@ Objetivo G4: completar la tabla con el texto exacto de cada celda vacía y una a
 | `histedit` | corrección | `dayHeadHTML` | tabla de sesión compacta (`.hist-compact`) | no (v267) | |
 | `share` | resumen | según tipo | §7.19 | no | |
 | `stack` | inventario | `.section` //STACK | TRKTabs HOY/TODOS, bloques por momento | **sí (debería no)** | §7.25 |
-| `splitedit` | inventario | `.section` //SPLIT | días (`.seday`), ejercicios (`.seex`), deriva (`.sedrift`) | no | ▲▼ para reordenar y ✕ sin deshacer (G4) |
+| `splitedit` | inventario | `.section` //SPLIT | nombre, //SCHEDULE (cómo entrenas, días sin gym, RIR/RPE, §7.39), //COVERAGE (sets por semana), días (`.seday`), ejercicios (`.seex`), deriva (`.sedrift`) | no | ▲▼ para reordenar y ✕ sin deshacer (G4) |
 | `settings` | utilitario | `.section` //SETTINGS | //PERFIL, entrenamiento, //SALUD, datos (`sync data`, `espacio`, `export`, `import`, `reset data`) | no | `reset data` igual que `export` (M6-19); cinco nombres para el respaldo (M6-11) → G4 |
 | `agenda` | — | — | sin acceso desde v226 | — | código muerto (`renderAgenda()`, G4) |
 | overlays | — | — | §7.32 | — | — |
@@ -1885,7 +1972,8 @@ que crea o reemplaza una sesión se oculta mientras hay una viva.** La revisa: R
 | borrar una serie (deslizar) | inmediato; TRKAsk solo si se lleva drops con datos | toast + `[deshacer]` + menú al mantener el número (G4, M2-07) |
 | `↩` | v258: deshace el último ✓ por su hora (`doneAt`), conserva peso/reps/RIR y avisa con toast + `[deshacer]` | ✓ (M2-08) |
 | quitar un ejercicio del split (✕) | sin confirmación ni deshacer, a 1 del ▼ | desde el editor del ejercicio, con toast + deshacer (G4, M1-04) |
-| `rest day` · `skip day` | v269 (§7.37): `rest day` registra el descanso **sin mover la rotación** → toast `✓ descanso · mañana: <día>` + `[deshacer]`, y `[quitar descanso]` lo borra; `skip day` avanza la rotación → toast `✓ saltado · sigue <día>` + `[deshacer]`; con sesión viva no existen ni corren (v258, M1-01b) | ✓ (M1-03) |
+| `rest day` · `skip day` | v269 (§7.37): `rest day` registra el descanso **sin mover la rotación** → toast `✓ descanso · sigue <día> · mañana` (v273) + `[deshacer]`, y `[quitar descanso]` lo borra; `skip day` avanza la rotación → toast `✓ saltado · sigue <día>` + `[deshacer]` (en días fijos no existe, v273); con sesión viva no existen ni corren (v258, M1-01b) | ✓ (M1-03) |
+| cambiar el plan en //SCHEDULE | v273 (§7.39): inmediato y sin confirmación; no toca sesiones ni `rotIdx`, solo cómo se lee el calendario (se revierte tocando la opción anterior) | ✓ |
 | ocultar //SUPPS en una cuenta nueva (`ignorar por ahora`) | v269 (§7.36): toast + `[deshacer]`; vuelve desde //SETTINGS | ✓ |
 | quitar, agregar o reordenar tiles de //PROGRESS | v269 (§7.35): sobre una copia; `[cancel]` descarta y `✓ done` guarda con toast | ✓ |
 | `[+ log past session]` | oculto y bloqueado con sesión viva (v258, M1-01) | ✓ |
@@ -2024,10 +2112,17 @@ Línea base del 2026-09-21: todos en 0 salvo `style=""` 89, excepciones 33, lett
   serie en la unidad de la vez más reciente sin mezclar; una fila vieja sin tipo es el mismo ejercicio; `fatigueFlag()`
   con 2 ejercicios bajando y >25 % a RIR 0, y no con uno solo. `_diagSelfCheck` y `_muscleSelfCheck` ya no prueban
   MEV/MRV ni landmarks.
+- **`_scheduleSelfCheck()`** (v273, al final de `?selftest=1`; corre sobre una base de juguete y restaura `db`; 33
+  self-checks en total): 6 días a 3 on / 1 off = ciclo real de 8 · tras 3 entrenados seguidos toca descanso (`why:'plan'`)
+  · tras el descanso se entrena · un día sin entrenar ES descanso y no pide otro · el pronóstico salta el descanso (mañana
+  entrenas) · día sin gym = descanso (`why:'blocked'`) · la racha no se rompe por el descanso del plan y sin plan sí se
+  corta · días fijos: hoy toca el día asignado (`planDay` y `curDayIdx`), un día sin rutina es descanso y el ciclo es 7 ·
+  RPE 8.5 ↔ RIR 1.5, RIR 0 = RPE 10 y la F se queda · la etiqueta se calcula (`@ RPE · F`, sin F `@ RPE`).
 - **Inventario en navegador** (`tools/ds-inventory.js`, se guarda en G1): tamaños, colores→token, radios, sombras, blur,
-  tracking, animaciones, glifos y toques por pantalla, con el respaldo real del dueño. **`dsSweep()` de hoy** (v272, 393×852,
+  tracking, animaciones, glifos y toques por pantalla, con el respaldo real del dueño. **`dsSweep()` de hoy** (v273, 393×852,
   su respaldo, sin sesión viva; es la línea base `render` de `tools/ds-baseline.json`): ua 0 · hit 713 · txt 133 · fsOff 0
-  · blur 0 · glyph 72 · rad 0 (v271: glyph 67; el +5 es la etiqueta del dueño `puh🥀` —un ejercicio suyo— que ahora sale
+  · blur 0 · glyph 72 · rad 0 — igual que en v272; //SCHEDULE se midió aparte en el editor de split en sus tres modos: los
+  toggles nuevos miden ≥44 y ningún modo suma toques chicos (v271: glyph 67; el +5 es la etiqueta del dueño `puh🥀` —un ejercicio suyo— que ahora sale
   en una fila de diagnóstico de //MUSCLES: +1 en `progress` y en cada hoja que el barrido abre encima, `sheet:metric-steps`,
   `sheet:streak`, `sheet:sleeplog`, `sheet:rhrlog`. Es texto del dueño, no un glifo de interfaz, B-08).
 

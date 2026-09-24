@@ -53,8 +53,25 @@ const S2=[
 // sesión en curso: toca "start" en gym (si ya hay una, la retoma) y se queda en la tabla; después, sus sheets
 ['live:workout',W=>{ W.go('home'); const b=W.document.querySelector('[data-act="start"],[data-act="resume"]'); if(b)b.click(); W.go('workout'); }],
 ['live:exedit',W=>{ W.go('workout'); W.openExEdit(0,0,0); }],
-['live:machine',W=>{ W.go('workout'); W.openMachineEdit(0); }]
+['live:machine',W=>{ W.go('workout'); W.openMachineEdit(0); }],
+// v273 · cómo entrenas. Van AL FINAL porque cambian la db del frame (plan, métrica, lo de hoy apartado) y aquí no hay
+// later(): lo que sigue lo heredaría. En un _pre.html anterior a v273 el plan y la métrica no existen (A pinta lo de antes)
+['splitedit:schedule',W=>{ W.go('splitedit'); schedTop(W); }],
+['splitedit:weekly',(W,D)=>{ const P=W.splitPlan?W.splitPlan():{blocked:[]}; D.split.plan={mode:'weekly',on:P.on,off:P.off,week:{},blocked:P.blocked.slice()}; if(W.defaultWeek)D.split.plan.week=W.defaultWeek(); W.__trk.state.selDay=null; W.go('splitedit'); schedTop(W); }],
+['home:planrest',(W,D)=>planRest(W,D)],
+// la sesión congela su escala al nacer: se reemplaza la del frame (en memoria, detrás del guardia) y se abre el RPE de la 1.ª serie
+['workout:rpe',(W,D)=>{ D.split.metric='rpe'; D.activeWork=W.newWorkSession(); W.__trk.state._curEx=null; W.go('workout'); const b=W.document.querySelector('#view .rirb'); if(b)b.click(); }]
 ];
+// v273 · #view hasta //SCHEDULE (la cabecera justo antes de la fila `modo`), como toSection del estudio
+function schedTop(W){ const v=W.document.getElementById('view'), b=W.document.querySelector('#view [data-act="sp_mode"]'), ln=b&&b.closest('.line'), sec=ln&&ln.previousElementSibling; if(!v||!sec)return;
+  const hr=sec.previousElementSibling, top=(hr&&hr.classList.contains('rule'))?hr:sec; v.scrollTop+=top.getBoundingClientRect().top-v.getBoundingClientRect().top; }
+// v273 · hoy toca descanso por el plan: fuera la sesión viva, lo de hoy (entreno y descanso) y un plan rotativo que con esta
+// historia dé descanso hoy (mismo orden que planRest del estudio); si ninguno, hoy sin gym
+function planRest(W,D){ const t=W.todayISO(); D.activeWork=null; D.sessions=(D.sessions||[]).filter(s=>!(s&&s.date===t)); try{ W.bumpIdx(); }catch(_){} W.__trk.state.selDay=null;
+  if(W.planDay&&W.splitPlan&&(D.split.days||[]).length){ const P0=W.splitPlan(), dw=W.dowOf(t), bl=P0.blocked.filter(d=>d!==dw); let ok=false;
+    for(const [on,off] of (P0.mode==='cycle'?[[P0.on,P0.off]]:[]).concat([[3,1],[2,1],[1,1],[1,2],[2,2],[3,2],[1,3],[2,3],[3,3]])){ D.split.plan={mode:'cycle',on,off,blocked:bl.slice()}; const pd=W.planDay(t); if(pd.rest&&pd.why==='plan'){ ok=true; break; } }
+    if(!ok)D.split.plan={mode:'cycle',on:P0.on,off:P0.off,blocked:bl.concat([dw])}; }
+  W.go('home'); }
 async function runDiff2(S){ const A=document.getElementById('A').contentWindow, B=document.getElementById('B').contentWindow; const res={};
   if(!A.__trk||!B.__trk)throw new Error('frames sin guardia: no se corre');
   const D=W=>W.__trk.db;

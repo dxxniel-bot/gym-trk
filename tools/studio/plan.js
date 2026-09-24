@@ -11,7 +11,7 @@
 
   window.TRK_PLAN = {
     updated: '2026-09-24',
-    note: 'ruta de la guía: G1 y G2 hechos, F0 y T preparan el estudio; G0 se decide aquí, TS (v267) hornea el "terminal sobrio", P1 (v268) el primer arranque, v269 y v270 (salud por Atajo) lo que pediste el 24-sep, v271 comida y unidades y v272 σ v2 y estado del progreso; en el orden que aprobaste siguen split: cómo entrenas (v273), progreso por ejercicio (v274), suplementos con marca y frasco (v275), macros: laboratorio y carrusel (v276), configuración paso a paso (v277), cuentas (v278), Pro y anuncios (v279) y tour (v280). G3 y G4 completan la identidad sin versión fija. Cada entrega borra el CSS de su propuesta y la marca shipped.',
+    note: 'ruta de la guía: G1 y G2 hechos, F0 y T preparan el estudio; G0 se decide aquí, TS (v267) hornea el "terminal sobrio", P1 (v268) el primer arranque, v269 y v270 (salud por Atajo) lo que pediste el 24-sep, v271 comida y unidades, v272 σ v2 y estado del progreso y v273 split: cómo entrenas (diario, días fijos o rotativo, días sin gym, ciclo real y RIR o RPE); en el orden que aprobaste siguen progreso por ejercicio (v274), suplementos con marca y frasco (v275), macros: laboratorio y carrusel (v276), configuración paso a paso (v277), cuentas (v278), Pro y anuncios (v279) y tour (v280). G3 y G4 completan la identidad sin versión fija. Cada entrega borra el CSS de su propuesta y la marca shipped.',
     phases: [
 
       P('G1', 'guía', null, 'hecho', [
@@ -140,11 +140,11 @@
         I('check', 'self-checks: tabla de calibración de σ, estado por ejercicio, diagnóstico y músculos', 'hecho', { audit: 'glyph 67→72 (etiqueta del dueño)' }),
       ]),
 
-      P('V273', 'split: cómo entrenas', 'v273', 'pendiente', [
-        I('mode', 'cómo entrenas: diario · días fijos · rotativo on/off', 'pendiente'),
-        I('blocked', 'días bloqueados', 'pendiente'),
-        I('cycle', 'ciclo real', 'pendiente'),
-        I('effort', 'esfuerzo en RIR o RPE', 'pendiente'),
+      P('V273', 'split: cómo entrenas', 'v273', 'hecho', [
+        I('mode', 'cómo entrenas, antes que los días ("antes de todo poner si se entrena a diario… qué días on, qué días off"): //SCHEDULE con modo [diario] · días fijos · rotativo; rotativo con días on 1–6 y off 1–3; días fijos con una rutina o descanso por día de la semana ("todos los lunes se hace esta rutina"), y ahí [skip day] ya no sale', 'hecho'),
+        I('blocked', 'días sin gym L M X J V S D en su propia línea ("ningún gimnasio abre los domingos"): cuentan como descanso, no rompen la racha y el pronóstico los salta; en inicio: hoy toca descanso · domingo sin gym · siguiente: mañana · <día> con [entrenar igual] (sin primario)', 'hecho'),
+        I('cycle', 'ciclo real y adaptativo ("mi split actual realmente sería un split de ocho días"): 6 días a 3 on / 1 off = 8; tras 3 entrenados seguidos toca descanso y un día sin entrenar ES descanso ("si no se entrena = descanso"); ROTATION · 8 d, +Nd y el .ics con la fecha real; //COVERAGE en sets por semana con ese ciclo', 'hecho'),
+        I('effort', 'intensidad RIR o RPE por split ("mi amigo utiliza el RPE"): la sesión congela su escala; RPE F 10 9.5 9 8.5 8 7.5 7 6 5 en dos filas de 44 y se guarda como RIR = 10 − RPE; fallo (F) [sí] no; la etiqueta @ RIR · F se calcula; compartir, historial y export en la escala de la sesión', 'hecho', { audit: '33 self-checks · dsSweep sin cambios' }),
       ]),
 
       P('V274', 'progreso por ejercicio', 'v274', 'pendiente', [
@@ -169,7 +169,7 @@
 
       P('V277', 'configuración paso a paso', 'v277', 'pendiente', [
         I('setup', 'crear cuenta como configuración paso a paso (reemplaza el formulario de perfil de una sola pantalla)', 'pendiente', { proposal: 'fields' }),
-        I('train', 'pregunta cómo entrenas y si usas RIR o RPE', 'pendiente'),
+        I('train', 'pregunta cómo entrenas y si usas RIR o RPE (el ajuste ya vive en //SCHEDULE desde v273)', 'pendiente'),
       ]),
 
       P('V278', 'cuentas', 'v278', 'pendiente', [

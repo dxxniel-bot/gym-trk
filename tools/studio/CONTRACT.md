@@ -73,9 +73,14 @@ iframe.srcdoc = t.replace(/<head([^>]*)>/i, m => m + '<base href="'+base+'"><scr
   escenario lo deshace antes de correr (en orden inverso) y llama `W.bumpIdx()`. Nada se borra ni se reescribe; lo que la
   app guarde en medio lo absorbe el guardia. Hoy: `m:supps-empty` (el stack entero y `suppHide` se apartan: la invitación
   de //SUPPS solo sale con el stack vacío) y `home:rest` (se apartan la sesión viva y lo entrenado hoy, luego el toque real
-  de `[data-act="rest"]`; al salir se quita ese descanso). Un descanso real de hoy se deja como está.
-- Cubrir TODO: las 60 de `tools/ds-diff.html` (S2; v269 sin `m:mood`; v271 + `m:log:saved` y `macros:unit`; v272 +
-  `home:stimulus` y `m:deload`) + las 16 de `tools/ds-inventory.js` + arranque (`T.bootPreview(null,
+  de `[data-act="rest"]`; al salir se quita ese descanso). Un descanso real de hoy se deja como está. v273: `tempSplit(W, T,
+  clave, valor)` cambia `db.split.plan` o `db.split.metric` solo mientras se mira (al salir vuelve el valor tal cual, o se
+  quita si no existía) — lo usan `splitedit:weekly`, `home:planrest` y `workout:rpe`, y `home:rest` cuando hoy toca descanso
+  por el plan (entonces la app no ofrece `[rest day]`: el plan pasa a diario y sin hoy bloqueado para dar el toque real);
+  `asideToday(W, T, conDescanso)` aparta la sesión viva y lo de hoy (`home:rest` y `home:planrest`).
+- Cubrir TODO: las 64 de `tools/ds-diff.html` (S2; v269 sin `m:mood`; v271 + `m:log:saved` y `macros:unit`; v272 +
+  `home:stimulus` y `m:deload`; v273 + `splitedit:schedule`, `splitedit:weekly`, `home:planrest` y `workout:rpe`, al final
+  de S2 porque allá no hay `later` y cambian la db del frame) + las 16 de `tools/ds-inventory.js` + arranque (`T.bootPreview(null,
   true, false)` y el corto `boot:short` con `true` y `live`), wrap (`W.monthlyWrap(W.prevMonthYm(), true)`), recap (forzar vía la lógica de `snapRecap` si es posible),
   aviso de inactividad (`W.promptIdleSession()` con una sesión en curso "vieja"), toasts (`W.toast('✓ guardado')`,
   `W.toast('⚠ error de prueba','err')`, con deshacer), `W.trkAsk({...})`, `W.holdConfirm({...})`, barra de guardado
@@ -101,6 +106,18 @@ iframe.srcdoc = t.replace(/<head([^>]*)>/i, m => m + '<base href="'+base+'"><scr
   `later` hace falta. `m:muscle`, `m:volume`, `m:lift`, `m:session`, `home`, `progress` e `histedit` no cambian de
   receta y ya pintan σ (VOLUME/STIMULUS/FATIGUE del músculo, e1RM en su unidad real con su línea de estado). Fuera
   MEV/MRV y la guía RP: la marca `.mrv` (--warn .7) ya no se pinta. Total v272: 108 escenarios.
+- v273 (split: cómo entrenas — `db.split.plan` {mode daily|weekly|cycle, on, off, week, blocked}, `db.split.metric` rir|rpe,
+  `db.split.allowF`): `splitedit:schedule` (`W.go('splitedit')` y `#view` hasta //SCHEDULE con `toSection`, que ahora acepta
+  el elemento: la cabecera justo antes de la fila `modo` —modo [diario] días fijos rotativo, on 1–6 · off 1–3, días sin gym
+  L M X J V S D en su línea, el ciclo real, intensidad [RIR] RPE y fallo (F) [sí] no—), `splitedit:weekly` (el plan en días
+  fijos con `W.defaultWeek()` —o tu semana si ya la tienes— vía `tempSplit`: una fila por día con [rutina] → trkMenu, `sin
+  gym` en los bloqueados), `home:planrest` (hoy toca descanso por el plan: `asideToday` con descanso y un plan rotativo que
+  con TU historia dé `planDay(hoy)` = descanso `plan` —el tuyo si ya es rotativo, luego 3/1, 2/1, 1/1, 1/2…; con la demo
+  sale 1 on / 2 off—; si ninguno, hoy sin gym: una línea `hoy toca descanso · … · siguiente: …` y [entrenar igual], sin
+  primario) y `workout:rpe` (`own:true`: la escala va a RPE con `tempSplit`, luego una sesión PROPIA —`newWorkSession`
+  congela la escala al nacer, así la del dueño no se toca— y el toque real en el `.rirb` de la 1.ª serie: F 10 9.5 9 8.5 8
+  7.5 7 6 5 en dos filas de 44, `.tselr.wrap`). `splitedit`, `home` y `home:rest` siguen igual (el editor pinta //SCHEDULE
+  antes que los días y //COVERAGE en sets por semana). Total v273: 112 escenarios.
 - Etiquetas cortas en español: `gym · inicio`, `macros`, `hoja · agregar alimento`, `sesión · tabla`, `arranque`…
 
 ## 4 · `window.TRK_KNOBS` — knobs.js
@@ -164,7 +181,9 @@ iframe.srcdoc = t.replace(/<head([^>]*)>/i, m => m + '<base href="'+base+'"><scr
 ## 6 · `window.TRK_DEMO` — demo.js
 
 `TRK_DEMO.build(todayDate?) → objeto db` (JSON) que la app acepta tal cual (`migrate()` sin errores): `_demo:true`,
-usuario `demo`, split push/pull/legs genérico (ids estables únicos), ~10 semanas de sesiones con drop set, unilateral y
+usuario `demo`, split push/pull/legs genérico (ids estables únicos; v273: `plan` rotativo
+`{mode:'cycle',on:3,off:1,blocked:[0]}`, así //SCHEDULE, el ciclo real y la racha con descansos del plan salen con datos;
+el `--check` lo exige y comprueba que `migrate()` no lo toque), ~10 semanas de sesiones con drop set, unilateral y
 cardio, comidas genéricas por día, agua, 2 suplementos, sueño, pasos y peso corporal; sin ánimo (v269: `migrate()` lo
 purga con `purgeMood`, que el `--check` también extrae); fechas relativas a hoy (racha y "hoy" siempre con datos). PRNG con
 semilla fija. Nada del dueño. `node tools/studio/demo.js --check` valida la forma y
@@ -178,8 +197,8 @@ sale con 1 si algo falta.
 ```
 Fases: G1 (hecho), G2/v258 (hecho), F0/v259 (hecho), T/v260 (hecho), S1 estudio (hecho), G0 decisiones, TS/v267 terminal
 sobrio (hecho), P1/v268 primer arranque (hecho), V269 lo del 24-sep (hecho), V270 salud por Atajo (hecho), V271 comida y
-unidades (hecho), V272 σ v2 y estado del progreso (hecho), y en el orden aprobado por el dueño (24-sep): V273 split: cómo
-entrenas, V274 progreso por ejercicio, V275 suplementos con marca y frasco, V276 macros: laboratorio y carrusel, V277 configuración
+unidades (hecho), V272 σ v2 y estado del progreso (hecho), V273 split: cómo entrenas (hecho), y en el orden aprobado por el
+dueño (24-sep): V274 progreso por ejercicio, V275 suplementos con marca y frasco, V276 macros: laboratorio y carrusel, V277 configuración
 paso a paso (antes V271a), V278 cuentas (antes V271b), V279 Pro y anuncios (antes V273), V280 tour (antes V274); G3a–d y
 G4a–c sin versión fija (del plan aprobado). `proposal` enlaza a TRK_PROPOSALS.
 

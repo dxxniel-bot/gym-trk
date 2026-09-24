@@ -1,7 +1,7 @@
 // gym//TRK · estudio · DEMO (tools/studio/demo.js) → window.TRK_DEMO
 // Base de datos 100 % sintética para las vistas previas del estudio (CONTRACT.md §6). Nada del dueño: usuario `demo`,
-// split push/pull/legs genérico, comidas genéricas, fechas relativas a hoy. PRNG mulberry32 con semilla fija: la misma
-// fecha da siempre la misma base. `_demo:true` en la raíz → las rutas de importación reales de la app la rechazan.
+// split push/pull/legs genérico (v273: rotativo 3 on / 1 off, domingo sin gym), comidas genéricas, fechas relativas a
+// hoy. PRNG mulberry32 con semilla fija: la misma fecha da siempre la misma base. `_demo:true` en la raíz → las rutas de importación reales de la app la rechazan.
 //   TRK_DEMO.build(hoy?)  → objeto db (JSON) que migrate() acepta tal cual · hoy = Date | 'YYYY-MM-DD' | nada
 //   TRK_DEMO.check(db, hoy?) → [problemas] (vacío = bien)
 // En node: `node tools/studio/demo.js --check` valida la forma (y, si encuentra index.html, la pasa por el migrate()
@@ -118,7 +118,9 @@
     const round5 = x => Math.max(5, Math.round(x / 5) * 5), round25 = x => Math.max(2.5, Math.round(x / 2.5) * 2.5);
 
     // ---- split ----
-    const split = { name: 'push/pull/legs', days: SPLIT.map(d => ({ id: d.id, name: d.name, tag: '@ RIR · F', metric: 'rir', allowFailure: true,
+    // v273 · cómo entrenas (db.split.plan, aditivo): rotativo 3 on / 1 off con el domingo sin gym, como el dueño; así el
+    // bloque //SCHEDULE del editor, el ciclo real (4 días) y la racha con descansos del plan se ven con datos
+    const split = { name: 'push/pull/legs', plan: { mode: 'cycle', on: 3, off: 1, blocked: [0] }, days: SPLIT.map(d => ({ id: d.id, name: d.name, tag: '@ RIR · F', metric: 'rir', allowFailure: true,
       exercises: d.ex.map(e => { const o = e[7] || {};
         const x = { id: id('e'), name: e[0], muscle: e[1], type: e[2], machine: e[3], unilateral: !!o.uni, sets: e[4], unit: 'lbs', note: '' };
         if(o.muscles) x.muscles = o.muscles.map(m => ({ name: m[0], weight: m[1] }));
@@ -281,6 +283,8 @@
     A(days.length >= 3, 'split.days ≥ 3');
     const dIds = new Set(days.map(d => d.id)), exIds = new Set(); let exN = 0;
     A(dIds.size === days.length, 'ids de día únicos');
+    const pl = (db.split && db.split.plan) || {};
+    A(pl.mode === 'cycle' && pl.on === 3 && pl.off === 1 && Array.isArray(pl.blocked) && pl.blocked.indexOf(0) >= 0, 'split.plan rotativo 3 on / 1 off con domingo sin gym (v273)');
     days.forEach(d => (d.exercises || []).forEach(e => { exN++; exIds.add(e.id); }));
     A(exIds.size === exN && exN > 0, 'ids de ejercicio únicos en el split');
     const S = db.sessions || [];
@@ -354,13 +358,14 @@
         const ids = []; o.split.days.forEach(d => d.exercises.forEach(e => ids.push(e.id)));
         if(ids.join() !== db.split.days.map(d => d.exercises.map(e => e.id).join()).join()) P.push('migrate() re-acuñó ids del split');
         if('mood' in o) P.push('migrate() dejó pasar db.mood (v269 lo purga)');
+        if(!o.split.plan || JSON.stringify(o.split.plan) !== JSON.stringify(db.split.plan)) P.push('migrate() tocó split.plan (v273: es aditivo)');
         mig = 'migrate() real: ok · goalHist ' + Object.keys(o.goalHist || {}).length + ' días';
       }
     }catch(e){ P.push('migrate() falló: ' + (e && e.message || e)); }
     let sets = 0, drops = 0, items = 0; db.sessions.forEach(s => s.exercises.forEach(e => { sets += e.sets.length; drops += e.sets.filter(x => x.isDrop).length; }));
     Object.values(db.meals).forEach(a => { items += a.length; });
     console.log('TRK_DEMO · ' + iso(new Date()) + ' · ' + (a.length / 1024).toFixed(0) + ' KB');
-    console.log('  split ' + db.split.days.map(d => d.name + '(' + d.exercises.length + ')').join(' · ') + ' · sesiones ' + db.sessions.length + ' · series ' + sets + ' (drop ' + drops + ')');
+    console.log('  split ' + db.split.days.map(d => d.name + '(' + d.exercises.length + ')').join(' · ') + ' · plan ' + db.split.plan.mode + ' ' + db.split.plan.on + '/' + db.split.plan.off + ' sin gym ' + db.split.plan.blocked.join(',') + ' · sesiones ' + db.sessions.length + ' · series ' + sets + ' (drop ' + drops + ')');
     console.log('  comidas ' + Object.keys(db.meals).length + ' días / ' + items + ' ítems · alimentos ' + db.foods.length + ' · sueño ' + Object.keys(db.sleep).length +
       ' · pasos ' + Object.keys(db.steps).length + ' · peso ' + Object.keys(db.bodyweight).length + ' · stack ' + db.stack.length);
     console.log('  ' + mig);
