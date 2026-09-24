@@ -75,8 +75,10 @@ las etiquetas de campo. Cabeceras en una línea (`sep 2026 · 10`).
 errores, toasts, vacíos, diagnósticos). Un componente nunca mezcla idiomas. Las etiquetas del dueño no se traducen.
 
 **Números.** Series pegadas `160lbs×8@0 / 160lbs×6@0` · lectura suelta `59.8 kg` (unidad tenue) · miles `2,405` ·
-cambio `▲ +3%` / `▼ −4%` (signo menos real) · hora `09:13` · duración `1h26` · fecha `17 sep` · estimado `~43` ·
-sin dato `—`.
+cambio `▲ +3%` / `▼ −4%` (signo menos real) · hora `09:13` · fecha `17 sep` · estimado `~43` · sin dato `—`.
+**Duraciones en h y min, con espacio** (`45 min` · `5 h 12 min` · `2 d 4 h`, vía `fmtDur`): **nunca horas decimales**
+(`5.2 h` no dice nada; decisión del 24-sep, §9). En el eje de una gráfica, horas redondas (`7 h`). El temporizador de
+descanso sigue en `m:ss` (`1:30`).
 
 **Marca.** `gym//TRK`: `gym` y `TRK` en `--fg`/800, `//` en `--o40`, sin tracking. 22 en pantalla, 16 en overlays y
 pie de compartir, 34 solo en el landing. Una sola variante.
@@ -192,6 +194,8 @@ caracteres sin perder un dato?
 | 2026-09-24 | **Unidad del peso corporal aparte y primero** (v269): `te pesas en kg/lbs` es distinto de `pesas gym lbs/kg`; las dos van al inicio del perfil, el campo de peso sigue a la primera y el peso corporal se muestra en esa unidad en toda la app (registro, tile, detalle, wrap, perfil) | "ya pusiste tu peso en kilos. Porque abajo dice pesas en libras kilos. O sea, no tiene puto sentido" |
 | 2026-09-24 | **Perfil proporcionado** (v269): casillas de 36 y `--t-field` 14 en toda la app (reescribe el 16 del 23-sep, B-04); actividad y objetivo como listas verticales con la descripción de cada opción a su lado (fuera la pista que cambiaba abajo); `[‹ atrás]` arriba | "el formulario para profile... está muy gordo, está muy alto, o sea, la casilla está muy grande, el texto adentro de las casillas también, o sea, está desproporcional" · "en actividad, de sedentario, ligero, moderado, alto, está mal acomodado. Y luego abajo la nota de que caminas algo... la nota dependiendo de qué selecciona... está todo goofy" · "no hay forma de darle back" |
 | 2026-09-24 | **Atajo de Salud: pega todo** (v270): un solo Atajo copia pasos, peso, sueño con fases, FC en reposo, HRV y energía; la app lo pega con un toque (`health · paste` en //STATS, `[pegar de Salud]` en //HEALTH) y la receta explica que aún no somos app nativa. Lo tecleado a mano gana | "hay que ver la forma de generar un shortcut en general para que a la hora de pegar la información se pegue lo del peso, se pegue lo de los pasos, se pegue lo del HRV, se pegue lo de la frecuencia cardíaca en reposo, o sea, literalmente todo" |
+| 2026-09-24 | **Meals sin trampas** (v271): `cancel` en la hoja de loguear **nunca** registra el alimento (vuelve a la búsqueda o cierra; un alimento nuevo decide aparte `guardar en mis alimentos [sí] no`) · `[+ food]` sube a la cabecera de cada comida, con sus corchetes, a la derecha entre el nombre y el total · el nombre de la comida manda y el total queda segundo (`--o70`/700) · cada alimento vuelve a llevar su línea `P 31 · C 2 · F 1` con la fuente principal (por kcal) en blanco negrita, sin color | "a pesar de que le doy cancelar se me agrega a la meal ese alimento que no quería agregar" · "el add food se pierde mucho… yo le añadiría los corchetes y lo pondría igual del lado derecho de la meal" · "el nombre de la meal y el total de calorías… destaca más… las calorías totales que es el nombre de la meal" · "le hace falta lo que antes tenía de que por alimento poner sus macros y en highlight como que su fuente principal" · elección: "Blanco en negrita, sin color" |
+| 2026-09-24 | **Duraciones en h y min** (v271): `45 min` · `5 h 12 min` · `2 d 4 h` en toda la app (sueño, recuperación, sesión, agenda, recap, wrap, exportar); nunca horas decimales; el eje de una gráfica en horas redondas (`7 h`) y el descanso sigue `m:ss`. Reescribe el `1h26` de §3 | "hoy dormí 5.2 horas, pero ese 0.2 horas no me dice nada. así que hay que manejar horas y minutos, hay que manejar las unidades correspondientes de las cosas" |
 
 ## 10. Preguntas abiertas (se cierran en el estudio, `tools/studio.html`)
 

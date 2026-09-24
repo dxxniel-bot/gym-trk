@@ -100,10 +100,11 @@
     let rows = '';
     if(kcal){ let cls = ''; if(g.kcal){ cls = Math.abs(kcal - g.kcal) <= g.kcal * 0.1 ? 'good' : (kcal > g.kcal ? 'bad' : ''); } rows += L('kcal', kcal + (g.kcal ? ' / ' + g.kcal : ''), cls); }
     if(steps) rows += L('pasos', steps.toLocaleString());
-    rows += L('sesión', sess ? W.escTxt(sess.dayName || 'sí') + ' ✓' : 'descanso');
+    rows += L('sesión', sess ? W.escTxt(sess.dayName || 'sí') + ' ✓' : (W.restToday() ? 'descanso' : '—'));
     if(water) rows += L('agua', water + (g.water ? ' / ' + g.water : '') + ' L', (g.water && water >= g.water) ? 'good' : '');
-    const sl = W.sleepHours(db.sleep && db.sleep[today]); if(sl) rows += L('sueño', sl + ' h', (g.sleep && sl >= g.sleep) ? 'good' : '');
-    W.showOverlay(`<div class="bt"><span class="s">//</span>HOY <span class="u-data u-o40 u-w4">· ${W.fmtShort(today)}</span></div>${rows}<div class="bready">[tap para cerrar]</div>`, {}); }
+    // v271 · duraciones en h y min con el formateador de la app (fmtSleep: minutos exactos → '5 h 12 min'), nunca '5.2 h'
+    const sl = W.sleepHours(db.sleep && db.sleep[today]); if(sl) rows += L('sueño', W.fmtSleep(db.sleep[today]), (g.sleep && sl >= g.sleep) ? 'good' : '');
+    W.showOverlay(`<div class="bt"><span class="s">//</span>TODAY <span class="u-data u-o40 u-w4">· ${W.fmtShort(today)}</span></div>${rows}<div class="bready">[tap para cerrar]</div>`, {}); }
 
   const L = [
     // ---------------- gym ----------------
@@ -137,6 +138,12 @@
     // con 16 arriba y abajo, [ver gramos|ver %] a la derecha y sin barra de scroll (el ancho ya no brinca al abrir)
     { id:'macros:open', g:'pantalla', label:'macros · detalle', run(W, T){ macrosOn(W, T);
         if(!click(W, '#view [data-act="togglemacros"]')){ T.state.macroOpen = true; W.render(); } } },
+    // v271 · el mismo detalle y el toque real de [ver %] (button.b de 44; reRender, ya no sube hasta arriba). Sale siempre
+    // desde gramos → %; macroPct es estado en memoria y vuelve a como estaba al pasar al siguiente escenario (later)
+    { id:'macros:unit', g:'pantalla', label:'macros · detalle en %', run(W, T){ const st = T.state, p0 = st.macroPct;
+        st.macroPct = false; later(W, () => { st.macroPct = p0; });
+        macrosOn(W, T); if(!click(W, '#view [data-act="togglemacros"]')){ st.macroOpen = true; W.render(); }
+        click(W, '#view [data-act="toggleMacroUnit"]'); } },
     // v269 · cuenta sin suplementos: //SUPPS arriba de las comidas invita a registrarlos ([+ supp] · ··· → ignorar por ahora)
     { id:'m:supps-empty', g:'pantalla', label:'macros · sin suplementos (invitación)', run(W, T){ noSupps(W, T); macrosOn(W, T); } },
     // retención "high": la fila solo sale fuera de rango (BRAND §4) → busca el día con comida más reciente que la tenga
@@ -153,7 +160,12 @@
     { id:'m:text', g:'hoja', label:'hoja · pegar texto', run(W){ W.openTextParse(); } },
     { id:'m:mealcode', g:'hoja', label:'hoja · código de comida', run(W, T){ const m = firstMeal(W, T); if(m){ W._mealId = m.id; W.openMealCode(); } } },
     { id:'m:verify', g:'hoja', label:'hoja · verificar alimento', run(W){ W.openVerify(food, {}); } },
-    { id:'m:log', g:'hoja', label:'hoja · porción', run(W, T){ W.openLog((T.db.foods || [])[0] || food, { isNew:true }); } },
+    // v271 · [cancel] ya no loguea (antes data-act="logonly" → commitLog): vuelve a la búsqueda o cierra. Alimento nuevo =
+    // fila 'guardar en mis alimentos [sí] no' y el primario siempre 'loguear'; guardado = sin esa fila
+    { id:'m:log', g:'hoja', label:'hoja · loguear alimento nuevo (guardar sí/no)', run(W, T){ W.openLog((T.db.foods || [])[0] || food, { isNew:true }); } },
+    { id:'m:log:saved', g:'hoja', label:'hoja · loguear alimento guardado', run(W, T){ const m = firstMeal(W, T), f = (T.db.foods || [])[0] || food;
+        W._faCtx = null;   // sin contexto de búsqueda: [cancel] cierra (con él sería ← back / faback)
+        W.openLog(f, { fromId:f.id || null, tag:(m && m.tag) || 'meal' }); } },
     { id:'m:lognutri', g:'hoja', label:'hoja · porción · nuevo', run(W){ W.openLog(food, { isNew:true }); } },
     { id:'m:mealsum', g:'hoja', label:'hoja · desglose de comida', run(W, T){ const m = firstMeal(W, T); if(m) W.openMealSummary(m.tag); } },
     { id:'m:dupmeal', g:'hoja', label:'hoja · duplicar comida', run(W, T){ const m = firstMeal(W, T); if(m && m.tag) W.openDupMeal(m.tag); } },

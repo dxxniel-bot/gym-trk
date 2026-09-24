@@ -11,7 +11,7 @@
 
   window.TRK_PLAN = {
     updated: '2026-09-24',
-    note: 'ruta de la guía: G1 y G2 hechos, F0 y T preparan el estudio; G0 se decide aquí, TS (v267) hornea el "terminal sobrio", P1 (v268) el primer arranque y v269 lo que pediste el 24-sep; siguen configuración paso a paso (v270a), cuentas (v270b), salud por Atajo (v271), tensión v2 (v272), Pro y anuncios (v273) y tour (v274). G3 y G4 completan la identidad sin versión fija. Cada entrega borra el CSS de su propuesta y la marca shipped.',
+    note: 'ruta de la guía: G1 y G2 hechos, F0 y T preparan el estudio; G0 se decide aquí, TS (v267) hornea el "terminal sobrio", P1 (v268) el primer arranque, v269 y v270 (salud por Atajo) lo que pediste el 24-sep y v271 comida y unidades; en el orden que aprobaste siguen σ v2 y estado del progreso (v272), split: cómo entrenas (v273), progreso por ejercicio (v274), suplementos con marca y frasco (v275), macros: laboratorio y carrusel (v276), configuración paso a paso (v277), cuentas (v278), Pro y anuncios (v279) y tour (v280). G3 y G4 completan la identidad sin versión fija. Cada entrega borra el CSS de su propuesta y la marca shipped.',
     phases: [
 
       P('G1', 'guía', null, 'hecho', [
@@ -120,24 +120,64 @@
         I('url', 'SHORTCUT_URL: enlace de iCloud cuando el dueño arme el Atajo una vez en su iPhone', 'pendiente'),
       ]),
 
-      P('V271a', 'configuración paso a paso', 'v271a', 'pendiente', [
-        I('setup', 'crear cuenta como configuración paso a paso (reemplaza el formulario de perfil de una sola pantalla)', 'pendiente', { proposal: 'fields' }),
+      P('V271', 'comida y unidades', 'v271', 'hecho', [
+        I('cancel', '[cancel] al loguear ya no agrega el alimento: vuelve a la búsqueda o cierra; alimento nuevo con la fila "guardar en mis alimentos [sí] no" y el primario siempre loguear ("a pesar de que le doy cancelar se me agrega")', 'hecho'),
+        I('foodadd', '[+ food] entre corchetes en la cabecera de cada comida, a la derecha del nombre (44 px); fuera la fila del final', 'hecho', { audit: 'hit 715→713' }),
+        I('hier', 'jerarquía: el nombre de la comida manda (--t-section 800 --fg) y su total baja a --o70 700', 'hecho'),
+        I('macros', 'macros por alimento de vuelta: P · C · F en cada fila con la fuente principal en blanco y negrita, sin color; ~ si es aproximado', 'hecho'),
+        I('scroll', '[ver gramos|ver %] y los demás toggles ya no suben hasta arriba (reRender); en % un anillo muestra lo que queda', 'hecho', { audit: 'R-SCROLL toggles 3→0' }),
+        I('units', 'duraciones en h y min en toda la app: 5 h 12 min en lugar de 5.2 h (sueño, recuperación, sesión, agenda, recap, export); el descanso sigue en m:ss', 'hecho'),
       ]),
 
-      P('V271b', 'cuentas', 'v271b', 'pendiente', [
+      P('V272', 'σ v2 y estado del progreso', 'v272', 'pendiente', [
+        I('sigma', 'σ en lugar de T y fuera MEV/MRV y la guía RP', 'pendiente'),
+        I('state', 'estado por ejercicio: progresando · estable · estancado · retrocediendo', 'pendiente'),
+        I('fatigue', 'fatiga acumulada y descarga opcional', 'pendiente'),
+        I('e1rm', 'e1RM honesto por unidad', 'pendiente'),
+      ]),
+
+      P('V273', 'split: cómo entrenas', 'v273', 'pendiente', [
+        I('mode', 'cómo entrenas: diario · días fijos · rotativo on/off', 'pendiente'),
+        I('blocked', 'días bloqueados', 'pendiente'),
+        I('cycle', 'ciclo real', 'pendiente'),
+        I('effort', 'esfuerzo en RIR o RPE', 'pendiente'),
+      ]),
+
+      P('V274', 'progreso por ejercicio', 'v274', 'pendiente', [
+        I('list', 'lista numerada de ejercicios', 'pendiente'),
+        I('chart', 'gráfica por ejercicio', 'pendiente'),
+      ]),
+
+      P('V275', 'suplementos con marca y frasco', 'v275', 'pendiente', [
+        I('brand', 'marca de cada suplemento', 'pendiente'),
+        I('dose', 'dosis', 'pendiente'),
+        I('stock', 'inventario del frasco', 'pendiente'),
+        I('warn', 'aviso 7 días antes de que se acabe', 'pendiente'),
+        I('archive', 'archivar o pausar', 'pendiente'),
+        I('swap', 'cambiar a otra marca', 'pendiente'),
+      ]),
+
+      P('V276', 'macros: laboratorio y carrusel', 'v276', 'pendiente', [
+        I('lab', 'versiones de las barras y de la distribución para elegir', 'pendiente'),
+        I('carousel', 'carrusel del panel', 'pendiente'),
+        I('share', 'compartir el panel', 'pendiente'),
+      ]),
+
+      P('V277', 'configuración paso a paso', 'v277', 'pendiente', [
+        I('setup', 'crear cuenta como configuración paso a paso (reemplaza el formulario de perfil de una sola pantalla)', 'pendiente', { proposal: 'fields' }),
+        I('train', 'pregunta cómo entrenas y si usas RIR o RPE', 'pendiente'),
+      ]),
+
+      P('V278', 'cuentas', 'v278', 'pendiente', [
         I('records', 'capa de registros, sombra en IndexedDB v2 y código muerto', 'pendiente'),
         I('sync', 'pantallas de cuenta en el estilo nuevo, sync con Supabase y //ACCOUNT', 'pendiente'),
       ]),
 
-      P('V272', 'tensión v2', 'v272', 'pendiente', [
-        I('sigma', 'σ tensión v2: segunda versión del motor de tensión', 'pendiente'),
-      ]),
-
-      P('V273', 'Pro y anuncios', 'v273', 'pendiente', [
+      P('V279', 'Pro y anuncios', 'v279', 'pendiente', [
         I('pro', 'plan Pro y anuncios (cobro en la web primero)', 'pendiente'),
       ]),
 
-      P('V274', 'tour por sección', 'v274', 'pendiente', [
+      P('V280', 'tour por sección', 'v280', 'pendiente', [
         I('tour', 'tour por sección para cuentas nuevas, con [saltar]; va después de las cuentas y viaja con ellas', 'pendiente'),
       ]),
 

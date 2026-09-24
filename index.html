@@ -321,7 +321,7 @@
   .mdtabs{position:relative; display:flex; gap:0; border-bottom:var(--bw-sep) solid var(--o10); margin-bottom:var(--s5);}
   .mdtabs span{position:relative; z-index:1; flex:1; text-align:center; padding:var(--s3) 0 10px; font-size:var(--t-data); color:var(--o50); cursor:pointer; letter-spacing:var(--ls-ui); font-weight:700;}
   .mdtabs span.on{color:var(--fg);} .mdtabs span.on::after{content:''; position:absolute; left:25%; right:25%; bottom:-.5px; height:2px; background:var(--fill);}
-  .mdval{font-size:var(--t-hero); font-weight:800; letter-spacing:var(--ls-num); margin-bottom:var(--s2); line-height:1.05;}
+  .mdval{font-size:var(--t-hero); font-weight:800; letter-spacing:var(--ls-num); margin-bottom:var(--s2); line-height:1.05;} .mdval span{font-size:var(--t-data); font-weight:400; color:var(--o50); margin:0 var(--s1); letter-spacing:0;}   /* v271 · 5 h 42 min: la unidad chica */
   .mdmeta{font-size:var(--t-label); color:var(--o50); margin-bottom:6px;}
   .mdgood{color:var(--good);} .mdbad{color:var(--bad);} .mdflat{color:var(--o50);}
   .mdstats{margin-top:var(--s4); border-top:var(--bw-sep) solid var(--o12); padding-top:var(--s3);}
@@ -419,20 +419,24 @@
   .lseg{margin-bottom:var(--s2);} .lseg span i{margin-left:var(--s2); font-style:normal; font-size:var(--t-label); font-weight:400; color:var(--o50);}
   /* comidas plegables: el total (16/800) manda sobre sus alimentos (12/400) — queja 9 */
   .mrec{--mcol:32px;} .mrec+.mrec{border-top:var(--bw-sep) solid var(--o10);}
-  .mhd{display:grid; grid-template-columns:minmax(0,1fr) auto var(--mcol); align-items:center; min-height:44px;}
+  .mhd{display:grid; grid-template-columns:minmax(0,1fr) auto auto var(--mcol); align-items:center; min-height:44px;}
+  .mhd .madd{margin:0 var(--s2) 0 var(--s3); color:var(--o60);}   /* v271 · [+ food] a la derecha de la comida: "el add food se pierde" */
   .mtg{display:block; min-width:0; height:44px; padding:0; border:0; background:none; color:inherit; font-family:inherit; text-align:left; line-height:44px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; cursor:pointer;}
   .mchev{display:inline-block; width:var(--s5); font-size:var(--t-section); color:var(--o30); transition:transform var(--dur-2) var(--ease-out);} .mrec.open .mchev{transform:rotate(90deg);}
   .mnm{font-size:var(--t-section); font-weight:800; color:var(--fg);}
   .mmeta{margin-left:var(--s3); font-size:var(--t-label); color:var(--o40);}
-  .mkc{height:44px; padding:0 0 0 var(--s3); border:0; background:none; color:var(--fg); font-family:inherit; font-size:var(--t-section); font-weight:800; letter-spacing:var(--ls-num); text-align:right; cursor:pointer;}
-  .mhd .gmore{grid-column:3; width:44px; height:44px; margin:0 -12px 0 0; padding:0 12px 0 0; display:flex; align-items:center; justify-content:flex-end; color:var(--o50);}   /* la regla base de .gmore lo manda a la columna 4 (rejilla vieja de .ghead) */
+  .mkc{height:44px; padding:0 0 0 var(--s3); border:0; background:none; color:var(--o70); font-family:inherit; font-size:var(--t-section); font-weight:700; letter-spacing:var(--ls-num); text-align:right; cursor:pointer;}
+  .mhd .gmore{grid-column:4; width:44px; height:44px; margin:0 -12px 0 0; padding:0 12px 0 0; display:flex; align-items:center; justify-content:flex-end; color:var(--o50);}   /* la regla base de .gmore lo manda a la columna 4 (rejilla vieja de .ghead) */
   /* v257 · "más acciones": tres puntos dibujados (3 px, 3 px de aire) — el texto ··· a 16 salía diminuto y pegado al
      total. Toque de 44×44 que se mete 12 px en el margen de la página; 17 px entre el total y el primer punto. */
   .dots3{display:block; width:3px; height:3px; margin-right:12px; border-radius:50%; background:currentColor; box-shadow:6px 0 0 currentColor, 12px 0 0 currentColor/*ds:exempt*/;}   /* la "sombra" dibuja los puntos 2 y 3 */
   .mlbody{padding-bottom:var(--s2);}
   .mit{display:flex; align-items:center; gap:var(--s3); width:100%; min-height:36px; padding:0 var(--mcol) 0 var(--s5); border:0; background:none; color:inherit; font-family:inherit; font-size:var(--t-data); text-align:left; cursor:pointer;}
   .mit .nm{flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--o70);} .mit .q{font-weight:700; color:var(--o70);} .mit .kc{flex:0 0 auto; color:var(--o50);}
-  .mit.add .nm{font-weight:700; color:var(--o60);} .mit:active,.mit.exp{background:var(--o10);}
+  .mit:active,.mit.exp{background:var(--o10);}
+  .mit .nm1{display:block; overflow:hidden; text-overflow:ellipsis;} .mit .mmac{display:block; font-size:var(--t-label); color:var(--o50); line-height:var(--lh-tight); margin-top:1px;} .mit .mmac b{color:var(--fg); font-weight:700;}   /* v271 · macros por alimento, el principal en blanco */
+  .mit:has(.mmac){padding-top:var(--s1); padding-bottom:var(--s1);}
+  .lsv{align-items:center; min-height:44px; margin-top:var(--s2);} .lsv .toggles{flex:0 0 auto;}
   .mit.st{padding:0; cursor:default;} .mit.st:active{background:none;}
   /* hoja de desglose: título + hora en una línea, el total primero, radar de 132 y la lista a su lado */
   .msh{display:flex; align-items:center; gap:var(--s4);}
@@ -1043,7 +1047,7 @@
 
 <script>
 "use strict";
-const APP_V='v270';   // versión visible (arranque); R-DOC la compara con sw.js y con DESIGN_SYSTEM.md línea 3
+const APP_V='v271';   // versión visible (arranque); R-DOC la compara con sw.js y con DESIGN_SYSTEM.md línea 3
 const LS_KEY='gymtrk_db_v1';
 // BRAND.md §3 · diccionario cerrado de glifos de interfaz (un glifo = un significado). tools/ds-audit.cjs (R-GLY) lee
 // esta constante: cualquier otro símbolo no ASCII en un literal de interfaz es una desviación. Las etiquetas que el
@@ -2336,7 +2340,7 @@ function muscleRecoveryState(id,nowMs){ const ex=muscleExposureIndex()[id]||[]; 
   const mid=(win.lo+win.hi)/2; const pct=Math.max(0,Math.min(100,Math.round(h/Math.max(1,mid)*100)));
   const state=h>=win.hi?'fresh':h>=win.lo?'likely':'recovering';
   return {id,h,last,est,obs,win,pct,state}; }
-function recStateTxt(r){ if(!r)return ''; const hh=r.h<48?Math.round(r.h)+' h':Math.round(r.h/24*10)/10+' d';
+function recStateTxt(r){ if(!r)return ''; const hh=fmtDur(Math.round(r.h)*60);
   return r.state==='fresh'?'fresco · '+hh:r.state==='likely'?'casi · '+hh:'~'+r.pct+'% · '+hh; }
 function recStateCol(r){ return !r?'var(--o40)':r.state==='fresh'?'var(--o50)':   /* v262 · "fresco" sin verde */r.state==='likely'?'var(--o70)':'var(--warn)'; }
 // agregados por ventana de fechas (VOLUMEN/ESTÍMULO) sobre las exposiciones
@@ -2369,7 +2373,7 @@ function musclesSectionHTML(){ const rows=muscleRowsData(); if(!rows.length)retu
 const DIAG={farRIR:3, farMinRN:4, drop:-3, fatSets:1.25, fatRIR:0.5, lowSleep:6, splitN:3, splitGap:3, lenKnown:0.7, lenMinSets:6};
 // banderas del día con los MISMOS umbrales que las causas de un ▼ (downContext): una sola definición
 function dayFlags(date){ const out=[]; const r=readinessFor(date); if(!r)return out; const P=r.parts;
-  if(P.sleep&&P.sleep.score<80)out.push('dormiste '+P.sleep.v+'h');
+  if(P.sleep&&P.sleep.score<80)out.push('dormiste '+fmtH(P.sleep.v));
   if(P.rhr&&P.rhr.z>1.5)out.push(P.rhr.txt);
   if(P.hrv&&P.hrv.z<-1)out.push('HRV baja');
   if(P.load&&P.load.ratio>1.4)out.push(P.load.txt);
@@ -2484,7 +2488,7 @@ function openMuscleDetail(id){ const M=MUSCLES[id]; if(!M)return; const t=todayI
     +`<div class="grp-label sub">RECOVERY</div>`
     // D19: la escala es el FIN de la ventana (lleno ⇔ fresco) con marca en su inicio; rec.pct (vs punto medio) queda para el texto
     +(rec?bar('rec',rec.h/Math.max(1,rec.win.hi)*100,rec.win.lo>0&&rec.win.lo<rec.win.hi?trkMark(rec.win.lo/rec.win.hi*100):'',rec.win.lo>0&&rec.win.lo<rec.win.hi?'marca: inicio de la ventana':''):'')
-    +(rec?line('última exposición','hace '+(rec.h<48?Math.round(rec.h)+' h':r1m(rec.h/24)+' d'),fmtShort(rec.last.date)):'')
+    +(rec?line('última exposición','hace '+fmtDur(Math.round(rec.h)*60),fmtShort(rec.last.date)):'')
     +(est?line(glossWrap('ventana estimada','est'),est.lo+'–'+est.hi+' h','base '+M.rec[0]+'–'+M.rec[1]+' h × dosis '+est.f):'')
     +(obs&&obs.hours?line(glossWrap('ventana observada','est'),winTxt(obs.hours[0],obs.hours[1]),'tu historial · '+obs.n+' pares'):line(glossWrap('ventana observada','est'),'aún no',(obs?obs.n:0)+' de 6 pares necesarios'))
     +(obs&&obs.n?`<div class="submeta u-mt4 u-mb0 u-mx0">capacidad según horas de descanso: ${obs.buckets.filter(b=>b.n).map(b=>(b.b>=1e9?'>'+b.a:b.a+'-'+b.b)+' h '+(b.med>=0?'+':'')+r1m(b.med)+'% (n'+b.n+')').join(' · ')}</div>`:'')
@@ -2693,7 +2697,7 @@ function weeklyCardio(days){ days=days||7; const now=new Date(); const cut=new D
 }
 function topLift(){ const m={}; db.sessions.forEach(s=>{if(s.type==='rest')return;(s.exercises||[]).forEach(e=>{let v=0;(e.sets||[]).forEach(st=>v+=(parseFloat(st.w)||0)*(parseFloat(st.r)||0)); m[e.name]=(m[e.name]||0)+v;});}); let best='—',bv=-1; for(const k in m){if(m[k]>bv){bv=m[k];best=k;}} return best; }
 function kfmt(n){ return n>=1000? (n/1000).toFixed(1)+'k' : String(Math.round(n)); }
-function elapsedStr(ms){ if(!ms)return''; const s=Math.max(0,Math.round((Date.now()-ms)/1000)); const h=Math.floor(s/3600),m=Math.floor(s%3600/60); return h?h+'h '+pad(m)+'m':m+'m'; }
+function elapsedStr(ms){ if(!ms)return''; const s=Math.max(0,Math.round((Date.now()-ms)/1000)); return fmtDur(Math.floor(s/60)); }
 
 // ---------- render: nav ----------
 function renderNav(){
@@ -2780,7 +2784,7 @@ function renderHome(){
     +`<div class="line stat"><span class="k">sessions · 7d</span><span class="dots"></span><span class="v">${s7.count}</span></div>`
     +`<div class="line stat"><span class="k">uptime</span><span class="dots"></span><span class="v">${uptimeDays()}d</span></div>`
     +`<div class="line stat tap" role="button" tabindex="0" data-act="editsteps"><span class="k">steps · today</span><span class="dots"></span><span class="v">${(db.steps&&db.steps[todayISO()])?db.steps[todayISO()].toLocaleString():'— tap'}</span></div>`
-    +`<div class="line stat tap" role="button" tabindex="0" data-act="logsleep"><span class="k">sleep · last night</span><span class="dots"></span><span class="v">${(db.sleep&&db.sleep[todayISO()])?sleepHours(db.sleep[todayISO()])+' h':'— tap'}</span></div>`
+    +`<div class="line stat tap" role="button" tabindex="0" data-act="logsleep"><span class="k">sleep · last night</span><span class="dots"></span><span class="v">${(db.sleep&&db.sleep[todayISO()])?(fmtSleep(db.sleep[todayISO()])||'—'):'— tap'}</span></div>`
     +`<div class="line stat tap" role="button" tabindex="0" data-act="healthpaste"><span class="k">health · paste</span><span class="dots"></span><span class="v">${H().shortcut.lastPaste?hpAgo(H().shortcut.lastPaste)+(Date.now()-H().shortcut.lastPaste>18*3600000?' · tap':''):'— tap'}</span></div>`;
 }
 // read-only preview of what starting this day would actually produce (without starting the workout)
@@ -3357,7 +3361,7 @@ function _readinessSelfCheck(){
     A('weighted score', r.score===Math.round((r.parts.sleep.score*0.35+r.parts.rhr.score*0.25)/0.6));
     db.sessions=[{id:'rs1',date:today,type:'training',exercises:[]}];
     const causes=downContext(db.sessions[0],0,null);
-    A('a capacity drop lists its probable causes', causes.some(c=>/dormiste 5h/.test(c))&&causes.some(c=>/FC reposo \+6/.test(c)));
+    A('a capacity drop lists its probable causes', causes.some(c=>/dormiste 5 h/.test(c))&&causes.some(c=>/FC reposo \+6/.test(c)));
     A('good day → nothing listed', (()=>{ db.sleep[today]=[{date:today,type:'nocturno',hours:8.2}]; H().daily[today]={rhr:57}; bumpIdx(); return downContext(db.sessions[0],0,null).length===0; })());
     console.log('readiness self-check OK');
   } finally { db.sleep=keep.sleep; db.health=keep.health; db.sessions=keep.sessions; db.meals=keep.meals; bumpIdx(); }
@@ -3919,6 +3923,26 @@ function _healthPasteSelfCheck(){ const A=(nm,c)=>{ if(!c) throw new Error('SELF
     A('pegar dos veces no duplica', db.steps['2026-09-20']===8200&&Object.keys(H().sleep).length===1);
   } finally { db=real; }
   console.log('health paste self-check OK'); }
+function _v271SelfCheck(){ const A=(nm,c)=>{ if(!c) throw new Error('SELFCHECK v271: '+nm); };
+  // h y min
+  A('5.2 h → 5 h 12 min', fmtH(5.2)==='5 h 12 min'); A('0.5 h → 30 min', fmtH(0.5)==='30 min'); A('7 h exactas', fmtH(7)==='7 h');
+  A('60 h → 2 d 12 h', fmtDur(3600)==='2 d 12 h'); A('sueño al minuto con hora de inicio y fin', sleepMinOf({start:'23:10',end:'07:02',hours:7.9})===472);
+  A('fases: dormido = REM+core+profundo', sleepMinOf({start:'23:00',end:'07:00',ph:{awake:20,rem:90,core:250,deep:60}})===400);
+  // macros por alimento: fuente principal por kcal
+  A('pollo: proteína principal', /<b>P 31<\/b>/.test(macroLineHTML({protein:31,carbs:0,fat:3})));
+  A('aguacate: grasa principal por kcal', /<b>F 15<\/b>/.test(macroLineHTML({protein:2,carbs:9,fat:15})));
+  A('agua: sin línea', macroLineHTML({protein:0,carbs:0,fat:0})==='');
+  // cancel NO agrega (sandbox)
+  const real=db, _t=toast, _rr=reRender; const app=document.getElementById('app');
+  try{ db=JSON.parse(JSON.stringify(real)); toast=()=>null; reRender=()=>null; const d=curDate(); const n0=(db.meals[d]||[]).length;
+    const fd={id:'f_t',name:'pollo prueba',base:'g',per100:{kcal:165,protein:31,carbs:0,fat:3.6},sizes:{g:1}}; db.foods=(db.foods||[]).concat([fd]);
+    openLog(fd,{fromId:'f_t',tag:'comida'}); const c=document.querySelector('#modal .sheetbtns .cancel');
+    A('la hoja tiene cancel', !!c&&c.dataset.act!=='logonly'); c.click();
+    A('cancel no loguea', (db.meals[d]||[]).length===n0);
+    openLog(fd,{tag:'comida',isNew:true}); A('alimento nuevo: fila guardar sí/no', !!document.querySelector('#l_save .t.on[data-v="1"]'));
+    const c2=document.querySelector('#modal .sheetbtns .cancel'); c2.click(); A('cancel del nuevo no loguea', (db.meals[d]||[]).length===n0);
+  } finally { try{ closeModal(); }catch(_){} db=real; toast=_t; reRender=_rr; }
+  console.log('v271 self-check OK'); }
 function _v269SelfCheck(){ const A=(nm,c)=>{ if(!c) throw new Error('SELFCHECK v269: '+nm); };
   // 1 · ánimo: migrate lo borra y deja constancia; un respaldo viejo también
   const d1=migrate({profile:{username:'x'},mood:{'2026-09-01':{x:5,y:7,label:'contento'}},split:{days:[]}});
@@ -4454,7 +4478,7 @@ function renderHistoryEditor(){
 // informational only, shown once per session. NEVER feeds setScore/e1RM/the %ladder above.
 function sessionContextNote(w){
   const date=w.date||todayISO(); const parts=[];
-  const sl=db.sleep&&db.sleep[date]; if(sl!=null){ const h=sleepHours(sl); if(h>0)parts.push('dormiste '+h+'h'); }
+  const sl=db.sleep&&db.sleep[date]; if(sl!=null){ const h=sleepHours(sl); if(h>0)parts.push('dormiste '+fmtSleep(sl)); }
   const startMin=hm2min(w.loggedAfter?w.startTime:w.startTs);
   if(isFinite(startMin)){
     const items=(db.meals&&db.meals[date])||[]; let kcal=0;
@@ -4624,8 +4648,13 @@ function kcalParts(list,target){ const v=list.map(m=>+m.kcal||0), tot=target!=nu
   for(let j=0;j<ord.length&&rest>0;j++,rest--)fl[ord[j][1]]++;
   for(let j=ord.length-1;j>=0&&rest<0;j--,rest++)fl[ord[j][1]]--;
   return fl; }
+// v271 · P · C · F de cada alimento, con su fuente principal (por kcal: P·4, C·4, F·9) en blanco negrita, sin color
+// (el dueño: "le hace falta… por alimento poner sus macros y en highlight… su fuente principal" · eligió "blanco en negrita")
+function macroLineHTML(m){ const p=+m.protein||0, c=+m.carbs||0, f=+m.fat||0; if(!(p||c||f))return '';
+  const dom=(p*4>=c*4&&p*4>=f*9)?'p':(c*4>=f*9?'c':'f'); const x=(v,l,k)=>{ const t=l+' '+Math.round(v); return dom===k?'<b>'+t+'</b>':t; };
+  return `<span class="mmac">${m.approx?'~':''}${x(p,'P','p')} · ${x(c,'C','c')} · ${x(f,'F','f')}</span>`; }
 function mealItemRow(m,kc){ const nm=(m.name||'').replace(/ ×[\d.]+$/,''); const exp=state.expandedMeal===m.id;
-  return `<div class="mit${exp?' exp':''}" data-act="viewmeal" data-id="${m.id}" data-rk="mi:${m.id}"><span class="nm"><b class="q">${itemQtyLabel(m)}</b> ${escTxt(nm)}</span><span class="kc">${m.approx?'~':''}${kc==null?(Math.round(m.kcal)||0):kc}</span></div>`+(exp?mealDetailInline(m):''); }
+  return `<div class="mit${exp?' exp':''}" data-act="viewmeal" data-id="${m.id}" data-rk="mi:${m.id}"><span class="nm"><span class="nm1"><b class="q">${itemQtyLabel(m)}</b> ${escTxt(nm)}</span>${macroLineHTML(m)}</span><span class="kc">${m.approx?'~':''}${kc==null?(Math.round(m.kcal)||0):kc}</span></div>`+(exp?mealDetailInline(m):''); }
 function foodSecHTML(iso,items,dayKcal){
   const DP=dayMealParts(iso,items,dayKcal), byTag=DP.byTag, tags=DP.tags;   // v256: los totales de las comidas suman exacto el anillo
   state._mealOpen=state._mealOpen||{};
@@ -4635,8 +4664,9 @@ function foodSecHTML(iso,items,dayKcal){
     const op=!!om[tag], tm=mealTime(iso,tag), et=escTxt(tag), kc=DP.meal[tags.indexOf(tag)];
     const meta=[tm,Math.round(mt.protein)+'P '+Math.round(mt.carbs)+'C '+Math.round(mt.fat)+'F'].filter(Boolean).join(' · ');
     const kp=kcalParts(list,kc);
-    const rows=op?`<div class="mlbody">${list.map((m,i)=>mealItemRow(m,kp[i])).join('')}<button type="button" class="mit add" data-act="addtomeal" data-tag="${et}"><span class="nm">+ food</span></button></div>`:'';
+    const rows=op?`<div class="mlbody">${list.map((m,i)=>mealItemRow(m,kp[i])).join('')}</div>`:'';
     return `<div class="mrec${op?' open':''}" data-tag="${et}" data-rk="ml:${et}"><div class="mhd"><button type="button" class="mtg" data-act="mealfold" data-tag="${et}" aria-expanded="${op}"><span class="mchev" aria-hidden="true">›</span><span class="mnm">${et}</span><span class="mmeta">${escTxt(meta)}</span></button>`
+      +`<button type="button" class="b madd" data-act="addtomeal" data-tag="${et}" aria-label="agregar alimento a ${et}">+ food</button>`
       +`<button type="button" class="mkc" data-act="mealsummary" data-tag="${et}" aria-label="desglose de ${et} · ${kc} kcal"><span data-nk="mk:${et}" data-nv="${kc}">${kc.toLocaleString()}</span></button>`
       +`<button type="button" class="gmore" data-act="mealmenu" data-tag="${et}" aria-label="acciones de ${et}"><span class="dots3" aria-hidden="true"></span></button></div>${rows}</div>`; }).join('');
   const n=tags.length;
@@ -4659,7 +4689,7 @@ function renderMacros(){
   const macroRing=(key,lbl,val,goal,unit,kpg)=>{
     const isRem=!!state.ringRem[key];
     let p,ctr,sub;
-    if(state.macroPct){ p=goal?val/goal*100:0; ctr=Math.round(p)+'%'; sub='completado'; }
+    if(state.macroPct){ const pc=goal?val/goal*100:0; if(isRem){ p=Math.max(0,100-pc); ctr=Math.round(p)+'%'; sub='restante'; } else { p=pc; ctr=Math.round(pc)+'%'; sub='completado'; } }   // v271 · en % el toque también cambia a restante
     else if(isRem){ const r=goal-val; p=goal?r/goal*100:0; ctr=Math.round(r); sub='restante'; }
     else { p=goal?val/goal*100:0; ctr=Math.round(val); sub='/ '+goal+' '+unit; }
     return `<div class="cell ${macroStatus(val,goal)}" data-act="ringtog" data-k="${key}">${ringHTML(p,'<div class="num" data-nk="m-'+key+'-'+(state.macroPct?'pct':isRem?'rem':'val')+'" data-nv="'+parseFloat(ctr)+'">'+ctr+'</div>',null,isRem)}<div class="cap">${lbl}</div><div class="sub">${sub}</div></div>`;
@@ -4669,7 +4699,7 @@ function renderMacros(){
   // v269 · el panel abierto: regla a sangre con el mismo aire arriba y abajo → radar → anillos → [ver gramos | ver %] → INTAKE
   let details = !open?'' : `<hr class="rule"/>`
     +`<div class="macro-rad">${dayRadar(t,g)}</div><div class="rings">${macroRing('protein','protein',t.protein,g.protein,'g',4)}${macroRing('carbs','carbs',t.carbs,g.carbs,'g',4)}${macroRing('fat','fat',t.fat,g.fat,'g',9)}</div>`
-    +`<div class="kp-unit"><a data-act="toggleMacroUnit" class="u-label u-o50 u-tap">[${state.macroPct?'ver gramos':'ver %'}]</a></div>`
+    +`<div class="kp-unit"><button type="button" class="b" data-act="toggleMacroUnit">${state.macroPct?'ver gramos':'ver %'}</button></div>`
     +`<hr class="rule"/><div class="grp-label">INTAKE</div>`
     +(goalSecHidden('electro')?'':intakeRow('sodium',t.sodium,g.sodium,'mg')+intakeRow('potassium',t.potassium,g.potassium,'mg'))
     +(goalSecHidden('sugarfiber')?'':intakeRow('sugar',t.sugar,g.sugar,'g')+intakeRow('fiber',t.fiber,g.fiber,'g'))
@@ -4708,8 +4738,8 @@ function itemQtyLabel(m){ const f=m._food, u=m._unit, q=m.qty||1; const base=(f&
   return grams ? numTxt(q)+' ('+grams+' '+base+')' : numTxt(q)+'×'; }
 // tap a food item -> just edit / delete (no per-item nutrition; that's at meal level)
 function mealDetailInline(m){ const br=(m._food&&m._food.brand)||'';
-  // v256: P/C/F y la marca del alimento viven aquí, no en cada fila (la fila queda en cantidad · nombre · kcal)
-  return `<div class="mdmeal"><div class="mdm">P ${Math.round(m.protein)||0} · C ${Math.round(m.carbs)||0} · F ${Math.round(m.fat)||0}${br?' · '+escTxt(br):''}</div><div class="mdacts"><a data-act="editmealx" data-id="${m.id}">[editar]</a><a data-act="movemeal" data-id="${m.id}">[mover]</a><a data-act="delmealx" data-id="${m.id}">[borrar]</a></div></div>`;
+  // v271: P · C · F ya viven en la fila (macroLineHTML); aquí queda la marca y las acciones
+  return `<div class="mdmeal">${br?`<div class="mdm">${escTxt(br)}</div>`:''}<div class="mdacts"><a data-act="editmealx" data-id="${m.id}">[editar]</a><a data-act="movemeal" data-id="${m.id}">[mover]</a><a data-act="delmealx" data-id="${m.id}">[borrar]</a></div></div>`;
 }
 // tap a meal header -> full nutrition breakdown of the whole meal (the set)
 function mealGroupDetail(list){
@@ -4723,7 +4753,7 @@ function mealGroupDetail(list){
 // fuertes que el total de su comida (queja 9). Aquí son filas de solo lectura.
 function mealFoodRows(items){ const kp=kcalParts(items);
   return items.map((m,i)=>{ const nm=(m.name||'').replace(/ ×[\d.]+$/,'');
-    return `<div class="mit st"><span class="nm"><b class="q">${itemQtyLabel(m)}</b> ${escTxt(nm)}</span><span class="kc">${kp[i]}</span></div>`; }).join(''); }
+    return `<div class="mit st"><span class="nm"><span class="nm1"><b class="q">${itemQtyLabel(m)}</b> ${escTxt(nm)}</span>${macroLineHTML(m)}</span><span class="kc">${kp[i]}</span></div>`; }).join(''); }
 // ---- v256 · compartir en 1:1 (quejas 7, 8 y 11) ------------------------------------------------------------------
 // v257 · VERTICAL, a altura natural: lo que se ve es una historia de Instagram (el dueño toma captura). El cuadro 1:1
 // de v256 recortaba — comida perdía TODOS sus alimentos — y apretaba las series: "amontonado". Aquí nada se recorta,
@@ -4815,7 +4845,7 @@ function renderShareSession(id){
   const s=(db.sessions||[]).find(x=>x.id===id)||(db.sessions||[]).filter(x=>x.type!=='rest').slice(-1)[0];
   if(!s)return summaryShell(shTopRow('sesión',''),`<div class="empty">sin sesión para compartir</div>`);
   const M=shSessModel(s), pl=(n,w)=>n+' '+w+(n===1?'':'s');
-  const dur=M.dur?(M.dur.h!=null?M.dur.h+'h'+M.dur.m:M.dur.min+' min'):'';
+  const dur=M.dur?fmtDur(M.dur.h!=null?M.dur.h*60+(+M.dur.m||0):M.dur.min):'';
   // cabecera como en su foto: el día grande, fecha · gym, y una línea con duración · series · ejercicios
   const top=`<div class="shst"><div class="shsn">${escTxt(M.title)}</div>${M.meta?`<div class="shsm">${escTxt(M.meta)}</div>`:''}<div class="shsum">${[dur,pl(M.series,'serie'),pl(M.exn,'ejercicio')].filter(Boolean).join(' · ')}</div></div>`;
   let prevM=null;
@@ -4861,7 +4891,7 @@ function shareTextFor(){
   if(state.shareType==='session'){
     const s=(db.sessions||[]).find(x=>x.id===state.shareId)||(db.sessions||[]).filter(x=>x.type!=='rest').slice(-1)[0]; if(!s)return '';
     const M=shSessModel(s), pl=(n,w)=>n+' '+w+(n===1?'':'s');
-    const dur=M.dur?(M.dur.h!=null?M.dur.h+'h'+M.dur.m:M.dur.min+'min'):'—';
+    const dur=M.dur?fmtDur(M.dur.h!=null?M.dur.h*60+(+M.dur.m||0):M.dur.min):'—';
     const L=[]; let pm=null; M.exs.forEach(x=>{ L.push((x.muscle&&x.muscle!==pm?'#'+x.muscle+' ':'')+x.name+' '+x.toks.map(shTokTxt).join(' / ')); pm=x.muscle; });
     return [M.title+(M.meta?' · '+M.meta:''), dur+' · '+pl(M.series,'serie')+' · '+pl(M.exn,'ejercicio'), '', ...L, '', 'gym//TRK'].join('\n'); }
   const M=shFoodModel(curDate()), t=M.t, L=[];
@@ -5088,7 +5118,8 @@ function lineChart(vals,opt){ opt=opt||{};
   // ---- detalle: etiquetas HTML sobre el SVG (el texto dentro de un SVG estirado se deformaría) ----
   const fmt=opt.fmt||(v=>String(Math.round(v*10)/10));
   const pct=y=>(y/H*100).toFixed(2)+'%';
-  const ticks=[hi,(hi+lo)/2,lo].map(v=>'<span class="chy" style="top:'+pct(Y(v))+'">'+escTxt(fmt(v))+'</span>').join('');
+  const tfmt=opt.tfmt||fmt;   // v271 · el eje puede usar una forma corta (sueño: horas redondas)
+  const ticks=[hi,(hi+lo)/2,lo].map(v=>'<span class="chy" style="top:'+pct(Y(v))+'">'+escTxt(tfmt(v))+'</span>').join('');
   const avgP='';   // U4: la pastilla 'prom' dentro de la gráfica era redundante — el encabezado ya dice el promedio (Oura: el ancla numérica va FUERA del SVG)
   let xt='';
   if(opt.dates&&opt.dates.length===n&&n){ const k=Math.min(opt.xticks||4,n); const used={};
@@ -5148,7 +5179,7 @@ function openMetricDetail(key){
   const win=daysEnding(days,end);
   const labels=raw.map((v,i)=>(v!=null?vf(v):'sin registro')+' · '+fmtShort(sp.dates[i]));
   const yz=(window._chartYZ&&window._chartYZ.md)||1;
-  const chart=real.length?lineChart(raw,{h:150,detail:true,dates:sp.dates,tlo:Date.parse(win[0]+'T12:00:00'),thi:Date.parse(end+'T12:00:00'),band2,avg,fmt:vf,labels,kind:'md',ladder:MD_LADDER,cur:cust?'':days,yZoom:yz}):'';
+  const chart=real.length?lineChart(raw,{h:150,detail:true,dates:sp.dates,tlo:Date.parse(win[0]+'T12:00:00'),thi:Date.parse(end+'T12:00:00'),band2,avg,fmt:vf,tfmt:sp.tfmt,labels,kind:'md',ladder:MD_LADDER,cur:cust?'':days,yZoom:yz}):'';
   let bI=-1,wI=-1; raw.forEach((v,i)=>{ if(v==null)return; if(bI<0||v>raw[bI])bI=i; if(wI<0||v<raw[wI])wI=i; });
   const tab=d=>`<span data-act="mdrange" data-r="${d}" data-m="${key}" class="${(!cust&&days===d)?'on':''}">${MD_LBL[d]}</span>`;
   const segs=MD_LADDER.map(tab).join('')+`<span data-act="mdcustom" class="${cust||window._mdShowCustom?'on':''}" title="rango personalizado">▦</span>`;
@@ -5166,7 +5197,7 @@ function openMetricDetail(key){
     <div class="mdhd"><h3>${sp.title}</h3>${headBtn}</div>
     <div class="mdtabs" data-tk="md-${key}">${segs}</div>${custBox}
     ${!real.length?`${nav}<div class="empty u-py32 u-px0">sin registros en este rango</div>`:`
-      <div class="mdtop2"><div><div class="mdval">${escTxt(vf(lastV))}</div><div class="mdmeta">${li>=0?fmtShort(sp.dates[li]):''}${avg!=null?' · prom '+escTxt(vf(avg)):''}</div></div>
+      <div class="mdtop2"><div><div class="mdval">${sp.valHTML?sp.valHTML(mdRound(lastV)):escTxt(vf(lastV))}</div><div class="mdmeta">${li>=0?fmtShort(sp.dates[li]):''}${avg!=null?' · prom '+escTxt(vf(avg)):''}</div></div>
         ${st?`<div class="mdst" style="color:${stCol}">${st}<div class="mdstl">tu normal ${escTxt(vf(lastBand[0]))} – ${escTxt(vf(lastBand[1]))}</div></div>`
             :(nb&&nb.lo==null?`<div class="mdst u-o40">sin normal<div class="mdstl">${nb.n}/${nb.need} d</div></div>`:'')}</div>
       ${nav}
@@ -5325,7 +5356,7 @@ function readinessFor(date){
   const h=H(); const parts={}; const day=h.daily[date]||{};
   const sh=sleepOnDate(date); const g=+((goalsFor(date)||{}).sleep||((db.settings||{}).goals||{}).sleep||8);
   if(sh>0){ const b=meanSd(priorDays(date,14,sleepOnDate)); let sc=100-25*Math.max(0,g-sh); if(b.n>=5&&sh<b.m-1)sc-=10;
-    parts.sleep={score:clamp100(sc),v:sh,txt:'sueño '+sh+'h'+(sh<g?' ('+signed(sh-g,1)+')':'')}; }
+    parts.sleep={score:clamp100(sc),v:sh,txt:'sueño '+fmtH(sh)+(sh<g?' (−'+fmtH(g-sh)+')':'')}; }
   const rh=+day.rhr;
   if(rh>0){ const b=meanSd(priorDays(date,28,d=>+((h.daily[d]||{}).rhr)||0));
     if(b.n>=7){ const z=(rh-b.m)/Math.max(b.sd,1.5); parts.rhr={score:clamp100(100-20*Math.max(0,z)),z,v:rh,txt:'FC reposo '+signed(rh-b.m)}; } }
@@ -5614,7 +5645,7 @@ function hrChartSVG(s,r){ const pts=r.pts||[]; if(pts.length<2)return ''; const 
   return `<svg class="hrsvg" viewBox="0 0 ${W} ${Hh}" preserveAspectRatio="none" role="img" aria-label="frecuencia cardíaca durante la sesión"><polyline points="${pts.map(p=>X(p[0])+','+Y(p[1])).join(' ')}" fill="none" class="sw-data" stroke="currentColor" stroke-width="1.4" vector-effect="non-scaling-stroke"/>${ticks}</svg>`; }
 function sessHRBlock(s){ const h=H(); const r=h.sessHR[s.id]; const wo=workoutOfSession(s.id); if(!r&&!wo)return '';
   const bits=[]; if(r&&r.avg)bits.push('FC media '+r.avg); if(r&&r.max)bits.push('máx '+r.max);
-  if(wo){ bits.push(Math.round((wo.endMs-wo.startMs)/60000)+' min'); if(wo.kcal)bits.push(Math.round(wo.kcal)+' kcal'); }
+  if(wo){ bits.push(fmtDur((wo.endMs-wo.startMs)/60000)); if(wo.kcal)bits.push(Math.round(wo.kcal)+' kcal'); }
   const sk=(r&&r.src)||(wo&&wo.src)||''; const sn=sk?((h.sources[sk]&&h.sources[sk].name)||sk):'';
   const note=r?(r.perSet?'':' · FC cada ~'+Math.round(r.medDt)+' s: solo resumen de sesión'):'';
   return `<div class="hrblk">${r&&r.pts?hrChartSVG(s,r):''}<div class="submeta">${bits.join(' · ')}${sn?' · '+escTxt(sn):''}${note}</div></div>`; }
@@ -5626,7 +5657,7 @@ function importHealth(sp){ const msg=[];
   if(sp.has('weight')){ const w=parseFloat(sp.get('weight')); if(w>=20&&w<=400){ db.bodyweight=db.bodyweight||{}; if(H().src.weight[todayISO()]==='manual'){ msg.push('peso de hoy: se queda el tuyo'); } else { db.bodyweight[todayISO()]=Math.round(w*10)/10; H().src.weight[todayISO()]='shortcut'; if(db.profile)db.profile.weightKg=Math.round(w*10)/10; } if(false)msg.push((Math.round(w*10)/10)+' kg · hoy'); } }
   if(sp.has('weighth')){ db.bodyweight=db.bodyweight||{}; const c=importPairs(sp.get('weighth'),(k,v)=>{ const w=parseFloat(v); if(!(w>=20&&w<=400))return false; db.bodyweight[k]=Math.round(w*10)/10; return true; }); if(c){ const ks=Object.keys(db.bodyweight).sort(); if(ks.length&&db.profile)db.profile.weightKg=db.bodyweight[ks[ks.length-1]]; msg.push(c+' registros de peso'); } }
   if(sp.has('stepsq')){ const arr=(sp.get('stepsq')||'').split(','); const N=arr.length; let end=sp.get('qend'); const _tst=end&&/^\d{4}-\d{2}-\d{2}$/.test(end)?new Date(end+'T12:00:00'):null; if(!_tst||isNaN(_tst.getTime()))end=todayISO(); db.steps=db.steps||{}; let c=0; for(let i=0;i<N;i++){ const n=parseInt(arr[i],10); if(isNaN(n)||n<0||n>=200000)continue; const d=shiftDate(end,-(N-1-i)); if(!/^\d{4}-\d{2}-\d{2}$/.test(d))continue; db.steps[d]=n; c++; } if(c)msg.push(c+' días de pasos'); }
-  if(sp.has('sleep')){ const v=parseSleepVal(sp.get('sleep'), todayISO()); if(v!=null){ db.sleep=db.sleep||{}; db.sleep[todayISO()]=v; msg.push(sleepHours(v)+' h de sueño · hoy'); } }
+  if(sp.has('sleep')){ const v=parseSleepVal(sp.get('sleep'), todayISO()); if(v!=null){ db.sleep=db.sleep||{}; db.sleep[todayISO()]=v; msg.push(fmtSleep(v)+' de sueño · hoy'); } }
   if(sp.has('sleeph')){ db.sleep=db.sleep||{}; const c=importPairs(sp.get('sleeph'),(k,val)=>{ const v=parseSleepVal(val,k); if(v==null)return false; db.sleep[k]=v; return true; }); if(c)msg.push(c+' días de sueño'); }
   return msg; }
 // ---------- v270 · Atajo de Salud: pegar todo de un toque ----------
@@ -5682,7 +5713,7 @@ function healthPasteNow(){ const done=t=>{ t=String(t||''); const r=healthPasteA
 function openShortcutSetup(){ const h=H(), sc=h.shortcut||{};
   const st=(n,t)=>'<div class="hpst"><span class="hpn">'+n+'</span><span>'+t+'</span></div>';
   openModal('<h3>Atajo de Salud</h3><div class="submeta u-mb10">aún no somos app nativa: el iPhone no deja a una web leer Salud. Un Atajo copia tus datos (peso, pasos, sueño, FC en reposo, HRV, energía) y aquí los pegas con un toque.'+(sc.lastPaste?' · último: '+escTxt(agoTxt(sc.lastPaste)):'')+'</div>'
-    +(SHORTCUT_URL?'<a class="start u-mb10" href="'+SHORTCUT_URL+'" target="_blank" rel="noopener">▶ instalar atajo</a>':'')
+    +(SHORTCUT_URL?'<a class="b u-mb10" href="'+SHORTCUT_URL+'" target="_blank" rel="noopener">instalar atajo</a>':'')
     +'<div class="grp-label">ARMARLO · UNA VEZ · ~5 MIN</div>'
     +st(1,'Atajos → <b>+</b> → <b>Buscar muestras de Salud</b> (Find Health Samples): <b>Pasos</b> · últimos 7 días · agrupar por <b>día</b>.')
     +st(2,'<b>Repetir con cada elemento</b> → dentro, un <b>Texto</b>: <code>steps</code> + Fecha de inicio (formato ISO 8601, sin hora) + Valor, separados por espacio.')
@@ -5763,7 +5794,20 @@ function blockAsleep(b){ if(!b)return 0; const win=(b.start&&b.end)?sleepDur(b.s
   if(b.ph){ const ph=phaseMin(b); return ph?Math.round(phAsleepMin(ph,winMin(b)||win*60)/6)/10:win; }   // v257
   if(!(b.stages&&b.stages.length))return win;
   const awake=stageMin(b,'awake')/60; return Math.max(0,Math.round((win-awake)*10)/10); }   // U6: intervalos, igual que antes
-function fmtHM(min){ min=Math.max(0,Math.round(+min||0)); const h=Math.floor(min/60), m=min%60; return h?h+'h'+(m?' '+pad(m)+'m':''):m+'m'; }
+// v271 · UNA forma de decir duraciones. El dueño: "hoy dormí 5.2 horas, pero ese 0.2 horas no me dice nada… hay que
+// manejar horas y minutos". 45 min · 5 h 12 min · 2 d 4 h. fmtHM queda como alias (fases del sueño).
+function fmtDur(min){ min=Math.max(0,Math.round(+min||0)); if(min<60)return min+' min'; const h=Math.floor(min/60), m=min%60;
+  if(h<48)return h+' h'+(m?' '+m+' min':''); const d=Math.floor(h/24), hh=h%24; return d+' d'+(hh?' '+hh+' h':''); }
+function fmtH(h){ return fmtDur((+h||0)*60); }   // horas decimales (promedios, metas) → h y min
+function fmtHM(min){ return fmtDur(min); }
+// la unidad chica (tiles): 5<span>h</span> 12<span>min</span>
+function durHTML(min){ min=Math.max(0,Math.round(+min||0)); const h=Math.floor(min/60), m=min%60; return h?h+'<span>h</span>'+(m?' '+m+'<span>min</span>':''):m+'<span>min</span>'; }
+// minutos dormidos EXACTOS del día: sleepHours() redondea a 0.1 h (6 min); con hora de inicio y fin se cuenta al minuto
+function sleepMinOf(v){ return sleepBlocks(v).reduce((s,b)=>{ if(!b)return s;
+  if(b.start&&b.end){ const wm=winMin(b); if(wm>0){ if(b.ph){ const ph=phaseMin(b); return s+(ph?phAsleepMin(ph,wm):wm); }
+    if(b.stages&&b.stages.length)return s+Math.max(0,wm-Math.round(stageMin(b,'awake'))); return s+wm; } }
+  const h=+b.hours; return s+(isFinite(h)&&h>0?Math.round(h*60):0); },0); }
+function fmtSleep(v){ const m=sleepMinOf(v); return m>0?fmtDur(m):''; }
 // barra proporcional (profundo → core → REM → despierto, de sólido a tenue); lo que no llega a la ventana queda como
 // "sin clasificar" a la vista (Fitbit hace lo mismo)
 function hypnoHTML(b){ const ph=phaseMin(b); if(!ph)return ''; const wm=winMin(b);
@@ -5792,20 +5836,20 @@ function openSleepLog(){
   const ks=Object.keys(db.sleep||{}).sort();
   const recent=ks.slice(-8).reverse();
   const rows=recent.map(d=>{ const n=sleepBlocks(db.sleep[d]).length; const h=sleepHours(db.sleep[d]);
-    return `<div class="line u-py6 u-px0"><span class="k u-tap u-ul" data-act="editsleep" data-d="${d}">${d}</span><span class="dots"></span><span class="v">${h} h${n>1?' · '+n+' bloques':''} <span data-act="delsleep" data-d="${d}" class="u-o40 u-tap u-ml8">✕</span></span></div>`; }).join('');
+    return `<div class="line u-py6 u-px0"><span class="k u-tap u-ul" data-act="editsleep" data-d="${d}">${d}</span><span class="dots"></span><span class="v">${fmtSleep(db.sleep[d])||'—'}${n>1?' · '+n+' bloques':''} <span data-act="delsleep" data-d="${d}" class="u-o40 u-tap u-ml8">✕</span></span></div>`; }).join('');
   openModal(`<h3>sueño</h3>
    <div class="submeta u-mb8">noche + siestas · el total del día es la suma de los bloques</div>
    <div class="field"><label>FECHA (despertar)</label><input id="sl_date" type="date" value="${todayISO()}" max="${todayISO()}"/></div>
    <div class="grp-label first">BLOCKS</div>
    <div id="sl_blocks"></div>
-   <div class="u-flex u-gap12 u-aic u-mt8 u-mb4 u-mx0"><button class="b u-f0" id="sl_add">+ siesta</button><a id="sl_manual" class="u-data u-o50 u-tap u-ul">¿sin hora? horas →</a><span id="sl_total" class="submeta u-mlauto">total — h</span></div>
+   <div class="u-flex u-gap12 u-aic u-mt8 u-mb4 u-mx0"><button class="b u-f0" id="sl_add">+ siesta</button><a id="sl_manual" class="u-data u-o50 u-tap u-ul">¿sin hora? horas →</a><span id="sl_total" class="submeta u-mlauto">total —</span></div>
    <div class="sheetbtns u-mb6"><button class="ok" id="sl_save">guardar</button><button class="cancel" data-act="closemodal">cerrar</button></div>
    ${recent.length?`<div class="grp-label sub">RECENT LOGS</div>`+rows+``:''}`);
   let blocks=[];
   const blkTimed=b=>b.start!==undefined; // manual block has no start key
   const blkH=b=>blkTimed(b)?((b.start&&b.end)?blockAsleep(b):0):(+b.hours>0?Math.round(+b.hours*10)/10:0);
-  const blkLabel=b=>{ const h=blkH(b); if(h<=0)return'—'; return h+'h · '+(blkTimed(b)?(isNocturnal(b.start)?'nocturno':'siesta'):'manual'); };
-  function total(){ const el=document.getElementById('sl_total'); if(el){ let t=0; blocks.forEach(b=>t+=blkH(b)); el.textContent='total '+(Math.round(t*10)/10)+' h'; } }
+  const blkLabel=b=>{ const h=blkH(b); if(h<=0)return'—'; return fmtDur(blkTimed(b)?sleepMinOf([b]):h*60)+' · '+(blkTimed(b)?(isNocturnal(b.start)?'nocturno':'siesta'):'manual'); };
+  function total(){ const el=document.getElementById('sl_total'); if(el){ let t=0; blocks.forEach(b=>t+=(blkTimed(b)&&b.start&&b.end)?sleepMinOf([b]):blkH(b)*60); el.textContent='total '+(t>0?fmtDur(t):'—'); } }
   function relabel(i){ const el=document.getElementById('sllbl'+i); if(el)el.textContent=blkLabel(blocks[i]); }
   // v257: el resumen de fases se reescribe SOLO él — los campos nunca se vuelven a crear mientras escribes
   function phSum(i){ const el=document.getElementById('slhy'+i), b=blocks[i]; if(!el||!b)return;
@@ -5915,7 +5959,7 @@ function metricSeries(key, days, end){ end=end||todayISO(); const LD=k=>daysEndi
       avg: pos.length?Math.round((pos.reduce((a,b)=>a+b,0)/pos.length)*10)/10:0,
       min: pos.length?Math.min.apply(null,pos):0,
       max: vals.length?Math.max.apply(null,vals):0,
-      goal, change:null, fmt:n=>n+' h', zero:true, canLog:true, logAct:'logsleep'};
+      goal, change:null, fmt:n=>fmtH(n), tfmt:n=>Math.round(n)+' h', valHTML:n=>durHTML(Math.round(n*60)), zero:true, canLog:true, logAct:'logsleep'};
   }
   if(key==='kcal'){
     const hd=LD(days);
@@ -6237,8 +6281,8 @@ function renderProgress(){
     if(_slLog.length){ const _g=db.settings.goals.sleep||0, _a=Math.round(avgPos(_slArr)*10)/10, _ln=sleepHours(db.sleep&&db.sleep[todayISO()]);
       const cls=_g&&_a>=_g?'good':'flat';
       put('sleep',`<div class="ptile tap" data-act="metricdetail" data-m="sleep"><div class="ptlh"><div class="plbl">sleep</div><span class="ptchev">›</span></div>`
-        +`<div class="pval">${_ln||'—'}<span>h dormidas</span></div>`
-        +`<div class="pst ${cls}">${_g?(_a>=_g?'▲ prom '+_a+'h en meta · 14d':'prom '+_a+'h · meta '+_g+'h'):'prom '+_a+'h · 14d'}</div>${lineChart(_slArr,{h:32,zero:true,gap0:true})}</div>`);
+        +`<div class="pval">${_ln?durHTML(sleepMinOf(db.sleep[todayISO()])):'—'}</div>`
+        +`<div class="pst ${cls}">${_g?(_a>=_g?'▲ prom '+fmtH(_a)+' en meta':'prom '+fmtH(_a)+' · '+Math.round(_a/_g*100)+'% de la meta'):'prom '+fmtH(_a)+' · 14d'}</div>${lineChart(_slArr,{h:32,zero:true,gap0:true})}</div>`);
     } else put('sleep',emptyTile('sleep','h','logsleep'));
   }
   // FC en reposo / HRV / energía activa (Salud, v220) — solo si hay datos
@@ -6371,7 +6415,7 @@ function agendaFilters(){ try{ const v=JSON.parse(localStorage.getItem('gymtrk_a
 function minToHM(min){ min=((Math.round(min)%1440)+1440)%1440; return pad(Math.floor(min/60))+':'+pad(min%60); }
 function renderAgenda(){
   const ISO=curAgendaDate(), f=agendaFilters(), PXMIN=1.2, top=m=>Math.round(m*PXMIN), CANVAS=top(1440);
-  const durTxt=m=>{ const h=Math.floor(m/60),mm=Math.round(m%60); return h?(h+'h'+(mm?' '+mm+'m':'')):(mm+'m'); };
+  const durTxt=m=>fmtDur(m);
   let body=`<div class="ag-head">`+statusBar(false)
     +`<hr class="rule"/>`
     +`<div class="section"><div class="h dnavh"><a data-act="agprev" class="dnav">‹</a><span class="dnlbl-wrap"><span class="dnlbl">${dayLabel(ISO,1)}</span><input type="date" class="dcal" data-act="agcal" value="${ISO}"/></span><a data-act="agnext" class="dnav">›</a></div></div>`;
@@ -6380,9 +6424,9 @@ function renderAgenda(){
   // recolectar eventos con hora + chips "sin hora" (estilo rimu: SIN HORA arriba)
   const evs=[]; let chips='';
   if(f.meals){ const _byT={}; ((db.meals&&db.meals[ISO])||[]).forEach(m=>{ const tg=m.tag||'comida'; (_byT[tg]=_byT[tg]||{tag:tg,kcal:0}).kcal+=+m.kcal||0; }); Object.keys(_byT).forEach(tg=>{ const hm=mealTime(ISO,tg); const mn=hm2min(hm); if(isFinite(mn)) evs.push({mn,kind:'meal',tag:tg,kcal:_byT[tg].kcal,time:hm}); else chips+=`<span class="ag-chip">${escTxt(tg)} · ${Math.round(_byT[tg].kcal)||0}</span>`; }); }
-  if(f.train)(db.sessions||[]).filter(s=>s.date===ISO&&s.type!=='rest').forEach(s=>{ const mn=hm2min(s.startTime); if(isFinite(mn)) evs.push({mn,kind:'sess',s,durM:Math.max(20,Math.round((s.durSec||0)/60))}); else chips+=`<span class="ag-chip">${escTxt(s.dayName||'sesión')}${s.durSec?' · '+Math.round(s.durSec/60)+'m':''}</span>`; });
+  if(f.train)(db.sessions||[]).filter(s=>s.date===ISO&&s.type!=='rest').forEach(s=>{ const mn=hm2min(s.startTime); if(isFinite(mn)) evs.push({mn,kind:'sess',s,durM:Math.max(20,Math.round((s.durSec||0)/60))}); else chips+=`<span class="ag-chip">${escTxt(s.dayName||'sesión')}${s.durSec?' · '+fmtDur(s.durSec/60):''}</span>`; });
   const sleepEvs=[]; const sv=db.sleep&&db.sleep[ISO];
-  if(f.sleep&&sv) sleepBlocks(sv).forEach(b=>{ if(b&&b.start&&b.end&&isFinite(hm2min(b.end))) sleepEvs.push(b); else if(b){ const hh=Math.round((+(b&&b.hours)||0)*10)/10; chips+=`<span class="ag-chip">${(b&&b.start&&!isNocturnal(b.start))?'siesta':'sueño'} · ${hh}h</span>`; } });
+  if(f.sleep&&sv) sleepBlocks(sv).forEach(b=>{ if(b&&b.start&&b.end&&isFinite(hm2min(b.end))) sleepEvs.push(b); else if(b){ chips+=`<span class="ag-chip">${(b&&b.start&&!isNocturnal(b.start))?'siesta':'sueño'} · ${fmtSleep([b])||'—'}</span>`; } });
   if(f.supps)(db.stack||[]).filter(x=>isDueToday(x,ISO)&&!x.archived).forEach(x=>{ const s=tickState(x.ticks&&x.ticks[ISO]); const mk=s==='taken'?' <b class="agm g">✓</b>':s==='late'?' <b class="agm w">tarde</b>':s==='skipped'?' <b class="agm b">✕</b>':''; const tt=x.tickTimes&&x.tickTimes[ISO]; const mn=hm2min(tt);
     if((s==='taken'||s==='late')&&isFinite(mn)) evs.push({mn,kind:'supp',id:x.id,name:x.name||'supp',mk,time:tt}); // checado con hora → bloque en timeline
     else chips+=`<span class="ag-chip supp" data-act="agsupptick" data-id="${escTxt(x.id||'')}">${escTxt(x.name||'supp')}${mk}</span>`; });
@@ -6399,7 +6443,7 @@ function renderAgenda(){
     const _supByT={}; evs.filter(x=>x.kind==='supp').forEach(x=>{ (_supByT[x.time]=_supByT[x.time]||[]).push(x); });
     Object.keys(_supByT).forEach(t=>{ const g=_supByT[t]; EV.push({a:hm2min(t),b:hm2min(t)+15,type:'mk',cat:'supp',time:t,group:g,count:g.length}); });
     evs.filter(x=>x.kind==='sess').forEach(x=>{ const _e=hm2min(x.s.endTime); const eM=isFinite(_e)?(_e<x.mn?_e+1440:_e):x.mn+x.durM; const dM=Math.max(20,eM-x.mn); EV.push({a:x.mn,b:Math.max(x.mn+20,eM),type:'blk',cat:'gym',sid:x.s.id,y0:x.mn,y1:eM,label:escTxt(x.s.dayName||'sesión'),sub:escTxt(x.s.startTime)+'–'+minToHM(eM)+' · '+durTxt(dM)}); });
-    sleepEvs.forEach(sl=>{ const sM=hm2min(sl.start), eM=hm2min(sl.end); const nap=!isNocturnal(sl.start); const bh=Math.round((+sl.hours||sleepDur(sl.start,sl.end))*10)/10; const ttl=nap?'siesta':'sueño'; const sub=escTxt(sl.start||'?')+'–'+escTxt(sl.end)+' · '+bh+'h';
+    sleepEvs.forEach(sl=>{ const sM=hm2min(sl.start), eM=hm2min(sl.end); const nap=!isNocturnal(sl.start); const bh=Math.round((+sl.hours||sleepDur(sl.start,sl.end))*10)/10; const ttl=nap?'siesta':'sueño'; const sub=escTxt(sl.start||'?')+'–'+escTxt(sl.end)+' · '+(fmtSleep([sl])||fmtH(bh));
       if(isFinite(sM)&&isFinite(eM)&&eM<=sM){ EV.push({a:sM,b:1440,type:'blk',cat:'slp',y0:sM,y1:1440,label:ttl,sub}); EV.push({a:0,b:eM,type:'blk',cat:'slp',y0:0,y1:eM,label:ttl,sub}); } // cruza medianoche → partido
       else { const s0=isFinite(sM)?sM:0, e0=isFinite(eM)?eM:s0; EV.push({a:s0,b:Math.max(s0+18,e0),type:'blk',cat:'slp',y0:s0,y1:e0,label:ttl,sub}); } });
     // carriles: clusters de solape encadenado → primera columna libre; cols = pico de concurrencia del cluster
@@ -7054,7 +7098,7 @@ function snapRecap(){ try{
   if(steps)rows+=L('pasos',steps.toLocaleString());
   rows+=L('sesión',sess?escTxt(sess.dayName||'sí')+' ✓':(restToday()?'descanso':'—'));
   if(water)rows+=L('agua',water+(g.water?' / '+g.water:'')+' L',(g.water&&water>=g.water)?'good':'');
-  const sl=sleepHours(db.sleep&&db.sleep[today]); if(sl)rows+=L('sueño',sl+' h',(g.sleep&&sl>=g.sleep)?'good':'');
+  const sl=sleepHours(db.sleep&&db.sleep[today]); if(sl)rows+=L('sueño',fmtSleep(db.sleep[today]),(g.sleep&&sl>=g.sleep)?'good':'');
   showOverlay(`<div class="bt"><span class="s">//</span>TODAY <span class="u-data u-o40 u-w4">· ${fmtShort(today)}</span></div>${rows}<div class="bready">[tap para cerrar]</div>`,{ms:5000});
 }catch(_){} }
 
@@ -7102,7 +7146,7 @@ function buildWrapSlides(d){
   if(d.topLift)slides.push(wrapBig(d.topE1,' kg','tu mejor e1RM', escTxt(d.topLift)));
   if(d.kDays)slides.push(wrapBig(kFmt(d.avgKcal),' kcal','promedio diario', d.kDays+' días registrados'+(g.kcal?' · meta '+g.kcal:'')));
   if(d.bwStart!=null&&d.bwEnd!=null){ const ch=Math.round((d.bwEnd-d.bwStart)*10)/10; const chU=Math.round((bwShow(d.bwEnd)-bwShow(d.bwStart))*10)/10; slides.push(wrapBig(bwShow(d.bwEnd),' '+bwU(),'peso al cierre', (chU>0?'+':'')+chU+' '+bwU()+' en el mes')); void ch; }
-  if(d.avgSleep||d.avgWater||d.avgSteps){ let lines=''; if(d.avgSleep)lines+=`<div class="ws-h"><span>sueño</span><b>${d.avgSleep} h</b></div>`; if(d.avgWater)lines+=`<div class="ws-h"><span>agua</span><b>${d.avgWater} L</b></div>`; if(d.avgSteps)lines+=`<div class="ws-h"><span>pasos</span><b>${d.avgSteps.toLocaleString()}</b></div>`;
+  if(d.avgSleep||d.avgWater||d.avgSteps){ let lines=''; if(d.avgSleep)lines+=`<div class="ws-h"><span>sueño</span><b>${fmtH(d.avgSleep)}</b></div>`; if(d.avgWater)lines+=`<div class="ws-h"><span>agua</span><b>${d.avgWater} L</b></div>`; if(d.avgSteps)lines+=`<div class="ws-h"><span>pasos</span><b>${d.avgSteps.toLocaleString()}</b></div>`;
     slides.push(`<div class="ws-lbl u-mb16">hábitos · promedio diario</div><div class="ws-hwrap">${lines}</div>`); }
   let recap=''; const R=(k,v)=>`<div class="line"><span class="k">${k}</span><span class="dots"></span><span class="v">${v}</span></div>`;
   if(d.sessions)recap+=R('sesiones',d.sessions);
@@ -7110,7 +7154,7 @@ function buildWrapSlides(d){
   if(d.topLift)recap+=R('top e1RM',d.topE1+' kg');
   if(d.kDays)recap+=R('kcal/día',kFmt(d.avgKcal));
   if(d.bwStart!=null&&d.bwEnd!=null){ const ch=Math.round((d.bwEnd-d.bwStart)*10)/10; const chU=Math.round((bwShow(d.bwEnd)-bwShow(d.bwStart))*10)/10; recap+=R('peso',(chU>0?'+':'')+chU+' '+bwU()); void ch; }
-  if(d.avgSleep)recap+=R('sueño',d.avgSleep+' h');
+  if(d.avgSleep)recap+=R('sueño',fmtH(d.avgSleep));
   slides.push(`<div class="ws-card"><div class="ws-cardh">${escTxt(d.monthName)} ${d.y} · wrap</div>${recap}<div class="ws-cardf">gym<span>//</span>TRK</div></div><div class="ws-share">captura para compartir</div>`);
   return slides;
 }
@@ -7274,7 +7318,7 @@ document.getElementById('app').addEventListener('click',e=>{
   // G2 · R-SESS: lo que CREA una sesión o mueve la rotación nunca corre con una sesión viva (antes reemplazaba la tuya)
   else if((a==='start'||a==='loglater'||a==='rest'||a==='skip'||a==='unrest')&&db.activeWork){ toast('⚠ sesión en curso · termínala o abórtala','err'); }
   else if(a==='start'){ db.activeWork=newWorkSession(); save(); state._autoScroll=true; go('workout'); }
-  else if(a==='togglepreview'){ state.previewDay=!state.previewDay; render(); }
+  else if(a==='togglepreview'){ state.previewDay=!state.previewDay; reRender(); }
   else if(a==='loglater'){ const w=newWorkSession(); w.loggedAfter=true; w.startMs=null; const y=new Date(); y.setDate(y.getDate()-1); w.date=todayISO(y); db.activeWork=w; save(); go('workout'); }
   else if(a==='togglenoadv'){ if(db.activeWork){ db.activeWork.noAdvance=!db.activeWork.noAdvance; reRender(); } }
   else if(a==='resume'){ go('workout'); }
@@ -7491,10 +7535,10 @@ document.getElementById('app').addEventListener('click',e=>{
   else if(a==='editexname'){ const w=db.activeWork; const ex=w&&w.exercises[exi]; if(ex&&ex.muscle){ openAddExStep2(exi, ex.muscle, exi); } else { openAddExercise(exi, exi); } }
   else if(a==='editexnote'){ const w=db.activeWork; if(w&&w.exercises[exi]){ const cur=w.exercises[exi].note||''; trkPrompt({title:'nota · '+((w.exercises[exi].name)||'ejercicio'),label:'NOTA',value:cur,placeholder:'agarre, asiento, sensación…'},v=>{ w.exercises[exi].note=String(v).trim(); save(); state._scroll=(document.getElementById('view')||{}).scrollTop||0; render(); toast('✓ nota guardada'); }); } }
   else if(a==='save'){ saveSession(); }
-  else if(a==='togglemacros'){ state._scroll=document.getElementById('view').scrollTop; state.macroOpen=!state.macroOpen; render(); }
-  else if(a==='toggleMacroUnit'){ state.macroPct=!state.macroPct; render(); }
-  else if(a==='ringtog'){ state._scroll=document.getElementById('view').scrollTop; const k=el.dataset.k; state.ringRem=state.ringRem||{}; state.ringRem[k]=!state.ringRem[k]; render(); }
-  else if(a==='viewmeal'){ state._scroll=document.getElementById('view').scrollTop; state.expandedMeal = state.expandedMeal===el.dataset.id ? null : el.dataset.id; if(state.expandedMeal)state._enter={sel:'.mdmeal'}; render(); }
+  else if(a==='togglemacros'){ state.macroOpen=!state.macroOpen; reRender(); }   // v271 · reRender conserva el scroll (ver gramos/% subía hasta arriba)
+  else if(a==='toggleMacroUnit'){ state.macroPct=!state.macroPct; reRender(); }
+  else if(a==='ringtog'){ const k=el.dataset.k; state.ringRem=state.ringRem||{}; state.ringRem[k]=!state.ringRem[k]; reRender(); }
+  else if(a==='viewmeal'){ state.expandedMeal = state.expandedMeal===el.dataset.id ? null : el.dataset.id; if(state.expandedMeal)state._enter={sel:'.mdmeal'}; reRender(); }
   else if(a==='viewtag'){ state._scroll=document.getElementById('view').scrollTop; state.expandedTag = state.expandedTag===el.dataset.tag ? null : el.dataset.tag; render(); }
   else if(a==='famealwheel'){ faMealWheel(); }
   else if(a==='faapprox'){ openApproxMeal(curTag()); }
@@ -7593,7 +7637,7 @@ document.getElementById('app').addEventListener('click',e=>{
   else if(a==='fmanual'){ openVerify({name:'',base:'g',per100:{},sizes:{}},{isNew:true,tag:window._faTag||curTag()}); }
   else if(a==='vcontinue'){ const f=readRegister(); if(!f.name){ toast('⚠ pon un nombre','err'); return; } const _go8=()=>{ const vv=window._verify||{}; openLog(f,{tag:vv.tag,barcode:f.barcode,fromId:vv.fromId,isNew:true}); }; if(!f.barcode) return trkAsk({title:'registrar sin código de barras',detail:'puedes vincular un código después',ok:'registrar'},_go8); return _go8();}
   else if(a==='mealcode'){ openMealCode(); }
-  else if(a==='logsave'){ commitLog(true); }
+  else if(a==='logsave'){ const L=window._log||{}; commitLog(!L.isNew||!document.querySelector('#l_save .t.on[data-v="0"]')); }
   else if(a==='logonly'){ commitLog(false); }
   else if(a==='delmeal'){ const t=curDate(); db.meals[t]=(db.meals[t]||[]).filter(m=>m.id!==el.dataset.id); save(); render(); }
   else if(a==='editgoals'){ openGoals(); }
@@ -7621,7 +7665,7 @@ document.getElementById('app').addEventListener('click',e=>{
   else if(a==='restplus'){ const w=db.activeWork; if(w&&w.restEnd){ w.restEnd+=15000; save(); updateRestBar(); } }
   else if(a==='restskip'){ const w=db.activeWork; if(w){ w.restEnd=null; _restFinT=0; save(); updateRestBar(); } }
   else if(a==='editrest'){ trkPrompt({title:'descanso entre series',label:'SEGUNDOS',value:db.settings.restSec||90,type:'number',inputmode:'numeric',hint:'entre 10 y 600'},v=>{ const n=parseInt(v,10); if(isNaN(n)||n<10||n>600){ toast('⚠ entre 10 y 600 segundos','err'); return false; } db.settings.restSec=n; save(); render(); toast('✓ descanso guardado'); }); }
-  else if(a==='togglebeep'){ db.settings.restBeep=!db.settings.restBeep; save(); render(); }
+  else if(a==='togglebeep'){ db.settings.restBeep=!db.settings.restBeep; save(); reRender(); }
   // G2 · M2-08: ↩ deshace el ÚLTIMO ✓ (por su hora) y conserva lo escrito. Antes borraba peso, reps y RIR de la serie
   // más baja de la página con datos, aunque nunca le hubieras dado ✓ y aunque fuera de otro ejercicio.
   else if(a==='undo'){ const w=db.activeWork; if(!w)return; let best=null;
@@ -9353,7 +9397,7 @@ function openLog(food, opts){ opts=opts||{}; const fd=asCanonical(food);
   const units=foodUnits(fd); const lu=(!opts.editId && opts.unit==null && opts.qty==null)?getLastUsed(fd):null;
   const defUnit=opts.unit||(lu && units.some(u=>u.key===lu.unit)?lu.unit:(fd.sizes.serving?'serving':units[0].key));
   const defQty=(opts.qty!=null)?opts.qty:(lu && lu.qty>0 ? lu.qty : 1);
-  const editing=!!opts.editId; const primary=editing?'guardar cambios':(window._log.isNew?'guardar + loguear':'loguear');
+  const editing=!!opts.editId; const primary=editing?'guardar cambios':'loguear';   // v271 · guardar en mis alimentos es una fila aparte
   const defTime=editing?(opts.time||''):nowHM();   // HORA opcional: alta asume hora actual; edición usa la del item (vacío si null)
   const hasBack=!editing && window._faCtx;
   openModal(`<h3>${hasBack?'<a data-act="faback" class="u-o50 u-data u-w7 u-tap u-mr8 u-lsui" title="volver a la búsqueda">← back</a>':''}${editing?'editar registro':'loguear'} · ${escTxt(fd.name||'alimento')}</h3>
@@ -9362,7 +9406,8 @@ function openLog(food, opts){ opts=opts||{}; const fd=asCanonical(food);
 
    <div class="lkc" id="l_kcal"></div>
    <div class="lnut" id="l_full"></div>
-   <div class="sheetbtns"><button class="ok" data-act="logsave">${primary}</button>${editing?'<button class="cancel" data-act="closemodal">cancel</button>':('<button class="cancel" data-act="logonly">'+(window._log.isNew?'loguear sin guardar':'cancel')+'</button>')}</div>`);
+   ${(window._log.isNew&&!editing)?'<div class="line lsv"><span class="k">guardar en mis alimentos</span><span class="dots"></span><span class="toggles" id="l_save"><button type="button" class="t on" data-act="optpick" data-v="1">sí</button><button type="button" class="t" data-act="optpick" data-v="0">no</button></span></div>':''}
+   <div class="sheetbtns"><button class="ok" data-act="logsave">${primary}</button><button class="cancel" data-act="${hasBack?'faback':'closemodal'}">cancel</button></div>`);   // v271 · cancel NUNCA loguea (antes era logonly → commitLog)
   const nutRow=(lbl,v,u,b)=>`<div class="line"><span class="k${b?' u-fg':''}">${lbl}</span><span class="dots"></span><span class="v${b?' u-fg':''}">${u==='L'?(+v||0).toFixed(2):Math.round(+v||0)}${u?' '+u:''}</span></div>`;
   const lrecalc=()=>{ const u=(document.getElementById('l_unit')||{}).value; const q=parseFloat(val('l_qty'))||1; const nut=computeNutrients(fd,u,q);
     const k=document.getElementById('l_kcal'); if(k)k.innerHTML='<b>'+Math.round(nut.kcal)+'</b> <span class="u">kcal · '+numTxt(nut._grams)+' '+fd.base+'</span>';
@@ -9931,7 +9976,7 @@ function buildExportMd(db){
   const sleep=db.sleep||{}, steps=db.steps||{};
   const waterFor=d=>(meals[d]||[]).reduce((a,m)=>a+(+m.water||0),0);
   const hdates=Array.from(new Set([].concat(Object.keys(sleep),Object.keys(bw),Object.keys(steps),Object.keys(meals)))).filter(Boolean).sort().reverse();
-  const hrows=hdates.map(d=>{ const w=waterFor(d); return {d,sl:sleep[d]!=null?n(sleepHours(sleep[d]))+'h':'—',pe:bw[d]!=null?n(bw[d])+'kg':'—',pa:steps[d]!=null?Math.round(steps[d]):'—',ag:w>0?n(w)+'L':'—',any:(sleep[d]!=null||bw[d]!=null||steps[d]!=null||w>0)}; }).filter(r=>r.any);
+  const hrows=hdates.map(d=>{ const w=waterFor(d); return {d,sl:sleep[d]!=null?(fmtSleep(sleep[d])||'—'):'—',pe:bw[d]!=null?n(bw[d])+'kg':'—',pa:steps[d]!=null?Math.round(steps[d]):'—',ag:w>0?n(w)+'L':'—',any:(sleep[d]!=null||bw[d]!=null||steps[d]!=null||w>0)}; }).filter(r=>r.any);
   L.push('## //HÁBITOS','');
   if(hrows.length){ L.push('| fecha | sueño | peso | pasos | agua |','| --- | --- | --- | --- | --- |'); hrows.forEach(r=>L.push('| '+fd(r.d)+' | '+r.sl+' | '+r.pe+' | '+r.pa+' | '+r.ag+' |')); L.push(''); }
   else { L.push('// sin datos',''); }
@@ -10022,7 +10067,7 @@ try{ offerLivePending(livePendingSync()); }catch(_){}
 // diario de arranque. Mientras decide, los respaldos se retienen para no pisar `latest`.
 try{ withTO(idbBootCheck(),12000).catch(()=>idbReleaseHold()); }catch(_){ idbReleaseHold(); }
 try{ growthLog(); }catch(_){}
-try{ promptIdleSession(); }catch(_){} try{ if(typeof location!=='undefined' && /[?&]selftest=1/.test(location.search)){ const _rawMain=(()=>{ try{ return localStorage.getItem(LS_KEY); }catch(_){ return null; } })(), _rawLive=(()=>{ try{ return localStorage.getItem(LS_LIVE); }catch(_){ return null; } })(), _lc0=_lastClosed; _sbx=true; try{ _identitySelfCheck(); _dropsetSelfCheck(); _baselineSelfCheck(); _variantSelfCheck(); _historyEditSelfCheck(); _idSelfCheck(); _cardioSelfCheck(); _tensionSelfCheck(); _healthSelfCheck(); _readinessSelfCheck(); _loggingSelfCheck(); _mergeSelfCheck(); _streakSelfCheck(); _chartSelfCheck(); _muscleSelfCheck(); _exProfileSelfCheck(); _recoverySelfCheck(); _diagSelfCheck(); _uiSelfCheck(); _v256SelfCheck(); _v257SelfCheck(); _sessSafetyCheck(); _storageSelfCheck(); _lateralitySelfCheck(); _v268SelfCheck(); _v269SelfCheck(); _healthPasteSelfCheck(); } finally{ _sbx=false; _lastClosed=_lc0; try{ if(_rawLive==null)localStorage.removeItem(LS_LIVE); else localStorage.setItem(LS_LIVE,_rawLive); }catch(_){} } let _rawAfter=null; try{ _rawAfter=localStorage.getItem(LS_KEY); }catch(_){} const _same=(()=>{ if(_rawAfter===_rawMain)return true; try{ const a=JSON.parse(_rawAfter), b=_rawMain==null?JSON.parse(JSON.stringify(db)):JSON.parse(_rawMain);   /* v267 · almacén vacío: se compara contra la base real en memoria */ return !!a&&!!b&&((a.profile||{}).username===(b.profile||{}).username)&&((a.sessions||[]).length===(b.sessions||[]).length)&&(JSON.stringify(a.split)===JSON.stringify(b.split)); }catch(_){ return false; } })(); if(!_same)console.error(new Error('SELFCHECK sandbox: una base de juguete llegó a tu disco')); else console.log('sandbox self-check OK'); setTimeout(()=>{ _idbSelfCheck(); },800); setTimeout(_dsRenderReport,1500); } }catch(e){ console.error(e); } try{ const _sp=new URLSearchParams(location.search); const _hasHistorical=_sp.has('stepsh')||_sp.has('weighth')||_sp.has('stepsq')||_sp.has('sleeph'); const _hk=['steps','stepsh','weight','weighth','stepsq','sleep','sleeph'].some(k=>_sp.has(k)); if(_hk&&!(db.profile&&db.profile.username)){ if(_bootJ)_bootJ.flags.push('urlImportEmpty'); if(history.replaceState)history.replaceState(null,'',location.pathname); setTimeout(()=>{ try{ toast('⚠ ese enlace abrió Safari, no tu app','err'); }catch(_){} },600); } else if(_hasHistorical){ const _hsp=_sp; if(history.replaceState)history.replaceState(null,'',location.pathname); setTimeout(()=>{ trkAsk({title:'importar datos históricos',detail:'este link trae pasos, peso o sueño de varios días · acepta solo si viene de tu propio Atajo de iOS',ok:'importar'},()=>{ try{ const _imp=importHealth(_hsp); if(_imp.length){ save(); render(); toast('✓ '+_imp.join(' · ')); } }catch(_){} }); },400); } else { const _imp=importHealth(_sp); if(_imp.length){ window._healthImported=_imp; if(history.replaceState)history.replaceState(null,'',location.pathname); } } }catch(_){} save(); render(); if(window._healthImported)setTimeout(()=>toast('✓ '+window._healthImported.join(' · ')),250); if(window._recoveredFromBackup)setTimeout(()=>{try{toast('⚠ se recuperó un respaldo local · revisa tus datos, podrían faltar cambios muy recientes','err');}catch(_){}},600);
+try{ promptIdleSession(); }catch(_){} try{ if(typeof location!=='undefined' && /[?&]selftest=1/.test(location.search)){ const _rawMain=(()=>{ try{ return localStorage.getItem(LS_KEY); }catch(_){ return null; } })(), _rawLive=(()=>{ try{ return localStorage.getItem(LS_LIVE); }catch(_){ return null; } })(), _lc0=_lastClosed; _sbx=true; try{ _identitySelfCheck(); _dropsetSelfCheck(); _baselineSelfCheck(); _variantSelfCheck(); _historyEditSelfCheck(); _idSelfCheck(); _cardioSelfCheck(); _tensionSelfCheck(); _healthSelfCheck(); _readinessSelfCheck(); _loggingSelfCheck(); _mergeSelfCheck(); _streakSelfCheck(); _chartSelfCheck(); _muscleSelfCheck(); _exProfileSelfCheck(); _recoverySelfCheck(); _diagSelfCheck(); _uiSelfCheck(); _v256SelfCheck(); _v257SelfCheck(); _sessSafetyCheck(); _storageSelfCheck(); _lateralitySelfCheck(); _v268SelfCheck(); _v269SelfCheck(); _healthPasteSelfCheck(); _v271SelfCheck(); } finally{ _sbx=false; _lastClosed=_lc0; try{ if(_rawLive==null)localStorage.removeItem(LS_LIVE); else localStorage.setItem(LS_LIVE,_rawLive); }catch(_){} } let _rawAfter=null; try{ _rawAfter=localStorage.getItem(LS_KEY); }catch(_){} const _same=(()=>{ if(_rawAfter===_rawMain)return true; try{ const a=JSON.parse(_rawAfter), b=_rawMain==null?JSON.parse(JSON.stringify(db)):JSON.parse(_rawMain);   /* v267 · almacén vacío: se compara contra la base real en memoria */ return !!a&&!!b&&((a.profile||{}).username===(b.profile||{}).username)&&((a.sessions||[]).length===(b.sessions||[]).length)&&(JSON.stringify(a.split)===JSON.stringify(b.split)); }catch(_){ return false; } })(); if(!_same)console.error(new Error('SELFCHECK sandbox: una base de juguete llegó a tu disco')); else console.log('sandbox self-check OK'); setTimeout(()=>{ _idbSelfCheck(); },800); setTimeout(_dsRenderReport,1500); } }catch(e){ console.error(e); } try{ const _sp=new URLSearchParams(location.search); const _hasHistorical=_sp.has('stepsh')||_sp.has('weighth')||_sp.has('stepsq')||_sp.has('sleeph'); const _hk=['steps','stepsh','weight','weighth','stepsq','sleep','sleeph'].some(k=>_sp.has(k)); if(_hk&&!(db.profile&&db.profile.username)){ if(_bootJ)_bootJ.flags.push('urlImportEmpty'); if(history.replaceState)history.replaceState(null,'',location.pathname); setTimeout(()=>{ try{ toast('⚠ ese enlace abrió Safari, no tu app','err'); }catch(_){} },600); } else if(_hasHistorical){ const _hsp=_sp; if(history.replaceState)history.replaceState(null,'',location.pathname); setTimeout(()=>{ trkAsk({title:'importar datos históricos',detail:'este link trae pasos, peso o sueño de varios días · acepta solo si viene de tu propio Atajo de iOS',ok:'importar'},()=>{ try{ const _imp=importHealth(_hsp); if(_imp.length){ save(); render(); toast('✓ '+_imp.join(' · ')); } }catch(_){} }); },400); } else { const _imp=importHealth(_sp); if(_imp.length){ window._healthImported=_imp; if(history.replaceState)history.replaceState(null,'',location.pathname); } } }catch(_){} save(); render(); if(window._healthImported)setTimeout(()=>toast('✓ '+window._healthImported.join(' · ')),250); if(window._recoveredFromBackup)setTimeout(()=>{try{toast('⚠ se recuperó un respaldo local · revisa tus datos, podrían faltar cambios muy recientes','err');}catch(_){}},600);
 applyDesign(); try{ if(/[?&]design\b/.test(location.search))localStorage.setItem('gymtrk_designmode','1'); if(localStorage.getItem('gymtrk_designmode')==='1')openDesignPanel(); }catch(_){}
 try{ bootScreen(()=>{ try{
   if(/[?&]wrap=1\b/.test(location.search)){ monthlyWrap(prevMonthYm(), true); return; }

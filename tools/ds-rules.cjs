@@ -108,6 +108,8 @@ module.exports = function rules(raw, repoDir) {
   for (const m of js.matchAll(/\bsave\(\);\s*toast\(\s*['"`]✓/g)) add('TOASTOK', jsA + m.index, fnAt(jsA + m.index));
   // ---- R-SCROLL ----
   for (const m of js.matchAll(/closeModal\(\);\s*render\(\)/g)) if (!skipped(jsA + m.index)) add('SCROLL', jsA + m.index, fnAt(jsA + m.index) + ' · ' + m[0]);
+  // v271 · un interruptor de la misma pantalla (toggle*/*tog*) con render() pelado te sube hasta arriba (ver gramos/%)
+  for (const m of js.matchAll(/a===['"](\w*(?:[Tt]og|toggle)\w*)['"]\)\s*\{/g)) { const a = m.index + m[0].length - 1, b = js.slice(a, blockEnd(js, a) + 1); if (/(^|[^e])render\(\)/.test(b.replace(/reRender/g, '')) && !/state\._scroll|\bgo\(/.test(b)) add('SCROLL', jsA + m.index, m[1] + ' · render()'); }
   for (const m of js.matchAll(/a===['"](sd_\w+)['"]\)\s*\{/g)) { const a = m.index + m[0].length - 1, b = js.slice(a, blockEnd(js, a) + 1); if (/(^|[^e])render\(\)/.test(b.replace(/reRender/g, ''))) add('SCROLL', jsA + m.index, m[1] + ' · render()'); }
   // ---- R-RAD / R-RADF · radios ----
   // v259 · el valor de cada token de radio se resuelve desde :root siguiendo cadenas var() (un alias como

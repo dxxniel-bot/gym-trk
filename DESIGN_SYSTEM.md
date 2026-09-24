@@ -1,6 +1,6 @@
 # gym//TRK — DESIGN SYSTEM (referencia del estado actual)
 
-> Referencia del estado actual (v270). **Lee BRAND.md primero**: manda sobre este archivo. Sin historia: DESIGN_CHANGELOG.md.
+> Referencia del estado actual (v271). **Lee BRAND.md primero**: manda sobre este archivo. Sin historia: DESIGN_CHANGELOG.md.
 
 ---
 
@@ -195,16 +195,17 @@ tabla) · a ojo.
 |---|---|---|---|---|---|
 | Héroe | `--t-hero` | 800 | `--ls-num` | tight | `.mdval` (valor del detalle de métrica), marca del landing. Nada más |
 | Display | `--t-display` | 800 | `--ls-num` | tight | `.whdr .wname` (nombre del día), `.pval`, `.ring.lg .num`, `.shsn`, `.msum-tot b`, `.exbn` |
-| Sección / título | `--t-section` | 800 | 0 (`--ls-title` si va en mayúsculas) | ui | `.section .h`, `.sheet h3`, `.lt .h`, `.mnm`, `.mkc` (total de comida), `.exhead .n`, `.wline .wtn`, `.dnlbl`, `.shtt` |
+| Sección / título | `--t-section` | 800 | 0 (`--ls-title` si va en mayúsculas) | ui | `.section .h`, `.sheet h3`, `.lt .h`, `.mnm` (nombre de comida), `.exhead .n`, `.wline .wtn`, `.dnlbl`, `.shtt` |
 | Campo (solo editable) | `--t-field` (14, v269) | 400 / 700 (800 al renombrar) | 0 | — | `.field input`/`select`, `#fa_q`, `textarea.ta`, `.slph input`, `.slblk input`, `.mdcust input`, `select.pfsel`, `#pf_gym`, `.pfw`, `.msum-time`, `.gnmin`, `.senm`, `.obi` |
 | Glifo de control | `--t-section` | 400 | 0 | tight | `.dchk`, `.pairdone`, `.dnav`, `.lx`, `.mchev`, `.footer .undo`, `.exmore` |
 | Fila / dato | `--t-data` | 400 (valor 700/800) | 0 | ui; lectura en compartir | `.line`, `.mit`, `.lc`, `.trow`, `.srw`, `.stq`, `.inp`, `.pick` |
 | Acción: botón, chip, tab | `--t-data` | 700 | `--ls-ui` | centrado por alto | `.lact` = `.mdtabs span` = `.nav a` a 700; el primario (`.start` = `.sheetbtns .ok` = `.footer .save`) a 800; los `[verbo]` (`button.b`, `button.cancel`, `.secondary .b`, `.sheetbtns .cancel`) y las opciones sin elegir (`button.t`) a 400, la elegida a 700 |
-| Etiqueta, meta, ayuda, vacío | `--t-label` | 400 | `--ls-caps` en MAYÚSCULAS · `--ls-ui` en meta de interfaz · 0 | ui | `.grp-label`, `.whdr .wlbl`, `.submeta`, `.empty`, `.wmeta`, `.thead .cl`, `.setn`, `.exsub .note` |
+| Etiqueta, meta, ayuda, vacío | `--t-label` | 400 | `--ls-caps` en MAYÚSCULAS · `--ls-ui` en meta de interfaz · 0 | ui | `.grp-label`, `.whdr .wlbl`, `.submeta`, `.empty`, `.wmeta`, `.thead .cl`, `.setn`, `.exsub .note`, `.mmac` (macros del alimento, v271; su fuente principal en `<b>` `--fg`/700) |
 | Estado semántico | `--t-label` | 700 | `--ls-caps` si es sigla | — | `.lpr` (PR), `.pst`, `.setprog`, `.vst` |
 
-- El total de una comida **siempre** manda sobre sus alimentos: `--t-section`/800 (14) contra 12/400 (decisión del dueño,
-  v256).
+- En la cabecera de una comida **manda el nombre** (`.mnm` `--t-section`/800 `--fg`) y el total va segundo (`.mkc`
+  `--t-section`/700 en `--o70`, v271; el dueño, 24-sep: "…destaca más… las calorías totales que es el nombre de la
+  meal"), pero el total **siempre** manda sobre sus alimentos (12/400 en `--o50`; decisión del dueño, v256).
 - `.tselo` (opción de TRKSelect) no es un campo: va a `--t-section`/700.
 - Las flechas `‹ ›` nunca pesan más que el dato que mueven.
 - Tamaños por pantalla (hoy, v269): gym {10,12,14,20} · sesión {10,12,14} · macros {10,12,14,20} · progreso {10,12,14,20,
@@ -908,7 +909,8 @@ rejillas"; compartir es **vertical, a altura natural, nunca un cuadro que recort
   pantalla: barra de estado con atrás · `.sharecard` · marca `.shfoot` · `.shacts` con `[copiar texto]` (`shareTextFor()`,
   mismo modelo) y `[guardar imagen]` (`shareImage()`).
 - **Sesión** (`shSessModel()` → `renderShareSession()`): `.shst` con el día en `.shsn` (`--t-display`/800), fecha · gym en
-  `.shsm` (`--t-label` `--o50`) y una línea `1h26 · 18 series · 7 ejercicios` en `.shsum` (`--t-data` `--o70`). Cuerpo: una
+  `.shsm` (`--t-label` `--o50`) y una línea `1 h 26 min · 18 series · 7 ejercicios` en `.shsum` (`--t-data` `--o70`; la
+  duración con `fmtDur()` desde v271, antes `1h26`). Cuerpo: una
   fila `.srw` por ejercicio: `#músculo` (`.srm`, solo cuando cambia) · nombre `.srn` 800 · series `shTokTxt()` →
   `160lbs×8@0 / 160lbs×6@0` (`.srs1` en `--o50`, drop `↓` en `--o40`, separador `.srsep`). Entre ejercicios `--s5`,
   interlineado 1.6. **Sin** tonelaje, T ni tarjeta.
@@ -955,8 +957,8 @@ rejillas"; compartir es **vertical, a altura natural, nunca un cuadro que recort
 
 ### 7.22 Línea de preparación
 
-- **Clase / API:** `readinessLineHTML()` → `.ready` (`--t-label` `--o50`: `recuperación <b>43</b> · sueño 6.2h (−1.8) · …`,
-  `.rk` en `--ls-caps`, `.rl` `--o35`); toca → `openReadiness()`. Debajo, `dayMusclesLineHTML()` (músculos del día y su
+- **Clase / API:** `readinessLineHTML()` → `.ready` (`--t-label` `--o50`: `recuperación <b>43</b> · sueño 6 h 12 min (−1 h 48 min) · …`
+  con `fmtH()` desde v271, `.rk` en `--ls-caps`, `.rl` `--o35`); toca → `openReadiness()`. Debajo, `dayMusclesLineHTML()` (músculos del día y su
   estado).
 - **Partes (`READY_W`, `READY_ORDER`; v269):** sueño .35 · FC en reposo .25 · HRV .20 (solo si alguna fuente
   la da) · carga de entreno .25 · comida de ayer .15. Solo cuentan las que tienen dato; la confianza es la fracción del
@@ -985,9 +987,22 @@ Decisión del dueño 2026-09-21: macros en orden **SUPPS → MEALS → WATER**, 
 - **SUPPS:** momentos en TRKTabs (`.lseg`, `AM 2/6 · PM …`) y rejilla de 2 columnas `.lcg` de celdas `.lc` (36 de alto;
   tomado `.on` con ✓); `✓ AM` marca lo pendiente del momento. Un toque = tomado con su hora; marcar no mueve nada. Sin
   ningún suplemento en el stack, la sección no desaparece: sale la invitación (v269, §7.36).
-- **MEALS:** una `.mrec` por comida: cabecera `.mhd` de 44 (`.mtg` con `.mchev` y el nombre `.mnm` `--t-section`/800 + meta
-  `.mmeta` `hora · P C F`; total `.mkc` `--t-section`/800 que abre el desglose; `.gmore` con `.dots3` → `openMealMenu()`); alimentos `.mit` de 36
-  (`--t-data`, cantidad en negrita, kcal `--o50`); `+ food` al final.
+- **MEALS:** una `.mrec` por comida. Cabecera `.mhd` de 44 en **4 columnas** (v271: nombre | `[+ food]` | kcal | `···`):
+  `.mtg` con `.mchev`, el nombre `.mnm` (`--t-section`/800 `--fg`, **manda**) y la meta `.mmeta` (`hora · P C F`,
+  `--t-label` `--o40`) · `[+ food]` = `button.b` `.madd` (corchetes por CSS, 44 de alto, `--o60`; a la vista aunque
+  la comida esté plegada) → `openFoodAdd(tag, true)` · total `.mkc` (`--t-section`/700 en `--o70`, segundo tras el
+  nombre) que abre el desglose · `.gmore` (columna 4) con `.dots3` → `openMealMenu()`. Alimentos `.mit` de 36: línea `.nm1` (`--t-data`, cantidad en negrita, kcal `--o50`) y
+  debajo `.mmac` `P 31 · C 2 · F 1` (`--t-label` `--o50`, `macroLineHTML()`) con la fuente principal por kcal (P·4, C·4,
+  F·9) en `<b>` `--fg`/700, **sin color** (elección del dueño: "Blanco en negrita, sin color") y `~` delante si es
+  aproximada; la misma línea sale en la hoja de desglose (`mealFoodRows()`). Tocar un alimento lo abre en su sitio
+  (`mealDetailInline()`): solo la marca y `[editar] [mover] [borrar]`. Ya no hay fila `+ food` al final de la comida (el
+  dueño: "el add food se pierde mucho… yo le añadiría los corchetes y lo pondría igual del lado derecho de la meal").
+- **Hoja de loguear** (`openLog()`, v271): unidad y cantidad, kcal y nutrientes en vivo; con un alimento **nuevo**, una fila
+  `guardar en mis alimentos ···· [sí] no` (`.lsv` con `.toggles` `#l_save`, `optpick`; sí por defecto). El primario es
+  siempre `loguear` (`guardar cambios` al editar) y `logsave` lee la fila. **`[cancel]` nunca loguea**: vuelve a la
+  búsqueda con su texto (`faback`) si llegaste desde ahí, o cierra (`closemodal`). Antes el secundario decía cancelar y
+  llamaba a `logonly` → `commitLog(false)`, que sí registraba ("a pesar de que le doy cancelar se me agrega a la meal ese
+  alimento que no quería agregar"). La revisa: `_v271SelfCheck`.
 - **WATER:** chips de vaso `.lc` (quitar = toast con `[deshacer]`); `+ water` abre la elección de cantidad.
 - **Hoy → objetivo:** las filas tocables miden 36 (M4-07, G4: 44); vacíos en inglés (`no meals logged`, G3); el ✓ de
   tomado va en `--good` (G3).
@@ -1031,6 +1046,10 @@ compartir comida; excepción `ring`).
   barras. Dentro de `.kpanel` **toda** `.rule` va a sangre (margen lateral `-16`, el padding del panel) con el **mismo aire
   arriba y abajo** (`--s5`), y el radar deja `--s4` antes de los anillos. El cambio `[ver gramos | ver %]` pasó de arriba
   del radar a debajo de los anillos, junto a lo que convierte. Abrirlo ya no mueve el ancho (LAY-2b, §5.1).
+- **Sin brinco de scroll (v271; el dueño: "cuando le doy en ver gramos o ver porcentaje, se me scrollea hasta arriba… eso
+  está muy molesto"):** `[ver gramos | ver %]` es un `button.b` (`[verbo]` de 44 de alto; antes un enlace chico) y
+  `toggleMacroUnit`, `togglemacros` (abrir el panel) y `ringtog` (tocar un anillo) repintan con `reRender()`, que conserva
+  el scroll (también `viewmeal`, `togglepreview` y `togglebeep`; R-SCROLL lo vigila, §18.1). En modo % tocar un anillo cambia a **% restante** (`restante`), igual que en gramos.
 
 ### 7.29 `.u-hit` (pendiente G4)
 
@@ -1277,8 +1296,9 @@ Day sí es saltar el día del split". Antes los dos avanzaban la rotación.
   permiso o el texto no es del Atajo, abre la hoja `pegar de Salud` con la casilla.
 - **La receta** (`openShortcutSetup()`): 7 pasos numerados (`.hpst`: número `--o40`, texto `--o70`, acciones del iPhone en
   `--fg`/700), el ejemplo de lo copiado en `.hpfmt` (caja fina `--o20`, radio `--r-ctl`) y `pegar ahora` como primario.
-  Explica en una línea que aún no somos app nativa. `SHORTCUT_URL` (vacío hoy) muestra `▶ instalar atajo` cuando el dueño
-  comparta el Atajo por iCloud.
+  Explica en una línea que aún no somos app nativa. `SHORTCUT_URL` (vacío hoy) muestra `[instalar atajo]` cuando el dueño
+  comparta el Atajo por iCloud: un `[verbo]` (clase `b`, v271; antes era un segundo primario junto a `pegar ahora`:
+  R-OK vuelve a 6).
 - **Renglones tocables de //STATS:** `.line.stat.tap` = el renglón entero es el botón (antes solo el número), con el
   mismo alto que sus vecinos: `steps · today`, `sleep · last night`, `health · paste`. **Hoy → objetivo:** siguen bajo 44 de
   alto como todo //STATS (B-11); subirlos a 44 solo a ellos deja el bloque disparejo (probado en v270 y revertido).
@@ -1312,7 +1332,8 @@ Instrumentación, no infografía (B-02: la gráfica existe solo cuando el texto 
 3. **Detalle:** el rango normal propio (`normalBandFixed()`, p15–p85 de 90 días, un solo par por periodo) son **dos líneas
    de referencia** de .5 en `--o30`, sin relleno; sin 7 días de historia dice `sin normal · N/7 d`. Promedio punteado (sin
    pastilla dentro de la gráfica: el encabezado ya lo dice); último punto con halo; 3 etiquetas Y a la derecha y 4 fechas
-   abajo, en HTML sobre el SVG.
+   abajo, en HTML sobre el SVG. Las etiquetas Y pueden tener su forma corta (`opt.tfmt`, v271: sueño en horas redondas
+   `7 h`, NUM-2 en §9.3).
 4. **Acento solo en el estado** ("en rango / sobre / bajo lo normal"), nunca en la línea.
 5. Periodos `7D · 15D · 30D · 3M · 6M · 1A` + ▦ rango propio + `‹ ›` para paginar (`mdPage()`). Gestos: mantener y
    deslizar (scrub), pellizco ↔ (periodo), ↕ (zoom vertical), doble toque (normal). `touch-action:none` solo sobre la
@@ -1361,7 +1382,7 @@ punto, escalas de color de otras apps, 0 falso. `miniBars()` convierte huecos en
 
 | Tipo | Ejemplo | Regla |
 |---|---|---|
-| **Estado** | "sin baseline", "4/14 d", "hoy: comida + gym ✓", "sin clasificar 42 m" | se queda: es dato |
+| **Estado** | "sin baseline", "4/14 d", "hoy: comida + gym ✓", "sin clasificar 42 min" | se queda: es dato |
 | **Instrucción de gesto** | "mantén y desliza… pellizca ↔… doble toque" | **fuera**: el gesto se descubre tocando |
 | **Pista de una vez** | "desliza una serie → para borrarla" | una sola vez por dispositivo (`hintSeen()`/`hintMark()`), nunca en cada render |
 | **Definición** | "MEV/MAV/MRV", "correlación, no causa", "estimado vs observado" | al glosario `data-gloss` |
@@ -1383,12 +1404,21 @@ Una forma de escribir cada tipo de dato, con su función (NUM-1). La revisa: a o
 | Peso corporal (v269) | en la unidad que elegiste para pesarte (`db.settings.bwUnit`, kg por defecto): `131.8 lbs` o `59.8 kg`, 1 decimal | `bwU()` (unidad) · `bwShow(kg)` (para mostrar) · `bwParse(texto)` (para guardar, siempre en kg; en lbs con 0.01 de precisión, así 160 lbs se relee exacto) | ✓ registro de peso, tile, detalle de métrica, throwback, wrap mensual, //PROFILE |
 | Miles | `2,405` | `toLocaleString()` | ✓ |
 | Cambio | `▲ +3%` / `▼ −4%` con signo menos real (−) | badges de progreso | revisar que ningún cambio use `-` (G4) |
-| Macros | `48P 71C 4F` · kcal `2,178 / 2,405` | TRKLog, compartir | ✓ |
+| Macros | comida `48P 71C 4F` · kcal `2,178 / 2,405` · por alimento (v271) `P 31 · C 2 · F 1` con la fuente principal por kcal en `<b>` `--fg`/700, sin color, y `~` si es aproximado | TRKLog, compartir · `macroLineHTML()` en `.mit` y `mealFoodRows()` | ✓ |
 | Hora | `09:13` | `nowHM()` | ✓ |
-| Duración | `1h26` · `42 min` · descanso `1:30` | `shSessModel()`, `elapsedStr()`, `fmtRest()` | ✓ |
+| Duración (v271) | `45 min` · `5 h 12 min` · `2 d 4 h`: h y min con espacio, **nunca horas decimales** (`5.2 h` → `5 h 12 min`) · tile con la unidad chica `5<span>h</span> 12<span>min</span>` · eje de gráfica en horas redondas `7 h` · descanso `1:30` (m:ss) | `fmtDur(min)` (la única forma) · `fmtH(horas)` (promedios y metas que vienen en horas decimales) · `fmtHM()` (alias; fases del sueño) · `durHTML(min)` (tiles y valor grande) · `fmtSleep(v)` = `fmtDur(sleepMinOf(v))` · `fmtRest()` (descanso) | ✓ en ~30 sitios: //STATS, tile y detalle de sueño, preparación (`sueño 6 h 12 min (−1 h 48 min)`), `dayFlags()` (`dormiste 5 h 42 min`), contexto de la sesión, recuperación (`hace 2 d 4 h`, `recStateTxt()`), cronómetro de la sesión (`elapsedStr()`), agenda, recap, wrap, export `.md`, toast de Salud, FC del entreno y compartir sesión |
 | Fecha | `17 sep` · con año `17 sep 2026` · cabecera `sep 2026 · 10` | `fmtShort()`, `fmtDate()` | ✓ |
 | Estimado | `~43` | — | ✓ |
 | Sin dato | `—` | — | ✓ |
+
+- **NUM-2 · duraciones (v271; el dueño, 24-sep: "hoy dormí 5.2 horas, pero ese 0.2 horas no me dice nada… hay que manejar
+  horas y minutos"):** toda duración que se lee pasa por `fmtDur()` (o `fmtH()`/`durHTML()`/`fmtSleep()`, que la llaman);
+  nada escribe `h` con decimales. El sueño se cuenta **al minuto** con `sleepMinOf(v)` (inicio y fin; con fases, REM + core
+  + profundo; con intervalos, ventana − despierto; sin horas, `hours` × 60); `sleepHours()` redondea a 0.1 h (6 min) y
+  queda para la matemática, no para mostrar. En el detalle de métrica, `metricSeries()` puede dar `tfmt` (las etiquetas
+  del eje, que `lineChart()` lee como `opt.tfmt`; sueño: horas redondas `N h`) y `valHTML` (el valor grande de `.mdval`
+  con la unidad chica en `.mdval span`, `--t-data`/400 `--o50`); la tile de sueño dice `prom 7 h · 93% de la meta`. La
+  revisa: `_v271SelfCheck` (`5.2 h` → `5 h 12 min`, `0.5 h` → `30 min`, `7 h`, `60 h` → `2 d 12 h`, sueño al minuto).
 
 Decimales solo cuando informan: kg 1, porcentajes 0–1, series 1. Unidades por dominio (v269: dos ajustes distintos,
 porque mucha gente se pesa en kg y carga en lbs): **peso corporal** en `db.settings.bwUnit` (se guarda siempre en kg) y
@@ -1673,7 +1703,7 @@ Objetivo G4: completar la tabla con el texto exacto de cada celda vacía y una a
 | `onboard` | primer uso (perfil) | `[‹ atrás]` (`.obback`) + `.obh` `gym//TRK//PROFILE` + una línea | filas de terminal `.obr` (clave `.obk` + control; `.obi`, toggles), unidades primero, listas `.toggles.oblist` con su descripción, vista previa `.obprev`, `▶ empezar` | no | v268 · v269, §7.34: la fila con foco lleva `>`; Enter salta al siguiente campo; guardar es aditivo |
 | `home` (gym) | estado actual | `statusBar` + rotación + `dayHeadHTML` (`//NEXT`) | línea de preparación, músculos del día, vista previa (`[ ver rutina ▾ ]`), primario, `[rest day]` `[skip day]` (o `hoy: descanso ✓`, §7.37), //ESTÍMULO, //STATS | sí | con sesión viva solo existe `▶ resume workout` (v258, M1-01/M1-01b) |
 | `workout` | registro | `.wline` (modo enfoque) | tabla de sesión, descanso, footer | no | §7.8, §7.20 |
-| `macros` | composición | `statusBar` + día `‹ fecha ›` | anillo en `.card`, detalle (radar, P/C/F, `[ver gramos]`, INTAKE, retención), SUPPS (o su invitación) → MEALS → WATER | sí | §7.24, §7.28, §7.36 |
+| `macros` | composición | `statusBar` + día `‹ fecha ›` | anillo en `.card`, detalle (radar, P/C/F, `[ver gramos \| ver %]`, INTAKE, retención), SUPPS (o su invitación) → MEALS (`[+ food]` en cada cabecera) → WATER | sí | §7.24, §7.28, §7.36 |
 | `progress` | análisis | `.section` //PROGRESS + `[edit]` | racha en franja, tiles `.ptile` en el orden de `db.settings.progLayout`, //FUERZA, //RECORDS, //MÚSCULOS, //RENDIMIENTO | sí (no mientras se edita) | modo editar §7.35; tiles → filas en G3 |
 | `history` | archivo | `.section` //HISTORY | mes TRKCal, rail por mes, sesión que se abre en su sitio | no | |
 | `histedit` | corrección | `dayHeadHTML` | tabla de sesión compacta (`.hist-compact`) | no (v267) | |
@@ -1793,6 +1823,7 @@ que crea o reemplaza una sesión se oculta mientras hay una viva.** La revisa: R
 | recuperar una sesión al arrancar | v259: se copia antes a `gymtrk_live_pending`; solo `[recuperarla]` o `[descartar]` deciden; tocar fuera la deja para el siguiente arranque; con otra sesión viva no la pisa | ✓ |
 | `▶ continuar` una sesión pasada | v258: la original sigue en el historial hasta guardar (guardar la reemplaza, sin mover la rotación); abortar la deja intacta y restaura la rotación (M3-09) | ✓ |
 | registrar manualmente desde el escáner | v258: guarda en la comida elegida (`window._faTag` se lee antes de cerrar el sheet, M4-08) | ✓ |
+| `[cancel]` en la hoja de loguear un alimento | v271 (§7.24): **nunca registra** (antes `logonly` sí lo agregaba a la comida); vuelve a la búsqueda con su texto o cierra | ✓ |
 
 ### 17.5 Inventario primero
 
@@ -1865,7 +1896,7 @@ Línea base del 2026-09-21: todos en 0 salvo `style=""` 89, excepciones 33, lett
 | R-SVGFS | `font-size` o `stroke-width` de SVG fuera de escala | P1 |
 | R-SEM | color semántico fuera de las funciones de veredicto | P1 |
 | R-SAVE | `save()` en una acción sin feedback, deshacer, TRKHold ni TRKAsk | P1 |
-| R-SCROLL | `closeModal(); render()` o `render()` en listas editables | P1 |
+| R-SCROLL | `closeModal(); render()` o `render()` en listas editables; desde v271 también un interruptor de la misma pantalla (handler `toggle*` o `…tog…`) que repinta con `render()` pelado sin `state._scroll` ni `go(` (te subía hasta arriba: `[ver gramos \| ver %]`). En v270 marcaba 3 handlers; hoy 0 | P1 |
 | R-RAD | radio de contenido fuera de la familia de B-05, resuelta desde `:root` (0 · `--r-sm` 2 marcas · `--r-mark`/`--r-ctl`/`--radius` 4): literal en px, píldora fuera de las barras finas o `--r-float` en contenido. R-RADF: lo que flota admite además `--r-float` 8 y sus alias | P1 |
 | R-BLUR | `backdrop-filter` fuera del chrome | P1 |
 | R-EXEMPT | exención sin id de §15 | P1 |
@@ -1910,8 +1941,16 @@ Línea base del 2026-09-21: todos en 0 salvo `style=""` 89, excepciones 33, lett
   destino y `progMetrics()` respeta lo oculto · **peso corporal** — `bwParse('160')` en lbs guarda 72.57 kg y
   `bwShow()` lo relee como 160 exacto; en kg no cambia nada. `_readinessSelfCheck` ajusta su confianza a 0.60 (sueño + FC
   sin ánimo). Además `purgeMood()` guarda en IndexedDB la foto `pre-data2` antes de borrar, solo si había ánimo.
+- **`_v271SelfCheck()`** (en `?selftest=1`; lo que toca `db` corre sobre una copia con `toast`/`reRender` sustituidos):
+  **duraciones** — `fmtH(5.2)` = `5 h 12 min`, `fmtH(0.5)` = `30 min`, `fmtH(7)` = `7 h`, `fmtDur(3600)` = `2 d 12 h`;
+  `sleepMinOf()` al minuto con inicio y fin (23:10–07:02 = 472) y con fases (REM + core + profundo = 400) · **macros por
+  alimento** — `macroLineHTML()` pone en `<b>` la fuente principal por kcal (pollo → `P 31`, aguacate → `F 15`) y un
+  alimento sin macros no lleva línea · **cancel no loguea** — con un alimento guardado y con uno nuevo (que además trae la
+  fila `guardar en mis alimentos` en sí), `[cancel]` deja la comida igual.
 - **Inventario en navegador** (`tools/ds-inventory.js`, se guarda en G1): tamaños, colores→token, radios, sombras, blur,
-  tracking, animaciones, glifos y toques por pantalla, con el respaldo real del dueño.
+  tracking, animaciones, glifos y toques por pantalla, con el respaldo real del dueño. **`dsSweep()` de hoy** (v271, 393×852,
+  su respaldo, sin sesión viva; es la línea base `render` de `tools/ds-baseline.json`): ua 0 · hit 713 · txt 133 · fsOff 0
+  · blur 0 · glyph 67 · rad 0 (v270: hit 715; −1 en `macros` y −1 en `sheet:foodadd`).
 
 ### 18.3 `tools/ds-diff.html`
 

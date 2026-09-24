@@ -74,7 +74,7 @@ iframe.srcdoc = t.replace(/<head([^>]*)>/i, m => m + '<base href="'+base+'"><scr
   app guarde en medio lo absorbe el guardia. Hoy: `m:supps-empty` (el stack entero y `suppHide` se apartan: la invitación
   de //SUPPS solo sale con el stack vacío) y `home:rest` (se apartan la sesión viva y lo entrenado hoy, luego el toque real
   de `[data-act="rest"]`; al salir se quita ese descanso). Un descanso real de hoy se deja como está.
-- Cubrir TODO: las 56 de `tools/ds-diff.html` (S2; v269 sin `m:mood`) + las 16 de `tools/ds-inventory.js` + arranque (`T.bootPreview(null,
+- Cubrir TODO: las 58 de `tools/ds-diff.html` (S2; v269 sin `m:mood`; v271 + `m:log:saved` y `macros:unit`) + las 16 de `tools/ds-inventory.js` + arranque (`T.bootPreview(null,
   true, false)` y el corto `boot:short` con `true` y `live`), wrap (`W.monthlyWrap(W.prevMonthYm(), true)`), recap (forzar vía la lógica de `snapRecap` si es posible),
   aviso de inactividad (`W.promptIdleSession()` con una sesión en curso "vieja"), toasts (`W.toast('✓ guardado')`,
   `W.toast('⚠ error de prueba','err')`, con deshacer), `W.trkAsk({...})`, `W.holdConfirm({...})`, barra de guardado
@@ -86,6 +86,12 @@ iframe.srcdoc = t.replace(/<head([^>]*)>/i, m => m + '<base href="'+base+'"><scr
   (compartir ejercicio con la cámara de video + REC en la 1.ª `[data-camsi]`, sin volver a tocarla si ya la tiene; la marca
   vive en `state._cam`, no en `db`). Fuera `m:mood` (se retiró el ánimo). Total v269: 104 escenarios (`m:machine` de S2
   vive aquí como `live:machine`).
+- v271: `m:log:saved` (hoja · loguear alimento guardado: `macros` en el último día con comida y `W.openLog(food de
+  T.db.foods, {fromId, tag})` con `W._faCtx=null`, así `[cancel]` cierra; sin la fila "guardar en mis alimentos") junto a
+  `m:log`, que se queda como el alimento nuevo (`isNew`: fila `guardar en mis alimentos [sí] no`, primario siempre
+  `loguear`; se reetiqueta, no hay `m:log:new`); `macros:unit` (lo de `macros:open` + el toque real de
+  `[data-act="toggleMacroUnit"]`, siempre de gramos → %; `state.macroPct` vuelve a su valor con `later`). El recap usa
+  `W.fmtSleep(...)` (h y min, como `snapRecap`), `//TODAY` y `—` sin sesión ni descanso. Total v271: 106 escenarios.
 - Etiquetas cortas en español: `gym · inicio`, `macros`, `hoja · agregar alimento`, `sesión · tabla`, `arranque`…
 
 ## 4 · `window.TRK_KNOBS` — knobs.js
@@ -162,9 +168,11 @@ sale con 1 si algo falta.
     items:[ { id:'nav', text:'nav elegida (texto, ≥44, sin animar columnas)', status:'por decidir', proposal:'nav', audit:'RADF 9→0' } ] } ] }
 ```
 Fases: G1 (hecho), G2/v258 (hecho), F0/v259 (hecho), T/v260 (hecho), S1 estudio (hecho), G0 decisiones, TS/v267 terminal
-sobrio (hecho), P1/v268 primer arranque (hecho), V269 lo del 24-sep (hecho), V270a configuración paso a paso, V270b cuentas,
-V271 salud por Atajo, V272 tensión v2 (σ), V273 Pro y anuncios, V274 tour, G3a–d y G4a–c sin versión fija (del plan
-aprobado). `proposal` enlaza a TRK_PROPOSALS.
+sobrio (hecho), P1/v268 primer arranque (hecho), V269 lo del 24-sep (hecho), V270 salud por Atajo (hecho), V271 comida y
+unidades (hecho), y en el orden aprobado por el dueño (24-sep): V272 σ v2 y estado del progreso, V273 split: cómo entrenas,
+V274 progreso por ejercicio, V275 suplementos con marca y frasco, V276 macros: laboratorio y carrusel, V277 configuración
+paso a paso (antes V271a), V278 cuentas (antes V271b), V279 Pro y anuncios (antes V273), V280 tour (antes V274); G3a–d y
+G4a–c sin versión fija (del plan aprobado). `proposal` enlaza a TRK_PROPOSALS.
 
 ## 8 · Núcleo — studio.js / studio.html / studio.css
 
