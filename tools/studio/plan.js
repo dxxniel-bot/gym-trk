@@ -11,7 +11,7 @@
 
   window.TRK_PLAN = {
     updated: '2026-09-23',
-    note: 'ruta de la guía: G1 y G2 hechos, F0 y T preparan el estudio; G0 se decide aquí, TS (v267) hornea el "terminal sobrio" y luego vienen primer arranque (v268), cuentas (v269 · v270) y tour (v271). G3 y G4 completan la identidad sin versión fija. Cada entrega borra el CSS de su propuesta y la marca shipped.',
+    note: 'ruta de la guía: G1 y G2 hechos, F0 y T preparan el estudio; G0 se decide aquí, TS (v267) hornea el "terminal sobrio" y P1 (v268) el primer arranque; siguen cuentas (v269 · v270) y tour (v271). G3 y G4 completan la identidad sin versión fija. Cada entrega borra el CSS de su propuesta y la marca shipped.',
     phases: [
 
       P('G1', 'guía', null, 'hecho', [
@@ -92,10 +92,13 @@
         I('sandbox', 'falso positivo del sandbox con el almacén vacío', 'hecho'),
       ]),
 
-      P('P1', 'primer arranque', 'v268', 'pendiente', [
-        I('onboard', 'formulario de perfil nuevo en el estilo terminal sobrio', 'pendiente'),
-        I('spin', 'animaciones de terminal: trkSpin ▖▘▝▗ que cuenta segundos y trkProgress █░', 'pendiente'),
-        I('boot', 'arranque "loading gym tracker" en cada apertura, menos de 1 s, se salta tocando', 'pendiente'),
+      P('P1', 'primer arranque', 'v268', 'hecho', [
+        I('onboard', 'perfil nuevo en filas de terminal: clave en minúsculas, > en la fila con foco, casillas de 40, Enter salta al siguiente, vista previa de kcal y proteína ("tosco, todo muy gordo" → sobrio)', 'hecho', { proposal: 'fields' }),
+        I('onbsave', 'empezar ya no pisa nada: conserva el perfil y la meta de sueño, escribe goalHist de hoy y el peso solo si lo escribiste', 'hecho'),
+        I('spin', 'animaciones de terminal: trkSpin ▖▘▝▗ que cuenta segundos (un solo ticker que se apaga solo) y trkProgress [█▍░] en búsqueda, código de barras, OCR, lectura con IA, //ESPACIO y el toast de tarea; fuera los anillos .spin/.fa-spin', 'hecho', { audit: 'MOTION 10→7 · EXEMPT 31→28' }),
+        I('boot', 'arranque "loading gym tracker" en cada apertura: líneas reales impresas una a una, barra y ready▌ en ~1 s; corto sin shader con sesión viva o si abriste hace <30 min; se salta tocando', 'hecho', { proposal: 'boot' }),
+        I('z2', 'ningún aviso del arranque se abre debajo del arranque o del recap: la cola espera a que se cierren', 'hecho', { audit: 'Z-2' }),
+        I('check', '_v268SelfCheck: barra, ticker que se detiene, cola bajo el arranque y empezar en sandbox', 'hecho'),
       ]),
 
       P('AC', 'cuentas', 'v269 · v270', 'pendiente', [
@@ -129,7 +132,7 @@
 
       P('G3c', 'voz, glifos y color', null, 'pendiente', [
         I('labels', '//etiquetas de sistema en inglés (la lista del estudio) · v262', 'hecho', { proposal: 'english', audit: 'LANG 11→0 · T-05' }),
-        I('fieldlbl', 'etiquetas de campo en minúsculas', 'pendiente', { audit: 'VOZ-2' }),
+        I('fieldlbl', 'etiquetas de campo en minúsculas (el perfil nuevo ya las usa · v268)', 'en curso', { audit: 'VOZ-2' }),
         I('back', '[‹ origen] con state._from y su scroll', 'pendiente', { proposal: 'back', audit: 'T-02 · BRK 1→0' }),
         I('glyphs', 'glifos fuera del set → GLYPHS; 📷 → ícono TRK', 'pendiente', { audit: 'GLY 46→0 · GLYE 4→0 · T-09' }),
         I('green', 'verde solo en el glifo o el número; fresco sin verde · v262', 'hecho', { proposal: 'green', audit: 'T-08 · SEM ↓' }),
@@ -143,7 +146,7 @@
         I('scan', 'ícono TRK del escáner', 'por decidir', { proposal: 'icons' }),
         I('shader', 'shader de fósforo con /max, dpr y resize (sin comprimir) · v262', 'hecho', { proposal: 'boot', audit: 'T-11' }),
         I('rm', 'shader apagado con reduced-motion y al ocultarse', 'pendiente', { audit: 'T-11' }),
-        I('lines', 'líneas del arranque impresas una a una', 'pendiente'),
+        I('lines', 'líneas del arranque impresas una a una (visibilidad, sin movimiento) · v268', 'hecho', { proposal: 'boot' }),
       ]),
 
       P('G4a', 'interacción', null, 'pendiente', [
@@ -158,7 +161,7 @@
       ]),
 
       P('G4b', 'movimiento y limpieza', null, 'pendiente', [
-        I('spinner', 'spinner de texto (pasa a P1 · v268)', 'pendiente'),
+        I('spinner', 'spinner de texto ▖▘▝▗ y barra de progreso de bloques · v268 (P1)', 'hecho', { audit: 'MOTION 10→7' }),
         I('bounce', 'fuera los rebotes y las transiciones sueltas', 'pendiente', { audit: 'MOTION ↓' }),
         I('lhsnap', 'interlineados sueltos a la escala --lh-*', 'pendiente', { proposal: 'lh', audit: 'R-LH ↓' }),
         I('dead', 'código muerto: miniBars, updateNowBar, renderShareWeight, agenda', 'pendiente'),

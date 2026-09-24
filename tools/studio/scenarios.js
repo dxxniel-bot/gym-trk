@@ -172,6 +172,7 @@
     { id:'m:textsheet', g:'hoja', label:'hoja · guardar como texto', run(W){ W.openTextSheet('gymtrk-respaldo.json', '{"version":1,"profile":{"username":"demo"},"sessions":[],"meals":{}}', noop); } },
     { id:'landing', g:'pantalla', label:'entrada', run(W){ W.go('landing'); } },
     { id:'login', g:'pantalla', label:'entrada · iniciar', run(W){ W.go('login'); } },
+    // v268 · filas de terminal (.ob/.obr): clave en minúsculas, > en la fila con foco, vista previa de kcal y proteína
     { id:'onboard', g:'pantalla', label:'entrada · crear perfil', run(W){ W.go('onboard'); } },
     // ---------------- compartir ----------------
     { id:'m:shareday', g:'compartir', label:'compartir · el día (botón)', run(W){ W.go('macros'); click(W, '[data-act="share"],[data-act="sharemacros"]'); } },
@@ -181,7 +182,11 @@
     // toca la primera serie (si aún no hay una: tocarla otra vez la quitaría): la marca de cámara (📷 hoy, cámara TRK en icons A) solo sale con una serie elegida
     { id:'popup:exshare', g:'compartir', label:'compartir · ejercicio', live:true, run(W){ W.go('workout'); W.openExShare(0); if(!$(W, '.exsh .camon')) click(W, '.exsh [data-camsi]'); } },
     // ---------------- overlays ----------------
-    { id:'boot', g:'overlay', label:'arranque', async run(W, T){ T.bootPreview(null, true); await wait(320); } },
+    // v268 · "loading gym tracker" en cada apertura: el guardia pide la variante completa (shader, db/split/última sesión,
+    // barra, ready▌ en ~0.95 s) o la corta (~0.5 s, sin shader: '> resuming <día> · set n/N' con la sesión en curso).
+    // Se espera a que se imprima entera (220 ms del guardia + la animación) para que la medición vea todas las líneas.
+    { id:'boot', g:'overlay', label:'arranque', async run(W, T){ T.bootPreview(null, true, false); await wait(1300); } },
+    { id:'boot:short', g:'overlay', label:'arranque · corto (sesión en curso)', live:true, async run(W, T){ T.bootPreview(null, true, true); await wait(800); } },
     { id:'wrap', g:'overlay', label:'wrap del mes', run(W){ W.monthlyWrap(W.prevMonthYm(), true); if(!$(W, '#bootov')) W.monthlyWrap(W.todayISO().slice(0, 7), true); } },
     { id:'recap', g:'overlay', label:'recap del día', run(W, T){ recap(W, T); } },
     { id:'ask', g:'overlay', label:'pregunta', run(W){ W.trkAsk({ title:'editar una serie completada', detail:'ya está confirmada en el historial', ok:'editar' }, noop, noop); } },

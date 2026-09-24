@@ -145,7 +145,7 @@
   button.b:active,button.cancel:active,.secondary .b:active,.sheetbtns .cancel:active,.mdcust .b:active{color:var(--fg);}
   /* opción (toggle): sin caja; la elegida va [entre corchetes] en --fg/700 y las demás en --o50. Los corchetes apagados
      guardan su lugar para que nada se mueva al elegir. */
-  button.t{min-height:44px; padding:0 var(--s1); font-size:var(--t-data); font-weight:400; color:var(--o50); background:none; border:0; border-radius:0; text-align:left; cursor:pointer;}
+  button.t{min-height:44px; min-width:44px; padding:0 var(--s1); font-size:var(--t-data); font-weight:400; color:var(--o50); background:none; border:0; border-radius:0; text-align:left; cursor:pointer;}
   button.t::before{content:'['; visibility:hidden;} button.t::after{content:']'; visibility:hidden;}
   button.t.on{color:var(--fg); font-weight:700;} button.t.on::before,button.t.on::after{visibility:visible;}
 
@@ -656,8 +656,24 @@
   .item:active{background:var(--card2);}
   /* rounded controls (base rules consolidated above) */
   .field input::placeholder{color:var(--o30);}
+  /* v268 · perfil en filas de terminal (el dueño: el formulario "tosco, todo muy gordo"): etiqueta en minúsculas a la izquierda,
+     control a la derecha; la fila con foco lleva > (el mismo "aquí" de la barra de abajo). */
+  .ob{padding-top:var(--s5);}
+  .obh{font-size:var(--t-section); font-weight:800; margin-bottom:var(--s2);} .obh .s{color:var(--o40);} .obh .p{margin-left:1ch; font-weight:700; color:var(--o50);}
+  .ob>.submeta{margin-bottom:var(--s4);}
+  .obr{display:grid; grid-template-columns:10.5ch minmax(0,1fr); align-items:baseline; column-gap:var(--s3); min-height:44px; font-size:var(--t-data);}
+  .obk{position:relative; padding-left:1.5ch; color:var(--o50); white-space:nowrap;} .obk::before{content:'>'; position:absolute; left:0; visibility:hidden; color:var(--fg);}
+  .obr:focus-within .obk{color:var(--fg);} .obr:focus-within .obk::before{visibility:visible;}
+  .obv{display:flex; align-items:center; gap:var(--s2); min-width:0;}
+  .obi{height:44px; width:100%; min-width:0; padding:0 var(--s3); border:var(--bw-field) solid var(--o40); border-radius:var(--r-ctl); background:transparent; color:var(--fg); font-size:var(--t-field);}
+  .obi:focus{border-color:var(--fg);} .obi:focus-visible{outline:none;} .obi::placeholder{color:var(--o30);}
+  .obi.sm{flex:0 0 auto; width:7ch; text-align:right;}
+  .obu{color:var(--o40);} .obk2{margin-left:var(--s4); color:var(--o50);}
+  .obr .toggles{gap:0 var(--s1);} .obr .toggles.wrap{grid-template-columns:auto auto; justify-content:start; column-gap:var(--s4);}
+  .obr.obr-h{min-height:0; margin:calc(-1 * var(--s2)) 0 var(--s2);} .obhint{font-size:var(--t-label); color:var(--o40); line-height:var(--lh-ui);}
+  .obprev{margin:var(--s5) 0 var(--s4); font-size:var(--t-data); color:var(--o60);} .obprev b{color:var(--fg); font-weight:800;}
   /* v267 · casilla con foco: el borde sube a --fg (sin anillo extra) */
-  .field input:focus,.field select:focus,#fa_q:focus,textarea.ta:focus,.mdcust input:focus,.slph input:focus,.slblk input:focus,select.pfsel:focus,#pf_gym:focus,.pfw:focus,.msum-time:focus{border-color:var(--fg);}
+  .field input:focus,.field select:focus,#fa_q:focus,textarea.ta:focus,.mdcust input:focus,.slph input:focus,.slblk input:focus,select.pfsel:focus,#pf_gym:focus,.pfw:focus,.msum-time:focus{border-color:var(--fg); outline:none;}   /* el borde ES el foco: sin anillo doble */
   /* bottom nav: píldora flotante glass (absolute al .frame; el scroll vive en .scroll, no en body → esquiva el bug iOS de fixed) */
   .nav{ position:absolute; left:0; right:0; bottom:calc(12px + env(safe-area-inset-bottom)); margin:0 auto; width:max-content; max-width:calc(100% - 2 * var(--sp-px)); z-index:var(--z-nav); flex:0 0 auto; display:flex; align-items:center; justify-content:center; gap:0; padding:0 var(--s2); border-radius:var(--r-nav); font-size:var(--t-data);}   /* material: .glass */
   /* v267 · pestañas de texto (BRAND §4, el dueño 23-sep: "> parpadea y el nombre fijo"): sin íconos ni animación de layout.
@@ -768,7 +784,6 @@
   .fa-empty .fa-em-foot{margin-top:var(--s4); text-align:center; color:var(--o35); font-size:var(--t-label);}
   @keyframes faPop{to{opacity:1; transform:translateY(0)}}
   @keyframes faFade{to{opacity:.5}}
-  .fa-spin{display:inline-block; width:10px; height:10px; border:1px solid var(--o20); border-top-color:var(--fg); border-radius:50%; animation:spin .7s linear infinite/*ds:exempt*/; vertical-align:middle; margin-right:6px;}
   .fa-listwrap{flex:1; overflow-y:auto; min-height:0; -webkit-overflow-scrolling:touch; margin-top:var(--s4);}
   /* scanner reticle overlay */
   .scan-reticle{position:absolute; inset:0; pointer-events:none; display:flex; align-items:center; justify-content:center;}
@@ -785,8 +800,10 @@
   @keyframes bcchk{0%{opacity:0;transform:scale(.4)}55%{opacity:1;transform:scale(1.15)}100%{opacity:1;transform:scale(1)}}
   .bc-check{color:var(--good); font-weight:800; margin-right:6px;}
   /* loading spinner / dots */
-  .spin{display:inline-block; width:11px; height:11px; border:1px solid var(--o20); border-top-color:var(--fg); border-radius:50%; animation:spin .7s linear infinite/*ds:exempt*/; vertical-align:middle; margin-right:6px;}
-  @keyframes spin{to{transform:rotate(360deg)}}
+  /* v268 · trabajo en curso como en una terminal (BRAND §3): ▖▘▝▗ = trabajando, [█░] = medidor. Sin animación CSS: los mueve
+     un solo ticker de JS (120 ms, solo textContent) que se apaga solo cuando ya no hay [data-spin] en pantalla. */
+  .tspin{display:inline-flex; align-items:baseline; color:var(--o60); white-space:nowrap;} .tspin .tsg{display:inline-block; width:1ch; margin-right:1ch; color:var(--fg); font-weight:400;} .tspin .tst{font-style:normal; color:var(--o40);}
+  .tprog{white-space:nowrap; color:var(--o60); font-variant-numeric:tabular-nums;} .tprog b{font-weight:400; color:var(--fg); letter-spacing:0;} .tprog i{font-style:normal; color:var(--o50);}
   /* day navigator (macros) */
   .dnavh{display:flex; align-items:center; gap:var(--s1);}
   .dnlbl-wrap{position:relative; display:inline-flex;} .dnlbl-wrap .dcal{position:absolute; inset:0; width:100%; height:100%; opacity:0; border:0; padding:0; margin:0; background:none; color:transparent; cursor:pointer; -webkit-appearance:none; appearance:none;}
@@ -811,12 +828,20 @@
   .fadein{animation:viewin var(--dur-screen) var(--ease-out);}
   /* boot / recap overlay — terminal status, tap or timeout dismisses */
   .bootov{position:absolute; inset:0; z-index:var(--z-overlay); background:var(--frame); display:flex; flex-direction:column; justify-content:center; padding:0 var(--s7); transition:opacity var(--dur-2) var(--ease-out);}
-  .bootov .bootsh{position:absolute; inset:0; width:100%; height:100%; z-index:-1; pointer-events:none; opacity:.5;}
+  .bootov .bootsh{position:absolute; inset:0; width:100%; height:100%; z-index:-1; pointer-events:none; opacity:var(--op-dim);}
   .bootov.out{opacity:0; pointer-events:none;}
   .bootov .bt{font-size:var(--t-section); font-weight:800; letter-spacing:.02em/*ds:exempt*/; margin-bottom:var(--s5);}
   .bootov .bt .s{color:var(--o40);}
   .bootov .line{font-size:var(--t-data); padding:var(--s2) 0;}
-  .bootov .bready{margin-top:var(--s5); font-size:var(--t-label); color:var(--o50); animation:blink 1.15s var(--ease-step) infinite/*ds:exempt*/;}
+  .bootov .bready{margin-top:var(--s5); font-size:var(--t-label); color:var(--o50);}
+  /* v268 · arranque "loading gym tracker" (el dueño: "cada vez que abres la app"): imprime línea por línea — visibility, sin
+     movimiento (BRAND §1: escribir letra por letra solo aquí, y ni eso: son líneas) */
+  .bootov .bboot{width:100%; max-width:320px; font-size:var(--t-data);}
+  .bootov .bl{visibility:hidden;} .bootov .bl.on{visibility:visible;}
+  .bootov .bp{padding:var(--s2) 0; color:var(--o70); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .bootov .bt .bv{font-size:var(--t-label); font-weight:400; color:var(--o40); margin-left:1ch; letter-spacing:0;}
+  .bootov .bcur{margin-left:2px; animation:blink var(--dur-blink) var(--ease-step) infinite/*ds:exempt:loop*/;}
+  @media (prefers-reduced-motion:reduce){ .bootov .bcur{animation:none;} }
   /* monthly wrap — tap-through story, mono/terminal, screenshot-shareable */
   .wrapov{justify-content:space-between; padding:0; cursor:pointer;}
   .wtop{padding:var(--s6) var(--s6) 0;}
@@ -999,12 +1024,13 @@
 
 <script>
 "use strict";
-const APP_V='v267';   // versión visible (arranque); R-DOC la compara con sw.js y con DESIGN_SYSTEM.md línea 3
+const APP_V='v268';   // versión visible (arranque); R-DOC la compara con sw.js y con DESIGN_SYSTEM.md línea 3
 const LS_KEY='gymtrk_db_v1';
 // BRAND.md §3 · diccionario cerrado de glifos de interfaz (un glifo = un significado). tools/ds-audit.cjs (R-GLY) lee
 // esta constante: cualquier otro símbolo no ASCII en un literal de interfaz es una desviación. Las etiquetas que el
 // dueño escribe (datos) no cuentan.
 const GLYPHS='✓○▲▼⠿›‹▾▶↓✕↩~⚠▌×@/→#—−';
+const GLYPHS_VIZ='▖▘▝▗░▒▓█▏▎▍▋▊▉─│┌┐└┘├┤┬┴┼';   // v268 · trabajo (spinner) y medidores de terminal: solo en trkSpin/trkProgress
 // AI vision proxy (Cloudflare Worker holding the owner's Gemini key). Empty => fall back to on-device OCR.
 // After deploying proxy/gymtrk-ai-worker.js, paste its URL here, e.g. 'https://gymtrk-ai.tucuenta.workers.dev'.
 const AI_PROXY_URL='';
@@ -1567,8 +1593,8 @@ function openStorage(){
     +(_persisted===false?`<div class="submeta u-mb8 u-warn">sin persistencia, el navegador puede borrar todo si el iPhone se queda sin espacio · exporta seguido</div>`:'')
     +`<div class="grp-label sub">STORAGE</div>`
     +rows.map(r=>`<div class="stline"><span class="stk">${escTxt(nm(r.k))}</span><span class="stv">${kb(r.b)}</span></div>`).join('')
-    +`<div class="grp-label sub">COPIES</div><div id="st_copies"><div class="submeta">cargando…</div></div>`
-    +`<div class="grp-label sub">BOOT LOG</div><div id="st_boot"><div class="submeta">cargando…</div></div>`
+    +`<div class="grp-label sub">COPIES</div><div id="st_copies"><div class="submeta">${trkSpinHTML('cargando')}</div></div>`
+    +`<div class="grp-label sub">BOOT LOG</div><div id="st_boot"><div class="submeta">${trkSpinHTML('cargando')}</div></div>`
     +`<div class="u-tr u-mt8"><a data-act="stdiag" class="u-tap u-o60 u-data">[copiar diagnóstico]</a></div>`
     +`<div class="sheetbtns u-mt12">${orph?`<button class="ok" data-act="stfree">liberar ${kb(orph)}</button>`:''}<button class="ok" data-act="bakshare">guardar respaldo</button><button class="cancel" data-act="closemodal">cerrar</button></div>`
     +`<div class="submeta u-mt8">"guardar respaldo" abre la hoja de iOS: elige Archivos y la carpeta que quieras. Último: ${daysSinceBackup()>=999?'nunca':'hace '+daysSinceBackup()+' d'}.</div>`
@@ -3786,7 +3812,7 @@ function dsRadCeil(){ try{ const cs=getComputedStyle(document.documentElement); 
 function _dsRenderCheck(root){ root=root||document.getElementById('app'); const out={ua:0,hit:0,txt:0,fsOff:0,blur:0,glyph:0,rad:0,samples:{}}; const _sc=dsScale(), _fl=dsTextFloor(), _rc=dsRadCeil();
   const note=(k,s)=>{ out[k]++; const a=out.samples[k]=out.samples[k]||[]; if(a.length<6&&a.indexOf(s)<0)a.push(s); };
   const tag=e=>e.tagName.toLowerCase()+(e.classList&&e.classList.length?'.'+[...e.classList].slice(0,2).join('.'):'');
-  const okGlyph=ch=>GLYPHS.indexOf(ch)>=0||/[a-zA-Z0-9áéíóúüñÁÉÍÓÚÜÑ¿¡·–×\s.,:;!?'"()%+\-=<>*&$_|\\\[\]{}^`]/.test(ch);
+  const okGlyph=ch=>GLYPHS.indexOf(ch)>=0||GLYPHS_VIZ.indexOf(ch)>=0||/[a-zA-Z0-9áéíóúüñÁÉÍÓÚÜÑ¿¡·–×\s.,:;!?'"()%+\-=<>*&$_|\\\[\]{}^`]/.test(ch);
   [...root.querySelectorAll('*')].forEach(e=>{ if(e.closest(DS_EXEMPT))return; const r=e.getBoundingClientRect(); if(!(r.width>0&&r.height>0))return;
     const cs=getComputedStyle(e); if(cs.visibility==='hidden')return; const own=[...e.childNodes].filter(n=>n.nodeType===3&&n.nodeValue.trim()).map(n=>n.nodeValue).join('');
     if(own){ const fs=parseFloat(cs.fontSize);
@@ -3803,6 +3829,34 @@ function _dsRenderCheck(root){ root=root||document.getElementById('app'); const 
       let w=r.width, h=r.height; const af=getComputedStyle(e,'::after'); if(af&&af.content&&af.content!=='none'&&af.position==='absolute'){ w=Math.max(w,parseFloat(af.width)||0); h=Math.max(h,parseFloat(af.height)||0); }
       if(w<44||h<44)note('hit',tag(e)+' '+Math.round(w)+'×'+Math.round(h)); } });
   return out; }
+// v268 · barra de progreso, ticker del spinner, cola del arranque y el perfil nuevo (en sandbox: nada llega a tu disco)
+function _v268SelfCheck(){ const A=(nm,c)=>{ if(!c) throw new Error('SELFCHECK v268: '+nm); };
+  A('barra en 0 = vacía', trkBarTxt(0,8)==='░░░░░░░░'); A('barra en 100 = llena', trkBarTxt(100,8)==='████████');
+  A('barra a la mitad', trkBarTxt(50,8)==='████░░░░'); A('barra con octavo', trkBarTxt(56.25,8)==='████▌░░░');
+  A('la barra se acota a 0-100', trkBarTxt(140,4)==='████'&&trkBarTxt(-5,4)==='░░░░');
+  A('el spinner solo usa glifos que existen en JetBrains Mono', [...TRK_SPIN].every(c=>'▖▘▝▗'.indexOf(c)>=0));
+  const app=document.getElementById('app'), sp=document.createElement('div'); sp.innerHTML=trkSpinHTML('probando'); app.appendChild(sp); spinStart();
+  A('con un spinner en pantalla el ticker corre', !!_spinT); sp.remove(); spinTick(); A('sin spinners el ticker se apaga solo', !_spinT);
+  // Z-2: con el arranque (o el recap) en pantalla ningún aviso se abre debajo
+  const qB=_bootQ.splice(0), shB=_bootShowing, ov=document.createElement('div'); ov.id='bootov'; app.appendChild(ov);
+  const ask0=document.getElementById('asklayer');
+  try{ _bootQ.push({o:{title:'prueba'},onOk:null,onCancel:null}); _bootShowing=true; _bootNext();
+    A('con el arranque abierto el aviso espera en la cola', _bootQ.length===1&&document.getElementById('asklayer')===ask0);
+  } finally { ov.remove(); _bootQ.length=0; qB.forEach(x=>_bootQ.push(x)); _bootShowing=shB; }
+  // perfil: onboardgo con una base nueva (sandbox)
+  const real=db, rs=state.screen, box=document.createElement('div'), today=todayISO();
+  const fill=(v)=>{ box.innerHTML=renderOnboard(); app.appendChild(box); Object.entries(v).forEach(([k,x])=>{ const e=document.getElementById(k); if(e)e.value=x; }); box.querySelector('[data-act="onboardgo"]').click(); box.remove(); };
+  try{
+    db=seed(); db.settings.goals=Object.assign({},db.settings.goals,{sleep:8});
+    fill({ob_user:'prueba',ob_age:'30',ob_w:'80',ob_h:'180'});
+    A('el perfil guarda desde cuándo usas la app', db.profile.username==='prueba'&&db.profile.since===today);
+    A('la meta de sueño no se pierde al calcular las metas', db.settings.goals.sleep===8&&db.settings.goals.kcal>0);
+    A('la meta de hoy queda en goalHist', !!(db.goalHist&&db.goalHist[today]&&db.goalHist[today].kcal===db.settings.goals.kcal));
+    A('el peso tecleado es el primer registro de peso', db.bodyweight&&db.bodyweight[today]===80);
+    db=seed(); fill({ob_user:'sinpeso'});
+    A('sin peso tecleado no se inventa un registro', !(db.bodyweight&&db.bodyweight[today]!=null)&&db.profile.weightKg===70);
+  } finally { db=real; state.screen=rs; try{ box.remove(); }catch(_){} }
+  console.log('v268 self-check OK'); }
 function _dsRenderReport(){ try{ const r=_dsRenderCheck(); console.log('ds-render ['+state.screen+'] ua '+r.ua+' · hit '+r.hit+' · txt '+r.txt+' · fsOff '+r.fsOff+' · blur '+r.blur+' · glyph '+r.glyph+' · rad '+r.rad, r.samples); return r; }catch(e){ console.error('ds-render', e); } }
 function _uiSelfCheck(){
   const A=(nm,c)=>{ if(!c) throw new Error('SELFCHECK ui: '+nm); };
@@ -3885,7 +3939,7 @@ function _uiSelfCheck(){
     A('TRKCal: febrero 2026 = 28 días + 6 de relleno (semana-lunes), sin cabecera', (cal.match(/class="cd /g)||[]).length===34&&(cal.match(/cd e"/g)||[]).length===6&&!/cmh/.test(cal));
     A('TRKCal: solo el día marcado lleva acción y su número', (cal.match(/data-act=/g)||[]).length===1&&/cd l1" data-act="x" data-d="2026-02-03" title="2026-02-03 · t">3<\/i>/.test(cal));
     const e=toast('⚠ error de prueba'); A('un error lleva role=alert y se queda (sin temporizador)', e.getAttribute('role')==='alert'&&e.classList.contains('err'));
-    const t=toastTask('probando'); A('una tarea arranca con "…" y sin tipo', /^…/.test(box().lastElementChild.textContent)&&box().lastElementChild.classList.contains('task'));
+    const t=toastTask('probando'); A('una tarea arranca con el spinner de terminal y sin tipo', !!box().lastElementChild.querySelector('[data-spin]')&&box().lastElementChild.classList.contains('task'));
     t.done('✓ lista'); A('la tarea se resuelve en el mismo toast', box().lastElementChild.classList.contains('ok')&&box().lastElementChild.textContent==='✓ lista');
     let ran=0, canceled=0;
     trkAsk({title:'prueba'},()=>ran++,()=>canceled++); const L=document.getElementById('asklayer');
@@ -4832,22 +4886,36 @@ function renderLogin(){
 }
 
 // ---------- render: onboarding ----------
+// v268 · perfil en filas de terminal. Lo que cambia es solo la forma: mismos ids (ob_*), mismos datos que escribe onboardgo.
+const OB_ACT={'1.2':'oficina y carro · casi no caminas','1.375':'caminas algo o entrenas 1-3× por semana','1.55':'gym 4-5× por semana o trabajo de pie','1.725':'trabajo físico o entrenas 6-7× por semana'};
+const OB_GOAL={cut:'perder grasa · ~20 % bajo tu mantenimiento',maintain:'recomposición · comes tu mantenimiento',bulk:'ganar masa · ~10 % sobre tu mantenimiento'};
+function obPick(id){ const e=document.querySelector('#'+id+' .t.on'); return e?e.dataset.v:''; }
+function obDraft(){ const num=id=>{ const v=parseFloat(String(val(id)).replace(',','.')); return isFinite(v)&&v>0?v:null; };
+  const age=num('ob_age'), w=num('ob_w'), h=num('ob_h');
+  return {sex:obPick('ob_sex')||'M', goal:obPick('ob_goal')||'maintain', activity:parseFloat(obPick('ob_act'))||1.375, age:age||25, weightKg:w||70, heightCm:h||175,
+    typed:!!(age&&w&&h), wTyped:!!(w&&w>=30&&w<=250)}; }
+function obPrev(){ const el=document.getElementById('ob_prev'); if(!el)return; const d=obDraft(); let g; try{ g=recalcGoals(d); }catch(_){ return; }
+  el.innerHTML=(d.typed?'':'<span class="u-o40">~</span>')+'<b>'+Math.round(g.kcal).toLocaleString('en-US')+'</b> kcal · <b>'+Math.round(g.protein)+'</b> g proteína al día';
+  const ah=document.getElementById('ob_acthint'); if(ah)ah.textContent=OB_ACT[String(d.activity)]||'';
+  const gh=document.getElementById('ob_goalhint'); if(gh)gh.textContent=OB_GOAL[d.goal]||''; }
 function renderOnboard(){
-  return `<div class="u-pt24">
-    <div class="u-w8 u-disp u-lsnum">gym<span class="u-o50">//</span>TRK</div>
-    <div class="u-data u-o50 u-mt6 u-mb4 u-mx0">// crear cuenta</div>
-    <div class="submeta u-mb16">cuéntanos de ti para calcular tus metas — toma 1 min y todo se queda en tu teléfono.</div>
-    <div class="field"><label>TU NOMBRE</label><input id="ob_user" placeholder="ej. dani" autocomplete="off" autocapitalize="off"/></div>
-    <div class="field"><label>SEXO</label><div class="toggles" id="ob_sex"><button class="t on" data-act="optpick" data-v="M">hombre</button><button class="t" data-act="optpick" data-v="F">mujer</button></div></div>
-    <div class="field row2"><div><label>EDAD</label><input id="ob_age" type="number" inputmode="numeric" placeholder="24"/></div><div><label>PESO (kg)</label><input id="ob_w" type="number" inputmode="decimal" placeholder="70"/></div></div>
-    <div class="field"><label>ESTATURA (cm)</label><input id="ob_h" type="number" inputmode="numeric" placeholder="175"/></div>
-    <div class="field"><label>ACTIVIDAD <span class="u-o30 u-w4">· qué tanto te mueves al día</span></label><div class="toggles wrap" id="ob_act"><button class="t" data-act="optpick" data-v="1.2">sedentario<span class="u-label u-block u-dim">oficina/carro</span></button><button class="t on" data-act="optpick" data-v="1.375">ligero</button><button class="t" data-act="optpick" data-v="1.55">moderado<span class="u-label u-block u-dim">gym 4-5×/sem</span></button><button class="t" data-act="optpick" data-v="1.725">alto</button></div></div>
-    <div class="field"><label>OBJETIVO</label><div class="toggles" id="ob_goal"><button class="t" data-act="optpick" data-v="cut">déficit</button><button class="t on" data-act="optpick" data-v="maintain">mantener</button><button class="t" data-act="optpick" data-v="bulk">volumen</button></div></div>
-    <div class="submeta u-mt-n8 u-mb8 u-label">déficit = perder grasa · mantener = composición · volumen = masa + grasa</div>
-    <div class="field"><label>GIMNASIO</label><input id="ob_gym" placeholder="mi gym" autocomplete="off"/></div>
-    <div class="field"><label>UNIDADES (pesas)</label><div class="toggles" id="ob_unit"><button class="t on" data-act="optpick" data-v="lbs">lbs</button><button class="t" data-act="optpick" data-v="kg">kg</button></div></div>
-    <button class="start u-mt12" data-act="onboardgo">▶ crear cuenta</button>
-    <div class="submeta u-mt12 u-mb10 u-mx0">con esto calculamos tus metas de kcal y macros; las puedes ajustar cuando quieras. proteína ≈ tu peso en kg × 2g · carbos y grasas llenan el resto.</div>
+  setTimeout(obPrev,0);
+  const T=(id,opts,cur,wrap)=>`<div class="toggles${wrap?' wrap':''}" id="${id}">${opts.map(([v,l])=>`<button class="t${v===cur?' on':''}" data-act="optpick" data-v="${v}">${l}</button>`).join('')}</div>`;
+  return `<div class="ob">
+    <div class="obh">gym<span class="s">//</span>TRK<span class="p">//PROFILE</span></div>
+    <div class="submeta">1 min · se queda en este teléfono · todo se cambia después</div>
+    <label class="obr"><span class="obk">nombre</span><span class="obv"><input id="ob_user" class="obi" placeholder="dani" autocomplete="off" autocapitalize="off" enterkeyhint="next"/></span></label>
+    <div class="obr"><span class="obk">sexo</span>${T('ob_sex',[['M','hombre'],['F','mujer']],'M')}</div>
+    <div class="obr"><span class="obk">edad</span><span class="obv"><input id="ob_age" class="obi sm" type="number" inputmode="numeric" placeholder="25" enterkeyhint="next"/><span class="obk2">peso</span><input id="ob_w" class="obi sm" type="number" inputmode="decimal" placeholder="70" enterkeyhint="next"/><span class="obu">kg</span></span></div>
+    <label class="obr"><span class="obk">estatura</span><span class="obv"><input id="ob_h" class="obi sm" type="number" inputmode="numeric" placeholder="175" enterkeyhint="next"/><span class="obu">cm</span></span></label>
+    <div class="obr"><span class="obk">actividad</span>${T('ob_act',[['1.2','sedentario'],['1.375','ligero'],['1.55','moderado'],['1.725','alto']],'1.375',1)}</div>
+    <div class="obr obr-h"><span></span><span class="obhint" id="ob_acthint"></span></div>
+    <div class="obr"><span class="obk">objetivo</span>${T('ob_goal',[['cut','déficit'],['maintain','mantener'],['bulk','volumen']],'maintain')}</div>
+    <div class="obr obr-h"><span></span><span class="obhint" id="ob_goalhint"></span></div>
+    <label class="obr"><span class="obk">gym</span><span class="obv"><input id="ob_gym" class="obi" placeholder="mi gym" autocomplete="off" enterkeyhint="done"/></span></label>
+    <div class="obr"><span class="obk">pesas en</span>${T('ob_unit',[['lbs','lbs'],['kg','kg']],'lbs')}</div>
+    <div class="obprev" id="ob_prev"></div>
+    <button class="start" data-act="onboardgo">▶ empezar</button>
   </div>`;
 }
 
@@ -6797,23 +6865,34 @@ function showOverlay(html,opts){ opts=opts||{}; try{
   o.addEventListener('click',kill);
   if(opts.ms)setTimeout(kill,opts.ms);
 }catch(_){ if(opts.onDone)opts.onDone(); } }
+// v268 · "loading gym tracker" en CADA apertura (decisión del dueño 23-sep). Una vez por apertura (sessionStorage), se salta
+// tocando. Versión corta (~0.5 s) con sesión viva o si abriste hace menos de 30 min. Líneas reales, nunca inventadas.
 function bootScreen(onDone){ try{
   if(sessionStorage.getItem('gymtrk_boot')){ if(onDone)onDone(); return; }
-  if(!db.profile.username || !(db.sessions||[]).some(s=>s.type!=='rest')){ if(onDone)onDone(); return; }
   sessionStorage.setItem('gymtrk_boot','1');
-  const L=(k,v)=>`<div class="line"><span class="k">${k}</span><span class="dots"></span><span class="v">${v}</span></div>`;
+  let lastOpen=0; try{ lastOpen=+localStorage.getItem('gymtrk_lastopen')||0; localStorage.setItem('gymtrk_lastopen',String(Date.now())); }catch(_){}
+  const rm=reducedMotion(), has=!!(db.profile&&db.profile.username), w=db.activeWork;
+  const liveSets=w&&(w.exercises||[]).length?[].concat(...w.exercises.map(e=>e.sets||[])):null;
+  const short=!!liveSets||(Date.now()-lastOpen<30*60000);
+  const L=(k,v)=>`<div class="line bl"><span class="k">${k}</span><span class="dots"></span><span class="v">${v}</span></div>`;
+  const P=t=>`<div class="bl bp">${t}</div>`;
   const tr=(db.sessions||[]).filter(s=>s.type!=='rest').sort((a,b)=>String(a.date).localeCompare(String(b.date)));
   const last=tr[tr.length-1];
   const dAgo=last?Math.max(0,Math.round((new Date(todayISO()+'T12:00:00')-new Date(last.date+'T12:00:00'))/86400000)):null;
-  const w=progWeekly(2); const cur=w.vols[1]||0, prev=w.vols[0]||0; const pct=prev>0?Math.round((cur-prev)/prev*100):null;
-  const kFmt=n=>n>=10000?(n/1000).toFixed(1)+'k':Math.round(n).toLocaleString();
-  const bwk=Object.keys(db.bodyweight||{}).sort(); const bw=bwk.length?db.bodyweight[bwk[bwk.length-1]]:null;
-  let rows=L('uptime',uptimeDays()+'d');
-  if(last)rows+=L('last session',escTxt(last.dayName||'sesión')+' · '+(dAgo===0?'hoy':dAgo===1?'ayer':'hace '+dAgo+'d'));
-  if(cur)rows+=L('weekly vol',kFmt(cur)+(pct!=null?' <span style="color:'+(pct>=0?'var(--good)':'var(--bad)')+'">'+(pct>=0?'▲ +'+pct:'▼ −'+Math.abs(pct))+'%</span>':''));
-  if(bw)rows+=L('bw',bw+' kg');
-  const sl=sleepHours(db.sleep&&db.sleep[todayISO()]); if(sl)rows+=L('sleep',sl+' h');
-  showOverlay(`<div class="bt">gym<span class="s">//</span>TRK</div>${rows}<div class="bready">[ready]</div>`,{ms:1300,onDone,shader:true});   // v262 · marca única
+  let rows=P('&gt; loading gym tracker');
+  if(liveSets){ const dn=liveSets.filter(x=>x&&x.done).length; rows+=P('&gt; resuming '+escTxt(w.dayName||'sesión')+' · set '+Math.min(dn+1,liveSets.length)+'/'+liveSets.length); }
+  else if(!short){
+    rows+=L('db', has?(tr.length+' sessions'):'new · this phone');
+    const days=(db.split&&db.split.days)||[]; if(has&&days.length){ const d=days[curDayIdx()]; rows+=L('split', escTxt(db.split.name||'split')+(d?' · '+escTxt(d.name):'')); }
+    if(last)rows+=L('last session', escTxt(last.dayName||'sesión')+' · '+(dAgo===0?'hoy':dAgo===1?'ayer':'hace '+dAgo+'d'));
+  }
+  const total=rm?600:(short?480:950);
+  showOverlay(`<div class="bt">gym<span class="s">//</span>TRK<span class="bv">${APP_V}</span></div><div class="bboot">${rows}${P(trkProgressHTML(0,{cells:18}))}<div class="bl bready">ready<span class="bcur">▌</span></div></div>`,{ms:total+260,onDone,shader:!short});
+  const ov=document.getElementById('bootov'); if(!ov)return;
+  const ls=[...ov.querySelectorAll('.bl')], pb=ov.querySelector('.tprog');
+  if(rm){ ls.forEach(l=>l.classList.add('on')); trkProgressSet(pb,100); return; }
+  const step=total/(ls.length+1); ls.forEach((l,i)=>setTimeout(()=>l.classList.add('on'),Math.round(step*i)));
+  const t0=Date.now(), iv=setInterval(()=>{ if(!pb||!pb.isConnected){ clearInterval(iv); return; } const p=Math.min(100,(Date.now()-t0)/(total*.85)*100); trkProgressSet(pb,p); if(p>=100)clearInterval(iv); },40);
 }catch(_){ if(onDone)onDone(); } }
 // snap recap: one 5s screen after 21h closing the day's loop (kcal/steps/session/water/sleep). Once per day; ?recap=1 forces for QA.
 function snapRecap(){ try{
@@ -7076,20 +7155,16 @@ document.getElementById('app').addEventListener('click',e=>{
   else if(a==='backlanding'){ state.screen='landing'; render(); }
   else if(a==='loginfile'){ doImport(); }
   else if(a==='dologin'){ try{ const d=JSON.parse(val('li_txt')); if(!d.split||!d.profile||!d.profile.username) throw 0; const _go16=()=>{ db=migrate(d); save(); state.screen='home'; render(); }; return confirmReplace(d,_go16);}catch(e){ const m=document.getElementById('li_msg'); if(m)m.textContent='texto inválido · revisa que sea el backup completo'; } }
-  else if(a==='optpick'){ el.parentElement.querySelectorAll('.t').forEach(x=>x.classList.remove('on')); el.classList.add('on'); }
+  else if(a==='optpick'){ el.parentElement.querySelectorAll('.t').forEach(x=>x.classList.remove('on')); el.classList.add('on'); if(state.screen==='onboard')obPrev(); }
   else if(a==='onboardgo'){
-    const u=val('ob_user'); if(!u){ toast('⚠ pon tu nombre de usuario','err'); return; }
-    const pv=id=>{ const e=document.querySelector('#'+id+' .t.on'); return e?e.dataset.v:''; };
-    const sex=pv('ob_sex')||'M', goal=pv('ob_goal')||'maintain', unit=pv('ob_unit')||'lbs';
-    const act=parseFloat(pv('ob_act'))||1.375;
-    const age=+val('ob_age')||25, w=+val('ob_w')||70, hh=+val('ob_h')||175;
-    const bmr=10*w+6.25*hh-5*age+(sex==='M'?5:-161);
-    const kcal=Math.round((bmr*act*(goal==='cut'?0.8:goal==='bulk'?1.1:1.0))/10)*10;
-    const protein=Math.round(2.0*w), fat=Math.round(0.9*w);
-    const carbs=Math.max(0,Math.round((kcal-protein*4-fat*9)/4));
-    db.profile={username:u,sex,age,weightKg:w,heightCm:hh,activity:act,goal};
+    const u=val('ob_user'); if(!u){ toast('⚠ pon tu nombre','err'); const ue=document.getElementById('ob_user'); if(ue)ue.focus(); return; }
+    const d=obDraft(), unit=obPick('ob_unit')||'lbs', today=todayISO();
+    // v268 · aditivo: se conserva lo que ya hubiera en el perfil y en las metas (antes se reemplazaba: sin 'since' y sin meta de sueño)
+    db.profile=Object.assign({},db.profile,{username:u,sex:d.sex,age:d.age,weightKg:d.weightKg,heightCm:d.heightCm,activity:d.activity,goal:d.goal,since:(db.profile&&db.profile.since)||today});
     const g=val('ob_gym')||'home'; db.gyms=[g]; db.activeGym=g; db.settings.unit=unit;
-    db.settings.goals=recalcGoals(db.profile);
+    db.settings.goals=Object.assign({},db.settings.goals,recalcGoals(db.profile));
+    db.goalHist=db.goalHist||{}; db.goalHist[today]=Object.assign({},db.settings.goals);
+    if(d.wTyped){ db.bodyweight=db.bodyweight||{}; if(db.bodyweight[today]==null)db.bodyweight[today]=d.weightKg; }   // el peso que tecleaste es tu primer registro
     state.screen='home'; save(); render();
   }
   else if(a==='changesplit'||a==='schedule'){ go('splitedit'); }
@@ -7466,7 +7541,10 @@ document.getElementById('app').addEventListener('change',e=>{
   const el=e.target.closest('[data-act="setf"]'); if(!el)return;
   setField(+el.dataset.exi,+el.dataset.si,el.dataset.f,el.value);
 });
+document.getElementById('app').addEventListener('keydown',e=>{ if(e.key!=='Enter'||!e.target.classList||!e.target.classList.contains('obi'))return;
+  const all=[...document.querySelectorAll('.obi')], i=all.indexOf(e.target); e.preventDefault(); if(i>=0&&i<all.length-1)all[i+1].focus(); else e.target.blur(); });
 document.getElementById('app').addEventListener('input',e=>{
+  if(state.screen==='onboard'&&e.target.id&&/^ob_/.test(e.target.id)){ obPrev(); return; }
   const hsf=e.target.closest('[data-act="h_setf"]'); if(hsf&&hsf.tagName==='INPUT'){ setHistField(+hsf.dataset.exi,+hsf.dataset.si,hsf.dataset.f,hsf.value); return; }
   const sf=e.target.closest('[data-act="setf"]'); if(sf&&sf.tagName==='INPUT'){ setField(+sf.dataset.exi,+sf.dataset.si,sf.dataset.f,sf.value,sf.dataset.f==='w'); return; }
   const sn=e.target.closest('[data-act="sd_name"]'); if(sn){ db.split.days[+sn.dataset.di].name=sn.value; saveSoon(); return; }
@@ -8820,7 +8898,7 @@ function openFoodAdd(preset, lockTag){
   function scheduleOFF(term){ clearTimeout(_offT); const seq=++_offSeq; _offT=setTimeout(async()=>{
     const list=document.getElementById('fa_list'); if(!list)return;
     if(q.value.trim()!==term||seq!==_offSeq)return;     // stale query, user kept typing
-    if(window._faLast===term)return; const hint=document.createElement('div'); hint.className='submeta'; hint.id='fa_offhint'; hint.style.cssText='padding:8px 0;text-align:center'; hint.innerHTML='<span class="fa-spin"></span>buscando en línea…';
+    if(window._faLast===term)return; const hint=document.createElement('div'); hint.className='submeta'; hint.id='fa_offhint'; hint.style.cssText='padding:8px 0;text-align:center'; hint.innerHTML=trkSpinHTML('buscando en línea');
     const old=document.getElementById('fa_offhint'); if(old)old.remove(); list.appendChild(hint);
     try{ const res=await searchFoods(term); window._faLast=term; if(seq!==_offSeq||q.value.trim()!==term)return;
       const oldh=document.getElementById('fa_offhint'); if(oldh)oldh.remove();
@@ -8866,7 +8944,7 @@ function openBarcode(){
    <div id="bc_msg" class="submeta u-my8 u-mx0" style="min-height:16px">iniciando cámara…</div>
    <div class="field"><label>O ESCRIBE EL CÓDIGO</label><input id="bc_code" inputmode="numeric" placeholder="7501..." autocomplete="off"/></div>
    <div class="sheetbtns"><button class="ok" id="bc_go">look up</button><button class="cancel" id="bc_cap">capturar</button><button class="cancel" data-act="closemodal">cancel</button></div>`);
-  const doLookup=async()=>{ const code=val('bc_code'); if(!code)return; const m=document.getElementById('bc_msg'); if(m)m.innerHTML='<span class="spin"></span>buscando…';
+  const doLookup=async()=>{ const code=val('bc_code'); if(!code)return; const m=document.getElementById('bc_msg'); if(m)m.innerHTML=trkSpinHTML('buscando');
     const local=(db.foods||[]).find(f=>foodHasCode(f,code));
     if(local){ openVerify(local,{fromId:local.id,qty:1,tag:window._faTag}); return; }
     const food=await lookupBarcode(code);
@@ -8913,10 +8991,10 @@ function openBarcode(){
   // manual "capturar" → thorough full-res decode of the current preview (or a photo if no live camera)
   const cap=document.getElementById('bc_cap'); if(cap){ cap.onclick=async()=>{ if(scanDone)return; const mm=document.getElementById('bc_msg'); const s=window._scanner;
     if(s&&s.video&&s.video.videoWidth){ for(let i=0;i<20&&decoding;i++){ await new Promise(r=>setTimeout(r,50)); } if(scanDone)return; decoding=true;
-      if(mm)mm.innerHTML='<span class="spin"></span>leyendo…'; const v=s.video; const cv=document.createElement('canvas'); cv.width=v.videoWidth; cv.height=v.videoHeight; try{ cv.getContext('2d').drawImage(v,0,0); }catch(_){}
+      if(mm)mm.innerHTML=trkSpinHTML('leyendo'); const v=s.video; const cv=document.createElement('canvas'); cv.width=v.videoWidth; cv.height=v.videoHeight; try{ cv.getContext('2d').drawImage(v,0,0); }catch(_){}
       let code=null; try{ code=await decodeImgSrc(cv.toDataURL('image/jpeg',0.88)); }catch(_){} decoding=false;
       if(code){ hit(code); return; } if(mm)mm.textContent='no se leyó · acércalo, enfócalo y captura otra vez (o escríbelo)'; return; }
-    const inp=document.createElement('input'); inp.type='file'; inp.accept='image/*'; inp.setAttribute('capture','environment'); inp.onchange=async()=>{ const f=inp.files&&inp.files[0]; if(!f)return; if(mm)mm.innerHTML='<span class="spin"></span>leyendo código…'; const code=await decodeBarcodeImage(f); if(code){ hit(code); } else if(mm){ mm.textContent='no se leyó · acércalo de frente y enfocado, o escríbelo'; } }; inp.click(); }; }
+    const inp=document.createElement('input'); inp.type='file'; inp.accept='image/*'; inp.setAttribute('capture','environment'); inp.onchange=async()=>{ const f=inp.files&&inp.files[0]; if(!f)return; if(mm)mm.innerHTML=trkSpinHTML('leyendo código'); const code=await decodeBarcodeImage(f); if(code){ hit(code); } else if(mm){ mm.textContent='no se leyó · acércalo de frente y enfocado, o escríbelo'; } }; inp.click(); }; }
 }
 function servingToLiters(sz){
   if(!sz)return 0;
@@ -8996,7 +9074,7 @@ function openNameSearch(barcode){
    <div class="field"><label>NAME</label><input id="ns_q" placeholder="ej. nutella, protein bar, arroz" autocomplete="off"/></div>
    <div class="sheetbtns u-mb6"><button class="ok" id="ns_go">search →</button><button class="cancel" data-act="closemodal">cancel</button></div>
    <div id="ns_msg" class="submeta"></div><div id="ns_list" style="max-height:210px;overflow-y:auto"></div>`);
-  const run=async()=>{ const q=val('ns_q'); if(!q)return; const msg=document.getElementById('ns_msg'); msg.innerHTML='<span class="spin"></span>buscando…';
+  const run=async()=>{ const q=val('ns_q'); if(!q)return; const msg=document.getElementById('ns_msg'); msg.innerHTML=trkSpinHTML('buscando');
     const bm=BASE_FOODS.map(f=>({f,sc:searchScore(q,f)})).filter(x=>x.sc>0).sort((a,b)=>b.sc-a.sc).slice(0,15).map(x=>x.f);
     const res=await searchFoods(q); window._nsRes=res; const tot=bm.length+res.length; msg.textContent=tot?(tot+' resultados'):'sin resultados';
     const baseHtml=bm.map(f=>`<div class="pickitem" data-act="pickbase" data-id="${f.id}">${f.name}<span class="u-fr u-o50">${Math.round(foodKcal100(f))}/100${f.base==='ml'?'ml':'g'}</span></div>`).join('');
@@ -9376,7 +9454,22 @@ function toast(msg,type,opt){ try{ const s=String(msg==null?'':msg); opt=opt||{}
     box.appendChild(t); while(box.children.length>3)box.firstElementChild.remove();
     if(ty==='ok'||ty==='')setTimeout(t._kill,opt.undo?durMs('--toast-life-err',4600):durMs('--toast-life',2300));
     return t; }catch(_){ return null; } }
-function toastTask(msg){ const t=toast('… '+String(msg||'').replace(/^…\s*/,''),'task');
+// ---------- v268 · terminal: spinner ▖▘▝▗, barra [█░] y línea "pensando" con segundos ----------
+const TRK_SPIN='▖▘▝▗'; let _spinT=null;
+function spinTick(){ const els=document.querySelectorAll('[data-spin]'); if(!els.length){ clearInterval(_spinT); _spinT=null; return; }
+  const now=Date.now(), fr=reducedMotion()?TRK_SPIN[0]:TRK_SPIN[Math.floor(now/120)%TRK_SPIN.length];
+  els.forEach(e=>{ const g=e.querySelector('.tsg'); if(g&&g.textContent!==fr)g.textContent=fr;
+    const t=e.querySelector('.tst'); if(t){ const sec=Math.floor((now-(+e.dataset.t0||now))/1000), v=sec>=1?' '+sec+'s':''; if(t.textContent!==v)t.textContent=v; } }); }
+function spinStart(){ if(!_spinT)_spinT=setInterval(spinTick,120); spinTick(); }
+function trkSpinHTML(verb,o){ o=o||{}; setTimeout(spinStart,0);
+  return '<span class="tspin" data-spin data-t0="'+(o.t0||Date.now())+'" role="status" aria-live="polite"><b class="tsg">'+TRK_SPIN[0]+'</b><span class="tsv">'+escTxt(String(verb||''))+'…</span><i class="tst"></i></span>'; }
+function trkBarTxt(p,n){ n=n||16; p=Math.max(0,Math.min(100,+p||0)); const full=p/100*n, k=Math.floor(full), E='▏▎▍▌▋▊▉';
+  let out='█'.repeat(k); if(k<n){ const e=Math.floor((full-k)*8); out+=e>=1?E[e-1]:'░'; out+='░'.repeat(n-k-1); } return out; }
+function trkProgressHTML(p,o){ o=o||{}; const v=Math.round(Math.max(0,Math.min(100,+p||0)));
+  return '<span class="tprog" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="'+v+'" data-cells="'+(o.cells||16)+'">'+(o.label?escTxt(o.label)+' ':'')+'[<b>'+trkBarTxt(v,o.cells)+'</b>] <i>'+v+'%</i></span>'; }
+function trkProgressSet(el,p){ if(!el)return; const v=Math.round(Math.max(0,Math.min(100,+p||0))); el.setAttribute('aria-valuenow',v);
+  const b=el.querySelector('b'), i=el.querySelector('i'); if(b)b.textContent=trkBarTxt(v,+el.dataset.cells||16); if(i)i.textContent=v+'%'; }
+function toastTask(msg){ const t=toast(String(msg||'').replace(/^…\s*/,''),'task'); try{ const tm=t&&t.querySelector('.tm'); if(tm)tm.innerHTML=trkSpinHTML(String(msg||'').replace(/^…\s*/,'')); }catch(_){}
   const fin=(m,ty)=>{ if(!t)return toast(m,ty); t.className='toast glass-strong '+ty; t.setAttribute('role',ty==='err'?'alert':'status'); t.textContent=m; if(ty==='ok')setTimeout(t._kill,durMs('--toast-life',2300)); };
   return { done:m=>fin(m||'✓ listo','ok'), fail:m=>fin(m||'⚠ no se pudo','err') }; }
 // TRKAsk / TRKHold viven en una capa propia (#asklayer, --z-pop) encima del sheet: nunca lo reemplazan.
@@ -9398,7 +9491,8 @@ function trkAsk(o,onOk,onCancel){ const danger=!!o.danger;
 // lo pendiente sigue guardado y se vuelve a ofrecer en el siguiente arranque.
 const _bootQ=[]; let _bootShowing=false;
 function bootAsk(o,onOk,onCancel,now){ _bootQ.push({o,onOk,onCancel}); if(_bootShowing)return; _bootShowing=true; if(now)_bootNext(); else setTimeout(_bootNext,700); }
-function _bootNext(){ const it=_bootQ.shift(); if(!it){ _bootShowing=false; return; }
+function _bootNext(){ if(document.getElementById('bootov')){ setTimeout(_bootNext,300); return; }   // v268 · Z-2: ningún aviso se abre DEBAJO del arranque o del recap; espera a que se cierren
+  const it=_bootQ.shift(); if(!it){ _bootShowing=false; return; }
   const next=()=>{ if(_bootQ.length)setTimeout(_bootNext,250); else _bootShowing=false; };
   trkAsk(Object.assign({},it.o,{dismiss:next}), ()=>{ if(it.onOk)it.onOk(); next(); }, ()=>{ if(it.onCancel)it.onCancel(); next(); });
   const lay=document.getElementById('asklayer'); if(lay)lay._onReplaced=()=>{ _bootQ.length=0; _bootShowing=false; }; }
@@ -9687,11 +9781,11 @@ function prepImage(file){ return new Promise(res=>{
   img.onerror=()=>{ URL.revokeObjectURL(url); res(file); };
   img.src=url; }); }
 async function ocrPhoto(file,barcode){ if(!file)return; window._faTag=window._faTag||curTag();
-  openModal('<h3>reading label…</h3><div id="ocr_msg" class="submeta">cargando OCR (unos segundos la 1ª vez)…</div>');
+  openModal('<h3>reading label…</h3><div id="ocr_msg" class="submeta">'+trkSpinHTML('cargando OCR · la 1ª vez tarda unos segundos')+'</div>');
   try{ await loadScript('https://cdn.jsdelivr.net/npm/tesseract.js@5.0.4/dist/tesseract.min.js','sha384-Ptw8HCYAWF6vIop6WuGxfSCiDCIzUWqjrHYfx8Vd0S4CMBaicAdBh2y+Ufle664A');
     const mm=document.getElementById('ocr_msg');
     const src=await prepImage(file);
-    const {data}=await Tesseract.recognize(src,'eng+spa',{logger:p=>{ if(mm&&p.status==='recognizing text') mm.textContent='leyendo… '+Math.round(p.progress*100)+'%'; }});
+    const {data}=await Tesseract.recognize(src,'eng+spa',{logger:p=>{ if(mm&&p.status==='recognizing text'){ let pb=mm.querySelector('.tprog'); if(!pb){ mm.innerHTML=trkProgressHTML(0,{label:'leyendo'}); pb=mm.querySelector('.tprog'); } trkProgressSet(pb,p.progress*100); } }});
     const text=data.text||'';
     openVerify({name:'',serving:'1 serving',barcode:barcode||'',per:parseNutritionText(text)},{isNew:true,tag:window._faTag,ocrText:text});
   }catch(e){ const mm=document.getElementById('ocr_msg'); if(mm)mm.textContent='no se pudo leer la foto · usa text o manual'; }
@@ -9713,7 +9807,7 @@ function labelFallback(msgEl,barcode,reason){ if(!msgEl)return;
   const mn=document.getElementById('ai_man'); if(mn)mn.onclick=()=>{ if(barcode)window._linkBarcode=barcode; openVerify({name:'',base:'g',per100:{},sizes:{},barcode:barcode||''},{isNew:true,tag:window._faTag||curTag()}); };
 }
 async function aiPhoto(file,barcode){ if(!file)return; window._faTag=window._faTag||curTag();
-  openModal('<h3>analizando…</h3><div id="ai_msg" class="submeta">leyendo la etiqueta con IA…</div>');
+  openModal('<h3>analizando…</h3><div id="ai_msg" class="submeta">'+trkSpinHTML('leyendo la etiqueta con IA')+'</div>');
   const msg=()=>document.getElementById('ai_msg');
   try{
     const dataUrl=await fileToDataURL(file); if(!dataUrl) throw new Error('imagen inválida');
@@ -9747,7 +9841,7 @@ try{ offerLivePending(livePendingSync()); }catch(_){}
 // diario de arranque. Mientras decide, los respaldos se retienen para no pisar `latest`.
 try{ withTO(idbBootCheck(),12000).catch(()=>idbReleaseHold()); }catch(_){ idbReleaseHold(); }
 try{ growthLog(); }catch(_){}
-try{ promptIdleSession(); }catch(_){} try{ if(typeof location!=='undefined' && /[?&]selftest=1/.test(location.search)){ const _rawMain=(()=>{ try{ return localStorage.getItem(LS_KEY); }catch(_){ return null; } })(), _rawLive=(()=>{ try{ return localStorage.getItem(LS_LIVE); }catch(_){ return null; } })(), _lc0=_lastClosed; _sbx=true; try{ _identitySelfCheck(); _dropsetSelfCheck(); _baselineSelfCheck(); _variantSelfCheck(); _historyEditSelfCheck(); _idSelfCheck(); _cardioSelfCheck(); _tensionSelfCheck(); _healthSelfCheck(); _readinessSelfCheck(); _loggingSelfCheck(); _mergeSelfCheck(); _streakSelfCheck(); _chartSelfCheck(); _muscleSelfCheck(); _exProfileSelfCheck(); _recoverySelfCheck(); _diagSelfCheck(); _uiSelfCheck(); _v256SelfCheck(); _v257SelfCheck(); _sessSafetyCheck(); _storageSelfCheck(); _lateralitySelfCheck(); } finally{ _sbx=false; _lastClosed=_lc0; try{ if(_rawLive==null)localStorage.removeItem(LS_LIVE); else localStorage.setItem(LS_LIVE,_rawLive); }catch(_){} } let _rawAfter=null; try{ _rawAfter=localStorage.getItem(LS_KEY); }catch(_){} const _same=(()=>{ if(_rawAfter===_rawMain)return true; try{ const a=JSON.parse(_rawAfter), b=_rawMain==null?JSON.parse(JSON.stringify(db)):JSON.parse(_rawMain);   /* v267 · almacén vacío: se compara contra la base real en memoria */ return !!a&&!!b&&((a.profile||{}).username===(b.profile||{}).username)&&((a.sessions||[]).length===(b.sessions||[]).length)&&(JSON.stringify(a.split)===JSON.stringify(b.split)); }catch(_){ return false; } })(); if(!_same)console.error(new Error('SELFCHECK sandbox: una base de juguete llegó a tu disco')); else console.log('sandbox self-check OK'); setTimeout(()=>{ _idbSelfCheck(); },800); setTimeout(_dsRenderReport,1500); } }catch(e){ console.error(e); } try{ const _sp=new URLSearchParams(location.search); const _hasHistorical=_sp.has('stepsh')||_sp.has('weighth')||_sp.has('stepsq')||_sp.has('sleeph'); const _hk=['steps','stepsh','weight','weighth','stepsq','sleep','sleeph'].some(k=>_sp.has(k)); if(_hk&&!(db.profile&&db.profile.username)){ if(_bootJ)_bootJ.flags.push('urlImportEmpty'); if(history.replaceState)history.replaceState(null,'',location.pathname); setTimeout(()=>{ try{ toast('⚠ ese enlace abrió Safari, no tu app','err'); }catch(_){} },600); } else if(_hasHistorical){ const _hsp=_sp; if(history.replaceState)history.replaceState(null,'',location.pathname); setTimeout(()=>{ trkAsk({title:'importar datos históricos',detail:'este link trae pasos, peso o sueño de varios días · acepta solo si viene de tu propio Atajo de iOS',ok:'importar'},()=>{ try{ const _imp=importHealth(_hsp); if(_imp.length){ save(); render(); toast('✓ '+_imp.join(' · ')); } }catch(_){} }); },400); } else { const _imp=importHealth(_sp); if(_imp.length){ window._healthImported=_imp; if(history.replaceState)history.replaceState(null,'',location.pathname); } } }catch(_){} save(); render(); if(window._healthImported)setTimeout(()=>toast('✓ '+window._healthImported.join(' · ')),250); if(window._recoveredFromBackup)setTimeout(()=>{try{toast('⚠ se recuperó un respaldo local · revisa tus datos, podrían faltar cambios muy recientes','err');}catch(_){}},600);
+try{ promptIdleSession(); }catch(_){} try{ if(typeof location!=='undefined' && /[?&]selftest=1/.test(location.search)){ const _rawMain=(()=>{ try{ return localStorage.getItem(LS_KEY); }catch(_){ return null; } })(), _rawLive=(()=>{ try{ return localStorage.getItem(LS_LIVE); }catch(_){ return null; } })(), _lc0=_lastClosed; _sbx=true; try{ _identitySelfCheck(); _dropsetSelfCheck(); _baselineSelfCheck(); _variantSelfCheck(); _historyEditSelfCheck(); _idSelfCheck(); _cardioSelfCheck(); _tensionSelfCheck(); _healthSelfCheck(); _readinessSelfCheck(); _loggingSelfCheck(); _mergeSelfCheck(); _streakSelfCheck(); _chartSelfCheck(); _muscleSelfCheck(); _exProfileSelfCheck(); _recoverySelfCheck(); _diagSelfCheck(); _uiSelfCheck(); _v256SelfCheck(); _v257SelfCheck(); _sessSafetyCheck(); _storageSelfCheck(); _lateralitySelfCheck(); _v268SelfCheck(); } finally{ _sbx=false; _lastClosed=_lc0; try{ if(_rawLive==null)localStorage.removeItem(LS_LIVE); else localStorage.setItem(LS_LIVE,_rawLive); }catch(_){} } let _rawAfter=null; try{ _rawAfter=localStorage.getItem(LS_KEY); }catch(_){} const _same=(()=>{ if(_rawAfter===_rawMain)return true; try{ const a=JSON.parse(_rawAfter), b=_rawMain==null?JSON.parse(JSON.stringify(db)):JSON.parse(_rawMain);   /* v267 · almacén vacío: se compara contra la base real en memoria */ return !!a&&!!b&&((a.profile||{}).username===(b.profile||{}).username)&&((a.sessions||[]).length===(b.sessions||[]).length)&&(JSON.stringify(a.split)===JSON.stringify(b.split)); }catch(_){ return false; } })(); if(!_same)console.error(new Error('SELFCHECK sandbox: una base de juguete llegó a tu disco')); else console.log('sandbox self-check OK'); setTimeout(()=>{ _idbSelfCheck(); },800); setTimeout(_dsRenderReport,1500); } }catch(e){ console.error(e); } try{ const _sp=new URLSearchParams(location.search); const _hasHistorical=_sp.has('stepsh')||_sp.has('weighth')||_sp.has('stepsq')||_sp.has('sleeph'); const _hk=['steps','stepsh','weight','weighth','stepsq','sleep','sleeph'].some(k=>_sp.has(k)); if(_hk&&!(db.profile&&db.profile.username)){ if(_bootJ)_bootJ.flags.push('urlImportEmpty'); if(history.replaceState)history.replaceState(null,'',location.pathname); setTimeout(()=>{ try{ toast('⚠ ese enlace abrió Safari, no tu app','err'); }catch(_){} },600); } else if(_hasHistorical){ const _hsp=_sp; if(history.replaceState)history.replaceState(null,'',location.pathname); setTimeout(()=>{ trkAsk({title:'importar datos históricos',detail:'este link trae pasos, peso o sueño de varios días · acepta solo si viene de tu propio Atajo de iOS',ok:'importar'},()=>{ try{ const _imp=importHealth(_hsp); if(_imp.length){ save(); render(); toast('✓ '+_imp.join(' · ')); } }catch(_){} }); },400); } else { const _imp=importHealth(_sp); if(_imp.length){ window._healthImported=_imp; if(history.replaceState)history.replaceState(null,'',location.pathname); } } }catch(_){} save(); render(); if(window._healthImported)setTimeout(()=>toast('✓ '+window._healthImported.join(' · ')),250); if(window._recoveredFromBackup)setTimeout(()=>{try{toast('⚠ se recuperó un respaldo local · revisa tus datos, podrían faltar cambios muy recientes','err');}catch(_){}},600);
 applyDesign(); try{ if(/[?&]design\b/.test(location.search))localStorage.setItem('gymtrk_designmode','1'); if(localStorage.getItem('gymtrk_designmode')==='1')openDesignPanel(); }catch(_){}
 try{ bootScreen(()=>{ try{
   if(/[?&]wrap=1\b/.test(location.search)){ monthlyWrap(prevMonthYm(), true); return; }

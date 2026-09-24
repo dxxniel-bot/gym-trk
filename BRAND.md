@@ -17,7 +17,7 @@ Nombre corto de la identidad: **CMD hacker × glass moderno**.
 Qué **no** es: verde matrix, scanlines, glitch, typewriter en el contenido, neón, prompts falsos (`root@`,
 `user@host:~$`), tiles tipo Apple Health, SaaS genérico, wellness pastel, gamificación de casino (confeti, XP, mascotas).
 El caret `>` sí existe, con un solo significado: **aquí / activo** (la pestaña en la que estás, la línea que imprime el
-arranque); nunca como prompt decorativo (§3).
+arranque, la fila del perfil que estás llenando); nunca como prompt decorativo (§3).
 
 ## 2. Reglas (IDs estables — se citan en cada cambio)
 
@@ -55,8 +55,11 @@ toque de 44 px (`.u-hit`). Ej.: `[+ set]` `[share]` `[‹ gym]` `[borrar sesión
 | ↩ | deshacer | ~ | estimado |
 | ⚠ | aviso | ▌ | cursor (solo arranque y vacíos) |
 | × @ / → # | notación de series y datos | — | sin dato |
-| `>` | aquí / activo (pestaña de la nav, prompt del arranque) | ▖ ▘ ▝ ▗ | trabajando (v268) |
-| █ ░ | medidor de progreso (v268) | | |
+| `>` | aquí / activo (pestaña de la nav, prompt del arranque, fila con foco) | ▖ ▘ ▝ ▗ | trabajando: `▖ buscando… 3s` |
+| █ ░ | medidor de progreso: `[██████▍░░░] 42%` (octavos ▏…▉ en el borde) | | |
+
+Los de trabajo y medidor (con el box-drawing) viven en `GLYPHS_VIZ` y solo en dos componentes: el spinner de texto, cuando
+no se sabe cuánto falta, y el medidor, cuando el avance es real. Nada de anillos que giran.
 
 ✓ ○ ⠿ ↩ **no existen en JetBrains Mono**: Google no los sirve y salen con la fuente del sistema (pregunta abierta, §10).
 Los demás glifos del set llegan de la fuente con un subconjunto propio (`&text=`, v267).
@@ -99,8 +102,13 @@ pie de compartir, 34 solo en el landing. Una sola variante.
   desde v267). Un ícono nuevo necesita aprobación del dueño.
 - **Arranque.** Shader WebGL de marca (única excepción de fondo animado): **matriz de puntos de fósforo** (rejilla de 6 px,
   onda desde el centro, monocromo), encuadre cover (sin comprimir), cuadro quieto con reduced-motion y apagado en segundo
-  plano. Imprime `> loading gym tracker` **en cada apertura** (decidido el 23-sep) y sus líneas de estado una a una, con
-  `▖▘▝▗` mientras trabaja y el medidor `█░` (pendiente → v268).
+  plano, detrás del texto a `--op-dim`. **`loading gym tracker` en cada apertura** (decidido el 23-sep, enviado en v268):
+  `gym//TRK` con su versión, `> loading gym tracker`, sus líneas de estado reales (`db`, `split`, `last session`) una a una —solo
+  aparecen, nada se mueve—, el medidor `[██████] 100%` y `ready▌`. ~1 s; versión corta (~0.5 s, sin shader, `> resuming
+  <día> · set n/N`) con una sesión viva o si abriste hace menos de 30 min; tocar lo salta; con reduced-motion sale todo a
+  la vez. Ningún aviso se abre debajo de él.
+- **Trabajo en curso** (enviado en v268, §9). Como en una terminal: `▖ verbo… 3s` (el glifo cambia, los segundos cuentan)
+  cuando no se sabe cuánto falta; `[█░] %` cuando el avance es real. Sin anillos giratorios.
 
 ## 5. Siete primitivos (todo se arma con esto)
 
@@ -111,7 +119,7 @@ peso ······························ 61 kg  ▼ −
 #chest  bench press  160lbs×8@0 / 160lbs×6@0                 ← línea de registro
 [+ set]  [↓ drop set]  [share]                               ← [comando]
  1  FS  [ 60   ] lbs [10] [2]  ✓                             ← rejilla de datos (cajas de 4 px)
-███████░░░  72%                                              ← medidor (v268)
+[███████░░░] 72%                                             ← medidor
 ```
 
 ## 6. Excepciones con nombre (todas funcionales)
@@ -133,7 +141,7 @@ compartir con números gigantes ("del pito") · confeti, XP, mascotas, FOMO · f
 Sin logo y en gris, ¿parece una terminal dentro de vidrio? Y con conteos (los mide `_dsRenderCheck`):
 `backdrop-filter` fuera del chrome = 0 · esquinas > 4 px en el contenido = 0 (medido por `_dsRenderCheck` · rad) ·
 primarios por vista ≤1 · marcas de color
-sobre el pliegue ≤3 · emoji de interfaz = 0 · glifos fuera de `GLYPHS` = 0 · tamaños fuera de la escala (incluido SVG)
+sobre el pliegue ≤3 · emoji de interfaz = 0 · glifos fuera de `GLYPHS` (y de `GLYPHS_VIZ`, trabajo y medidor) = 0 · tamaños fuera de la escala (incluido SVG)
 = 0 · texto bajo `--o40` = 0 · fugas del navegador (13.333 px, `rgb(240,240,240)`) = 0 · ¿se puede reescribir con
 caracteres sin perder un dato?
 
@@ -166,7 +174,9 @@ caracteres sin perder un dato?
 | 2026-09-23 | **Esquinas a 4** (v267): todo control y las tarjetas a 4; solo lo que flota a 8. Reescribe B-05 otra vez (el 22-sep todo control iba a 12) | "el redondeado en general… de los botones, de las casillas de escribir, siento que es demasiado" · "hay elementos que son muy chiquitos, por ejemplo el full stack… el redondeado se ve exagerado" · elección: "4 px, suave" |
 | 2026-09-23 | **Escala 10·12·14·20·28** (v267) y `--t-field` 16 solo en lo editable | "fuentes muy grandes para lo que son" · elección: "14 · 20, más compacto" |
 | 2026-09-23 | **Nav de texto con `>`** (v267): el `>` marca la pestaña activa y parpadea; el nombre no se mueve | "que este símbolo > sea el que como que indique en qué pestaña estás… Y que esté parpadeando" · elección: "> parpadea y el nombre fijo (Recomendado)" |
-| 2026-09-23 | **El arranque imprime `loading gym tracker` en cada apertura** (sale en v268) | elección: "Cada vez que abres la app (Recomendado)" |
+| 2026-09-23 | **El arranque imprime `loading gym tracker` en cada apertura** (enviado en v268: línea por línea, versión corta con sesión viva o si abriste hace <30 min, tocar lo salta) | elección: "Cada vez que abres la app (Recomendado)" |
+| 2026-09-23 | **Trabajo en curso como en Claude Code** (enviado en v268): spinner de texto `▖▘▝▗` con su verbo y los segundos; medidor `[█░] %` solo con avance real; fuera los anillos que giraban | "animaciones… estilo como lo de Claude Code, de que cuando está cargando algo, cuando está pensando" |
+| 2026-09-23 | **Perfil en filas de terminal** (v268): crear cuenta pasa a filas `clave  control` en minúsculas, campos de 40, `>` en la fila con foco (el mismo "aquí" de la nav) y vista previa de kcal/proteína | respuesta a su queja del formulario de crear cuenta: "tosco, todo muy gordo" |
 | 2026-09-23 | **Secundarios como `[verbo]`** (v267): sin caja, corchetes en `--o40`; decidido en principio el 21-sep (B-06) y enviado con esta ronda | su vista previa del 23-sep |
 | 2026-09-23 | **Casilla = caja fina y opción = `[x]`** (v267): campo editable con borde 1 px `--o40`, fondo transparente y radio 4 (foco = borde `--fg`); toggle sin caja, la opción elegida `[entre corchetes]` en `--fg`/700 | su vista previa del 23-sep |
 
@@ -181,7 +191,8 @@ Cerradas el 22-sep con el look "1" (§9): panel del anillo (vidrio sutil), shade
 `--o40`); ese día también el tinte de los negros (R=G=B, vidrio sin saturar). **Cerradas el 23-sep** (§9, v267): las
 esquinas (contenido a 4 y lo que flota a 8; reemplaza el 12 del 22-sep), la escala (14 · 20), la variante de nav (texto
 con `>` que parpadea), la variante de primario (bloque inverso de 44, radio 4, presionado = invertir) y los secundarios
-como `[verbo]`. **Siguen abiertas:** set de íconos TRK (la nav ya no los usa: quedan share, camera y escáner), tarjetas →
+como `[verbo]`. **Enviadas en v268** (§9): el arranque `loading gym tracker` en cada apertura y el trabajo en curso de
+terminal (`▖▘▝▗` y `[█░]`), que dejan de estar pendientes. **Siguen abiertas:** set de íconos TRK (la nav ya no los usa: quedan share, camera y escáner), tarjetas →
 paneles (por ahora solo bajaron a radio 4), `[‹ origen]` (hoy `[‹ back]` de texto que siempre vuelve a gym), interlineado
 y opacidad a la escala, y **los glifos ✓ ○ ⠿ ↩ no existen en JetBrains Mono** (salen con la fuente del sistema):
 reemplazarlos o aceptarlos.

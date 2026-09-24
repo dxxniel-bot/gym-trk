@@ -91,9 +91,9 @@ ${P('icons','A')} .exsh .camon::before{content:''; display:block; width:14px; he
       ] },
 
     { id:'boot', n:6, group:'G0', title:'boot shader', rule:'BRAND §4 arranque · B-09', src:'brand-lab §6',
-      question:'Implementado en v262: tu elección ya es el look de la app ("hoy").', status:'shipped', decided:{ pick:'C', date:'2026-09-22', quote:'TRK-PICK v1 · 1 · base v261 · datos demo · 6boot=C' }, shipped:'v262',
-      scenarios:['boot'],
-      options:[ { k:'hoy', label:'hoy · matriz de fósforo (v262)' }, { k:'C', label:'matriz de fósforo', note:'horneado en index.html en v262; su CSS de propuesta se borró' } ] },
+      question:'Implementado en v262: tu elección ya es el look de la app ("hoy"). Desde v268 queda detrás del "loading gym tracker" que sale en cada apertura, atenuado a --op-dim; la versión corta (sesión viva o abriste hace <30 min) va sin shader.', status:'shipped', decided:{ pick:'C', date:'2026-09-22', quote:'TRK-PICK v1 · 1 · base v261 · datos demo · 6boot=C' }, shipped:'v262',
+      scenarios:['boot', 'boot:short'],
+      options:[ { k:'hoy', label:'hoy · matriz de fósforo detrás del arranque (v262 · v268)' }, { k:'C', label:'matriz de fósforo', note:'horneado en index.html en v262; su CSS de propuesta se borró. v268: opacidad --op-dim (antes .5) detrás de las líneas del arranque' } ] },
     { id:'field', n:7, group:'G0', title:'field edge', rule:'B-11 · WCAG 1.4.11', src:'brand-lab §7',
       question:'Implementado en v262: tu elección ya es el look de la app ("hoy").', status:'shipped', decided:{ pick:'A', date:'2026-09-22', quote:'TRK-PICK v1 · 1 · base v261 · datos demo · 7field=A' }, shipped:'v262',
       scenarios:['workout', 'live:workout', 'histedit', 'm:session'],
@@ -173,7 +173,7 @@ ${P('lh','A')} .sxs, ${P('lh','A')} .fa-empty, ${P('lh','A')} .empty{line-height
       scenarios:['progress', 'splitedit', 'm:food', 'm:goals', 'm:profile'],
       options:[
         { k:'hoy', label:'hoy · literales' },
-        { k:'A', label:'a los tokens de estado', note:'No se tocan las marcas (MRV .7, relleno de mantener .22, shader .5) ni el subtexto de la opción elegida. La opción sugerida del perfil (.75) pasa a .7, no a .45: bajo --o40 no se lee. :active y arrastre solo se ven al tocar.',
+        { k:'A', label:'a los tokens de estado', note:'No se tocan las marcas (MRV .7, relleno de mantener .22; el shader del arranque ya usa --op-dim desde v268) ni el subtexto de la opción elegida. La opción sugerida del perfil (.75) pasa a .7, no a .45: bajo --o40 no se lee. :active y arrastre solo se ven al tocar.',
           css: `
 ${P('opacity','A')} .ptile.tap:active, ${P('opacity','A')} .ag-mk.supp:active{opacity:var(--op-press);}
 ${P('opacity','A')} .ex.dragsrc, ${P('opacity','A')} .mgroup.dragsrc{opacity:var(--op-dim);}

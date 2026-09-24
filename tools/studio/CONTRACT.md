@@ -37,7 +37,8 @@ iframe.srcdoc = t.replace(/<head([^>]*)>/i, m => m + '<base href="'+base+'"><scr
 ```
 - Tras `load`: exigir `W.__trk && W.__trk.sandbox===true`; si no, destruir el frame y mostrar "guardia no activa".
 - `W.__trk`: `db`, `state` (getters), `writes` `{n,log}`, `mode` (`'window'` | `'prototype'`), `stress()`,
-  `bootPreview(runner, hold)`, `bootKill()`. Funciones de la app = globales del frame (`W.go('macros')`, `W.render()`,
+  `bootPreview(runner, hold, short?)` (v268: sin `short` = arranque completo — borra en la sombra `gymtrk_lastopen` y aparta
+  la sesión viva solo durante la llamada síncrona a `bootScreen`; `short:true` = la versión corta, sin shader), `bootKill()`. Funciones de la app = globales del frame (`W.go('macros')`, `W.render()`,
   `W.reRender()`, `W.closeModal()`, `W.closeAsk(true)`, `W.closeExShare()`, `W.openMetricDetail('steps')`…).
 - Un frame mide 393×852 (o 375×812 / 430×932). En el teléfono: 1:1 (ancho = 100vw, sin escalar). En escritorio se escala
   con `transform:scale()` si no cabe.
@@ -68,7 +69,7 @@ iframe.srcdoc = t.replace(/<head([^>]*)>/i, m => m + '<base href="'+base+'"><scr
 - `own:true` = el escenario arma su PROPIA sesión (aviso de inactividad, `workout:fs`): la del dueño se aparta y el siguiente
   escenario la devuelve; nunca se modifica una sesión real.
 - Cubrir TODO: las 57 de `tools/ds-diff.html` (S2) + las 16 de `tools/ds-inventory.js` + arranque (`T.bootPreview(null,
-  true)`), wrap (`W.monthlyWrap(W.prevMonthYm(), true)`), recap (forzar vía la lógica de `snapRecap` si es posible),
+  true, false)` y el corto `boot:short` con `true` y `live`), wrap (`W.monthlyWrap(W.prevMonthYm(), true)`), recap (forzar vía la lógica de `snapRecap` si es posible),
   aviso de inactividad (`W.promptIdleSession()` con una sesión en curso "vieja"), toasts (`W.toast('✓ guardado')`,
   `W.toast('⚠ error de prueba','err')`, con deshacer), `W.trkAsk({...})`, `W.holdConfirm({...})`, barra de guardado
   fallido (`W.saveFailed()` si existe), compartir un ejercicio (`W.openExShare(0)` con sesión en curso), `trkMenu`,
@@ -145,7 +146,7 @@ sale con 1 si algo falta.
     items:[ { id:'nav', text:'nav elegida (texto, ≥44, sin animar columnas)', status:'por decidir', proposal:'nav', audit:'RADF 9→0' } ] } ] }
 ```
 Fases: G1 (hecho), G2/v258 (hecho), F0/v259 (hecho), T/v260 (hecho), S1 estudio (hecho), G0 decisiones, TS/v267 terminal
-sobrio (hecho), P1/v268 primer arranque, AC/v269 · v270 cuentas, TR/v271 tour, G3a–d y G4a–c sin versión fija (del plan
+sobrio (hecho), P1/v268 primer arranque (hecho), AC/v269 · v270 cuentas, TR/v271 tour, G3a–d y G4a–c sin versión fija (del plan
 aprobado). `proposal` enlaza a TRK_PROPOSALS.
 
 ## 8 · Núcleo — studio.js / studio.html / studio.css

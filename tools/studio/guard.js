@@ -140,10 +140,19 @@
       tryIt('clear', () => W.localStorage.clear());
       r.absorbed = writes.n - n0; r.idbBlocked = W.indexedDB === undefined; r.mode = mode;
       return r; },
-    bootPreview(runner, hold){ patchBoot(); shaderRunner = typeof runner === 'function' ? runner : null; holdBoot = hold !== false;
+    // v268 · bootScreen sale CORTO (sin shader) con sesión viva o si la app se abrió hace <30 min (lee y reescribe
+    // gymtrk_lastopen en cada arranque; aquí se lee del dueño y se escribe en la sombra). La vista previa elige la
+    // variante: por defecto la completa (la hora de la última apertura se borra en la sombra y la sesión viva se aparta
+    // SOLO durante la llamada síncrona: bootScreen la lee al entrar y nada más corre en medio); short = la corta.
+    bootPreview(runner, hold, short){ patchBoot(); shaderRunner = typeof runner === 'function' ? runner : null; holdBoot = hold !== false;
       try{ const o = document.getElementById('bootov'); if(o) o.click(); }catch(_){}
       SS.map.delete('gymtrk_boot'); SS.dead.add('gymtrk_boot');
-      setTimeout(() => { try{ W.bootScreen(); }catch(e){ console.warn(e); } }, 220); },
+      if(short){ LS.map.set('gymtrk_lastopen', String(Date.now())); LS.dead.delete('gymtrk_lastopen'); }
+      else { LS.map.delete('gymtrk_lastopen'); LS.dead.add('gymtrk_lastopen'); }
+      setTimeout(() => { let aside = false, w = null;
+        try{ if(!short && db && db.activeWork){ w = db.activeWork; db.activeWork = null; aside = true; } }catch(_){}
+        try{ W.bootScreen(); }catch(e){ console.warn(e); }
+        finally{ try{ if(aside && db.activeWork == null) db.activeWork = w; }catch(_){} } }, 220); },
     bootKill(){ holdBoot = false; try{ const o = document.getElementById('bootov'); if(o) o.click(); }catch(_){} },
     // el aviso de inactividad (modal que no se cierra) solo sale cuando el escenario 'idle' lo pide
     allowIdle(on){ idleOK = on !== false; },

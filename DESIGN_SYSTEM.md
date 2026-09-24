@@ -1,6 +1,6 @@
 # gym//TRK — DESIGN SYSTEM (referencia del estado actual)
 
-> Referencia del estado actual (v267). **Lee BRAND.md primero**: manda sobre este archivo. Sin historia: DESIGN_CHANGELOG.md.
+> Referencia del estado actual (v268). **Lee BRAND.md primero**: manda sobre este archivo. Sin historia: DESIGN_CHANGELOG.md.
 
 ---
 
@@ -80,7 +80,7 @@ BRAND §5 define los siete primitivos con los que se arma toda pantalla. Aquí, 
 | **Línea de registro** `#chest  bench press  160lbs×8@0 / 160lbs×6@0` | `.srw` (compartir sesión) | objetivo G4: también en historial y vista previa del día (M3-04, M1-18) |
 | **`[comando]`** | `.addbtn`, `.ctrls a`, `.section .meta`, `.fa-acts a`, `.mdacts a`; los secundarios `button.b`, `button.cancel`, `.secondary .b`, `.sheetbtns .cancel`, `.footer .abort`/`.undo` (corchetes por CSS, v267) | toque 44 con `.u-hit` (pendiente G4) |
 | **Rejilla de datos** (cajas de 4) | tabla de sesión: `.thead`, `.srow`, `.pair`, `.inp`, `.pick`, `.fs` | la superficie de referencia de B-05 |
-| **Medidor** `███████░░░ 72%` | hoy no existe como texto; lo más cercano son las barras finas `.bar`/`.vbar`/`.wprog` | v268 lo estrena en texto (`█░`, plan); ▮▯ no existen en JetBrains Mono. Objetivo G3/G4: una sola forma de medidor por uso |
+| **Medidor** `[███████░░░] 72%` | TRKProgress (v268, §7.33): `trkProgressHTML()` → `.tprog` (lectura de etiqueta con OCR, barra del arranque); las proporciones fijas siguen en las barras finas `.bar`/`.vbar`/`.wprog` | `█░` con octavos `▏…▉` en el borde; ▮▯ no existen en JetBrains Mono. Objetivo G3/G4: una sola forma de medidor por uso |
 
 **Tres sigilos** (BRAND §3): `//` sistema · `[ ]` acción · `#` etiqueta del dueño (tenue). En el código: `.s` pinta el
 `//` en `--o40`/`--o50`; `#` aparece en `.srm` (compartir) y en el log de comidas.
@@ -245,7 +245,7 @@ tarjeta 16, flotante 12).
 | `--r-float` | 8 | **solo lo que flota**: nav (`--r-nav`; sus pestañas no tienen caja), sheet (`--r-sheet`), toast (`--r-toast`), popovers `.tsel`/`.gloss` (`--r-pop`), `.savebar` (`--r-bar`), fantasma de arrastre, panel de `?design` |
 | `--r-sheet` | `var(--r-float)` | esquinas inferiores del sheet |
 | `--r-pill` | 999 | **única píldora que queda**: la tapa de las barras finas ≤6 px (`.bar`, `.wprog`, `.vbar`) |
-| `50%` | — | puntos, thumbs, spinners, `.dots3`, punto del rail |
+| `50%` | — | puntos, thumbs, `.dots3`, punto del rail (los spinners circulares se retiraron en v268) |
 
 - RAD-1: prohibidos 3/6/9/10/12/14/16 y cualquier literal en píxeles (todo va por token); el 8 solo como `--r-float` en
   lo que flota. La revisa: ds-audit (radios fuera de escala: hoy 0).
@@ -287,14 +287,15 @@ presionado `.6` de la agenda, `.5` de `.fa-em-step.off`/`.u-dim`, arrastre `.3`,
 | `--ease-out` | `cubic-bezier(.22,1,.36,1)` | entradas y transformaciones, sin overshoot |
 | `--ease-in` | `cubic-bezier(.4,0,1,1)` | salidas |
 | `--toast-life` / `--toast-life-err` | 2.3s / 4.6s | vida del toast (el de error o con deshacer, el doble) |
-| `--dur-blink` | 1.1s | parpadeo del `>` de la pestaña activa (v267; bucle `loop`, en pasos) |
+| `--dur-blink` | 1.1s | parpadeo del `>` de la pestaña activa (v267) y del cursor `▌` de `ready` en el arranque (v268); bucle `loop`, en pasos |
 
 - MOV-T1: ninguna duración literal en el CSS salvo los bucles con id (§15). En JS se leen con `durMs()`, que respeta la
-  unidad (el hold lee `--dur-hold` desde v260). Hoy quedan literales en JS: 1300/5000 del arranque y el recap, 190/200 de salidas, 430 del
-  escáner, 1600 del scrub, y el easing del rebote del escáner.
+  unidad (el hold lee `--dur-hold` desde v260). Hoy quedan literales en JS: 950/480/600 (+260 de cierre) del arranque
+  (normal/corto/movimiento reducido, v268), 40 de su barra, 5000 del recap, 120 del ticker de TRKSpin (v268), 190/200 de
+  salidas, 430 del escáner, 1600 del scrub, y el easing del rebote del escáner.
 - v260: `--mv-1` 4px (desplazamiento máximo del contenido en `rowin`, `mdslide` y `viewin`, B-09) · `--ease-step`
-  `step-end` (los bucles de terminal: cursor ▌, `[ready]`, wrap y, desde v267, el `>` de la nav) · `--dur-hold` 900ms
-  (TRKHold).
+  `step-end` (los bucles de terminal: cursor ▌ del landing, wrap, desde v267 el `>` de la nav y desde v268 el cursor
+  `.bcur` de `ready▌` en el arranque) · `--dur-hold` 900ms (TRKHold).
 
 ### 4.11 Capas (z)
 
@@ -310,8 +311,11 @@ presionado `.6` de la agenda, `.5` de `.fa-em-step.off`/`.u-dim`, arrastre `.3`,
 
 - Z-1: todo z-index va por token; los únicos locales son `.mdtabs span` (1, sobre su indicador), el lienzo del shader (−1
   dentro del overlay) y la agenda (código muerto).
-- Z-2 (objetivo G4, M6-38): una pregunta de recuperación de datos (TRKAsk, `--z-pop`) puede quedar tapada por el arranque
-  (`--z-overlay`). Prioridad: seguridad de datos > arranque > wrap > recap.
+- Z-2 (M6-38, resuelto en v268): una pregunta de recuperación de datos (TRKAsk, `--z-pop`) podía abrirse **debajo** del
+  arranque (`--z-overlay`). Ahora la cola del arranque (`_bootNext()`) no abre ningún aviso mientras exista `#bootov`
+  (arranque o recap): lo vuelve a intentar cada 300 ms y lo abre en cuanto se cierra. Como el arranque dura ~1 s y se
+  salta tocando, la pregunta llega enseguida y nunca tapada: ninguna decisión de datos se toma a ciegas. Lo prueba
+  `_v268SelfCheck`.
 - Scrim: `--scrim` `rgba(0,0,0,.6)` en `.modal` (v260).
 
 ### 4.12 Vidrio (solo chrome)
@@ -356,8 +360,8 @@ los mueve en vivo sin tocar la app; cambian de valor solo por decisión del due�
 | `--scrim` · `--nav-clear` · `--mv-1` · `--ease-step` · `--dur-hold` | `rgba(0,0,0,.6)` · 84px · 4px · `step-end` · 900ms | 1 · 2 · 3 · 3 · JS | fondo de modal · espacio sobre la nav · desplazamiento · bucles · TRKHold |
 | `--ring-glow` · `--ring-glow-sm` | retirados en v262 | — | el anillo ya no tiene brillo (look "1") |
 
-Sin token a propósito: los bordes de 1 px de los spinners (`.spin`, `.fa-spin`) y la línea del scrub (`.chsl`), que son
-geometría. Falta retirar `--abort` (G3a).
+Sin token a propósito: la línea del scrub (`.chsl`), que es geometría. Los anillos de carga con borde de 1 px se retiraron
+en v268: el trabajo en curso ahora es texto (TRKSpin, §7.33). Falta retirar `--abort` (G3a).
 
 ---
 
@@ -461,8 +465,10 @@ changelog. Estado medido:
 - `✓ <objeto> <acción>` en español y minúscula, una línea, sin punto final: `✓ sesión guardada · 9 series`,
   `✓ sesión actualizada`, `✓ split actualizado`, `✓ ejercicio actualizado`, `✓ perfil del ejercicio guardado`,
   `✓ comida guardada`, `✓ metas guardadas`, `✓ peso guardado`, `✓ sueño guardado`, `✓ ajustes guardados`.
-- Tareas (`toastTask()`): `… sincronizando salud` → `✓ salud sincronizada · 12 días`; `… buscando producto` →
-  `✓ encontrado` / `⚠ no está en OpenFoodFacts`; `… generando imagen` → `✓ imagen lista`.
+- Tareas (`toastTask()`, v268 con TRKSpin): `▖ sincronizando salud… 3s` → `✓ salud sincronizada · 12 días`;
+  `▖ buscando producto…` → `✓ encontrado` / `⚠ no está en OpenFoodFacts`; `▖ generando imagen…` → `✓ imagen lista`. El
+  verbo va en gerundio y en minúscula; los puntos suspensivos los pone el componente (el mensaje no los trae) y los
+  segundos aparecen solos a partir de 1 s.
 - Error: `⚠ qué pasó · qué hacer` (`⚠ pon un nombre`), nunca un diálogo nativo.
 - Reversible: `✓ alimento borrado [deshacer]`.
 - Vacío: `// sin registros · [+ acción]`. En Progreso, además, **la tile activada nunca desaparece** (v263): sin dato muestra `—` + `sin registro` y ella misma es el botón de registro.
@@ -551,7 +557,9 @@ en `›` para navegar. Nada más. El árbol para elegir está en §17.3.
 - **Anatomía (v267, vista previa del dueño 23-sep):** caja fina: alto 44 · `--r-ctl` 4 · borde 1 (`--bw-field`) `--o40` ·
   fondo **transparente** · `--t-field` 16 (anti-zoom). `.msum-time` (hora del desglose) conserva su caja de 36 con .5
   `--o20`. `.mmrow select` va a `--t-data` porque acompaña a una fila (el viewport ya bloquea el zoom).
-- **Estados:** foco = el borde sube a `--fg` (sin anillo extra); con teclado sigue `:focus-visible`; placeholder `--o30`.
+- **Estados:** foco = el borde sube a `--fg` **y es el foco** (v268: `outline:none` en `:focus` de todos los campos de v267,
+  sin anillo doble); placeholder `--o30`.
+- **Variante del perfil de primer uso:** `.obi` (40 de alto, dentro de una fila de terminal), §7.34.
 - **Sí / No:** **unidad y porción siempre `<select>`, nunca texto libre** (vinculante). No alturas 30/32/34/38, fondo
   relleno, radio distinto de `--r-ctl`, sombras internas, labels flotantes ni bordes de color.
 - **Hoy → objetivo:** la etiqueta va en MAYÚSCULAS (objetivo G3, VOZ-2). El borde `--o40` ya llega a 4.9:1.
@@ -735,7 +743,8 @@ La pieza más gym//TRK de la app: densa, afilada, técnica. **Nunca** vidrio, ra
 
 - **Rol:** decir qué pasó después de una acción; una sola voz para todo el feedback (§6.3).
 - **API:** `toast(msg, type, {undo})` (tipo `ok`/`err`/neutro, se infiere de `✓`/`⚠`) · `toastTask(msg)` → `{done, fail}`
-  para lo que tarda.
+  para lo que tarda: desde v268 el toast de tarea lleva TRKSpin dentro de `.tm` (`▖ sincronizando salud… 3s`) y
+  `done()`/`fail()` lo resuelven **en el mismo toast** con `✓`/`⚠` (al quitarse el spinner, el ticker se apaga solo).
 - **Anatomía:** `.toasts` (pila `aria-live`, máximo 3, sale la más vieja) · `.toast.glass-strong` `--r-toast` (=
   `--r-float` 8), `--t-data`/700; borde del vidrio (`.ok`, sin verde desde v262), `--bad` (`.err`, se queda hasta tocarlo,
   con ` ✕`), neutro; `.toast.task` en `--o70`;
@@ -756,7 +765,8 @@ reemplaza, así lo escrito abajo se conserva. Diálogos nativos (`alert`/`confir
   recuperar (la sesión por recuperar) NUNCA se toma tocando fuera: `dismiss` la deja para después.
 - **Cola del arranque (v259):** `bootAsk(o, onOk, onCancel)` pone los avisos del arranque uno tras otro (sesión por
   recuperar → respaldo más completo). Si otro aviso los tapa (`_onReplaced`), la cola se vacía: lo pendiente sigue
-  guardado y se vuelve a ofrecer en el siguiente arranque.
+  guardado y se vuelve a ofrecer en el siguiente arranque. v268 (Z-2, §4.11): mientras el arranque o el recap están en
+  pantalla (`#bootov`), `_bootNext()` espera y reintenta cada 300 ms; ningún aviso se abre debajo.
 - **Anatomía:** `h3` + `.submeta` + `.sheetbtns` (primario + secundario; si destruye, `.cancel.danger` + secundario).
 - **Hoy → objetivo G4:** título por defecto `'¿seguro?'` y OK destructivo que parece cancelar (VOZ-5).
 
@@ -862,6 +872,8 @@ componente, con una API. **Ninguna pantalla implementa su propia versión**: si 
 | **TRKCal** | un mes (o una franja) de días con intensidad | `monthCalHTML(y, m, mark, {head, num})`, `stripCalHTML(n, mark)`, `histCalHTML()` | §8 |
 | **TRKLog** | registrar lo del día con una sola anatomía | `logSecHTML({k, title, v, act, body, open})`, `lfoldInit()` | §7.24 |
 | **TRKRing** | el anillo de macros | `ringHTML(pct, center, size, inv)` | §7.28 |
+| **TRKSpin** | algo trabaja y no se sabe cuánto falta (v268) | `trkSpinHTML(verb, {t0})` → `.tspin[data-spin]`; un solo ticker `spinStart()`/`spinTick()` | §7.33 |
+| **TRKProgress** | algo trabaja y se sabe cuánto va (v268) | `trkProgressHTML(p, {label, cells})` → `.tprog`; `trkProgressSet(el, p)`; `trkBarTxt(p, n)` | §7.33 |
 
 `afterPaint(root, swap)` (al final de `render()` y de `openModal()`) es **la única vía** para animar lo que `render()`
 reconstruye: cierra popovers y aplica TRKNum, TRKBar, TRKTabs y `applyEnter()` una sola vez (TRK-2).
@@ -1000,8 +1012,10 @@ compartir comida; excepción `ring`).
 
 - **Regla (BRAND §3):** `gym` y `TRK` en `--fg`/800, `//` en `--o40`, sin tracking; 22 en pantalla, 16 en overlays y pie de
   compartir, 34 solo en el landing. Una sola variante.
-- **Hoy hay seis:** landing `--t-hero` con `//` `--o40` y cursor `.cur`; login y onboarding `--t-display` con `//` `--o50`;
-  pie de compartir `.shfoot` todo en `--o35`; arranque `.bootov .bt` al revés (`gym` tenue); wrap `.ws-kick` y `.ws-cardf`.
+- **Hoy hay seis:** landing `--t-hero` con `//` `--o40` y cursor `.cur`; login `--t-display` con `//` `--o50`; perfil de
+  primer uso `.obh` a `--t-section`/800 con `//` `--o40` y la etiqueta `//PROFILE` en `--o50` (v268, §7.34); pie de
+  compartir `.shfoot` todo en `--o35`; arranque `.bootov .bt` a `--t-section`/800 con `//` `--o40` y la versión (`APP_V`) en
+  `.bv` `--t-label` `--o40` (v268); wrap `.ws-kick` y `.ws-cardf`.
 - **Objetivo G3:** una clase `.mark` (pendiente G3) con sus tres tamaños por contexto.
 
 ### 7.31 Íconos TRK
@@ -1018,11 +1032,103 @@ compartir comida; excepción `ring`).
 
 | Overlay | API | Hoy | Objetivo |
 |---|---|---|---|
-| **Arranque** | `bootScreen()` → `showOverlay(html, {ms:1300, shader:true})`; una vez por apertura (`sessionStorage`), con usuario y ≥1 sesión; tocar cierra | `.bootov` a pantalla completa; `startShader()` (WebGL, el shader de marca) de fondo al .5; líneas `.line` de estado; `[ready]` parpadeando (`.bready`); ▲▼ de `weekly vol` en verde/rojo | G3 (BRAND §4): shader con encuadre correcto (hoy se ve comprimido), apagado con reduced-motion y en segundo plano; líneas que se imprimen una a una; marca única; sin color de veredicto |
-| **Recap de las 21 h** | `snapRecap()` → `showOverlay(…, {ms:5000})`; una vez al día (`?recap=1` lo fuerza) | `//HOY · fecha` + líneas con `--good`/`--bad`; `[tap para cerrar]` | G4: evaluar (capa bloqueante cada noche) |
+| **Arranque "loading gym tracker"** (v268, decisión del dueño 23-sep: "Cada vez que abres la app") | `bootScreen()` → `showOverlay(html, {ms, shader})`; **en cada apertura**, una vez por apertura (`sessionStorage.gymtrk_boot`), con o sin cuenta; tocar lo salta. Ficha abajo | `.bootov` a pantalla completa; shader de fósforo (`startShader()`) detrás a `--op-dim`; `.bboot` con líneas `.bl` que se imprimen una a una | ✓ enviado en v268 (BRAND §4). Queda: marca única en todos los overlays (§7.30) |
+| **Recap de las 21 h** | `snapRecap()` → `showOverlay(…, {ms:5000})`; una vez al día (`?recap=1` lo fuerza); se encadena después del arranque | `//TODAY · fecha` + líneas con `--good`/`--bad`; `[tap para cerrar]` quieto (v268: `.bready` ya no parpadea) | G4: evaluar (capa bloqueante cada noche) |
 | **Wrap mensual** | `wrapMonthData()` + diapositivas `.wstage` | números de 60 y 44 exentos, tarjeta `.ws-card`, "captura para compartir" | G4: es el formato de números grandes que el dueño rechazó ("del pito") |
 | **Escáner** | `openBarcode()` → `.scan-reticle` | marco `.frame2` de 2 con velo, línea que barre (`scanmove`), fijado en verde con rebote y ✓ de 40 | G4: idioma de botones (`look up` / `capturar` / `cancel`), rol de `capturar`, verde |
 | **Compartir un ejercicio** | `openExShare()` → `.exsh` | §7.19 | §7.19 |
+
+#### Arranque "loading gym tracker" (`bootScreen()`, v268)
+- **Rol:** la app abre como una terminal que carga: dice qué versión corre y qué encontró en este teléfono. Líneas reales
+  (de `db.sessions`, `db.split`, `db.activeWork`), nunca inventadas.
+- **Anatomía:** cabecera `.bt` `gym//TRK` + `.bv` con la versión (`APP_V`, `v268`) · `.bboot` (máx. 320 de ancho,
+  `--t-data`): `> loading gym tracker` (`.bp`, `--o70`) · filas `clave ···· valor` (`.line.bl`): `db` (`N sessions`, o
+  `new · this phone` sin cuenta), `split` (nombre · día de hoy; solo con cuenta y días), `last session` (día · hoy / ayer /
+  hace Nd) · TRKProgress de 18 celdas (`[██████] 100%`, §7.33) · `ready▌` (`.bready` + `.bcur`: el cursor parpadea en pasos
+  con `--dur-blink`, `/*ds:exempt:loop*/`, quieto con movimiento reducido).
+- **Tiempo:** normal ~950 ms (se cierra a los ~1.2 s). Cada línea aparece en su turno (`total / (líneas + 1)`) solo con
+  `visibility` (`.bl` → `.bl.on`): se imprime, no se mueve (B-09). La barra se llena por tiempo en el 85 % del total.
+  **Corto** ~480 ms y sin shader: con una sesión viva (`> resuming <día> · set n/N`, n = la siguiente serie sin ✓) o si
+  abriste hace menos de 30 min (`localStorage.gymtrk_lastopen`). **Movimiento reducido:** todo a la vez, barra al 100 %,
+  600 ms.
+- **Toque:** tocar en cualquier parte lo salta.
+- **Fondo:** shader de fósforo (`startShader()`, excepción `boot`) detrás a `--op-dim`; cuadro quieto con movimiento
+  reducido y pausado en segundo plano; nunca en la versión corta.
+- **Honestidad:** la barra del arranque marca el tiempo del propio arranque, no un avance de carga: es la única excepción a
+  la regla de TRKProgress (§7.33).
+- **Cola:** los avisos del arranque esperan a que se cierre (Z-2, §4.11).
+- **La revisa:** `_v268SelfCheck` (la cola espera bajo `#bootov`) · a ojo.
+
+### 7.33 Trabajo en curso: TRKSpin y TRKProgress (v268)
+
+Decisión del dueño 2026-09-23 (BRAND §9): "estilo como lo de Claude Code, de que cuando está cargando algo, cuando está
+pensando". El trabajo en curso se escribe como en una terminal: un verbo con su glifo que cambia y sus segundos, o una
+barra de texto con su porcentaje. Reemplaza a los anillos giratorios de CSS, retirados junto con su `@keyframes` (en el
+auditor, excepciones 31 → 28 y bucles R-MOTION 10 → 7).
+
+#### TRKSpin
+- **Rol:** algo trabaja y **no** se sabe cuánto falta (red, cámara, motor de OCR cargando, IA).
+- **API:** `trkSpinHTML(verb, {t0})` → `<span class="tspin" data-spin role="status" aria-live="polite">` con `.tsg` (el
+  glifo) · `.tsv` (`verbo…`) · `.tst` (segundos). `t0` = desde cuándo contar (por defecto, ahora). Insertarlo arranca el
+  ticker.
+- **Anatomía:** `▖ buscando en línea… 3s`. Glifo en `--fg`/400 con 1 ch de ancho y 1 ch de aire (cambiar de cuadro no
+  mueve el texto); verbo en `--o60`; segundos en `--o40` y solo a partir de 1 s. Cuadros `TRK_SPIN` = `▖▘▝▗` (existen en
+  JetBrains Mono y llegan por el subconjunto `&text=`, GLY-3).
+- **Motor:** **un solo** ticker global (`spinStart()`, 120 ms) que recorre los `[data-spin]` y escribe solo `textContent`
+  (glifo y segundos; ni clases ni estilos) y **se apaga solo** (`spinTick()`) cuando ya no queda ninguno en el documento.
+  Sin animación CSS: no hay bucle que declarar ni que exentar.
+- **Movimiento reducido:** el glifo se queda en el primer cuadro (`▖`); los segundos siguen contando (son dato).
+- **Dónde:** búsqueda en línea de alimentos (`buscando en línea`), código de barras (`buscando`, `leyendo`,
+  `leyendo código`), búsqueda por nombre (`buscando`), OCR mientras carga su motor, lectura de etiqueta con IA
+  (`leyendo la etiqueta con IA`), //ESPACIO (`cargando` en COPIES y BOOT LOG) y el toast de tarea (`toastTask()`, §7.12).
+- **Sí / No:** sí un verbo en gerundio, minúscula y en español (es prosa, §6.1). No un spinner sin verbo, no dos para la
+  misma tarea, no puntos suspensivos en el verbo (los pone el componente), no animarlo con CSS.
+
+#### TRKProgress
+- **Rol:** algo trabaja y **sí** se sabe cuánto va.
+- **API:** `trkProgressHTML(p, {label, cells})` → `<span class="tprog" role="progressbar">` con `aria-valuemin` 0,
+  `aria-valuemax` 100 y `aria-valuenow`: `etiqueta [<b>barra</b>] <i>42%</i>`; `trkProgressSet(el, p)` actualiza barra, `%`
+  y `aria-valuenow` sin repintar; `trkBarTxt(p, n)` da solo la barra. `cells` = 16 por defecto.
+- **Anatomía:** `leyendo [██████▍░░░░░░░░░] 42%`. Celdas llenas `█`, el borde en octavos (`▏▎▍▌▋▊▉`: avanza de a 1/8 de
+  celda) y lo que falta en `░`; barra en `--fg`/400 sin tracking, `%` en `--o50` con cifras tabulares, etiqueta en `--o60`.
+  Acotado a 0–100.
+- **Movimiento:** solo cambia el texto; ninguna transición.
+- **Dónde:** OCR de la etiqueta (arranca con TRKSpin mientras carga el motor y pasa a la barra con el % real de Tesseract)
+  y el arranque (18 celdas).
+- **Honestidad:** solo con avance **real**; si no se sabe cuánto falta, TRKSpin. Única excepción: el arranque, donde la
+  barra marca el tiempo del propio overlay.
+- **Glifos:** `GLYPHS_VIZ` (`▖▘▝▗░▒▓█▏▎▍▋▊▉` + box-drawing `─│┌┐└┘├┤┬┴┼`) los declara y `_dsRenderCheck` los acepta. El
+  `▌` de la mitad es el mismo carácter del cursor (`GLYPHS`), pero dentro de `[…]` solo es media celda.
+- **La revisa:** `_v268SelfCheck` (barra vacía, llena, a la mitad, con octavo y acotada; el ticker corre con un spinner y se
+  apaga sin ninguno) · `_uiSelfCheck` (la tarea arranca con el spinner) · a ojo.
+
+### 7.34 Perfil en filas de terminal (`renderOnboard()`, v268)
+
+Respuesta a la queja del dueño sobre el formulario de crear cuenta ("tosco, todo muy gordo", BRAND §9). Cambia solo la
+forma: mismos ids (`ob_*`) y los mismos datos que escribe `onboardgo`.
+
+- **Rol:** el primer perfil (nombre, cuerpo, actividad, objetivo, gym, unidad) en una pantalla que se lee como
+  `clave  valor`.
+- **Clase / API:** `.ob` (pantalla) · `.obh` cabecera `gym//TRK//PROFILE` + `.submeta` (`1 min · se queda en este
+  teléfono · todo se cambia después`) · `.obr` fila (rejilla de `10.5ch` + resto, alineada por la línea base, mínimo 44,
+  `--t-data`) · `.obk` clave en minúsculas `--o50` · `.obv` control · `.obi` campo (`.obi.sm`: 7 ch alineado a la derecha,
+  para números) · `.obu` unidad `--o40` · `.obk2` segunda clave en la misma fila (`peso` junto a `edad`) · `.obr.obr-h` +
+  `.obhint` pista de una línea `--t-label` `--o40` · `.obprev` vista previa de metas · primario `.start` `▶ empezar`.
+- **Filas:** `nombre` · `sexo [hombre] mujer` · `edad [ ] peso [ ] kg` · `estatura [ ] cm` · `actividad` (2×2,
+  `.toggles.wrap`) + pista de la elegida (`OB_ACT`) · `objetivo déficit [mantener] volumen` + pista (`OB_GOAL`) · `gym` ·
+  `pesas en [lbs] kg`. Los toggles son los de §7.3.
+- **Campo `.obi`:** 40 de alto · borde `--bw-field` `--o40` · `--r-ctl` 4 · transparente · `--t-field` 16 (anti-zoom) ·
+  placeholder `--o30`; foco = borde `--fg`, sin contorno.
+- **Foco:** la fila con foco (`:focus-within`) pasa su clave a `--fg` y le pone `>` delante (el mismo "aquí" de la nav,
+  BRAND §3); el `>` ya tiene su lugar reservado (`visibility`), así la clave no se mueve. Enter salta al siguiente `.obi`;
+  en el último cierra el teclado.
+- **Vista previa:** `obPrev()` escribe en vivo `2,170 kcal · 122 g proteína al día` con `recalcGoals()` (el mismo cálculo
+  que se guarda), números en `--fg`/800; lleva `~` delante mientras edad, peso o estatura sean los de ejemplo (§9.1).
+- **Guardar (`onboardgo`, aditivo desde v268):** conserva lo que ya hubiera en `profile` y fija `profile.since` si no
+  existía; **mezcla** las metas (la de sueño sobrevive); escribe `goalHist[hoy]`; y solo si tecleaste un peso entre 30 y 250
+  kg lo apunta como tu primer registro de `bodyweight[hoy]`. Sin nombre: `⚠ pon tu nombre` y el foco vuelve al campo.
+- **La revisa:** `_v268SelfCheck` (en sandbox: `since`, meta de sueño, `goalHist`, peso tecleado y sin teclear) · a ojo a
+  393×852.
 
 ---
 
@@ -1041,7 +1147,7 @@ Instrumentación, no infografía (B-02: la gráfica existe solo cuando el texto 
 | **Radar** | `dayRadar()` → `.macro-rad`, `.msum-rad` | macros (detalle), desglose de comida | etiquetas SVG a `font-size="7.5"` (≈5.9 reales): objetivo G4 etiquetas HTML a 10 o quitarlo (decisión del dueño) | — |
 | **Calendario** (TRKCal) | `monthCalHTML()`, `stripCalHTML()` (racha en franja `.strk-row`), `histCalHTML()` (`.hcal`) | racha, historial | un solo blanco en opacidad (`--track` · `--o30` · `--fg`); celda cuadrada `--r-mark`; hoy con contorno `--o40`; **lunes primero** (`L M X J V S D`); sin leyenda; tocar un día lleva a ese día | días vacíos |
 | **FC** | `hrChartSVG()` → `.hrsvg` | hoja de sesión | 56 de alto, `--o60`, marca por serie | no se dibuja |
-| **Medidor de celdas** ▮▯ | — | — | primitivo de BRAND §5; hoy no existe | — |
+| **Medidor de texto** (TRKProgress, v268) | `trkProgressHTML()` → `.tprog` | lectura de etiqueta con OCR, arranque | primitivo de BRAND §5: `[█░] %` con octavos en el borde, solo con avance real (§7.33); ▮▯ no existen en la fuente | `[░░░] 0%` |
 
 **Línea (GRA-1…6):**
 1. **Sin dato = hueco.** La línea se corta; nunca un 0 en el piso (`chartNums()` con `gap0` en las métricas diarias donde 0 =
@@ -1073,7 +1179,8 @@ punto, escalas de color de otras apps, 0 falso. `miniBars()` convierte huecos en
 
 | Señal | Significa | Dónde |
 |---|---|---|
-| `~` antes o después de un dato | estimado o deducido | tensión con RIR supuesto, perfil sugerido, % de baja confianza |
+| `~` antes o después de un dato | estimado o deducido | tensión con RIR supuesto, perfil sugerido, % de baja confianza, vista previa de metas del perfil mientras edad/peso/estatura son los de ejemplo (v268) |
+| `▖ verbo… 3s` · `[█░] 42%` | algo trabaja; la barra solo si el avance es real | TRKSpin · TRKProgress (§7.33) |
 | borde punteado | sugerido, falta que lo confirmes | `.pftog.sug`, deriva del split |
 | gris .45 (`.pf`) | prefill de la sesión anterior; no cuenta hasta confirmarlo | tabla de sesión |
 | hueco en la línea | no hay dato ese día | gráficas |
@@ -1143,6 +1250,8 @@ Reduced-motion = instantáneo.
 - MOV-2: solo `transform` y `opacity`. Nada de animar `width`, `height`, `top`, `left`, `padding`, `gap` ni `grid-*`.
 - MOV-3: `transition` solo en nodos que **persisten** entre renders (en un nodo que `render()` rehace, nunca se ve: X1-09).
 - MOV-4: los bucles son solo funcionales, en `steps()` o lineales, con id `loop` y `animation:none` con reduced-motion.
+  Hoy (v268): `.cur` (landing), `.bootov .bcur` (arranque), el `>` de la nav, `.wnav`, `.scan-reticle .scl` y
+  `.restbar.fin`. El trabajo en curso ya no es un bucle CSS: es texto que escribe TRKSpin (§7.33).
 - MOV-5: sin rebote, elástico, parallax, animaciones infinitas decorativas ni "que se sienta premium". Presionado:
   opacidad o `scale(.98)`.
 - MOV-6: con reduced-motion todo es instantáneo y los bucles se vuelven un glifo quieto. La regla global
@@ -1168,8 +1277,8 @@ Leyenda de la última columna: ✓ cumple B-09 · ⚠ a revisar con el dueño ·
 | `restdone` (`.restbar.fin`) | fin del descanso | border-top-color → `--good` | .5s × 3 (`loop`) | ease | aviso | .01ms | ✓ excepción `loop` |
 | `blink` (`.cur::after`) | landing | opacity en pasos | 1.15s infinito (`loop`) | `step-end` | cursor ▌ | `animation:none` | ✓ |
 | `blink` (`.nav a.active::before`) | pestaña activa de la nav (v267) | opacity en pasos | `--dur-blink` 1.1s infinito (`/*ds:exempt:loop*/`) | `--ease-step` | el `>` de "estás aquí" | `animation:none` (el `>` queda quieto) | ✓ excepción `loop` |
-| `blink` (`.bootov .bready`, `.wnav`) | arranque, wrap | opacity en pasos | 1.15s / 1.5s infinito | `step-end` | "listo" / "toca" | una vez (v258) | ✓ |
-| `spin` (`.spin`, `.fa-spin`) | cargas (OpenFoodFacts, IA, OCR) | rotate 360 | .7s infinito (`loop`) | linear | cargando | una vez (v258) | ✓; G4 spinner de texto |
+| `blink` (`.bootov .bcur`) | arranque (v268): el cursor de `ready▌` | opacity en pasos | `--dur-blink` 1.1s infinito (`/*ds:exempt:loop*/`) | `--ease-step` | "listo" | `animation:none` (el cursor queda quieto) | ✓ excepción `loop` (antes parpadeaba toda la línea `[ready]`) |
+| `blink` (`.wnav`) | wrap | opacity en pasos | 1.5s infinito | `step-end` | "toca" | una vez (v258) | ✓ |
 | `scanmove` (`.scan-reticle .scl`) | escáner buscando | `top` 30%↔70% | 2s infinito | ease-in-out | "buscando" | `animation:none`, línea al centro | ⚠ anima `top` (excepción `scanner`) |
 | `bcpop` (`.scan-reticle.hit .frame2`) | código detectado | scale 1→1.06→1 | `--dur-3` | `cubic-bezier(.2,1.3,.4,1)` literal | fijado | .01ms | ✗ G4: rebote fuera de lista, easing literal |
 | `bcchk` (`.scan-reticle.hit .chk`) | código detectado | opacity · scale .4→1.15→1 | `--dur-3` | `--ease-out` | ✓ grande | .01ms | ✗ G4: rebote |
@@ -1203,7 +1312,10 @@ Leyenda de la última columna: ✓ cumple B-09 · ⚠ a revisar con el dueño ·
 | TRKHold `holdConfirm()` | mantener el botón | `.hold-fill` scaleX 0→1 + texto "armando N%" | 900 · linear | **no mira la preferencia** (es un temporizador) | ✓ temporizador |
 | Sheets `openModal()` / `closeModal()`; capa `askLayer()` / `closeAsk()` | abrir / cerrar | clases `.in` / `.out`; el fantasma se borra a los 200 | — | `askLayer()` no anima | ✓ chrome |
 | Toasts `toast()` | aviso | clase `.out` a los `--toast-life` / `--toast-life-err`; se borra a `--dur-3` | — | .01ms | ✓ chrome |
-| Arranque `bootScreen()` + `startShader()` | abrir la app | lienzo WebGL en bucle `requestAnimationFrame` (1300 y fuera) | 1300 | **no se apaga** con reduced-motion ni en segundo plano (T-11) | ✗ G3 (BRAND §4) |
+| Arranque `bootScreen()` (v268) | cada apertura, una vez | las líneas `.bl` aparecen una a una (`visibility`, `setTimeout`); la barra TRKProgress se llena por tiempo (intervalo de 40 que se apaga solo) | ~950 (corto ~480) + 260 de cierre | todo a la vez, barra al 100 %, 600 | ✓ imprime, no mueve |
+| Shader `startShader()` | arranque normal (no el corto) | lienzo WebGL en bucle `requestAnimationFrame` detrás a `--op-dim` | lo que dure el arranque | cuadro quieto; pausado en segundo plano (v262) | ✓ excepción `boot` |
+| TRKSpin `spinStart()` / `spinTick()` (v268) | hay algún `[data-spin]` en pantalla | `textContent` del glifo (`▖▘▝▗`) y de los segundos; un solo ticker que se apaga solo | 120 · en pasos | glifo quieto en `▖`; los segundos siguen | ✓ texto, no movimiento de caja |
+| TRKProgress `trkProgressSet()` (v268) | avance real (OCR) o el reloj del arranque | `textContent` de la barra y del `%` | — | igual (es dato) | ✓ |
 | Recap `snapRecap()` | primera apertura después de las 21 h | overlay 5000 | 5000 | .01ms | G4 |
 | Escáner | `startScan()` | bucle de decodificación (~360), pausa de 430 tras fijar, vibración 55 | — | la línea se detiene | ⚠ excepción `scanner` |
 | Scrub de gráfica | mantener y deslizar | línea punteada y punto siguen al dedo; se ocultan a los 1600 | directo | — | ✓ |
@@ -1220,9 +1332,11 @@ toque (X1-10).
 
 ### 11.1 Diccionario `GLYPHS` (cerrado; un glifo = un significado)
 
-Espejo de BRAND §3 y de la constante `GLYPHS` de `index.html` (`'✓○▲▼⠿›‹▾▶↓✕↩~⚠▌×@/→#—'`). Cualquier otro símbolo en un
-texto de interfaz es una desviación; las etiquetas que escribe el dueño no cuentan. La revisa: R-GLY · `_dsRenderCheck`
-glyph.
+Espejo de BRAND §3 y de la constante `GLYPHS` de `index.html` (`'✓○▲▼⠿›‹▾▶↓✕↩~⚠▌×@/→#—−'`). Desde v268 la acompaña
+`GLYPHS_VIZ` (`'▖▘▝▗░▒▓█▏▎▍▋▊▉─│┌┐└┘├┤┬┴┼'`): los cuadros del spinner y los bloques del medidor, que solo viven en
+TRKSpin y TRKProgress, y el box-drawing, reservado a overlays y compartir (hoy sin uso). Cualquier otro símbolo en un texto de interfaz es
+una desviación; las etiquetas que escribe el dueño no cuentan. La revisa: R-GLY (el auditor acepta esos bloques desde
+v267) · `_dsRenderCheck` glyph (acepta `GLYPHS_VIZ` desde v268).
 
 | Glifo | Significa | Hoy se usa en | Texto para lectores de pantalla |
 |---|---|---|---|
@@ -1239,11 +1353,12 @@ glyph.
 | ↩ | deshacer | `.footer .undo` | "deshacer" |
 | ~ | estimado | `~T`, `~` de sugerido | "aproximado" |
 | ⚠ | aviso | toasts de error, alimentos a revisar | "aviso" |
-| ▌ | cursor (solo arranque y vacíos) | `.cur` del landing | — |
+| ▌ | cursor (solo arranque y vacíos) | `.cur` del landing, `.bcur` de `ready▌` en el arranque (v268); dentro de un medidor `[…]` es media celda | — |
 | × @ / → # | notación de series y datos | `160lbs×8@0 / …`, `→ acción` del diagnóstico, `#músculo` | — |
 | — | sin dato | lecturas vacías | "sin dato" |
-| `>` | aquí / activo (ASCII, fuera de `GLYPHS`: lo pone el CSS) | `.nav a.active::before` (v267); prompt del arranque (v268) | `aria-current="page"` |
-| ▖ ▘ ▝ ▗ · █ ░ | trabajando · medidor (v268, plan) | todavía no se usan | — |
+| `>` | aquí / activo (ASCII, fuera de `GLYPHS`) | `.nav a.active::before` (v267); prompt del arranque `> loading gym tracker` y la fila con foco del perfil `.obk::before` (v268) | `aria-current="page"` |
+| ▖ ▘ ▝ ▗ | trabajando (`GLYPHS_VIZ`, v268) | TRKSpin `.tsg` (§7.33) | `role="status"` con el verbo |
+| █ ░ (+ octavos ▏▎▍▋▊▉) | medidor (`GLYPHS_VIZ`, v268) | TRKProgress `.tprog` (§7.33) | `role="progressbar"` con `aria-valuenow` |
 
 - GLY-1: **un glifo, un significado.** Hoy se rompe: `▲▼` también reordena en el editor de split y en la hoja de sesión
   (M1-04, M3-10 → `⠿` o menú, G3); `~` también significa "tomado tarde" en el stack (G4); `›` también gira para
@@ -1258,7 +1373,7 @@ glyph.
 ### 11.2 Puntuación tipográfica (no son glifos de interfaz)
 
 `·` separador de datos (el más usado) · `–` rango (`61.1 – 62.1 kg`) · `−` signo menos real (obligatorio en cambios) ·
-`…` tarea en curso (`… sincronizando`) · `¿ ¡` · `≤ ≥` en texto. Se escriben como texto, no como glifos. (La constante
+`…` tarea en curso, detrás del verbo (`▖ sincronizando salud…`, lo pone TRKSpin desde v268) · `¿ ¡` · `≤ ≥` en texto. Se escriben como texto, no como glifos. (La constante
 `GLYPHS` no los incluye; R-GLY y `_dsRenderCheck` deben tratarlos como puntuación.)
 
 ### 11.3 Fuera del set, en uso hoy (se reemplazan)
@@ -1306,19 +1421,20 @@ hover.
 ### 12.2 Estados por módulo
 
 Cada sección tiene su vacío `// …` y cada módulo sus finales explícitos (EST-1). Forma: `// sin registros · [+ acción]`;
-error `⚠ qué pasó · qué hacer`; sin conexión `⚠ sin conexión · [reintentar]`.
+cargando `▖ verbo… 3s` (TRKSpin) o, con avance real, `[█░] %` (TRKProgress) (v268, §7.33); error `⚠ qué pasó · qué
+hacer`; sin conexión `⚠ sin conexión · [reintentar]`.
 
 | Módulo | Vacío (hoy) | Pocos datos | Cargando | Error / sin conexión |
 |---|---|---|---|---|
 | Gym | cabecera `//GYM sin split` + `+ crear split`, `explorar splits`, `importar` | recuperación con "pocos datos"; "sin baseline" en series | — | — (local) |
 | Sesión | — | prefill vacío; "sin baseline" | — | guardado fallido: `.savebar` permanente + TRKAsk "no se pudo guardar" |
-| Macros | `no meals logged`, `no water logged` (inglés: G3 → español) | — | búsqueda en línea con `.fa-spin` | OpenFoodFacts falla **en silencio** y un código que no se pudo buscar sale como "no encontrado" (M4-09 → G4: `// 0 resultados` · `⚠ sin conexión · [reintentar]` · resultados) |
+| Macros | `no meals logged`, `no water logged` (inglés: G3 → español) | — | `▖ buscando en línea… 3s` (TRKSpin); OCR `leyendo [██████▍░░░] 42%` (TRKProgress) | OpenFoodFacts falla **en silencio** y un código que no se pudo buscar sale como "no encontrado" (M4-09 → G4: `// 0 resultados` · `⚠ sin conexión · [reintentar]` · resultados) |
 | Progreso | **activada = recuadro (v263):** una métrica encendida en `[config]` dibuja su tile aunque no tenga un solo dato — sin tile no hay por dónde registrarla. Vacío = `emptyTile()`: `—` + `sin registro`, y el recuadro entero abre su registro (volumen/tensión/e1rm → `loglater`; FC en reposo/HRV/energía activa → su hoja). "sin registros en este rango", "sin volumen registrado en este rango", "aún no hay levantamientos con peso × reps" | `sin normal · N/7 d`, diagnóstico "pocos datos" | — | — |
 | Historial | "sin sesiones registradas" | — | — | sesión inexistente en compartir (G4) |
 | Stack | "stack vacío", "no toca nada hoy ✓" | — | — | — |
-| Compartir | "sin sesión para compartir", "sin series registradas", "sin alimentos este día", "aún sin series con peso y reps" | — | `… generando imagen` | `⚠ no se pudo generar la imagen` |
-| Ajustes · salud | — | — | `… sincronizando salud` | `⚠ …` del sync; errores de permisos en el log |
-| Escáner | — | — | cámara abriendo | fallback a foto, búsqueda por nombre y tecleo |
+| Compartir | "sin sesión para compartir", "sin series registradas", "sin alimentos este día", "aún sin series con peso y reps" | — | `▖ generando imagen… 1s` (toast de tarea) | `⚠ no se pudo generar la imagen` |
+| Ajustes · salud | — | — | `▖ sincronizando salud… 3s` (toast de tarea) | `⚠ …` del sync; errores de permisos en el log |
+| Escáner | — | — | `iniciando cámara…`; al buscar o leer un código, `▖ buscando…` / `▖ leyendo…` (TRKSpin) | fallback a foto, búsqueda por nombre y tecleo |
 
 Objetivo G4: completar la tabla con el texto exacto de cada celda vacía y una acción por vacío.
 
@@ -1386,7 +1502,8 @@ Objetivo G4: completar la tabla con el texto exacto de cada celda vacía y una a
 
 | Pantalla (`state.screen`) | Instrumento | Cabecera | Contenido | Nav hoy | Notas |
 |---|---|---|---|---|---|
-| `landing` / `login` / `onboard` | primer uso | marca | `.start`, `.field`, `.toggles` | no | M0 sin evaluar (G4): tono de venta, etiquetas en mayúsculas, `← regresar`, marca con `//` en dos opacidades |
+| `landing` / `login` | primer uso | marca | `.start`, `.field`, `.toggles` | no | M0 sin evaluar (G4): tono de venta, etiquetas en mayúsculas, `← regresar`, marca con `//` en dos opacidades |
+| `onboard` | primer uso (perfil) | `.obh` `gym//TRK//PROFILE` + una línea | filas de terminal `.obr` (clave `.obk` + control; `.obi`, toggles), pistas `.obhint`, vista previa `.obprev`, `▶ empezar` | no | v268, §7.34: la fila con foco lleva `>`; Enter salta al siguiente campo; guardar es aditivo |
 | `home` (gym) | estado actual | `statusBar` + rotación + `dayHeadHTML` (`//NEXT`) | línea de preparación, músculos del día, vista previa (`[ ver rutina ▾ ]`), primario, //ESTÍMULO, //STATS | sí | con sesión viva solo existe `▶ resume workout` (v258, M1-01/M1-01b) |
 | `workout` | registro | `.wline` (modo enfoque) | tabla de sesión, descanso, footer | no | §7.8, §7.20 |
 | `macros` | composición | `statusBar` + día `‹ fecha ›` | anillo en `.card`, detalle (radar, P/C/F, INTAKE, retención), SUPPS → MEALS → WATER | sí | §7.24, §7.28 |
@@ -1406,17 +1523,17 @@ Objetivo G4: completar la tabla con el texto exacto de cada celda vacía y una a
 
 Toda excepción es funcional y tiene **id de categoría** (BRAND §6). En el CSS se marca pegada a la declaración. Hoy casi
 todo el marcador es `/*ds:exempt*/` sin id; los primeros con id son `/*ds:exempt:ring*/` (radio del panel del anillo) y
-`/*ds:exempt:loop*/` (el `>` de la nav, v267). Objetivo G4: `/*ds:exempt:<id>*/` con un id de esta lista en todos
+`/*ds:exempt:loop*/` (el `>` de la nav, v267, y el cursor `.bcur` del arranque, v268). Objetivo G4: `/*ds:exempt:<id>*/` con un id de esta lista en todos
 (R-EXEMPT). Marcar algo como exento exige que esté aquí (EXC-1).
 
 | Id | Qué exime | Usos actuales |
 |---|---|---|
 | `ring` | el anillo de kcal (macros y compartir comida): única gráfica circular | `.ring.lg .num` tracking −1px · radio del panel `.card.kpanel` (`/*ds:exempt:ring*/`) |
 | `table36` | tabla de sesión con celdas de 36 y campos a 12 (densidad en la serie); el ✓ amplía su toque con `::after` | sin marcador CSS (es la anatomía de §7.8) |
-| `boot` | shader de marca del arranque (única excepción de fondo animado) y su tipografía | `.bootov .bt` tracking .02em; `startShader()` |
+| `boot` | shader de marca del arranque (única excepción de fondo animado) y su tipografía | `.bootov .bt` tracking .02em; `startShader()` (detrás a `--op-dim` desde v268; no corre en el arranque corto) |
 | `wrap` | overlay de un solo mensaje del wrap mensual | `.ws-big` 60 y tracking −2px · `.ws-month` 44 y −1.5px · tracking de `.wnav`, `.ws-lbl`, `.ws-sub`, `.ws-kick`, `.ws-year`, `.ws-cardh`, `.ws-cardf`, `.ws-share` (el wrap se reevalúa en G4: formato rechazado) |
 | `scanner` | overlay de cámara | `.scan-reticle .chk` 40 · `.scan-reticle .scl` (bucle, también `loop`) |
-| `loop` | bucles funcionales: única animación infinita permitida | `.restbar.fin` (3 destellos) · `.cur::after`, `.bootov .bready`, `.wnav` (`blink`) · `.nav a.active::before` (`blink`, el `>` de la pestaña activa, `/*ds:exempt:loop*/`, v267) · `.spin`, `.fa-spin` (`spin`) · `.scan-reticle .scl` (`scanmove`) |
+| `loop` | bucles funcionales: única animación infinita permitida | `.cur::after` (`blink`, landing) · `.bootov .bcur` (`blink`, el cursor de `ready▌`, `/*ds:exempt:loop*/`, v268) · `.nav a.active::before` (`blink`, el `>` de la pestaña activa, `/*ds:exempt:loop*/`, v267) · `.wnav` (`blink`) · `.scan-reticle .scl` (`scanmove`) · `.restbar.fin` (3 destellos). v268 retiró los anillos de carga y su `@keyframes`: el trabajo en curso es texto (TRKSpin, §7.33) y no necesita excepción |
 | `geom` | geometría atada al JS o centrado óptico de puntos | `.chwrap` y `.chxs` (40 de columna de etiquetas Y = `.chscrub right`) · `.slfc` (mismo margen de eje) · `.chsd` −5 (punto de 10) · `.strk-row .cd.t.l0::after` y `.cm .cd.t.l0::after` −1.5 (punto de 3) · `.dots3` (la sombra dibuja los puntos 2 y 3) · `.ag-hr i` 30 (agenda, muerta) |
 | `vp-lock` | zoom bloqueado (§13.1) | meta viewport |
 | `camera` | ícono TRK de cámara en compartir un ejercicio (lo que el dueño pone en sus historias) | hoy `.exsh .camon::before` con el emoji 📷 (objetivo G3: ícono TRK) |
@@ -1520,7 +1637,8 @@ quedar registrado. Antes de escribir UI se responde por escrito:
    commit.
 4. Tokens (ninguno literal), colores semánticos y su porqué, gráfica (si la hay: la representación más eficiente en
    lenguaje TRK, no la más bonita).
-5. Estados: vacío, pocos datos, cargando, error, sin conexión, sugerido/estimado (§9, §12.2).
+5. Estados: vacío, pocos datos, cargando (TRKSpin o TRKProgress, §7.33; nunca un spinner propio), error, sin conexión,
+   sugerido/estimado (§9, §12.2).
 6. Movimiento: qué cambio de estado comunica (§10).
 
 ### 17.6 Definición de terminado
@@ -1599,7 +1717,8 @@ Línea base del 2026-09-21: todos en 0 salvo `style=""` 89, excepciones 33, lett
 - **`_dsRenderCheck()`** (en `?selftest=1`; en consola `_dsRenderReport()`): mide sobre el DOM pintado lo que el auditor
   estático no ve — `ua` fugas de estilo del navegador (letra 13.333, fondo `rgb(240,240,240)`), `hit` toques bajo 44×44
   contando su `::after` (R-HIT), `txt` texto bajo `--o40` (R-TXT), `fsOff` tamaños fuera de la escala (incluido SVG y
-  `--t-field`), `blur` fuera del chrome, `glyph` glifos fuera de `GLYPHS` y, desde v267, **`rad`**: esquinas de contenido
+  `--t-field`), `blur` fuera del chrome, `glyph` glifos fuera de `GLYPHS` (desde v268 acepta también `GLYPHS_VIZ`: los
+  cuadros de TRKSpin, los bloques de TRKProgress y el box-drawing) y, desde v267, **`rad`**: esquinas de contenido
   más redondas que max(`--r-ctl`, `--radius`) (hoy 4), sin contar lo que flota (`DS_CHROME`), lo exento (`DS_EXEMPT`), los
   puntos (círculos ≤24) ni las barras finas `.bar`/`.wprog`/`.vbar` — la prueba de 5 s de BRAND §8. Solo reporta; los
   umbrales viven en la línea base.
@@ -1607,6 +1726,12 @@ Línea base del 2026-09-21: todos en 0 salvo `style=""` 89, excepciones 33, lett
   mueven `rotIdx` ni agregan o quitan sesiones; continuar + abortar no borra la sesión pasada; y desde v267, **sin split**
   (cuenta nueva) `loglater` abre una sesión libre (`dayId` null) y `rest`/`skip` no mueven la rotación ni agregan
   sesiones. Desde v258 es una aserción dura (`SELFCHECK R-SESS`): si falla, `?selftest=1` se detiene.
+- **`_v268SelfCheck()`** (en `?selftest=1`, al final de la suite y en sandbox: nada llega al disco): la barra de texto
+  (`trkBarTxt`: vacía, llena, a la mitad, con octavo y acotada a 0–100); que `TRK_SPIN` solo use `▖▘▝▗`; que el ticker
+  corra con un `[data-spin]` en pantalla y se apague solo sin ninguno; **Z-2**: con `#bootov` en pantalla un aviso de
+  la cola del arranque espera en vez de abrirse debajo; y `onboardgo` sobre una base nueva: guarda `profile.since`,
+  conserva la meta de sueño, escribe `goalHist[hoy]`, el peso tecleado es el primer registro de `bodyweight` y sin peso
+  tecleado no se inventa ninguno.
 - **Inventario en navegador** (`tools/ds-inventory.js`, se guarda en G1): tamaños, colores→token, radios, sombras, blur,
   tracking, animaciones, glifos y toques por pantalla, con el respaldo real del dueño.
 
