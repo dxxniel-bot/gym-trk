@@ -1,6 +1,6 @@
 # gym//TRK — DESIGN SYSTEM (referencia del estado actual)
 
-> Referencia del estado actual (v273). **Lee BRAND.md primero**: manda sobre este archivo. Sin historia: DESIGN_CHANGELOG.md.
+> Referencia del estado actual (v274). **Lee BRAND.md primero**: manda sobre este archivo. Sin historia: DESIGN_CHANGELOG.md.
 
 ---
 
@@ -621,7 +621,7 @@ en `›` para navegar. Nada más. El árbol para elegir está en §17.3.
 - **Movimiento:** el indicador aparece en su sitio al pintarse; **solo viaja** (posición y ancho, `--dur-2 --ease-out`)
   cuando cambia la pestaña elegida (así "PM" ya no parpadea).
 - **Dónde:** periodos del detalle de métrica, volumen y e1RM; HOY/TODOS del stack; momentos de SUPPS (`.lseg`); vistas de
-  compartir un ejercicio.
+  compartir un ejercicio; la bitácora de un ejercicio (v274, §7.40: `e1RM · peso top · volumen` y sus periodos).
 - **La revisa:** a ojo · self-check de UI.
 
 ### 7.4 Marcas y estados
@@ -644,8 +644,8 @@ Hoy hay más de diez clases de fila. Se agrupan en **cuatro familias**; una fila
 | Familia | Anatomía | Toque | Clases de hoy |
 |---|---|---|---|
 | **A · Lectura** `clave ···· valor` | clave `--o60` · líder punteado `.dots` · valor `--fg`/700; `--t-data`; sin toque | — | `.line`, `.line.stat`, `.mdline` (variante de detalle), `.tbrow`, `.stline`, `.nl-row`, `.mdr` |
-| **B · Navegable** (termina en `›`) | nombre `--t-data` + sublínea `--t-label` opcional; `›` `--o30` al final; separador .5 `--o10` | toda la fila, ≥44 | `.line.lnav`, `.nvm` (menú, filas de ~50), `.pickitem`, `.exrow`, `.hrow`, `.mscrow`, `.mmrow`, `.trow` (con sparkline), `.mdtr`, `.stq` (si tiene detalle) |
-| **C · Registro** (una línea por registro, B-03) | `#etiqueta` tenue · nombre `--fg`/800 · datos `--o50`; interlineado de lectura | la fila, si abre algo | `.srw` (la referencia), `.sxr` (historial compacto, objetivo G4: pasa a `.srw`), `.mit` (alimento), `.sitem` (compartir comida), `.lc` (celda de supp/agua), `.seex` (ejercicio del split), `.exbr` |
+| **B · Navegable** (termina en `›`) | nombre `--t-data` + sublínea `--t-label` opcional; `›` `--o30` al final; separador .5 `--o10` | toda la fila, ≥44 | `.line.lnav`, `.nvm` (menú, filas de ~50), `.pickitem`, `.exrow`, `.hrow`, `.mscrow`, `.mmrow`, `.trow` (con sparkline), `.mdtr`, `.stq` (si tiene detalle), `.line.exl` y `.line.exr` (v274: anatomía de fila A, toque de fila entera a 44, sin `›`; abren la bitácora, §7.40) |
+| **C · Registro** (una línea por registro, B-03) | `#etiqueta` tenue · nombre `--fg`/800 · datos `--o50`; interlineado de lectura | la fila, si abre algo | `.srw` (la referencia), `.sxr` (historial compacto, objetivo G4: pasa a `.srw`), `.mit` (alimento), `.sitem` (compartir comida), `.lc` (celda de supp/agua), `.seex` (ejercicio del split), `.exbr`, `.elog` (sesión de la bitácora de un ejercicio, v274, §7.40) |
 | **D · Rejilla editable** | cajas de dato (`--r-ctl` 4) en columnas fijas | cada caja | `.srow`/`.pair` con `.gc-*`, `.slph`, `.slblk` |
 
 - ROW-2: separador **.5 `--o10`** en todas las filas de lista; dentro de un grupo con borde, el separador es el borde.
@@ -667,7 +667,7 @@ Hoy hay más de diez clases de fila. Se agrupan en **cuatro familias**; una fila
 | **Título de sheet** | `.sheet h3` (`.sub` para el `· tag`) | `--t-section`/800 `--fg` `--ls-title` |
 
 - HDR-1: una cabecera por pantalla (`dayHeadHTML` o `//MÓDULO` + meta), un `//` por sección.
-- Hoy //FUERZA, //RECORDS, //MÚSCULOS y //RENDIMIENTO son `.grp-label` de 10, más débiles que sus propias filas (M5-07):
+- Hoy //FUERZA, //RECORDS, //EXERCISES (v274), //MÚSCULOS y //RENDIMIENTO son `.grp-label` de 10, más débiles que sus propias filas (M5-07):
   objetivo G4 a `.section` 16/800.
 - El atrás de la barra de estado es `[‹ back]` de texto desde v267 (antes una caja de 68×37): objetivo G3 `[‹ origen]`
   (§14.2).
@@ -737,7 +737,8 @@ La pieza más gym//TRK de la app: densa, afilada, técnica. **Nunca** vidrio, ra
 - **Rol:** las tres pantallas primarias: **progress · gym · macros**. Pertenece al chrome, no al contenido.
 - **Clase / API:** `renderNav()` construye una vez `.nav.glass` con tres `<a data-act="nav" data-screen role="link">` de
   solo texto (`progress  gym  macros`; `NAVIC` y sus íconos se retiraron en v267) y alterna `.active` +
-  `aria-current="page"`; se oculta en workout, settings, splitedit, history, histedit y share (y sin usuario).
+  `aria-current="page"`; se oculta en workout, settings, splitedit, history, exhist (v274), histedit y share (y sin
+  usuario).
   Suplementos, músculos, split, historial y ajustes viven en el menú `u/…` (`.nvm`).
 - **Anatomía (v267, decisión del dueño 2026-09-23: "> parpadea y el nombre fijo", BRAND §4):** cápsula de vidrio
   `--r-nav` (= `--r-float` 8) flotando a 12 del borde, sin separación entre pestañas; pestaña de 44 de alto (mínimo 44 de
@@ -818,8 +819,9 @@ reemplaza, así lo escrito abajo se conserva. Diálogos nativos (`alert`/`confir
 - **Hoy → objetivo G4:** las filas no elegidas en `--o35` son texto bajo el piso (TOK-4).
 
 #### TRKMenu
-- **Rol:** las acciones de una entidad (comida, ejercicio del catálogo). **API:** `trkMenu(título, [[etiqueta, fn], …])` →
-  filas `.nvm` con `›` en la capa de decisión.
+- **Rol:** las acciones de una entidad (comida, ejercicio del catálogo: `perfil del ejercicio` · `historial` (v274; antes
+  `historial · e1RM`) · `seleccionar para unir`; el nombre del ejercicio en el entreno, v274: `historial` · `cambiar
+  ejercicio`). **API:** `trkMenu(título, [[etiqueta, fn], …])` → filas `.nvm` con `›` en la capa de decisión.
 
 ### 7.14 Popovers
 
@@ -1049,7 +1051,8 @@ de la guía RP ("esa madre realmente no sirve"). El modelo vive en `contexto/ten
   máquina/polea/smith, del mismo gym; Theil–Sen sobre ln e1RM con ventana de 4/8/12 semanas según cuánto llevas con el
   ejercicio (crece hasta 16 hasta juntar 6 sesiones en 4 semanas o más; perillas `EXST`). Estados `progresando` ·
   `estable` · `estancado` · `retrocediendo` · `pocos datos`; `exStatusTxt()` → `progresando · +1.8 %/sem · 9 sesiones en
-  8 sem`. Lo leen el detalle de e1RM (línea `estado`), el diagnóstico (`regress`/`plateau`) y `fatigueFlag()` (≥2
+  8 sem`. Lo leen la bitácora del ejercicio (v274, §7.40: su línea de estado y la clave de toda su historia), el
+  detalle de e1RM de respaldo (línea `estado`), //EXERCISES, el diagnóstico (`regress`/`plateau`) y `fatigueFlag()` (≥2
   retrocediendo en ~10 días **y** carga de la semana >20 % sobre su media de 4 semanas o >25 % de las series a F/RIR 0).
 - **Recuperación:** `recoveryEstimate()` toma la dosis del costo C (+25 % con ≥2 F en compuestos de pierna).
 - **La revisa:** `_tensionSelfCheck` (tabla de calibración de σ) · `_exStatusSelfCheck` · `_diagSelfCheck` ·
@@ -1096,7 +1099,8 @@ Decisión del dueño 2026-09-21: macros en orden **SUPPS → MEALS → WATER**, 
 ### 7.26 Editores de entidad
 
 - **Hoy:** cada entidad tiene su sheet de edición: `openExEdit()` (ejercicio), `openExProfile()` (perfil y músculos del
-  motor, con lo sugerido punteado `.pftog.sug`), `openStackEdit()` (suplemento), `openGoals()` (metas), `openSleepLog()`
+  motor, con lo sugerido punteado `.pftog.sug`; desde v274 lleva `[historial ›]` bajo el tipo si el ejercicio tiene
+  sesiones, §7.40), `openStackEdit()` (suplemento), `openGoals()` (metas), `openSleepLog()`
   (sueño), el editor de máquina y el perfil de ajustes. Todos usan la familia formulario (§7.2), `.toggles` y `.sheetbtns`.
 - **Regla (ENT-1):** un editor = un sheet con `h3` · campos en el orden en que se piensan · lo sugerido punteado hasta que lo
   toques · un primario (`guardar`) · lo destructivo al final y separado (TRKHold si es irreversible) · toast al guardar.
@@ -1458,6 +1462,78 @@ adaptativo… si no se entrena = descanso".
   días fijos: índice, descanso y ciclo 7; RPE 8.5 ↔ RIR 1.5 y la F se queda; etiqueta calculada) · a ojo a 393×852 en los
   tres modos.
 
+### 7.40 Bitácora de un ejercicio (`renderExHist()`, pantalla `exhist`, v274)
+
+Decisión del dueño 2026-09-24 (BRAND §9): "irme a progreso, seleccionar el ejercicio y… ver… un enlistado de… la fecha de
+la sesión… peso, número de repeticiones e intensidad, y… una gráfica de progreso respecto a ese ejercicio… como… las
+notas" (las de su amigo: `#1`, `#2`, `#3`… con fecha y series).
+
+- **Rol:** todo lo que has hecho de un ejercicio, sesión por sesión, y cómo va su capacidad, en una pantalla secundaria.
+- **Clave:** `exHistKey()` (v272, §7.23: nombre + variante; las filas viejas sin tipo se pliegan a la variante con tipo),
+  **nunca `exId`**, que cambia por día del split: el mismo ejercicio en 3 días del split es **una** historia (sus calf
+  rises); uni ≠ bi. `exKeyByName(name, hint)` resuelve un nombre suelto (tile, //STRENGTH, //RECORDS, catálogo) a la
+  variante con más sesiones; con pista (un ejercicio), a la de su lateralidad. `exHistRows(key)` = sus filas de
+  `exIndex()` (sin cardio), la más nueva primero.
+- **Abrir:** `openExHist(key)` cierra el sheet que haya, recuerda de qué pantalla vienes (`state._exFrom`) y hace
+  `go('exhist')` con `state._exKey`. En el marcado: `data-act="exhist"` + `data-k`.
+- **Anatomía** (de arriba abajo; §17.2):
+  1. `statusBar(false)` y debajo `[‹ back]` (`button.b`, `exback`).
+  2. `dayHeadHTML('EXERCISE', '[bi] nombre', 'machine · 17 sesiones · kg')` (§7.6): tipo (`canonType()`), sesiones y la
+     unidad de la serie (`exSeries()`; placas se lee `placas`).
+  3. La línea de estado de v272 en `.submeta`: `exStatusTxt()` → `progresando · +0.6 %/sem · 6 sesiones en 5 sem`.
+  4. TRKTabs (§7.3) `e1RM · peso top · volumen` (`extab`, `state._exTab`; e1RM por defecto).
+  5. `lineChart()` de detalle (§8: 150 de alto, etiqueta por punto para el scrub, promedio punteado): un punto por
+     sesión en la **unidad real** del ejercicio — e1RM `sessE1RM()`, peso top = el `effW()` mayor, volumen = Σ peso ×
+     reps. Solo series de trabajo: sin drops, sin sugerencias `_pf`, sin series en otra unidad ni con peso corporal sin
+     registrar. Con 1 punto en el rango: `1 sesión en este rango: hacen falta 2 para la línea`; sin puntos: `sin datos en
+     este rango`.
+  6. En máquina, polea o smith la línea compara **solo el gym de la última sesión** (regla de v217: otra máquina es otra
+     carga) y, si alguna quedó fuera, la nota `.u-label` `--o40`: `la línea: solo AGON GYM · otra máquina no se compara`.
+     El //LOG sí las lista todas.
+  7. Periodos TRKTabs `30D 90D 6M 1A todo` (`exrange`, `state._exDays`; **6M** por defecto).
+  8. //LOG (`.section`, meta `17 sesiones · la más nueva arriba`) y una fila `.elog` por sesión (familia C, §7.5;
+     `role="button"`, separador `--bw-sep` `--o10`, padding `--s3` arriba y abajo):
+     - `.eloh` (alineada por la línea base, `gap` `--s3`): `.elon` `#17` (`--t-section` `--fg`/800, 4ch; **`#1` es la más vieja**) ·
+       `.elod` `23 sep · delts/push B · AGON GYM` (`--t-data` `--o60`; si no cabe baja de renglón, nunca se corta: B-12) ·
+       ▲▼% de capacidad de esa sesión
+       (`progBadgeFromProg(histProgress())`, §7.4, la misma que en el historial).
+     - `.elos` (`--t-data` `--o70`, `--lh-read`, sangrada el ancho de `#17` —2.4 × `--t-section`— + `--s3` para caer bajo la fecha): las series con
+       `shareExLines()` —el formato de RECENT y compartir— unidas por ` / `, cada sesión en **su** escala RIR/RPE (`_shM`,
+       §7.39), y la unidad una vez al final (`· kg` en `--o40`). Los drops salen en el texto (`↓`) aunque no entren a la
+       gráfica.
+     - Tocar la fila abre esa sesión (`vieweditsession`).
+- **Atrás y nav:** sin nav (`renderNav()` la oculta, como en history; NAV-2). `[‹ back]` vuelve a `state._exFrom` —la
+  pantalla de donde viniste; si no hay, progress— y a la misma altura (`state._exScroll`): es el primer atrás que vuelve
+  al origen (§14.2).
+- **Entradas** (todas terminan en `openExHist()`):
+  - **//EXERCISES en //PROGRESS** (`exListHTML()`, solo con `cfg.e1rm`; va después de //RECORDS y antes de //MUSCLES):
+    `.grp-label` `//EXERCISES · cada sesión de cada ejercicio` y sub `los de los últimos 60 días · veces · última` (con
+    todos: `todos · veces · última`). Una fila `.line.exl` por ejercicio (por `exHistKey`), el más reciente arriba:
+    `[bi] nombre ···· progresando · 17 · 23 sep` — estado en `--o60` (se omite con `pocos datos`), veces y la última
+    fecha; 44 de alto, la fila entera es el toque, sin `›`. `[ver todos · N]` / `[solo los recientes]` (`button.b`,
+    `exall`, `state._exAll`) solo si hay más de los que se ven.
+  - **//RECORDS:** cada récord es tocable (`.line.exr`, 44).
+  - **Tile de e1RM y filas de //STRENGTH** (`liftdetail`): llevan `data-k` y abren la bitácora; `openLiftDetail()` queda
+    solo de respaldo, si no hay clave.
+  - **Catálogo:** `···` → `historial` (antes `historial · e1RM`, que abría `openLiftDetail()`).
+  - **Perfil del ejercicio** (`openExProfile()`): `[historial ›]` bajo el tipo, si el ejercicio tiene sesiones.
+  - **Entreno:** tocar el nombre del ejercicio (`editexname`) abre TRKMenu `historial` · `cambiar ejercicio`; sin
+    historia, cambiar directo.
+  - **Historial:** en una sesión abierta, el nombre de cada ejercicio (`.sxn`, `u-tap u-ul`).
+- **Estados:** vacío `sin registros de este ejercicio` (`.empty`) con su `[‹ back]`. Pestaña y periodo viven en `state`
+  (en memoria, no se guardan).
+- **Toque:** filas de //EXERCISES y //RECORDS a 44 (`.line.exl`, `.line.exr`), y las pestañas y periodos de la bitácora
+  también (`.mdtabs.tall`: 44 de alto, el resto de las TRKTabs sigue en ~33). `exhist` está en el recorrido de
+  `dsSweep()`: hit 2 (los dos de la barra de estado que tiene cada pantalla) y glyph 1 (el `’` del nombre de un gym suyo,
+  texto del dueño).
+- **Glifos:** la etiqueta del dueño `puh🥀` (un ejercicio suyo) ahora también sale en //EXERCISES: glyph 72 → 87 (+3 en
+  `progress` y en cada una de las 4 hojas que el barrido abre encima). Es texto del dueño, no un glifo de interfaz (B-08).
+- **Nombres:** el nombre en `.line.exl` y el día y gym de `.elod` bajan a una segunda línea si no caben; nunca se cortan
+  (B-12 / ROW-3).
+- **Sí / No:** sí una bitácora numerada como sus notas, la más nueva arriba; sí una sola historia por ejercicio; no
+  mezclar unidades ni máquinas de otro gym en la línea; no una puntuación.
+- **La revisa:** `_exHistSelfCheck` (§18.2) · a ojo a 393×852 con su respaldo.
+
 ---
 
 ## 8. Gráficas
@@ -1553,7 +1629,7 @@ Una forma de escribir cada tipo de dato, con su función (NUM-1). La revisa: a o
 | Intensidad (v273) | se **guarda** en RIR (`F`, 0–5, medios); se **lee** en la escala de la sesión: RIR `@2` · `RIR 2` · ` · RIR2`, RPE = 10 − RIR `@8` · `RPE 8` · ` · RPE8` (medios de 7 a 10; `F` queda `F`); la sigla va en MAYÚSCULAS, la cabecera de columna en minúsculas (`rir`/`rpe`) | `rpeToRir()` (para guardar) · `rirShow(v, m)` (para mostrar) · `_icM` (tabla) · `_shM` (compartir `shTokTxt()`/`exShRir()`, historial `_shRir()`) · export `.md` con `s.metric` · `intensityTag()` → `@ RIR · F` / `@ RPE` (cabecera del día, `.ics`) | ✓ en tabla, selector, compartir, historial y export; el `title` del ▲▼ (`setBadgeHTML()`) usa la escala del split, no la de la sesión |
 | Lateralidad | `[uni]`/`[bi]` al frente, misma fuente que el nombre; nunca la unidad | `latTxt()`, `exLatTagHead()` | ✓ (B-12) |
 | Tipo de ejercicio | una sola forma (`[libre] [máquina] [smith] [cable] [bw]`, propuesta de la auditoría) | hoy 5 formas (`máquina`, `mach`, `pulley`, `machine`, `free`) en `variantChips()` y otros | `typeTag()` (pendiente G4) |
-| Carga | `effW()` (peso corporal vivo); `numTxt()` (hasta 2 decimales); `roundLoad()` (kg 2.5 · lbs 5 · pla 1); `kgLoad()` (lbs→kg, placas fuera) | ✓ | v272: el detalle de e1RM (`liftE1Series()`/`openLiftDetail()`) va en la unidad real de la vez más reciente (`lbs`, `placas`), sin drops ni sugerencias; la tile de e1RM todavía dice `kg` (M5-04): G4 |
+| Carga | `effW()` (peso corporal vivo); `numTxt()` (hasta 2 decimales); `roundLoad()` (kg 2.5 · lbs 5 · pla 1); `kgLoad()` (lbs→kg, placas fuera) | ✓ | v272: el detalle de e1RM (`liftE1Series()`/`openLiftDetail()`) va en la unidad real de la vez más reciente (`lbs`, `placas`), sin drops ni sugerencias; desde v274 la tile y //STRENGTH abren la bitácora (`renderExHist()`, §7.40), también en la unidad real, y `openLiftDetail()` queda de respaldo; la tile de e1RM todavía dice `kg` (M5-04): G4 |
 | Lectura suelta | `59.8 kg`: número `--fg`, unidad separada y tenue (`.line .v .u`, `.pval span`) | ✓ | |
 | Peso corporal (v269) | en la unidad que elegiste para pesarte (`db.settings.bwUnit`, kg por defecto): `131.8 lbs` o `59.8 kg`, 1 decimal | `bwU()` (unidad) · `bwShow(kg)` (para mostrar) · `bwParse(texto)` (para guardar, siempre en kg; en lbs con 0.01 de precisión, así 160 lbs se relee exacto) | ✓ registro de peso, tile, detalle de métrica, throwback, wrap mensual, //PROFILE |
 | Miles | `2,405` | `toLocaleString()` | ✓ |
@@ -1579,7 +1655,7 @@ porque mucha gente se pesa en kg y carga en lbs): **peso corporal** en `db.setti
 **pesas del gym** en `db.settings.unit` (la unidad por defecto de un ejercicio nuevo); cada carga va en la unidad de su
 ejercicio (`exDisplayUnit()`), visible en el `<select>` de cada serie y en compartir. Las dos se eligen en //PROFILE
 (`peso corporal en ›`, `pesas del gym en ›`, con TRKSelect) y en el primer perfil, antes de teclear un peso (§7.34).
-Todavía en kg fijo: la tile de e1RM (su detalle ya va en la unidad real desde v272) y el `peso … kg/Nd` del mantenimiento
+Todavía en kg fijo: la tile de e1RM (su detalle —desde v274 la bitácora del ejercicio, §7.40— ya va en la unidad real) y el `peso … kg/Nd` del mantenimiento
 real (M5-04, G4).
 
 ---
@@ -1836,9 +1912,9 @@ Objetivo G4: completar la tabla con el texto exacto de cada celda vacía y una a
 ### 14.1 Primarias y secundarias
 
 - NAV-1: **pantallas primarias** = las tres de la nav (progress · gym · macros): con nav y sin atrás.
-- NAV-2: **pantallas secundarias** (sesión, historial, editor de historial, compartir, stack, split, ajustes, catálogos):
-  **sin nav** y con un solo atrás. Hoy `renderNav()` oculta la nav en workout, settings, splitedit, history, histedit
-  (v267), share y //PROGRESS mientras se edita (v269: la barra `.pedbar` toma su lugar), pero se ve en stack y agenda
+- NAV-2: **pantallas secundarias** (sesión, historial, bitácora de un ejercicio, editor de historial, compartir, stack,
+  split, ajustes, catálogos): **sin nav** y con un solo atrás. Hoy `renderNav()` oculta la nav en workout, settings,
+  splitedit, history, exhist (v274), histedit (v267), share y //PROGRESS mientras se edita (v269: la barra `.pedbar` toma su lugar), pero se ve en stack y agenda
   (T-02, G4).
 - NAV-3: lo secundario se abre desde una fila `›`, desde `[verbo]` o desde el menú `u/…` (`navmenu` → `.nvm`).
 
@@ -1846,7 +1922,9 @@ Objetivo G4: completar la tabla con el texto exacto de cada celda vacía y una a
 
 - **Hoy:** `statusBar(true)` pinta `[‹ back]` (v267: acción de texto con corchetes por CSS y toque ampliado; antes una
   caja de 68×37 con borde) y `data-act="leave"` siempre manda a gym: se pierden el scroll y el contexto; el editor de
-  historial tiene dos salidas distintas (`[‹ back]` → gym y `‹ cerrar` → historial).
+  historial tiene dos salidas distintas (`[‹ back]` → gym y `‹ cerrar` → historial). **Excepción (v274):** la bitácora
+  de un ejercicio (`exhist`, §7.40) lleva su propio `[‹ back]` (`button.b`, `exback`) que vuelve a la pantalla de donde
+  viniste (`state._exFrom`; si no hay, progress): el primer atrás al origen, aunque todavía no recuerda el scroll.
 - **Objetivo G4** (T-02): `state._from` (pendiente G3) guarda de dónde vienes con su scroll; un solo `[‹ origen]` de texto
   en la barra de estado, con 44 de toque (`[‹ gym]`, `[‹ historial]`).
 - NAV-4: cerrar un sheet **nunca** mueve el scroll de abajo (`reRender()`, no `closeModal(); render()`). La revisa: R-SCROLL.
@@ -1860,8 +1938,9 @@ Objetivo G4: completar la tabla con el texto exacto de cada celda vacía y una a
 | `home` (gym) | estado actual | `statusBar` + rotación + `dayHeadHTML` (`//NEXT`) | línea de preparación, músculos del día, vista previa (`[ ver rutina ▾ ]`), primario, `[rest day]` `[skip day]` (o `hoy: descanso ✓`, §7.37; en un descanso del plan o día sin gym, `.restplan` + `[entrenar igual]` sin primario, v273), //STIMULUS (σ por músculo y, si toca, la fila de fatiga acumulada, §7.23), //STATS | sí | con sesión viva solo existe `▶ resume workout` (v258, M1-01/M1-01b) |
 | `workout` | registro | `.wline` (modo enfoque) | tabla de sesión, descanso, footer | no | §7.8, §7.20 |
 | `macros` | composición | `statusBar` + día `‹ fecha ›` | anillo en `.card`, detalle (radar, P/C/F, `[ver gramos \| ver %]`, INTAKE, retención), SUPPS (o su invitación) → MEALS (`[+ food]` en cada cabecera) → WATER | sí | §7.24, §7.28, §7.36 |
-| `progress` | análisis | `.section` //PROGRESS + `[edit]` | racha en franja, tiles `.ptile` en el orden de `db.settings.progLayout`, //FUERZA, //RECORDS, //MUSCLES (σ, §7.23), //RENDIMIENTO | sí (no mientras se edita) | modo editar §7.35; tiles → filas en G3 |
-| `history` | archivo | `.section` //HISTORY | mes TRKCal, rail por mes, sesión que se abre en su sitio | no | |
+| `progress` | análisis | `.section` //PROGRESS + `[edit]` | racha en franja, tiles `.ptile` en el orden de `db.settings.progLayout`, //STRENGTH, //RECORDS (tocable, v274), //EXERCISES (v274, §7.40), //MUSCLES (σ, §7.23), //RENDIMIENTO | sí (no mientras se edita) | modo editar §7.35; tiles → filas en G3; la tile de e1RM, //STRENGTH, //RECORDS y //EXERCISES abren `exhist` |
+| `exhist` | un ejercicio (v274) | `statusBar` + `[‹ back]` + `dayHeadHTML` (`//EXERCISE`) | línea de estado, TRKTabs `e1RM · peso top · volumen`, línea de detalle en la unidad real, periodos, //LOG numerado (`.elog`, la más nueva arriba) | no | §7.40; `[‹ back]` vuelve al origen |
+| `history` | archivo | `.section` //HISTORY | mes TRKCal, rail por mes, sesión que se abre en su sitio (el nombre de cada ejercicio abre `exhist`, v274) | no | |
 | `histedit` | corrección | `dayHeadHTML` | tabla de sesión compacta (`.hist-compact`) | no (v267) | |
 | `share` | resumen | según tipo | §7.19 | no | |
 | `stack` | inventario | `.section` //STACK | TRKTabs HOY/TODOS, bloques por momento | **sí (debería no)** | §7.25 |
@@ -2118,10 +2197,19 @@ Línea base del 2026-09-21: todos en 0 salvo `style=""` 89, excepciones 33, lett
   entrenas) · día sin gym = descanso (`why:'blocked'`) · la racha no se rompe por el descanso del plan y sin plan sí se
   corta · días fijos: hoy toca el día asignado (`planDay` y `curDayIdx`), un día sin rutina es descanso y el ciclo es 7 ·
   RPE 8.5 ↔ RIR 1.5, RIR 0 = RPE 10 y la F se queda · la etiqueta se calcula (`@ RPE · F`, sin F `@ RPE`).
+- **`_exHistSelfCheck()`** (v274, al final de `?selftest=1`; corre sobre una base de juguete —4 sesiones de `db curl` en
+  2 días del split, una vieja sin tipo y una unilateral— y restaura `db` y la pantalla; **34 self-checks** en total): por
+  nombre gana la variante con más sesiones y, con pista, la de su lateralidad · el mismo ejercicio en 2 días del split es
+  una sola historia · una fila vieja sin tipo cuenta como libre y entra a la misma historia · uni ≠ bi · `#1` es la más
+  vieja y la más nueva va arriba · la gráfica va en la unidad del ejercicio (`lbs`, no kg) · los drops salen en el texto
+  (`↓`) y no en la gráfica. Imprime `exercise history self-check OK`.
 - **Inventario en navegador** (`tools/ds-inventory.js`, se guarda en G1): tamaños, colores→token, radios, sombras, blur,
-  tracking, animaciones, glifos y toques por pantalla, con el respaldo real del dueño. **`dsSweep()` de hoy** (v273, 393×852,
-  su respaldo, sin sesión viva; es la línea base `render` de `tools/ds-baseline.json`): ua 0 · hit 713 · txt 133 · fsOff 0
-  · blur 0 · glyph 72 · rad 0 — igual que en v272; //SCHEDULE se midió aparte en el editor de split en sus tres modos: los
+  tracking, animaciones, glifos y toques por pantalla, con el respaldo real del dueño. **`dsSweep()` de hoy** (v274, 393×852,
+  su respaldo, sin sesión viva; es la línea base `render` de `tools/ds-baseline.json`): ua 0 · hit 715 · txt 133 · fsOff 0
+  · blur 0 · glyph 88 · rad 0. **v274:** glyph 72 → 88 porque la etiqueta del dueño `puh🥀` ahora también sale en
+  //EXERCISES (+3 en `progress` y en cada una de las 4 hojas que el barrido abre encima; texto del dueño, B-08) y el `’`
+  de un gym suyo en la bitácora; hit 713 → 715 solo por la pantalla nueva `exhist` (los 2 de la barra de estado que tiene
+  cada pantalla): las filas de //EXERCISES y //RECORDS y las pestañas de la bitácora miden 44 (§7.40). v273: igual que v272; //SCHEDULE se midió aparte en el editor de split en sus tres modos: los
   toggles nuevos miden ≥44 y ningún modo suma toques chicos (v271: glyph 67; el +5 es la etiqueta del dueño `puh🥀` —un ejercicio suyo— que ahora sale
   en una fila de diagnóstico de //MUSCLES: +1 en `progress` y en cada hoja que el barrido abre encima, `sheet:metric-steps`,
   `sheet:streak`, `sheet:sleeplog`, `sheet:rhrlog`. Es texto del dueño, no un glifo de interfaz, B-08).

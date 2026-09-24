@@ -51,6 +51,11 @@
     await S('sheet:streak',async()=>{ openStreakSheet(); });
     await S('sheet:sleeplog',async()=>{ openSleepLog(); });
     await S('sheet:rhrlog',async()=>{ openHealthNumLog('rhr'); });
+    // v274 · la bitácora del ejercicio con más sesiones (clave exHistKey), abierta desde progreso como en la app. Solo lectura:
+    // openExHist → closeModal + go (lo mismo que cualquier otra pantalla del barrido). Va DESPUÉS de las 4 hojas que se abren
+    // encima de progress, para no cambiar lo que miden. tools/ds-baseline.json (medido en v274 sin ella) aún no la tiene
+    await S('exhist',async()=>{ const c={}; let k=null; exIndex().forEach(r=>{ if(!r||!r.ex||isCardio(r.ex))return; const h=exHistKey(r.ex); if(!h)return; c[h]=(c[h]||0)+1; if(!k||c[h]>c[k])k=h; });
+      if(!k)throw new Error('sin ejercicios con historia'); state._exTab=state._exDays=state._exAll=undefined; go('progress'); openExHist(k); });
     await S('history',async()=>{ go('history'); });
     if(last)await S('histedit',async()=>{ state._histSessId=last.id; go('histedit'); });
     await S('settings',async()=>{ go('settings'); });

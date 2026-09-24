@@ -135,6 +135,8 @@
   .secondary{display:flex; flex-wrap:wrap; gap:0 var(--s4); margin-top:var(--s2);}
   .secondary .b{flex:0 0 auto;}
   .line.sch{align-items:center; min-height:44px;} .line.sch .toggles{flex:0 0 auto; gap:0;} .toggles.dow{justify-content:space-between; gap:0;}
+  .line.exl,.line.exr{min-height:44px; align-items:center;} .line.exl .k{flex:0 1 auto; min-width:0;} .mdtabs.tall span{min-height:44px; display:flex; align-items:center; justify-content:center; padding:0;} .line.exl .dots{min-width:var(--s3);} .line.exl .v{flex:0 0 auto; white-space:nowrap;}   /* v274 · //EXERCISES y la bitácora de un ejercicio */
+  .elog{padding:var(--s3) 0; border-bottom:var(--bw-sep) solid var(--o10);} .eloh{display:flex; align-items:baseline; gap:var(--s3);} .elon{font-size:var(--t-section); font-weight:800; color:var(--fg); min-width:4ch;} .elod{flex:1; min-width:0; color:var(--o60); font-size:var(--t-data);} .elos{margin-top:var(--s1); padding-left:calc(var(--t-section) * 2.4 + var(--s3)); color:var(--o70); font-size:var(--t-data); line-height:var(--lh-read);}
   .restplan{font-size:var(--t-data); color:var(--o70); line-height:var(--lh-read); margin-bottom:var(--s2);}
   .secondary .restok{display:inline-flex; align-items:center; height:44px; font-size:var(--t-data); color:var(--fg); margin-right:var(--s2);}
   /* G2 · T-01: los roles de botón tienen estilo propio. `.b` y `.t` solo existían dentro de un padre (`.secondary .b`,
@@ -1050,7 +1052,7 @@
 
 <script>
 "use strict";
-const APP_V='v273';   // versión visible (arranque); R-DOC la compara con sw.js y con DESIGN_SYSTEM.md línea 3
+const APP_V='v274';   // versión visible (arranque); R-DOC la compara con sw.js y con DESIGN_SYSTEM.md línea 3
 const LS_KEY='gymtrk_db_v1';
 // BRAND.md §3 · diccionario cerrado de glifos de interfaz (un glifo = un significado). tools/ds-audit.cjs (R-GLY) lee
 // esta constante: cualquier otro símbolo no ASCII en un literal de interfaz es una desviación. Las etiquetas que el
@@ -2298,7 +2300,7 @@ function openExProfile(name,back,gymSel){
   const sec=tg.slice(1).map((t,i)=>`<div class="pfsec"><select class="pfsel" data-sec="${i}"><option value="">— quitar —</option>${mOpt(t.id)}</select><input class="pfw" data-secw="${i}" type="number" inputmode="decimal" step="0.05" min="0" max="1" value="${t.w}"/></div>`).join('');
   const tSrc=tg[0]?(tg[0].src==='user'?'fijado':tg[0].src==='inferred'?'~ deducido del nombre':tg[0].src==='auto'?'de tu etiqueta':'sin resolver'):'sin músculo';
   openModal(`<h3>perfil · ${latTxt(ex)}${escTxt(ex.name)}</h3>
-   <div class="submeta u-mb8">${escTxt(ex.type||'free')}${p.mach&&gym?` · en <b>${escTxt(gym)}</b>`:''}</div>
+   <div class="submeta u-mb8">${escTxt(ex.type||'free')}${p.mach&&gym?` · en <b>${escTxt(gym)}</b>`:''}</div>${(()=>{ const k=exKeyByName(ex.name,ex); return k&&exHistRows(k).length?`<div class="u-mb8"><button type="button" class="b" data-act="exhist" data-k="${escTxt(k)}">historial ›</button></div>`:''; })()}
    ${p.mach&&gyms.length>1?`<div class="field"><label>GYM (la máquina de cada gym puede ser distinta)</label><select id="pf_gym">${gyms.map(g=>`<option value="${escTxt(g)}"${g===gym?' selected':''}>${escTxt(g)}</option>`).join('')}</select></div>`:''}
    <div class="grp-label first">PRIME MOVERS <span class="u-o35 u-w4">· ${tSrc}</span></div>
    <div class="submeta u-mb6">tus etiquetas no cambian · esto es a qué músculo real cuenta el volumen, la recuperación y las sugerencias</div>
@@ -2852,7 +2854,7 @@ function elapsedStr(ms){ if(!ms)return''; const s=Math.max(0,Math.round((Date.no
 function renderNav(){
   const n=document.getElementById('nav'); if(!n) return; const sc=state.screen;
   { const v=document.getElementById('view'); if(v)v.classList.toggle('pedit',sc==='progress'&&!!state.progEdit); }   // v269 · modo editar: la barra ✓ listo baja hasta el borde
-  if(sc==='workout'||sc==='settings'||sc==='splitedit'||sc==='history'||sc==='histedit'||sc==='share'||(sc==='progress'&&state.progEdit)||!db.profile.username){ n.style.display='none'; return; } n.style.display='flex';
+  if(sc==='workout'||sc==='settings'||sc==='splitedit'||sc==='history'||sc==='exhist'||sc==='histedit'||sc==='share'||(sc==='progress'&&state.progEdit)||!db.profile.username){ n.style.display='none'; return; } n.style.display='flex';
   if(n.dataset.built!=='1'){ // construir UNA vez; luego solo toggle .active → la transición CSS anima (innerHTML cada render mataría la animación)
     // v226: stack y agenda salen de la barra (el dueño no las usaba: "ni siquiera me incentiva meterme").
     // Ningún dato se borra — db.stack/db.adhoc siguen, el check diario vive en macros y el ABM en el menú u/.
@@ -4155,6 +4157,25 @@ function _scheduleSelfCheck(){ const A=(nm,c)=>{ if(!c) throw new Error('SELFCHE
     A('la etiqueta se calcula: @ RPE · F', (db.split.metric='rpe',intensityTag())==='@ RPE · F'&&(db.split.allowF=false,intensityTag())==='@ RPE');
   } finally { db=real; bumpIdx(); }
   console.log('schedule self-check OK'); }
+function _exHistSelfCheck(){ const A=(nm,c)=>{ if(!c) throw new Error('SELFCHECK historial por ejercicio: '+nm); };
+  const D=k=>shiftDate(todayISO(),-k);
+  const se=(id,k,day,ex)=>({id,date:D(k),dayId:day,dayName:day,gym:'G',type:'training',exercises:[ex]});
+  const curl=(w,rir,o)=>Object.assign({name:'db curl',muscle:'bicep',type:'free',sets:[{w:String(w),r:'10',rir:String(rir),unit:'lbs',done:true},{w:String(w),r:'8',rir:'0',unit:'lbs',done:true},{w:String(w-10),r:'8',rir:'0',unit:'lbs',isDrop:true,done:true}]},o||{});
+  const real=db, rs=state.screen;
+  try{
+    db=migrate({_idfix:true,_fsfix:true,profile:{username:'t'},split:{name:'t',days:[{id:'A',name:'A',exercises:[]},{id:'B',name:'B',exercises:[]}]},
+      sessions:[se('s1',20,'A',curl(25,2,{exId:'a1'})),se('s2',13,'B',curl(25,1,{exId:'b1'})),se('s3',6,'A',curl(30,1,{exId:'a1',type:undefined})),se('s4',2,'B',curl(20,1,{exId:'b1',unilateral:true,sets:[{w:'20',r:'10',rir:'1',unit:'lbs',side:'R',done:true},{w:'20',r:'10',rir:'1',unit:'lbs',side:'L',done:true}]}))]}); bumpIdx();
+    const K=exHistKey(db.sessions[0].exercises[0]), rows=exHistRows(K), KU=exHistKey(db.sessions[3].exercises[0]);
+    A('por nombre: la variante con más sesiones; con pista, la de su lateralidad', exKeyByName('DB Curl')===K&&exKeyByName('db curl',db.sessions[3].exercises[0])===KU&&KU!==K);
+    A('el mismo ejercicio en 2 días del split es una sola historia', rows.length===3&&rows.every(r=>r.ex.name==='db curl'));
+    A('una fila vieja sin tipo cuenta como libre y entra a la misma historia', rows.some(r=>r.sid==='s3'));
+    A('uni ≠ bi', exHistRows(KU).length===1);
+    state._exKey=K; state._exTab='e1'; state._exDays=9999; const h=renderExHist();
+    A('numera #1 la más vieja y la más nueva arriba', /#3<\/span><span class="elod">[^<]*· A/.test(h)&&h.indexOf('#3')<h.indexOf('#1'));
+    A('la gráfica usa la unidad del ejercicio (no kg)', /lbs/.test(h)&&!/ kg ·/.test(h));
+    A('los drops salen en texto y no en la gráfica', /↓/.test(h));
+  } finally { db=real; state.screen=rs; state._exKey=state._exTab=state._exDays=undefined; bumpIdx(); }
+  console.log('exercise history self-check OK'); }
 function _v269SelfCheck(){ const A=(nm,c)=>{ if(!c) throw new Error('SELFCHECK v269: '+nm); };
   // 1 · ánimo: migrate lo borra y deja constancia; un respaldo viejo también
   const d1=migrate({profile:{username:'x'},mood:{'2026-09-01':{x:5,y:7,label:'contento'}},split:{days:[]}});
@@ -5169,6 +5190,46 @@ function shareExLines(e){
   }
   return {lines:out,unit:one,n:out.length};
 }
+// ---- v274 · PROGRESO POR EJERCICIO ----
+// El dueño: "irme a progreso, seleccionar el ejercicio y… ver… un enlistado de… la fecha de la sesión… peso, número de
+// repeticiones e intensidad, y… una gráfica de progreso respecto a ese ejercicio… como… las notas" de su amigo.
+// La clave es exHistKey (v272: nombre + variante, con el pliegue legacy), nunca exId (cambia por día del split).
+// por nombre (tiles, //RECORDS, catálogo): la variante con más sesiones; con pista (un ejercicio), la de su lateralidad
+function exKeyByName(name,hint){ const nk=String(name||'').toLowerCase().trim(); if(!nk)return ''; const pick=useHint=>{ const c={};
+    exIndex().forEach((r,i)=>{ if(r.name!==nk||isCardio(r.ex))return; if(useHint&&uniOf(r.ex)!==uniOf(hint))return; const k=exHistKey(r.ex); (c[k]=c[k]||{k,n:0,i}).n++; });
+    const L=Object.values(c).sort((a,b)=>b.n-a.n||a.i-b.i); return L.length?L[0].k:''; };
+  return (hint&&pick(true))||pick(false); }
+function exHistRows(key){ return key?exIndex().filter(r=>!isCardio(r.ex)&&exHistKey(r.ex)===key):[]; }   // la más reciente primero
+function openExHist(key){ if(!key)return; try{ closeModal(); }catch(_){} if(state.screen!=='exhist'){ state._exFrom=state.screen; const v=document.getElementById('view'); state._exScroll=v?v.scrollTop:0; } state._exKey=key; go('exhist'); }
+// //EXERCISES en Progreso: cada ejercicio con su estado, cuántas veces y la última
+function exListHTML(){ const seen={}, list=[];
+  exIndex().forEach(r=>{ if(isCardio(r.ex))return; const k=exHistKey(r.ex); if(seen[k]){ seen[k].n++; return; } seen[k]={k,name:r.ex.name,ex:r.ex,last:r.date,n:1}; list.push(seen[k]); });
+  if(!list.length)return ''; const d60=shiftDate(todayISO(),-59), all=!!state._exAll; const show=all?list:list.filter(x=>x.last>=d60);
+  let h='<hr class="rule"/><div class="grp-label">//EXERCISES · cada sesión de cada ejercicio</div><div class="u-label u-o40 u-mt-n4 u-mb6 u-mx0">'+(all?'todos':'los de los últimos 60 días')+' · veces · última</div>';
+  show.forEach(x=>{ const st=exStatus(x.k); const sl=st.state==='little'?'':EXST_LBL[st.state];
+    h+='<div class="line exl u-tap" role="button" tabindex="0" data-act="exhist" data-k="'+escTxt(x.k)+'"><span class="k">'+latTxt(x.ex)+escTxt(x.name)+'</span><span class="dots"></span><span class="v">'+(sl?'<span class="u-o60">'+sl+'</span> · ':'')+x.n+' · '+escTxt(fmtShort(x.last))+'</span></div>'; });
+  if(list.length>show.length||all)h+='<div class="u-mt6"><button type="button" class="b" data-act="exall">'+(all?'solo los recientes':'ver todos · '+list.length)+'</button></div>';
+  return h; }
+function renderExHist(){ const key=state._exKey, rows=exHistRows(key); const back='<div class="u-mb4"><button type="button" class="b" data-act="exback">‹ back</button></div>';
+  if(!rows.length)return statusBar(false)+back+'<div class="empty">sin registros de este ejercicio</div>';
+  const ex=rows[0].ex, n=rows.length, S=exSeries(key), U=S.unit==='pla'?'placas':(S.unit||'kg'), st=exStatus(key);
+  const tab=state._exTab||'e1', days=state._exDays||180, t0=days>=9999?'':shiftDate(todayISO(),-(days-1));
+  const mach=/^(machine|cable|smith)$/.test(canonType(ex.type)), g0=rows[0].gym, cmp=rows.filter(r=>!mach||gymMatch(r.gym,g0));   // otra máquina no se compara (v217)
+  const pts=cmp.slice().reverse().filter(r=>!t0||r.date>=t0).map(r=>{ const w=(r.sets||[]).filter(x=>x&&!x._pf&&!x.isDrop&&(x.w||x.r)&&!bwMissing(x)&&(!S.unit||!unitN(x)||unitN(x)===S.unit));
+    const v=tab==='e1'?sessE1RM(r.sets,S.unit):tab==='top'?w.reduce((m,x)=>Math.max(m,effW(x)||0),0):w.reduce((a,x)=>a+(effW(x)||0)*(setReps(x)||0),0);
+    return {date:r.date,v:v||0}; }).filter(p=>p.v>0);
+  const fmt=v=>Math.round(v).toLocaleString()+' '+U; const labels=pts.map(p=>fmt(p.v)+' · '+fmtShort(p.date));
+  const chart=pts.length>=2?lineChart(pts.map(p=>p.v),{h:150,detail:true,dates:pts.map(p=>p.date),labels,fmt,avg:pts.reduce((a,p)=>a+p.v,0)/pts.length})
+    :'<div class="submeta u-my12 u-mx0">'+(pts.length?'1 sesión en este rango: hacen falta 2 para la línea':'sin datos en este rango')+'</div>';
+  const tabs=[['e1','e1RM'],['top','peso top'],['vol','volumen']].map(([k,l])=>'<span data-act="extab" data-t="'+k+'" class="'+(tab===k?'on':'')+'">'+l+'</span>').join('');
+  const per=[[30,'30D'],[90,'90D'],[180,'6M'],[365,'1A'],[9999,'todo']].map(([d,l])=>'<span data-act="exrange" data-r="'+d+'" class="'+(days===d?'on':'')+'">'+l+'</span>').join('');
+  let log=''; rows.forEach((r,i)=>{ _shM=(r.sess&&r.sess.metric)==='rpe'?'rpe':'rir'; const L=shareExLines(r.ex); let pr=null; try{ pr=histProgress(r.sess,r.ei); }catch(_){}
+    log+='<div class="elog u-tap" role="button" tabindex="0" data-act="vieweditsession" data-id="'+escTxt(r.sid)+'"><div class="eloh"><span class="elon">#'+(n-i)+'</span><span class="elod">'+escTxt(fmtShort(r.date))+' · '+escTxt(r.sess.dayName||'sesión')+(r.gym?' · '+escTxt(r.gym):'')+'</span>'+(pr?progBadgeFromProg(pr,'capacidad vs la vez anterior'):'')+'</div><div class="elos">'+L.lines.join(' / ')+(L.unit?' <span class="u-o40">· '+escTxt(L.unit)+'</span>':'')+'</div></div>'; });
+  return statusBar(false)+back
+    +dayHeadHTML('EXERCISE',latTxt(ex)+escTxt(ex.name),[canonType(ex.type),n+' sesiones',U].filter(Boolean).join(' · '))
+    +'<div class="submeta u-mb10">'+escTxt(exStatusTxt(st))+'</div>'
+    +'<div class="mdtabs tall" data-tk="exh-t">'+tabs+'</div>'+chart+(cmp.length<rows.length?'<div class="u-label u-o40 u-mt4">la línea: solo '+escTxt(g0||'este gym')+' · otra máquina no se compara</div>':'')+'<div class="mdtabs tall u-mt8" data-tk="exh-r">'+per+'</div>'
+    +'<hr class="rule"/><div class="section u-mb10"><div class="h"><span class="s">//</span>LOG</div><div class="meta">'+n+' sesiones · la más nueva arriba</div></div>'+log; }
 // un ejercicio en el formato compacto de compartir: [bi] nombre · músculo · unidad · T (+ extra) y sus series en una línea
 function sessExBlockHTML(e,r,t,extra){ return `<div class="sxr"><div class="sxh"><span class="sxn">${latTxt(e)}${escTxt(e.name)}</span><span class="sxk">${escTxt(e.muscle||'')}${r.unit?' · '+escTxt(r.unit):''}${t||''}${extra||''}</span></div><div class="sxs">${r.lines.join(' · ')}</div></div>`; }
 function renderShareWeight(){
@@ -6476,7 +6537,7 @@ function renderProgress(){
   if(cfg.e1rm && !e1.length)put('e1rm',emptyTile('e1rm','kg','loglater'));
   if(e1.length && cfg.e1rm){ const t=e1[0]; const d=t.prev!=null?t.cur-t.prev:null; const pct=t.prev>0?Math.round((t.cur-t.prev)/t.prev*100):null;
     const cls=d==null?'flat':d>0?'good':d<0?'bad':'flat'; const arr=d==null?'·':d>0?'▲':d<0?'▼':'=';
-    put('e1rm',`<div class="ptile tap" data-act="liftdetail" data-ex="${escTxt(t.name)}"><div class="ptlh"><div class="plbl">e1rm</div><span class="ptchev">›</span></div><div class="ptname">${latTxt(t)}${escTxt(t.name)}</div>`
+    put('e1rm',`<div class="ptile tap" data-act="liftdetail" data-ex="${escTxt(t.name)}" data-k="${escTxt(exKeyByName(t.name,t))}"><div class="ptlh"><div class="plbl">e1rm</div><span class="ptchev">›</span></div><div class="ptname">${latTxt(t)}${escTxt(t.name)}</div>`
       +`<div class="pval">${Math.round(t.cur)}<span>kg</span></div>`
       +`<div class="pst ${cls}">${arr}${pct!=null?' '+(pct>0?'+':'')+pct+'%':''}</div>${lineChart(t.prev!=null?[t.prev,t.cur]:[t.cur],{h:32})}</div>`);
   }
@@ -6532,15 +6593,16 @@ function renderProgress(){
     const _tlo=Date.parse(lastDays(30)[0]+'T12:00:00'), _thi=Date.parse(todayISO()+'T12:00:00');
     e1.forEach(x=>{ const d=x.prev!=null?Math.round(x.cur-x.prev):null; const arr=d==null?'·':(d>0?'▲':d<0?'▼':'='); const dc=d>0?'u-good':d<0?'u-bad':'u-o40';
       const ser=liftE1Series(x.name,30); const sp=ser.length>=2?lineChart(ser.map(p=>p.e1),{h:22,pad:3,noFill:true,noDots:true,margin:'0',dates:ser.map(p=>p.date),tlo:_tlo,thi:_thi}):''; const v=Math.round(x.cur);
-      out+=`<div class="trow" data-act="liftdetail" data-ex="${escTxt(x.name)}"><span class="trn">${latTxt(x)}${escTxt(x.name)}</span><span class="trsp">${sp}</span><span class="trv"><b data-nk="e1:${escTxt(x.name)}" data-nv="${v}">${v}</b> <span class="trd ${dc}">${arr}${d?Math.abs(d):''}</span></span><span class="ptchev u-data">›</span></div>`; }); }
+      out+=`<div class="trow" data-act="liftdetail" data-ex="${escTxt(x.name)}" data-k="${escTxt(exKeyByName(x.name,x))}"><span class="trn">${latTxt(x)}${escTxt(x.name)}</span><span class="trsp">${sp}</span><span class="trv"><b data-nk="e1:${escTxt(x.name)}" data-nv="${v}">${v}</b> <span class="trd ${dc}">${arr}${d?Math.abs(d):''}</span></span><span class="ptchev u-data">›</span></div>`; }); }
   if(cfg.e1rm){ const _pr=prRecords(); if(_pr.length){
     // D15: PR = el récord se marcó en los últimos 7 días (logro reciente, no solo la tabla)
     const _d7=shiftDate(todayISO(),-6), _top=_pr.slice(0,10), _nPR=_top.filter(x=>x.edate>=_d7).length;
     out+=`<hr class="rule"/><div class="grp-label">//RECORDS · mejor <span data-gloss="e1rm">e1RM</span> histórico</div><div class="u-label u-o40 u-mt-n4 u-mb6 u-mx0">tu mejor levantada histórica por ejercicio${_nPR?' · PR = récord de los últimos 7 días':''}</div>`;
     _top.forEach(x=>{ const _tw=Math.round(x.tw*10)/10;
-      out+=`<div class="line"><span class="k">${latTxt(x)}${escTxt(x.name)}${x.edate>=_d7?'<span class="lpr" title="récord marcado el '+escTxt(fmtShort(x.edate))+'">PR</span>':''}</span><span class="dots"></span><span class="v">${Math.round(x.e1)}${escTxt(x.eu||'')} <span class="u-o40 u-label">· top ${_tw}${escTxt(x.twu||'')}×${x.twr||0}</span></span></div>`; });
+      out+=`<div class="line exr u-tap" role="button" tabindex="0" data-act="exhist" data-k="${escTxt(exKeyByName(x.name,x))}"><span class="k">${latTxt(x)}${escTxt(x.name)}${x.edate>=_d7?'<span class="lpr" title="récord marcado el '+escTxt(fmtShort(x.edate))+'">PR</span>':''}</span><span class="dots"></span><span class="v">${Math.round(x.e1)}${escTxt(x.eu||'')} <span class="u-o40 u-label">· top ${_tw}${escTxt(x.twu||'')}×${x.twr||0}</span></span></div>`; });
   } }
   try{ const _wp=prevMonthYm().split('-'); if(wrapMonthData(+_wp[0],+_wp[1]-1).hasData) out+='<div class="u-tc u-mt16 u-mb2 u-mx0"><a data-act="wrapview" class="u-data u-o60 u-tap">▸ ver tu wrap · '+escTxt(MONFULL[+_wp[1]-1])+'</a></div>'; }catch(_){}
+  if(cfg.e1rm)out+=exListHTML();
   out+=musclesSectionHTML();
   const _pins=performanceInsights(); if(_pins.length){ out+=`<hr class="rule"/><div class="grp-label">//PERFORMANCE · correlaciones</div><div class="u-label u-o40 u-mt-n4 u-mb6 u-mx0">qué coincide con sesiones de más o menos capacidad · correlación, no causa</div>`; _pins.forEach(function(x){ out+=`<div class="line"><span class="k">${escTxt(x.variable)}</span><span class="dots"></span><span class="v" style="color:${x.r>0?'var(--good)':'var(--bad)'}">${x.r>0?'▲':'▼'} capacidad<span class="u-o40 u-label"> · r=${Math.round(Math.abs(x.r)*100)/100} (${x.n} sesiones)</span></span></div>`; }); }
   if(_ed)return out+`<div class="pedbar"><button type="button" class="b" data-act="progadd">+ add</button><button type="button" class="b" data-act="progcancel">cancel</button><button type="button" class="start pedok" data-act="progdone">✓ done</button></div>`;
@@ -7005,7 +7067,7 @@ function histBodyHTML(s){ _shM=(s&&s.metric)==='rpe'?'rpe':'rir';
   (s.exercises||[]).forEach((e,ei)=>{ const r=shareExLines(e); if(!r.n)return;
     const t=tn&&tn[ei]&&tn[ei].total>0?' · σ '+fmtSig(tn[ei].total):'';
     let pb=''; try{ pb=progBadgeFromProg(histProgress(s,ei),'capacidad (e1RM) vs sesión equivalente'); }catch(_){}
-    b+=sessExBlockHTML(e,r,t,pb?' '+pb:''); });
+    const _k=exHistKey(e); b+=sessExBlockHTML(e,r,t,pb?' '+pb:'').replace('<span class="sxn">','<span class="sxn u-tap u-ul" role="button" tabindex="0" data-act="exhist" data-k="'+escTxt(_k)+'">'); });
   return `<div class="hbody">${b||'<div class="ehint">sin series registradas</div>'}<div class="hacts"><a class="u-label u-o50 u-tap" data-act="vieweditsession" data-id="${s.id}">[ver / editar]</a></div></div>`;
 }
 function renderHistory(){
@@ -7095,7 +7157,7 @@ function render(){
   let sc=state.screen;
   if(!db.profile.username){ sc = (state.screen==='onboard'||state.screen==='login') ? state.screen : 'landing'; }
   if(sc==='workout'){ state.work=db.activeWork; if(!state.work){ state.screen=sc='home'; } }
-  v.innerHTML = sc==='landing'?renderLanding() : sc==='login'?renderLogin() : sc==='onboard'?renderOnboard() : sc==='home'?renderHome() : sc==='workout'?renderWorkout() : sc==='macros'?renderMacros() : sc==='share'?renderShare() : sc==='progress'?renderProgress() : sc==='stack'?renderStack() : sc==='settings'?renderSettings() : sc==='splitedit'?renderSplitEdit() : sc==='history'?renderHistory() : sc==='agenda'?renderAgenda() : sc==='histedit'?renderHistoryEditor() : renderHome();
+  v.innerHTML = sc==='landing'?renderLanding() : sc==='login'?renderLogin() : sc==='onboard'?renderOnboard() : sc==='home'?renderHome() : sc==='workout'?renderWorkout() : sc==='macros'?renderMacros() : sc==='share'?renderShare() : sc==='progress'?renderProgress() : sc==='stack'?renderStack() : sc==='settings'?renderSettings() : sc==='splitedit'?renderSplitEdit() : sc==='history'?renderHistory() : sc==='exhist'?renderExHist() : sc==='agenda'?renderAgenda() : sc==='histedit'?renderHistoryEditor() : renderHome();
   document.getElementById('wfooter').style.display = sc==='workout'?'flex':'none';
   try{updateRestBar();}catch(_){}
   try{updateNowBar();}catch(_){}
@@ -7621,7 +7683,12 @@ document.getElementById('app').addEventListener('click',e=>{
   else if(a==='mdcustapply'){ const f=val('mdc_from'), t=val('mdc_to'); if(f&&t&&f<t){ const td=todayISO(); window._mdCustom={from:f,to:t>td?td:t}; window._mdShowCustom=false; openMetricDetail(window._mdKey); } else toast('elige un rango de al menos 2 días','err'); }
   else if(a==='volumedetail'){ window._volWeeks=window._volWeeks||12; openVolumeDetail(); }
   else if(a==='volweeks'){ window._volWeeks=+el.dataset.w||12; openVolumeDetail(); }
-  else if(a==='liftdetail'){ window._liftDays=window._liftDays||90; openLiftDetail(el.dataset.ex||window._liftName); }
+  else if(a==='liftdetail'){ const _k=el.dataset.k||exKeyByName(el.dataset.ex||window._liftName); if(_k){ openExHist(_k); } else { window._liftDays=window._liftDays||90; openLiftDetail(el.dataset.ex||window._liftName); } }   // v274 · el detalle de un ejercicio es su bitácora
+  else if(a==='exhist'){ openExHist(el.dataset.k); }
+  else if(a==='exback'){ state._scroll=state._exScroll||0; go(state._exFrom&&state._exFrom!=='exhist'?state._exFrom:'progress'); }   // vuelve a donde estabas, a la misma altura
+  else if(a==='extab'){ state._exTab=el.dataset.t; reRender(); }
+  else if(a==='exrange'){ state._exDays=+el.dataset.r||180; reRender(); }
+  else if(a==='exall'){ state._exAll=!state._exAll; reRender(); }
   else if(a==='liftrange'){ window._liftDays=+el.dataset.r||90; openLiftDetail(window._liftName); }
   else if(a==='wrapview'){ monthlyWrap(prevMonthYm(), true); }
   else if(a==='stacktick'){ stackToggleTick(el.dataset.id, todayISO()); }
@@ -7701,7 +7768,7 @@ document.getElementById('app').addEventListener('click',e=>{
     else run(); }
   else if(a==='exmenu'){ const nm=el.dataset.n, k=el.dataset.k;   // R3 · D10: acciones de la fila del catálogo
     const sel=(window._mgSel||[]).indexOf(k)>=0;
-    trkMenu(nm,[['perfil del ejercicio',()=>openExProfile(nm,'catalog')],['historial · e1RM',()=>openLiftDetail(nm)],[sel?'quitar de la selección para unir':'seleccionar para unir',()=>{ window._mgSel=window._mgSel||[]; const i=window._mgSel.indexOf(k); if(i>=0)window._mgSel.splice(i,1); else window._mgSel.push(k); openExerciseDirectory(); }]]); }
+    trkMenu(nm,[['perfil del ejercicio',()=>openExProfile(nm,'catalog')],['historial',()=>openExHist(exKeyByName(nm))],[sel?'quitar de la selección para unir':'seleccionar para unir',()=>{ window._mgSel=window._mgSel||[]; const i=window._mgSel.indexOf(k); if(i>=0)window._mgSel.splice(i,1); else window._mgSel.push(k); openExerciseDirectory(); }]]); }
   else if(a==='pf_save'){ saveExProfile(); }
   else if(a==='pf_close'){ closeProfileBack((window._exProf||{}).back); }
   else if(a==='pf_addsec'){ const box=document.getElementById('pf_secs'); if(box){ const i=box.querySelectorAll('select[data-sec]').length; if(i<3){
@@ -7772,7 +7839,8 @@ document.getElementById('app').addEventListener('click',e=>{
   else if(a==='axback'){ const c=window._axCtx||{}; openAddExercise(c.afterExi,c.replaceExi); }
   else if(a==='axdetails'){ const c=window._axCtx||{}; if(c.replaceExi!=null)openExEdit(null,-1,c.replaceExi); }
   else if(a==='editmach'){ openMachineEdit(exi); }
-  else if(a==='editexname'){ const w=db.activeWork; const ex=w&&w.exercises[exi]; if(ex&&ex.muscle){ openAddExStep2(exi, ex.muscle, exi); } else { openAddExercise(exi, exi); } }
+  else if(a==='editexname'){ const w=db.activeWork; const ex=w&&w.exercises[exi]; const swap=()=>{ if(ex&&ex.muscle){ openAddExStep2(exi, ex.muscle, exi); } else { openAddExercise(exi, exi); } };
+    const _k=ex?exHistKey(ex):''; if(_k&&exHistRows(_k).length)trkMenu(ex.name,[['historial',()=>openExHist(_k)],['cambiar ejercicio',swap]]); else swap(); }   // v274 · tocar el nombre: su historial o cambiarlo
   else if(a==='editexnote'){ const w=db.activeWork; if(w&&w.exercises[exi]){ const cur=w.exercises[exi].note||''; trkPrompt({title:'nota · '+((w.exercises[exi].name)||'ejercicio'),label:'NOTA',value:cur,placeholder:'agarre, asiento, sensación…'},v=>{ w.exercises[exi].note=String(v).trim(); save(); state._scroll=(document.getElementById('view')||{}).scrollTop||0; render(); toast('✓ nota guardada'); }); } }
   else if(a==='save'){ saveSession(); }
   else if(a==='togglemacros'){ state.macroOpen=!state.macroOpen; reRender(); }   // v271 · reRender conserva el scroll (ver gramos/% subía hasta arriba)
@@ -10311,7 +10379,7 @@ try{ offerLivePending(livePendingSync()); }catch(_){}
 // diario de arranque. Mientras decide, los respaldos se retienen para no pisar `latest`.
 try{ withTO(idbBootCheck(),12000).catch(()=>idbReleaseHold()); }catch(_){ idbReleaseHold(); }
 try{ growthLog(); }catch(_){}
-try{ promptIdleSession(); }catch(_){} try{ if(typeof location!=='undefined' && /[?&]selftest=1/.test(location.search)){ const _rawMain=(()=>{ try{ return localStorage.getItem(LS_KEY); }catch(_){ return null; } })(), _rawLive=(()=>{ try{ return localStorage.getItem(LS_LIVE); }catch(_){ return null; } })(), _lc0=_lastClosed; _sbx=true; try{ _identitySelfCheck(); _dropsetSelfCheck(); _baselineSelfCheck(); _variantSelfCheck(); _historyEditSelfCheck(); _idSelfCheck(); _cardioSelfCheck(); _tensionSelfCheck(); _healthSelfCheck(); _readinessSelfCheck(); _loggingSelfCheck(); _mergeSelfCheck(); _streakSelfCheck(); _chartSelfCheck(); _muscleSelfCheck(); _exProfileSelfCheck(); _recoverySelfCheck(); _diagSelfCheck(); _uiSelfCheck(); _v256SelfCheck(); _v257SelfCheck(); _sessSafetyCheck(); _storageSelfCheck(); _lateralitySelfCheck(); _v268SelfCheck(); _v269SelfCheck(); _healthPasteSelfCheck(); _v271SelfCheck(); _exStatusSelfCheck(); _scheduleSelfCheck(); } finally{ _sbx=false; _lastClosed=_lc0; try{ if(_rawLive==null)localStorage.removeItem(LS_LIVE); else localStorage.setItem(LS_LIVE,_rawLive); }catch(_){} } let _rawAfter=null; try{ _rawAfter=localStorage.getItem(LS_KEY); }catch(_){} const _same=(()=>{ if(_rawAfter===_rawMain)return true; try{ const a=JSON.parse(_rawAfter), b=_rawMain==null?JSON.parse(JSON.stringify(db)):JSON.parse(_rawMain);   /* v267 · almacén vacío: se compara contra la base real en memoria */ return !!a&&!!b&&((a.profile||{}).username===(b.profile||{}).username)&&((a.sessions||[]).length===(b.sessions||[]).length)&&(JSON.stringify(a.split)===JSON.stringify(b.split)); }catch(_){ return false; } })(); if(!_same)console.error(new Error('SELFCHECK sandbox: una base de juguete llegó a tu disco')); else console.log('sandbox self-check OK'); setTimeout(()=>{ _idbSelfCheck(); },800); setTimeout(_dsRenderReport,1500); } }catch(e){ console.error(e); } try{ const _sp=new URLSearchParams(location.search); const _hasHistorical=_sp.has('stepsh')||_sp.has('weighth')||_sp.has('stepsq')||_sp.has('sleeph'); const _hk=['steps','stepsh','weight','weighth','stepsq','sleep','sleeph'].some(k=>_sp.has(k)); if(_hk&&!(db.profile&&db.profile.username)){ if(_bootJ)_bootJ.flags.push('urlImportEmpty'); if(history.replaceState)history.replaceState(null,'',location.pathname); setTimeout(()=>{ try{ toast('⚠ ese enlace abrió Safari, no tu app','err'); }catch(_){} },600); } else if(_hasHistorical){ const _hsp=_sp; if(history.replaceState)history.replaceState(null,'',location.pathname); setTimeout(()=>{ trkAsk({title:'importar datos históricos',detail:'este link trae pasos, peso o sueño de varios días · acepta solo si viene de tu propio Atajo de iOS',ok:'importar'},()=>{ try{ const _imp=importHealth(_hsp); if(_imp.length){ save(); render(); toast('✓ '+_imp.join(' · ')); } }catch(_){} }); },400); } else { const _imp=importHealth(_sp); if(_imp.length){ window._healthImported=_imp; if(history.replaceState)history.replaceState(null,'',location.pathname); } } }catch(_){} save(); render(); if(window._healthImported)setTimeout(()=>toast('✓ '+window._healthImported.join(' · ')),250); if(window._recoveredFromBackup)setTimeout(()=>{try{toast('⚠ se recuperó un respaldo local · revisa tus datos, podrían faltar cambios muy recientes','err');}catch(_){}},600);
+try{ promptIdleSession(); }catch(_){} try{ if(typeof location!=='undefined' && /[?&]selftest=1/.test(location.search)){ const _rawMain=(()=>{ try{ return localStorage.getItem(LS_KEY); }catch(_){ return null; } })(), _rawLive=(()=>{ try{ return localStorage.getItem(LS_LIVE); }catch(_){ return null; } })(), _lc0=_lastClosed; _sbx=true; try{ _identitySelfCheck(); _dropsetSelfCheck(); _baselineSelfCheck(); _variantSelfCheck(); _historyEditSelfCheck(); _idSelfCheck(); _cardioSelfCheck(); _tensionSelfCheck(); _healthSelfCheck(); _readinessSelfCheck(); _loggingSelfCheck(); _mergeSelfCheck(); _streakSelfCheck(); _chartSelfCheck(); _muscleSelfCheck(); _exProfileSelfCheck(); _recoverySelfCheck(); _diagSelfCheck(); _uiSelfCheck(); _v256SelfCheck(); _v257SelfCheck(); _sessSafetyCheck(); _storageSelfCheck(); _lateralitySelfCheck(); _v268SelfCheck(); _v269SelfCheck(); _healthPasteSelfCheck(); _v271SelfCheck(); _exStatusSelfCheck(); _scheduleSelfCheck(); _exHistSelfCheck(); } finally{ _sbx=false; _lastClosed=_lc0; try{ if(_rawLive==null)localStorage.removeItem(LS_LIVE); else localStorage.setItem(LS_LIVE,_rawLive); }catch(_){} } let _rawAfter=null; try{ _rawAfter=localStorage.getItem(LS_KEY); }catch(_){} const _same=(()=>{ if(_rawAfter===_rawMain)return true; try{ const a=JSON.parse(_rawAfter), b=_rawMain==null?JSON.parse(JSON.stringify(db)):JSON.parse(_rawMain);   /* v267 · almacén vacío: se compara contra la base real en memoria */ return !!a&&!!b&&((a.profile||{}).username===(b.profile||{}).username)&&((a.sessions||[]).length===(b.sessions||[]).length)&&(JSON.stringify(a.split)===JSON.stringify(b.split)); }catch(_){ return false; } })(); if(!_same)console.error(new Error('SELFCHECK sandbox: una base de juguete llegó a tu disco')); else console.log('sandbox self-check OK'); setTimeout(()=>{ _idbSelfCheck(); },800); setTimeout(_dsRenderReport,1500); } }catch(e){ console.error(e); } try{ const _sp=new URLSearchParams(location.search); const _hasHistorical=_sp.has('stepsh')||_sp.has('weighth')||_sp.has('stepsq')||_sp.has('sleeph'); const _hk=['steps','stepsh','weight','weighth','stepsq','sleep','sleeph'].some(k=>_sp.has(k)); if(_hk&&!(db.profile&&db.profile.username)){ if(_bootJ)_bootJ.flags.push('urlImportEmpty'); if(history.replaceState)history.replaceState(null,'',location.pathname); setTimeout(()=>{ try{ toast('⚠ ese enlace abrió Safari, no tu app','err'); }catch(_){} },600); } else if(_hasHistorical){ const _hsp=_sp; if(history.replaceState)history.replaceState(null,'',location.pathname); setTimeout(()=>{ trkAsk({title:'importar datos históricos',detail:'este link trae pasos, peso o sueño de varios días · acepta solo si viene de tu propio Atajo de iOS',ok:'importar'},()=>{ try{ const _imp=importHealth(_hsp); if(_imp.length){ save(); render(); toast('✓ '+_imp.join(' · ')); } }catch(_){} }); },400); } else { const _imp=importHealth(_sp); if(_imp.length){ window._healthImported=_imp; if(history.replaceState)history.replaceState(null,'',location.pathname); } } }catch(_){} save(); render(); if(window._healthImported)setTimeout(()=>toast('✓ '+window._healthImported.join(' · ')),250); if(window._recoveredFromBackup)setTimeout(()=>{try{toast('⚠ se recuperó un respaldo local · revisa tus datos, podrían faltar cambios muy recientes','err');}catch(_){}},600);
 applyDesign(); try{ if(/[?&]design\b/.test(location.search))localStorage.setItem('gymtrk_designmode','1'); if(localStorage.getItem('gymtrk_designmode')==='1')openDesignPanel(); }catch(_){}
 try{ bootScreen(()=>{ try{
   if(/[?&]wrap=1\b/.test(location.search)){ monthlyWrap(prevMonthYm(), true); return; }

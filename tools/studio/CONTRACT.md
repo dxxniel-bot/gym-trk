@@ -78,9 +78,12 @@ iframe.srcdoc = t.replace(/<head([^>]*)>/i, m => m + '<base href="'+base+'"><scr
   quita si no existía) — lo usan `splitedit:weekly`, `home:planrest` y `workout:rpe`, y `home:rest` cuando hoy toca descanso
   por el plan (entonces la app no ofrece `[rest day]`: el plan pasa a diario y sin hoy bloqueado para dar el toque real);
   `asideToday(W, T, conDescanso)` aparta la sesión viva y lo de hoy (`home:rest` y `home:planrest`).
-- Cubrir TODO: las 64 de `tools/ds-diff.html` (S2; v269 sin `m:mood`; v271 + `m:log:saved` y `macros:unit`; v272 +
+- Cubrir TODO: las 69 de `tools/ds-diff.html` (S2; v269 sin `m:mood`; v271 + `m:log:saved` y `macros:unit`; v272 +
   `home:stimulus` y `m:deload`; v273 + `splitedit:schedule`, `splitedit:weekly`, `home:planrest` y `workout:rpe`, al final
-  de S2 porque allá no hay `later` y cambian la db del frame) + las 16 de `tools/ds-inventory.js` + arranque (`T.bootPreview(null,
+  de S2 porque allá no hay `later` y cambian la db del frame; v274 + `progress:exercises`, `exhist`, `exhist:log`,
+  `exhist:top` y `workout:exname`, tras `live:machine`: solo estado de pantalla, y el reinicio de cada escenario cierra
+  también la capa de TRKAsk) + las 17 de `tools/ds-inventory.js` (v274 + `exhist`, tras las 4 hojas que se abren encima de
+  progress) + arranque (`T.bootPreview(null,
   true, false)` y el corto `boot:short` con `true` y `live`), wrap (`W.monthlyWrap(W.prevMonthYm(), true)`), recap (forzar vía la lógica de `snapRecap` si es posible),
   aviso de inactividad (`W.promptIdleSession()` con una sesión en curso "vieja"), toasts (`W.toast('✓ guardado')`,
   `W.toast('⚠ error de prueba','err')`, con deshacer), `W.trkAsk({...})`, `W.holdConfirm({...})`, barra de guardado
@@ -118,6 +121,21 @@ iframe.srcdoc = t.replace(/<head([^>]*)>/i, m => m + '<base href="'+base+'"><scr
   congela la escala al nacer, así la del dueño no se toca— y el toque real en el `.rirb` de la 1.ª serie: F 10 9.5 9 8.5 8
   7.5 7 6 5 en dos filas de 44, `.tselr.wrap`). `splitedit`, `home` y `home:rest` siguen igual (el editor pinta //SCHEDULE
   antes que los días y //COVERAGE en sets por semana). Total v273: 112 escenarios.
+- v274 (progreso por ejercicio — pantalla `exhist`, `renderExHist`; clave `exHistKey` = nombre + variante con el pliegue
+  legacy, nunca `exId`, que cambia por día del split): `progress:exercises` (`W.go('progress')` y `#view` hasta //EXERCISES
+  con `toSection` —el `.grp-label` después de //RECORDS; solo sale con la tile de e1RM, así que si está oculta se muestra
+  con `later` mientras se mira—: `[bi] nombre ···· estado · veces · última` en filas `.line.exl` de 44, `[ver todos · N]`),
+  `exhist` (la bitácora del ejercicio con más sesiones de los datos cargados —`topExKey` sobre `W.exIndex()`, sin cardio—
+  abierta como en la app: `W.go('progress')` y `W.openExHist(clave)`, así `[‹ back]` vuelve a progress: //EXERCISE, línea de
+  estado de v272, pestañas e1RM · peso top · volumen, `lineChart` en su unidad real y periodos 30D 90D 6M 1A todo),
+  `exhist:log` (lo mismo con `#view` hasta //LOG: `#N fecha · día · gym` + ▲% y las series en el formato RECENT) y
+  `exhist:top` (los toques reales de `[data-act="extab"][data-t="top"]` y `[data-act="exrange"][data-r="9999"]`). Los cuatro
+  guardan con `later` el estado de pantalla (`_exFrom`, `_exKey`, `_exTab`, `_exDays`, `_exAll`), lo dejan en sus valores por
+  defecto (e1RM · 6M · solo los recientes) y al salir lo devuelven tal cual (y si aún se está en `exhist`, vuelven a la
+  pantalla previa). `workout:exname` (`own:true`: el toque sella `lastTouch` en la sesión viva, así que es una sesión PROPIA;
+  toque real en el nombre —`[data-act="editexname"]`— del primer ejercicio con historia → trkMenu `[historial]` `[cambiar
+  ejercicio]`; sin historia la app cambia directo). `m:lift` sigue abriendo `openLiftDetail` directo (queda de respaldo: la
+  tile y //STRENGTH ya abren `exhist`). Nada toca la db. Total v274: 117 escenarios.
 - Etiquetas cortas en español: `gym · inicio`, `macros`, `hoja · agregar alimento`, `sesión · tabla`, `arranque`…
 
 ## 4 · `window.TRK_KNOBS` — knobs.js
@@ -197,8 +215,8 @@ sale con 1 si algo falta.
 ```
 Fases: G1 (hecho), G2/v258 (hecho), F0/v259 (hecho), T/v260 (hecho), S1 estudio (hecho), G0 decisiones, TS/v267 terminal
 sobrio (hecho), P1/v268 primer arranque (hecho), V269 lo del 24-sep (hecho), V270 salud por Atajo (hecho), V271 comida y
-unidades (hecho), V272 σ v2 y estado del progreso (hecho), V273 split: cómo entrenas (hecho), y en el orden aprobado por el
-dueño (24-sep): V274 progreso por ejercicio, V275 suplementos con marca y frasco, V276 macros: laboratorio y carrusel, V277 configuración
+unidades (hecho), V272 σ v2 y estado del progreso (hecho), V273 split: cómo entrenas (hecho), V274 progreso por ejercicio
+(hecho, con la cita del dueño como primer ítem), y en el orden aprobado por el dueño (24-sep): V275 suplementos con marca y frasco, V276 macros: laboratorio y carrusel, V277 configuración
 paso a paso (antes V271a), V278 cuentas (antes V271b), V279 Pro y anuncios (antes V273), V280 tour (antes V274); G3a–d y
 G4a–c sin versión fija (del plan aprobado). `proposal` enlaza a TRK_PROPOSALS.
 

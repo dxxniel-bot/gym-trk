@@ -1,9 +1,10 @@
 // gym//TRK · estudio · ESCENARIOS (tools/studio/scenarios.js) — contrato: tools/studio/CONTRACT.md §3
 // Cada escenario abre una pantalla, hoja, overlay o aviso de la app REAL dentro del frame (detrás de guard.js).
 //   { id, g, label, run(W,T), live? }   W = window del frame · T = W.__trk (T.db, T.state)
-// Fuentes: las 60 de tools/ds-diff.html (S2; allá D era la db → aquí T.db; v269 sin m:mood; v272 + home:stimulus y m:deload;
-// v273 + splitedit:schedule, splitedit:weekly, home:planrest y workout:rpe) + las 16 de dsSweep (tools/ds-inventory.js,
-// sus ids son la línea base de tools/ds-baseline.json) + los nuevos de §3. Un id aparece una sola vez.
+// Fuentes: las 69 de tools/ds-diff.html (S2; allá D era la db → aquí T.db; v269 sin m:mood; v272 + home:stimulus y m:deload;
+// v273 + splitedit:schedule, splitedit:weekly, home:planrest y workout:rpe; v274 + progress:exercises, exhist, exhist:log,
+// exhist:top y workout:exname) + las 17 de dsSweep (tools/ds-inventory.js, sus ids son la línea base de
+// tools/ds-baseline.json; v274 + exhist) + los nuevos de §3. Un id aparece una sola vez.
 // Orden = como se recorre la app: gym (inicio, sesión) · macros · progreso · historial · ajustes · hojas sueltas ·
 // compartir · overlays · avisos.
 // Sesión en vivo: `live:true` → run() se asegura de que haya una (W.newWorkSession(), solo en memoria; lo que la app
@@ -106,6 +107,35 @@
     p.week = (P0.mode === 'weekly' && Object.keys(P0.week).length) ? Object.assign({}, P0.week) : W.defaultWeek();
     T.state.selDay = null; }
 
+  // ---- v274 · progreso por ejercicio ----
+  // La historia de un ejercicio va por exHistKey (nombre + variante, con el pliegue legacy), nunca por exId (cambia por día
+  // del split): el que tiene más sesiones en los datos cargados.
+  function topExKey(W){ const c = {}; let best = null;
+    (W.exIndex() || []).forEach(r => { if(!r || !r.ex || W.isCardio(r.ex)) return; const k = W.exHistKey(r.ex); if(!k) return;
+      c[k] = (c[k] || 0) + 1; if(!best || c[k] > c[best]) best = k; });
+    return best; }
+  // estado en memoria de la pantalla (de dónde vienes, el ejercicio, la pestaña, el periodo, ver todos): sale de sus valores
+  // por defecto y al salir vuelve tal cual (o se quita si no existía); si aún se está en exhist, se vuelve a la pantalla previa
+  const EXST = ['_exFrom', '_exKey', '_exTab', '_exDays', '_exAll'];
+  function exState(W, T){ const st = T.state, scr = st.screen, prev = EXST.map(k => [k, Object.prototype.hasOwnProperty.call(st, k), st[k]]);
+    later(W, () => { prev.forEach(([k, had, v]) => { if(had) st[k] = v; else delete st[k]; }); if(st.screen === 'exhist'){ try{ W.go(scr || 'home'); }catch(_){} } });
+    EXST.forEach(k => { delete st[k]; }); }
+  // la bitácora del ejercicio con más sesiones, abierta como en la app: desde progreso (así [‹ back] vuelve ahí)
+  function exHistOn(W, T){ exState(W, T); const k = topExKey(W); W.go('progress'); if(k) W.openExHist(k); return !!k; }
+  // la sección //LOG de la bitácora (la cabecera .section cuyo título es //LOG) y //EXERCISES de progreso (su .grp-label)
+  const logSec = W => Array.from(W.document.querySelectorAll('#view .section')).find(s => /^\/\/\s*LOG\b/.test(((s.querySelector('.h') || s).textContent || '').trim())) || null;
+  const exListSec = W => Array.from(W.document.querySelectorAll('#view .grp-label')).find(e => /^\/\/EXERCISES\b/.test((e.textContent || '').trim())) || null;
+  // //EXERCISES solo sale con la tile de e1RM activa: si está oculta, se muestra solo mientras se mira
+  function exListOn(W, T){ exState(W, T); const L = W.progLayout(), i = L.hidden.indexOf('e1rm');
+    if(i >= 0){ L.hidden.splice(i, 1); later(W, () => { if(L.hidden.indexOf('e1rm') < 0) L.hidden.splice(Math.min(i, L.hidden.length), 0, 'e1rm'); }); }
+    W.go('progress'); const s = exListSec(W); if(s) toSection(W, s); }
+  // en el entreno, tocar el nombre de un ejercicio con historia abre [historial] [cambiar ejercicio] (sin historia, cambiar
+  // directo). Sesión PROPIA: el toque sella lastTouch en la sesión viva, así la del dueño no se toca
+  function exNameMenu(W, T){ const w = ownLive(W, T); T.state._curEx = null; W.go('workout');
+    const exs = w.exercises || []; let i = exs.findIndex(e => { const k = e && !W.isCardio(e) ? W.exHistKey(e) : ''; return !!k && W.exHistRows(k).length > 0; });
+    if(i < 0) i = 0;
+    click(W, '#view [data-act="editexname"][data-exi="' + i + '"]'); }
+
   // ---- sesión en vivo en memoria ----
   function restore(W, T){ T.db.activeWork = ORIG.has(W) ? ORIG.get(W) : null; ORIG.delete(W); }
   function ensureLive(W, T){ let w = T.db.activeWork;
@@ -179,6 +209,9 @@
         W.updateRestBar(); } },
     { id:'gloss', g:'overlay', label:'glosario · RIR', live:true, run(W){ W.go('workout'); click(W, '#view [data-gloss="rir"]') || click(W, '#view [data-gloss]'); } },
     { id:'live:exname', g:'sesión', label:'sesión · nombre del ejercicio', live:true, run(W){ W.go('workout'); W.openExName(0); } },
+    // v274 · tocar el nombre de un ejercicio con historia: trkMenu [historial] [cambiar ejercicio] (sin historia, cambiar
+    // directo). Sesión PROPIA (el toque sella lastTouch en la sesión viva); el primer ejercicio que ya tenga historia
+    { id:'workout:exname', g:'sesión', label:'sesión · tocar el nombre ([historial] [cambiar])', own:true, run(W, T){ exNameMenu(W, T); } },
     { id:'live:addex', g:'sesión', label:'sesión · + ejercicio', live:true, run(W){ W.go('workout'); W.openAddExercise(0); } },
     { id:'m:addex2', g:'sesión', label:'sesión · + ejercicio · lista', live:true, run(W){ W.go('workout'); W.openAddExStep2(0, 'chest'); } },
     { id:'m:addexform', g:'sesión', label:'sesión · + ejercicio · nuevo', live:true, run(W){ W.go('workout'); W.openAddExForm(0, 'chest'); } },
@@ -237,6 +270,9 @@
     // ---------------- progreso ----------------
     { id:'progress', g:'pantalla', label:'progreso', run(W){ W.go('progress'); } },
     { id:'nav:progress', g:'pantalla', label:'nav · progress activa', run(W){ navOn(W, () => W.go('progress')); } },
+    // v274 · //EXERCISES (con la tile de e1RM, después de //RECORDS): los de los últimos 60 días, '[bi] nombre ···· estado ·
+    // veces · última' en filas de 44 (el estado no sale con 'pocos datos'), [ver todos · N]. #view desplazado hasta ahí
+    { id:'progress:exercises', g:'pantalla', label:'progreso · //EXERCISES', run(W, T){ exListOn(W, T); } },
     { id:'sheet:metric-steps', g:'hoja', label:'hoja · métrica · pasos 30D', run(W){ W.go('progress'); mdRange(W, 30); W.openMetricDetail('steps'); } },
     { id:'m:metric', g:'hoja', label:'hoja · métrica · pasos 7D', run(W){ W.go('progress'); mdRange(W, 7); W.openMetricDetail('steps'); } },
     { id:'sheet:streak', g:'hoja', label:'hoja · racha', run(W){ W.openStreakSheet(); } },
@@ -249,7 +285,21 @@
     { id:'m:muscle', g:'hoja', label:'hoja · músculo', run(W){ W.openMuscleDetail('side_delts'); } },
     { id:'m:musclemap', g:'hoja', label:'hoja · mapa de músculos', run(W){ W.openMuscleMap(); } },
     { id:'m:volume', g:'hoja', label:'hoja · volumen', run(W){ W.openVolumeDetail(); } },
-    { id:'m:lift', g:'hoja', label:'hoja · levantamiento', run(W, T){ const s = lastTrain(T) || lastAny(T); const e = s && (s.exercises || [])[0]; if(e) W.openLiftDetail(e.name); } },
+    // v274 · el tile y //STRENGTH ya abren la bitácora del ejercicio (exhist); openLiftDetail queda de respaldo y se abre directo
+    { id:'m:lift', g:'hoja', label:'hoja · levantamiento (respaldo)', run(W, T){ const s = lastTrain(T) || lastAny(T); const e = s && (s.exercises || [])[0]; if(e) W.openLiftDetail(e.name); } },
+    // v274 · progreso por ejercicio ("un enlistado de… la fecha de la sesión… peso, número de repeticiones e intensidad, y…
+    // una gráfica"): el de más sesiones, abierto desde progreso con openExHist(clave). [‹ back] · //EXERCISE [bi] nombre ·
+    // tipo · N sesiones · unidad · la línea de estado de v272 · e1RM | peso top | volumen · lineChart en su unidad real (sin
+    // drops; en máquina/polea/smith solo el gym de la última vez) · 30D 90D [6M] 1A todo · //LOG #N la más nueva arriba.
+    // Estado en memoria (_exFrom/_exKey/_exTab/_exDays/_exAll) con `later`: sale por defecto y vuelve al salir
+    { id:'exhist', g:'pantalla', label:'progreso · un ejercicio (bitácora)', run(W, T){ exHistOn(W, T); } },
+    // //LOG: '#17  23 sep · <día> · <gym>' + ▲% de capacidad y debajo las series en el formato RECENT (' / ', en la escala
+    // RIR/RPE de cada sesión) + ' · kg'; tocar una fila abre esa sesión
+    { id:'exhist:log', g:'pantalla', label:'progreso · un ejercicio · //LOG', run(W, T){ exHistOn(W, T); const s = logSec(W); if(s) toSection(W, s); } },
+    // los toques reales de [peso top] y [todo] (extab / exrange); _exTab y _exDays vuelven a como estaban al salir
+    { id:'exhist:top', g:'pantalla', label:'progreso · un ejercicio · peso top · todo', run(W, T){ const st = T.state; exHistOn(W, T);
+        if(!click(W, '#view [data-act="extab"][data-t="top"]')){ st._exTab = 'top'; W.reRender(); }
+        if(!click(W, '#view [data-act="exrange"][data-r="9999"]')){ st._exDays = 9999; W.reRender(); } } },
     { id:'m:catalog', g:'hoja', label:'hoja · catálogo de ejercicios', run(W){ W._mgSel = []; W.openExerciseDirectory(); } },
     { id:'m:profile', g:'hoja', label:'hoja · perfil del ejercicio', run(W, T){ const e = firstEx(T); if(e) W.openExProfile(e.name); } },
     // v269 · //PROGRESS en modo widgets ([edit] o mantener 0.5 s una tile): − quitar, ⠿ arrastrar, [+ add] [cancel] ✓ done.

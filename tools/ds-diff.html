@@ -54,6 +54,15 @@ const S2=[
 ['live:workout',W=>{ W.go('home'); const b=W.document.querySelector('[data-act="start"],[data-act="resume"]'); if(b)b.click(); W.go('workout'); }],
 ['live:exedit',W=>{ W.go('workout'); W.openExEdit(0,0,0); }],
 ['live:machine',W=>{ W.go('workout'); W.openMachineEdit(0); }],
+// v274 · progreso por ejercicio (en un _pre.html anterior a v274 openExHist no existe: ERR en A). Solo estado de pantalla
+// (_exFrom/_exKey/_exTab/_exDays/_exAll), nada de la db. //EXERCISES en progreso, la bitácora del ejercicio con más
+// sesiones (clave exHistKey, nunca exId), su //LOG, la pestaña peso top con todo el periodo, y en la sesión en curso el
+// toque en el nombre → trkMenu [historial] [cambiar ejercicio] (la capa de TRKAsk se cierra al empezar el siguiente)
+['progress:exercises',W=>{ exReset(W); W.go('progress'); secTop(W,[...W.document.querySelectorAll('#view .grp-label')].find(e=>/^\/\/EXERCISES\b/.test(e.textContent.trim()))); }],
+['exhist',W=>exOpen(W)],
+['exhist:log',W=>{ exOpen(W); secTop(W,[...W.document.querySelectorAll('#view .section')].find(s=>/^\/\/\s*LOG\b/.test(((s.querySelector('.h')||s).textContent||'').trim()))); }],
+['exhist:top',W=>{ exOpen(W); const t=W.document.querySelector('#view [data-act="extab"][data-t="top"]'); if(t)t.click(); const r=W.document.querySelector('#view [data-act="exrange"][data-r="9999"]'); if(r)r.click(); }],
+['workout:exname',W=>{ W.go('workout'); const w=W.__trk.db.activeWork, xs=(w&&w.exercises)||[]; let i=xs.findIndex(e=>e&&!W.isCardio(e)&&W.exHistRows(W.exHistKey(e)).length); if(i<0)i=0; const n=W.document.querySelector('#view [data-act="editexname"][data-exi="'+i+'"]'); if(n)n.click(); }],
 // v273 · cómo entrenas. Van AL FINAL porque cambian la db del frame (plan, métrica, lo de hoy apartado) y aquí no hay
 // later(): lo que sigue lo heredaría. En un _pre.html anterior a v273 el plan y la métrica no existen (A pinta lo de antes)
 ['splitedit:schedule',W=>{ W.go('splitedit'); schedTop(W); }],
@@ -62,6 +71,12 @@ const S2=[
 // la sesión congela su escala al nacer: se reemplaza la del frame (en memoria, detrás del guardia) y se abre el RPE de la 1.ª serie
 ['workout:rpe',(W,D)=>{ D.split.metric='rpe'; D.activeWork=W.newWorkSession(); W.__trk.state._curEx=null; W.go('workout'); const b=W.document.querySelector('#view .rirb'); if(b)b.click(); }]
 ];
+// v274 · #view hasta una sección (su regla arriba), como toSection del estudio; el ejercicio con más sesiones; la bitácora
+// abierta desde progreso con su estado por defecto (e1RM · 6M · solo los recientes)
+function secTop(W,el){ const v=W.document.getElementById('view'); if(!v||!el)return; const sec=el.closest('.section')||el, hr=sec.previousElementSibling, top=(hr&&hr.classList.contains('rule'))?hr:sec; v.scrollTop+=top.getBoundingClientRect().top-v.getBoundingClientRect().top; }
+function topExKey(W){ const c={}; let best=null; W.exIndex().forEach(r=>{ if(!r||!r.ex||W.isCardio(r.ex))return; const k=W.exHistKey(r.ex); if(!k)return; c[k]=(c[k]||0)+1; if(!best||c[k]>c[best])best=k; }); return best; }
+function exReset(W){ const S=W.__trk.state; ['_exFrom','_exKey','_exTab','_exDays','_exAll'].forEach(k=>{ delete S[k]; }); }
+function exOpen(W){ exReset(W); W.go('progress'); W.openExHist(topExKey(W)); }
 // v273 · #view hasta //SCHEDULE (la cabecera justo antes de la fila `modo`), como toSection del estudio
 function schedTop(W){ const v=W.document.getElementById('view'), b=W.document.querySelector('#view [data-act="sp_mode"]'), ln=b&&b.closest('.line'), sec=ln&&ln.previousElementSibling; if(!v||!sec)return;
   const hr=sec.previousElementSibling, top=(hr&&hr.classList.contains('rule'))?hr:sec; v.scrollTop+=top.getBoundingClientRect().top-v.getBoundingClientRect().top; }
@@ -76,8 +91,8 @@ async function runDiff2(S){ const A=document.getElementById('A').contentWindow, 
   if(!A.__trk||!B.__trk)throw new Error('frames sin guardia: no se corre');
   const D=W=>W.__trk.db;
   for(const [name,fn] of S){ let ea='',eb='';
-    try{ try{A.closeModal()}catch(_){} fn(A,D(A)); }catch(e){ ea=e.message; }
-    try{ try{B.closeModal()}catch(_){} fn(B,D(B)); }catch(e){ eb=e.message; }
+    try{ try{A.closeModal()}catch(_){} try{A.closeAsk(true)}catch(_){} fn(A,D(A)); }catch(e){ ea=e.message; }   // v274 · también la capa de TRKAsk (workout:exname deja un trkMenu)
+    try{ try{B.closeModal()}catch(_){} try{B.closeAsk(true)}catch(_){} fn(B,D(B)); }catch(e){ eb=e.message; }
     await new Promise(r=>setTimeout(r,40));
     const a=snap(A), b=snap(B); const diffs=[];
     if(a.length!==b.length){ res[name]={err:ea||eb||null, struct:'A '+a.length+' vs B '+b.length}; continue; }

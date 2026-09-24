@@ -11,7 +11,7 @@
 
   window.TRK_PLAN = {
     updated: '2026-09-24',
-    note: 'ruta de la guía: G1 y G2 hechos, F0 y T preparan el estudio; G0 se decide aquí, TS (v267) hornea el "terminal sobrio", P1 (v268) el primer arranque, v269 y v270 (salud por Atajo) lo que pediste el 24-sep, v271 comida y unidades, v272 σ v2 y estado del progreso y v273 split: cómo entrenas (diario, días fijos o rotativo, días sin gym, ciclo real y RIR o RPE); en el orden que aprobaste siguen progreso por ejercicio (v274), suplementos con marca y frasco (v275), macros: laboratorio y carrusel (v276), configuración paso a paso (v277), cuentas (v278), Pro y anuncios (v279) y tour (v280). G3 y G4 completan la identidad sin versión fija. Cada entrega borra el CSS de su propuesta y la marca shipped.',
+    note: 'ruta de la guía: G1 y G2 hechos, F0 y T preparan el estudio; G0 se decide aquí, TS (v267) hornea el "terminal sobrio", P1 (v268) el primer arranque, v269 y v270 (salud por Atajo) lo que pediste el 24-sep, v271 comida y unidades, v272 σ v2 y estado del progreso, v273 split: cómo entrenas (diario, días fijos o rotativo, días sin gym, ciclo real y RIR o RPE) y v274 progreso por ejercicio (la bitácora #1, #2, #3… con su gráfica); en el orden que aprobaste siguen suplementos con marca y frasco (v275), macros: laboratorio y carrusel (v276), configuración paso a paso (v277), cuentas (v278), Pro y anuncios (v279) y tour (v280). G3 y G4 completan la identidad sin versión fija. Cada entrega borra el CSS de su propuesta y la marca shipped.',
     phases: [
 
       P('G1', 'guía', null, 'hecho', [
@@ -147,9 +147,13 @@
         I('effort', 'intensidad RIR o RPE por split ("mi amigo utiliza el RPE"): la sesión congela su escala; RPE F 10 9.5 9 8.5 8 7.5 7 6 5 en dos filas de 44 y se guarda como RIR = 10 − RPE; fallo (F) [sí] no; la etiqueta @ RIR · F se calcula; compartir, historial y export en la escala de la sesión', 'hecho', { audit: '33 self-checks · dsSweep sin cambios' }),
       ]),
 
-      P('V274', 'progreso por ejercicio', 'v274', 'pendiente', [
-        I('list', 'lista numerada de ejercicios', 'pendiente'),
-        I('chart', 'gráfica por ejercicio', 'pendiente'),
+      P('V274', 'progreso por ejercicio', 'v274', 'hecho', [
+        I('note', 'lo que pediste: "irme a progreso, seleccionar el ejercicio y… ver… un enlistado de… la fecha de la sesión… peso, número de repeticiones e intensidad, y… una gráfica de progreso respecto a ese ejercicio… como… las notas" (las de tu amigo: #1, #2, #3… con fecha y series)', 'hecho'),
+        I('screen', 'una pantalla por ejercicio (sin barra de abajo, [‹ back] a donde estabas): //EXERCISE [bi] nombre · tipo · N sesiones · unidad y su línea de estado (progresando · +0.6 %/sem · 6 sesiones en 5 sem); la historia va por nombre + variante, nunca por el id del día: el mismo ejercicio en 3 días del split es UNA historia, y uni ≠ bi', 'hecho'),
+        I('chart', 'gráfica e1RM · peso top · volumen en la unidad real del ejercicio, periodos 30D 90D 6M 1A todo (6M por defecto); sin drops ni series en otra unidad; en máquina, polea o smith solo el gym de la última vez ("la línea: solo <gym> · otra máquina no se compara")', 'hecho'),
+        I('log', '//LOG numerado, la más nueva arriba: #17 · fecha · día · gym, el ▲% de capacidad y debajo las series como en RECENT (peso×reps y RIR o RPE de esa sesión, drops con ↓); tocar una abre la sesión', 'hecho'),
+        I('entries', 'entradas: //EXERCISES en progreso (los de los últimos 60 días · estado · veces · última, [ver todos · N]); //RECORDS, la tile y //STRENGTH de e1RM; catálogo ··· → historial; perfil del ejercicio [historial ›]; en el entreno, tocar el nombre → [historial] [cambiar ejercicio]; en el historial, el nombre de cada ejercicio', 'hecho', { audit: 'filas de 44 · hit 713 igual' }),
+        I('check', '_exHistSelfCheck: 2 días del split = una historia, fila vieja sin tipo cuenta como libre, pista de lateralidad, uni ≠ bi, #1 la más vieja, unidad real, drops en texto', 'hecho', { audit: '34 self-checks · glyph 72→87 (etiqueta del dueño)' }),
       ]),
 
       P('V275', 'suplementos con marca y frasco', 'v275', 'pendiente', [
