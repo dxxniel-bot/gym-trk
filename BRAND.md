@@ -3,7 +3,7 @@
 > La identidad de gym//TRK en una página. Manda sobre todo lo demás: si `DESIGN_SYSTEM.md` (la referencia), una skill
 > o una propuesta choca con esto, **gana este archivo** y el choque se anota como pregunta para el dueño.
 > Sin historia ni versiones aquí: eso vive en `DESIGN_CHANGELOG.md` (nunca se implementa desde ahí).
-> Última decisión registrada: 2026-09-23.
+> Última decisión registrada: 2026-09-24.
 
 ## 1. Qué es
 
@@ -26,11 +26,11 @@ arranque, la fila del perfil que estás llenando); nunca como prompt decorativo 
 | **B-01** | **Dos capas.** Contenido plano sobre `#000` (terminal). Chrome flotante de vidrio (nav, sheet, toast, popover). `backdrop-filter` solo en chrome. |
 | **B-02** | **Texto primero.** Todo dato se puede escribir con caracteres; la gráfica existe solo cuando el texto no alcanza. |
 | **B-03** | **Una línea por registro.** El átomo es la fila de referencia del dueño: `#chest  bench press  160lbs×8@0 / 160lbs×6@0`. Toda lista nueva se diseña primero así. |
-| **B-04** | **Jerarquía = opacidad > tamaño > peso.** Escala única 10·12·14·20·28 (también en SVG; la movió el dueño el 23-sep: "14 · 20, más compacto"). `--t-field` 16 **solo** en lo editable (input, select, textarea: con menos de 16 el iPhone hace zoom al enfocar); nunca en texto que solo se lee. JetBrains Mono, única familia. |
+| **B-04** | **Jerarquía = opacidad > tamaño > peso.** Escala única 10·12·14·20·28 (también en SVG; la movió el dueño el 23-sep: "14 · 20, más compacto"). `--t-field` **14** (v269; antes 16) **solo** en lo editable (input, select, textarea); nunca en texto que solo se lee. Ya no hace falta 16 para evitar el zoom del iPhone al enfocar: el viewport lleva `maximum-scale=1` (`vp-lock`, §6) y la tabla de series lleva meses con campos a 12 sin zoom. Lo movió el dueño el 24-sep: "está desproporcional". JetBrains Mono, única familia. |
 | **B-05** | **Contenido afilado** (la reescribió el dueño el 23-sep: "4 px, suave"). Reglas y barras a 0. `--r-sm` 2 px **solo** en marcas que no se tocan. `--r-mark` 4 px en marcas de gráfica. **Todo control —botón, campo, celda de la tabla de series, chip, toggle— y las tarjetas a 4** (`--r-ctl` = `--radius` = 4). Solo el chrome flotante (nav, sheets, toasts, popovers) lleva `--r-float` 8. 50 % solo en puntos. Única píldora que queda: la tapa de las barras finas ≤6 px (`.bar`, `.wprog`, `.vbar`). |
 | **B-06** | **Dos tipos de acción.** `[verbo objeto]` para lo puntual, **incluidos los secundarios** (cancelar, alternativas de una hoja, `[abort]`, `[↩]`): sin caja, corchetes en `--o40` (enviados en v267). **Un solo primario por vista** (bloque gym//TRK, §4). Fila que termina en `›` para navegar. Nada más. |
 | **B-07** | **Color reduccionista.** La paleta es la opacidad del blanco. El color semántico va en el **glifo o el número**, nunca en una frase entera. ≤3 marcas de color sobre el pliegue. Si está en orden, no lleva color. |
-| **B-08** | **Íconos TRK.** Palabra > glifo del set (§3) > ícono TRK (SVG propio, §4). **Emoji de interfaz: 0.** Lo que el dueño escribe (🥀 en un nombre) se muestra tal cual. |
+| **B-08** | **Íconos TRK.** Palabra > glifo del set (§3) > ícono TRK (SVG propio, §4). **Emoji de interfaz: 0** (el último de compartir, la cámara de fotos, salió en v269: la serie grabada lleva la cámara TRK). Lo que el dueño escribe (🥀 en un nombre) se muestra tal cual. |
 | **B-09** | **Movimiento: el contenido imprime, el chrome se desliza.** El contenido cambia al instante o con opacidad + ≤4 px. Solo el chrome se mueve como vidrio. Un movimiento visible por toque. Reduced-motion = instantáneo. |
 | **B-10** | **Menos detalle.** Una idea una vez. Sin instrucciones impresas (van al glosario `data-gloss`). ≤4 secciones sobre el pliegue. |
 | **B-11** | **Hecho para la serie.** Una mano, toque ≥44×44, lo que necesitas ahora es lo más grande. Lo que se ve puede ser fino; el toque sigue ≥44. Texto nunca por debajo de `--o40`. |
@@ -98,8 +98,12 @@ pie de compartir, 34 solo en el landing. Una sola variante.
 - **Puntuaciones reduccionistas.** Existen, en mínimo: `recovery ~43` en una línea 12/800 sin héroe ni color de
   veredicto; `~ retention 62 · Na:K 2.1 →` como fila de diagnóstico que solo aparece si se sale de rango.
 - **Íconos TRK.** SVG propio: rejilla 24, trazo 1.6, remates cuadrados, geometría ortogonal de consola,
-  `currentColor`. Piezas: share, camera (marca de la serie grabada, reemplaza al emoji 📷) y escáner (la nav es de texto
-  desde v267). Un ícono nuevo necesita aprobación del dueño.
+  `currentColor`. Piezas: share, camera y escáner (la nav es de texto desde v267). Un ícono nuevo necesita aprobación del
+  dueño. **Camera, enviada en v269** a pedido suyo (24-sep): una **cámara de video** (cuerpo y lente de trazo 1.4 en
+  `currentColor`) con un **punto rojo de grabación** relleno en `--bad`, de 16 px, a la izquierda de la serie que marcaste
+  en compartir-ejercicio; reemplaza al emoji de cámara de fotos. El rojo es la señal de "grabando" que él pidió, no un
+  veredicto. Como share, hoy está dibujada a viewBox 16 / trazo 1.4: pasar el set a la rejilla 24 / trazo 1.6 sigue
+  abierto (§10).
 - **Arranque.** Shader WebGL de marca (única excepción de fondo animado): **matriz de puntos de fósforo** (rejilla de 6 px,
   onda desde el centro, monocromo), encuadre cover (sin comprimir), cuadro quieto con reduced-motion y apagado en segundo
   plano, detrás del texto a `--op-dim`. **`loading gym tracker` en cada apertura** (decidido el 23-sep, enviado en v268):
@@ -126,8 +130,9 @@ peso ······························ 61 kg  ▼ −
 
 `ring` anillo de kcal (macros y compartir) · `table36` tabla de sesión con celdas de 36 px (densidad en la serie;
 el ✓ amplía su toque con `::after`) · `boot` shader del arranque · `wrap`/`scanner` overlays de un solo mensaje ·
-`vp-lock` zoom bloqueado (app nativa-like; compensado con 16 px en campos) · `camera` ícono TRK de cámara en
-compartir-ejercicio (lo que el dueño pone en sus historias) · `user-label` emoji dentro de etiquetas del dueño.
+`vp-lock` zoom bloqueado (app nativa-like; también evita el zoom del iPhone al enfocar un campo, por eso los campos van a
+`--t-field` 14 desde v269) · `camera` ícono TRK de cámara de video con su punto rojo de grabación en compartir-ejercicio
+(lo que el dueño pone en sus historias; v269) · `user-label` emoji dentro de etiquetas del dueño.
 
 ## 7. Prohibido
 
@@ -179,6 +184,13 @@ caracteres sin perder un dato?
 | 2026-09-23 | **Perfil en filas de terminal** (v268): crear cuenta pasa a filas `clave  control` en minúsculas, campos de 40, `>` en la fila con foco (el mismo "aquí" de la nav) y vista previa de kcal/proteína | respuesta a su queja del formulario de crear cuenta: "tosco, todo muy gordo" |
 | 2026-09-23 | **Secundarios como `[verbo]`** (v267): sin caja, corchetes en `--o40`; decidido en principio el 21-sep (B-06) y enviado con esta ronda | su vista previa del 23-sep |
 | 2026-09-23 | **Casilla = caja fina y opción = `[x]`** (v267): campo editable con borde 1 px `--o40`, fondo transparente y radio 4 (foco = borde `--fg`); toggle sin caja, la opción elegida `[entre corchetes]` en `--fg`/700 | su vista previa del 23-sep |
+| 2026-09-24 | **Fuera el ánimo** (v269): se retira de toda la app (hoja, tile de progreso, línea `mood · today` de //STATS y su peso en recovery) y el dato se borra con una foto previa en IndexedDB; ya lo había pedido | "Te había dicho de que quitaras lo del mood" |
+| 2026-09-24 | **`rest day` ≠ `skip day`** (v269): rest = descanso programado, se registra y **no mueve el split** (mañana toca el mismo día); skip = saltar el día del split. Los dos con `[deshacer]`; el descanso se quita con `[quitar descanso]` | "Rest Day no es para saltar, es para indicar... fue programado el descanso. Skip Day sí es saltar el día del split" |
+| 2026-09-24 | **//PROGRESS se edita como pantalla de widgets** (v269): `[edit]` (o mantener una tile) → `−` en cada tile para quitarla, `⠿` para acomodarla, `+ add` para lo oculto y `✓ listo` para confirmar (`cancel` descarta). Reemplaza la hoja de métricas on/off | "en configuración de activar y desactivar, preferiría que fueran otro de edit para poder que aparezca el signo de más para agregar, signo de menos en cada elemento para quitar... acomodar tu orden y ya después confirmar... como una screen de widgets" |
+| 2026-09-24 | **Suplementos en una cuenta nueva** (v269): //SUPPS sale arriba de MEALS aunque no haya ninguno, con `[+ supp]` y `···` → `ignorar por ahora` (se reactiva desde ajustes) | "en una cuenta nueva, arriba de Meals, tendría que salir la opción de registrar suplementos. Y en caso de que no quieran, pues que sea tres puntitos e ignorar" |
+| 2026-09-24 | **Cámara de video con punto rojo** (v269): la serie grabada en compartir-ejercicio lleva el ícono TRK camera (cámara de video y un punto rojo de grabación); fuera el emoji de cámara de fotos (B-08) | "en lugar del emoji de la cámara de fotografía sea una cámara de video... una señalización roja como de que está grabando" |
+| 2026-09-24 | **Unidad del peso corporal aparte y primero** (v269): `te pesas en kg/lbs` es distinto de `pesas gym lbs/kg`; las dos van al inicio del perfil, el campo de peso sigue a la primera y el peso corporal se muestra en esa unidad en toda la app (registro, tile, detalle, wrap, perfil) | "ya pusiste tu peso en kilos. Porque abajo dice pesas en libras kilos. O sea, no tiene puto sentido" |
+| 2026-09-24 | **Perfil proporcionado** (v269): casillas de 36 y `--t-field` 14 en toda la app (reescribe el 16 del 23-sep, B-04); actividad y objetivo como listas verticales con la descripción de cada opción a su lado (fuera la pista que cambiaba abajo); `[‹ atrás]` arriba | "el formulario para profile... está muy gordo, está muy alto, o sea, la casilla está muy grande, el texto adentro de las casillas también, o sea, está desproporcional" · "en actividad, de sedentario, ligero, moderado, alto, está mal acomodado. Y luego abajo la nota de que caminas algo... la nota dependiendo de qué selecciona... está todo goofy" · "no hay forma de darle back" |
 
 ## 10. Preguntas abiertas (se cierran en el estudio, `tools/studio.html`)
 
@@ -192,7 +204,11 @@ Cerradas el 22-sep con el look "1" (§9): panel del anillo (vidrio sutil), shade
 esquinas (contenido a 4 y lo que flota a 8; reemplaza el 12 del 22-sep), la escala (14 · 20), la variante de nav (texto
 con `>` que parpadea), la variante de primario (bloque inverso de 44, radio 4, presionado = invertir) y los secundarios
 como `[verbo]`. **Enviadas en v268** (§9): el arranque `loading gym tracker` en cada apertura y el trabajo en curso de
-terminal (`▖▘▝▗` y `[█░]`), que dejan de estar pendientes. **Siguen abiertas:** set de íconos TRK (la nav ya no los usa: quedan share, camera y escáner), tarjetas →
+terminal (`▖▘▝▗` y `[█░]`), que dejan de estar pendientes. **Decididas y enviadas el 24-sep** (§9, v269): el campo a 14,
+la cámara de video con su punto rojo, `rest` ≠ `skip`, //PROGRESS editable como widgets, la invitación de suplementos y
+la unidad del peso corporal aparte. **Siguen abiertas:** set de íconos TRK (la nav ya no los usa: share y camera existen
+dibujados a viewBox 16 / trazo 1.4, falta el escáner y llevar las tres a la rejilla 24 / trazo 1.6), tarjetas →
 paneles (por ahora solo bajaron a radio 4), `[‹ origen]` (hoy `[‹ back]` de texto que siempre vuelve a gym), interlineado
-y opacidad a la escala, y **los glifos ✓ ○ ⠿ ↩ no existen en JetBrains Mono** (salen con la fuente del sistema):
-reemplazarlos o aceptarlos.
+y opacidad a la escala, **los glifos ✓ ○ ⠿ ↩ no existen en JetBrains Mono** (salen con la fuente del sistema; el `⠿` de
+//PROGRESS editable también): reemplazarlos o aceptarlos, y el idioma de los botones de acción, que la barra del modo
+editar de //PROGRESS ya no mezcla idiomas: `[+ add] [cancel] ✓ done` y en gym `rest today ✓ [undo rest] [skip day]` (resuelto el 24-sep).

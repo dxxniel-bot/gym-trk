@@ -1,6 +1,6 @@
 # gym//TRK — DESIGN SYSTEM (referencia del estado actual)
 
-> Referencia del estado actual (v268). **Lee BRAND.md primero**: manda sobre este archivo. Sin historia: DESIGN_CHANGELOG.md.
+> Referencia del estado actual (v269). **Lee BRAND.md primero**: manda sobre este archivo. Sin historia: DESIGN_CHANGELOG.md.
 
 ---
 
@@ -26,8 +26,8 @@ acciones → la ficha del componente (§7) → tokens (§4) → §17.6 definici�
   existe lleva al lado "(pendiente G3)" o "(pendiente G4)".
 - Las reglas tienen un ID estable (`TOK-3`, `ACT-2`…) para citarlas en cada cambio, junto a las B-xx de BRAND. Cada una
   dice **la revisa:** `ds-audit R-xx` (estático), `_dsRenderCheck` (en pantalla, `?selftest=1`), un self-check, o *a ojo*.
-- Medidas: los tamaños de letra van siempre por token (`--t-*`, escala 10·12·14·20·28 desde v267, más `--t-field` 16 solo
-  en lo editable). En las fichas de §7 las medidas
+- Medidas: los tamaños de letra van siempre por token (`--t-*`, escala 10·12·14·20·28 desde v267, más `--t-field` solo
+  en lo editable: 14 desde v269, antes 16). En las fichas de §7 las medidas
   de caja se escriben sin unidad (son px CSS) para no confundirlas con tamaños de letra.
 
 **Regla de oro.** *No diseñes cada pantalla: diseña el sistema y usa el sistema para construir cada pantalla.* Si una
@@ -40,7 +40,8 @@ cerró el panel del anillo de vidrio sutil, el shader de fósforo y el borde de 
 esquinas —contenido 4, flotante `--r-float` 8—, la escala 14 · 20, la nav de texto con `>`, el primario y los secundarios
 `[verbo]`) y estas, encontradas al escribir la referencia:
 1. **Glifos en uso que BRAND no menciona:** ⬆ ⬇ ↔ (perfil de resistencia), ▦ (rango personalizado), ▢ ▣ (elegir en el
-   catálogo), ↻ ↺ (reintentar, recuperado, última vez), ↑ (flojas, ánimo), ⋯ (menú de fila del catálogo). §11.3.
+   catálogo), ↻ ↺ (reintentar, recuperado, última vez), ↑ (flojas, tiles de peso y kcal), ⋯ (menú de fila del catálogo).
+   §11.3.
 2. **Idioma de los botones de sheet** (`guardar`, `cancelar`, `borrar`): ¿son "verbos de comando" (inglés) o prosa
    (español)? §6.2.
 3. **Movimiento de contenido que hoy pasa de 4** (reacomodo FLIP de TRKRow, barras que crecen, el ✓ con rebote): ¿se
@@ -158,19 +159,23 @@ se renombran. Contraste calculado sobre `#000`.
 - **Familia única:** JetBrains Mono (Google Fonts), fallback `ui-monospace, Menlo, monospace` (B-04). Fuentes nuevas:
   prohibidas.
 - **Escala única (TYP-1, v267 — el dueño, 23-sep: "14 · 20, más compacto"):** `--t-label` 10 · `--t-data` 12 ·
-  `--t-section` **14** · `--t-display` **20** · `--t-hero` **28**, más **`--t-field` 16 solo en lo editable** (input,
-  select, textarea: con menos de 16 el iPhone hace zoom al enfocar; nunca en texto que solo se lee). El auditor y
-  `_dsRenderCheck` leen la escala de `:root` (`dsScale()` incluye `--t-field`; `DS_SCALE_DEF` = 10·12·14·20·28·16).
+  `--t-section` **14** · `--t-display` **20** · `--t-hero` **28**, más **`--t-field` solo en lo editable** (input,
+  select, textarea; nunca en texto que solo se lee). **`--t-field` = 14 desde v269** (antes 16; el dueño, 24-sep: "la
+  casilla está muy grande, el texto adentro de las casillas también… está desproporcional"). El 16 existía para que el
+  iPhone no hiciera zoom al enfocar, pero el viewport ya lleva `maximum-scale=1` (`vp-lock`, §13.1) y la tabla de series
+  lleva meses con campos a 12 sin zoom. Con 14 el campo coincide con `--t-section`: la escala efectiva vuelve a ser de 5
+  tamaños. El auditor y `_dsRenderCheck` leen la escala de `:root` (`dsScale()` incluye `--t-field`; el respaldo
+  `DS_SCALE_DEF`, que solo se usa si `:root` no se puede leer, todavía trae 16).
   Cualquier otro tamaño está prohibido, **también en SVG**. Exentos solo con id (§15): wrap 60/44, escáner 40, panel
-  `?design=1`. Hoy (v267) el CSS usa `--t-label` ×152 · `--t-data` ×98 · `--t-section` ×38 · `--t-field` ×11 ·
+  `?design=1`. Hoy (v269) el archivo usa `--t-label` ×152 · `--t-data` ×104 · `--t-section` ×40 · `--t-field` ×12 ·
   `--t-display` ×13 · `--t-hero` ×4; el radar de macros todavía escribe `font-size="7.5"` en su SVG (objetivo G4, M4-11).
   La revisa: ds-audit (escala, tokens viejos) · R-SVGFS · `_dsRenderCheck` fsOff.
 - **Pesos (TYP-2):** 400 texto · 700 énfasis, números, botones y chips · 800 títulos, `//SECCIÓN`, nombre del
   ejercicio, valores display. **600 prohibido** (no se carga; el navegador lo pinta como 700). Desde v260 la URL de la
   fuente solo carga 400 · 700 · 800 (300 y 500 no se usaban). La revisa: R-FONT.
 - **Mínimos (TYP-3):** texto ≥10 siempre. **800 nunca por debajo de 12.** 700 a 10 solo en estado semántico (▲▼ %, PR,
-  sobre MRV). Campos que abren teclado o picker a `--t-field` 16 (anti-zoom de iOS), salvo la tabla de sesión (`table36`). La revisa:
-  ds-audit (peso 800 bajo 12, campos por debajo de 16).
+  sobre MRV). Campos que abren teclado o picker a `--t-field` (14 desde v269), salvo la tabla de sesión (`table36`, 12).
+  La revisa: ds-audit (peso 800 bajo 12, campos por debajo de `--t-field`: el auditor lee el valor de `:root`).
 - **Tracking (TYP-4), 4 roles por token:** `--ls-caps` .2em (rótulos en MAYÚSCULAS a 10) · `--ls-title` .12em (títulos
   en mayúsculas; hoy también `.sheet h3` y `.sph .h`) · `--ls-num` −.03em (números de `--t-display` y `--t-hero`) · `--ls-ui` .03em (botones,
   controles y meta de interfaz) · 0 por defecto. Un rol = un valor. Hoy queda un tracking fuera de rol (`.14em` en
@@ -191,7 +196,7 @@ tabla) · a ojo.
 | Héroe | `--t-hero` | 800 | `--ls-num` | tight | `.mdval` (valor del detalle de métrica), marca del landing. Nada más |
 | Display | `--t-display` | 800 | `--ls-num` | tight | `.whdr .wname` (nombre del día), `.pval`, `.ring.lg .num`, `.shsn`, `.msum-tot b`, `.exbn` |
 | Sección / título | `--t-section` | 800 | 0 (`--ls-title` si va en mayúsculas) | ui | `.section .h`, `.sheet h3`, `.lt .h`, `.mnm`, `.mkc` (total de comida), `.exhead .n`, `.wline .wtn`, `.dnlbl`, `.shtt` |
-| Campo (solo editable) | `--t-field` | 400 / 700 (800 al renombrar) | 0 | — | `.field input`/`select`, `#fa_q`, `textarea.ta`, `.slph input`, `.slblk input`, `.mdcust input`, `select.pfsel`, `#pf_gym`, `.pfw`, `.msum-time`, `.gnmin`, `.senm` |
+| Campo (solo editable) | `--t-field` (14, v269) | 400 / 700 (800 al renombrar) | 0 | — | `.field input`/`select`, `#fa_q`, `textarea.ta`, `.slph input`, `.slblk input`, `.mdcust input`, `select.pfsel`, `#pf_gym`, `.pfw`, `.msum-time`, `.gnmin`, `.senm`, `.obi` |
 | Glifo de control | `--t-section` | 400 | 0 | tight | `.dchk`, `.pairdone`, `.dnav`, `.lx`, `.mchev`, `.footer .undo`, `.exmore` |
 | Fila / dato | `--t-data` | 400 (valor 700/800) | 0 | ui; lectura en compartir | `.line`, `.mit`, `.lc`, `.trow`, `.srw`, `.stq`, `.inp`, `.pick` |
 | Acción: botón, chip, tab | `--t-data` | 700 | `--ls-ui` | centrado por alto | `.lact` = `.mdtabs span` = `.nav a` a 700; el primario (`.start` = `.sheetbtns .ok` = `.footer .save`) a 800; los `[verbo]` (`button.b`, `button.cancel`, `.secondary .b`, `.sheetbtns .cancel`) y las opciones sin elegir (`button.t`) a 400, la elegida a 700 |
@@ -202,8 +207,9 @@ tabla) · a ojo.
   v256).
 - `.tselo` (opción de TRKSelect) no es un campo: va a `--t-section`/700.
 - Las flechas `‹ ›` nunca pesan más que el dato que mueven.
-- Tamaños por pantalla (hoy, v267): gym {10,12,14,20} · sesión {10,12,14} · macros {10,12,14,20} · progreso {10,12,14,20,
-  28 en el detalle} · ajustes {10,12,14} · compartir {10,12,14,20}; más 16 en cada campo editable.
+- Tamaños por pantalla (hoy, v269): gym {10,12,14,20} · sesión {10,12,14} · macros {10,12,14,20} · progreso {10,12,14,20,
+  28 en el detalle} · ajustes {10,12,14} · compartir {10,12,14,20}; el campo editable ya no suma un tamaño (14 =
+  `--t-section`).
 
 ### 4.6 Espaciado y ritmo
 
@@ -245,7 +251,7 @@ tarjeta 16, flotante 12).
 | `--r-float` | 8 | **solo lo que flota**: nav (`--r-nav`; sus pestañas no tienen caja), sheet (`--r-sheet`), toast (`--r-toast`), popovers `.tsel`/`.gloss` (`--r-pop`), `.savebar` (`--r-bar`), fantasma de arrastre, panel de `?design` |
 | `--r-sheet` | `var(--r-float)` | esquinas inferiores del sheet |
 | `--r-pill` | 999 | **única píldora que queda**: la tapa de las barras finas ≤6 px (`.bar`, `.wprog`, `.vbar`) |
-| `50%` | — | puntos, thumbs, `.dots3`, punto del rail (los spinners circulares se retiraron en v268) |
+| `50%` | — | puntos, thumbs, `.dots3`, punto del rail, el `−` de quitar en //PROGRESS editable (`.pdel`, 20, v269; `_dsRenderCheck` lo cuenta como punto) (los spinners circulares se retiraron en v268) |
 
 - RAD-1: prohibidos 3/6/9/10/12/14/16 y cualquier literal en píxeles (todo va por token); el 8 solo como `--r-float` en
   lo que flota. La revisa: ds-audit (radios fuera de escala: hoy 0).
@@ -371,7 +377,11 @@ en v268: el trabajo en curso ahora es texto (TRKSpin, §7.33). Falta retirar `--
 
 - LAY-1: marco de referencia **393×852**; en ≤440 de ancho ocupa la pantalla (`.frame`). Se mide también a 375×812.
 - LAY-2: el contenido vive en `#view` (`.scroll`), el **único** elemento que hace scroll, con `padding: --sp-py --sp-px`
-  y abajo `calc(84 + safe-area)` para librar la nav flotante.
+  y abajo `calc(84 + safe-area)` para librar la nav flotante (en //PROGRESS editable, `.scroll.pedit` quita ese espacio:
+  no hay nav y la barra `.pedbar` baja hasta el borde, §7.35).
+- LAY-2b (v269): `.scroll` **no tiene barra de scroll** (`scrollbar-width:none` y `::-webkit-scrollbar` oculto). Donde
+  la barra ocupa espacio, aparecía al abrir el panel del anillo y el ancho del contenido brincaba (el dueño: "se cambia la
+  anchura porque se agrega el scroll"); en iOS la barra ya flotaba sin ocupar espacio. El ancho útil es siempre el de §5.2.
 - LAY-3: **un solo eje**: todo el contenido comparte borde izquierdo y derecho (`--sp-px`). Dos pantallas lado a lado se
   ven construidas sobre la misma retícula.
 - LAY-4: secciones = `hr.rule` + `.section` (título `//` a la izquierda, meta a la derecha) → contenido. Entre secciones
@@ -389,8 +399,7 @@ JetBrains Mono avanza **0.6em** por carácter. Ancho útil a 393 = 393 − 2×18
 |---|---|---|---|
 | 10 | 6.0 | 59 | 56 |
 | 12 | 7.2 | **49** | 47 |
-| 14 | 8.4 | 42 | 40 |
-| 16 (campo) | 9.6 | 37 | 35 |
+| 14 (sección y, desde v269, campo) | 8.4 | 42 | 40 |
 | 20 | 12.0 | 29 | 28 |
 | 28 | 16.8 | 21 | 20 |
 
@@ -441,7 +450,8 @@ changelog. Estado medido:
   En español: PERFIL, SALUD, ESTÍMULO, MÚSCULOS, FUERZA, RENDIMIENTO, COBERTURA, HOY (recap).
 - Una pieza con dos idiomas: barra de estado (`streak:` junto a `meta: mantener`), barra de descanso (`descanso · skip ·
   listo`), abortar (`abort` → "abortar la sesión"), ajustes (`data`, `export file` junto a `espacio`), sheets (`guardar` +
-  `cancel`), vacíos en inglés (`no meals logged`, `no water logged`).
+  `cancel`), vacíos en inglés (`no meals logged`, `no water logged`); desde v269 también la fila de descanso de gym
+  (resuelto el 24-sep: `rest today ✓ [undo rest] [skip day]` y `[+ add] [cancel] ✓ done`, todo en inglés).
 - Para cerrar se usa `cancel`, `cancelar`, `close` y `cerrar`.
 
 **Lista para G3 (propuesta G1, a confirmar con el dueño; BRAND solo fija PROFILE, SETTINGS, HEALTH, STIMULUS, PROGRESS):**
@@ -470,8 +480,12 @@ changelog. Estado medido:
   verbo va en gerundio y en minúscula; los puntos suspensivos los pone el componente (el mensaje no los trae) y los
   segundos aparecen solos a partir de 1 s.
 - Error: `⚠ qué pasó · qué hacer` (`⚠ pon un nombre`), nunca un diálogo nativo.
-- Reversible: `✓ alimento borrado [deshacer]`.
-- Vacío: `// sin registros · [+ acción]`. En Progreso, además, **la tile activada nunca desaparece** (v263): sin dato muestra `—` + `sin registro` y ella misma es el botón de registro.
+- Reversible: `✓ alimento borrado [deshacer]`. v269: `✓ descanso · mañana: <día> [deshacer]`, `✓ saltado · sigue <día>
+  [deshacer]`, `supps ocultos · vuelven en ajustes [deshacer]`; sin deshacer (se revierten con su propio control):
+  `✓ descanso quitado`, `✓ supps de vuelta en macros`, `✓ progreso acomodado`, `✓ peso corporal en lbs`.
+- Vacío: `// sin registros · [+ acción]`. En Progreso, además, **la tile visible nunca desaparece por falta de datos**
+  (v263): sin dato muestra `—` + `sin registro` y ella misma es el botón de registro; solo sale de la rejilla si la quitas
+  en el modo editar (v269, §7.35).
 - La revisa: ds-audit (guardados sin feedback: hoy 0; diálogos nativos: hoy 0) · R-SAVE · R-TOAST.
 
 ---
@@ -514,7 +528,7 @@ en `›` para navegar. Nada más. El árbol para elegir está en §17.3.
   (`gap` 0 / `--s4`). `.footer .abort` pinta sus corchetes en `--abort`; `.footer .undo` va a `--t-section` (glifo ↩).
 - **Estados:** presionado = texto `--fg`.
 - **Toque:** 44 de alto × su ancho.
-- **Sí / No:** sí `[rest day]` `[skip day]` `[cancelar]`. **La etiqueta nunca trae sus propios corchetes** (los pone el
+- **Sí / No:** sí `[rest day]` `[skip day]` `[undo rest]` `[cancelar]` (qué hace cada uno en gym: §7.37). **La etiqueta nunca trae sus propios corchetes** (los pone el
   CSS: `[unir]` escrito en un `button.b` sale `[[unir]]`; en v267 se quitaron de `+ toma puntual`, `adoptar` y `unir`). No
   cajas, no pills, no botones con estética propia por módulo, no íconos sin texto en acciones importantes.
 - **Hoy:** decidido en principio el 21-sep y enviado en v267. `button{font-family:inherit}` sigue (T-01): fuera de su
@@ -542,8 +556,9 @@ en `›` para navegar. Nada más. El árbol para elegir está en §17.3.
 - **La revisa:** `_dsRenderCheck` hit.
 
 #### Más acciones (`.dots3`)
-- **Rol:** abrir el menú de acciones de una entidad (comida).
-- **Anatomía:** tres puntos dibujados de 3 con 3 de aire, `--o50` (`.gmore` > `.dots3`); nunca el texto `···`.
+- **Rol:** abrir el menú de acciones de una entidad (comida) o de una sección (//SUPPS vacío, v269).
+- **Anatomía:** tres puntos dibujados de 3 con 3 de aire, `--o50` (`.gmore` > `.dots3`; en la cabecera de TRKLog,
+  `.lsmore` > `.dots3`, §7.36); nunca el texto `···`.
 - **Toque:** 44×44 que se mete 12 en el margen de la página.
 - **Hoy:** el catálogo usa `⋯` como texto (`.exmore`): fuera del set (§11.3).
 
@@ -555,15 +570,15 @@ en `›` para navegar. Nada más. El árbol para elegir está en §17.3.
   `.pfw`, `.slblk input`, `.slph input`, `.mdcust input`, `.msum-time`, `.mmrow select`. Etiqueta `.field label`. Los de
   renombrar en línea (`.gnmin`, `.senm`) son §7.27.
 - **Anatomía (v267, vista previa del dueño 23-sep):** caja fina: alto 44 · `--r-ctl` 4 · borde 1 (`--bw-field`) `--o40` ·
-  fondo **transparente** · `--t-field` 16 (anti-zoom). `.msum-time` (hora del desglose) conserva su caja de 36 con .5
-  `--o20`. `.mmrow select` va a `--t-data` porque acompaña a una fila (el viewport ya bloquea el zoom).
+  fondo **transparente** · `--t-field` (14 desde v269; el zoom al enfocar lo evita el viewport, §4.4). `.msum-time` (hora
+  del desglose) conserva su caja de 36 con .5 `--o20`. `.mmrow select` va a `--t-data` porque acompaña a una fila.
 - **Estados:** foco = el borde sube a `--fg` **y es el foco** (v268: `outline:none` en `:focus` de todos los campos de v267,
   sin anillo doble); placeholder `--o30`.
-- **Variante del perfil de primer uso:** `.obi` (40 de alto, dentro de una fila de terminal), §7.34.
+- **Variante del perfil de primer uso:** `.obi` (36 de alto desde v269, dentro de una fila de terminal), §7.34.
 - **Sí / No:** **unidad y porción siempre `<select>`, nunca texto libre** (vinculante). No alturas 30/32/34/38, fondo
   relleno, radio distinto de `--r-ctl`, sombras internas, labels flotantes ni bordes de color.
 - **Hoy → objetivo:** la etiqueta va en MAYÚSCULAS (objetivo G3, VOZ-2). El borde `--o40` ya llega a 4.9:1.
-- **La revisa:** ds-audit (campos por debajo de 16: hoy 0).
+- **La revisa:** ds-audit (campos por debajo de `--t-field`: hoy 0).
 
 #### Dato (tabla de sesión)
 - **Clase / API:** `.inp` (`.inp.weight`), `.pick`, `.fs`, `.bwchip`; RIR con TRKSelect (`.pick.rirb` + `openRirSelect()`;
@@ -589,6 +604,11 @@ en `›` para navegar. Nada más. El árbol para elegir está en §17.3.
 - **Anatomía (v267, vista previa del dueño 23-sep):** **sin caja**; alto 44; `--t-data` `--ls-ui`; sin elegir `--o50`/400;
   elegida `[etiqueta]` en `--fg`/700, con corchetes por CSS (`::before`/`::after`) que, apagados, guardan su lugar
   (`visibility:hidden`) para que nada se mueva al elegir.
+- **Variante lista (`.toggles.oblist`, v269, perfil de primer uso):** una opción por línea (`role="radiogroup"`, cada
+  botón `role="radio"` con `aria-checked`), en rejilla de `12.5ch` + resto alineada por la línea base, mínimo 40 de alto:
+  nombre `.obn` (`--t-data`, corchetes por CSS sobre el nombre, no sobre la fila) y su descripción `.obd` fija al lado
+  (`--t-label` `--o40`, `--o60` en la elegida, interlineado de lectura). La descripción no cambia al elegir: nada se
+  reacomoda abajo. Para elecciones cuyo significado no cabe en la palabra (actividad, objetivo).
 - **Hoy:** cerrado en v267 (antes caja con radio de control y relleno `--fill` en la elegida).
 
 #### Pestañas (TRKTabs)
@@ -899,19 +919,22 @@ rejillas"; compartir es **vertical, a altura natural, nunca un cuadro que recort
   `kcalParts()`).
 - **Un ejercicio** (`openExShare()`): capa sólida `.exsh` (`--z-overlay`) con tres vistas en TRKTabs: `igual` (el mismo
   `renderExercise()` de solo lectura, misma x y ancho), `grande` (`.exbr`, una serie por línea a `--t-section`) y `la serie`
-  (`.exov` a `--t-hero`, pregunta abierta §1). Tocar una serie le pone 📷 a su izquierda en el margen (`.camon`, a
-  `--t-label`; una a la vez, en memoria con `exCamSet()`, nunca toca `db`); tocar fuera cierra. Botón `.exshr` junto al ✕
-  con `EXSH_SVG`.
+  (`.exov` a `--t-hero`, pregunta abierta §1). Tocar una serie la marca como la grabada (`.camon`; una a la vez, en
+  memoria con `exCamSet()`, nunca toca `db`) y le pone a su izquierda, en el margen, el ícono TRK camera (v269, §7.31):
+  `CAM_SVG` dentro de `.camic` (16×16, `--fg`, a 2 del borde de la fila, centrado en su alto). En `igual`/`grande` se
+  inserta en la fila marcada; en `la serie`, en cada línea `.exov` de esa serie. Tocar fuera cierra. Botón `.exshr` junto
+  al ✕ con `EXSH_SVG`.
 - **Imagen:** `shareImage()` dibuja en un canvas de **1080 × la altura real** (con el margen negro de la página), texto nodo
   por nodo con el avance exacto de la mono, sin librerías; se entrega por la hoja de compartir o, si no se puede, en un sheet
   para mantener presionada. Nunca `<a download>`.
 - **Sí / No (SHR-1…4):** vertical y a altura natural; sin escalones, sin `+N`, sin bajar la letra; interlineado 1.5–1.6;
   nada interactivo dentro de la tarjeta; ninguna tarjeta de números gigantes ("del pito"); ningún cuadro 1:1.
 - **Hoy → objetivo:** la marca `.shfoot` va toda en `--o35` (objetivo G3: marca única, §7.30); el botón `EXSH_SVG` usa
-  viewBox 16 y trazo 1.4 como el ícono de iOS (objetivo G3: ícono TRK "share"); 📷 es emoji (objetivo G3: ícono TRK
-  "camera", excepción `camera`); si el id no existe, compartir sesión muestra la última sin avisar (G4: `// esa sesión ya no
+  viewBox 16 y trazo 1.4 como el ícono de iOS (objetivo G3: ícono TRK "share" en la rejilla del set); la cámara ya es
+  ícono TRK desde v269 (excepción `camera`; el emoji salió y R-GLYE bajó de 4 a 2); si el id no existe, compartir sesión muestra la última sin avisar (G4: `// esa sesión ya no
   existe`); `[uni]`/`[bi]` en compartir es decisión menor pendiente. `renderShareWeight()` no tiene quien lo abra (G4).
-- **La revisa:** `_v257SelfCheck` · a ojo con capturas de las 44 sesiones reales.
+- **La revisa:** `_v257SelfCheck` (marcar la serie no toca `db`) · `_v269SelfCheck` (la marca es un SVG con su punto en
+  `--bad`) · a ojo con capturas de las 44 sesiones reales.
 
 ### 7.20 Modo enfoque
 
@@ -935,6 +958,9 @@ rejillas"; compartir es **vertical, a altura natural, nunca un cuadro que recort
 - **Clase / API:** `readinessLineHTML()` → `.ready` (`--t-label` `--o50`: `recuperación <b>43</b> · sueño 6.2h (−1.8) · …`,
   `.rk` en `--ls-caps`, `.rl` `--o35`); toca → `openReadiness()`. Debajo, `dayMusclesLineHTML()` (músculos del día y su
   estado).
+- **Partes (`READY_W`, `READY_ORDER`; v269):** sueño .35 · FC en reposo .25 · HRV .20 (solo si alguna fuente
+  la da) · carga de entreno .25 · comida de ayer .15. Solo cuentan las que tienen dato; la confianza es la fracción del
+  peso posible que sí lo tuvo (sueño + FC = 0.60). La revisa: `_readinessSelfCheck`.
 - **Hoy → objetivo G3** (decisión del dueño 2026-09-21, BRAND §4): la hoja de detalle muestra la puntuación en `.mdval`
   (`--t-hero`, "43 / 100"), que BRAND prohíbe ("puntuación única en tamaño héroe"). Objetivo: `recovery ~43` en una línea
   `--t-data`/800, sin héroe ni color de veredicto; el desglose sigue en su hoja.
@@ -957,7 +983,8 @@ Decisión del dueño 2026-09-21: macros en orden **SUPPS → MEALS → WATER**, 
 - **Anatomía:** `.lsec` > `.lhd` de 44: botón `.lt` (`//TÍTULO` `--t-section`/800 · lectura `.lv` `--t-data` `--o40` con TRKNum
   · `›` `.lx` que gira) + acción `.lact`. Cuerpo `.lbody`.
 - **SUPPS:** momentos en TRKTabs (`.lseg`, `AM 2/6 · PM …`) y rejilla de 2 columnas `.lcg` de celdas `.lc` (36 de alto;
-  tomado `.on` con ✓); `✓ AM` marca lo pendiente del momento. Un toque = tomado con su hora; marcar no mueve nada.
+  tomado `.on` con ✓); `✓ AM` marca lo pendiente del momento. Un toque = tomado con su hora; marcar no mueve nada. Sin
+  ningún suplemento en el stack, la sección no desaparece: sale la invitación (v269, §7.36).
 - **MEALS:** una `.mrec` por comida: cabecera `.mhd` de 44 (`.mtg` con `.mchev` y el nombre `.mnm` `--t-section`/800 + meta
   `.mmeta` `hora · P C F`; total `.mkc` `--t-section`/800 que abre el desglose; `.gmore` con `.dots3` → `openMealMenu()`); alimentos `.mit` de 36
   (`--t-data`, cantidad en negrita, kcal `--o50`); `+ food` al final.
@@ -998,6 +1025,12 @@ compartir comida; excepción `ring`).
 - **Hoy (v262, look "1"; radio 4 desde v267):** en un panel de vidrio sutil `.card.kpanel` (`--glass-bg-strong`, borde
   `--glass-edge`, radio `--r-ctl`, excepción `ring`), sin brillo ni punto al 0 % (`.ring-fill.z`); color solo en el arco y
   en `left/over` (BRAND §4).
+- **Panel abierto (v269; el dueño: "la línea divisora de abajo de mantenimiento y donde empieza la gráfica… no tiene los
+  espaciados bien"):** orden fijo `.hbal` (balance vs mantenimiento) → regla → radar `.macro-rad` → anillos `.rings` →
+  `[ver gramos]` / `[ver %]` en `.kp-unit` (alineado a la derecha, `--s3` arriba) → regla → `INTAKE` (`.grp-label`) y sus
+  barras. Dentro de `.kpanel` **toda** `.rule` va a sangre (margen lateral `-16`, el padding del panel) con el **mismo aire
+  arriba y abajo** (`--s5`), y el radar deja `--s4` antes de los anillos. El cambio `[ver gramos | ver %]` pasó de arriba
+  del radar a debajo de los anillos, junto a lo que convierte. Abrirlo ya no mueve el ancho (LAY-2b, §5.1).
 
 ### 7.29 `.u-hit` (pendiente G4)
 
@@ -1021,10 +1054,15 @@ compartir comida; excepción `ring`).
 ### 7.31 Íconos TRK
 
 - **Hoy:** la nav es de texto desde v267 (`NAVIC` se retiró). `EXSH_SVG` (compartir un ejercicio): viewBox 16, trazo 1.4.
-  Escáner y cámara: sin ícono propio (📷 emoji).
+  **`CAM_SVG` (v269, pedida por el dueño el 24-sep, BRAND §9):** la marca de la serie grabada en compartir-ejercicio.
+  Cámara de video: cuerpo (rectángulo de 9×7, radio 1) y lente trapezoidal, trazo 1.4 en `currentColor`, uniones
+  redondeadas; dentro del cuerpo un **punto de grabación** relleno en `--bad` (sin trazo). Se pinta en `.camic` (16×16,
+  `--fg`, §7.19) y lleva `aria-hidden`: la serie marcada ya es `.camon`. El rojo es la señal de "grabando" que él pidió
+  (no un veredicto; excepción `camera`). Reemplaza al emoji de cámara de fotos. Escáner: sin ícono propio.
 - **Objetivo G3** (decisión del dueño 2026-09-21, BRAND §4 y B-08): set propio — rejilla 24, trazo 1.6, **remates
   cuadrados**, geometría ortogonal de consola, `currentColor`, variante sobre chip de vidrio para el chrome. Piezas: share,
-  camera y el escáner. Se dibujan en una lámina (G0) y el dueño las aprueba; un ícono nuevo necesita su
+  camera y el escáner. Share y camera existen dibujadas a viewBox 16 / trazo 1.4 (camera con uniones redondeadas): pasarlas
+  a la rejilla del set y dibujar el escáner va en una lámina (G0) que el dueño aprueba; un ícono nuevo necesita su
   aprobación.
 - Orden de preferencia (B-08): palabra > glifo del set (§11) > ícono TRK. Emoji de interfaz: 0.
 
@@ -1102,23 +1140,36 @@ auditor, excepciones 31 → 28 y bucles R-MOTION 10 → 7).
 - **La revisa:** `_v268SelfCheck` (barra vacía, llena, a la mitad, con octavo y acotada; el ticker corre con un spinner y se
   apaga sin ninguno) · `_uiSelfCheck` (la tarea arranca con el spinner) · a ojo.
 
-### 7.34 Perfil en filas de terminal (`renderOnboard()`, v268)
+### 7.34 Perfil en filas de terminal (`renderOnboard()`, v268 · v269)
 
-Respuesta a la queja del dueño sobre el formulario de crear cuenta ("tosco, todo muy gordo", BRAND §9). Cambia solo la
-forma: mismos ids (`ob_*`) y los mismos datos que escribe `onboardgo`.
+Respuesta a dos quejas del dueño sobre el formulario de crear cuenta: "tosco, todo muy gordo" (v268) y, el 24-sep, "está
+muy gordo, está muy alto… la casilla está muy grande, el texto adentro de las casillas también… está desproporcional",
+"en actividad… está mal acomodado… la nota dependiendo de qué selecciona… está todo goofy", "no hay forma de darle back" y
+"ya pusiste tu peso en kilos. Porque abajo dice pesas en libras kilos" (v269, BRAND §9). Mismos ids (`ob_*`) y los mismos
+datos que escribe `onboardgo`, más la unidad del peso corporal. Es la forma vigente hasta el alta paso a paso (plan v270a).
 
-- **Rol:** el primer perfil (nombre, cuerpo, actividad, objetivo, gym, unidad) en una pantalla que se lee como
+- **Rol:** el primer perfil (nombre, unidades, cuerpo, actividad, objetivo, gym) en una pantalla que se lee como
   `clave  valor`.
-- **Clase / API:** `.ob` (pantalla) · `.obh` cabecera `gym//TRK//PROFILE` + `.submeta` (`1 min · se queda en este
-  teléfono · todo se cambia después`) · `.obr` fila (rejilla de `10.5ch` + resto, alineada por la línea base, mínimo 44,
-  `--t-data`) · `.obk` clave en minúsculas `--o50` · `.obv` control · `.obi` campo (`.obi.sm`: 7 ch alineado a la derecha,
-  para números) · `.obu` unidad `--o40` · `.obk2` segunda clave en la misma fila (`peso` junto a `edad`) · `.obr.obr-h` +
-  `.obhint` pista de una línea `--t-label` `--o40` · `.obprev` vista previa de metas · primario `.start` `▶ empezar`.
-- **Filas:** `nombre` · `sexo [hombre] mujer` · `edad [ ] peso [ ] kg` · `estatura [ ] cm` · `actividad` (2×2,
-  `.toggles.wrap`) + pista de la elegida (`OB_ACT`) · `objetivo déficit [mantener] volumen` + pista (`OB_GOAL`) · `gym` ·
-  `pesas en [lbs] kg`. Los toggles son los de §7.3.
-- **Campo `.obi`:** 40 de alto · borde `--bw-field` `--o40` · `--r-ctl` 4 · transparente · `--t-field` 16 (anti-zoom) ·
-  placeholder `--o30`; foco = borde `--fg`, sin contorno.
+- **Clase / API:** `.ob` (pantalla) · `.obback` `[‹ atrás]` arriba (v269: acción de texto de 44 de alto, `--t-data`
+  `--o60` con corchetes por CSS en `--o40`; `data-act="backlanding"` vuelve a la portada) · `.obh` cabecera
+  `gym//TRK//PROFILE` + `.submeta` (`1 min · para calcular tu mantenimiento · todo se cambia después`) · `.obr` fila
+  (rejilla de `12.5ch` + resto desde v269 —antes 10.5: `te pesas en` no cabía—, alineada por la línea base, mínimo 44,
+  `--t-data`) · `.obk` clave en minúsculas `--o50` · `.obv` control · `.obi` campo (`.obi.sm`: 7 ch alineado a la
+  derecha, para números) · `.obu` unidad `--o40` · `.obr.obtop` fila de lista (actividad, objetivo; dos seguidas se
+  separan `--s4`) · `.obprev` vista previa de metas · primario `.start` `▶ empezar`.
+- **Filas (v269, en este orden):** `nombre` · `te pesas en [kg] lbs` · `pesas gym [lbs] kg` (**las unidades primero**,
+  antes de teclear un peso) · `sexo [hombre] mujer` · `edad [ ] años` · `peso [ ] kg` (la unidad `#ob_wu` sigue a
+  `te pesas en` en vivo) · `estatura [ ] cm` · `actividad` y `objetivo` como **listas verticales** `.toggles.oblist`
+  (§7.3), cada opción con su descripción fija al lado (`OB_ACT`: sedentario · ligero · moderado · alto; `OB_GOAL`:
+  déficit · mantener · volumen) · `gym`. Ya no hay una pista que cambie abajo al elegir, y `peso` tiene su propia fila
+  (antes compartía la de `edad`).
+- **Campo `.obi`:** **36** de alto (v269; antes 44) · borde `--bw-field` `--o40` · `--r-ctl` 4 · transparente ·
+  `--t-field` 14 · placeholder `--o30`; foco = borde `--fg`, sin contorno.
+- **Unidades:** con `te pesas en lbs`, el peso tecleado se convierte a kg (0.01 de precisión) antes de calcular y de
+  guardarse; `onboardgo` escribe `db.settings.bwUnit` (peso corporal) y `db.settings.unit` (pesas del gym) por separado
+  (§9.3).
+- **Hoy → objetivo:** `[‹ atrás]` (español) convive con el `[‹ back]` de la barra de estado: dos palabras para atrás
+  (VOZ-4, se resuelve con `[‹ origen]`, §14.2).
 - **Foco:** la fila con foco (`:focus-within`) pasa su clave a `--fg` y le pone `>` delante (el mismo "aquí" de la nav,
   BRAND §3); el `>` ya tiene su lugar reservado (`visibility`), así la clave no se mueve. Enter salta al siguiente `.obi`;
   en el último cierra el teclado.
@@ -1127,8 +1178,85 @@ forma: mismos ids (`ob_*`) y los mismos datos que escribe `onboardgo`.
 - **Guardar (`onboardgo`, aditivo desde v268):** conserva lo que ya hubiera en `profile` y fija `profile.since` si no
   existía; **mezcla** las metas (la de sueño sobrevive); escribe `goalHist[hoy]`; y solo si tecleaste un peso entre 30 y 250
   kg lo apunta como tu primer registro de `bodyweight[hoy]`. Sin nombre: `⚠ pon tu nombre` y el foco vuelve al campo.
-- **La revisa:** `_v268SelfCheck` (en sandbox: `since`, meta de sueño, `goalHist`, peso tecleado y sin teclear) · a ojo a
-  393×852.
+- **La revisa:** `_v268SelfCheck` (en sandbox: `since`, meta de sueño, `goalHist`, peso tecleado y sin teclear) ·
+  `_v269SelfCheck` (ida y vuelta lbs ↔ kg) · a ojo a 393×852.
+
+### 7.35 //PROGRESS en modo editar (widgets, v269)
+
+Decisión del dueño 2026-09-24 (BRAND §9): "que aparezca el signo de más para agregar, signo de menos en cada elemento para
+quitar… acomodar tu orden y ya después confirmar… como una screen de widgets". Reemplaza la hoja on/off de métricas.
+
+- **Rol:** elegir qué tiles de //PROGRESS se ven y en qué orden, viendo la pantalla real.
+- **Entrar:** `[edit]` en la meta de //PROGRESS (antes `[config]`) o **mantener 0.5 s una tile** (sin moverse más de 8;
+  vibra 20; `_swipeGuard` evita que el toque abra la tile). `openProgConfig()` se conserva y ahora entra al modo (lo usa
+  el estudio). Salir de la pantalla descarta la edición (`go()`).
+- **Datos:** `db.settings.progLayout` = `{v:1, order, hidden}` (viaja en respaldos y sync). Se crea una vez desde la
+  config vieja de este teléfono (`localStorage` `gymtrk_progress_metrics_config`; `tdee` hereda el on/off de `kcal`).
+  Registro cerrado `PROG_KEYS` (weight · volume · tension · e1rm · steps · water · sleep · rhr · hrv · kcalact · kcal ·
+  tdee) + `consistency` (la franja de racha, siempre arriba cuando se ve); nombres en `PROG_LBL`. `tdee`
+  (mantenimiento real) es tile propia desde v269 (antes colgaba de `kcal`).
+- **API:** `progLayout()` · `progMetrics(ed)` · `progGridHTML(T, ed)` (cada tile se arma con su clave y el orden lo pone
+  el layout) · `progEditStart()` · `progPlace(k, destino, después)` · `progMove(k, ±1)` · `progGripMenu(k)` ·
+  `openProgAdd()`. La edición trabaja sobre una copia (`state.progEdit`); nada se guarda hasta `✓ done`.
+- **Anatomía:** la meta dice `editing` (`--o60`); la nav se oculta y `.scroll.pedit` quita su espacio. Cada tile
+  `.ptile.ed` lleva borde `--o40`, esconde su `›` (`.ptchev`) y no abre su detalle. **`−`** (`.pdel`) arriba a la
+  izquierda, montado 6 fuera de la esquina: círculo de 20 en `--fg` con el `−` en `--on-fill` `--t-data`/800 y un
+  `::after` que lleva el toque a 44. **`⠿`** (`.pgrip`) arriba a la derecha: área de 44×44, glifo `--t-section` `--o50`,
+  `touch-action:none`. La franja de racha (`.pwide.ed`, sangría `--s6`) solo lleva `−` (no se reordena). Abajo, la barra
+  **`.pedbar`** pegada al borde (`sticky`, fondo `--bg`, separador `--bw-sep` `--o10`, padding `--s3` + safe-area):
+  `[+ add]` · `[cancel]` (`button.b`) · `✓ done` (`.start.pedok`, el primario de la vista, ocupa el resto).
+- **Arrastrar (⠿):** a los 6 de movimiento nace `.dragghost` con el nombre de la tile, que sigue al dedo; el origen queda
+  `.dragsrc` a `--op-dim`; la tile más cercana (por su centro) marca dónde cae con una barra interior de `--bw-mark`
+  `--fill` a su izquierda (`.dropbefore`) o derecha (`.dropafter`), según el lado del dedo; cerca del borde de `#view`
+  (80) hace scroll de 12 por movimiento; al soltar, `progPlace()` + `reRender()` (TRKRow, `data-rk` `pw:<clave>`).
+  **Tocar ⠿ sin moverlo** abre TRKMenu `mover antes` · `mover después` · `quitar` (la alternativa visible del gesto,
+  A11Y-5).
+- **`+ add`:** sheet `agregar a progreso` con lo oculto como filas `nombre ···· + ›` (vacío: `// ya tienes todo a la
+  vista`); agregar la pone al final (la racha vuelve arriba).
+- **Confirmar:** `✓ done` guarda el layout con `savedToast('✓ progreso acomodado')`; `[cancel]` descarta la copia.
+- **Sí / No:** sin temblor ni animación en bucle al editar (B-09: nada se mueve solo); una tile quitada sale de la
+  rejilla, pero una tile visible sin datos sigue dibujándose (§12.2). No una hoja on/off.
+- **Resuelto (24-sep):** la barra ya no mezcla idiomas (`[+ add] [cancel] ✓ done`); antes caía en la pregunta
+  del idioma de los botones (§6.2, BRAND §10). `⠿` sale con la fuente del sistema (GLY-3).
+- **La revisa:** `_v269SelfCheck` (el layout trae todas las tiles; arrastrar antes y después del destino; lo oculto no se
+  pinta) · a ojo a 393×852.
+
+### 7.36 //SUPPS en una cuenta nueva (invitación, v269)
+
+Decisión del dueño 2026-09-24 (BRAND §9): "en una cuenta nueva, arriba de Meals, tendría que salir la opción de registrar
+suplementos. Y en caso de que no quieran, pues que sea tres puntitos e ignorar".
+
+- **Cuándo:** `suppSecHTML()` sin tomas debidas ese día, **sin nada en el stack** y sin `db.settings.suppHide`. Si el
+  stack tiene algo pero hoy no toca nada, la sección no sale.
+- **Anatomía:** la misma de TRKLog (§7.24): `//SUPPS` con lectura `—` (`--o40`), abierta; acción `.lact` `+ supp` y, a su
+  derecha, `.lsmore` (44×44, se mete `--s4` en el margen) con `.dots3` en `--o50`. Cuerpo: vacío `.empty.supempty`
+  alineado a la izquierda con interlineado de lectura: `// marca tus suplementos con un toque, aquí arriba de tus comidas`.
+- **Acciones:** `+ supp` → `openStackEdit(null, 'supp')`. `···` → TRKMenu `suplementos`: `+ agregar suplemento` ·
+  `ignorar por ahora` → `db.settings.suppHide`, toast `supps ocultos · vuelven en ajustes` con `[deshacer]`.
+- **Volver:** mientras estén ocultos, //SETTINGS muestra la fila `supps en macros ···· ocultos · mostrar ›`
+  (`supphideoff`) → `✓ supps de vuelta en macros`.
+- **La revisa:** a ojo en una cuenta nueva a 393×852.
+
+### 7.37 Descanso y salto de día en gym (`rest` ≠ `skip`, v269)
+
+Decisión del dueño 2026-09-24 (BRAND §9): "Rest Day no es para saltar, es para indicar… fue programado el descanso. Skip
+Day sí es saltar el día del split". Antes los dos avanzaban la rotación.
+
+- **`[rest day]`** (`rest`): registra `{type:'rest'}` con la fecha de hoy y **sin `dayId`**; **no mueve `db.rotIdx`**
+  (mañana toca el mismo día del split). Toast `✓ descanso · mañana: <día>` + `[deshacer]`. No corre si hoy ya entrenaste
+  (`trainedToday()`: `⚠ hoy ya entrenaste`) ni dos veces el mismo día (`restToday()`). Cuenta para la racha (§8, TRKCal).
+- **Con el descanso puesto**, la fila `.secondary` de gym dice `rest today ✓` (`.restok`, `--t-data` `--fg`, 44 de
+  alto) · `[undo rest]` (`unrest`, toast `✓ descanso quitado`) · `[skip day]`.
+- **`[skip day]`** (`skip`): avanza la rotación un día, sin registrar nada. Toast `✓ saltado · sigue <día>` + `[deshacer]`
+  (restaura `rotIdx`).
+- **En el calendario:** un día con solo descanso abre un sheet `<día> · descanso` con `descanso programado · no movió tu
+  split` y `[quitar descanso]` (`calday_unrest`). El recap de las 21 h dice `descanso` solo si lo registraste (si no, `—`).
+- **Con sesión viva** `rest`, `unrest` y `skip` no corren (CON-2; R-SESS prueba `rest` y `skip`). **Sin split**,
+  `rest`/`skip` no hacen nada.
+- **Hoy → objetivo:** los `title` de los botones explican cada uno (`descanso programado: no mueve tu split` · `salta
+  este día del split`), pero en el iPhone no se ven: si hace falta, van al glosario (`data-gloss`, G4).
+- **La revisa:** `_v269SelfCheck` (rest registra y no mueve el split, no duplica, quitar lo borra, skip sí mueve) ·
+  R-SESS.
 
 ---
 
@@ -1225,6 +1353,7 @@ Una forma de escribir cada tipo de dato, con su función (NUM-1). La revisa: a o
 | Tipo de ejercicio | una sola forma (`[libre] [máquina] [smith] [cable] [bw]`, propuesta de la auditoría) | hoy 5 formas (`máquina`, `mach`, `pulley`, `machine`, `free`) en `variantChips()` y otros | `typeTag()` (pendiente G4) |
 | Carga | `effW()` (peso corporal vivo); `numTxt()` (hasta 2 decimales); `roundLoad()` (kg 2.5 · lbs 5 · pla 1); `kgLoad()` (lbs→kg, placas fuera) | ✓ | e1RM en lbs etiquetado "kg" a mano (M5-04): G4 |
 | Lectura suelta | `59.8 kg`: número `--fg`, unidad separada y tenue (`.line .v .u`, `.pval span`) | ✓ | |
+| Peso corporal (v269) | en la unidad que elegiste para pesarte (`db.settings.bwUnit`, kg por defecto): `131.8 lbs` o `59.8 kg`, 1 decimal | `bwU()` (unidad) · `bwShow(kg)` (para mostrar) · `bwParse(texto)` (para guardar, siempre en kg; en lbs con 0.01 de precisión, así 160 lbs se relee exacto) | ✓ registro de peso, tile, detalle de métrica, throwback, wrap mensual, //PROFILE |
 | Miles | `2,405` | `toLocaleString()` | ✓ |
 | Cambio | `▲ +3%` / `▼ −4%` con signo menos real (−) | badges de progreso | revisar que ningún cambio use `-` (G4) |
 | Macros | `48P 71C 4F` · kcal `2,178 / 2,405` | TRKLog, compartir | ✓ |
@@ -1234,8 +1363,12 @@ Una forma de escribir cada tipo de dato, con su función (NUM-1). La revisa: a o
 | Estimado | `~43` | — | ✓ |
 | Sin dato | `—` | — | ✓ |
 
-Decimales solo cuando informan: kg 1, porcentajes 0–1, series 1. Unidades por dominio: peso corporal en kg; cargas en la
-unidad de cada ejercicio (`exDisplayUnit()`); la unidad se ve en el `<select>` de cada serie y en compartir.
+Decimales solo cuando informan: kg 1, porcentajes 0–1, series 1. Unidades por dominio (v269: dos ajustes distintos,
+porque mucha gente se pesa en kg y carga en lbs): **peso corporal** en `db.settings.bwUnit` (se guarda siempre en kg) y
+**pesas del gym** en `db.settings.unit` (la unidad por defecto de un ejercicio nuevo); cada carga va en la unidad de su
+ejercicio (`exDisplayUnit()`), visible en el `<select>` de cada serie y en compartir. Las dos se eligen en //PROFILE
+(`peso corporal en ›`, `pesas del gym en ›`, con TRKSelect) y en el primer perfil, antes de teclear un peso (§7.34).
+Todavía en kg fijo: la tile de e1RM y el `peso … kg/Nd` del mantenimiento real (M5-04, G4).
 
 ---
 
@@ -1309,6 +1442,7 @@ Leyenda de la última columna: ✓ cumple B-09 · ⚠ a revisar con el dueño ·
 | `applyEnter()` | `state._enter` / `state._pop` | clases `.enter` y `.pop`; con `{scroll}` hace `scrollIntoView` suave | — | no corre | ✓ |
 | Deslizar para borrar | arrastre horizontal ≥9 en una fila `data-swipe` | translateX sigue al dedo (máx. 140), opacity ≥.3; al soltar ≥76: sale a translateX 60% y opacity 0 y se borra; <76: vuelve | `--dur-2` · `--ease-in` / `--ease-out` (en línea) | la salida es instantánea | ✓ sigue al dedo |
 | Arrastrar para reordenar | mantener el asa `.dgrip` | `.dragghost` sigue al dedo; origen `.dragsrc` a .3; marca de 2 `--fill` donde cae; al soltar, TRKRow | directo | — | ✓ |
+| //PROGRESS editable (v269, §7.35) | mantener 0.5 s una tile (entra) · arrastrar `⠿` ≥6 | nada se mueve al entrar (sin temblor); `.dragghost` sigue al dedo, origen `.dragsrc` a `--op-dim`, barra interior de 2 `--fill` a un lado de la tile destino, scroll de 12 cerca del borde; al soltar, TRKRow | directo | — | ✓ |
 | TRKHold `holdConfirm()` | mantener el botón | `.hold-fill` scaleX 0→1 + texto "armando N%" | 900 · linear | **no mira la preferencia** (es un temporizador) | ✓ temporizador |
 | Sheets `openModal()` / `closeModal()`; capa `askLayer()` / `closeAsk()` | abrir / cerrar | clases `.in` / `.out`; el fantasma se borra a los 200 | — | `askLayer()` no anima | ✓ chrome |
 | Toasts `toast()` | aviso | clase `.out` a los `--toast-life` / `--toast-life-err`; se borra a `--dur-3` | — | .01ms | ✓ chrome |
@@ -1343,7 +1477,7 @@ v267) · `_dsRenderCheck` glyph (acepta `GLYPHS_VIZ` desde v268).
 | ✓ | hecho | `.dchk`, `.pairdone`, toasts de éxito, `✓ AM` | "hecho" |
 | ○ | pendiente | `.dchk` sin confirmar | "pendiente" |
 | ▲ ▼ | cambio (sube / baja) | badges de progreso, //FUERZA, detalle | "sube 3 %" / "baja 4 %" |
-| ⠿ | arrastrar / reordenar | `.dgrip`, fantasma de arrastre | "arrastrar" |
+| ⠿ | arrastrar / reordenar | `.dgrip`, `.pgrip` (tiles de //PROGRESS editable, v269), fantasma de arrastre | "arrastrar" / "mover <tile>" |
 | › | entrar / abrir detalle | `.rchev`, `.nvm-x`, `.ptchev`, `.lx`, `.mchev` | "abrir" |
 | ‹ | atrás / anterior | `.dnav`, `.hcnav`, flechas de rotación | "anterior" |
 | ▾ | desplegar / elegir | `.umcaret`, `.sgoal .cv`, `[ ver rutina ▾ ]` | "elegir" |
@@ -1362,7 +1496,9 @@ v267) · `_dsRenderCheck` glyph (acepta `GLYPHS_VIZ` desde v268).
 
 - GLY-1: **un glifo, un significado.** Hoy se rompe: `▲▼` también reordena en el editor de split y en la hoja de sesión
   (M1-04, M3-10 → `⠿` o menú, G3); `~` también significa "tomado tarde" en el stack (G4); `›` también gira para
-  desplegar en TRKLog (el significado de desplegar es `▾`; G3/G4).
+  desplegar en TRKLog (el significado de desplegar es `▾`; G3/G4); desde v269 el `−` (signo menos de los cambios) también
+  quita una tile en //PROGRESS editable (`.pdel`, con `aria-label` "quitar <tile>"), porque el dueño pidió "signo de menos
+  en cada elemento para quitar" como en una pantalla de widgets; en lo demás, quitar sigue siendo `✕`.
 - GLY-2: los glifos llevan `aria-hidden` y el control lleva `aria-label` con la palabra (hoy VoiceOver lee "black
   up-pointing triangle": G4, T-12).
 - GLY-3 (v267): Google sirve JetBrains Mono solo en latin/griego/cirílico, así que ▲▼▾▶✕⚠↓→▌, las cajas `─│┌┐└┘├┤┬┴┼`,
@@ -1390,7 +1526,7 @@ v267) · `_dsRenderCheck` glyph (acepta `GLYPHS_VIZ` desde v268).
 | ■ | v258: `cerrar a las HH:MM` ya va en gris y sin ■ (M2-09) | G3: `[cerrar a las 14:32]` | ✓ |
 | ⋯ | menú de fila del catálogo (`.exmore`) | `.dots3` | G3 |
 | ≈ | solo en comentarios del código | `~` | — |
-| ⬆ ⬇ ↔ ▦ ▢ ▣ ↻ ↺ ↑ | perfil de resistencia, rango personalizado, elegir en el catálogo, reintentar / recuperado / última vez, "flojas ↑" y "↑ ánimo" | **pregunta abierta** (BRAND no los menciona; §1) | G3 |
+| ⬆ ⬇ ↔ ▦ ▢ ▣ ↻ ↺ ↑ | perfil de resistencia, rango personalizado, elegir en el catálogo, reintentar / recuperado / última vez, "flojas ↑" y el `↑` de las tiles de peso y kcal | **pregunta abierta** (BRAND no los menciona; §1) | G3 |
 | ● ◆ | agenda (pantalla sin acceso) | se borra con la agenda | G4 |
 | ▁ ¶ | panel `?design=1`, botón `¶ texto` de la IA | `[minimizar]`, `[texto]` | G4 |
 
@@ -1398,7 +1534,9 @@ v267) · `_dsRenderCheck` glyph (acepta `GLYPHS_VIZ` desde v268).
 
 - ICO-1 (B-08): palabra > glifo del set > ícono TRK (§7.31). **Emoji de interfaz: 0.** Lo que el dueño escribe (🥀 en un
   nombre) se muestra tal cual (excepción `user-label`).
-- Hoy el único emoji de interfaz es 📷 en compartir un ejercicio (objetivo G3: ícono TRK "camera", excepción `camera`).
+- v269: salió el último emoji de compartir (la cámara de fotos que marcaba la serie grabada); en su lugar va el ícono TRK
+  `CAM_SVG` (§7.31, excepción `camera`). El auditor (R-GLYE) bajó de 4 a 2: los dos que quedan son ✗ y ✎, fuera del set
+  (§11.3).
 
 ---
 
@@ -1428,8 +1566,8 @@ hacer`; sin conexión `⚠ sin conexión · [reintentar]`.
 |---|---|---|---|---|
 | Gym | cabecera `//GYM sin split` + `+ crear split`, `explorar splits`, `importar` | recuperación con "pocos datos"; "sin baseline" en series | — | — (local) |
 | Sesión | — | prefill vacío; "sin baseline" | — | guardado fallido: `.savebar` permanente + TRKAsk "no se pudo guardar" |
-| Macros | `no meals logged`, `no water logged` (inglés: G3 → español) | — | `▖ buscando en línea… 3s` (TRKSpin); OCR `leyendo [██████▍░░░] 42%` (TRKProgress) | OpenFoodFacts falla **en silencio** y un código que no se pudo buscar sale como "no encontrado" (M4-09 → G4: `// 0 resultados` · `⚠ sin conexión · [reintentar]` · resultados) |
-| Progreso | **activada = recuadro (v263):** una métrica encendida en `[config]` dibuja su tile aunque no tenga un solo dato — sin tile no hay por dónde registrarla. Vacío = `emptyTile()`: `—` + `sin registro`, y el recuadro entero abre su registro (volumen/tensión/e1rm → `loglater`; FC en reposo/HRV/energía activa → su hoja). "sin registros en este rango", "sin volumen registrado en este rango", "aún no hay levantamientos con peso × reps" | `sin normal · N/7 d`, diagnóstico "pocos datos" | — | — |
+| Macros | `no meals logged`, `no water logged` (inglés: G3 → español); sin suplementos, la invitación de //SUPPS (§7.36) | — | `▖ buscando en línea… 3s` (TRKSpin); OCR `leyendo [██████▍░░░] 42%` (TRKProgress) | OpenFoodFacts falla **en silencio** y un código que no se pudo buscar sale como "no encontrado" (M4-09 → G4: `// 0 resultados` · `⚠ sin conexión · [reintentar]` · resultados) |
+| Progreso | **visible = recuadro (v263; desde v269 "visible" = no quitada en el modo editar, §7.35):** una tile visible se dibuja aunque no tenga un solo dato — sin tile no hay por dónde registrarla. Vacío = `emptyTile()`: `—` + `sin registro`, y el recuadro entero abre su registro (volumen/tensión/e1rm → `loglater`; FC en reposo/HRV/energía activa → su hoja). "sin registros en este rango", "sin volumen registrado en este rango", "aún no hay levantamientos con peso × reps" | `sin normal · N/7 d`, diagnóstico "pocos datos" | — | — |
 | Historial | "sin sesiones registradas" | — | — | sesión inexistente en compartir (G4) |
 | Stack | "stack vacío", "no toca nada hoy ✓" | — | — | — |
 | Compartir | "sin sesión para compartir", "sin series registradas", "sin alimentos este día", "aún sin series con peso y reps" | — | `▖ generando imagen… 1s` (toast de tarea) | `⚠ no se pudo generar la imagen` |
@@ -1446,7 +1584,7 @@ Objetivo G4: completar la tabla con el texto exacto de cada celda vacía y una a
 
 | Decisión | Criterio WCAG que se sacrifica | Por qué | Compensación |
 |---|---|---|---|
-| **Zoom bloqueado** (`maximum-scale=1, user-scalable=no`; excepción `vp-lock`) | 1.4.4 cambio de tamaño del texto | sensación de app nativa, sin zoom accidental en la serie | campos a 16; texto nunca bajo `--o40` |
+| **Zoom bloqueado** (`maximum-scale=1, user-scalable=no`; excepción `vp-lock`) | 1.4.4 cambio de tamaño del texto | sensación de app nativa, sin zoom accidental en la serie; también evita el zoom al enfocar un campo, así que desde v269 los campos van a 14 (`--t-field`) | texto nunca bajo `--o40` |
 | **Texto de 10** (`--t-label`) | ninguno formal (las skills piden 11) | densidad de terminal | solo en meta y rótulos, nunca en datos que se leen en la serie |
 | **Tabla de 36** (excepción `table36`) | 2.5.5 (44, AAA); cumple 2.5.8 (24, AA) | densidad en la serie | ✓ con toque ampliado (objetivo G4: 44×42) |
 | **Bordes bajo 3:1** | 1.4.11 contraste de lo que no es texto | lenguaje de líneas finas | pregunta abierta de BRAND §10 |
@@ -1468,8 +1606,9 @@ Objetivo G4: completar la tabla con el texto exacto de cada celda vacía y una a
 - SND-1 **Sonido solo al terminar el descanso**, con su ajuste (`settings.restBeep`): dos chirridos de 880 Hz
   (`restNotify()`); el `AudioContext` se crea dentro del toque del ✓ (`restAudioInit()`) porque iOS lo exige. Ningún otro
   sonido; el toast no suena.
-- SND-2 **Vibración**: `navigator.vibrate` al terminar el descanso (200), al levantar una fila para arrastrar (28), al fijar
-  un código (55) y al completar un TRKHold (30). **Safari de iOS no vibra**: en el iPhone del dueño la vibración no existe;
+- SND-2 **Vibración**: `navigator.vibrate` al terminar el descanso (200), al levantar una fila o una tile para arrastrar
+  (28), al entrar al modo editar de //PROGRESS manteniendo una tile (20, v269), al fijar un código (55) y al completar un
+  TRKHold (30). **Safari de iOS no vibra**: en el iPhone del dueño la vibración no existe;
   solo funciona en Android y en la app nativa. Nunca es la única señal.
 
 ### 13.4 Solo modo oscuro
@@ -1486,7 +1625,8 @@ Objetivo G4: completar la tabla con el texto exacto de cada celda vacía y una a
 - NAV-1: **pantallas primarias** = las tres de la nav (progress · gym · macros): con nav y sin atrás.
 - NAV-2: **pantallas secundarias** (sesión, historial, editor de historial, compartir, stack, split, ajustes, catálogos):
   **sin nav** y con un solo atrás. Hoy `renderNav()` oculta la nav en workout, settings, splitedit, history, histedit
-  (v267) y share, pero se ve en stack y agenda (T-02, G4).
+  (v267), share y //PROGRESS mientras se edita (v269: la barra `.pedbar` toma su lugar), pero se ve en stack y agenda
+  (T-02, G4).
 - NAV-3: lo secundario se abre desde una fila `›`, desde `[verbo]` o desde el menú `u/…` (`navmenu` → `.nvm`).
 
 ### 14.2 Atrás
@@ -1503,11 +1643,11 @@ Objetivo G4: completar la tabla con el texto exacto de cada celda vacía y una a
 | Pantalla (`state.screen`) | Instrumento | Cabecera | Contenido | Nav hoy | Notas |
 |---|---|---|---|---|---|
 | `landing` / `login` | primer uso | marca | `.start`, `.field`, `.toggles` | no | M0 sin evaluar (G4): tono de venta, etiquetas en mayúsculas, `← regresar`, marca con `//` en dos opacidades |
-| `onboard` | primer uso (perfil) | `.obh` `gym//TRK//PROFILE` + una línea | filas de terminal `.obr` (clave `.obk` + control; `.obi`, toggles), pistas `.obhint`, vista previa `.obprev`, `▶ empezar` | no | v268, §7.34: la fila con foco lleva `>`; Enter salta al siguiente campo; guardar es aditivo |
-| `home` (gym) | estado actual | `statusBar` + rotación + `dayHeadHTML` (`//NEXT`) | línea de preparación, músculos del día, vista previa (`[ ver rutina ▾ ]`), primario, //ESTÍMULO, //STATS | sí | con sesión viva solo existe `▶ resume workout` (v258, M1-01/M1-01b) |
+| `onboard` | primer uso (perfil) | `[‹ atrás]` (`.obback`) + `.obh` `gym//TRK//PROFILE` + una línea | filas de terminal `.obr` (clave `.obk` + control; `.obi`, toggles), unidades primero, listas `.toggles.oblist` con su descripción, vista previa `.obprev`, `▶ empezar` | no | v268 · v269, §7.34: la fila con foco lleva `>`; Enter salta al siguiente campo; guardar es aditivo |
+| `home` (gym) | estado actual | `statusBar` + rotación + `dayHeadHTML` (`//NEXT`) | línea de preparación, músculos del día, vista previa (`[ ver rutina ▾ ]`), primario, `[rest day]` `[skip day]` (o `hoy: descanso ✓`, §7.37), //ESTÍMULO, //STATS | sí | con sesión viva solo existe `▶ resume workout` (v258, M1-01/M1-01b) |
 | `workout` | registro | `.wline` (modo enfoque) | tabla de sesión, descanso, footer | no | §7.8, §7.20 |
-| `macros` | composición | `statusBar` + día `‹ fecha ›` | anillo en `.card`, detalle (radar, P/C/F, INTAKE, retención), SUPPS → MEALS → WATER | sí | §7.24, §7.28 |
-| `progress` | análisis | `.section` //PROGRESS | racha en franja, tiles `.ptile`, //FUERZA, //RECORDS, //MÚSCULOS, //RENDIMIENTO | sí | tiles → filas en G3 |
+| `macros` | composición | `statusBar` + día `‹ fecha ›` | anillo en `.card`, detalle (radar, P/C/F, `[ver gramos]`, INTAKE, retención), SUPPS (o su invitación) → MEALS → WATER | sí | §7.24, §7.28, §7.36 |
+| `progress` | análisis | `.section` //PROGRESS + `[edit]` | racha en franja, tiles `.ptile` en el orden de `db.settings.progLayout`, //FUERZA, //RECORDS, //MÚSCULOS, //RENDIMIENTO | sí (no mientras se edita) | modo editar §7.35; tiles → filas en G3 |
 | `history` | archivo | `.section` //HISTORY | mes TRKCal, rail por mes, sesión que se abre en su sitio | no | |
 | `histedit` | corrección | `dayHeadHTML` | tabla de sesión compacta (`.hist-compact`) | no (v267) | |
 | `share` | resumen | según tipo | §7.19 | no | |
@@ -1536,7 +1676,7 @@ todo el marcador es `/*ds:exempt*/` sin id; los primeros con id son `/*ds:exempt
 | `loop` | bucles funcionales: única animación infinita permitida | `.cur::after` (`blink`, landing) · `.bootov .bcur` (`blink`, el cursor de `ready▌`, `/*ds:exempt:loop*/`, v268) · `.nav a.active::before` (`blink`, el `>` de la pestaña activa, `/*ds:exempt:loop*/`, v267) · `.wnav` (`blink`) · `.scan-reticle .scl` (`scanmove`) · `.restbar.fin` (3 destellos). v268 retiró los anillos de carga y su `@keyframes`: el trabajo en curso es texto (TRKSpin, §7.33) y no necesita excepción |
 | `geom` | geometría atada al JS o centrado óptico de puntos | `.chwrap` y `.chxs` (40 de columna de etiquetas Y = `.chscrub right`) · `.slfc` (mismo margen de eje) · `.chsd` −5 (punto de 10) · `.strk-row .cd.t.l0::after` y `.cm .cd.t.l0::after` −1.5 (punto de 3) · `.dots3` (la sombra dibuja los puntos 2 y 3) · `.ag-hr i` 30 (agenda, muerta) |
 | `vp-lock` | zoom bloqueado (§13.1) | meta viewport |
-| `camera` | ícono TRK de cámara en compartir un ejercicio (lo que el dueño pone en sus historias) | hoy `.exsh .camon::before` con el emoji 📷 (objetivo G3: ícono TRK) |
+| `camera` | ícono TRK de cámara de video en compartir un ejercicio (lo que el dueño pone en sus historias), con su punto rojo de grabación | `.exsh .camic` con `CAM_SVG` (v269; antes un emoji por `::before`); el punto en `--bad` es la señal de grabando que él pidió, no un veredicto |
 | `user-label` | emoji dentro de las etiquetas del dueño | datos, sin marcador |
 | `dev` (propuesta G1, no está en BRAND §6) | panel `?design=1`, fuera del alcance del sistema | `.dz-h` 11 y tracking .3px · `.dz-h button` 14 |
 
@@ -1615,11 +1755,13 @@ que crea o reemplaza una sesión se oculta mientras hay una viva.** La revisa: R
 | quitar un alimento · quitar un vaso de agua | toast + `[deshacer]` | — |
 | guardar sesión | TRKAsk ("finalizar la sesión") + toast | — |
 | cambiar un ejercicio con series · adoptar el split · unir ejercicios · registrar sin código | TRKAsk | — |
-| borrar peso / sueño / ánimo / FC en reposo de un día | TRKAsk | reversible → toast + `[deshacer]` (G4) |
+| borrar peso / sueño / FC en reposo de un día | TRKAsk | reversible → toast + `[deshacer]` (G4) |
 | borrar una serie (deslizar) | inmediato; TRKAsk solo si se lleva drops con datos | toast + `[deshacer]` + menú al mantener el número (G4, M2-07) |
 | `↩` | v258: deshace el último ✓ por su hora (`doneAt`), conserva peso/reps/RIR y avisa con toast + `[deshacer]` | ✓ (M2-08) |
 | quitar un ejercicio del split (✕) | sin confirmación ni deshacer, a 1 del ▼ | desde el editor del ejercicio, con toast + deshacer (G4, M1-04) |
-| `rest day` · `skip day` | inmediato, sin deshacer; con sesión viva ya no existen ni corren (v258, M1-01b) | toast `✓ día saltado · sigue <día>` + `[deshacer]` (G4, M1-03) |
+| `rest day` · `skip day` | v269 (§7.37): `rest day` registra el descanso **sin mover la rotación** → toast `✓ descanso · mañana: <día>` + `[deshacer]`, y `[quitar descanso]` lo borra; `skip day` avanza la rotación → toast `✓ saltado · sigue <día>` + `[deshacer]`; con sesión viva no existen ni corren (v258, M1-01b) | ✓ (M1-03) |
+| ocultar //SUPPS en una cuenta nueva (`ignorar por ahora`) | v269 (§7.36): toast + `[deshacer]`; vuelve desde //SETTINGS | ✓ |
+| quitar, agregar o reordenar tiles de //PROGRESS | v269 (§7.35): sobre una copia; `[cancel]` descarta y `✓ done` guarda con toast | ✓ |
 | `[+ log past session]` | oculto y bloqueado con sesión viva (v258, M1-01) | ✓ |
 | recuperar una sesión al arrancar | v259: se copia antes a `gymtrk_live_pending`; solo `[recuperarla]` o `[descartar]` deciden; tocar fuera la deja para el siguiente arranque; con otra sesión viva no la pisa | ✓ |
 | `▶ continuar` una sesión pasada | v258: la original sigue en el historial hasta guardar (guardar la reemplaza, sin mover la rotación); abortar la deja intacta y restaura la rotación (M3-09) | ✓ |
@@ -1732,6 +1874,15 @@ Línea base del 2026-09-21: todos en 0 salvo `style=""` 89, excepciones 33, lett
   la cola del arranque espera en vez de abrirse debajo; y `onboardgo` sobre una base nueva: guarda `profile.since`,
   conserva la meta de sueño, escribe `goalHist[hoy]`, el peso tecleado es el primer registro de `bodyweight` y sin peso
   tecleado no se inventa ninguno.
+- **`_v269SelfCheck()`** (en `?selftest=1`, después de `_v268SelfCheck`; lo que toca `db` corre sobre una copia y con
+  `go`/`toast` sustituidos): **ánimo** — `migrate()` borra `mood`, sube `_dataVer` a 2 y deja `_dataLog.v2` con cuántos
+  días había; un segundo `migrate()` (un respaldo viejo) tampoco lo trae; `READY_W` y `READY_ORDER` ya no lo llevan ·
+  **rest ≠ skip** con los handlers reales — `rest` registra el descanso y no mueve `rotIdx`, un segundo `rest` no duplica,
+  `unrest` lo borra y `skip` sí avanza la rotación sin registrar nada · **cámara** — `CAM_SVG` es un SVG con un círculo en
+  `--bad` · **//PROGRESS** — `progLayout()` trae todas las `PROG_KEYS`, `progPlace()` pone una tile antes y después del
+  destino y `progMetrics()` respeta lo oculto · **peso corporal** — `bwParse('160')` en lbs guarda 72.57 kg y
+  `bwShow()` lo relee como 160 exacto; en kg no cambia nada. `_readinessSelfCheck` ajusta su confianza a 0.60 (sueño + FC
+  sin ánimo). Además `purgeMood()` guarda en IndexedDB la foto `pre-data2` antes de borrar, solo si había ánimo.
 - **Inventario en navegador** (`tools/ds-inventory.js`, se guarda en G1): tamaños, colores→token, radios, sombras, blur,
   tracking, animaciones, glifos y toques por pantalla, con el respaldo real del dueño.
 
