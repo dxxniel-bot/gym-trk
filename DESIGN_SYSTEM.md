@@ -1,6 +1,6 @@
 # gym//TRK — DESIGN SYSTEM (referencia del estado actual)
 
-> Referencia del estado actual (v276). **Lee BRAND.md primero**: manda sobre este archivo. Sin historia: DESIGN_CHANGELOG.md.
+> Referencia del estado actual (v277). **Lee BRAND.md primero**: manda sobre este archivo. Sin historia: DESIGN_CHANGELOG.md.
 
 ---
 
@@ -482,7 +482,8 @@ changelog. Estado medido:
   `▖ buscando producto…` → `✓ encontrado` / `⚠ no está en OpenFoodFacts`; `▖ generando imagen…` → `✓ imagen lista`. El
   verbo va en gerundio y en minúscula; los puntos suspensivos los pone el componente (el mensaje no los trae) y los
   segundos aparecen solos a partir de 1 s.
-- Error: `⚠ qué pasó · qué hacer` (`⚠ pon un nombre`, `⚠ pon lo que trae el frasco`), nunca un diálogo nativo.
+- Error: `⚠ qué pasó · qué hacer` (`⚠ pon un nombre`, `⚠ pon lo que trae el frasco`), nunca un diálogo nativo. En un
+  paso del alta el error va en línea bajo el paso (`.onberr`, v277, §7.34), no en toast.
 - Reversible: `✓ alimento borrado [deshacer]`. v269: `✓ descanso · sigue <día> · mañana [deshacer]` (forma de v273),
   `✓ saltado · sigue <día> [deshacer]`, `supps ocultos · vuelven en ajustes [deshacer]`; v275 (suplementos, deshacer
   exacto): `omega-3 en pausa [deshacer]`, `omega-3 archivado · se acabó [deshacer]` (o `· no lo encontré`),
@@ -581,7 +582,8 @@ en `›` para navegar. Nada más. El árbol para elegir está en §17.3.
   del desglose) conserva su caja de 36 con .5 `--o20`. `.mmrow select` va a `--t-data` porque acompaña a una fila.
 - **Estados:** foco = el borde sube a `--fg` **y es el foco** (v268: `outline:none` en `:focus` de todos los campos de v267,
   sin anillo doble); placeholder `--o30`.
-- **Variante del perfil de primer uso:** `.obi` (36 de alto desde v269, dentro de una fila de terminal), §7.34.
+- **Variante del alta (primer uso):** `.obi` (36 de alto desde v269, dentro de una fila de terminal de 44; desde v277 una
+  pregunta por pantalla), §7.34.
 - **Sí / No:** **unidad y porción siempre `<select>`, nunca texto libre** (vinculante). No alturas 30/32/34/38, fondo
   relleno, radio distinto de `--r-ctl`, sombras internas, labels flotantes ni bordes de color.
 - **Hoy → objetivo:** la etiqueta va en MAYÚSCULAS (objetivo G3, VOZ-2). El borde `--o40` ya llega a 4.9:1.
@@ -611,7 +613,8 @@ en `›` para navegar. Nada más. El árbol para elegir está en §17.3.
 - **Anatomía (v267, vista previa del dueño 23-sep):** **sin caja**; alto 44; `--t-data` `--ls-ui`; sin elegir `--o50`/400;
   elegida `[etiqueta]` en `--fg`/700, con corchetes por CSS (`::before`/`::after`) que, apagados, guardan su lugar
   (`visibility:hidden`) para que nada se mueva al elegir.
-- **Variante lista (`.toggles.oblist`, v269, perfil de primer uso):** una opción por línea (`role="radiogroup"`, cada
+- **Variante lista (`.toggles.oblist`, v269; en el alta desde v277: actividad, objetivo y rutina, a todo lo ancho, §7.34):**
+  una opción por línea (`role="radiogroup"`, cada
   botón `role="radio"` con `aria-checked`), en rejilla de `12.5ch` + resto alineada por la línea base, mínimo 40 de alto:
   nombre `.obn` (`--t-data`, corchetes por CSS sobre el nombre, no sobre la fila) y su descripción `.obd` fija al lado
   (`--t-label` `--o40`, `--o60` en la elegida, interlineado de lectura). La descripción no cambia al elegir: nada se
@@ -1275,7 +1278,8 @@ compartir comida o el panel de macros, v276; excepción `ring`).
 - **Regla (BRAND §3):** `gym` y `TRK` en `--fg`/800, `//` en `--o40`, sin tracking; 22 en pantalla, 16 en overlays y pie de
   compartir, 34 solo en el landing. Una sola variante.
 - **Hoy hay seis:** landing `--t-hero` con `//` `--o40` y cursor `.cur`; login `--t-display` con `//` `--o50`; perfil de
-  primer uso `.obh` a `--t-section`/800 con `//` `--o40` y la etiqueta `//PROFILE` en `--o50` (v268, §7.34); pie de
+  primer uso `.obh` a `--t-section`/800 con `//` `--o40` y la etiqueta `//SETUP 3/10` en `--o50` (v268; el paso desde
+  v277, §7.34); pie de
   compartir `.shfoot` todo en `--o35`; arranque `.bootov .bt` a `--t-section`/800 con `//` `--o40` y la versión (`APP_V`) en
   `.bv` `--t-label` `--o40` (v268); wrap `.ws-kick` y `.ws-cardf`.
 - **Objetivo G3:** una clase `.mark` (pendiente G3) con sus tres tamaños por contexto.
@@ -1370,46 +1374,97 @@ auditor, excepciones 31 → 28 y bucles R-MOTION 10 → 7).
 - **La revisa:** `_v268SelfCheck` (barra vacía, llena, a la mitad, con octavo y acotada; el ticker corre con un spinner y se
   apaga sin ninguno) · `_uiSelfCheck` (la tarea arranca con el spinner) · a ojo.
 
-### 7.34 Perfil en filas de terminal (`renderOnboard()`, v268 · v269)
+### 7.34 Alta paso a paso (`renderOnboard()`, v277; sus filas son las de v268 · v269)
 
-Respuesta a dos quejas del dueño sobre el formulario de crear cuenta: "tosco, todo muy gordo" (v268) y, el 24-sep, "está
-muy gordo, está muy alto… la casilla está muy grande, el texto adentro de las casillas también… está desproporcional",
-"en actividad… está mal acomodado… la nota dependiendo de qué selecciona… está todo goofy", "no hay forma de darle back" y
-"ya pusiste tu peso en kilos. Porque abajo dice pesas en libras kilos" (v269, BRAND §9). Mismos ids (`ob_*`) y los mismos
-datos que escribe `onboardgo`, más la unidad del peso corporal. Es la forma vigente hasta el alta paso a paso (plan v270a).
+Encargo del dueño 2026-09-24 (BRAND §9): "pantalla por pantalla: usuario → biométricos → objetivo → split (ahora o
+después) → dieta (ahora o después) → Atajo de Salud → plan de pago", con `[‹ atrás]`. Reemplaza al formulario de una sola
+pantalla de v268 · v269 (`gym//TRK//PROFILE`, diez filas y `▶ empezar`; se fueron `obPick`, `obDraft`, `obPrev` y el
+handler `onboardgo`). De v268 · v269 se quedan las filas: `.obr`/`.obk`/`.obi` (caja de 36 dentro de una fila de 44), las
+listas `.toggles.oblist` con su descripción fija, el `>` en la fila con foco y Enter al siguiente campo. **Pendiente:** la
+cuenta (correo y código) entra como pasos con v278 y el plan de pago con v279.
 
-- **Rol:** el primer perfil (nombre, unidades, cuerpo, actividad, objetivo, gym) en una pantalla que se lee como
-  `clave  valor`.
-- **Clase / API:** `.ob` (pantalla) · `.obback` `[‹ atrás]` arriba (v269: acción de texto de 44 de alto, `--t-data`
-  `--o60` con corchetes por CSS en `--o40`; `data-act="backlanding"` vuelve a la portada) · `.obh` cabecera
-  `gym//TRK//PROFILE` + `.submeta` (`1 min · para calcular tu mantenimiento · todo se cambia después`) · `.obr` fila
-  (rejilla de `12.5ch` + resto desde v269 —antes 10.5: `te pesas en` no cabía—, alineada por la línea base, mínimo 44,
-  `--t-data`) · `.obk` clave en minúsculas `--o50` · `.obv` control · `.obi` campo (`.obi.sm`: 7 ch alineado a la
-  derecha, para números) · `.obu` unidad `--o40` · `.obr.obtop` fila de lista (actividad, objetivo; dos seguidas se
-  separan `--s4`) · `.obprev` vista previa de metas · primario `.start` `▶ empezar`.
-- **Filas (v269, en este orden):** `nombre` · `te pesas en [kg] lbs` · `pesas gym [lbs] kg` (**las unidades primero**,
-  antes de teclear un peso) · `sexo [hombre] mujer` · `edad [ ] años` · `peso [ ] kg` (la unidad `#ob_wu` sigue a
-  `te pesas en` en vivo) · `estatura [ ] cm` · `actividad` y `objetivo` como **listas verticales** `.toggles.oblist`
-  (§7.3), cada opción con su descripción fija al lado (`OB_ACT`: sedentario · ligero · moderado · alto; `OB_GOAL`:
-  déficit · mantener · volumen) · `gym`. Ya no hay una pista que cambie abajo al elegir, y `peso` tiene su propia fila
-  (antes compartía la de `edad`).
-- **Campo `.obi`:** **36** de alto (v269; antes 44) · borde `--bw-field` `--o40` · `--r-ctl` 4 · transparente ·
-  `--t-field` 14 · placeholder `--o30`; foco = borde `--fg`, sin contorno.
-- **Unidades:** con `te pesas en lbs`, el peso tecleado se convierte a kg (0.01 de precisión) antes de calcular y de
-  guardarse; `onboardgo` escribe `db.settings.bwUnit` (peso corporal) y `db.settings.unit` (pesas del gym) por separado
-  (§9.3).
-- **Hoy → objetivo:** `[‹ atrás]` (español) convive con el `[‹ back]` de la barra de estado: dos palabras para atrás
-  (VOZ-4, se resuelve con `[‹ origen]`, §14.2).
-- **Foco:** la fila con foco (`:focus-within`) pasa su clave a `--fg` y le pone `>` delante (el mismo "aquí" de la nav,
-  BRAND §3); el `>` ya tiene su lugar reservado (`visibility`), así la clave no se mueve. Enter salta al siguiente `.obi`;
-  en el último cierra el teclado.
-- **Vista previa:** `obPrev()` escribe en vivo `2,170 kcal · 122 g proteína al día` con `recalcGoals()` (el mismo cálculo
-  que se guarda), números en `--fg`/800; lleva `~` delante mientras edad, peso o estatura sean los de ejemplo (§9.1).
-- **Guardar (`onboardgo`, aditivo desde v268):** conserva lo que ya hubiera en `profile` y fija `profile.since` si no
-  existía; **mezcla** las metas (la de sueño sobrevive); escribe `goalHist[hoy]`; y solo si tecleaste un peso entre 30 y 250
-  kg lo apunta como tu primer registro de `bodyweight[hoy]`. Sin nombre: `⚠ pon tu nombre` y el foco vuelve al campo.
-- **La revisa:** `_v268SelfCheck` (en sandbox: `since`, meta de sueño, `goalHist`, peso tecleado y sin teclear) ·
-  `_v269SelfCheck` (ida y vuelta lbs ↔ kg) · a ojo a 393×852.
+- **Rol:** el primer perfil, **una pregunta por pantalla**, con lo opcional para después y **nada escrito hasta terminar**.
+- **Clase / API:** `renderOnboard()` pinta el paso `db.onb.step` de `ONB_STEPS` (10, `{k, q, why, opt}`) · `onbD()` (el
+  borrador, sobre `onbDefaults()`) · `onbNext()` · `onbBack(fromPop)` · `onbGo(i, fromPop)` · `onbCheck(k, d)` ·
+  `onbProfile(d)` · `onbPrevTxt(d)` · `onbSummaryHTML(d)` · `onbApply(d)` · `onbFinish()`. Acciones: `onbnext`, `onbback`,
+  `onblater`, `onbpick` (toggles y listas, `data-f`/`data-v`), `onbday` (días sin gym), `onbshortcut`, `onbfinish`; las
+  casillas llevan `data-od` (datos) o `data-og` (metas) y se guardan en el listener de `input`.
+- **Chrome (igual en los 10 pasos), de arriba abajo** dentro de `.ob.onb` (columna flex de alto mínimo `100dvh` − 2 ×
+  `--s5`: el pie queda abajo aunque el paso sea corto):
+  1. `.obback` `[‹ atrás]` (`onbback`), siempre: vuelve un paso; en el 1 vuelve a la portada (`step` 0; el borrador se
+     queda y `lcreate` lo retoma en el paso 1).
+  2. `.obh` `gym//TRK` + `.p` `//SETUP 3/10` (el paso y el total).
+  3. `.onbbar` `[███░░░░░░░]`: una celda por paso, las hechas en `<b>` `--fg`/400 y el resto y los corchetes en `--o40`,
+     `--t-data` sin tracking, `aria-hidden` (el paso ya lo dice la cabecera).
+  4. `.onbq` la pregunta (`--t-display`/800) y `.submeta` una línea con el porqué (`--t-label` `--o40`).
+  5. El cuerpo del paso (tabla de abajo).
+  6. `.onberr` el error en línea (`role="alert"`): `⚠` en `--warn` (el color solo en el glifo, B-07) y el texto en
+     `--o70`: `⚠ peso en lbs, entre 66 y 550`. Se va al teclear o al tocar una opción; nunca un toast.
+  7. `.onbfoot` pegado abajo (`position:sticky`, fondo `--bg`, `--s5` arriba y `--s4` + zona segura abajo: la zona del
+     pulgar): el primario `.start` `▶ seguir` (`▶ ir al gym` en el último) y, en los opcionales, `[más adelante]`
+     (`button.b`, centrado).
+- **Filas:** las de v268 · v269 — `.obr` (rejilla `12.5ch` + resto, alineada por la línea base, mínimo 44, `--t-data`;
+  como `<label>`, la fila entera es el toque de su casilla) · `.obk` clave en minúsculas `--o50` (con foco, `--fg` y `>`
+  delante en su lugar reservado) · `.obv` · `.obi` caja fina de **36** (`--bw-field` `--o40`, `--r-ctl` 4, transparente,
+  `--t-field` 14, placeholder `--o30`, foco = borde `--fg`; `.obi.sm` 7 ch a la derecha para números) · `.obu` unidad
+  `--o40`. Enter salta al siguiente `.obi`; en el último cierra el teclado. **Nueva `.obr.obstack`** (v277) para lo que
+  trae muchas opciones: la clave arriba y los toggles `.toggles.dow` a todo lo ancho (`días on 1–6`, `días sin gym
+  L M X J V S D`). Las listas `.toggles.oblist` (§7.3) van a todo lo ancho y sin clave: la pregunta es su etiqueta.
+- **Pasos (`ONB_STEPS`; opcional = trae `[más adelante]`):**
+
+| # | clave | pregunta | cuerpo |
+|---|---|---|---|
+| 1 | `name` | `¿cómo te llamamos?` | `nombre` (obligatorio) · `gym` (`opcional · ej. smart fit centro`; vacío = `home`) |
+| 2 | `units` | `¿en qué pesas?` | `peso corporal [kg] lbs` · `pesas del gym [lbs] kg`, **antes del cuerpo**: el peso se escribe en tu unidad (BRAND §9, v269) |
+| 3 | `body` | `tu cuerpo` | `sexo [hombre] mujer` · `edad [ ] años` · `estatura [ ] cm` · `peso [ ] kg` o `lbs` (sufijo y ejemplo en la unidad del paso 2) · `.obprev` en vivo `mantenimiento 2,610 kcal al día` (`onbPrevTxt()`: `recalcGoals()` con objetivo mantener; `~` delante mientras edad, peso o estatura sean los de ejemplo, §9.1) |
+| 4 | `act` | `¿qué tan activo eres?` | lista `OB_ACT`: sedentario · ligero · moderado · alto, cada una con su descripción |
+| 5 | `goal` | `tu objetivo` | lista `OB_GOAL` con sus kcal en la descripción: `N kcal · ~20 % abajo de tu mantenimiento` · `N kcal · tu mantenimiento` · `N kcal · ~10 % arriba` |
+| 6 | `train` · opcional | `¿cómo entrenas?` | el plan de v273 (§7.39): `modo [diario] días fijos rotativo`; en rotativo `días on` 1–6 (`.obstack`) y `días off` 1–3; en días fijos una línea (`qué rutina toca cada día lo eliges en el editor de split`); `días sin gym` en su propia fila (`.obstack`); `intensidad [RIR] RPE` y una línea que la explica (`RIR: cuántas repeticiones te quedaban · 0 = al fallo` / `RPE: 10 = no salía otra · 9 = te quedaba 1`) |
+| 7 | `split` · opcional | `tu rutina` | lista con `SPLIT_TEMPLATES()` (push/pull/legs · upper/lower · full body, con su descripción) + `desde cero` (`un día vacío y armas el tuyo`); debajo, `¿ya la tienes en tus notas? la pegas después en el editor de split` |
+| 8 | `goals` · opcional | `tus metas del día` | `kcal` · `proteína` · `carbos` · `grasa` (g) · `agua` (L), prellenadas con `recalcGoals()` y editables; pie `calculadas para <objetivo>` o `con tus ajustes`. Lo tecleado se queda en `d.goals` aunque después cambies el cuerpo |
+| 9 | `health` · opcional | `conecta Salud` | iPhone: una línea (`aún no somos app nativa: el iPhone no deja que una página lea Salud…`) + `[cómo se arma el Atajo]` → `openShortcutSetup()` (§7.38). Android: `por ahora se registran a mano`, sin botón |
+| 10 | `ready` | `listo` | `onbSummaryHTML()`: una `.onbl` por tema (`--t-data` `--o70`, separador `--bw-sep` `--o10`) con `✓` en `--good` o `—` en `--o40`: nombre · peso en tu unidad · estatura / objetivo · kcal · proteína / `rotativo 3 on / 1 off · sin gym: dom · RPE` (o `cómo entrenas · después`) / la plantilla, `rutina desde cero` o `rutina · después` / `Salud · después, en ajustes` (siempre `—`: el paso solo explica); luego `.onbready` `ready▌` (`--t-section`/800, el cursor `.cur`) y el primario `▶ ir al gym` |
+
+- **Dato (`db.onb`):** `{step, done, d}` con `d` = `{name, gym, bwu, unit, sex, age, h, w, act, goal, mode, on, off,
+  blocked, metric, tpl, goals, skip}` (por defecto `onbDefaults()`: kg / lbs, hombre, ligero, mantener, diario 3/1, RIR,
+  sin plantilla, sin metas propias). **Se guarda en cada toque y cada tecla** (`saveSoon()`; cada paso con `save()`): si
+  iOS cierra la app, vuelve a su paso con lo que llevabas. **Nada del perfil se escribe antes de `▶ ir al gym`.**
+  `[más adelante]` apunta el paso en `d.skip` y avanza; `▶ seguir` lo quita.
+- **Validación (`onbCheck(k, d)`, al tocar `▶ seguir`):** `pon tu nombre` (lo único obligatorio); en el cuerpo, solo lo
+  que escribiste: edad 13–99, estatura 120–230 cm y peso 30–250 kg **revisado en tu unidad** (`peso en lbs, entre 66 y
+  550`). Vacío pasa: el cálculo usa 25 años, 175 cm y 70 kg, con `~`.
+- **Terminar (`onbFinish()` → `onbApply(d)`), todo de una vez:** `profile` (`username`, `sex`, `age`, `heightCm`,
+  `weightKg`, `activity`, `goal`; `since` si no había) · `gyms` y `activeGym` · `settings.unit` y `settings.bwUnit` ·
+  `settings.goals` = las que hubiera + `recalcGoals()` + lo tecleado en el paso 8 (la meta de sueño sobrevive) ·
+  `goalHist[hoy]` · `bodyweight[hoy]` en kg si tecleaste un peso en rango (150 lbs = 68.04 kg) · el split de la plantilla
+  (o `mi split` con un día vacío) con `plan` `{mode, on, off, week, blocked}` y `metric` (días fijos → `defaultWeek()`) ·
+  `rotIdx` 0 · y `db.onb` = `{done:true, at, skip}` (el borrador se va). Lo que dejaste para después no se escribe: sin
+  plan, sin split, metas calculadas. Luego gym, o el editor de split con `desde cero`.
+- **Quién lo ve:** `migrate()` marca `onb.done` (`at:'antes'`) a cualquier base con usuario: **el dueño nunca lo ve**, ni
+  un respaldo que se importe.
+- **Router e historial:** sin usuario, `render()` abre el alta si `state.screen` es `onboard` **o** hay un alta a medias
+  (`step` > 0): la app vuelve a su paso y deja `state.screen` en `onboard` (sin eso, tras reabrir lo tecleado no se
+  guardaba); si no, la portada (`login` se respeta). Cada paso hacia adelante hace `history.pushState` y `[‹ atrás]`
+  `replaceState` (no apila); el atrás del sistema (`popstate`) retrocede un paso igual que `[‹ atrás]` (§14.2).
+- **Después del alta:** un split nuevo (`+ crear split`, una plantilla o `importar`) conserva cómo entrenas y RIR/RPE
+  (`splitCarry()`), y con días fijos y la semana vacía la arma con `defaultWeek()`. Cambiar kg ↔ lbs en el paso 2
+  convierte el peso ya escrito. Fuera de rango no cuenta en el cálculo en vivo (lleva `~`). Lo único que se escribe antes
+  de `▶ ir al gym` es lo que pegues de Salud en el paso 9; si no tecleaste peso, el perfil toma ese.
+- **Medido (v277):** `_dsRenderCheck` en cada paso: txt 0 (tras el arreglo de la barra) y hit solo las casillas `.obi` de
+  36 (1–5 por paso), dentro de filas de 44 (la decisión de v268 · v269). `dsSweep` no lo recorre: su base tiene usuario.
+- **Hoy → objetivo:**
+  - `[‹ atrás]` (español) convive con el `[‹ back]` de la barra de estado: dos palabras para atrás (VOZ-4, se resuelve
+    con `[‹ origen]`, §14.2).
+  - Choques con BRAND (preguntas abiertas en BRAND §10): `//SETUP` y `ready` en inglés junto a `▶ seguir`, `▶ ir al gym`
+    y `[más adelante]` en español (VOZ-1; R-LANG no lo ve) · `ready▌` usa el cursor `.cur` del landing (1.15 s literal,
+    no `--dur-blink`) fuera del arranque y los vacíos (§11.1). Los `✓` del resumen van sin color (B-07).
+  - `.onbbar` es su propia barra en vez de TRKProgress (`trkBarTxt()`, §7.33): §7.18 pide no reimplementar (G4).
+  - R-OK cuenta 2 primarios en `renderOnboard` (6 → 7) porque `▶ seguir` y `▶ ir al gym` van en un ternario: en
+    pantalla hay uno.
+  - `[cómo armar el Atajo]` (la misma etiqueta que en //HEALTH) pasa de 3 palabras (VOZ-6).
+- **La revisa:** `_onbSelfCheck` · `_v268SelfCheck` (el perfil sobre una base nueva, ahora por `onbApply()`) ·
+`_dsRenderCheck` por paso · a ojo a 393×852 (capturas de los 10 pasos y del
+  error en línea).
 
 ### 7.35 //PROGRESS en modo editar (widgets, v269)
 
@@ -1512,7 +1567,8 @@ Day sí es saltar el día del split". Antes los dos avanzaban la rotación.
 - **Lo tecleado gana:** `ingestHealth` suma `body[]`; el peso que registras a mano queda `H().src.weight[fecha]='manual'`
   y el Atajo no lo pisa. El formato viejo de URL (`?steps=…`) sigue entrando por `importHealth`.
 - **Entradas:** //STATS en gym `health · paste ···· 3 min` (con más de 18 h: `· tap`) · //HEALTH en ajustes
-  `[pegar de Salud] [cómo armar el Atajo] [importar JSON]` · el enlace `↻ pegar de Salud` al final de //PROGRESS.
+  `[pegar de Salud] [cómo armar el Atajo] [importar JSON]` · el enlace `↻ pegar de Salud` al final de //PROGRESS · en el
+  alta (v277, §7.34), el paso `conecta Salud` con `[cómo se arma el Atajo]` (solo en iPhone).
 - **Pegar = 2 toques:** `healthPasteNow()` lee el portapapeles dentro del toque (iOS muestra su burbuja "Pegar"); si no hay
   permiso o el texto no es del Atajo, abre la hoja `pegar de Salud` con la casilla.
 - **La receta** (`openShortcutSetup()`): 7 pasos numerados (`.hpst`: número `--o40`, texto `--o70`, acciones del iPhone en
@@ -1536,7 +1592,8 @@ adaptativo… si no se entrena = descanso".
 
 - **Rol:** decir cómo se reparte el split en el calendario y en qué escala se mide la intensidad, antes de editar los días.
 - **Dónde:** editor de split (`renderSplitEdit()`), **primero**: nombre del split → //SCHEDULE → //COVERAGE → días. Sin
-  días en el split no sale.
+  días en el split no sale. En el alta (v277, §7.34) es el paso opcional `¿cómo entrenas?` (modo, días on/off, días sin
+  gym, RIR o RPE; sin `fallo (F)`): `onbApply()` escribe `plan` y `metric` al terminar.
 - **Datos (aditivos; sin `plan` = diario, el comportamiento de siempre):**
   - `db.split.plan` = `{mode, on, off, week, blocked}` — `mode` `'daily'` (la rotación de siempre) · `'weekly'` (días
     fijos) · `'cycle'` (rotativo); `on` y `off` (el editor ofrece 1–6 y 1–3; `splitPlan()` acota y pone 3/1 por
@@ -1839,7 +1896,7 @@ Decimales solo cuando informan: kg 1, porcentajes 0–1, series 1. Unidades por 
 porque mucha gente se pesa en kg y carga en lbs): **peso corporal** en `db.settings.bwUnit` (se guarda siempre en kg) y
 **pesas del gym** en `db.settings.unit` (la unidad por defecto de un ejercicio nuevo); cada carga va en la unidad de su
 ejercicio (`exDisplayUnit()`), visible en el `<select>` de cada serie y en compartir. Las dos se eligen en //PROFILE
-(`peso corporal en ›`, `pesas del gym en ›`, con TRKSelect) y en el primer perfil, antes de teclear un peso (§7.34).
+(`peso corporal en ›`, `pesas del gym en ›`, con TRKSelect) y en el alta, en su propio paso antes del cuerpo (§7.34).
 Todavía en kg fijo: la tile de e1RM (su detalle —desde v274 la bitácora del ejercicio, §7.40— ya va en la unidad real) y el `peso … kg/Nd` del mantenimiento
 real (M5-04, G4).
 
@@ -1881,7 +1938,7 @@ Leyenda de la última columna: ✓ cumple B-09 · ⚠ a revisar con el dueño ·
 | `scrimin` / `scrimout` (`.modal.in`, `.modal.out`) | idem | background-color | `--dur-2` | `--ease-out` / `--ease-in` | el fondo se oscurece | .01ms | ✓ chrome |
 | `toastin` / `toastout` (`.toast`, `.toast.out`) | `toast()` / cierre | opacity · translateY 10 / 8 | `--dur-3` | `--ease-out` / `--ease-in` | el aviso llega y se va | .01ms | ✓ chrome (revisar con `--mv-1` en G3) |
 | `restdone` (`.restbar.fin`) | fin del descanso | border-top-color → `--good` | .5s × 3 (`loop`) | ease | aviso | .01ms | ✓ excepción `loop` |
-| `blink` (`.cur::after`) | landing | opacity en pasos | 1.15s infinito (`loop`) | `step-end` | cursor ▌ | `animation:none` | ✓ |
+| `blink` (`.cur::after`) | landing y el `ready▌` al final del alta (v277) | opacity en pasos | 1.15s infinito (`loop`) | `step-end` | cursor ▌ | `animation:none` | ✓ |
 | `blink` (`.nav a.active::before`) | pestaña activa de la nav (v267) | opacity en pasos | `--dur-blink` 1.1s infinito (`/*ds:exempt:loop*/`) | `--ease-step` | el `>` de "estás aquí" | `animation:none` (el `>` queda quieto) | ✓ excepción `loop` |
 | `blink` (`.bootov .bcur`) | arranque (v268): el cursor de `ready▌` | opacity en pasos | `--dur-blink` 1.1s infinito (`/*ds:exempt:loop*/`) | `--ease-step` | "listo" | `animation:none` (el cursor queda quieto) | ✓ excepción `loop` (antes parpadeaba toda la línea `[ready]`) |
 | `blink` (`.wnav`) | wrap | opacity en pasos | 1.5s infinito | `step-end` | "toca" | una vez (v258) | ✓ |
@@ -1948,26 +2005,26 @@ v267) · `_dsRenderCheck` glyph (acepta `GLYPHS_VIZ` desde v268).
 
 | Glifo | Significa | Hoy se usa en | Texto para lectores de pantalla |
 |---|---|---|---|
-| ✓ | hecho | `.dchk`, `.pairdone`, toasts de éxito, `✓ AM` | "hecho" |
+| ✓ | hecho | `.dchk`, `.pairdone`, toasts de éxito, `✓ AM`, resumen del alta (`.onbl`, v277) | "hecho" |
 | ○ | pendiente | `.dchk` sin confirmar | "pendiente" |
 | ▲ ▼ | cambio (sube / baja) | badges de progreso, //FUERZA, detalle | "sube 3 %" / "baja 4 %" |
 | ⠿ | arrastrar / reordenar | `.dgrip`, `.pgrip` (tiles de //PROGRESS editable, v269), fantasma de arrastre | "arrastrar" / "mover <tile>" |
 | › | entrar / abrir detalle | `.rchev`, `.nvm-x`, `.ptchev`, `.lx`, `.mchev` | "abrir" |
 | ‹ | atrás / anterior | `.dnav`, `.hcnav`, flechas de rotación | "anterior" |
 | ▾ | desplegar / elegir | `.umcaret`, `.sgoal .cv`, `[ ver rutina ▾ ]` | "elegir" |
-| ▶ | empezar / continuar | `▶ start workout`, `▶ resume workout`, `▶ continuar` | "empezar" |
+| ▶ | empezar / continuar | `▶ start workout`, `▶ resume workout`, `▶ continuar`, `▶ seguir` y `▶ ir al gym` (alta, v277) | "empezar" |
 | ↓ | drop set | `[↓ drop set]`, series de drop | "drop" |
 | ✕ | quitar | toast de error, ✕ de ejercicio, `.lc .x` | "quitar" |
 | ↩ | deshacer | `.footer .undo` | "deshacer" |
 | ~ | estimado | `~σ`, `~` de sugerido | "aproximado" |
-| ⚠ | aviso | toasts de error, alimentos a revisar, suplemento por acabarse (`⚠ ~5 d`, `⚠ se acabó`, v275) | "aviso" |
-| ▌ | cursor (solo arranque y vacíos) | `.cur` del landing, `.bcur` de `ready▌` en el arranque (v268); dentro de un medidor `[…]` es media celda | — |
+| ⚠ | aviso | toasts de error, alimentos a revisar, suplemento por acabarse (`⚠ ~5 d`, `⚠ se acabó`, v275), error en línea del alta (`.onberr`, v277) | "aviso" |
+| ▌ | cursor (solo arranque y vacíos) | `.cur` del landing, `.bcur` de `ready▌` en el arranque (v268); dentro de un medidor `[…]` es media celda; desde v277 también el `.cur` de `ready▌` al final del alta (fuera de "arranque y vacíos": pregunta abierta, §7.34) | — |
 | × @ / → # | notación de series y datos | `160lbs×8@0 / …`, `→ acción` del diagnóstico, `#músculo` | — |
 | — | sin dato | lecturas vacías | "sin dato" |
 | σ | estímulo en series efectivas (1 = una serie al fallo; v272, reemplaza a la T) | `σ0.98` por serie (`.settens`), `σ 2.6` por ejercicio (`.exT`), //STIMULUS, //MUSCLES, tile `σ · wk`, historial, hoja de sesión, export | "estímulo" |
-| `>` | aquí / activo (ASCII, fuera de `GLYPHS`) | `.nav a.active::before` (v267); prompt del arranque `> loading gym tracker` y la fila con foco del perfil `.obk::before` (v268) | `aria-current="page"` |
+| `>` | aquí / activo (ASCII, fuera de `GLYPHS`) | `.nav a.active::before` (v267); prompt del arranque `> loading gym tracker` y la fila con foco del alta `.obk::before` (v268) | `aria-current="page"` |
 | ▖ ▘ ▝ ▗ | trabajando (`GLYPHS_VIZ`, v268) | TRKSpin `.tsg` (§7.33) | `role="status"` con el verbo |
-| █ ░ (+ octavos ▏▎▍▋▊▉) | medidor (`GLYPHS_VIZ`, v268) | TRKProgress `.tprog` (§7.33) | `role="progressbar"` con `aria-valuenow` |
+| █ ░ (+ octavos ▏▎▍▋▊▉) | medidor (`GLYPHS_VIZ`, v268) | TRKProgress `.tprog` (§7.33); la barra de pasos del alta `.onbbar` (v277, propia, sin octavos ni %, `aria-hidden`: §7.34) | `role="progressbar"` con `aria-valuenow` |
 
 - GLY-1: **un glifo, un significado.** Hoy se rompe: `▲▼` también reordena en el editor de split y en la hoja de sesión
   (M1-04, M3-10 → `⠿` o menú, G3); `~` también significa "tomado tarde" en el stack (G4); `›` también gira para
@@ -2048,6 +2105,7 @@ hacer`; sin conexión `⚠ sin conexión · [reintentar]`.
 | Compartir | "sin sesión para compartir", "sin series registradas", "sin alimentos este día", "aún sin series con peso y reps" | — | `▖ generando imagen… 1s` (toast de tarea) | `⚠ no se pudo generar la imagen` |
 | Ajustes · salud | — | — | `▖ sincronizando salud… 3s` (toast de tarea) | `⚠ …` del sync; errores de permisos en el log |
 | Escáner | — | — | `iniciando cámara…`; al buscar o leer un código, `▖ buscando…` / `▖ leyendo…` (TRKSpin) | fallback a foto, búsqueda por nombre y tecleo |
+| Alta (v277) | — | `~` delante de `mantenimiento … kcal al día` mientras edad, peso o estatura sean los de ejemplo; en el resumen, `—` en lo que dejaste para después | — | en línea bajo el paso (`.onberr`, `role="alert"`): `⚠ pon tu nombre`, `⚠ peso en lbs, entre 66 y 550`; nunca toast (§7.34) |
 
 Objetivo G4: completar la tabla con el texto exacto de cada celda vacía y una acción por vacío.
 
@@ -2111,6 +2169,8 @@ Objetivo G4: completar la tabla con el texto exacto de cada celda vacía y una a
   historial tiene dos salidas distintas (`[‹ back]` → gym y `‹ cerrar` → historial). **Excepción (v274):** la bitácora
   de un ejercicio (`exhist`, §7.40) lleva su propio `[‹ back]` (`button.b`, `exback`) que vuelve a la pantalla de donde
   viniste (`state._exFrom`; si no hay, progress): el primer atrás al origen, aunque todavía no recuerda el scroll.
+  **Alta (v277, §7.34):** `[‹ atrás]` (`onbback`) vuelve un paso (en el 1, a la portada) y, como cada paso hace
+  `history.pushState`, el atrás del sistema (`popstate`) también retrocede un paso en vez de salir.
 - **Objetivo G4** (T-02): `state._from` (pendiente G3) guarda de dónde vienes con su scroll; un solo `[‹ origen]` de texto
   en la barra de estado, con 44 de toque (`[‹ gym]`, `[‹ historial]`).
 - NAV-4: cerrar un sheet **nunca** mueve el scroll de abajo (`reRender()`, no `closeModal(); render()`). La revisa: R-SCROLL.
@@ -2120,7 +2180,7 @@ Objetivo G4: completar la tabla con el texto exacto de cada celda vacía y una a
 | Pantalla (`state.screen`) | Instrumento | Cabecera | Contenido | Nav hoy | Notas |
 |---|---|---|---|---|---|
 | `landing` / `login` | primer uso | marca | `.start`, `.field`, `.toggles` | no | M0 sin evaluar (G4): tono de venta, etiquetas en mayúsculas, `← regresar`, marca con `//` en dos opacidades |
-| `onboard` | primer uso (perfil) | `[‹ atrás]` (`.obback`) + `.obh` `gym//TRK//PROFILE` + una línea | filas de terminal `.obr` (clave `.obk` + control; `.obi`, toggles), unidades primero, listas `.toggles.oblist` con su descripción, vista previa `.obprev`, `▶ empezar` | no | v268 · v269, §7.34: la fila con foco lleva `>`; Enter salta al siguiente campo; guardar es aditivo |
+| `onboard` | primer uso (alta paso a paso, v277) | `[‹ atrás]` (`.obback`) + `.obh` `gym//TRK//SETUP 3/10` + barra `.onbbar` + la pregunta `.onbq` y su porqué | un paso de `ONB_STEPS` (10): filas `.obr` (`.obi` de 36, toggles, `.obr.obstack`), listas `.toggles.oblist`, error en línea `.onberr`; pie `.onbfoot` pegado abajo con `▶ seguir` / `▶ ir al gym` y `[más adelante]` en los opcionales | no | §7.34: nada se escribe hasta terminar (`onbApply`); un alta a medias abre en su paso; el atrás del sistema retrocede un paso; con usuario no se ve nunca |
 | `home` (gym) | estado actual | `statusBar` + rotación + `dayHeadHTML` (`//NEXT`) | línea de preparación, músculos del día, vista previa (`[ ver rutina ▾ ]`), primario, `[rest day]` `[skip day]` (o `hoy: descanso ✓`, §7.37; en un descanso del plan o día sin gym, `.restplan` + `[entrenar igual]` sin primario, v273), //STIMULUS (σ por músculo y, si toca, la fila de fatiga acumulada, §7.23), //STATS | sí | con sesión viva solo existe `▶ resume workout` (v258, M1-01/M1-01b) |
 | `workout` | registro | `.wline` (modo enfoque) | tabla de sesión, descanso, footer | no | §7.8, §7.20 |
 | `macros` | composición | `statusBar` + día `‹ fecha ›` | anillo en `.card`, detalle (carrusel de versiones con sus pestañas abajo —`aros` = radar y P/C/F—, `[ver gramos \| ver %]`, INTAKE, retención), SUPPS (o su invitación) → MEALS (`[+ food]` en cada cabecera) → WATER; `[share]` → el día o el panel | sí | §7.24, §7.28, §7.36, §7.41 |
@@ -2151,7 +2211,7 @@ todo el marcador es `/*ds:exempt*/` sin id; los primeros con id son `/*ds:exempt
 | `boot` | shader de marca del arranque (única excepción de fondo animado) y su tipografía | `.bootov .bt` tracking .02em; `startShader()` (detrás a `--op-dim` desde v268; no corre en el arranque corto) |
 | `wrap` | overlay de un solo mensaje del wrap mensual | `.ws-big` 60 y tracking −2px · `.ws-month` 44 y −1.5px · tracking de `.wnav`, `.ws-lbl`, `.ws-sub`, `.ws-kick`, `.ws-year`, `.ws-cardh`, `.ws-cardf`, `.ws-share` (el wrap se reevalúa en G4: formato rechazado) |
 | `scanner` | overlay de cámara | `.scan-reticle .chk` 40 · `.scan-reticle .scl` (bucle, también `loop`) |
-| `loop` | bucles funcionales: única animación infinita permitida | `.cur::after` (`blink`, landing) · `.bootov .bcur` (`blink`, el cursor de `ready▌`, `/*ds:exempt:loop*/`, v268) · `.nav a.active::before` (`blink`, el `>` de la pestaña activa, `/*ds:exempt:loop*/`, v267) · `.wnav` (`blink`) · `.scan-reticle .scl` (`scanmove`) · `.restbar.fin` (3 destellos). v268 retiró los anillos de carga y su `@keyframes`: el trabajo en curso es texto (TRKSpin, §7.33) y no necesita excepción |
+| `loop` | bucles funcionales: única animación infinita permitida | `.cur::after` (`blink`, landing y el `ready▌` del alta, v277) · `.bootov .bcur` (`blink`, el cursor de `ready▌`, `/*ds:exempt:loop*/`, v268) · `.nav a.active::before` (`blink`, el `>` de la pestaña activa, `/*ds:exempt:loop*/`, v267) · `.wnav` (`blink`) · `.scan-reticle .scl` (`scanmove`) · `.restbar.fin` (3 destellos). v268 retiró los anillos de carga y su `@keyframes`: el trabajo en curso es texto (TRKSpin, §7.33) y no necesita excepción |
 | `geom` | geometría atada al JS o centrado óptico de puntos | `.chwrap` y `.chxs` (40 de columna de etiquetas Y = `.chscrub right`) · `.slfc` (mismo margen de eje) · `.chsd` −5 (punto de 10) · `.strk-row .cd.t.l0::after` y `.cm .cd.t.l0::after` −1.5 (punto de 3) · `.dots3` (la sombra dibuja los puntos 2 y 3) · `.ag-hr i` 30 (agenda, muerta) |
 | `vp-lock` | zoom bloqueado (§13.1) | meta viewport |
 | `camera` | ícono TRK de cámara de video en compartir un ejercicio (lo que el dueño pone en sus historias), con su punto rojo de grabación | `.exsh .camic` con `CAM_SVG` (v269; antes un emoji por `::before`); el punto en `--bad` es la señal de grabando que él pidió, no un veredicto |
@@ -2248,6 +2308,7 @@ que crea o reemplaza una sesión se oculta mientras hay una viva.** La revisa: R
 | `▶ continuar` una sesión pasada | v258: la original sigue en el historial hasta guardar (guardar la reemplaza, sin mover la rotación); abortar la deja intacta y restaura la rotación (M3-09) | ✓ |
 | registrar manualmente desde el escáner | v258: guarda en la comida elegida (`window._faTag` se lee antes de cerrar el sheet, M4-08) | ✓ |
 | `[cancel]` en la hoja de loguear un alimento | v271 (§7.24): **nunca registra** (antes `logonly` sí lo agregaba a la comida); vuelve a la búsqueda con su texto o cierra | ✓ |
+| el alta: `[‹ atrás]`, `[más adelante]`, `▶ ir al gym` | v277 (§7.34): sin confirmación porque nada se escribe hasta `▶ ir al gym` (`onbApply()`); atrás y `[más adelante]` no borran lo tecleado y lo que dejaste para después no se escribe | ✓ |
 
 ### 17.5 Inventario primero
 
@@ -2353,7 +2414,8 @@ Línea base del 2026-09-21: todos en 0 salvo `style=""` 89, excepciones 33, lett
 - **`_v268SelfCheck()`** (en `?selftest=1`, al final de la suite y en sandbox: nada llega al disco): la barra de texto
   (`trkBarTxt`: vacía, llena, a la mitad, con octavo y acotada a 0–100); que `TRK_SPIN` solo use `▖▘▝▗`; que el ticker
   corra con un `[data-spin]` en pantalla y se apague solo sin ninguno; **Z-2**: con `#bootov` en pantalla un aviso de
-  la cola del arranque espera en vez de abrirse debajo; y `onboardgo` sobre una base nueva: guarda `profile.since`,
+  la cola del arranque espera en vez de abrirse debajo; y el perfil sobre una base nueva (desde v277 por `onbApply()`, el
+  final del alta; antes el handler `onboardgo`): guarda `profile.since`,
   conserva la meta de sueño, escribe `goalHist[hoy]`, el peso tecleado es el primer registro de `bodyweight` y sin peso
   tecleado no se inventa ninguno.
 - **`_v269SelfCheck()`** (en `?selftest=1`, después de `_v268SelfCheck`; lo que toca `db` corre sobre una copia y con
@@ -2406,10 +2468,22 @@ Línea base del 2026-09-21: todos en 0 salvo `style=""` 89, excepciones 33, lett
   muestra gramos contra la meta (`142 / 180 g`) · `medidor` es un medidor de terminal (`[` bloques `]`) · `tabla` da el %
   de la meta (79 % y 77 %) · una clave inválida se lee `aros` y el carrusel tiene 5 · la dona entra solo si es la
   elegida · por defecto el carrusel son 5 (con `tabla`, sin dona). Imprime `macro viz self-check OK`.
+- **`_onbSelfCheck()`** (v277, al final de `?selftest=1`; sobre bases de juguete y restaura `db` y la pantalla; **37
+  self-checks** en total): quien ya tiene perfil nunca ve el alta (`migrate()` le pone `onb.done`) · sin nombre no avanza ·
+  el peso se revisa en tu unidad (20 lbs no pasa; 150 pasa en lbs y en kg) · 150 lbs = 68.04 kg · el paso dice
+  `//SETUP 1/10`, trae atrás y el primero no trae `más adelante` · un opcional sí lo trae · el último resume lo elegido
+  (`rotativo 3 on / 1 off · sin gym: dom · RPE`, `push/pull/legs`) · nada del perfil se escribe antes de terminar · al
+  terminar: perfil, unidades y el peso del día en kg · la meta que ajustaste se respeta (en `settings.goals` y en
+  `goalHist`) · plantilla + rotativo 3/1 + domingo sin gym + RPE → `cycleLen()` 4 · queda hecho y el borrador se va · lo
+  que dejaste para después no se escribe (sin split, sin plan, metas calculadas). Imprime `onboarding self-check OK`.
+  **De paso:** un comentario `//` dentro de `migrate()` (una sola línea) se comía el resto de la función; lo cazó
+  `_streakSelfCheck` y quedó como `/* */`.
 - **Inventario en navegador** (`tools/ds-inventory.js`, se guarda en G1): tamaños, colores→token, radios, sombras, blur,
-  tracking, animaciones, glifos y toques por pantalla, con el respaldo real del dueño. **`dsSweep()` de hoy** (v276, 393×852,
+  tracking, animaciones, glifos y toques por pantalla, con el respaldo real del dueño. **`dsSweep()` de hoy** (v277, 393×852,
   su respaldo, sin sesión viva; es la línea base `render` de `tools/ds-baseline.json`): ua 0 · hit 715 · txt 133 · fsOff 0
-  · blur 0 · glyph 88 · rad 0. **v276:** sin cambios, porque el barrido mide el panel de macros cerrado; medido abierto con
+  · blur 0 · glyph 88 · rad 0. **v277:** sin cambios, porque su base tiene usuario y el alta no entra al barrido; medido
+  paso por paso con `_dsRenderCheck`: txt 0 y hit solo las casillas `.obi` de 36 (1–5 por paso) dentro de filas de 44
+  (§7.34). **v276:** sin cambios, porque el barrido mide el panel de macros cerrado; medido abierto con
   sus datos, el panel tiene los mismos toques chicos que en v275 (25) en cada una de las 5 versiones del carrusel (las
   pestañas miden 44, §7.28). **v275:** sin cambios, porque su stack todavía no tiene productos; medido aparte con
   productos y frascos, el stack baja de hit 43 a 41 y el editor de suplemento de 41 a 40: ningún toque chico nuevo.

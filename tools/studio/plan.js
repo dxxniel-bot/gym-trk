@@ -11,7 +11,7 @@
 
   window.TRK_PLAN = {
     updated: '2026-09-24',
-    note: 'ruta de la guía: G1 y G2 hechos, F0 y T preparan el estudio; G0 se decide aquí, TS (v267) hornea el "terminal sobrio", P1 (v268) el primer arranque, v269 y v270 (salud por Atajo) lo que pediste el 24-sep, v271 comida y unidades, v272 σ v2 y estado del progreso, v273 split: cómo entrenas (diario, días fijos o rotativo, días sin gym, ciclo real y RIR o RPE), v274 progreso por ejercicio (la bitácora #1, #2, #3… con su gráfica), v275 suplementos con marca, frasco y aviso (cuántas quedan, aviso a una semana, pausa, archivo y volver con otra marca) y v276 macros: laboratorio, carrusel y compartir (las versiones del panel en un carrusel, compartir el panel y las propuestas 25 y 26 para elegir la que abre); en el orden que aprobaste siguen configuración paso a paso (v277), cuentas (v278), Pro y anuncios (v279) y tour (v280). G3 y G4 completan la identidad sin versión fija. Cada entrega borra el CSS de su propuesta y la marca shipped.',
+    note: 'ruta de la guía: G1 y G2 hechos, F0 y T preparan el estudio; G0 se decide aquí, TS (v267) hornea el "terminal sobrio", P1 (v268) el primer arranque, v269 y v270 (salud por Atajo) lo que pediste el 24-sep, v271 comida y unidades, v272 σ v2 y estado del progreso, v273 split: cómo entrenas (diario, días fijos o rotativo, días sin gym, ciclo real y RIR o RPE), v274 progreso por ejercicio (la bitácora #1, #2, #3… con su gráfica), v275 suplementos con marca, frasco y aviso (cuántas quedan, aviso a una semana, pausa, archivo y volver con otra marca), v276 macros: laboratorio, carrusel y compartir (las versiones del panel en un carrusel, compartir el panel y las propuestas 25 y 26 para elegir la que abre) y v277 alta paso a paso (10 pantallas con [‹ atrás], //SETUP N/10 y [más adelante]; nada se escribe hasta ▶ ir al gym); en el orden que aprobaste siguen cuentas (v278, con los pasos de correo y código al inicio del alta), Pro y anuncios (v279, con el paso del plan de pago) y tour (v280). G3 y G4 completan la identidad sin versión fija. Cada entrega borra el CSS de su propuesta y la marca shipped.',
     phases: [
 
       P('G1', 'guía', null, 'hecho', [
@@ -177,17 +177,31 @@
         I('check', '_macroVizSelfCheck: el reparto suma 100 (30/42 en el ejemplo), cada versión se pinta, barras en gramos contra la meta, medidor de terminal, tabla con el % de la meta, clave inválida → aros, la dona solo si la eliges y el carrusel trae 5', 'hecho', { audit: '36 self-checks · dsSweep sin cambios · panel abierto: 25 toques chicos en las 5 versiones, como v275' }),
       ]),
 
-      P('V277', 'configuración paso a paso', 'v277', 'pendiente', [
-        I('setup', 'crear cuenta como configuración paso a paso (reemplaza el formulario de perfil de una sola pantalla)', 'pendiente', { proposal: 'fields' }),
-        I('train', 'pregunta cómo entrenas y si usas RIR o RPE (el ajuste ya vive en //SCHEDULE desde v273)', 'pendiente'),
+      P('V277', 'alta paso a paso', 'v277', 'hecho', [
+        I('note', 'lo que pediste: "pantalla por pantalla: usuario → biométricos → objetivo → split (ahora o después) → dieta (ahora o después) → Atajo de Salud → plan de pago", con [‹ atrás] y casillas que cuadren (el formulario de una sola pantalla de v268-v269 era "todo goofy")', 'hecho'),
+        I('steps', '10 pantallas, una pregunta cada una: nombre y gym · ¿en qué pesas? (peso corporal y pesas del gym, ANTES del cuerpo) · tu cuerpo (sexo, edad, estatura y peso en tu unidad, con "mantenimiento 2,610 kcal al día" en vivo; ~ mientras sean los de por defecto) · actividad (4 filas con su descripción) · objetivo (3 filas con sus kcal) · cómo entrenas · tu rutina · metas del día · conecta Salud · listo', 'hecho', { proposal: 'fields' }),
+        I('chrome', '[‹ atrás] siempre (en el paso 1 vuelve a la entrada), gym//TRK //SETUP 3/10 y la barra [███░░░░░░░], la pregunta en grande y su por qué en una línea; filas de 44 con casilla de 36; las filas de muchas opciones apilan la etiqueta arriba; ▶ seguir abajo, en la zona del pulgar, y [más adelante] en los opcionales', 'hecho', { proposal: 'toggles' }),
+        I('train', 'cómo entrenas (lo de v273) antes de la rutina: diario / días fijos / rotativo con días on 1-6 y off 1-3, días sin gym L M X J V S D en su línea, intensidad RIR o RPE con una línea que la explica; la rutina: plantillas o desde cero; las metas: kcal, proteína, carbos, grasa y agua calculadas y editables (lo que cambies se respeta)', 'hecho'),
+        I('health', 'conecta Salud: en iPhone explica el Atajo y abre [cómo se arma el Atajo]; en Android, por ahora a mano', 'hecho'),
+        I('ready', 'listo: resumen ✓ / — de lo que quedó y ready▌ → ▶ ir al gym (o al editor de split si elegiste desde cero)', 'hecho'),
+        I('draft', 'borrador en db.onb: cada toque y tecla se guarda (si la app se cierra, vuelve a su paso); NADA de tu perfil se escribe hasta ▶ ir al gym (perfil, unidades, metas con tus ajustes, goalHist de hoy, el peso del día en kg, el split con su plan y su RIR o RPE); lo que dejaste para después no se escribe; atrás del sistema = un paso atrás', 'hecho'),
+        I('owner', 'tú nunca lo ves: migrate() marca hecho el alta de cualquier base con usuario', 'hecho'),
+        I('error', 'errores en línea (⚠ peso en lbs, entre 66 y 550): nombre obligatorio; edad 13-99, estatura 120-230 cm y peso revisados en TU unidad', 'hecho'),
+        I('bug', 'bug de camino: un comentario // dentro de migrate() (una sola línea) se comía el resto de la función; lo cazó la prueba de la racha y quedó como /* */', 'hecho'),
+        I('check', '_onbSelfCheck: quien ya tiene perfil no lo ve, sin nombre no avanza, peso en tu unidad (150 lbs = 68.04 kg), paso N/M y atrás, más adelante en los opcionales, el resumen trae lo elegido, nada se escribe antes de terminar, la meta ajustada se respeta, plantilla + rotativo 3/1 + domingo + RPE → ciclo de 4, lo que dejaste para después no se escribe', 'hecho', { audit: '37 self-checks · dsSweep sin cambios · por paso txt 0' }),
+        I('studio', 'estudio: onb:1 … onb:10, onb:error y onboard (retomada en su paso) como usuario nuevo solo en memoria; tu perfil, tu db.onb y tu split vuelven idénticos', 'hecho'),
+        I('account', 'los pasos de cuenta (correo + código) entran como pasos 1-2 con v278', 'pendiente'),
+        I('plan', 'el paso del plan de pago entra con v279', 'pendiente'),
       ]),
 
       P('V278', 'cuentas', 'v278', 'pendiente', [
+        I('onbacct', 'alta: los pasos de cuenta (correo y código) entran al principio del alta paso a paso', 'pendiente'),
         I('records', 'capa de registros, sombra en IndexedDB v2 y código muerto', 'pendiente'),
         I('sync', 'pantallas de cuenta en el estilo nuevo, sync con Supabase y //ACCOUNT', 'pendiente'),
       ]),
 
       P('V279', 'Pro y anuncios', 'v279', 'pendiente', [
+        I('onbpro', 'alta: el paso del plan de pago (lo último que pediste en el orden del alta)', 'pendiente'),
         I('pro', 'plan Pro y anuncios (cobro en la web primero)', 'pendiente'),
       ]),
 

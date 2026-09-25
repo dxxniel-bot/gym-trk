@@ -702,9 +702,9 @@
   .obi{height:36px; width:100%; min-width:0; padding:0 var(--s3); border:var(--bw-field) solid var(--o40); border-radius:var(--r-ctl); background:transparent; color:var(--fg); font-size:var(--t-field);}
   .obi:focus{border-color:var(--fg);} .obi:focus-visible{outline:none;} .obi::placeholder{color:var(--o30);}
   .obi.sm{flex:0 0 auto; width:7ch; text-align:right;}
-  .obu{color:var(--o40);} .obk2{margin-left:var(--s4); color:var(--o50);}
+  .obu{color:var(--o40);}
   .obr .toggles{gap:0 var(--s1);}
-  .obr.obtop + .obr.obtop{margin-top:var(--s4);}   /* actividad y objetivo: la etiqueta alinea con la 1.ª opción (baseline) y las dos listas se separan */
+  /* v277: .obr.obtop (la forma de una sola pantalla de v268) se fue con el alta paso a paso */
   .toggles.oblist{display:flex; flex-direction:column; align-items:stretch; gap:0;}
   .toggles.oblist button.t{display:grid; grid-template-columns:12.5ch minmax(0,1fr); align-items:baseline; column-gap:var(--s3); width:100%; min-height:40px; padding:var(--s2) var(--s1);}
   .toggles.oblist button.t::before,.toggles.oblist button.t::after{content:none;}
@@ -713,6 +713,15 @@
   .toggles.oblist .obd{font-size:var(--t-label); font-weight:400; color:var(--o40); line-height:var(--lh-read);} .toggles.oblist button.t.on .obd{color:var(--o60);}
   .obback{display:inline-flex; align-items:center; height:44px; margin:calc(-1 * var(--s3)) 0 var(--s2); font-size:var(--t-data); color:var(--o60); cursor:pointer;} .obback::before{content:'['; color:var(--o40);} .obback::after{content:']'; color:var(--o40);}
   .obprev{margin:var(--s5) 0 var(--s4); font-size:var(--t-data); color:var(--o60);} .obprev b{color:var(--fg); font-weight:800;}
+  /* v277 · alta paso a paso: paso N/M con su barra, una pregunta por pantalla, el primario abajo (zona del pulgar) */
+  .onb{display:flex; flex-direction:column; min-height:calc(100dvh - var(--s5) * 2);} .onbbar{font-size:var(--t-data); color:var(--o40); letter-spacing:0; margin:0 0 var(--s5);} .onbbar b{color:var(--fg); font-weight:400;}
+  .obr.obstack{display:block; padding:var(--s2) 0 0;} .obr.obstack .obk{display:block; margin-bottom:var(--s1);} .obr.obstack .toggles{width:100%;}
+  .onbq{font-size:var(--t-display); font-weight:800; line-height:var(--lh-ui); margin-bottom:var(--s2);}
+  .onberr{margin-top:var(--s3); font-size:var(--t-data); color:var(--o70);}
+  .onbfoot{position:sticky; bottom:0; display:flex; flex-direction:column; align-items:stretch; gap:var(--s2); margin-top:auto; padding:var(--s5) 0 calc(var(--s4) + env(safe-area-inset-bottom)); background:var(--bg);}
+  .onbfoot .b{align-self:center;}
+  .onbl{font-size:var(--t-data); padding:var(--s2) 0; color:var(--o70); border-bottom:var(--bw-sep) solid var(--o10);}
+  .onbready{margin-top:var(--s5); font-size:var(--t-section); font-weight:800;}
   /* v267 · casilla con foco: el borde sube a --fg (sin anillo extra) */
   .field input:focus,.field select:focus,#fa_q:focus,textarea.ta:focus,.mdcust input:focus,.slph input:focus,.slblk input:focus,select.pfsel:focus,#pf_gym:focus,.pfw:focus,.msum-time:focus{border-color:var(--fg); outline:none;}   /* el borde ES el foco: sin anillo doble */
   /* bottom nav: píldora flotante glass (absolute al .frame; el scroll vive en .scroll, no en body → esquiva el bug iOS de fixed) */
@@ -1064,7 +1073,7 @@
 
 <script>
 "use strict";
-const APP_V='v276';   // versión visible (arranque); R-DOC la compara con sw.js y con DESIGN_SYSTEM.md línea 3
+const APP_V='v277';   // versión visible (arranque); R-DOC la compara con sw.js y con DESIGN_SYSTEM.md línea 3
 const LS_KEY='gymtrk_db_v1';
 // BRAND.md §3 · diccionario cerrado de glifos de interfaz (un glifo = un significado). tools/ds-audit.cjs (R-GLY) lee
 // esta constante: cualquier otro símbolo no ASCII en un literal de interfaz es una desviación. Las etiquetas que el
@@ -1232,7 +1241,7 @@ function pickBootCopy(m,b){
   if(m.d||b.d)return {d:m.d||b.d,which:m.d?'main':'bak',why:'sin perfil'};
   return {d:null,which:'seed',why:'sin datos · '+m.st}; }
 function isStandalone(){ try{ return !!((window.matchMedia&&matchMedia('(display-mode: standalone)').matches)||navigator.standalone===true); }catch(_){ return false; } }
-function isIOS(){ try{ return /iP(hone|ad|od)/.test(navigator.userAgent||''); }catch(_){ return false; } }
+function isIOS(){ try{ const u=navigator.userAgent||''; return /iP(hone|ad|od)/.test(u)||(/Macintosh/.test(u)&&navigator.maxTouchPoints>1); }catch(_){ return false; } }   // v277: iPadOS se presenta como Mac
 function bootCtx(){ return {app:NATIVE_APP?'nativa':isStandalone()?'ícono':'navegador',ios:isIOS(),persisted:_persisted,quota:(_estim&&_estim.quota)||null,usage:(_estim&&_estim.usage)||null,sw:!!(navigator.serviceWorker&&navigator.serviceWorker.controller)}; }
 function load(){ const J=_bootJ={t:Date.now(),flags:[]};
   let rm=null, rb=null;
@@ -1316,7 +1325,7 @@ function _idSelfCheck(){
   A('gated: a second call is a no-op once _idfix is set', JSON.stringify(fx)===before);
   console.log('id self-check OK');
 }
-function migrate(d){ if(!d.version){d.version=1;} if(!d._meta||typeof d._meta!=='object')d._meta={seq:0,t:0}; if(!d.meals||typeof d.meals!=='object'||Array.isArray(d.meals))d.meals={}; if(!Array.isArray(d.foods))d.foods=[]; d.foods=d.foods.map(f=>(f&&f.per100)?f:asCanonical(f)); if(!Array.isArray(d.sessions))d.sessions=[]; if(!d.split||typeof d.split!=='object')d.split={name:'',days:[]}; if(!Array.isArray(d.split.days))d.split.days=[]; d.split.days.forEach(day=>{ if(!Array.isArray(day.exercises))day.exercises=[]; day.exercises.forEach(e=>{ if(e&&!e.id)e.id='e'+uid(); }); }); fixDuplicateExIds(d); fixLeakedFullStack(d); fixStraySides(d); purgeMood(d); d.health=healthShape((d.health&&typeof d.health==='object'&&!Array.isArray(d.health))?d.health:{}); if(!d.steps||typeof d.steps!=='object')d.steps={}; if(!d.machines||typeof d.machines!=='object')d.machines={}; if(!d.exCat||typeof d.exCat!=='object')d.exCat={}; if(!d.muscleMap||typeof d.muscleMap!=='object')d.muscleMap={}; if(!d.muscleNames||typeof d.muscleNames!=='object')d.muscleNames={}; if(!d.bodyweight||typeof d.bodyweight!=='object')d.bodyweight={}; if(!d.sleep||typeof d.sleep!=='object')d.sleep={}; if('selfcheck' in d)delete d.selfcheck;/* v263 · la auto-percepción estética se retira: el dato se borra una vez y no vuelve (boot, respaldo, log in, sync y archivo pasan por aquí) */ if(!d.adhoc||typeof d.adhoc!=='object')d.adhoc={}; if(!Array.isArray(d.mealTags))d.mealTags=['breakfast','lunch','snack','dinner']; if(!Array.isArray(d.stack))d.stack=[]; if(!d.lastUsed||typeof d.lastUsed!=='object')d.lastUsed={}; if(!d.settings||typeof d.settings!=='object')d.settings={goals:seed().settings.goals}; if(d.settings&&d.settings.goals&&d.settings.goals.alcohol==null)d.settings.goals.alcohol=(d.profile&&d.profile.sex==='F')?14:28; if(d.settings&&d.settings.restSec==null)d.settings.restSec=90; if(d.settings&&d.settings.restBeep==null)d.settings.restBeep=true; if(d.settings&&d.settings.goals&&d.settings.goals.sleep==null)d.settings.goals.sleep=8; if(d.profile&&!d.profile.since){ try{ const _cd=[]; (d.sessions||[]).forEach(s=>{if(s.date)_cd.push(s.date);}); Object.keys(d.meals||{}).forEach(k=>_cd.push(k)); Object.keys(d.bodyweight||{}).forEach(k=>_cd.push(k)); if(_cd.length)d.profile.since=_cd.sort()[0]; }catch(_){} }
+function migrate(d){ if(!d.version){d.version=1;} if(d.profile&&d.profile.username&&!(d.onb&&d.onb.done))d.onb={done:true,at:'antes'};   /* v277 · quien ya tiene perfil nunca ve el alta */  if(!d._meta||typeof d._meta!=='object')d._meta={seq:0,t:0}; if(!d.meals||typeof d.meals!=='object'||Array.isArray(d.meals))d.meals={}; if(!Array.isArray(d.foods))d.foods=[]; d.foods=d.foods.map(f=>(f&&f.per100)?f:asCanonical(f)); if(!Array.isArray(d.sessions))d.sessions=[]; if(!d.split||typeof d.split!=='object')d.split={name:'',days:[]}; if(!Array.isArray(d.split.days))d.split.days=[]; d.split.days.forEach(day=>{ if(!Array.isArray(day.exercises))day.exercises=[]; day.exercises.forEach(e=>{ if(e&&!e.id)e.id='e'+uid(); }); }); fixDuplicateExIds(d); fixLeakedFullStack(d); fixStraySides(d); purgeMood(d); d.health=healthShape((d.health&&typeof d.health==='object'&&!Array.isArray(d.health))?d.health:{}); if(!d.steps||typeof d.steps!=='object')d.steps={}; if(!d.machines||typeof d.machines!=='object')d.machines={}; if(!d.exCat||typeof d.exCat!=='object')d.exCat={}; if(!d.muscleMap||typeof d.muscleMap!=='object')d.muscleMap={}; if(!d.muscleNames||typeof d.muscleNames!=='object')d.muscleNames={}; if(!d.bodyweight||typeof d.bodyweight!=='object')d.bodyweight={}; if(!d.sleep||typeof d.sleep!=='object')d.sleep={}; if('selfcheck' in d)delete d.selfcheck;/* v263 · la auto-percepción estética se retira: el dato se borra una vez y no vuelve (boot, respaldo, log in, sync y archivo pasan por aquí) */ if(!d.adhoc||typeof d.adhoc!=='object')d.adhoc={}; if(!Array.isArray(d.mealTags))d.mealTags=['breakfast','lunch','snack','dinner']; if(!Array.isArray(d.stack))d.stack=[]; if(!d.lastUsed||typeof d.lastUsed!=='object')d.lastUsed={}; if(!d.settings||typeof d.settings!=='object')d.settings={goals:seed().settings.goals}; if(d.settings&&d.settings.goals&&d.settings.goals.alcohol==null)d.settings.goals.alcohol=(d.profile&&d.profile.sex==='F')?14:28; if(d.settings&&d.settings.restSec==null)d.settings.restSec=90; if(d.settings&&d.settings.restBeep==null)d.settings.restBeep=true; if(d.settings&&d.settings.goals&&d.settings.goals.sleep==null)d.settings.goals.sleep=8; if(d.profile&&!d.profile.since){ try{ const _cd=[]; (d.sessions||[]).forEach(s=>{if(s.date)_cd.push(s.date);}); Object.keys(d.meals||{}).forEach(k=>_cd.push(k)); Object.keys(d.bodyweight||{}).forEach(k=>_cd.push(k)); if(_cd.length)d.profile.since=_cd.sort()[0]; }catch(_){} }
   // recompute alcohol for old meal items logged before alcohol was in MACROKEYS
   try{ Object.values(d.meals||{}).forEach(arr=>arr.forEach(m=>{ if(m.alcohol==null){ if(m._food&&m._food.per100&&m._food.per100.alcohol&&m._unit){ m.alcohol=computeNutrients(m._food,m._unit,m.qty||1).alcohol; } else m.alcohol=0; } })); }catch(e){}
   // goalHist: snapshot of intake goals at the moment of first logging that day (history is FROZEN — past days never re-read the current goal)
@@ -4087,19 +4096,19 @@ function _v268SelfCheck(){ const A=(nm,c)=>{ if(!c) throw new Error('SELFCHECK v
   try{ _bootQ.push({o:{title:'prueba'},onOk:null,onCancel:null}); _bootShowing=true; _bootNext();
     A('con el arranque abierto el aviso espera en la cola', _bootQ.length===1&&document.getElementById('asklayer')===ask0);
   } finally { ov.remove(); _bootQ.length=0; qB.forEach(x=>_bootQ.push(x)); _bootShowing=shB; }
-  // perfil: onboardgo con una base nueva (sandbox)
-  const real=db, rs=state.screen, box=document.createElement('div'), today=todayISO();
-  const fill=(v)=>{ box.innerHTML=renderOnboard(); app.appendChild(box); Object.entries(v).forEach(([k,x])=>{ const e=document.getElementById(k); if(e)e.value=x; }); box.querySelector('[data-act="onboardgo"]').click(); box.remove(); };
+  // perfil (v277: el alta paso a paso escribe todo al final, con onbApply) · base nueva en sandbox
+  const real=db, rs=state.screen, today=todayISO();
+  const fill=(v)=>onbApply(Object.assign(onbDefaults(),v));
   try{
     db=seed(); db.settings.goals=Object.assign({},db.settings.goals,{sleep:8});
-    fill({ob_user:'prueba',ob_age:'30',ob_w:'80',ob_h:'180'});
+    fill({name:'prueba',age:'30',w:'80',h:'180'});
     A('el perfil guarda desde cuándo usas la app', db.profile.username==='prueba'&&db.profile.since===today);
     A('la meta de sueño no se pierde al calcular las metas', db.settings.goals.sleep===8&&db.settings.goals.kcal>0);
     A('la meta de hoy queda en goalHist', !!(db.goalHist&&db.goalHist[today]&&db.goalHist[today].kcal===db.settings.goals.kcal));
     A('el peso tecleado es el primer registro de peso', db.bodyweight&&db.bodyweight[today]===80);
-    db=seed(); fill({ob_user:'sinpeso'});
+    db=seed(); fill({name:'sinpeso'});
     A('sin peso tecleado no se inventa un registro', !(db.bodyweight&&db.bodyweight[today]!=null)&&db.profile.weightKg===70);
-  } finally { db=real; state.screen=rs; try{ box.remove(); }catch(_){} }
+  } finally { db=real; state.screen=rs; }
   console.log('v268 self-check OK'); }
 // v269 · ánimo fuera (con foto), rest ≠ skip, macros sin brinco, suplementos con invitación, cámara, //PROGRESS editable, unidades
 function _healthPasteSelfCheck(){ const A=(nm,c)=>{ if(!c) throw new Error('SELFCHECK Atajo de Salud: '+nm); };
@@ -4169,6 +4178,32 @@ function _scheduleSelfCheck(){ const A=(nm,c)=>{ if(!c) throw new Error('SELFCHE
     A('la etiqueta se calcula: @ RPE · F', (db.split.metric='rpe',intensityTag())==='@ RPE · F'&&(db.split.allowF=false,intensityTag())==='@ RPE');
   } finally { db=real; bumpIdx(); }
   console.log('schedule self-check OK'); }
+function _onbSelfCheck(){ const A=(nm,c)=>{ if(!c) throw new Error('SELFCHECK alta: '+nm); }; const real=db, rs=state.screen;
+  try{
+    A('quien ya tiene perfil nunca ve el alta', (()=>{ const x=migrate({profile:{username:'dani'},sessions:[]}); return !!(x.onb&&x.onb.done); })());
+    db=migrate({_idfix:true,_fsfix:true,profile:{},sessions:[],settings:{}}); state.screen='landing';
+    const d=onbD(); db.onb.step=1;
+    A('sin nombre no avanza', onbCheck('name',d)==='pon tu nombre');
+    Object.assign(d,{name:'dani',bwu:'lbs',w:'150',h:'175',age:'24'});
+    A('el peso se revisa en tu unidad', onbCheck('body',Object.assign({},d,{w:'20'}))!==''&&onbCheck('body',d)===''&&onbCheck('body',Object.assign({},d,{w:'150',bwu:'kg'}))==='');
+    A('150 lbs = 68.04 kg', Math.abs(onbProfile(d).wKg-68.04)<0.01);
+    Object.assign(d,{mode:'cycle',on:3,off:1,blocked:[0],metric:'rpe',tpl:'ppl',goals:{protein:160},skip:['health']});
+    const h=renderOnboard(); A('dice el paso N/M y trae atrás', /\/\/SETUP 1\/10/.test(h)&&/data-act="onbback"/.test(h)&&!/más adelante/.test(h));
+    db.onb.step=6; A('lo opcional trae "más adelante"', /data-act="onblater"/.test(renderOnboard()));
+    db.onb.step=10; A('el último resume lo elegido', /rotativo 3 on \/ 1 off · sin gym: dom · RPE/.test(renderOnboard())&&/push\/pull\/legs/.test(renderOnboard()));
+    A('nada del perfil se escribe antes de terminar', !db.profile.username);
+    onbApply(d);
+    A('al terminar: perfil, unidades y el peso del día en kg', db.profile.username==='dani'&&db.settings.bwUnit==='lbs'&&db.settings.unit==='lbs'&&Math.abs(db.bodyweight[todayISO()]-68.04)<0.01);
+    A('la meta que ajustaste se respeta', db.settings.goals.protein===160&&db.goalHist[todayISO()].protein===160);
+    A('la rutina con su plan: rotativo 3/1, domingo sin gym, RPE', db.split.days.length===3&&db.split.plan.mode==='cycle'&&db.split.plan.blocked[0]===0&&db.split.metric==='rpe'&&cycleLen()===4);
+    A('queda hecho y el borrador se va', db.onb.done===true&&!db.onb.d);
+    db=migrate({_idfix:true,_fsfix:true,profile:{},sessions:[],settings:{}}); const d2=onbD(); Object.assign(d2,{name:'ana',skip:['train','split','goals']}); onbApply(d2);
+    A('lo que dejaste para después no se escribe', !db.split.days.length&&!db.split.plan&&db.settings.goals.kcal===recalcGoals(db.profile).kcal);
+    db=migrate({_idfix:true,_fsfix:true,profile:{},sessions:[],settings:{}}); const d3=onbD(); Object.assign(d3,{name:'eva',mode:'weekly',metric:'rpe',skip:['split']}); onbApply(d3); splitCarry(SPLIT_TEMPLATES()[0].build());
+    A('una plantilla después del alta conserva cómo entrenas y arma la semana', db.split.metric==='rpe'&&db.split.plan.mode==='weekly'&&Object.keys(db.split.plan.week).length===3);
+    A('fuera de rango no cuenta en el cálculo', onbProfile({w:'15',bwu:'lbs',age:'24',h:'175'}).typed===false&&onbCheck('body',{w:'66',bwu:'lbs',age:'',h:''})==='');
+  } finally { db=real; state.screen=rs; }
+  console.log('onboarding self-check OK'); }
 function _macroVizSelfCheck(){ const A=(nm,c)=>{ if(!c) throw new Error('SELFCHECK macros · versiones: '+nm); };
   const t={kcal:1850,protein:142,carbs:200,fat:60}, g={kcal:2400,protein:180,carbs:250,fat:70}, s=macroSplit(t);
   A('el reparto por kcal suma 100', s.p+s.c+s.f===100&&s.p===30&&s.c===42&&!macroSplit({}));
@@ -5366,37 +5401,102 @@ function renderLogin(){
 }
 
 // ---------- render: onboarding ----------
-// v268 · perfil en filas de terminal. Lo que cambia es solo la forma: mismos ids (ob_*), mismos datos que escribe onboardgo.
+// v268 · perfil en filas de terminal (.obr/.obk/.obi y las listas .oblist): v277 las reusa, un paso por pantalla.
 const OB_ACT=[['1.2','sedentario','oficina y carro · casi no caminas'],['1.375','ligero','caminas algo o entrenas 1-3×/sem'],['1.55','moderado','gym 4-5×/sem o trabajo de pie'],['1.725','alto','trabajo físico o 6-7×/sem']];
 const OB_GOAL=[['cut','déficit','perder grasa · ~20 % bajo tu mantenimiento'],['maintain','mantener','recomposición · comes tu mantenimiento'],['bulk','volumen','ganar masa · ~10 % sobre tu mantenimiento']];
-function obPick(id){ const e=document.querySelector('#'+id+' .t.on'); return e?e.dataset.v:''; }
-function obDraft(){ const num=id=>{ const v=parseFloat(String(val(id)).replace(',','.')); return isFinite(v)&&v>0?v:null; };
-  const age=num('ob_age'), wIn=num('ob_w'), h=num('ob_h'), lbs=obPick('ob_bwu')==='lbs', w=wIn?(lbs?Math.round(wIn*LB*100)/100:wIn):null;
-  return {sex:obPick('ob_sex')||'M', goal:obPick('ob_goal')||'maintain', activity:parseFloat(obPick('ob_act'))||1.375, age:age||25, weightKg:w||70, heightCm:h||175,
-    typed:!!(age&&w&&h), wTyped:!!(w&&w>=30&&w<=250), bwUnit:lbs?'lbs':'kg'}; }
-function obPrev(){ const el=document.getElementById('ob_prev'); if(!el)return; const d=obDraft(); let g; try{ g=recalcGoals(d); }catch(_){ return; }
-  el.innerHTML=(d.typed?'':'<span class="u-o40">~</span>')+'<b>'+Math.round(g.kcal).toLocaleString('en-US')+'</b> kcal · <b>'+Math.round(g.protein)+'</b> g proteína al día';
-  const wu=document.getElementById('ob_wu'); if(wu)wu.textContent=d.bwUnit; }
-function renderOnboard(){
-  setTimeout(obPrev,0);
-  const T=(id,opts,cur)=>`<div class="toggles" id="${id}">${opts.map(([v,l])=>`<button class="t${v===cur?' on':''}" data-act="optpick" data-v="${v}">${l}</button>`).join('')}</div>`;
-  const L=(id,opts,cur)=>`<div class="toggles oblist" id="${id}" role="radiogroup">${opts.map(([v,l,d])=>`<button class="t${v===cur?' on':''}" data-act="optpick" data-v="${v}" role="radio" aria-checked="${v===cur}"><span class="obn">${l}</span><span class="obd">${d}</span></button>`).join('')}</div>`;
-  return `<div class="ob">
-    <a class="obback" data-act="backlanding">‹ atrás</a>
-    <div class="obh">gym<span class="s">//</span>TRK<span class="p">//PROFILE</span></div>
-    <div class="submeta">1 min · para calcular tu mantenimiento · todo se cambia después</div>
-    <label class="obr"><span class="obk">nombre</span><span class="obv"><input id="ob_user" class="obi" placeholder="dani" autocomplete="off" autocapitalize="off" enterkeyhint="next"/></span></label>
-    <div class="obr"><span class="obk">te pesas en</span>${T('ob_bwu',[['kg','kg'],['lbs','lbs']],'kg')}</div>
-    <div class="obr"><span class="obk">pesas gym</span>${T('ob_unit',[['lbs','lbs'],['kg','kg']],'lbs')}</div>
-    <div class="obr"><span class="obk">sexo</span>${T('ob_sex',[['M','hombre'],['F','mujer']],'M')}</div>
-    <label class="obr"><span class="obk">edad</span><span class="obv"><input id="ob_age" class="obi sm" type="number" inputmode="numeric" placeholder="25" enterkeyhint="next"/><span class="obu">años</span></span></label>
-    <label class="obr"><span class="obk">peso</span><span class="obv"><input id="ob_w" class="obi sm" type="number" inputmode="decimal" placeholder="70" enterkeyhint="next"/><span class="obu" id="ob_wu">kg</span></span></label>
-    <label class="obr"><span class="obk">estatura</span><span class="obv"><input id="ob_h" class="obi sm" type="number" inputmode="numeric" placeholder="175" enterkeyhint="next"/><span class="obu">cm</span></span></label>
-    <div class="obr obtop"><span class="obk">actividad</span>${L('ob_act',OB_ACT,'1.375')}</div>
-    <div class="obr obtop"><span class="obk">objetivo</span>${L('ob_goal',OB_GOAL,'maintain')}</div>
-    <label class="obr"><span class="obk">gym</span><span class="obv"><input id="ob_gym" class="obi" placeholder="mi gym" autocomplete="off" enterkeyhint="done"/></span></label>
-    <div class="obprev" id="ob_prev"></div>
-    <button class="start" data-act="onboardgo">▶ empezar</button>
+// ---- v277 · alta paso a paso ----
+// El dueño: "pantalla por pantalla: usuario → biométricos → objetivo → split (ahora o después) → dieta (ahora o después) →
+// Atajo de Salud → plan de pago", con [‹ atrás] y casillas que cuadren. Cada paso se guarda al instante en db.onb (si la app
+// se cierra, vuelve al mismo paso) y nada del perfil se escribe hasta [▶ ir al gym]. "Cómo entrenas" (v273) va antes de la
+// rutina. La cuenta (correo y código) entra con v278 y el plan de pago con v279.
+const ONB_STEPS=[
+  {k:'name', q:'¿cómo te llamamos?', why:'tu nombre va arriba; el gym, para separar tus máquinas'},
+  {k:'units', q:'¿en qué pesas?', why:'va antes del cuerpo: el peso que escribas sale en tu unidad · se cambia en ajustes'},
+  {k:'body', q:'tu cuerpo', why:'para calcular tu mantenimiento · se queda en tu teléfono'},
+  {k:'act', q:'¿qué tan activo eres?', why:'tu día normal, sin contar lo que vas a registrar aquí'},
+  {k:'goal', q:'tu objetivo', why:'las kcal salen de tu mantenimiento · se cambia cuando quieras'},
+  {k:'train', q:'¿cómo entrenas?', why:'para saber qué día te toca y cuándo descansas', opt:1},
+  {k:'split', q:'tu rutina', why:'una base para empezar · la editas después', opt:1},
+  {k:'goals', q:'tus metas del día', why:'calculadas con lo anterior · cambia el número que quieras', opt:1},
+  {k:'health', q:'conecta Salud', why:'pasos, sueño, peso y más, sin escribirlos', opt:1},
+  {k:'ready', q:'listo', why:'esto quedó · todo se cambia después'}];
+function onbDefaults(){ return {name:'',gym:'',bwu:'kg',unit:'lbs',sex:'M',age:'',h:'',w:'',act:'1.375',goal:'maintain',mode:'daily',on:3,off:1,blocked:[],metric:'rir',tpl:'',goals:null,skip:[]}; }
+function onbD(){ db.onb=db.onb||{step:1,done:false}; db.onb.d=Object.assign(onbDefaults(),db.onb.d||{}); return db.onb.d; }
+function onbNum(v){ const x=parseFloat(String(v==null?'':v).replace(',','.')); return isFinite(x)&&x>0?x:null; }
+// fuera de rango no cuenta (el cálculo en vivo usa el valor típico y lleva ~, como si no lo hubieras escrito)
+function onbProfile(d){ const w=onbNum(d.w), k0=w?(d.bwu==='lbs'?Math.round(w*LB*100)/100:w):null, wKg=k0&&k0>=29.9&&k0<=250?k0:null, a0=onbNum(d.age), age=a0&&a0>=13&&a0<=99?a0:null, h0=onbNum(d.h), h=h0&&h0>=120&&h0<=230?h0:null;
+  return {sex:d.sex==='F'?'F':'M', age:age||25, heightCm:h||175, weightKg:wKg||70, activity:parseFloat(d.act)||1.375, goal:d.goal||'maintain', typed:!!(age&&wKg&&h), wKg}; }
+// lo que impide seguir (vacío = se puede): nombre obligatorio; el cuerpo, en rango y en tu unidad
+function onbCheck(k,d){ const n=v=>parseFloat(String(v==null?'':v).replace(',','.'));
+  if(k==='name'&&!String(d.name||'').trim())return 'pon tu nombre';
+  if(k==='body'){ const a=n(d.age), h=n(d.h), w=n(d.w), lb=d.bwu==='lbs';
+    if(String(d.age)!==''&&!(a>=13&&a<=99))return 'edad entre 13 y 99 años';
+    if(String(d.h)!==''&&!(h>=120&&h<=230))return 'estatura en cm, entre 120 y 230';
+    if(String(d.w)!==''&&!(lb?(w>=66&&w<=550):(w>=30&&w<=250)))return lb?'peso en lbs, entre 66 y 550':'peso en kg, entre 30 y 250'; }   // en la unidad que escribiste
+  return ''; }
+function onbPrevTxt(d){ const P=onbProfile(d); let g; try{ g=recalcGoals(Object.assign({},P,{goal:'maintain'})); }catch(_){ return ''; }
+  return (P.typed?'':'<span class="u-o40">~</span>')+'mantenimiento <b>'+Math.round(g.kcal).toLocaleString('en-US')+'</b> kcal al día'; }
+function onbSummaryHTML(d){ const P=onbProfile(d), g=Object.assign({},recalcGoals(P),(d.skip||[]).indexOf('goals')<0&&d.goals||{}), sk=k=>(d.skip||[]).indexOf(k)>=0, tp=SPLIT_TEMPLATES().find(t=>t.key===d.tpl);
+  const L=(ok,t)=>`<div class="onbl">${ok?'✓':'<span class="u-o40">—</span>'} ${t}</div>`, wTxt=P.wKg?(d.bwu==='lbs'?numTxt(Math.round(P.wKg/LB))+' lbs':numTxt(P.wKg)+' kg'):'';
+  const mode=d.mode==='cycle'?'rotativo '+d.on+' on / '+d.off+' off':d.mode==='weekly'?'días fijos':'diario', bl=(d.blocked||[]).length?' · sin gym: '+DOW_ORDER.filter(w=>d.blocked.indexOf(w)>=0).map(w=>DOW_ES[w]).join(', '):'';
+  return L(1,escTxt(String(d.name||'').trim())+(wTxt?' · '+wTxt:'')+(onbNum(d.h)?' · '+onbNum(d.h)+' cm':''))
+    +L(1,escTxt((OB_GOAL.find(x=>x[0]===d.goal)||['','mantener'])[1])+' · '+Math.round(g.kcal).toLocaleString('en-US')+' kcal · '+Math.round(g.protein)+' g proteína')
+    +L(!sk('train'),sk('train')?'cómo entrenas · después':mode+bl+' · '+(d.metric==='rpe'?'RPE':'RIR'))
+    +L(!sk('split')&&!!(tp||d.tpl==='blank'),!sk('split')&&tp?escTxt(tp.name):!sk('split')&&d.tpl==='blank'?'rutina desde cero':'rutina · después')
+    +L(false,'Salud · después, en ajustes')
+    +`<div class="onbready">ready<span class="cur"></span></div>`; }
+function onbGo(i,fromPop,rep){ db.onb.step=Math.max(1,Math.min(ONB_STEPS.length,i)); state._onbErr=''; state._scroll=0; save(); render(); if(!fromPop)try{ history[rep?'replaceState':'pushState']({onb:db.onb.step},''); }catch(_){} }   // [‹ atrás] no apila historia
+function onbNext(){ const d=onbD(), k=ONB_STEPS[(db.onb.step||1)-1].k, e=onbCheck(k,d); if(e){ state._onbErr=e; reRender(); return false; }
+  d.skip=(d.skip||[]).filter(x=>x!==k); onbGo((db.onb.step||1)+1); return true; }
+function onbBack(fromPop){ if((db.onb.step||1)<=1){ db.onb.step=0; state._onbErr=''; state.screen='landing'; save(); render(); return; } onbGo(db.onb.step-1,fromPop,true); }
+// el paso de "listo": el perfil, las metas, el split con su plan y su RIR/RPE; nada de esto se escribe antes
+function onbApply(d){ const today=todayISO(), P=onbProfile(d), sk=k=>(d.skip||[]).indexOf(k)>=0;
+  db.profile=Object.assign({},db.profile,{username:String(d.name).trim(),sex:P.sex,age:P.age,weightKg:P.wKg||latestBodyweight()||P.weightKg,heightCm:P.heightCm,activity:P.activity,goal:P.goal,since:(db.profile&&db.profile.since)||today});
+  const gym=String(d.gym||'').trim()||'home'; db.gyms=[gym]; db.activeGym=gym; db.settings=db.settings||{}; db.settings.unit=d.unit==='kg'?'kg':'lbs'; db.settings.bwUnit=d.bwu==='lbs'?'lbs':'kg';
+  db.settings.goals=Object.assign({},db.settings.goals,recalcGoals(db.profile),(!sk('goals')&&d.goals)||{});
+  db.goalHist=db.goalHist||{}; db.goalHist[today]=Object.assign({},db.settings.goals);
+  if(P.wKg&&P.wKg>=30&&P.wKg<=250){ db.bodyweight=db.bodyweight||{}; if(db.bodyweight[today]==null)db.bodyweight[today]=P.wKg; }   // el peso que tecleaste es tu primer registro
+  const tp=!sk('split')&&SPLIT_TEMPLATES().find(t=>t.key===d.tpl);
+  if(tp)db.split=tp.build(); else if(!sk('split')&&d.tpl==='blank')db.split={name:'mi split',days:[{id:'d'+uid(),name:'día 1',exercises:[]}]};
+  db.split=db.split||{name:'',days:[]};
+  if(!sk('train')){ db.split.plan={mode:d.mode||'daily',on:+d.on||3,off:+d.off||1,week:{},blocked:(d.blocked||[]).map(Number)}; db.split.metric=d.metric==='rpe'?'rpe':'rir';
+    if(d.mode==='weekly'&&(db.split.days||[]).length)db.split.plan.week=defaultWeek(); }
+  db.rotIdx=0; db.onb={done:true,at:today,skip:(d.skip||[]).slice()}; }
+// un split nuevo (crear, plantilla, importar) conserva cómo entrenas y RIR/RPE (lo del alta o del editor); con días fijos y la
+// semana vacía (el alta sin rutina), la semana se arma sola con defaultWeek
+function splitCarry(s){ const k=db.split||{}; if(k.plan)s.plan=k.plan; if(k.metric)s.metric=k.metric; if(k.allowF!=null)s.allowF=k.allowF; db.split=s;
+  if(s.plan&&s.plan.mode==='weekly'&&!Object.keys(s.plan.week||{}).length&&(s.days||[]).length)s.plan.week=defaultWeek(); return s; }
+function onbFinish(){ const d=onbD(), blank=d.tpl==='blank'&&(d.skip||[]).indexOf('split')<0; onbApply(d); state.screen=blank?'splitedit':'home'; save(); render(); }
+window.addEventListener('popstate',()=>{ try{ if(db&&db.profile&&!db.profile.username&&db.onb&&!db.onb.done&&(db.onb.step||0)>0)onbBack(true); }catch(_){} });
+function renderOnboard(){ const d=onbD(), N=ONB_STEPS.length, i=Math.max(1,Math.min(N,db.onb.step||1)), S=ONB_STEPS[i-1];
+  const on=(f,v)=>String(d[f])===String(v);
+  const T=(f,opts)=>`<div class="toggles">${opts.map(([v,l])=>`<button type="button" class="t${on(f,v)?' on':''}" data-act="onbpick" data-f="${f}" data-v="${v}" aria-pressed="${on(f,v)}">${l}</button>`).join('')}</div>`;
+  const L=(f,opts)=>`<div class="toggles oblist" role="radiogroup">${opts.map(([v,l,x])=>`<button type="button" class="t${on(f,v)?' on':''}" data-act="onbpick" data-f="${f}" data-v="${v}" role="radio" aria-checked="${on(f,v)}"><span class="obn">${l}</span><span class="obd">${x}</span></button>`).join('')}</div>`;
+  const I=(f,k,o)=>`<label class="obr"><span class="obk">${k}</span><span class="obv"><input class="obi${o.n?' sm':''}" data-od="${f}" value="${escTxt(d[f]==null?'':String(d[f]))}" placeholder="${o.ph||''}"${o.n?' type="number" inputmode="'+(o.dec?'decimal':'numeric')+'"':' autocomplete="off" autocapitalize="off"'} enterkeyhint="${o.last?'done':'next'}"/>${o.u?`<span class="obu">${o.u}</span>`:''}</span></label>`;
+  const P=onbProfile(d); let body='';
+  if(S.k==='name') body=I('name','nombre',{ph:'dani'})+I('gym','gym',{ph:'opcional · ej. smart fit centro',last:1});
+  else if(S.k==='units') body=`<div class="obr"><span class="obk">peso corporal</span>${T('bwu',[['kg','kg'],['lbs','lbs']])}</div><div class="obr"><span class="obk">pesas del gym</span>${T('unit',[['lbs','lbs'],['kg','kg']])}</div>`;
+  else if(S.k==='body') body=`<div class="obr"><span class="obk">sexo</span>${T('sex',[['M','hombre'],['F','mujer']])}</div>`+I('age','edad',{n:1,ph:'25',u:'años'})+I('h','estatura',{n:1,ph:'175',u:'cm'})+I('w','peso',{n:1,dec:1,ph:d.bwu==='lbs'?'155':'70',u:d.bwu==='lbs'?'lbs':'kg',last:1})+`<div class="obprev" id="onb_prev">${onbPrevTxt(d)}</div>`;
+  else if(S.k==='act') body=L('act',OB_ACT);
+  else if(S.k==='goal') body=L('goal',OB_GOAL.map(([v,l])=>[v,l,Math.round(recalcGoals(Object.assign({},P,{goal:v})).kcal).toLocaleString('en-US')+' kcal · '+(v==='cut'?'~20 % abajo de tu mantenimiento':v==='bulk'?'~10 % arriba':'tu mantenimiento')]));
+  else if(S.k==='train') body=`<div class="obr"><span class="obk">modo</span>${T('mode',[['daily','diario'],['weekly','días fijos'],['cycle','rotativo']])}</div>`
+      +(d.mode==='cycle'?`<div class="obr obstack"><span class="obk">días on</span>${T('on',[[1,'1'],[2,'2'],[3,'3'],[4,'4'],[5,'5'],[6,'6']]).replace('class="toggles"','class="toggles dow"')}</div><div class="obr"><span class="obk">días off</span>${T('off',[[1,'1'],[2,'2'],[3,'3']])}</div>`:'')
+      +(d.mode==='weekly'?`<div class="submeta u-mb6">qué rutina toca cada día lo eliges en el editor de split</div>`:'')
+      +`<div class="obr obstack"><span class="obk">días sin gym</span><div class="toggles dow">${DOW_ORDER.map(w=>{ const b=(d.blocked||[]).map(Number).indexOf(w)>=0; return `<button type="button" class="t${b?' on':''}" data-act="onbday" data-v="${w}" aria-pressed="${b}" aria-label="${DOW_LONG[w]}">${DOW_INI[w]}</button>`; }).join('')}</div></div>`
+      +`<div class="obr"><span class="obk">intensidad</span>${T('metric',[['rir','RIR'],['rpe','RPE']])}</div><div class="submeta">${d.metric==='rpe'?'RPE: 10 = no salía otra · 9 = te quedaba 1':'RIR: cuántas repeticiones te quedaban · 0 = al fallo'}</div>`;
+  else if(S.k==='split'){ const tp=SPLIT_TEMPLATES(); body=L('tpl',tp.map(t=>[t.key,escTxt(t.name),escTxt(t.desc)]).concat([['blank','desde cero','un día vacío y armas el tuyo']]))+`<div class="submeta u-mt6">¿ya la tienes en tus notas? la pegas después en el editor de split</div>`; }
+  else if(S.k==='goals'){ const g=Object.assign({},recalcGoals(P),d.goals||{}); body=[['kcal','kcal','kcal'],['protein','proteína','g'],['carbs','carbos','g'],['fat','grasa','g'],['water','agua','L']].map(([f,l,u])=>`<label class="obr"><span class="obk">${l}</span><span class="obv"><input class="obi sm" type="number" inputmode="decimal" data-og="${f}" value="${g[f]!=null?g[f]:''}" enterkeyhint="next"/><span class="obu">${u}</span></span></label>`).join('')+`<div class="submeta u-mt6">${d.goals?'con tus ajustes':'calculadas para '+escTxt((OB_GOAL.find(x=>x[0]===d.goal)||['','mantener'])[1])}</div>`; }
+  else if(S.k==='health') body=`<div class="submeta u-mb8">${isIOS()?'aún no somos app nativa: el iPhone no deja que una página lea Salud. Un Atajo copia tus datos y aquí los pegas de un toque.':'en Android o en la computadora, por ahora se registran a mano; la app de tienda con Health Connect llega después.'}</div>`+(isIOS()?`<button type="button" class="b" data-act="onbshortcut">cómo armar el Atajo</button>`:'');
+  else body=onbSummaryHTML(d);
+  const err=state._onbErr||'';
+  return `<div class="ob onb">
+    <a class="obback" data-act="onbback">‹ atrás</a>
+    <div class="obh">gym<span class="s">//</span>TRK<span class="p">//SETUP ${i}/${N}</span></div>
+    <div class="onbbar" aria-hidden="true">[<b>${'█'.repeat(i)}</b>${'░'.repeat(N-i)}]</div>
+    <div class="onbq">${escTxt(S.q)}</div><div class="submeta u-mb10">${escTxt(S.why)}</div>
+    ${body}
+    ${err?`<div class="onberr" role="alert"><span class="u-warn">⚠</span> ${escTxt(err)}</div>`:''}
+    <div class="onbfoot">${S.k==='ready'?'<button class="start" data-act="onbfinish">▶ ir al gym</button>':'<button class="start" data-act="onbnext">▶ seguir</button>'}${S.opt?'<button type="button" class="b" data-act="onblater">más adelante</button>':''}</div>
   </div>`;
 }
 
@@ -7383,7 +7483,7 @@ let state={screen:'home',work:null,macroOpen:false};
 function render(){
   const v=document.getElementById('view');
   let sc=state.screen;
-  if(!db.profile.username){ sc = (state.screen==='onboard'||state.screen==='login') ? state.screen : 'landing'; }
+  if(!db.profile.username){ sc = state.screen==='login' ? 'login' : (state.screen==='onboard'||(db.onb&&!db.onb.done&&(db.onb.step||0)>0)) ? 'onboard' : 'landing'; if(sc==='onboard')state.screen='onboard'; }   // v277: el alta a medias vuelve a su paso, y su pantalla queda "onboard" (si no, lo tecleado tras reabrir no se guardaba)
   if(sc==='workout'){ state.work=db.activeWork; if(!state.work){ state.screen=sc='home'; } }
   v.innerHTML = sc==='landing'?renderLanding() : sc==='login'?renderLogin() : sc==='onboard'?renderOnboard() : sc==='home'?renderHome() : sc==='workout'?renderWorkout() : sc==='macros'?renderMacros() : sc==='share'?renderShare() : sc==='progress'?renderProgress() : sc==='stack'?renderStack() : sc==='settings'?renderSettings() : sc==='splitedit'?renderSplitEdit() : sc==='history'?renderHistory() : sc==='exhist'?renderExHist() : sc==='agenda'?renderAgenda() : sc==='histedit'?renderHistoryEditor() : renderHome();
   document.getElementById('wfooter').style.display = sc==='workout'?'flex':'none';
@@ -7867,29 +7967,28 @@ document.getElementById('app').addEventListener('click',e=>{
     toast('✓ saltado · sigue '+(nx?nx.name:'el siguiente'),'ok',{undo:()=>{ db.rotIdx=rot0; save(); render(); }}); }
   else if(a==='changegym'){ openGymPicker(); }
   else if(a==='pickgym'){ db.activeGym=el.dataset.g; if(db.activeWork)db.activeWork.gym=el.dataset.g; save(); closeModal(); reRender(); }
-  else if(a==='lcreate'){ state.screen='onboard'; render(); }
+  else if(a==='lcreate'){ onbD(); db.onb.done=false; if(!(db.onb.step>0))db.onb.step=1; state.screen='onboard'; save(); render(); try{ history.pushState({onb:db.onb.step},''); }catch(_){} }
+  else if(a==='onbnext'){ onbNext(); }
+  else if(a==='onbback'){ onbBack(); }
+  else if(a==='onblater'){ const d=onbD(), k=ONB_STEPS[(db.onb.step||1)-1].k; if((d.skip||[]).indexOf(k)<0)(d.skip=d.skip||[]).push(k); onbGo((db.onb.step||1)+1); }
+  else if(a==='onbpick'){ const d=onbD(), f=el.dataset.f, v=(f==='on'||f==='off')?+el.dataset.v:el.dataset.v, w=onbNum(d.w);
+    if(f==='bwu'&&v!==d.bwu&&w)d.w=String(v==='lbs'?Math.round(w/LB):Math.round(w*LB*10)/10);   // cambiar la unidad convierte el peso que ya escribiste
+    d[f]=v; state._onbErr=''; saveSoon(); reRender(); }
+  else if(a==='onbday'){ const d=onbD(), w=+el.dataset.v, b=(d.blocked||[]).map(Number); d.blocked=b.indexOf(w)>=0?b.filter(x=>x!==w):b.concat([w]); saveSoon(); reRender(); }
+  else if(a==='onbshortcut'){ openShortcutSetup(); }
+  else if(a==='onbfinish'){ onbFinish(); }
   else if(a==='llogin'){ state.screen='login'; render(); }
   else if(a==='backlanding'){ state.screen='landing'; render(); }
   else if(a==='loginfile'){ doImport(); }
   else if(a==='dologin'){ try{ const d=JSON.parse(val('li_txt')); if(!d.split||!d.profile||!d.profile.username) throw 0; const _go16=()=>{ db=migrate(d); save(); state.screen='home'; render(); }; return confirmReplace(d,_go16);}catch(e){ const m=document.getElementById('li_msg'); if(m)m.textContent='texto inválido · revisa que sea el backup completo'; } }
-  else if(a==='optpick'){ el.parentElement.querySelectorAll('.t').forEach(x=>{ x.classList.remove('on'); if(x.hasAttribute('aria-checked'))x.setAttribute('aria-checked','false'); }); el.classList.add('on'); if(el.hasAttribute('aria-checked'))el.setAttribute('aria-checked','true'); if(state.screen==='onboard')obPrev(); }
-  else if(a==='onboardgo'){
-    const u=val('ob_user'); if(!u){ toast('⚠ pon tu nombre','err'); const ue=document.getElementById('ob_user'); if(ue)ue.focus(); return; }
-    const d=obDraft(), unit=obPick('ob_unit')||'lbs', today=todayISO();
-    // v268 · aditivo: se conserva lo que ya hubiera en el perfil y en las metas (antes se reemplazaba: sin 'since' y sin meta de sueño)
-    db.profile=Object.assign({},db.profile,{username:u,sex:d.sex,age:d.age,weightKg:d.weightKg,heightCm:d.heightCm,activity:d.activity,goal:d.goal,since:(db.profile&&db.profile.since)||today});
-    const g=val('ob_gym')||'home'; db.gyms=[g]; db.activeGym=g; db.settings.unit=unit; db.settings.bwUnit=d.bwUnit;
-    db.settings.goals=Object.assign({},db.settings.goals,recalcGoals(db.profile));
-    db.goalHist=db.goalHist||{}; db.goalHist[today]=Object.assign({},db.settings.goals);
-    if(d.wTyped){ db.bodyweight=db.bodyweight||{}; if(db.bodyweight[today]==null)db.bodyweight[today]=d.weightKg; }   // el peso que tecleaste es tu primer registro
-    state.screen='home'; save(); render();
-  }
+  else if(a==='optpick'){ el.parentElement.querySelectorAll('.t').forEach(x=>{ x.classList.remove('on'); if(x.hasAttribute('aria-checked'))x.setAttribute('aria-checked','false'); }); el.classList.add('on'); if(el.hasAttribute('aria-checked'))el.setAttribute('aria-checked','true'); }
+  // v277: el viejo onboardgo se fue; el alta paso a paso termina en onbFinish()
   else if(a==='changesplit'||a==='schedule'){ go('splitedit'); }
-  else if(a==='newsplit'){ if(!db.split||!db.split.days.length){ db.split={name:'mi split', days:[{id:'d'+uid(),name:'día 1',tag:'@ RIR · F',metric:'rir',allowFailure:true,exercises:[]}]}; db.rotIdx=0; save(); } go('splitedit'); }
+  else if(a==='newsplit'){ if(!db.split||!db.split.days.length){ splitCarry({name:'mi split', days:[{id:'d'+uid(),name:'día 1',tag:'@ RIR · F',metric:'rir',allowFailure:true,exercises:[]}]}); db.rotIdx=0; save(); } go('splitedit'); }
   else if(a==='loaddemo'){ db.split=demoSplit(); db.rotIdx=0; state.selDay=null; save(); render(); }
   else if(a==='loadmine'){ db.split=myStarterSplit(); db.rotIdx=0; state.selDay=null; if(!db.activeGym){db.activeGym='PRO GYM — arandas'; db.gyms=['PRO GYM — arandas'];} save(); render(); }
   else if(a==='workshop'){ openWorkshop(); }
-  else if(a==='usetpl'){ const t=(window._tpls||[])[+el.dataset.i]; if(t){ const _k=db.split||{}; db.split=Object.assign(t.build(),{plan:_k.plan,metric:_k.metric,allowF:_k.allowF}); db.rotIdx=0; state.selDay=null; save(); closeModal(); go('splitedit'); } }
+  else if(a==='usetpl'){ const t=(window._tpls||[])[+el.dataset.i]; if(t){ splitCarry(t.build()); db.rotIdx=0; state.selDay=null; save(); closeModal(); go('splitedit'); } }
   else if(a==='logweight'){ openWeightLog(); }
   else if(a==='logsleep'){ openSleepLog(); }
   else if(a==='editsleep'){ const d=el.dataset.d; const dt=document.getElementById('sl_date'); if(dt){ dt.value=d; dt.dispatchEvent(new Event('change')); } }
@@ -8308,7 +8407,10 @@ document.getElementById('app').addEventListener('change',e=>{
 document.getElementById('app').addEventListener('keydown',e=>{ if(e.key!=='Enter'||!e.target.classList||!e.target.classList.contains('obi'))return;
   const all=[...document.querySelectorAll('.obi')], i=all.indexOf(e.target); e.preventDefault(); if(i>=0&&i<all.length-1)all[i+1].focus(); else e.target.blur(); });
 document.getElementById('app').addEventListener('input',e=>{
-  if(state.screen==='onboard'&&e.target.id&&/^ob_/.test(e.target.id)){ obPrev(); return; }
+  if(state.screen==='onboard'&&e.target.dataset&&(e.target.dataset.od||e.target.dataset.og)){ const d=onbD(), t=e.target;   // v277 · cada casilla del alta se guarda al teclear
+    if(t.dataset.od){ d[t.dataset.od]=t.value; const p=document.getElementById('onb_prev'); if(p)p.innerHTML=onbPrevTxt(d); }
+    else { const v=parseFloat(String(t.value).replace(',','.')); d.goals=Object.assign({},d.goals||{}); if(isFinite(v)&&v>0)d.goals[t.dataset.og]=v; else delete d.goals[t.dataset.og]; if(!Object.keys(d.goals).length)d.goals=null; }
+    if(state._onbErr){ state._onbErr=''; const er=document.querySelector('.onberr'); if(er)er.remove(); } saveSoon(); return; }
   const hsf=e.target.closest('[data-act="h_setf"]'); if(hsf&&hsf.tagName==='INPUT'){ setHistField(+hsf.dataset.exi,+hsf.dataset.si,hsf.dataset.f,hsf.value); return; }
   const sf=e.target.closest('[data-act="setf"]'); if(sf&&sf.tagName==='INPUT'){ setField(+sf.dataset.exi,+sf.dataset.si,sf.dataset.f,sf.value,sf.dataset.f==='w'); return; }
   const sn=e.target.closest('[data-act="sd_name"]'); if(sn){ db.split.days[+sn.dataset.di].name=sn.value; saveSoon(); return; }
@@ -8475,7 +8577,7 @@ function openImportSplit(){
    <div class="sheetbtns u-mt10"><button class="ok" id="imp_go">importar</button><button class="cancel" data-act="closemodal">cancel</button></div>`);
   document.getElementById('imp_go').onclick=()=>{ const m=document.getElementById('imp_msg');
     try{ const d=JSON.parse(val('imp_txt')); const sp=importIronlogSplit(d); if(!sp.days.length)throw new Error('sin días');
-      db.split=sp; db.rotIdx=0; state.selDay=null; save(); closeModal(); go('splitedit'); toast('✓ split importado · '+sp.days.length+' días · '+sp.days.reduce((a,x)=>a+x.exercises.length,0)+' ejercicios');
+      splitCarry(sp); db.rotIdx=0; state.selDay=null; save(); closeModal(); go('splitedit'); toast('✓ split importado · '+sp.days.length+' días · '+sp.days.reduce((a,x)=>a+x.exercises.length,0)+' ejercicios');
     }catch(e){ if(m)m.textContent='no se pudo importar: '+(e.message||'JSON inválido'); } };
 }
 function SPLIT_TEMPLATES(){
@@ -10613,7 +10715,7 @@ try{ offerLivePending(livePendingSync()); }catch(_){}
 // diario de arranque. Mientras decide, los respaldos se retienen para no pisar `latest`.
 try{ withTO(idbBootCheck(),12000).catch(()=>idbReleaseHold()); }catch(_){ idbReleaseHold(); }
 try{ growthLog(); }catch(_){}
-try{ promptIdleSession(); }catch(_){} try{ if(typeof location!=='undefined' && /[?&]selftest=1/.test(location.search)){ const _rawMain=(()=>{ try{ return localStorage.getItem(LS_KEY); }catch(_){ return null; } })(), _rawLive=(()=>{ try{ return localStorage.getItem(LS_LIVE); }catch(_){ return null; } })(), _lc0=_lastClosed; _sbx=true; try{ _identitySelfCheck(); _dropsetSelfCheck(); _baselineSelfCheck(); _variantSelfCheck(); _historyEditSelfCheck(); _idSelfCheck(); _cardioSelfCheck(); _tensionSelfCheck(); _healthSelfCheck(); _readinessSelfCheck(); _loggingSelfCheck(); _mergeSelfCheck(); _streakSelfCheck(); _chartSelfCheck(); _muscleSelfCheck(); _exProfileSelfCheck(); _recoverySelfCheck(); _diagSelfCheck(); _uiSelfCheck(); _v256SelfCheck(); _v257SelfCheck(); _sessSafetyCheck(); _storageSelfCheck(); _lateralitySelfCheck(); _v268SelfCheck(); _v269SelfCheck(); _healthPasteSelfCheck(); _v271SelfCheck(); _exStatusSelfCheck(); _scheduleSelfCheck(); _exHistSelfCheck(); _suppSelfCheck(); _macroVizSelfCheck(); } finally{ _sbx=false; _lastClosed=_lc0; try{ if(_rawLive==null)localStorage.removeItem(LS_LIVE); else localStorage.setItem(LS_LIVE,_rawLive); }catch(_){} } let _rawAfter=null; try{ _rawAfter=localStorage.getItem(LS_KEY); }catch(_){} const _same=(()=>{ if(_rawAfter===_rawMain)return true; try{ const a=JSON.parse(_rawAfter), b=_rawMain==null?JSON.parse(JSON.stringify(db)):JSON.parse(_rawMain);   /* v267 · almacén vacío: se compara contra la base real en memoria */ return !!a&&!!b&&((a.profile||{}).username===(b.profile||{}).username)&&((a.sessions||[]).length===(b.sessions||[]).length)&&(JSON.stringify(a.split)===JSON.stringify(b.split)); }catch(_){ return false; } })(); if(!_same)console.error(new Error('SELFCHECK sandbox: una base de juguete llegó a tu disco')); else console.log('sandbox self-check OK'); setTimeout(()=>{ _idbSelfCheck(); },800); setTimeout(_dsRenderReport,1500); } }catch(e){ console.error(e); } try{ const _sp=new URLSearchParams(location.search); const _hasHistorical=_sp.has('stepsh')||_sp.has('weighth')||_sp.has('stepsq')||_sp.has('sleeph'); const _hk=['steps','stepsh','weight','weighth','stepsq','sleep','sleeph'].some(k=>_sp.has(k)); if(_hk&&!(db.profile&&db.profile.username)){ if(_bootJ)_bootJ.flags.push('urlImportEmpty'); if(history.replaceState)history.replaceState(null,'',location.pathname); setTimeout(()=>{ try{ toast('⚠ ese enlace abrió Safari, no tu app','err'); }catch(_){} },600); } else if(_hasHistorical){ const _hsp=_sp; if(history.replaceState)history.replaceState(null,'',location.pathname); setTimeout(()=>{ trkAsk({title:'importar datos históricos',detail:'este link trae pasos, peso o sueño de varios días · acepta solo si viene de tu propio Atajo de iOS',ok:'importar'},()=>{ try{ const _imp=importHealth(_hsp); if(_imp.length){ save(); render(); toast('✓ '+_imp.join(' · ')); } }catch(_){} }); },400); } else { const _imp=importHealth(_sp); if(_imp.length){ window._healthImported=_imp; if(history.replaceState)history.replaceState(null,'',location.pathname); } } }catch(_){} save(); render(); if(window._healthImported)setTimeout(()=>toast('✓ '+window._healthImported.join(' · ')),250); if(window._recoveredFromBackup)setTimeout(()=>{try{toast('⚠ se recuperó un respaldo local · revisa tus datos, podrían faltar cambios muy recientes','err');}catch(_){}},600);
+try{ promptIdleSession(); }catch(_){} try{ if(typeof location!=='undefined' && /[?&]selftest=1/.test(location.search)){ const _rawMain=(()=>{ try{ return localStorage.getItem(LS_KEY); }catch(_){ return null; } })(), _rawLive=(()=>{ try{ return localStorage.getItem(LS_LIVE); }catch(_){ return null; } })(), _lc0=_lastClosed; _sbx=true; try{ _identitySelfCheck(); _dropsetSelfCheck(); _baselineSelfCheck(); _variantSelfCheck(); _historyEditSelfCheck(); _idSelfCheck(); _cardioSelfCheck(); _tensionSelfCheck(); _healthSelfCheck(); _readinessSelfCheck(); _loggingSelfCheck(); _mergeSelfCheck(); _streakSelfCheck(); _chartSelfCheck(); _muscleSelfCheck(); _exProfileSelfCheck(); _recoverySelfCheck(); _diagSelfCheck(); _uiSelfCheck(); _v256SelfCheck(); _v257SelfCheck(); _sessSafetyCheck(); _storageSelfCheck(); _lateralitySelfCheck(); _v268SelfCheck(); _v269SelfCheck(); _healthPasteSelfCheck(); _v271SelfCheck(); _exStatusSelfCheck(); _scheduleSelfCheck(); _exHistSelfCheck(); _suppSelfCheck(); _macroVizSelfCheck(); _onbSelfCheck(); } finally{ _sbx=false; _lastClosed=_lc0; try{ if(_rawLive==null)localStorage.removeItem(LS_LIVE); else localStorage.setItem(LS_LIVE,_rawLive); }catch(_){} } let _rawAfter=null; try{ _rawAfter=localStorage.getItem(LS_KEY); }catch(_){} const _same=(()=>{ if(_rawAfter===_rawMain)return true; try{ const a=JSON.parse(_rawAfter), b=_rawMain==null?JSON.parse(JSON.stringify(db)):JSON.parse(_rawMain);   /* v267 · almacén vacío: se compara contra la base real en memoria */ return !!a&&!!b&&((a.profile||{}).username===(b.profile||{}).username)&&((a.sessions||[]).length===(b.sessions||[]).length)&&(JSON.stringify(a.split)===JSON.stringify(b.split)); }catch(_){ return false; } })(); if(!_same)console.error(new Error('SELFCHECK sandbox: una base de juguete llegó a tu disco')); else console.log('sandbox self-check OK'); setTimeout(()=>{ _idbSelfCheck(); },800); setTimeout(_dsRenderReport,1500); } }catch(e){ console.error(e); } try{ const _sp=new URLSearchParams(location.search); const _hasHistorical=_sp.has('stepsh')||_sp.has('weighth')||_sp.has('stepsq')||_sp.has('sleeph'); const _hk=['steps','stepsh','weight','weighth','stepsq','sleep','sleeph'].some(k=>_sp.has(k)); if(_hk&&!(db.profile&&db.profile.username)){ if(_bootJ)_bootJ.flags.push('urlImportEmpty'); if(history.replaceState)history.replaceState(null,'',location.pathname); setTimeout(()=>{ try{ toast('⚠ ese enlace abrió Safari, no tu app','err'); }catch(_){} },600); } else if(_hasHistorical){ const _hsp=_sp; if(history.replaceState)history.replaceState(null,'',location.pathname); setTimeout(()=>{ trkAsk({title:'importar datos históricos',detail:'este link trae pasos, peso o sueño de varios días · acepta solo si viene de tu propio Atajo de iOS',ok:'importar'},()=>{ try{ const _imp=importHealth(_hsp); if(_imp.length){ save(); render(); toast('✓ '+_imp.join(' · ')); } }catch(_){} }); },400); } else { const _imp=importHealth(_sp); if(_imp.length){ window._healthImported=_imp; if(history.replaceState)history.replaceState(null,'',location.pathname); } } }catch(_){} save(); render(); if(window._healthImported)setTimeout(()=>toast('✓ '+window._healthImported.join(' · ')),250); if(window._recoveredFromBackup)setTimeout(()=>{try{toast('⚠ se recuperó un respaldo local · revisa tus datos, podrían faltar cambios muy recientes','err');}catch(_){}},600);
 applyDesign(); try{ if(/[?&]design\b/.test(location.search))localStorage.setItem('gymtrk_designmode','1'); if(localStorage.getItem('gymtrk_designmode')==='1')openDesignPanel(); }catch(_){}
 try{ bootScreen(()=>{ try{
   if(/[?&]wrap=1\b/.test(location.search)){ monthlyWrap(prevMonthYm(), true); return; }

@@ -4,7 +4,8 @@
 // Fuentes: las 75 de tools/ds-diff.html (S2; allá D era la db → aquí T.db; v269 sin m:mood; v272 + home:stimulus y m:deload;
 // v273 + splitedit:schedule, splitedit:weekly, home:planrest y workout:rpe; v274 + progress:exercises, exhist, exhist:log,
 // exhist:top y workout:exname; v275 + stack:all, m:stackedit:product, m:stackmore, m:stackreadd, m:stackbrand y
-// macros:supplow; v276 + macros:viz:rings/bars/meter/split/table/donut, share:macros y m:sharemenu) + las 17 de dsSweep
+// macros:supplow; v276 + macros:viz:rings/bars/meter/split/table/donut, share:macros y m:sharemenu; v277 + onb:1 … onb:10
+// y onb:error, y onboard pasa a ser el alta a medias retomada en su paso) + las 17 de dsSweep
 // (tools/ds-inventory.js, sus ids son la línea base de tools/ds-baseline.json; v274 + exhist) + los nuevos de §3. Un id
 // aparece una sola vez.
 // Orden = como se recorre la app: gym (inicio, sesión) · macros · progreso · historial · ajustes · hojas sueltas ·
@@ -22,6 +23,8 @@
 // cuando tus datos no los tienen, y settings.suppWarnDay (el aviso de una vez al día solo sale en macros:supplow).
 // v276: también settings.macroViz (la versión con la que abre el carrusel del panel de macros); state.shareType solo en
 // share:macros (los demás compartir lo dejan puesto, como antes).
+// v277: también el "usuario nuevo" del alta paso a paso (onb:1 … onb:10, onb:error, onboard, landing y login): sin
+// username y con db.onb de muestra SOLO mientras se mira; tu perfil, tu db.onb y tu split no se tocan.
 // run() nunca lanza: si algo falla devuelve {ok:false, err} (y lo deja en consola).
 (function(){ 'use strict';
   const MINE = new WeakSet(), STALE = new WeakSet(), ORIG = new WeakMap();
@@ -234,6 +237,32 @@
   // las 6 versiones de MACRO_VIZ de la app ([clave, pestaña]); la dona es solo de laboratorio (BRAND §4: el anillo de kcal
   // es la única gráfica circular) y entra al carrusel solo si es la elegida, como aquí
   const VIZ = [['rings', 'aros (radar + anillos)'], ['bars', 'barras'], ['meter', 'medidor'], ['split', 'reparto'], ['table', 'tabla'], ['donut', 'dona (solo laboratorio)']];
+
+  // ---- v277 · alta paso a paso (ONB_STEPS de la app: 10 pantallas) ----
+  // Tus datos tienen usuario y db.onb.done (migrate() lo marca a cualquier base con usuario: tú nunca ves el alta). Para
+  // mirarla, el frame pasa a "usuario nuevo" SOLO en memoria: username vacío (el router manda a la entrada o al alta) y
+  // db.onb con un borrador de muestra en el paso N. renderOnboard() llama a onbD(), que REESCRIBE db.onb.d: por eso se aparta
+  // el objeto db.onb entero y al salir vuelve la MISMA referencia (o se quita si no existía) — el tuyo nunca se toca, ni su
+  // .d. Nunca se llama a onbFinish()/onbApply() (escribirían perfil, unidades, metas, goalHist, peso y split en el frame) ni
+  // a onbGo() (guarda y hace pushState); onbNext() solo en onb:error y solo si onbCheck() ya da el error (no avanza). Al
+  // salir, la pantalla se vuelve a pintar con tu usuario (la nav regresa). Lo que la app guarde en medio lo absorbe el guardia.
+  const ONB_SAMPLE = { name:'dani', gym:'smart fit centro', sex:'M', age:24, h:175, w:155, bwu:'lbs', unit:'lbs', act:'1.55', goal:'bulk',
+    mode:'cycle', on:3, off:1, blocked:[0], metric:'rir', tpl:'ppl', goals:null, skip:[] };
+  // [pregunta de ONB_STEPS] (la app no la expone en window: const)
+  const ONB_Q = ['¿cómo te llamamos?', '¿en qué pesas?', 'tu cuerpo', '¿qué tan activo eres?', 'tu objetivo', '¿cómo entrenas?', 'tu rutina',
+    'tus metas del día', 'conecta Salud', 'listo'];
+  // onb = { step, done:false, d } o null (base nueva sin db.onb: la entrada)
+  function newUser(W, T, onb){ const db = T.db, st = T.state, sc = st.screen;
+    later(W, () => { if(['onboard', 'landing', 'login'].indexOf(st.screen) >= 0) st.screen = sc && ['onboard', 'landing', 'login'].indexOf(sc) < 0 ? sc : 'home';
+      try{ W.render(); }catch(_){} });   // se deshace al final: con tu usuario de vuelta
+    if(db.profile) tempKey(W, db.profile, 'username', '');
+    tempKey(W, st, '_onbErr', '');
+    const h = has(db, 'onb'), o = db.onb;
+    if(onb) db.onb = onb; else delete db.onb;
+    later(W, () => { if(T.db !== db) return; if(h) db.onb = o; else delete db.onb; }); }
+  const onbDraft = (n, x) => ({ step:n, done:false, d:Object.assign(JSON.parse(JSON.stringify(ONB_SAMPLE)), x || {}) });
+  // el paso N tal cual lo pinta el router (go('onboard') → renderOnboard)
+  function onbStep(W, T, n, x){ newUser(W, T, onbDraft(n, x)); W.go('onboard'); }
 
   // ---- sesión en vivo en memoria ----
   function restore(W, T){ T.db.activeWork = ORIG.has(W) ? ORIG.get(W) : null; ORIG.delete(W); }
@@ -493,12 +522,23 @@
     { id:'m:storage', g:'hoja', label:'hoja · almacenamiento', run(W){ W.openStorage(); } },
     // texto de muestra (nunca la db): la hoja que sale cuando el navegador no deja guardar el archivo
     { id:'m:textsheet', g:'hoja', label:'hoja · guardar como texto', run(W){ W.openTextSheet('gymtrk-respaldo.json', '{"version":1,"profile":{"username":"demo"},"sessions":[],"meals":{}}', noop); } },
-    { id:'landing', g:'pantalla', label:'entrada', run(W){ W.go('landing'); } },
-    { id:'login', g:'pantalla', label:'entrada · iniciar', run(W){ W.go('login'); } },
-    // v268 · filas de terminal (.ob/.obr): clave en minúsculas, > en la fila con foco, vista previa de kcal y proteína ·
-    // v269: [‹ atrás] arriba, unidades primero (te pesas en · pesas gym), actividad y objetivo en lista vertical con su
-    // descripción fija, casillas de 36 y letra de campo 14
-    { id:'onboard', g:'pantalla', label:'entrada · crear perfil', run(W){ W.go('onboard'); } },
+    // v277 · como una base nueva (sin usuario ni db.onb, solo mientras se mira): así la nav no sale, como en la app
+    { id:'landing', g:'pantalla', label:'entrada', run(W, T){ newUser(W, T, null); W.go('landing'); } },
+    { id:'login', g:'pantalla', label:'entrada · iniciar', run(W, T){ newUser(W, T, null); W.go('login'); } },
+    // v277 · alta paso a paso ("pantalla por pantalla: usuario → biométricos → objetivo → split (ahora o después) → dieta
+    // (ahora o después) → Atajo de Salud → plan de pago"; la de v268-v269 en una sola pantalla era "todo goofy"): [‹ atrás]
+    // siempre, gym//TRK //SETUP N/10, la barra [███░░░░░░░], la pregunta (t-display 800) y su por qué en una línea; filas
+    // .obr/.obk/.obi (casilla de 36 en fila de 44) y listas .oblist; abajo, fijo en la zona del pulgar, ▶ seguir (▶ ir al gym
+    // en el último) y [más adelante] en los opcionales (6-9). Borrador de muestra: dani · smart fit centro · 24 años · 175 cm
+    // · 155 lbs · moderado · volumen · rotativo 3/1 · domingo sin gym · push/pull/legs
+    ...ONB_Q.map((q, i) => ({ id:'onb:' + (i + 1), g:'pantalla', label:'alta · ' + (i + 1) + '/10 · ' + q, run(W, T){ onbStep(W, T, i + 1); } })),
+    // el cuerpo con un peso fuera de rango (15 lbs, un dígito de menos): ▶ seguir → onbNext() se queda en el paso con
+    // '⚠ peso en lbs, entre 66 y 550' en línea (.onberr, role=alert, ⚠ en --warn); el rango se revisa en TU unidad
+    { id:'onb:error', g:'pantalla', label:'alta · 3/10 · tu cuerpo · ⚠ peso fuera de rango', run(W, T){ onbStep(W, T, 3, { w:15 });
+        const d = T.db.onb && T.db.onb.d; if(d && typeof W.onbCheck === 'function' && W.onbCheck('body', d)) W.onbNext(); } },
+    // el alta a medias (la app se cerró en el paso 3): sin usuario, el router la reabre en su paso aunque se pida inicio.
+    // Se queda el id de v268 (las propuestas fields, type, toggles y wordmark lo usan para juzgar casillas y opciones)
+    { id:'onboard', g:'pantalla', label:'alta · retomada en su paso (3/10, el router)', run(W, T){ newUser(W, T, onbDraft(3)); W.go('home'); } },
     // ---------------- compartir ----------------
     // v276 · [share] en macros abre TRKMenu 'compartir': el día · tus comidas / el panel de macros (el toque real; nada
     // cambia hasta elegir). m:shareday sigue siendo el día desde el botón: el mismo toque y luego 'el día · tus comidas'

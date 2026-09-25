@@ -86,7 +86,9 @@ iframe.srcdoc = t.replace(/<head([^>]*)>/i, m => m + '<base href="'+base+'"><scr
   `macros:supplow`, al final de S2 como los de v273: dan marca y frasco a un suplemento y agregan los de muestra en la db
   del frame; v276 + `m:sharemenu`, `share:macros` y los 6 `macros:viz:*`, también al final: fijan `settings.macroViz` y
   `shareType`, y `vizTo` espera al listener del carrusel —`runDiff2` ya espera la promesa de un escenario—; `m:shareday` elige
-  `el día` en el menú nuevo: 83 en S2) + las 17 de `tools/ds-inventory.js` (v274 + `exhist`, tras las 4 hojas que se abren encima de
+  `el día` en el menú nuevo; v277 + `onb:1` … `onb:10` y `onb:error`, junto a `landing`/`login`/`onboard` —que ahora también
+  son de usuario nuevo—: `onbAt` pone el usuario nuevo, pinta y lo devuelve todo en su `finally`, sin `later`: 94 en S2) + las
+  17 de `tools/ds-inventory.js` (v274 + `exhist`, tras las 4 hojas que se abren encima de
   progress) + arranque (`T.bootPreview(null,
   true, false)` y el corto `boot:short` con `true` y `live`), wrap (`W.monthlyWrap(W.prevMonthYm(), true)`), recap (forzar vía la lógica de `snapRecap` si es posible),
   aviso de inactividad (`W.promptIdleSession()` con una sesión en curso "vieja"), toasts (`W.toast('✓ guardado')`,
@@ -178,6 +180,19 @@ iframe.srcdoc = t.replace(/<head([^>]*)>/i, m => m + '<base href="'+base+'"><scr
   `macrosOn` guarda también `settings.macroViz` (`keepViz`): lo que deje un deslizamiento del carrusel vuelve al salir.
   `macros`, `macros:open`, `macros:unit` y `macros:high` no cambian de receta (el carrusel abre en la versión de los datos
   cargados). Total v276: 131 escenarios.
+- v277 (alta paso a paso — `ONB_STEPS`, 10 pantallas: name · units · body · act · goal · train · split · goals · health ·
+  ready; borrador en `db.onb={step,done,d}`, nada del perfil se escribe hasta `onbApply` al final; `migrate()` marca
+  `onb.done` a cualquier base con usuario, así que con TUS datos el alta nunca sale): `onb:1` … `onb:10` (etiqueta `alta ·
+  N/10 · <pregunta>`), `onb:error` (paso 3 con 15 lbs y `W.onbNext()` → `⚠ peso en lbs, entre 66 y 550` en línea, `.onberr`;
+  solo se llama si `W.onbCheck('body', d)` ya da el error, así nunca avanza) y `onboard` (se queda el id: lo usan las
+  propuestas fields, type, toggles y wordmark; ahora es el alta a medias que el router reabre en su paso 3 con `W.go('home')`).
+  `landing` y `login` pasan a usuario nuevo (sin la nav, como en la app). Todos con `newUser(W, T, onb)` (`later`): username
+  vacío con `tempKey` y `db.onb` apartado ENTERO —`renderOnboard()` llama a `onbD()`, que reescribe `db.onb.d`: al salir vuelve
+  la misma referencia, o se quita si no existía, así tu `db.onb` y su `.d` no se tocan— más `state._onbErr`; el último deshacer
+  repinta con tu usuario (la nav regresa). Borrador de muestra `onbDraft(n)`: dani · smart fit centro · 24 · 175 cm · 155 lbs
+  (`bwu` lbs) · 1.55 · bulk · rotativo 3/1 · `blocked [0]` · ppl. Nunca `onbFinish`/`onbApply` (escribirían perfil, metas,
+  `goalHist`, peso y split en el frame) ni `onbGo` (guarda y hace `pushState`); si hace falta el resumen, es `onb:10`. Total v277:
+  142 escenarios.
 - Etiquetas cortas en español: `gym · inicio`, `macros`, `hoja · agregar alimento`, `sesión · tabla`, `arranque`…
 
 ## 4 · `window.TRK_KNOBS` — knobs.js
@@ -271,9 +286,10 @@ sobrio (hecho), P1/v268 primer arranque (hecho), V269 lo del 24-sep (hecho), V27
 unidades (hecho), V272 σ v2 y estado del progreso (hecho), V273 split: cómo entrenas (hecho), V274 progreso por ejercicio
 (hecho, con la cita del dueño como primer ítem), V275 suplementos con marca, frasco y aviso (hecho, con la cita del dueño
 como primer ítem), V276 macros: laboratorio, carrusel y compartir (hecho, con el encargo del dueño como primer ítem y dos
-ítems que abren las propuestas 25 y 26), y en el orden aprobado por el dueño (24-sep): V277 configuración
-paso a paso (antes V271a), V278 cuentas (antes V271b), V279 Pro y anuncios (antes V273), V280 tour (antes V274); G3a–d y
-G4a–c sin versión fija (del plan aprobado). `proposal` enlaza a TRK_PROPOSALS.
+ítems que abren las propuestas 25 y 26), V277 alta paso a paso (hecho, con el encargo del dueño como primer ítem y dos
+ítems pendientes: los pasos de cuenta con v278 y el del plan de pago con v279), y en el orden aprobado por el dueño (24-sep):
+V278 cuentas (antes V271b; su primer ítem, los pasos de correo y código del alta), V279 Pro y anuncios (antes V273; su primer
+ítem, el paso del plan de pago), V280 tour (antes V274); G3a–d y G4a–c sin versión fija (del plan aprobado). `proposal` enlaza a TRK_PROPOSALS.
 
 ## 8 · Núcleo — studio.js / studio.html / studio.css
 

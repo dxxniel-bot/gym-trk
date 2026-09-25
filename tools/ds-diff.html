@@ -35,7 +35,11 @@ const S2=[
 // v271 · macros con el detalle abierto (macros:open del estudio) y el toque real de [ver %]; sale siempre de gramos → %.
 // Deja macroOpen y macroPct encendidos para lo que sigue (igual en A y B)
 ['macros:unit',W=>{ const S=W.__trk.state; S.macroPct=false; S.macroOpen=false; W.go('macros'); const t=W.document.querySelector('#view [data-act="togglemacros"]'); if(t)t.click(); else { S.macroOpen=true; W.render(); } const u=W.document.querySelector('#view [data-act="toggleMacroUnit"]'); if(u)u.click(); }],
-['landing',W=>W.go('landing')],['login',W=>W.go('login')],['onboard',W=>W.go('onboard')],
+// v277 · entrada y alta paso a paso como usuario nuevo (onbAt: sin username, db.onb de muestra, y todo de vuelta ahí mismo)
+['landing',(W,D)=>onbAt(W,D,null,null,()=>W.go('landing'))],['login',(W,D)=>onbAt(W,D,null,null,()=>W.go('login'))],
+...[1,2,3,4,5,6,7,8,9,10].map(n=>['onb:'+n,(W,D)=>onbAt(W,D,n,null,()=>W.go('onboard'))]),
+['onb:error',(W,D)=>onbAt(W,D,3,{w:15},()=>{ W.go('onboard'); if(typeof W.onbCheck==='function'&&W.onbCheck('body',D.onb.d))W.onbNext(); })],
+['onboard',(W,D)=>onbAt(W,D,3,null,()=>W.go('home'))],
 ['m:metric',W=>{W.go('progress');W.openMetricDetail('steps')}],['m:muscle',W=>W.openMuscleDetail('side_delts')],['m:catalog',W=>W.openExerciseDirectory()],['m:session',(W,D)=>W.openSessionEdit(lastS(D).id)],
 ['m:ready',W=>W.openReadiness(W.todayISO())],['m:food',W=>W.openFoodAdd()],['m:goals',W=>W.openGoals()],['m:sleep',W=>W.openSleepLog()],['m:weight',W=>W.openWeightLog()],['m:rhr',W=>W.openHealthNumLog('rhr')],
 ['m:profile',(W,D)=>W.openExProfile(D.split.days[0].exercises[0].name)],['m:musclemap',W=>W.openMuscleMap()],['m:exedit',W=>{W.go('splitedit');W.openExEdit(0,0)}],['m:stackedit',(W,D)=>W.openStackEdit((D.stack[0]||{}).id)],['m:stacknew',W=>W.openStackEdit(null)],
@@ -92,6 +96,18 @@ const S2=[
 ['share:macros',(W,D)=>{ const S=W.__trk.state, d=lastFood(D); S.shareType='macros'; if(d)S.macroDate=d; W.go('share'); }],
 ...['rings','bars','meter','split','table','donut'].map(k=>['macros:viz:'+k,(W,D)=>vizTo(W,D,k)])
 ];
+// v277 · alta paso a paso. La db del frame tiene usuario y onb.done (migrate): aquí se vuelve "usuario nuevo" solo mientras
+// se pinta —username vacío (el router manda a la entrada o al alta) y db.onb con el borrador de muestra en el paso n (null =
+// base nueva sin db.onb)— y en el finally vuelve TODO ahí mismo: username, la MISMA referencia de db.onb (renderOnboard
+// reescribe db.onb.d vía onbD: solo toca el de muestra), state.screen y state._onbErr. Sin later(), así nada llega al
+// escenario siguiente; snap() mide el DOM ya pintado. Nunca onbFinish/onbApply/onbGo; onbNext solo si onbCheck ya da el
+// error (no avanza). En un _pre.html anterior a v277 no hay pasos: A pinta el formulario de v268-v269 (o la entrada con
+// 'onboard', que allá no retoma el paso): struct esperado
+const ONB_D={name:'dani',gym:'smart fit centro',sex:'M',age:24,h:175,w:155,bwu:'lbs',unit:'lbs',act:'1.55',goal:'bulk',mode:'cycle',on:3,off:1,blocked:[0],metric:'rir',tpl:'ppl',goals:null,skip:[]};
+function onbAt(W,D,n,x,paint){ const S=W.__trk.state, p=D.profile||{}, own=(o,k)=>Object.prototype.hasOwnProperty.call(o,k);
+  const hu=own(p,'username'), u=p.username, ho=own(D,'onb'), o0=D.onb, sc=S.screen, he=own(S,'_onbErr'), e0=S._onbErr;
+  try{ p.username=''; if(n==null)delete D.onb; else D.onb={step:n,done:false,d:Object.assign(JSON.parse(JSON.stringify(ONB_D)),x||{})}; S._onbErr=''; paint(); }
+  finally{ if(hu)p.username=u; else delete p.username; if(ho)D.onb=o0; else delete D.onb; S.screen=sc; if(he)S._onbErr=e0; else delete S._onbErr; } }
 // v276 · el último día con comida; el panel abierto (el toque real de togglemacros) con la versión k a la vista
 function lastFood(D){ return Object.keys(D.meals||{}).filter(k=>(D.meals[k]||[]).length).sort().pop()||null; }
 function vizTo(W,D,k){ const S=W.__trk.state, d=lastFood(D); D.settings=D.settings||{}; D.settings.macroViz=k; S.macroPct=false; S.macroOpen=false; W.go('macros');
