@@ -87,7 +87,10 @@ iframe.srcdoc = t.replace(/<head([^>]*)>/i, m => m + '<base href="'+base+'"><scr
   del frame; v276 + `m:sharemenu`, `share:macros` y los 6 `macros:viz:*`, también al final: fijan `settings.macroViz` y
   `shareType`, y `vizTo` espera al listener del carrusel —`runDiff2` ya espera la promesa de un escenario—; `m:shareday` elige
   `el día` en el menú nuevo; v277 + `onb:1` … `onb:10` y `onb:error`, junto a `landing`/`login`/`onboard` —que ahora también
-  son de usuario nuevo—: `onbAt` pone el usuario nuevo, pinta y lo devuelve todo en su `finally`, sin `later`: 94 en S2) + las
+  son de usuario nuevo—: `onbAt` pone el usuario nuevo, pinta y lo devuelve todo en su `finally`, sin `later`; v278 + los 7
+  `tour:*` al final: `tourAt` pinta con el `db.tour` de siempre, lo pone en blanco, llama a `W.tourShow(clave)` y lo devuelve
+  en su `finally` —con la sesión viva, el plan o los días del split que haga falta apartar—, `runDiff2` quita el velo
+  (`tourHide`) antes de cada escenario y el snap mide también `#tour`: 101 en S2) + las
   17 de `tools/ds-inventory.js` (v274 + `exhist`, tras las 4 hojas que se abren encima de
   progress) + arranque (`T.bootPreview(null,
   true, false)` y el corto `boot:short` con `true` y `live`), wrap (`W.monthlyWrap(W.prevMonthYm(), true)`), recap (forzar vía la lógica de `snapRecap` si es posible),
@@ -193,6 +196,23 @@ iframe.srcdoc = t.replace(/<head([^>]*)>/i, m => m + '<base href="'+base+'"><scr
   (`bwu` lbs) · 1.55 · bulk · rotativo 3/1 · `blocked [0]` · ppl. Nunca `onbFinish`/`onbApply` (escribirían perfil, metas,
   `goalHist`, peso y split en el frame) ni `onbGo` (guarda y hace `pushState`); si hace falta el resumen, es `onb:10`. Total v277:
   142 escenarios.
+- v278 (tour por sección — `TOUR_STEPS`/`TOUR_LBL`, 3-5 pasos por sección: `home`, `homeEmpty`, `workout`, `macros`,
+  `progress`, `settings`; `db.tour={v,seen,step,skipped}`; `migrate()` marca vistas todas las secciones de cualquier base sin
+  `db.tour`, así que con TUS datos nunca sale, y `onbApply` lo deja en blanco a una cuenta nueva; `tourMaybe` corre al final de
+  `afterPaint` con 350 ms de espera): `tour:home` (gym con split, 1/4 sobre `▶ start`), `tour:step2` (el paso 2: `‹ ›`, con
+  `db.tour.step.home=1`), `tour:homeempty` (gym sin split, 1/5 sobre `+ crear split`), `tour:workout` (`own:true`: una sesión
+  PROPIA; 1/5 sobre el primer peso), `tour:macros` (`macrosOn`; 1/4 sobre el anillo), `tour:progress` (1/3 sobre la racha) y
+  `tour:settings` (1/3 sobre `metas`), todos `g:'overlay'`. `tourAt(W, T, clave, pintar, paso?)`: registra con `later` la
+  vuelta del MISMO `db.tour` (o lo quita si no existía) y `W.tourHide()` —el velo `#tour` va en `#app` y no lo quita ningún
+  reinicio del estudio—, pinta con tu `db.tour` puesto (todo visto: el render no deja vivo el temporizador de `tourMaybe`),
+  pone `{v:1,seen:{},step:{},skipped:false}`, le quita el foco a la casilla activa (`tourBusy` esperaría) y llama a
+  `W.tourShow(clave)` directo. `homeStart` aparta la sesión viva (con ella solo existe `▶ resume`) y, si hoy toca descanso por
+  el plan, lo pasa a diario sin hoy bloqueado con `tempSplit` (como `home:rest`); `homeEmpty` aparta `db.split.days` con
+  `tempKey`. `[next]`, `[listo]`, `[skip tour]` o usar el control escriben en el `db.tour` de muestra y su `save()` lo absorbe
+  el guardia (0 escrituras reales). Tocar el velo pausa esa sección en `_tourPause` (memoria del frame, no expuesta): si pasó,
+  `tourAt` da el toque real de `[repetir]` (`tourreplay`) en ajustes y quita su aviso. Los demás escenarios no ven el tour: al
+  empezar el siguiente, `undoAll` devuelve tu `db.tour` y el temporizador que dejó el `W.go('home')` de `runIn` ya no
+  encuentra la sección encendida. Total v278: 149 escenarios.
 - Etiquetas cortas en español: `gym · inicio`, `macros`, `hoja · agregar alimento`, `sesión · tabla`, `arranque`…
 
 ## 4 · `window.TRK_KNOBS` — knobs.js
@@ -287,9 +307,11 @@ unidades (hecho), V272 σ v2 y estado del progreso (hecho), V273 split: cómo en
 (hecho, con la cita del dueño como primer ítem), V275 suplementos con marca, frasco y aviso (hecho, con la cita del dueño
 como primer ítem), V276 macros: laboratorio, carrusel y compartir (hecho, con el encargo del dueño como primer ítem y dos
 ítems que abren las propuestas 25 y 26), V277 alta paso a paso (hecho, con el encargo del dueño como primer ítem y dos
-ítems pendientes: los pasos de cuenta con v278 y el del plan de pago con v279), y en el orden aprobado por el dueño (24-sep):
-V278 cuentas (antes V271b; su primer ítem, los pasos de correo y código del alta), V279 Pro y anuncios (antes V273; su primer
-ítem, el paso del plan de pago), V280 tour (antes V274); G3a–d y G4a–c sin versión fija (del plan aprobado). `proposal` enlaza a TRK_PROPOSALS.
+ítems pendientes: los pasos de cuenta con v279 y el del plan de pago con v280), V278 tour por sección (hecho, con el encargo
+del dueño —plan, sección F— como primer ítem; antes V280 y antes V274: se adelantó porque cuentas y Pro esperan los pasos del
+dueño en Supabase y Lemon Squeezy), y en el orden aprobado por el dueño (24-sep): V279 cuentas (antes V278 y V271b; su primer
+ítem, los pasos de correo y código del alta) y V280 Pro y anuncios (antes V279 y V273; su primer ítem, el paso del plan de
+pago), con sus ítems tal cual; G3a–d y G4a–c sin versión fija (del plan aprobado). `proposal` enlaza a TRK_PROPOSALS.
 
 ## 8 · Núcleo — studio.js / studio.html / studio.css
 

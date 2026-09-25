@@ -76,7 +76,7 @@ module.exports = function rules(raw, repoDir) {
       else if (c === '}') st = i + 1; } }
   // el cuerpo de cada regla llega SIN comentarios (espacios del mismo largo): la marca /*ds:exempt…*/ de una declaración se lee del crudo
   const declRaw = (r, m) => raw.slice(r.i + 1 + m.index, r.i + 1 + m.index + m[0].length);
-  const CHROME = /(^|[\s,>])(\.nav|\.modal|\.sheet|\.toast|\.toasts|\.tsel|\.gloss|#asklayer|\.ask|\.glass|\.glass-strong|\.exsh|\.bootov|\.dz|\.savebar|\.dragghost|\.ag-supp-pop)\b/;   // v262: el fantasma de arrastre y el popover de la agenda también flotan
+  const CHROME = /(^|[\s,>])(\.nav|\.modal|\.sheet|\.toast|\.toasts|\.tsel|\.gloss|#asklayer|\.ask|\.glass|\.glass-strong|\.exsh|\.bootov|\.dz|\.savebar|\.dragghost|\.ag-supp-pop|\.tour|\.tourb)\b/;   // v262: el fantasma de arrastre y el popover de la agenda también flotan · v278: el tour (velo + globo)
   // clases con estilo propio (compuesto único) y pares padre→hijo
   const own = new Set(), pair = {};
   rules.forEach(r => { if (r.kf) return; r.sel.split(',').forEach(sel => { sel = sel.trim().replace(/::?[\w-]+(\([^)]*\))?/g, ''); const parts = sel.split(/\s*[\s>+~]\s*/).filter(Boolean);
@@ -144,7 +144,7 @@ module.exports = function rules(raw, repoDir) {
       if (toks.some(t => !RAD_OK.has(t.px))) add('RAD', r.i, r.sel + ' · ' + v.trim()); } });  // valor fuera de la familia
   // ---- R-BLUR · backdrop-filter fuera del chrome (CSS) y la clase glass fuera de nav/sheet/toast (marcado) ----
   rules.forEach(r => { if (r.kf) return; if (/backdrop-filter\s*:\s*(?!none)/.test(r.body) && !CHROME.test(r.sel)) add('BLUR', r.i, r.sel); });
-  for (const m of js.matchAll(/class="[^"]*\bglass(-strong)?\b[^"]*"/g)) { const i = jsA + m.index, f = fnAt(i); if (!/^(openModal|renderNav|toast|toastTask|trkAsk|holdConfirm|trkPrompt|trkMenu|trkSelect|trkPop|askLayer|showSaveBar)$/i.test(f) && !skipped(i)) add('BLUR', i, f + ' · ' + m[0]); }
+  for (const m of js.matchAll(/class="[^"]*\bglass(-strong)?\b[^"]*"/g)) { const i = jsA + m.index, f = fnAt(i); if (!/^(openModal|renderNav|toast|toastTask|trkAsk|holdConfirm|trkPrompt|trkMenu|trkSelect|trkPop|askLayer|showSaveBar|tourDraw)$/i.test(f) && !skipped(i)) add('BLUR', i, f + ' · ' + m[0]); }
   // ---- R-EXEMPT · solo la marca SIN categoría (`/*ds:exempt:loop*/` y demás ids de §15 no cuentan) ----
   for (const m of raw.matchAll(/\/\*ds:exempt\*\//g)) add('EXEMPT', m.index, raw.slice(Math.max(0, m.index - 50), m.index));
   // ---- R-MOTION ----

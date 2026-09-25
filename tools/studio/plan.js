@@ -11,7 +11,7 @@
 
   window.TRK_PLAN = {
     updated: '2026-09-24',
-    note: 'ruta de la guía: G1 y G2 hechos, F0 y T preparan el estudio; G0 se decide aquí, TS (v267) hornea el "terminal sobrio", P1 (v268) el primer arranque, v269 y v270 (salud por Atajo) lo que pediste el 24-sep, v271 comida y unidades, v272 σ v2 y estado del progreso, v273 split: cómo entrenas (diario, días fijos o rotativo, días sin gym, ciclo real y RIR o RPE), v274 progreso por ejercicio (la bitácora #1, #2, #3… con su gráfica), v275 suplementos con marca, frasco y aviso (cuántas quedan, aviso a una semana, pausa, archivo y volver con otra marca), v276 macros: laboratorio, carrusel y compartir (las versiones del panel en un carrusel, compartir el panel y las propuestas 25 y 26 para elegir la que abre) y v277 alta paso a paso (10 pantallas con [‹ atrás], //SETUP N/10 y [más adelante]; nada se escribe hasta ▶ ir al gym); en el orden que aprobaste siguen cuentas (v278, con los pasos de correo y código al inicio del alta), Pro y anuncios (v279, con el paso del plan de pago) y tour (v280). G3 y G4 completan la identidad sin versión fija. Cada entrega borra el CSS de su propuesta y la marca shipped.',
+    note: 'ruta de la guía: G1 y G2 hechos, F0 y T preparan el estudio; G0 se decide aquí, TS (v267) hornea el "terminal sobrio", P1 (v268) el primer arranque, v269 y v270 (salud por Atajo) lo que pediste el 24-sep, v271 comida y unidades, v272 σ v2 y estado del progreso, v273 split: cómo entrenas (diario, días fijos o rotativo, días sin gym, ciclo real y RIR o RPE), v274 progreso por ejercicio (la bitácora #1, #2, #3… con su gráfica), v275 suplementos con marca, frasco y aviso (cuántas quedan, aviso a una semana, pausa, archivo y volver con otra marca), v276 macros: laboratorio, carrusel y compartir (las versiones del panel en un carrusel, compartir el panel y las propuestas 25 y 26 para elegir la que abre), v277 alta paso a paso (10 pantallas con [‹ atrás], //SETUP N/10 y [más adelante]; nada se escribe hasta ▶ ir al gym) y v278 tour por sección (3 a 5 pasos la primera vez que una cuenta nueva entra a cada sección, sobre el control real, con [skip tour]; tú nunca lo ves), adelantado porque cuentas y Pro esperan tus pasos en Supabase y Lemon Squeezy: siguen cuentas (v279, con los pasos de correo y código al inicio del alta) y Pro y anuncios (v280, con el paso del plan de pago). G3 y G4 completan la identidad sin versión fija. Cada entrega borra el CSS de su propuesta y la marca shipped.',
     phases: [
 
       P('G1', 'guía', null, 'hecho', [
@@ -190,23 +190,29 @@
         I('bug', 'bug de camino: un comentario // dentro de migrate() (una sola línea) se comía el resto de la función; lo cazó la prueba de la racha y quedó como /* */', 'hecho'),
         I('check', '_onbSelfCheck: quien ya tiene perfil no lo ve, sin nombre no avanza, peso en tu unidad (150 lbs = 68.04 kg), paso N/M y atrás, más adelante en los opcionales, el resumen trae lo elegido, nada se escribe antes de terminar, la meta ajustada se respeta, plantilla + rotativo 3/1 + domingo + RPE → ciclo de 4, lo que dejaste para después no se escribe', 'hecho', { audit: '37 self-checks · dsSweep sin cambios · por paso txt 0' }),
         I('studio', 'estudio: onb:1 … onb:10, onb:error y onboard (retomada en su paso) como usuario nuevo solo en memoria; tu perfil, tu db.onb y tu split vuelven idénticos', 'hecho'),
-        I('account', 'los pasos de cuenta (correo + código) entran como pasos 1-2 con v278', 'pendiente'),
-        I('plan', 'el paso del plan de pago entra con v279', 'pendiente'),
+        I('account', 'los pasos de cuenta (correo + código) entran como pasos 1-2 con v279', 'pendiente'),
+        I('plan', 'el paso del plan de pago entra con v280', 'pendiente'),
       ]),
 
-      P('V278', 'cuentas', 'v278', 'pendiente', [
+      P('V278', 'tour por sección', 'v278', 'hecho', [
+        I('tour', 'lo que pediste (plan, sección F, aprobado): un tour por sección para cuentas nuevas, que se pueda saltar. Se adelantó: cuentas y Pro esperan tus pasos en Supabase y Lemon Squeezy, así que pasan a v279 y v280', 'hecho'),
+        I('steps', 'de 3 a 5 pasos por sección, la primera vez que entras: gym sin split (+ crear split · explorar splits · importar · tu menú u/ · la barra de abajo, "el > marca dónde estás") · gym con split (▶ start · ‹ › · registrar una sesión pasada · tu menú) · entreno (peso y reps, "lo gris es lo que hiciste la última vez" · RIR o RPE según la sesión · ✓ y descanso · [+ set]/[↓ drop set] · guardar) · macros (el anillo · + meal · el agua · ‹ › otros días) · progress (la racha · un recuadro · [edit]) · ajustes (perfil y metas · el respaldo, "tus datos viven en este teléfono" · las guías)', 'hecho'),
+        I('overlay', 'sobre el control REAL, que se puede tocar (usarlo cuenta como siguiente): velo en 4 rectángulos con un hueco de 6 px, anillo fino y globo de vidrio "// 1/4 · gym" con una línea y [next] ([listo] en el último) [skip tour]; abajo del control si cabe, si no arriba; se redibuja al hacer scroll; capa nueva --z-tour 45, entre hojas y popovers', 'hecho'),
+        I('control', 'tocar el velo lo pausa hasta la próxima vez que abras la app; [skip tour] los apaga todos con deshacer ("guías apagadas · se prenden en ajustes"); en ajustes, "guías de cada sección ···· repetir ›" los vuelve a prender; nunca sale encima del arranque, una hoja, un aviso o una casilla con foco (espera y reintenta); un control que no está se salta', 'hecho'),
+        I('owner', 'tú nunca lo ves: db.tour = {v:1, seen, step, skipped}; migrate() marca vistas todas las secciones de cualquier base sin db.tour (respaldos importados incluidos) y una cuenta nueva lo estrena al terminar el alta', 'hecho'),
+        I('check', '_tourSelfCheck: tú no lo ves y una cuenta nueva sí, 3-5 pasos por sección, gym sin split → su tour, entreno sin ejercicios → nada, siguiente avanza, el último la da por vista, tocar el velo pausa sin marcarla vista, skip las apaga todas', 'hecho', { audit: '38 self-checks · dsSweep sin cambios · ajustes: fila nueva de 44 · --strict en verde' }),
+        I('studio', 'estudio: tour:home, tour:step2, tour:homeempty, tour:workout, tour:macros, tour:progress y tour:settings — el paso 1 de cada sección (y el 2 de gym) sobre la pantalla real con db.tour en blanco solo en memoria; al salir vuelve tu db.tour y el velo se quita; el entreno en una sesión propia', 'hecho'),
+      ]),
+
+      P('V279', 'cuentas', 'v279', 'pendiente', [
         I('onbacct', 'alta: los pasos de cuenta (correo y código) entran al principio del alta paso a paso', 'pendiente'),
         I('records', 'capa de registros, sombra en IndexedDB v2 y código muerto', 'pendiente'),
         I('sync', 'pantallas de cuenta en el estilo nuevo, sync con Supabase y //ACCOUNT', 'pendiente'),
       ]),
 
-      P('V279', 'Pro y anuncios', 'v279', 'pendiente', [
+      P('V280', 'Pro y anuncios', 'v280', 'pendiente', [
         I('onbpro', 'alta: el paso del plan de pago (lo último que pediste en el orden del alta)', 'pendiente'),
         I('pro', 'plan Pro y anuncios (cobro en la web primero)', 'pendiente'),
-      ]),
-
-      P('V280', 'tour por sección', 'v280', 'pendiente', [
-        I('tour', 'tour por sección para cuentas nuevas, con [saltar]; va después de las cuentas y viaja con ellas', 'pendiente'),
       ]),
 
       P('G3a', 'chrome', null, 'en curso', [

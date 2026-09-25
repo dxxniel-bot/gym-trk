@@ -51,7 +51,7 @@
     --shadow-float:0 6px 22px rgba(0,0,0,.55);
     --dur-1:120ms; --dur-2:180ms; --dur-3:280ms; --dur-screen:140ms; --toast-life:2.3s; --toast-life-err:4.6s;
     --ease-out:cubic-bezier(.22,1,.36,1); --ease-in:cubic-bezier(.4,0,1,1);
-    --z-float:20; --z-nav:30; --z-modal:40; --z-pop:50; --z-overlay:60; --z-toast:80; --z-dev:90;
+    --z-float:20; --z-nav:30; --z-modal:40; --z-tour:45; --z-pop:50; --z-overlay:60; --z-toast:80; --z-dev:90;
     /* v260 · tokens exactos (T): cada uno nace con el valor de HOY — ningún píxel cambió al crearlos. Los mueve el
        estudio (tools/studio.html) y solo cambian de valor por decisión del dueño (BRAND §9). */
     --lh-tight:1; --lh-ui:1.2; --lh-read:1.4; --lh-share:1.6;                         /* interlineado por rol */
@@ -722,6 +722,11 @@
   .onbfoot .b{align-self:center;}
   .onbl{font-size:var(--t-data); padding:var(--s2) 0; color:var(--o70); border-bottom:var(--bw-sep) solid var(--o10);}
   .onbready{margin-top:var(--s5); font-size:var(--t-section); font-weight:800;}
+  /* v278 · tour: velo con hueco sobre el control real (se puede tocar), anillo fino y globo de vidrio */
+  .tour{position:absolute; inset:0; z-index:var(--z-tour); pointer-events:none;} .tour .tm{position:absolute; background:var(--scrim); pointer-events:auto;}
+  .tour .tr{position:absolute; border:var(--bw-field) solid var(--fg); border-radius:var(--r-ctl); pointer-events:none;}
+  .tourb{position:absolute; left:var(--s4); right:var(--s4); padding:var(--s4); border-radius:var(--r-float); pointer-events:auto;}
+  .tourh{font-size:var(--t-label); color:var(--o50); letter-spacing:var(--ls-title);} .tourt{margin:var(--s2) 0 var(--s3); font-size:var(--t-data); line-height:var(--lh-read); color:var(--fg);} .toura{display:flex; gap:var(--s4);}
   /* v267 · casilla con foco: el borde sube a --fg (sin anillo extra) */
   .field input:focus,.field select:focus,#fa_q:focus,textarea.ta:focus,.mdcust input:focus,.slph input:focus,.slblk input:focus,select.pfsel:focus,#pf_gym:focus,.pfw:focus,.msum-time:focus{border-color:var(--fg); outline:none;}   /* el borde ES el foco: sin anillo doble */
   /* bottom nav: píldora flotante glass (absolute al .frame; el scroll vive en .scroll, no en body → esquiva el bug iOS de fixed) */
@@ -1073,7 +1078,7 @@
 
 <script>
 "use strict";
-const APP_V='v277';   // versión visible (arranque); R-DOC la compara con sw.js y con DESIGN_SYSTEM.md línea 3
+const APP_V='v278';   // versión visible (arranque); R-DOC la compara con sw.js y con DESIGN_SYSTEM.md línea 3
 const LS_KEY='gymtrk_db_v1';
 // BRAND.md §3 · diccionario cerrado de glifos de interfaz (un glifo = un significado). tools/ds-audit.cjs (R-GLY) lee
 // esta constante: cualquier otro símbolo no ASCII en un literal de interfaz es una desviación. Las etiquetas que el
@@ -1325,7 +1330,7 @@ function _idSelfCheck(){
   A('gated: a second call is a no-op once _idfix is set', JSON.stringify(fx)===before);
   console.log('id self-check OK');
 }
-function migrate(d){ if(!d.version){d.version=1;} if(d.profile&&d.profile.username&&!(d.onb&&d.onb.done))d.onb={done:true,at:'antes'};   /* v277 · quien ya tiene perfil nunca ve el alta */  if(!d._meta||typeof d._meta!=='object')d._meta={seq:0,t:0}; if(!d.meals||typeof d.meals!=='object'||Array.isArray(d.meals))d.meals={}; if(!Array.isArray(d.foods))d.foods=[]; d.foods=d.foods.map(f=>(f&&f.per100)?f:asCanonical(f)); if(!Array.isArray(d.sessions))d.sessions=[]; if(!d.split||typeof d.split!=='object')d.split={name:'',days:[]}; if(!Array.isArray(d.split.days))d.split.days=[]; d.split.days.forEach(day=>{ if(!Array.isArray(day.exercises))day.exercises=[]; day.exercises.forEach(e=>{ if(e&&!e.id)e.id='e'+uid(); }); }); fixDuplicateExIds(d); fixLeakedFullStack(d); fixStraySides(d); purgeMood(d); d.health=healthShape((d.health&&typeof d.health==='object'&&!Array.isArray(d.health))?d.health:{}); if(!d.steps||typeof d.steps!=='object')d.steps={}; if(!d.machines||typeof d.machines!=='object')d.machines={}; if(!d.exCat||typeof d.exCat!=='object')d.exCat={}; if(!d.muscleMap||typeof d.muscleMap!=='object')d.muscleMap={}; if(!d.muscleNames||typeof d.muscleNames!=='object')d.muscleNames={}; if(!d.bodyweight||typeof d.bodyweight!=='object')d.bodyweight={}; if(!d.sleep||typeof d.sleep!=='object')d.sleep={}; if('selfcheck' in d)delete d.selfcheck;/* v263 · la auto-percepción estética se retira: el dato se borra una vez y no vuelve (boot, respaldo, log in, sync y archivo pasan por aquí) */ if(!d.adhoc||typeof d.adhoc!=='object')d.adhoc={}; if(!Array.isArray(d.mealTags))d.mealTags=['breakfast','lunch','snack','dinner']; if(!Array.isArray(d.stack))d.stack=[]; if(!d.lastUsed||typeof d.lastUsed!=='object')d.lastUsed={}; if(!d.settings||typeof d.settings!=='object')d.settings={goals:seed().settings.goals}; if(d.settings&&d.settings.goals&&d.settings.goals.alcohol==null)d.settings.goals.alcohol=(d.profile&&d.profile.sex==='F')?14:28; if(d.settings&&d.settings.restSec==null)d.settings.restSec=90; if(d.settings&&d.settings.restBeep==null)d.settings.restBeep=true; if(d.settings&&d.settings.goals&&d.settings.goals.sleep==null)d.settings.goals.sleep=8; if(d.profile&&!d.profile.since){ try{ const _cd=[]; (d.sessions||[]).forEach(s=>{if(s.date)_cd.push(s.date);}); Object.keys(d.meals||{}).forEach(k=>_cd.push(k)); Object.keys(d.bodyweight||{}).forEach(k=>_cd.push(k)); if(_cd.length)d.profile.since=_cd.sort()[0]; }catch(_){} }
+function migrate(d){ if(!d.version){d.version=1;} if(d.profile&&d.profile.username&&!(d.onb&&d.onb.done))d.onb={done:true,at:'antes'};   /* v277 · quien ya tiene perfil nunca ve el alta */ if(!d.tour||typeof d.tour!=='object'||Array.isArray(d.tour))d.tour={v:1,seen:{home:1,homeEmpty:1,workout:1,macros:1,progress:1,settings:1},step:{},skipped:false};   /* v278 · quien ya usaba la app no ve el tour */  if(!d._meta||typeof d._meta!=='object')d._meta={seq:0,t:0}; if(!d.meals||typeof d.meals!=='object'||Array.isArray(d.meals))d.meals={}; if(!Array.isArray(d.foods))d.foods=[]; d.foods=d.foods.map(f=>(f&&f.per100)?f:asCanonical(f)); if(!Array.isArray(d.sessions))d.sessions=[]; if(!d.split||typeof d.split!=='object')d.split={name:'',days:[]}; if(!Array.isArray(d.split.days))d.split.days=[]; d.split.days.forEach(day=>{ if(!Array.isArray(day.exercises))day.exercises=[]; day.exercises.forEach(e=>{ if(e&&!e.id)e.id='e'+uid(); }); }); fixDuplicateExIds(d); fixLeakedFullStack(d); fixStraySides(d); purgeMood(d); d.health=healthShape((d.health&&typeof d.health==='object'&&!Array.isArray(d.health))?d.health:{}); if(!d.steps||typeof d.steps!=='object')d.steps={}; if(!d.machines||typeof d.machines!=='object')d.machines={}; if(!d.exCat||typeof d.exCat!=='object')d.exCat={}; if(!d.muscleMap||typeof d.muscleMap!=='object')d.muscleMap={}; if(!d.muscleNames||typeof d.muscleNames!=='object')d.muscleNames={}; if(!d.bodyweight||typeof d.bodyweight!=='object')d.bodyweight={}; if(!d.sleep||typeof d.sleep!=='object')d.sleep={}; if('selfcheck' in d)delete d.selfcheck;/* v263 · la auto-percepción estética se retira: el dato se borra una vez y no vuelve (boot, respaldo, log in, sync y archivo pasan por aquí) */ if(!d.adhoc||typeof d.adhoc!=='object')d.adhoc={}; if(!Array.isArray(d.mealTags))d.mealTags=['breakfast','lunch','snack','dinner']; if(!Array.isArray(d.stack))d.stack=[]; if(!d.lastUsed||typeof d.lastUsed!=='object')d.lastUsed={}; if(!d.settings||typeof d.settings!=='object')d.settings={goals:seed().settings.goals}; if(d.settings&&d.settings.goals&&d.settings.goals.alcohol==null)d.settings.goals.alcohol=(d.profile&&d.profile.sex==='F')?14:28; if(d.settings&&d.settings.restSec==null)d.settings.restSec=90; if(d.settings&&d.settings.restBeep==null)d.settings.restBeep=true; if(d.settings&&d.settings.goals&&d.settings.goals.sleep==null)d.settings.goals.sleep=8; if(d.profile&&!d.profile.since){ try{ const _cd=[]; (d.sessions||[]).forEach(s=>{if(s.date)_cd.push(s.date);}); Object.keys(d.meals||{}).forEach(k=>_cd.push(k)); Object.keys(d.bodyweight||{}).forEach(k=>_cd.push(k)); if(_cd.length)d.profile.since=_cd.sort()[0]; }catch(_){} }
   // recompute alcohol for old meal items logged before alcohol was in MACROKEYS
   try{ Object.values(d.meals||{}).forEach(arr=>arr.forEach(m=>{ if(m.alcohol==null){ if(m._food&&m._food.per100&&m._food.per100.alcohol&&m._unit){ m.alcohol=computeNutrients(m._food,m._unit,m.qty||1).alcohol; } else m.alcohol=0; } })); }catch(e){}
   // goalHist: snapshot of intake goals at the moment of first logging that day (history is FROZEN — past days never re-read the current goal)
@@ -4058,7 +4063,7 @@ function _sessSafetyCheck(){
 // v260 · la escala y el piso de texto se leen de los tokens computados: si el estudio mueve --t-* o --o40, la medición sigue
 const DS_SCALE_DEF=[10,12,14,20,28,14]; function dsScale(){ try{ const cs=getComputedStyle(document.documentElement); const v=['--t-label','--t-data','--t-section','--t-display','--t-hero','--t-field'].map(t=>parseFloat(cs.getPropertyValue(t))); return v.every(x=>x>0)?v:DS_SCALE_DEF; }catch(_){ return DS_SCALE_DEF; } }
 function dsTextFloor(){ try{ const m=getComputedStyle(document.documentElement).getPropertyValue('--o40').match(/rgba?\([^)]*,\s*([\d.]+)\s*\)/); return m?(+m[1]-.005):.495; }catch(_){ return .495; } }
-const DS_SCALE=DS_SCALE_DEF, DS_CHROME='.nav,.modal,.toasts,.toast,.tsel,.gloss,#asklayer', DS_EXEMPT='.bootov,.scan-reticle,.dz';
+const DS_SCALE=DS_SCALE_DEF, DS_CHROME='.nav,.modal,.toasts,.toast,.tsel,.gloss,#asklayer,.tour', DS_EXEMPT='.bootov,.scan-reticle,.dz';
 // v267 · rad: una esquina de CONTENIDO más redonda que el control/tarjeta (hoy 4) — la prueba de 5 s de BRAND §8. No cuenta lo que flota
 // (DS_CHROME, --r-float), lo exento, los puntos (círculos ≤24 px) ni las barras finas (.bar/.wprog/.vbar, la única píldora).
 function dsRadCeil(){ try{ const cs=getComputedStyle(document.documentElement); return Math.max(parseFloat(cs.getPropertyValue('--r-ctl'))||4, parseFloat(cs.getPropertyValue('--radius'))||4); }catch(_){ return 4; } }
@@ -4178,6 +4183,23 @@ function _scheduleSelfCheck(){ const A=(nm,c)=>{ if(!c) throw new Error('SELFCHE
     A('la etiqueta se calcula: @ RPE · F', (db.split.metric='rpe',intensityTag())==='@ RPE · F'&&(db.split.allowF=false,intensityTag())==='@ RPE');
   } finally { db=real; bumpIdx(); }
   console.log('schedule self-check OK'); }
+function _tourSelfCheck(){ const A=(nm,c)=>{ if(!c) throw new Error('SELFCHECK tour: '+nm); }; const real=db, rs=state.screen, rp=_tourPause;
+  try{
+    const x=migrate({profile:{username:'dani'},sessions:[]}); A('quien ya usaba la app no lo ve', !!x.tour&&Object.keys(TOUR_STEPS).every(k=>x.tour.seen[k]));
+    db=migrate({_idfix:true,_fsfix:true,profile:{},sessions:[],settings:{}}); const d=onbD(); d.name='ana'; onbApply(d); _tourPause={};
+    A('una cuenta nueva sí lo ve', !!db.tour&&!db.tour.skipped&&!Object.keys(db.tour.seen).length);
+    Object.keys(TOUR_STEPS).forEach(k=>A(k+': de 3 a 5 pasos', TOUR_STEPS[k].length>=3&&TOUR_STEPS[k].length<=5&&!!TOUR_LBL[k]));
+    state.screen='home'; A('gym sin split → su tour de arranque', tourKey()==='homeEmpty'&&tourOn('homeEmpty'));
+    state.screen='workout'; A('entreno sin ejercicios → nada', tourKey()==='');
+    state.screen='history'; A('pantallas sin tour → nada', tourKey()==='');
+    const T=db.tour; tourAdvance(T,'macros',0,4); A('siguiente avanza un paso', T.step.macros===1&&!T.seen.macros);
+    tourAdvance(T,'macros',3,4); A('el último la da por vista', !!T.seen.macros&&T.step.macros===undefined&&!tourOn('macros'));
+    _tourPause.progress=1; A('tocar el velo la pausa sin marcarla vista', !tourOn('progress')&&!T.seen.progress);
+    T.skipped=true; A('skip tour las apaga todas', !tourOn('settings')&&!tourOn('homeEmpty'));
+    A('un tour roto en un respaldo se rehace sin tronar', (()=>{ const y=migrate({profile:{username:'x'},sessions:[],tour:'roto'}); return typeof y.tour==='object'&&!!y.tour.seen.home; })());
+    A('el último paso de ajustes no reinicia el tour', TOUR_STEPS.settings[TOUR_STEPS.settings.length-1].swallow===1);
+  } finally { db=real; state.screen=rs; _tourPause=rp; }
+  console.log('tour self-check OK'); }
 function _onbSelfCheck(){ const A=(nm,c)=>{ if(!c) throw new Error('SELFCHECK alta: '+nm); }; const real=db, rs=state.screen;
   try{
     A('quien ya tiene perfil nunca ve el alta', (()=>{ const x=migrate({profile:{username:'dani'},sessions:[]}); return !!(x.onb&&x.onb.done); })());
@@ -5408,7 +5430,7 @@ const OB_GOAL=[['cut','déficit','perder grasa · ~20 % bajo tu mantenimiento'],
 // El dueño: "pantalla por pantalla: usuario → biométricos → objetivo → split (ahora o después) → dieta (ahora o después) →
 // Atajo de Salud → plan de pago", con [‹ atrás] y casillas que cuadren. Cada paso se guarda al instante en db.onb (si la app
 // se cierra, vuelve al mismo paso) y nada del perfil se escribe hasta [▶ ir al gym]. "Cómo entrenas" (v273) va antes de la
-// rutina. La cuenta (correo y código) entra con v278 y el plan de pago con v279.
+// rutina. La cuenta (correo y código) entra con v279 y el plan de pago con v280.
 const ONB_STEPS=[
   {k:'name', q:'¿cómo te llamamos?', why:'tu nombre va arriba; el gym, para separar tus máquinas'},
   {k:'units', q:'¿en qué pesas?', why:'va antes del cuerpo: el peso que escribas sale en tu unidad · se cambia en ajustes'},
@@ -5461,13 +5483,85 @@ function onbApply(d){ const today=todayISO(), P=onbProfile(d), sk=k=>(d.skip||[]
   db.split=db.split||{name:'',days:[]};
   if(!sk('train')){ db.split.plan={mode:d.mode||'daily',on:+d.on||3,off:+d.off||1,week:{},blocked:(d.blocked||[]).map(Number)}; db.split.metric=d.metric==='rpe'?'rpe':'rir';
     if(d.mode==='weekly'&&(db.split.days||[]).length)db.split.plan.week=defaultWeek(); }
-  db.rotIdx=0; db.onb={done:true,at:today,skip:(d.skip||[]).slice()}; }
+  db.rotIdx=0; db.onb={done:true,at:today,skip:(d.skip||[]).slice()};
+  db.tour={v:1,seen:{},step:{},skipped:false}; }   // v278 · una cuenta nueva ve el tour de cada sección la primera vez
 // un split nuevo (crear, plantilla, importar) conserva cómo entrenas y RIR/RPE (lo del alta o del editor); con días fijos y la
 // semana vacía (el alta sin rutina), la semana se arma sola con defaultWeek
 function splitCarry(s){ const k=db.split||{}; if(k.plan)s.plan=k.plan; if(k.metric)s.metric=k.metric; if(k.allowF!=null)s.allowF=k.allowF; db.split=s;
   if(s.plan&&s.plan.mode==='weekly'&&!Object.keys(s.plan.week||{}).length&&(s.days||[]).length)s.plan.week=defaultWeek(); return s; }
 function onbFinish(){ const d=onbD(), blank=d.tpl==='blank'&&(d.skip||[]).indexOf('split')<0; onbApply(d); state.screen=blank?'splitedit':'home'; save(); render(); }
 window.addEventListener('popstate',()=>{ try{ if(db&&db.profile&&!db.profile.username&&db.onb&&!db.onb.done&&(db.onb.step||0)>0)onbBack(true); }catch(_){} });
+// ---- v278 · tour por sección ----
+// Para cuentas nuevas: 3-5 pasos por sección la primera vez que entras (gym, entreno, macros, progress, ajustes). Un velo con
+// hueco sobre el control real (se puede tocar: usarlo cuenta como "siguiente"), un globo de vidrio `// 1/4 · gym` con una
+// línea y [next] [skip tour]. Tocar el velo lo pausa hasta la próxima vez que abras la app; [skip tour] los apaga todos y se
+// vuelven a prender en ajustes. Quien ya usaba la app no lo ve (migrate los marca vistos).
+const TOUR_STEPS={
+  home:[{sel:'#view [data-act="start"]',t:()=>document.querySelector('#view .restplan')?'hoy toca descanso; si igual quieres entrenar, empieza aquí':'▶ start abre el día que te toca; lo gris es lo que hiciste la vez pasada'},
+    {sel:'#view .arrow[data-act="nextday"]',t:'‹ › si hoy quieres otro día de tu split'},
+    {sel:'#view [data-act="loglater"]',t:'¿entrenaste sin la app? regístralo aquí con su fecha'},
+    {sel:'[data-act="navmenu"]',t:'tu menú: suplementos, historial, catálogo y ajustes'},
+    {sel:'#nav',t:'abajo: progress · gym · macros; el > marca dónde estás'}],
+  homeEmpty:[{sel:'#view [data-act="newsplit"]',t:'arma tu split: los días de tu rutina con sus ejercicios'},
+    {sel:'#view [data-act="workshop"]',t:'o empieza de una plantilla y la editas'},
+    {sel:'#view [data-act="importsplit"]',t:'¿ya la tienes escrita en tus notas? pégala aquí'},
+    {sel:'[data-act="navmenu"]',t:'tu menú: suplementos, historial, catálogo y ajustes'},
+    {sel:'#nav',t:'abajo: progress · gym · macros; el > marca dónde estás'}],
+  workout:[{sel:()=>tourCurSet('input.inp.weight'),t:'escribe peso y reps; desde la segunda vez, lo gris es lo que hiciste la última vez'},
+    {sel:()=>tourCurSet('.rirb'),t:()=>(db.activeWork&&db.activeWork.metric)==='rpe'?'RPE: 10 = no salía otra · 9 = te quedaba 1':'RIR: cuántas te quedaban · 0 o F = al fallo'},
+    {sel:()=>tourCurSet('[data-act="done"]'),t:'✓ confirma la serie; en vivo también arranca el descanso'},
+    {sel:'#view [data-act="addset"]',t:'[+ set] agrega una serie · [↓ drop set] una bajada de peso'},
+    {sel:'#wfooter .save',t:'al terminar, guarda la sesión'}],
+  macros:[{sel:'#view [data-act="togglemacros"]',t:'el anillo: lo que llevas contra tu meta · tócalo para ver tus macros'},
+    {sel:'#view [data-act="newmeal"]',t:'+ meal: busca, escanea o registra una comida'},
+    {sel:'#view [data-act="waterpick"]',t:'el agua, de un toque'},
+    {sel:'#view [data-act="dayprev"]',t:'‹ › para ver o registrar otros días'}],
+  progress:[{sel:'#view [data-act="streakcal"]',t:'tu racha: días con comida o entreno registrado'},
+    {sel:'#view .ptile',t:'cada recuadro abre su detalle; uno vacío te deja registrar'},
+    {sel:'#view [data-act="progedit"]',t:'[edit] para quitar, agregar o mover recuadros'}],
+  settings:[{sel:'#view [data-act="pf_goals"]',t:'tu perfil y tus metas: todo se cambia aquí'},
+    {sel:'#view [data-act="export"]',t:'tus datos viven en este teléfono: guarda un respaldo de vez en cuando'},
+    {sel:'#view [data-act="tourreplay"]',t:'aquí vuelven a salir estas guías',swallow:1}]};   // swallow: tocarla aquí es "listo", no reinicia el tour
+// las anclas del entreno siguen a la serie que toca (la primera sin ✓): la primera de la página puede estar ya confirmada
+function tourCurSet(q){ const c=currentSetTarget(); return c?document.querySelector('#view '+q+'[data-exi="'+c.exi+'"][data-si="'+c.si+'"]'):null; }
+const TOUR_LBL={home:'gym',homeEmpty:'gym',workout:'entreno',macros:'macros',progress:'progress',settings:'ajustes'};
+let _tourT=0, _tourPause={};
+function tourKey(){ if(!db.profile||!db.profile.username)return ''; const sc=state.screen;
+  if(sc==='home')return dayCount()?'home':'homeEmpty'; if(sc==='workout')return (db.activeWork&&(db.activeWork.exercises||[]).length)?'workout':'';
+  return (sc==='macros'||sc==='progress'||sc==='settings')?sc:''; }
+function tourOn(k){ const T=db.tour; return !!(T&&!T.skipped&&k&&!(T.seen&&T.seen[k])&&!_tourPause[k]); }
+function tourBusy(){ const a=document.activeElement; return !!(document.getElementById('bootov')||document.getElementById('modal')||document.getElementById('asklayer')||(a&&/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName))); }
+// avanza un paso; pasar el último deja la sección vista
+function tourAdvance(T,k,i,n){ T.step=T.step||{}; T.seen=T.seen||{}; if(i+1>=n){ T.seen[k]=1; delete T.step[k]; } else T.step[k]=i+1; }
+function tourHide(){ const o=document.getElementById('tour'); if(o){ if(o._off)o._off(); o.remove(); } }
+function tourMaybe(){ clearTimeout(_tourT); tourHide(); const k=tourKey(); if(!tourOn(k))return; _tourT=setTimeout(()=>tourShow(k),350); }
+function tourShow(k){ if(tourKey()!==k||!tourOn(k))return; if(tourBusy()){ _tourT=setTimeout(()=>tourShow(k),800); return; }
+  const T=db.tour, L=TOUR_STEPS[k]; let i=(T.step&&T.step[k])||0, el=null;
+  for(;i<L.length;i++){ el=typeof L[i].sel==='function'?L[i].sel():document.querySelector(L[i].sel); if(el&&el.getBoundingClientRect().width>0)break; el=null; }
+  if(!el){ tourAdvance(T,k,L.length-1,L.length); save(); return; }   // sin anclas: la sección se da por vista
+  (T.step=T.step||{})[k]=i; if(el.closest('#view')&&el.scrollIntoView)el.scrollIntoView({block:'center'});
+  tourDraw(k,i,el); }
+function tourDraw(k,i,el){ tourHide(); const app=document.getElementById('app'); if(!app||!el.isConnected)return;
+  const L=TOUR_STEPS[k], s=L[i], A=app.getBoundingClientRect(), r=el.getBoundingClientRect(), P=6, last=i===L.length-1;
+  const x0=Math.max(0,r.left-A.left-P), y0=Math.max(0,r.top-A.top-P), x1=Math.min(A.width,r.right-A.left+P), y1=Math.min(A.height,r.bottom-A.top+P);
+  const m=(l,t,w,h)=>`<div class="tm" style="left:${l}px;top:${t}px;width:${Math.max(0,w)}px;height:${Math.max(0,h)}px"></div>`, txt=typeof s.t==='function'?s.t():s.t, below=y1+150<A.height;
+  const o=document.createElement('div'); o.id='tour'; o.className='tour';
+  o.innerHTML=m(0,0,A.width,y0)+m(0,y1,A.width,A.height-y1)+m(0,y0,x0,y1-y0)+m(x1,y0,A.width-x1,y1-y0)
+    +`<div class="tr" style="left:${x0}px;top:${y0}px;width:${x1-x0}px;height:${y1-y0}px"></div>`
+    +`<div class="tourb glass-strong" role="dialog" aria-label="guía de ${TOUR_LBL[k]}" style="${below?'top:'+Math.round(y1+12)+'px':'bottom:'+Math.round(A.height-y0+12)+'px'}"><div class="tourh">// ${i+1}/${L.length} · ${TOUR_LBL[k]}</div><div class="tourt" aria-live="polite">${escTxt(txt)}</div><div class="toura"><button type="button" class="b" data-tour="next">${last?'listo':'next'}</button><button type="button" class="b" data-tour="skip">skip tour</button></div></div>`;
+  app.appendChild(o);
+  { const b=o.querySelector('.tourb'), bh=b.offsetHeight; let top=below?y1+12:y0-12-bh; top=Math.max(8,Math.min(A.height-bh-8,top)); b.style.top=Math.round(top)+'px'; b.style.bottom='auto'; }   // el globo nunca sale del marco
+  o.addEventListener('click',ev=>{ const b=ev.target.closest('[data-tour]'); if(b){ ev.stopPropagation(); if(b.dataset.tour==='skip'){ tourSkip(); return; }
+      tourAdvance(db.tour,k,i,L.length); save(); tourHide(); if(!last)setTimeout(()=>tourShow(k),60); return; }
+    // tocar el velo pausa la sección hasta la próxima vez que abras la app, y el toque sigue a lo que hay debajo (la barra de abajo, guardar…)
+    if(ev.target.classList.contains('tm')){ ev.stopPropagation(); _tourPause[k]=1; const x=ev.clientX, y=ev.clientY; tourHide(); const t=document.elementFromPoint(x,y); if(t&&t.click)t.click(); } });
+  const use=ev=>{ if(!document.getElementById('tour'))return; if(s.swallow){ ev.stopPropagation(); ev.preventDefault(); } tourAdvance(db.tour,k,i,L.length); save(); tourHide(); };   // usar el control de verdad = siguiente (el toque sigue a la app, salvo swallow)
+  el.addEventListener('click',use,{capture:true,once:true});
+  const v=document.getElementById('view'), re=()=>{ if(el.isConnected)tourDraw(k,i,el); else tourHide(); }, esc=ev=>{ if(ev.key==='Escape'){ _tourPause[k]=1; tourHide(); } };
+  if(v)v.addEventListener('scroll',re,{passive:true,once:true}); window.addEventListener('resize',re,{passive:true,once:true}); document.addEventListener('keydown',esc);
+  try{ o.querySelector('[data-tour="next"]').focus({preventScroll:true}); }catch(_){}   // teclado y lector de pantalla llegan al globo; Esc lo pausa
+  o._off=()=>{ el.removeEventListener('click',use,{capture:true}); if(v)v.removeEventListener('scroll',re); window.removeEventListener('resize',re); document.removeEventListener('keydown',esc); }; }
+function tourSkip(){ const T=db.tour; if(!T)return; T.skipped=true; save(); tourHide(); reRender(); toast('guías apagadas · se prenden en ajustes','',{undo:()=>{ T.skipped=false; }}); }
 function renderOnboard(){ const d=onbD(), N=ONB_STEPS.length, i=Math.max(1,Math.min(N,db.onb.step||1)), S=ONB_STEPS[i-1];
   const on=(f,v)=>String(d[f])===String(v);
   const T=(f,opts)=>`<div class="toggles">${opts.map(([v,l])=>`<button type="button" class="t${on(f,v)?' on':''}" data-act="onbpick" data-f="${f}" data-v="${v}" aria-pressed="${on(f,v)}">${l}</button>`).join('')}</div>`;
@@ -7470,6 +7564,7 @@ function renderSettings(){
     +`<div class="line"><span class="k">sessions</span><span class="dots"></span><span class="v">${db.sessions.length}</span></div>`
     +`<div class="line u-tap" data-act="editrest"><span class="k">descanso entre sets</span><span class="dots"></span><span class="v">${db.settings.restSec||90}s ›</span></div>`
     +`<div class="line u-tap" data-act="togglebeep"><span class="k">beep fin de descanso</span><span class="dots"></span><span class="v">${db.settings.restBeep?'on':'off'} ›</span></div>`
+    +`<div class="line lnav u-tap" role="button" tabindex="0" data-act="tourreplay"><span class="k">guías de cada sección</span><span class="dots"></span><span class="v">${db.tour&&db.tour.skipped?'apagadas · prender':'repetir'} ›</span></div>`   // v278
     +(db.settings.suppHide?`<div class="line u-tap" data-act="supphideoff"><span class="k">supps en macros</span><span class="dots"></span><span class="v">ocultos · mostrar ›</span></div>`:'')
     +healthSettingsHTML()
     +`<hr class="rule"/><div class="cta"><button class="start" data-act="sync">sync data (copy / paste)</button>`
@@ -7547,7 +7642,7 @@ function applyEnter(root){ const e=state._enter, p=state._pop; state._enter=null
   else if(e){ const el=root.querySelector(e.ex!=null?'.ex[data-exi="'+e.ex+'"]':'.srow[data-exi="'+e.exi+'"][data-si="'+e.si+'"],.pair[data-exi="'+e.exi+'"][data-si="'+e.si+'"]');
     if(el){ el.classList.add('enter'); if(e.scroll&&el.scrollIntoView)el.scrollIntoView({block:'center',behavior:reducedMotion()?'auto':'smooth'}); } }
   if(p){ const el=root.querySelector('.dchk[data-exi="'+p.exi+'"][data-si="'+p.si+'"],.pairdone[data-exi="'+p.exi+'"][data-si="'+p.si+'"]'); if(el)el.classList.add('pop'); } }
-function afterPaint(root,swap){ if(!root)return; try{ popClose(); }catch(_){} try{ animNums(root); }catch(_){} try{ animBars(root); }catch(_){} try{ slideTabs(root,swap); }catch(_){} try{ applyEnter(root); }catch(_){} }
+function afterPaint(root,swap){ if(!root)return; try{ popClose(); }catch(_){} try{ animNums(root); }catch(_){} try{ animBars(root); }catch(_){} try{ slideTabs(root,swap); }catch(_){} try{ applyEnter(root); }catch(_){} try{ tourMaybe(); }catch(_){} }
 // ---- R4 · TRKRow reflow (§7.18): lo que queda se reacomoda en vez de saltar ----
 // Cada fila/bloque lleva data-rk = identidad de SU objeto (serie, ejercicio) — un WeakMap en memoria, nunca se guarda.
 // reRender() mide antes de pintar y, después, anima a cada elemento desde donde estaba (FLIP). Un elemento que se mueve
@@ -7977,6 +8072,7 @@ document.getElementById('app').addEventListener('click',e=>{
   else if(a==='onbday'){ const d=onbD(), w=+el.dataset.v, b=(d.blocked||[]).map(Number); d.blocked=b.indexOf(w)>=0?b.filter(x=>x!==w):b.concat([w]); saveSoon(); reRender(); }
   else if(a==='onbshortcut'){ openShortcutSetup(); }
   else if(a==='onbfinish'){ onbFinish(); }
+  else if(a==='tourreplay'){ db.tour={v:1,seen:{},step:{},skipped:false}; _tourPause={}; savedToast('✓ las guías vuelven a salir en cada sección'); reRender(); }
   else if(a==='llogin'){ state.screen='login'; render(); }
   else if(a==='backlanding'){ state.screen='landing'; render(); }
   else if(a==='loginfile'){ doImport(); }
@@ -10715,7 +10811,7 @@ try{ offerLivePending(livePendingSync()); }catch(_){}
 // diario de arranque. Mientras decide, los respaldos se retienen para no pisar `latest`.
 try{ withTO(idbBootCheck(),12000).catch(()=>idbReleaseHold()); }catch(_){ idbReleaseHold(); }
 try{ growthLog(); }catch(_){}
-try{ promptIdleSession(); }catch(_){} try{ if(typeof location!=='undefined' && /[?&]selftest=1/.test(location.search)){ const _rawMain=(()=>{ try{ return localStorage.getItem(LS_KEY); }catch(_){ return null; } })(), _rawLive=(()=>{ try{ return localStorage.getItem(LS_LIVE); }catch(_){ return null; } })(), _lc0=_lastClosed; _sbx=true; try{ _identitySelfCheck(); _dropsetSelfCheck(); _baselineSelfCheck(); _variantSelfCheck(); _historyEditSelfCheck(); _idSelfCheck(); _cardioSelfCheck(); _tensionSelfCheck(); _healthSelfCheck(); _readinessSelfCheck(); _loggingSelfCheck(); _mergeSelfCheck(); _streakSelfCheck(); _chartSelfCheck(); _muscleSelfCheck(); _exProfileSelfCheck(); _recoverySelfCheck(); _diagSelfCheck(); _uiSelfCheck(); _v256SelfCheck(); _v257SelfCheck(); _sessSafetyCheck(); _storageSelfCheck(); _lateralitySelfCheck(); _v268SelfCheck(); _v269SelfCheck(); _healthPasteSelfCheck(); _v271SelfCheck(); _exStatusSelfCheck(); _scheduleSelfCheck(); _exHistSelfCheck(); _suppSelfCheck(); _macroVizSelfCheck(); _onbSelfCheck(); } finally{ _sbx=false; _lastClosed=_lc0; try{ if(_rawLive==null)localStorage.removeItem(LS_LIVE); else localStorage.setItem(LS_LIVE,_rawLive); }catch(_){} } let _rawAfter=null; try{ _rawAfter=localStorage.getItem(LS_KEY); }catch(_){} const _same=(()=>{ if(_rawAfter===_rawMain)return true; try{ const a=JSON.parse(_rawAfter), b=_rawMain==null?JSON.parse(JSON.stringify(db)):JSON.parse(_rawMain);   /* v267 · almacén vacío: se compara contra la base real en memoria */ return !!a&&!!b&&((a.profile||{}).username===(b.profile||{}).username)&&((a.sessions||[]).length===(b.sessions||[]).length)&&(JSON.stringify(a.split)===JSON.stringify(b.split)); }catch(_){ return false; } })(); if(!_same)console.error(new Error('SELFCHECK sandbox: una base de juguete llegó a tu disco')); else console.log('sandbox self-check OK'); setTimeout(()=>{ _idbSelfCheck(); },800); setTimeout(_dsRenderReport,1500); } }catch(e){ console.error(e); } try{ const _sp=new URLSearchParams(location.search); const _hasHistorical=_sp.has('stepsh')||_sp.has('weighth')||_sp.has('stepsq')||_sp.has('sleeph'); const _hk=['steps','stepsh','weight','weighth','stepsq','sleep','sleeph'].some(k=>_sp.has(k)); if(_hk&&!(db.profile&&db.profile.username)){ if(_bootJ)_bootJ.flags.push('urlImportEmpty'); if(history.replaceState)history.replaceState(null,'',location.pathname); setTimeout(()=>{ try{ toast('⚠ ese enlace abrió Safari, no tu app','err'); }catch(_){} },600); } else if(_hasHistorical){ const _hsp=_sp; if(history.replaceState)history.replaceState(null,'',location.pathname); setTimeout(()=>{ trkAsk({title:'importar datos históricos',detail:'este link trae pasos, peso o sueño de varios días · acepta solo si viene de tu propio Atajo de iOS',ok:'importar'},()=>{ try{ const _imp=importHealth(_hsp); if(_imp.length){ save(); render(); toast('✓ '+_imp.join(' · ')); } }catch(_){} }); },400); } else { const _imp=importHealth(_sp); if(_imp.length){ window._healthImported=_imp; if(history.replaceState)history.replaceState(null,'',location.pathname); } } }catch(_){} save(); render(); if(window._healthImported)setTimeout(()=>toast('✓ '+window._healthImported.join(' · ')),250); if(window._recoveredFromBackup)setTimeout(()=>{try{toast('⚠ se recuperó un respaldo local · revisa tus datos, podrían faltar cambios muy recientes','err');}catch(_){}},600);
+try{ promptIdleSession(); }catch(_){} try{ if(typeof location!=='undefined' && /[?&]selftest=1/.test(location.search)){ const _rawMain=(()=>{ try{ return localStorage.getItem(LS_KEY); }catch(_){ return null; } })(), _rawLive=(()=>{ try{ return localStorage.getItem(LS_LIVE); }catch(_){ return null; } })(), _lc0=_lastClosed; _sbx=true; try{ _identitySelfCheck(); _dropsetSelfCheck(); _baselineSelfCheck(); _variantSelfCheck(); _historyEditSelfCheck(); _idSelfCheck(); _cardioSelfCheck(); _tensionSelfCheck(); _healthSelfCheck(); _readinessSelfCheck(); _loggingSelfCheck(); _mergeSelfCheck(); _streakSelfCheck(); _chartSelfCheck(); _muscleSelfCheck(); _exProfileSelfCheck(); _recoverySelfCheck(); _diagSelfCheck(); _uiSelfCheck(); _v256SelfCheck(); _v257SelfCheck(); _sessSafetyCheck(); _storageSelfCheck(); _lateralitySelfCheck(); _v268SelfCheck(); _v269SelfCheck(); _healthPasteSelfCheck(); _v271SelfCheck(); _exStatusSelfCheck(); _scheduleSelfCheck(); _exHistSelfCheck(); _suppSelfCheck(); _macroVizSelfCheck(); _onbSelfCheck(); _tourSelfCheck(); } finally{ _sbx=false; _lastClosed=_lc0; try{ if(_rawLive==null)localStorage.removeItem(LS_LIVE); else localStorage.setItem(LS_LIVE,_rawLive); }catch(_){} } let _rawAfter=null; try{ _rawAfter=localStorage.getItem(LS_KEY); }catch(_){} const _same=(()=>{ if(_rawAfter===_rawMain)return true; try{ const a=JSON.parse(_rawAfter), b=_rawMain==null?JSON.parse(JSON.stringify(db)):JSON.parse(_rawMain);   /* v267 · almacén vacío: se compara contra la base real en memoria */ return !!a&&!!b&&((a.profile||{}).username===(b.profile||{}).username)&&((a.sessions||[]).length===(b.sessions||[]).length)&&(JSON.stringify(a.split)===JSON.stringify(b.split)); }catch(_){ return false; } })(); if(!_same)console.error(new Error('SELFCHECK sandbox: una base de juguete llegó a tu disco')); else console.log('sandbox self-check OK'); setTimeout(()=>{ _idbSelfCheck(); },800); setTimeout(_dsRenderReport,1500); } }catch(e){ console.error(e); } try{ const _sp=new URLSearchParams(location.search); const _hasHistorical=_sp.has('stepsh')||_sp.has('weighth')||_sp.has('stepsq')||_sp.has('sleeph'); const _hk=['steps','stepsh','weight','weighth','stepsq','sleep','sleeph'].some(k=>_sp.has(k)); if(_hk&&!(db.profile&&db.profile.username)){ if(_bootJ)_bootJ.flags.push('urlImportEmpty'); if(history.replaceState)history.replaceState(null,'',location.pathname); setTimeout(()=>{ try{ toast('⚠ ese enlace abrió Safari, no tu app','err'); }catch(_){} },600); } else if(_hasHistorical){ const _hsp=_sp; if(history.replaceState)history.replaceState(null,'',location.pathname); setTimeout(()=>{ trkAsk({title:'importar datos históricos',detail:'este link trae pasos, peso o sueño de varios días · acepta solo si viene de tu propio Atajo de iOS',ok:'importar'},()=>{ try{ const _imp=importHealth(_hsp); if(_imp.length){ save(); render(); toast('✓ '+_imp.join(' · ')); } }catch(_){} }); },400); } else { const _imp=importHealth(_sp); if(_imp.length){ window._healthImported=_imp; if(history.replaceState)history.replaceState(null,'',location.pathname); } } }catch(_){} save(); render(); if(window._healthImported)setTimeout(()=>toast('✓ '+window._healthImported.join(' · ')),250); if(window._recoveredFromBackup)setTimeout(()=>{try{toast('⚠ se recuperó un respaldo local · revisa tus datos, podrían faltar cambios muy recientes','err');}catch(_){}},600);
 applyDesign(); try{ if(/[?&]design\b/.test(location.search))localStorage.setItem('gymtrk_designmode','1'); if(localStorage.getItem('gymtrk_designmode')==='1')openDesignPanel(); }catch(_){}
 try{ bootScreen(()=>{ try{
   if(/[?&]wrap=1\b/.test(location.search)){ monthlyWrap(prevMonthYm(), true); return; }

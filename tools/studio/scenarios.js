@@ -25,6 +25,8 @@
 // share:macros (los demás compartir lo dejan puesto, como antes).
 // v277: también el "usuario nuevo" del alta paso a paso (onb:1 … onb:10, onb:error, onboard, landing y login): sin
 // username y con db.onb de muestra SOLO mientras se mira; tu perfil, tu db.onb y tu split no se tocan.
+// v278: también db.tour (el tour por sección: tour:home, tour:step2, tour:homeempty, tour:workout, tour:macros,
+// tour:progress y tour:settings): en blanco SOLO mientras se mira; al salir vuelve tu db.tour y el velo (#tour) se quita.
 // run() nunca lanza: si algo falla devuelve {ok:false, err} (y lo deja en consola).
 (function(){ 'use strict';
   const MINE = new WeakSet(), STALE = new WeakSet(), ORIG = new WeakMap();
@@ -263,6 +265,35 @@
   const onbDraft = (n, x) => ({ step:n, done:false, d:Object.assign(JSON.parse(JSON.stringify(ONB_SAMPLE)), x || {}) });
   // el paso N tal cual lo pinta el router (go('onboard') → renderOnboard)
   function onbStep(W, T, n, x){ newUser(W, T, onbDraft(n, x)); W.go('onboard'); }
+
+  // ---- v278 · tour por sección (TOUR_STEPS de la app: gym sin split, gym, entreno, macros, progress y ajustes) ----
+  // Tus datos tienen todas las secciones vistas (migrate() las marca en cualquier base sin db.tour: tú nunca lo ves). Para
+  // mirarlo, db.tour va EN BLANCO —como lo deja onbApply a una cuenta nueva— SOLO mientras se mira: al salir vuelve el MISMO
+  // objeto (o se quita si no existía) y W.tourHide() quita el velo (#tour, en #app). La pantalla se pinta con tu db.tour
+  // puesto (todo visto: el render no deja un temporizador del tour vivo) y luego W.tourShow(clave) directo, sin esperar los
+  // 350 ms de tourMaybe; si otro render llega mientras se mira, la app lo vuelve a dibujar sola (es su comportamiento).
+  // [next], [listo], [skip tour] o usar el control escriben en el db.tour de muestra y su save() lo absorbe el guardia.
+  // Tocar el velo pausa esa sección en la memoria del frame (_tourPause, que la app no expone): si pasó, el toque real de
+  // [repetir] en ajustes la despausa (su aviso se quita). tourBusy espera con una casilla con foco: se le quita el foco.
+  const tourBlank = () => ({ v:1, seen:{}, step:{}, skipped:false });
+  function tourAt(W, T, key, paint, step){ if(typeof W.tourShow !== 'function') return false;   // un index.html anterior a v278
+    const db = T.db, h = has(db, 'tour'), t0 = db.tour;
+    later(W, () => { try{ W.tourHide(); }catch(_){} if(T.db !== db) return; if(h) db.tour = t0; else delete db.tour; });
+    paint(); db.tour = tourBlank();
+    if(!W.tourOn(key)){ W.go('settings'); click(W, '#view [data-act="tourreplay"]'); const tb = $(W, '#toasts'); if(tb) tb.textContent = '';
+      db.tour = t0; paint(); db.tour = tourBlank(); }
+    if(step) db.tour.step[key] = step;
+    const a = W.document.activeElement; if(a && a !== W.document.body && typeof a.blur === 'function') a.blur();
+    W.tourShow(key); return !!$(W, '#tour'); }
+  // gym con split y el día que toca listo para ▶ start: sin la sesión viva (con ella solo existe ▶ resume) y, si hoy toca
+  // descanso por tu plan, el plan pasa a diario sin hoy bloqueado solo mientras se mira (como home:rest). Todo vuelve al salir
+  function homeStart(W, T){ const db = T.db, w = db.activeWork, t = W.todayISO();
+    if(w){ db.activeWork = null; later(W, () => { if(T.db === db && db.activeWork == null) db.activeWork = w; }); }
+    if(hasPlan(W) && ((db.split || {}).days || []).length && W.planDay(t).rest){ const P = W.splitPlan(), dw = W.dowOf(t);
+      tempSplit(W, T, 'plan', Object.assign({}, P, { mode:'daily', blocked:P.blocked.filter(d => d !== dw) })); }
+    T.state.selDay = null; W.go('home'); }
+  // gym sin split (la cuenta nueva que dejó la rutina para después): los días del split se apartan (misma referencia al salir)
+  function homeEmpty(W, T){ const sp = T.db.split; if(sp) tempKey(W, sp, 'days', []); try{ W.bumpIdx(); }catch(_){} T.state.selDay = null; W.go('home'); }
 
   // ---- sesión en vivo en memoria ----
   function restore(W, T){ T.db.activeWork = ORIG.has(W) ? ORIG.get(W) : null; ORIG.delete(W); }
@@ -581,6 +612,25 @@
     { id:'select', g:'overlay', label:'selector corto · RIR', live:true, run(W){ W.go('workout');
         const a = $(W, '#view [data-f="rir"]') || $(W, '#view button') || $(W, '#view');
         W.trkSelect(a, ['F', '0', '1', '2', '3', '4', '5'], '2', noop, { title:'RIR · reps en reserva', clear:'— quitar' }); } },
+    // v278 · tour por sección ("un tour por sección para cuentas nuevas, que se pueda saltar"): el paso 1 de cada sección
+    // sobre la pantalla REAL con db.tour en blanco solo mientras se mira (tourAt). Velo --scrim en 4 rectángulos con un hueco
+    // de 6 px sobre el control real (se puede tocar: usarlo cuenta como siguiente), anillo fino --bw-field --fg --r-ctl y globo
+    // .tourb.glass-strong --r-float abajo del control si cabe (si no, arriba): '// 1/4 · gym' (t-label o50), una línea
+    // (t-data fg, --lh-read) y [next] ([listo] en el último) [skip tour]. Capa --z-tour 45 (entre hojas y popovers)
+    { id:'tour:home', g:'overlay', label:'guía · gym (1/4 · ▶ start)', run(W, T){ tourAt(W, T, 'home', () => homeStart(W, T)); } },
+    // el paso 2 (db.tour.step.home = 1, como tras [next]): ‹ › para otro día del split
+    { id:'tour:step2', g:'overlay', label:'guía · gym · paso 2 (‹ ›)', run(W, T){ tourAt(W, T, 'home', () => homeStart(W, T), 1); } },
+    // gym sin split: + crear split · explorar splits · importar · tu menú u/ · la barra de abajo ('el > marca dónde estás')
+    { id:'tour:homeempty', g:'overlay', label:'guía · gym sin split (1/5)', run(W, T){ tourAt(W, T, 'homeEmpty', () => homeEmpty(W, T)); } },
+    // entreno: sesión PROPIA (la del dueño no se toca); el 1.er peso ('lo gris es lo que hiciste la última vez') · RIR o RPE
+    // según la escala de la sesión · ✓ · [+ set]/[↓ drop set] · guardar. Sin ejercicios no hay tour
+    { id:'tour:workout', g:'overlay', label:'guía · entreno (1/5)', own:true, run(W, T){ tourAt(W, T, 'workout', () => { ownLive(W, T); T.state._curEx = null; W.go('workout'); }); } },
+    // macros (el último día con comida): el anillo · + meal · agua · ‹ › otros días
+    { id:'tour:macros', g:'overlay', label:'guía · macros (1/4)', run(W, T){ tourAt(W, T, 'macros', () => { macrosOn(W, T); }); } },
+    // progress: la racha · un recuadro · [edit]
+    { id:'tour:progress', g:'overlay', label:'guía · progress (1/3)', run(W, T){ tourAt(W, T, 'progress', () => W.go('progress')); } },
+    // ajustes: perfil y metas · el respaldo ('tus datos viven en este teléfono') · 'guías de cada sección ···· repetir ›'
+    { id:'tour:settings', g:'overlay', label:'guía · ajustes (1/3)', run(W, T){ tourAt(W, T, 'settings', () => W.go('settings')); } },
     // ---------------- avisos ----------------
     { id:'toast:ok', g:'aviso', label:'aviso · listo', run(W){ W.toast('✓ guardado'); } },
     { id:'toast:err', g:'aviso', label:'aviso · error', run(W){ W.toast('⚠ error de prueba', 'err'); } },

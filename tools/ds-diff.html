@@ -22,7 +22,7 @@ const P=['color','fontSize','fontWeight','marginTop','marginBottom','marginLeft'
   'lineHeight','borderTopWidth','borderRightWidth','borderBottomWidth','borderLeftWidth','borderTopColor','borderBottomColor','borderTopLeftRadius','borderTopRightRadius','borderBottomRightRadius','borderBottomLeftRadius','opacity','boxShadow','filter','strokeWidth','backdropFilter','outlineWidth','transitionDuration','animationName'];
 function snap(W){ W.document.getAnimations().forEach(a=>{ try{a.finish();}catch(_){} }); const out=[];
   const walk=(el,path)=>{ const cs=W.getComputedStyle(el); out.push({path,cls:el.getAttribute('class')||'',v:P.map(p=>cs[p])}); [...el.children].forEach((c,i)=>walk(c,path+'/'+c.tagName.toLowerCase()+i)); };
-  ['view','modal','nowbar','resttimer','wfooter','nav','toasts','asklayer'].forEach(id=>{ const el=W.document.getElementById(id); if(el)walk(el,'#'+id); });
+  ['view','modal','nowbar','resttimer','wfooter','nav','toasts','asklayer','tour'].forEach(id=>{ const el=W.document.getElementById(id); if(el)walk(el,'#'+id); });   // v278 · + el velo del tour (#tour, en #app)
   return out; }
 const food={name:'x',base:'g',per100:{kcal:100,protein:10,carbs:10,fat:2},sizes:{serving:30}};
 const lastS=D=>D.sessions[D.sessions.length-1];
@@ -94,8 +94,31 @@ const S2=[
 // (120 ms tras el scroll) para que no quede un temporizador vivo que toque las pestañas del escenario siguiente
 ['m:sharemenu',W=>{ W.go('macros'); const s=W.document.querySelector('#view [data-act="share"]'); if(s)s.click(); }],
 ['share:macros',(W,D)=>{ const S=W.__trk.state, d=lastFood(D); S.shareType='macros'; if(d)S.macroDate=d; W.go('share'); }],
-...['rings','bars','meter','split','table','donut'].map(k=>['macros:viz:'+k,(W,D)=>vizTo(W,D,k)])
+...['rings','bars','meter','split','table','donut'].map(k=>['macros:viz:'+k,(W,D)=>vizTo(W,D,k)]),
+// v278 · tour por sección: el paso 1 de cada sección (y el 2 de gym) con db.tour en blanco solo mientras se pinta (tourAt,
+// todo vuelve en su finally). En un _pre.html anterior a v278 no hay tourShow: ERR en A (struct)
+['tour:home',(W,D)=>tourAt(W,D,'home',()=>homeStart(W,D))],
+['tour:step2',(W,D)=>tourAt(W,D,'home',()=>homeStart(W,D),1)],
+['tour:homeempty',(W,D)=>{ const d0=D.split.days; try{ tourAt(W,D,'homeEmpty',()=>{ D.split.days=[]; try{ W.bumpIdx(); }catch(_){} W.__trk.state.selDay=null; W.go('home'); }); } finally{ D.split.days=d0; try{ W.bumpIdx(); }catch(_){} } }],
+['tour:workout',(W,D)=>{ const w0=D.activeWork; try{ tourAt(W,D,'workout',()=>{ D.activeWork=W.newWorkSession(); W.__trk.state._curEx=null; W.go('workout'); }); } finally{ D.activeWork=w0; } }],
+['tour:macros',(W,D)=>tourAt(W,D,'macros',()=>W.go('macros'))],
+['tour:progress',(W,D)=>tourAt(W,D,'progress',()=>W.go('progress'))],
+['tour:settings',(W,D)=>tourAt(W,D,'settings',()=>W.go('settings'))]
 ];
+// v278 · tour por sección. La db del frame tiene todas las secciones vistas (migrate): aquí db.tour va en blanco SOLO mientras
+// se pinta y en el finally vuelve la MISMA referencia (o se quita si no existía), así nada llega al escenario siguiente. Se
+// pinta con el db.tour de siempre (sin temporizador del tour) y luego tourShow(clave) directo; el velo (#tour) se queda en el
+// DOM para el snap y runDiff2 lo quita antes del siguiente (tourHide). Si hubo un toque en el velo (_tourPause, en memoria),
+// esa sección no sale hasta recargar. homeStart: sin la sesión viva (con ella solo existe resume) y, si hoy toca descanso por
+// el plan, el plan a diario sin hoy bloqueado; ambos vuelven en su finally
+function tourAt(W,D,key,paint,step){ const own=(o,k)=>Object.prototype.hasOwnProperty.call(o,k), ht=own(D,'tour'), t0=D.tour;
+  try{ paint(); if(typeof W.tourShow!=='function')throw new Error('sin tourShow'); D.tour={v:1,seen:{},step:{},skipped:false}; if(step)D.tour.step[key]=step;
+    const a=W.document.activeElement; if(a&&a!==W.document.body&&a.blur)a.blur(); W.tourShow(key); }
+  finally{ if(ht)D.tour=t0; else delete D.tour; } }
+function homeStart(W,D){ const w0=D.activeWork, sp=D.split, hp=Object.prototype.hasOwnProperty.call(sp,'plan'), p0=sp.plan, t=W.todayISO();
+  try{ D.activeWork=null; if(W.planDay&&W.splitPlan&&(sp.days||[]).length&&W.planDay(t).rest){ const P=W.splitPlan(), dw=W.dowOf(t); sp.plan=Object.assign({},P,{mode:'daily',blocked:P.blocked.filter(d=>d!==dw)}); }
+    W.__trk.state.selDay=null; W.go('home'); }
+  finally{ D.activeWork=w0; if(hp)sp.plan=p0; else delete sp.plan; } }
 // v277 · alta paso a paso. La db del frame tiene usuario y onb.done (migrate): aquí se vuelve "usuario nuevo" solo mientras
 // se pinta —username vacío (el router manda a la entrada o al alta) y db.onb con el borrador de muestra en el paso n (null =
 // base nueva sin db.onb)— y en el finally vuelve TODO ahí mismo: username, la MISMA referencia de db.onb (renderOnboard
@@ -151,8 +174,8 @@ async function runDiff2(S){ const A=document.getElementById('A').contentWindow, 
   if(!A.__trk||!B.__trk)throw new Error('frames sin guardia: no se corre');
   const D=W=>W.__trk.db;
   for(const [name,fn] of S){ let ea='',eb='';
-    try{ try{A.closeModal()}catch(_){} try{A.closeAsk(true)}catch(_){} await fn(A,D(A)); }catch(e){ ea=e.message; }   // v274 · también la capa de TRKAsk (workout:exname deja un trkMenu) · v276 · un escenario puede devolver una promesa (vizTo)
-    try{ try{B.closeModal()}catch(_){} try{B.closeAsk(true)}catch(_){} await fn(B,D(B)); }catch(e){ eb=e.message; }
+    try{ try{A.closeModal()}catch(_){} try{A.closeAsk(true)}catch(_){} try{A.tourHide()}catch(_){} await fn(A,D(A)); }catch(e){ ea=e.message; }   // v274 · también la capa de TRKAsk (workout:exname deja un trkMenu) · v276 · un escenario puede devolver una promesa (vizTo) · v278 · y el velo del tour
+    try{ try{B.closeModal()}catch(_){} try{B.closeAsk(true)}catch(_){} try{B.tourHide()}catch(_){} await fn(B,D(B)); }catch(e){ eb=e.message; }
     await new Promise(r=>setTimeout(r,40));
     const a=snap(A), b=snap(B); const diffs=[];
     if(a.length!==b.length){ res[name]={err:ea||eb||null, struct:'A '+a.length+' vs B '+b.length}; continue; }

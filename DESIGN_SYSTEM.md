@@ -1,6 +1,6 @@
 # gym//TRK — DESIGN SYSTEM (referencia del estado actual)
 
-> Referencia del estado actual (v277). **Lee BRAND.md primero**: manda sobre este archivo. Sin historia: DESIGN_CHANGELOG.md.
+> Referencia del estado actual (v278). **Lee BRAND.md primero**: manda sobre este archivo. Sin historia: DESIGN_CHANGELOG.md.
 
 ---
 
@@ -250,7 +250,7 @@ tarjeta 16, flotante 12).
 | `--r-mark` | 4 | marcas de gráfica: días del calendario, hipnograma, bloque de agenda |
 | `--r-ctl` | 4 | **TODO control**: primario (`.start`, `.sheetbtns .ok`, `.footer .save`), campos y selects, `.lact`, `.restbar a`, `.hold`, celdas de la tabla de series (`.inp`, `.pick`, `.fs`, `.bwchip`, `.inp-mini`), opciones de TRKSelect (`.tselo`), hora del desglose, **los chips** (`.chip`, `.spc`, `.wchip`, `.ag-chip`, `.chst`) y el panel del anillo (`.card.kpanel`, excepción `ring`). Los `[verbo]` y las opciones (`button.b/.t/.cancel`, `.secondary .b`, `.sheetbtns .cancel`, `.footer .abort/.undo`) no tienen caja: radio 0 |
 | `--radius` | 4 | tarjetas `.card`, `.grp`, `.ptile`, `.pfeat`, `.pthrow`, `.hcal`, `.ws-card` |
-| `--r-float` | 8 | **solo lo que flota**: nav (`--r-nav`; sus pestañas no tienen caja), sheet (`--r-sheet`), toast (`--r-toast`), popovers `.tsel`/`.gloss` (`--r-pop`), `.savebar` (`--r-bar`), fantasma de arrastre, panel de `?design` |
+| `--r-float` | 8 | **solo lo que flota**: nav (`--r-nav`; sus pestañas no tienen caja), sheet (`--r-sheet`), toast (`--r-toast`), popovers `.tsel`/`.gloss` (`--r-pop`), `.savebar` (`--r-bar`), fantasma de arrastre, panel de `?design`, globo del tour `.tourb` (v278, §7.42) |
 | `--r-sheet` | `var(--r-float)` | esquinas inferiores del sheet |
 | `--r-pill` | 999 | **única píldora que queda**: la tapa de las barras finas ≤6 px (`.bar`, `.wprog`, `.vbar`) |
 | `50%` | — | puntos, thumbs, `.dots3`, punto del rail, el `−` de quitar en //PROGRESS editable (`.pdel`, 20, v269; `_dsRenderCheck` lo cuenta como punto) (los spinners circulares se retiraron en v268) |
@@ -300,7 +300,8 @@ presionado `.6` de la agenda, `.5` de `.fa-em-step.off`/`.u-dim`, arrastre `.3`,
 - MOV-T1: ninguna duración literal en el CSS salvo los bucles con id (§15). En JS se leen con `durMs()`, que respeta la
   unidad (el hold lee `--dur-hold` desde v260). Hoy quedan literales en JS: 950/480/600 (+260 de cierre) del arranque
   (normal/corto/movimiento reducido, v268), 40 de su barra, 5000 del recap, 120 del ticker de TRKSpin (v268), 190/200 de
-  salidas, 430 del escáner, 1600 del scrub, y el easing del rebote del escáner.
+  salidas, 430 del escáner, 1600 del scrub, 350/800/60 del tour (espera, reintento si está ocupado, siguiente paso; v278,
+  §7.42), y el easing del rebote del escáner.
 - v260: `--mv-1` 4px (desplazamiento máximo del contenido en `rowin`, `mdslide` y `viewin`, B-09) · `--ease-step`
   `step-end` (los bucles de terminal: cursor ▌ del landing, wrap, desde v267 el `>` de la nav y desde v268 el cursor
   `.bcur` de `ready▌` en el arranque) · `--dur-hold` 900ms (TRKHold).
@@ -312,6 +313,7 @@ presionado `.6` de la agenda, `.5` de `.fa-em-step.off`/`.u-dim`, arrastre `.3`,
 | `--z-float` | 20 | `.dragghost` (fantasma de arrastre) |
 | `--z-nav` | 30 | `.nav` |
 | `--z-modal` | 40 | `.modal`: scrim + sheet (**tapa la nav**) |
+| `--z-tour` | 45 | `.tour` (v278, §7.42): velo con hueco + globo; tapa la nav y el contenido, y queda bajo la capa de decisión, los popovers, los overlays y los toasts (el `[deshacer]` de `[skip tour]` se ve encima). Nunca convive con una hoja: `tourBusy()` espera a que se cierre |
 | `--z-pop` | 50 | capa de decisión `.modal.asklayer` (TRKAsk, TRKHold, TRKWheel, TRKMenu) · popovers `.tsel` y `.gloss` |
 | `--z-overlay` | 60 | `.bootov` (arranque, recap, wrap) · `.exsh` (compartir un ejercicio) |
 | `--z-toast` | 80 | `.toasts` · `.savebar` (aviso permanente de guardado fallido) |
@@ -324,7 +326,7 @@ presionado `.6` de la agenda, `.5` de `.fa-em-step.off`/`.u-dim`, arrastre `.3`,
   (arranque o recap): lo vuelve a intentar cada 300 ms y lo abre en cuanto se cierra. Como el arranque dura ~1 s y se
   salta tocando, la pregunta llega enseguida y nunca tapada: ninguna decisión de datos se toma a ciegas. Lo prueba
   `_v268SelfCheck`.
-- Scrim: `--scrim` `rgba(0,0,0,.6)` en `.modal` (v260).
+- Scrim: `--scrim` `rgba(0,0,0,.6)` en `.modal` (v260) y en los 4 rectángulos del velo del tour (`.tour .tm`, v278).
 
 ### 4.12 Vidrio (solo chrome)
 
@@ -332,10 +334,12 @@ presionado `.6` de la agenda, `.5` de `.fa-em-step.off`/`.u-dim`, arrastre `.3`,
 (v264: sobre un gris `saturate()` no hace nada; el 1.7 de antes solo saturaba el color dentro del vidrio) · `--glass-edge`
 .14 · `--glass-edge-lo` .06 · `--glass-ring` .10 · `--glass-shadow` `0 8px 30px rgba(0,0,0,.55)`. Radio: `--r-float` 8.
 
-- GLS-1 (B-01): `backdrop-filter` **solo en chrome** (nav, sheet, toast; popover en G3). Nunca en contenido. La revisa:
-  R-BLUR · `_dsRenderCheck` blur.
-- GLS-2: **una sola definición.** Las utilidades `.glass` (nav) y `.glass-strong` (sheet, toast, capa de decisión) se
-  ponen en el marcado (`<nav class="nav glass">`, `openModal()`, `askLayer()`, `toast()`); el componente no repite blur,
+- GLS-1 (B-01): `backdrop-filter` **solo en chrome** (nav, sheet, toast, globo del tour desde v278; popover en G3). Nunca
+  en contenido. La revisa: R-BLUR (`tools/ds-rules.cjs` cuenta `.tour`/`.tourb` como chrome desde v278) · `_dsRenderCheck`
+  blur (`DS_CHROME` incluye `.tour`).
+- GLS-2: **una sola definición.** Las utilidades `.glass` (nav) y `.glass-strong` (sheet, toast, capa de decisión, globo del
+  tour) se ponen en el marcado (`<nav class="nav glass">`, `openModal()`, `askLayer()`, `toast()`, `tourDraw()`: la lista
+  de funciones que R-BLUR acepta); el componente no repite blur,
   fondo, borde ni sombra. Ajustes por pieza con selector doble (`.sheet.glass-strong`: solo borde inferior porque cuelga de
   arriba).
 - GLS-3: fallbacks en las utilidades: sin `backdrop-filter` → sólido; `prefers-reduced-transparency` → sólido sin blur
@@ -356,7 +360,7 @@ los mueve en vivo sin tocar la app; cambian de valor solo por decisión del due�
 | `--bw-box` | .5px | 15 | caja de dato (`.inp`, `.pick`, `.fs`, `.tselo`, `.chip`…) |
 | `--bw-dash` | 1px (v262) | 4 | subrayado punteado (`[data-gloss]`, `.mch`, `.u-dash`) |
 | `--bw-leader` | 1px | 2 | guía `····` de `clave ···· valor` (`.line .dots`, `.mddots`) |
-| `--bw-field` | 1px | 10 | campo de formulario (`.field input`, `#fa_q`, `textarea.ta`…; en `--o40` desde v267) |
+| `--bw-field` | 1px | 12 | campo de formulario (`.field input`, `#fa_q`, `textarea.ta`…; en `--o40` desde v267); desde v278 también el anillo del tour (`.tour .tr`, en `--fg`), que es un indicador y no un campo (§7.42) |
 | `--bw-ctl` | 1px | 9 | control (`.lact`, `.restbar a`, `.hold`, `.ag-chip`, anillo interior del primario presionado…; los `[verbo]` y los toggles ya no tienen borde, v267) |
 | `--bw-card` | 1px | 8 | tarjeta (`.card`, `.grp`, `.ptile`, `.hcal`…; G3 las retira) |
 | `--bw-rule` | 1px | 12 | regla (`.rule`, borde de `.footer`/`.restbar`, `.ghead`…) |
@@ -365,7 +369,7 @@ los mueve en vivo sin tocar la app; cambian de valor solo por decisión del due�
 | `--sw-grid` · `--sw-ref` · `--sw-data` · `--sw-data-lg` | .5 · 1 · 1.4 · 1.8 | clases `.sw-*` | trazos de gráficas (lineChart, radar, FC; la regla CSS gana al atributo) |
 | `--sw-icon` · `--sw-ring-lg` · `--sw-ring-md` | 1.6 · 1.4 · 1.8 | nav · anillos | trazos de íconos y anillos (la imagen para compartir lee el trazo computado) |
 | `--r-nav` · `--r-toast` · `--r-pop` · `--r-bar` | `var(--r-float)` (v262) | 2 · 1 · 2 · 1 | radio por pieza flotante; el auditor resuelve el alias |
-| `--scrim` · `--nav-clear` · `--mv-1` · `--ease-step` · `--dur-hold` | `rgba(0,0,0,.6)` · 84px · 4px · `step-end` · 900ms | 1 · 2 · 3 · 3 · JS | fondo de modal · espacio sobre la nav · desplazamiento · bucles · TRKHold |
+| `--scrim` · `--nav-clear` · `--mv-1` · `--ease-step` · `--dur-hold` | `rgba(0,0,0,.6)` · 84px · 4px · `step-end` · 900ms | 2 · 2 · 3 · 3 · JS | fondo de modal y velo del tour (v278) · espacio sobre la nav · desplazamiento · bucles · TRKHold |
 | `--ring-glow` · `--ring-glow-sm` | retirados en v262 | — | el anillo ya no tiene brillo (look "1") |
 
 Sin token a propósito: la línea del scrub (`.chsl`), que es geometría. Los anillos de carga con borde de 1 px se retiraron
@@ -487,8 +491,11 @@ changelog. Estado medido:
 - Reversible: `✓ alimento borrado [deshacer]`. v269: `✓ descanso · sigue <día> · mañana [deshacer]` (forma de v273),
   `✓ saltado · sigue <día> [deshacer]`, `supps ocultos · vuelven en ajustes [deshacer]`; v275 (suplementos, deshacer
   exacto): `omega-3 en pausa [deshacer]`, `omega-3 archivado · se acabó [deshacer]` (o `· no lo encontré`),
-  `omega-3 de vuelta [deshacer]`, `omega-3 · frasco nuevo de 120 cáps [deshacer]`; sin deshacer (se revierten con su propio control):
-  `✓ descanso quitado`, `✓ supps de vuelta en macros`, `✓ progreso acomodado`, `✓ peso corporal en lbs`.
+  `omega-3 de vuelta [deshacer]`, `omega-3 · frasco nuevo de 120 cáps [deshacer]`; v278: `guías apagadas · se prenden en
+  ajustes [deshacer]` (`[skip tour]`, §7.42); sin deshacer (se revierten con su propio control):
+  `✓ descanso quitado`, `✓ supps de vuelta en macros`, `✓ progreso acomodado`, `✓ peso corporal en lbs`, `✓ las guías
+  vuelven a salir en cada sección` (v278; 43 caracteres, pasa de los 42 de R-TOAST, que no lo ve porque va por
+  `savedToast()`).
 - Aviso con acción (v275, `opt.act`): `⚠ omega-3 · quedan 10 softgels · ~5 d [ver]` o `⚠ 3 suplementos por acabarse ·
   omega-3, zinc, creatina [ver]` (hasta 3 nombres); `[ver]` lleva al stack en TODOS. Una vez al día, al abrir macros.
 - Vacío: `// sin registros · [+ acción]`. En Progreso, además, **la tile visible nunca desaparece por falta de datos**
@@ -919,7 +926,8 @@ piezas, **no** para inventar componentes: si un conjunto de utilidades se repite
 - UTL-1: van al final del CSS como `#app .u-x`: ganan como ganaba el `style=""`, y un `el.style.*` en vivo les sigue
   ganando. El bloque se genera **solo con las que se usan**.
 - UTL-2: siguen en línea (y está bien) los valores calculados en vivo (`width:${pct}%`, colores de zona, posiciones) y el
-  `display:none` que el JS alterna. Hoy: 89 `style=""`.
+  `display:none` que el JS alterna. Hoy: 90 `style=""` (v278 suma 3 en `tourDraw()`: las posiciones medidas del velo, el
+  anillo y el globo).
 - UTL-3: no valores fuera de la escala, no color literal, no dos declaraciones de la misma propiedad en un elemento, no
   utilidades para lo que ya es componente. No existen `u-o70`, `u-info` ni utilidades de tamaño viejas.
 - **Pendiente G4:** `.u-hit` (pendiente G4), §7.29. La revisa: ds-audit (`style=""`) · R-DOC.
@@ -947,9 +955,11 @@ componente, con una API. **Ninguna pantalla implementa su propia versión**: si 
 | **TRKRing** | el anillo de macros | `ringHTML(pct, center, size, inv)` | §7.28 |
 | **TRKSpin** | algo trabaja y no se sabe cuánto falta (v268) | `trkSpinHTML(verb, {t0})` → `.tspin[data-spin]`; un solo ticker `spinStart()`/`spinTick()` | §7.33 |
 | **TRKProgress** | algo trabaja y se sabe cuánto va (v268) | `trkProgressHTML(p, {label, cells})` → `.tprog`; `trkProgressSet(el, p)`; `trkBarTxt(p, n)` | §7.33 |
+| **Tour** | la primera vez en cada sección, señalar sus controles reales (v278) | `TOUR_STEPS`, `tourMaybe()` → `tourShow()` → `tourDraw()`; `tourAdvance()`, `tourSkip()`; `db.tour` | §7.42 |
 
 `afterPaint(root, swap)` (al final de `render()` y de `openModal()`) es **la única vía** para animar lo que `render()`
-reconstruye: cierra popovers y aplica TRKNum, TRKBar, TRKTabs y `applyEnter()` una sola vez (TRK-2).
+reconstruye: cierra popovers y aplica TRKNum, TRKBar, TRKTabs y `applyEnter()` una sola vez (TRK-2); desde v278 termina
+con `tourMaybe()` (§7.42).
 
 ### 7.19 Compartir
 
@@ -1381,7 +1391,7 @@ después) → dieta (ahora o después) → Atajo de Salud → plan de pago", con
 pantalla de v268 · v269 (`gym//TRK//PROFILE`, diez filas y `▶ empezar`; se fueron `obPick`, `obDraft`, `obPrev` y el
 handler `onboardgo`). De v268 · v269 se quedan las filas: `.obr`/`.obk`/`.obi` (caja de 36 dentro de una fila de 44), las
 listas `.toggles.oblist` con su descripción fija, el `>` en la fila con foco y Enter al siguiente campo. **Pendiente:** la
-cuenta (correo y código) entra como pasos con v278 y el plan de pago con v279.
+cuenta (correo y código) entra como pasos con v279 y el plan de pago con v280 (renumeradas: el tour salió como v278).
 
 - **Rol:** el primer perfil, **una pregunta por pantalla**, con lo opcional para después y **nada escrito hasta terminar**.
 - **Clase / API:** `renderOnboard()` pinta el paso `db.onb.step` de `ONB_STEPS` (10, `{k, q, why, opt}`) · `onbD()` (el
@@ -1438,7 +1448,8 @@ cuenta (correo y código) entra como pasos con v278 y el plan de pago con v279.
   `settings.goals` = las que hubiera + `recalcGoals()` + lo tecleado en el paso 8 (la meta de sueño sobrevive) ·
   `goalHist[hoy]` · `bodyweight[hoy]` en kg si tecleaste un peso en rango (150 lbs = 68.04 kg) · el split de la plantilla
   (o `mi split` con un día vacío) con `plan` `{mode, on, off, week, blocked}` y `metric` (días fijos → `defaultWeek()`) ·
-  `rotIdx` 0 · y `db.onb` = `{done:true, at, skip}` (el borrador se va). Lo que dejaste para después no se escribe: sin
+  `rotIdx` 0 · `db.onb` = `{done:true, at, skip}` (el borrador se va) · y desde v278 `db.tour` en blanco (el tour de cada
+  sección, §7.42). Lo que dejaste para después no se escribe: sin
   plan, sin split, metas calculadas. Luego gym, o el editor de split con `desde cero`.
 - **Quién lo ve:** `migrate()` marca `onb.done` (`at:'antes'`) a cualquier base con usuario: **el dueño nunca lo ve**, ni
   un respaldo que se importe.
@@ -1772,6 +1783,82 @@ Decisión del dueño 2026-09-24 (BRAND §9): propuestas de barras de progreso y 
   al lado. Qué versión se queda es pregunta abierta (BRAND §10; propuestas 25 y 26 abiertas).
 - **La revisa:** `_macroVizSelfCheck` (§18.2) · a ojo con capturas de las 6 versiones.
 
+### 7.42 Tour por sección (`tourDraw()`, v278)
+
+Encargo del dueño del 23-sep (BRAND §9): un tour por sección para cuentas nuevas, que se pueda saltar; diseñado en la
+sección F del plan aprobado. Se adelantó a v278 porque no depende de nada: las cuentas pasan a v279 y Pro a v280.
+
+- **Rol:** la primera vez que una cuenta nueva entra a una sección, señalar de 3 a 5 de sus **controles reales** con una
+  línea cada uno. Es chrome (flota encima del contenido, como hojas y toasts), no contenido: el contenido no cambia.
+- **Clase / API:** `TOUR_STEPS` (`{sel, t}` por sección; `t` puede ser una función) · `TOUR_LBL` · `tourKey()` ·
+  `tourOn(k)` · `tourBusy()` · `tourMaybe()` · `tourShow(k)` · `tourDraw(k, i, el)` · `tourAdvance(T, k, i, n)` ·
+  `tourHide()` · `tourSkip()`. Botones del globo con `data-tour` (`next` / `skip`); en ajustes, `tourreplay`.
+- **Anatomía** (`#tour.tour`, hijo de `#app`, `position:absolute; inset:0`, `z-index:var(--z-tour)`, sin toque salvo
+  sus piezas):
+  1. **Velo con hueco:** 4 rectángulos `.tm` en `--scrim` (con toque) alrededor del ancla, a 6 de holgura y recortados al
+     marco. El hueco no lleva nada encima: **el control real se sigue tocando**.
+  2. **Anillo** `.tr` sobre el borde del hueco: `--bw-field` sólido en `--fg`, radio `--r-ctl` 4, sin toque.
+  3. **Globo** `.tourb.glass-strong` (`--r-float` 8, padding `--s4`, de `--s4` a `--s4` del marco): debajo del hueco (12
+     por debajo) si caben 150; si no, arriba (12 por encima); después de pintarlo se ajusta a su alto real para que nunca
+     salga del marco (8 de margen).
+  4. Dentro: `.tourh` `// 1/4 · gym` (`--t-label` `--o50`, `--ls-title`) · `.tourt` una línea (`--t-data` `--fg`,
+     `--lh-read`, `--s2` arriba y `--s3` abajo) · `.toura` (`--s4` entre botones) con dos `[verbo]` (`button.b`, 44 de
+     alto): `[next]` (`[listo]` en el último paso) y `[skip tour]`. Sin primario: la vista conserva el suyo (B-06).
+- **Cuándo sale:**
+  - `afterPaint()` termina con `tourMaybe()`: quita el tour que hubiera y, si la sección toca, lo pide a los 350.
+  - `tourKey()` = la sección de la pantalla: `home` (con días) u `homeEmpty` (sin split), `workout` **solo con
+    ejercicios**, `macros`, `progress`, `settings`; cualquier otra pantalla, o sin usuario, nada.
+  - `tourOn(k)`: existe `db.tour`, no está `skipped`, la sección no está vista y no está en pausa.
+  - **Ocupado** (`tourBusy()`): el arranque o el recap (`#bootov`), una hoja (`#modal`), la capa de decisión
+    (`#asklayer`) o una casilla con foco (`input`, `textarea`, `select`) → no dibuja y lo reintenta a los 800.
+  - `tourShow(k)` vuelve a buscar el ancla en cada render: un paso cuya ancla falta o mide 0 de ancho **se salta**; sin
+    ninguna, la sección cuenta como vista. Un ancla dentro de `#view` se centra con `scrollIntoView` (instantáneo).
+- **Pasos (`TOUR_STEPS`; la etiqueta sale de `TOUR_LBL`):**
+
+| sección | etiqueta | pasos: ancla → línea |
+|---|---|---|
+| `homeEmpty` (gym sin split) | `gym` | `newsplit` → arma tu split · `workshop` (`explorar splits`) → una plantilla · `importsplit` → pégala de tus notas · `navmenu` (`u/`) → tu menú: suplementos, historial, catálogo y ajustes · `#nav` → `abajo: progress · gym · macros; el > marca dónde estás` (5) |
+| `home` (gym con split) | `gym` | `start` → `▶ start abre el día que te toca…` · `.arrow` `nextday` → `‹ › si hoy quieres otro día de tu split` · `loglater` → regístralo con su fecha · `navmenu` → tu menú · `#nav` → abajo: progress · gym · macros (5) |
+| `workout` (con ejercicios) | `entreno` | el peso de la serie que toca (`tourCurSet()`: la primera sin ✓, con `currentSetTarget()`; así nunca señala una ya confirmada) → `escribe peso y reps; desde la segunda vez, lo gris es lo que hiciste la última vez` · `.rirb` → RIR o RPE según `db.activeWork.metric` (`RPE: 10 = no salía otra · 9 = te quedaba 1` / `RIR: cuántas te quedaban · 0 o F = al fallo`) · `done` → `✓ confirma la serie y arranca el descanso` · `addset` → `[+ set]` / `[↓ drop set]` · `#wfooter .save` → guarda la sesión (5) |
+| `macros` | `macros` | `togglemacros` → el anillo contra tu meta · `newmeal` → `+ meal` · `waterpick` → el agua de un toque · `dayprev` → `‹ ›` otros días (4) |
+| `progress` | `progress` | `streakcal` → tu racha · la primera `.ptile` → su detalle (una vacía registra) · `progedit` → `[edit]` (3) |
+| `settings` | `ajustes` | `pf_goals` → perfil y metas · `export` → `tus datos viven en este teléfono: guarda un respaldo de vez en cuando` · `tourreplay` → aquí vuelven a salir estas guías (3) |
+
+- **Avanzar, pausar, saltar, repetir:**
+  - `[next]`, o **usar el control de verdad** (un `click` en captura sobre el ancla, una sola vez; el toque sigue a la
+    app) → `tourAdvance()`: el siguiente paso (60 después) o, en el último, la sección queda vista. Se guarda en cada paso.
+  - **Tocar el velo** pausa esa sección (`_tourPause`, solo en memoria) hasta la próxima vez que abras la app; no la marca
+    vista, y el toque sigue a lo que hay debajo (`elementFromPoint`): tocar la barra de abajo o guardar funciona a la
+    primera. `Esc` también la pausa.
+  - `[skip tour]` (`tourSkip()`): `db.tour.skipped` y el toast `guías apagadas · se prenden en ajustes` con `[deshacer]`.
+  - **Ajustes** (//SETTINGS, §14.3): fila `.line.lnav` de 44 `guías de cada sección ···· repetir ›` (con las guías
+    apagadas, `apagadas · prender ›`) → `tourreplay`: `db.tour` en blanco, sin pausas, `✓ las guías vuelven a salir en
+    cada sección` y enseguida el tour de ajustes. Como paso 3 del tour de ajustes, tocar esa fila es `listo` (`swallow`: no reinicia).
+- **Dato:** `db.tour` = `{v:1, seen:{}, step:{}, skipped:false}` (`seen` por sección; `step` = el paso a medias).
+  `migrate()`: cualquier base sin `tour` (la del dueño, un respaldo importado) llega con las 6 secciones vistas: **el dueño
+  nunca lo ve**. `onbApply()` lo crea en blanco al terminar el alta de una cuenta nueva (§7.34).
+- **Movimiento:** ninguno propio (B-09). Aparece y se va de golpe, sin fundido ni deslizamiento; un scroll de `#view` o un cambio de
+  tamaño del marco (girar, iPad) lo redibuja en su lugar; un re-render lo quita y lo vuelve a pedir a los 350. Con reduced-motion es igual.
+- **Accesibilidad:** el globo es `role="dialog"` con `aria-label` `guía de <sección>`, **sin `aria-modal` ni trampa de
+  foco**, porque el control real sigue siendo usable (usarlo avanza); el foco va a `[next]` al abrir, la línea es
+  `aria-live="polite"` y `Esc` lo pausa. `[next]` y `[skip tour]` son `<button type="button">`;
+  el velo solo se toca con el dedo. Color: ninguno (B-07).
+- **Auditoría:** `.tour` entra a `DS_CHROME` (§18.2) y `tools/ds-rules.cjs` suma `.tour`/`.tourb` a lo que flota y
+  `tourDraw` a las funciones que pueden poner vidrio en el marcado (§4.12).
+- **Hoy → objetivo (choques; los de BRAND quedan como preguntas en BRAND §10):**
+  - Idioma (VOZ-1): `[next]` pasa a `[listo]` en el último paso (en //PROGRESS editable es `✓ done`); la etiqueta mezcla
+    `gym`, `macros`, `progress` con `entreno` y `ajustes` (la pantalla es //SETTINGS); y un concepto lleva dos nombres
+    (VOZ-4): `tour` en `[skip tour]`, `guías` en el toast, la fila de ajustes y el `aria-label`.
+  - Cada paso es una instrucción impresa (B-10), aunque salga una vez y flote.
+  - `.tourh` usa `--ls-title` en minúsculas: TYP-4 lo reserva a títulos en mayúsculas (una meta va con `--ls-ui` o 0).
+  - El anillo toma `--bw-field`, el rol del campo editable; es un indicador (BRD-1).
+  - Varias líneas nombran botones entre corchetes (`[+ set]`, `[↓ drop set]`, `[edit]`) dentro de la prosa (VOZ-6: los
+    corchetes son acción).
+  - La fila de ajustes termina en `›` sin abrir nada, como `descanso entre sets` y `beep` (B-06).
+  - El toast de repetir pasa de 42 caracteres (§6.3).
+- **La revisa:** `_tourSelfCheck` (§18.2) · capturas de una cuenta nueva recién salida del alta (gym vacío 1/5, gym 1/4 y
+  2/4, macros 1/4, entreno 1/5, ajustes 3/3) y con el respaldo del dueño, sin tour.
+
 ---
 
 ## 8. Gráficas
@@ -1986,6 +2073,7 @@ Leyenda de la última columna: ✓ cumple B-09 · ⚠ a revisar con el dueño ·
 | Pellizco de gráfica | dos dedos | cambia el periodo o el zoom vertical (se repinta el sheet; el indicador de TRKTabs viaja) | — | — | ✓ |
 | TRKWheel `trkWheel()` | girar la rueda | `scroll-snap` nativo; el marcado cambia en el evento | nativo | nativo | ✓ |
 | Carrusel de macros `mvzHTML()` / `mvzSync()` (v276, §7.28) | deslizar el carril · tocar una pestaña (`mvtab`) | scroll horizontal con `scroll-snap` (sigue al dedo); la pestaña hace `scrollTo` a su lámina; al asentarse (120) cambia el alto del carril de golpe y la clase de la pestaña | nativo · `smooth` | la pestaña salta sin animar (`reducedMotion()`); `mvzSync()` nunca anima | ✓ al deslizar (sigue al dedo) · ⚠ al tocar una pestaña el contenido viaja más de 4 (§1) |
+| Tour `tourMaybe()` / `tourDraw()` (v278, §7.42) | `afterPaint()` en una sección con tour pendiente | nada se anima: el velo, el anillo y el globo aparecen y se van de golpe; el ancla se centra con `scrollIntoView` instantáneo y un scroll de `#view` los redibuja en su sitio | espera 350 · reintento 800 si está ocupado · siguiente paso 60 | igual (no hay animación) | ✓ chrome que no se mueve |
 | `scrollIntoView` suave | foco tras un ✓ (`state._focusSet`), primer RIR (`state._autoScroll`), `[+ exercise]`, ir a la serie en curso, día del historial | scroll | nativo | los cinco miran `reducedMotion()` (v258) | ✓ |
 
 Hoy un ✓ dispara 4 o 5 movimientos a la vez (pop, barra, número, foco con scroll suave): objetivo G4, uno visible por
@@ -2191,7 +2279,7 @@ Objetivo G4: completar la tabla con el texto exacto de cada celda vacía y una a
 | `share` | resumen | según tipo (el día · una sesión · el panel de macros, v276) | §7.19 | no | |
 | `stack` | inventario | `.section` //STACK | TRKTabs HOY/TODOS, bloques por momento | **sí (debería no)** | §7.25 |
 | `splitedit` | inventario | `.section` //SPLIT | nombre, //SCHEDULE (cómo entrenas, días sin gym, RIR/RPE, §7.39), //COVERAGE (sets por semana), días (`.seday`), ejercicios (`.seex`), deriva (`.sedrift`) | no | ▲▼ para reordenar y ✕ sin deshacer (G4) |
-| `settings` | utilitario | `.section` //SETTINGS | //PERFIL, entrenamiento, //SALUD, datos (`sync data`, `espacio`, `export`, `import`, `reset data`) | no | `reset data` igual que `export` (M6-19); cinco nombres para el respaldo (M6-11) → G4 |
+| `settings` | utilitario | `.section` //SETTINGS | //PERFIL, entrenamiento (descanso, beep y, desde v278, `guías de cada sección ···· repetir ›`, §7.42), //SALUD, datos (`sync data`, `espacio`, `export`, `import`, `reset data`) | no | `reset data` igual que `export` (M6-19); cinco nombres para el respaldo (M6-11) → G4 |
 | `agenda` | — | — | sin acceso desde v226 | — | código muerto (`renderAgenda()`, G4) |
 | overlays | — | — | §7.32 | — | — |
 
@@ -2404,7 +2492,8 @@ Línea base del 2026-09-21: todos en 0 salvo `style=""` 89, excepciones 33, lett
   contando su `::after` (R-HIT), `txt` texto bajo `--o40` (R-TXT), `fsOff` tamaños fuera de la escala (incluido SVG y
   `--t-field`), `blur` fuera del chrome, `glyph` glifos fuera de `GLYPHS` (desde v268 acepta también `GLYPHS_VIZ`: los
   cuadros de TRKSpin, los bloques de TRKProgress y el box-drawing) y, desde v267, **`rad`**: esquinas de contenido
-  más redondas que max(`--r-ctl`, `--radius`) (hoy 4), sin contar lo que flota (`DS_CHROME`), lo exento (`DS_EXEMPT`), los
+  más redondas que max(`--r-ctl`, `--radius`) (hoy 4), sin contar lo que flota (`DS_CHROME`: nav, sheets, toasts, popovers,
+  `#asklayer` y, desde v278, el tour `.tour`), lo exento (`DS_EXEMPT`), los
   puntos (círculos ≤24) ni las barras finas `.bar`/`.wprog`/`.vbar` — la prueba de 5 s de BRAND §8. Solo reporta; los
   umbrales viven en la línea base.
 - **R-SESS** (`_sessSafetyCheck()`): con sesión viva, `loglater`, `start`, `rest` y `skip` no cambian `activeWork.id`, no
@@ -2478,10 +2567,17 @@ Línea base del 2026-09-21: todos en 0 salvo `style=""` 89, excepciones 33, lett
   que dejaste para después no se escribe (sin split, sin plan, metas calculadas). Imprime `onboarding self-check OK`.
   **De paso:** un comentario `//` dentro de `migrate()` (una sola línea) se comía el resto de la función; lo cazó
   `_streakSelfCheck` y quedó como `/* */`.
+- **`_tourSelfCheck()`** (v278, al final de `?selftest=1`; sobre bases de juguete y restaura `db`, la pantalla y
+  `_tourPause`; **38 self-checks** en total): quien ya usaba la app no lo ve (`migrate()` marca las 6 secciones vistas) ·
+  una cuenta nueva sí (`onbApply()` lo deja en blanco) · cada sección tiene de 3 a 5 pasos y su etiqueta · gym sin split →
+  su tour de arranque (`homeEmpty`) · entreno sin ejercicios → nada · otras pantallas (historial) → nada · `[next]` avanza
+  un paso sin marcarla vista · el último la da por vista · tocar el velo la pausa sin marcarla vista · `[skip tour]` las
+  apaga todas. Imprime `tour self-check OK`.
 - **Inventario en navegador** (`tools/ds-inventory.js`, se guarda en G1): tamaños, colores→token, radios, sombras, blur,
-  tracking, animaciones, glifos y toques por pantalla, con el respaldo real del dueño. **`dsSweep()` de hoy** (v277, 393×852,
+  tracking, animaciones, glifos y toques por pantalla, con el respaldo real del dueño. **`dsSweep()` de hoy** (v278, 393×852,
   su respaldo, sin sesión viva; es la línea base `render` de `tools/ds-baseline.json`): ua 0 · hit 715 · txt 133 · fsOff 0
-  · blur 0 · glyph 88 · rad 0. **v277:** sin cambios, porque su base tiene usuario y el alta no entra al barrido; medido
+  · blur 0 · glyph 88 · rad 0. **v278:** sin cambios: con su respaldo el tour no sale (todo visto) y la fila nueva de
+  ajustes mide 44. **v277:** sin cambios, porque su base tiene usuario y el alta no entra al barrido; medido
   paso por paso con `_dsRenderCheck`: txt 0 y hit solo las casillas `.obi` de 36 (1–5 por paso) dentro de filas de 44
   (§7.34). **v276:** sin cambios, porque el barrido mide el panel de macros cerrado; medido abierto con
   sus datos, el panel tiene los mismos toques chicos que en v275 (25) en cada una de las 5 versiones del carrusel (las
