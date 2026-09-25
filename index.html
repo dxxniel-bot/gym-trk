@@ -632,6 +632,18 @@
   .hbal{text-align:center; font-size:var(--t-label); color:var(--o50); margin-top:var(--s3);}
   .kpanel .rule{margin:var(--s5) calc(-1 * var(--s5));}   /* v269 · reglas a sangre dentro del panel del anillo, mismo aire arriba y abajo */
   .kp-unit{display:flex; justify-content:flex-end; margin-top:var(--s3);}
+  /* v276 · carrusel del panel de macros: láminas con scroll-snap, pestañas de texto abajo */
+  .mvtrack{display:flex; align-items:flex-start; overflow-x:auto; overflow-y:hidden; overscroll-behavior-x:contain; scroll-snap-type:x mandatory; scrollbar-width:none; -webkit-overflow-scrolling:touch;} .mvtrack::-webkit-scrollbar{display:none;}
+  .mvslide{flex:0 0 100%; min-width:0; scroll-snap-align:start; scroll-snap-stop:always;}
+  .mvtabs{margin:var(--s3) 0 0;} .mvtabs span{flex:1 1 auto; min-width:44px; letter-spacing:0;}
+  .mvml{display:grid; grid-template-columns:64px auto 1fr; align-items:center; column-gap:var(--s3); margin-top:var(--s4); font-size:var(--t-data);} .mvml:first-child{margin-top:0;} .mvml .ml{color:var(--o50);} .mvml .mv{text-align:right; color:var(--o60); white-space:nowrap;} .mvml .g,.mvleg .g,.mvtab .g{color:var(--o40);}
+  .mvsl{display:grid; grid-template-columns:48px 1fr; align-items:center; column-gap:var(--s3); margin-top:var(--s3); font-size:var(--t-data);} .mvsl:first-child{margin-top:0;} .mvsl .ml{color:var(--o50);}
+  .mvstack{display:flex; height:10px; background:var(--track);} .mvstack.thin{height:4px;} .mvstack>i{display:block; height:100%;}
+  .mvp{background:var(--fill); stroke:var(--fill);} .mvc{background:var(--o60); stroke:var(--o60);} .mvf{background:var(--o30); stroke:var(--o30);}
+  .mvleg{display:flex; flex-wrap:wrap; gap:var(--s2) var(--s4); margin-top:var(--s4); font-size:var(--t-data); color:var(--o70);} .mvleg i{display:inline-block; width:8px; height:8px; margin-right:var(--s1);}
+  .mvtab{font-size:var(--t-data);} .mvtr{display:grid; grid-template-columns:72px 1fr 1fr 48px; column-gap:var(--s3); padding:var(--s2) 0; border-bottom:var(--bw-sep) solid var(--o10); text-align:right;} .mvtr .ml{text-align:left; color:var(--o50);} .mvth{color:var(--o40); font-size:var(--t-label);}
+  .mvdonut{display:flex; align-items:center; gap:var(--s5);} .mvdonut svg{width:112px; height:112px; flex:0 0 auto;} .mvdonut .mvleg{flex-direction:column; margin-top:0;}
+  .shmhero{display:flex; justify-content:center; margin:var(--s2) 0 var(--s5);} .shmhero.good .ring-fill{stroke:var(--good);} .shmhero.over .ring-fill{stroke:var(--bad);} .shviz{margin-bottom:var(--s3);} .shviz .rings{margin-top:var(--s3);}
   .lkc{text-align:center; margin:10px 0 6px;} .lkc b{font-size:var(--t-display); font-weight:800; color:var(--fg);} .lkc .u{font-size:var(--t-data); color:var(--o50);}
   .lnut{max-height:38vh; overflow-y:auto; -webkit-overflow-scrolling:touch; margin:var(--s1) 0 10px;} .lnut .line{padding:var(--s2) 0;}
   .toggles{display:flex; flex-wrap:wrap; gap:0 var(--s4);} .toggles button{flex:0 0 auto; height:44px; letter-spacing:var(--ls-ui);}
@@ -1052,7 +1064,7 @@
 
 <script>
 "use strict";
-const APP_V='v275';   // versión visible (arranque); R-DOC la compara con sw.js y con DESIGN_SYSTEM.md línea 3
+const APP_V='v276';   // versión visible (arranque); R-DOC la compara con sw.js y con DESIGN_SYSTEM.md línea 3
 const LS_KEY='gymtrk_db_v1';
 // BRAND.md §3 · diccionario cerrado de glifos de interfaz (un glifo = un significado). tools/ds-audit.cjs (R-GLY) lee
 // esta constante: cualquier otro símbolo no ASCII en un literal de interfaz es una desviación. Las etiquetas que el
@@ -4157,6 +4169,21 @@ function _scheduleSelfCheck(){ const A=(nm,c)=>{ if(!c) throw new Error('SELFCHE
     A('la etiqueta se calcula: @ RPE · F', (db.split.metric='rpe',intensityTag())==='@ RPE · F'&&(db.split.allowF=false,intensityTag())==='@ RPE');
   } finally { db=real; bumpIdx(); }
   console.log('schedule self-check OK'); }
+function _macroVizSelfCheck(){ const A=(nm,c)=>{ if(!c) throw new Error('SELFCHECK macros · versiones: '+nm); };
+  const t={kcal:1850,protein:142,carbs:200,fat:60}, g={kcal:2400,protein:180,carbs:250,fat:70}, s=macroSplit(t);
+  A('el reparto por kcal suma 100', s.p+s.c+s.f===100&&s.p===30&&s.c===42&&!macroSplit({}));
+  const mp=state.macroPct; state.macroPct=false;
+  try{ MACRO_VIZ.forEach(([k])=>A(k+' se dibuja', macroVizHTML(k,t,g,{rings:'<i>r</i>'}).length>40));
+    A('barras: gramos contra la meta', /142 <span class="g">\/ 180 g/.test(macroVizHTML('bars',t,g)));
+    A('medidor de terminal', /\[<b>[█▏▎▍▌▋▊▉░]+<\/b>\]/.test(macroVizHTML('meter',t,g)));
+    A('tabla con % de la meta', /79%/.test(macroVizHTML('table',t,g))&&/77%/.test(macroVizHTML('table',t,g)));
+  } finally { state.macroPct=mp; }
+  db.settings=db.settings||{}; const rs=db.settings.macroViz;
+  try{ db.settings.macroViz='nope'; A('clave inválida → aros', macroVizKey()==='rings'&&macroVizList().length===5);
+    db.settings.macroViz='donut'; A('la dona entra solo si la eliges', macroVizList().some(v=>v[0]==='donut'));
+    db.settings.macroViz='bars'; A('por defecto el carrusel son 5', !macroVizList().some(v=>v[0]==='donut')&&/data-v="table"/.test(mvzHTML(t,g,'')));
+  } finally { if(rs===undefined)delete db.settings.macroViz; else db.settings.macroViz=rs; }
+  console.log('macro viz self-check OK'); }
 function _suppSelfCheck(){ const A=(nm,c)=>{ if(!c) throw new Error('SELFCHECK suplementos: '+nm); };
   const D=k=>shiftDate(todayISO(),-k), real=db, rs=state.screen, rd=state.macroDate;
   try{
@@ -4963,7 +4990,7 @@ function renderMacros(){
   const bl=bloating(t,g);
   // v269 · el panel abierto: regla a sangre con el mismo aire arriba y abajo → radar → anillos → [ver gramos | ver %] → INTAKE
   let details = !open?'' : `<hr class="rule"/>`
-    +`<div class="macro-rad">${dayRadar(t,g)}</div><div class="rings">${macroRing('protein','protein',t.protein,g.protein,'g',4)}${macroRing('carbs','carbs',t.carbs,g.carbs,'g',4)}${macroRing('fat','fat',t.fat,g.fat,'g',9)}</div>`
+    +mvzHTML(t,g,macroRing('protein','protein',t.protein,g.protein,'g',4)+macroRing('carbs','carbs',t.carbs,g.carbs,'g',4)+macroRing('fat','fat',t.fat,g.fat,'g',9))   // v276 · carrusel
     +`<div class="kp-unit"><button type="button" class="b" data-act="toggleMacroUnit">${state.macroPct?'ver gramos':'ver %'}</button></div>`
     +`<hr class="rule"/><div class="grp-label">INTAKE</div>`
     +(goalSecHidden('electro')?'':intakeRow('sodium',t.sodium,g.sodium,'mg')+intakeRow('potassium',t.potassium,g.potassium,'mg'))
@@ -5130,6 +5157,7 @@ function shQty(m){ const us={serving:'porc',container:'env',piece:'pza','100':'1
 function renderShare(){
   if(state.shareType==='session')return renderShareSession(state.shareId);
   if(state.shareType==='weight')return renderShareWeight();
+  if(state.shareType==='macros')return renderShareMacros();
   const M=shFoodModel(curDate()), t=M.t, g=goalsFor(curDate());
   const kpct=g.kcal?Math.min(100,Math.round(t.kcal/g.kcal*100)):0, kStat=macroStatus(t.kcal,g.kcal);
   const ck=t.carbs*4, fk=t.fat*9, pk=t.protein*4, tot=ck+fk+pk||1, pc=k=>Math.round(k/tot*100);
@@ -5153,6 +5181,7 @@ function dayMealParts(iso,food,dayKcal){
   return {tags, byTag, meal:parts.slice(0,tags.length), rest:parts[tags.length]||0}; }
 // texto copiable = el MISMO modelo (con RIR y F; sin tonelaje, T ni "restan")
 function shareTextFor(){
+  if(state.shareType==='macros')return macroShareText();
   if(state.shareType==='session'){
     const s=(db.sessions||[]).find(x=>x.id===state.shareId)||(db.sessions||[]).filter(x=>x.type!=='rest').slice(-1)[0]; if(!s)return '';
     const M=shSessModel(s), pl=(n,w)=>n+' '+w+(n===1?'':'s');
@@ -5181,6 +5210,21 @@ async function shareImage(){
       x.strokeStyle=tr?getComputedStyle(tr).stroke:'#222'; x.beginPath(); x.arc(cx,cy,rad,0,Math.PI*2); x.stroke();
       if(fl){ const frac=Math.max(0,Math.min(1,(parseFloat(fl.style.strokeDasharray)||0)/100));   // ringHTML: pathLength 100 → el primer valor ES el porcentaje
         if(frac>0){ x.strokeStyle=getComputedStyle(fl).stroke; x.beginPath(); x.arc(cx,cy,rad,-Math.PI/2,-Math.PI/2+frac*Math.PI*2); x.stroke(); } } });
+    // v276 · barras y reparto (rectángulos con su color) y el radar o la dona (SVG simple: polígonos, líneas, trazos, círculos, texto)
+    const _n=(v,d)=>{ const q=parseFloat(v); return isFinite(q)?q:d; };
+    card.querySelectorAll('.bar,.bar>i,.mvstack,.mvstack>i,.mvleg i').forEach(el=>{ const cs=getComputedStyle(el), bg=cs.backgroundColor, r=el.getBoundingClientRect();
+      if(!bg||bg==='transparent'||/rgba\([^)]*,\s*0\)$/.test(bg)||!r.width||!r.height)return; x.globalAlpha=_n(cs.opacity,1); x.fillStyle=bg; x.fillRect((r.left-box.left)*K,(r.top-box.top)*K,r.width*K,r.height*K); x.globalAlpha=1; });
+    card.querySelectorAll('.macro-rad svg,.mvdonut svg').forEach(svg=>{ const vb=svg.viewBox&&svg.viewBox.baseVal; if(!vb||!vb.width)return; const r=svg.getBoundingClientRect(), sc=Math.min(r.width/vb.width,r.height/vb.height);
+      const ox=r.left+(r.width-vb.width*sc)/2-vb.x*sc, oy=r.top+(r.height-vb.height*sc)/2-vb.y*sc; x.save(); x.setTransform(sc*K,0,0,sc*K,(ox-box.left)*K,(oy-box.top)*K);
+      svg.querySelectorAll('polygon,line,path,circle,text').forEach(el=>{ const cs=getComputedStyle(el), A=_n(cs.opacity,1), tg=el.tagName.toLowerCase(); let p=null;
+        if(tg==='text'){ x.globalAlpha=A; x.fillStyle=cs.fill; x.font=_n(el.getAttribute('font-size'),8)+'px "JetBrains Mono", ui-monospace, monospace'; x.textAlign='center'; x.textBaseline='middle'; x.fillText(el.textContent,+el.getAttribute('x'),+el.getAttribute('y')); return; }
+        if(tg==='polygon')p=new Path2D('M'+String(el.getAttribute('points')||'').trim().split(/\s+/).join('L')+'Z');
+        else if(tg==='line')p=new Path2D('M'+el.getAttribute('x1')+','+el.getAttribute('y1')+'L'+el.getAttribute('x2')+','+el.getAttribute('y2'));
+        else if(tg==='path')p=new Path2D(el.getAttribute('d')||'');
+        else { p=new Path2D(); p.arc(+el.getAttribute('cx'),+el.getAttribute('cy'),+el.getAttribute('r'),0,Math.PI*2); }
+        if(cs.fill&&cs.fill!=='none'){ x.globalAlpha=A*_n(cs.fillOpacity,1); x.fillStyle=cs.fill; x.fill(p); }
+        if(cs.stroke&&cs.stroke!=='none'){ x.globalAlpha=A*_n(cs.strokeOpacity,1); x.strokeStyle=cs.stroke; x.lineWidth=_n(cs.strokeWidth,1); x.lineJoin=cs.strokeLinejoin||'miter'; x.lineCap=cs.strokeLinecap||'butt'; x.stroke(p); } });
+      x.restore(); x.globalAlpha=1; });
     // texto, nodo por nodo, en su posición y con su fuente/color
     const tw=document.createTreeWalker(card,NodeFilter.SHOW_TEXT,{acceptNode:n=>n.nodeValue.trim()&&!n.parentElement.closest('[hidden]')&&!n.parentElement.closest('svg')?NodeFilter.FILTER_ACCEPT:NodeFilter.FILTER_REJECT});
     let n; while((n=tw.nextNode())){ const el=n.parentElement, cs=getComputedStyle(el); const rg=document.createRange(); rg.selectNodeContents(n); const rects=rg.getClientRects(); if(!rects.length)continue;
@@ -5593,6 +5637,54 @@ function mealRadar(t,g){ g=g||{};
     +ddots+labels+`</svg>`;
 }
 // day-totals radar — 7 axes vs daily goal (P/C/F as grams-vs-goal, not %kcal). No alcohol/sugar/caffeine.
+// ---- v276 · macros: varias versiones del panel, en carrusel (deslizas izquierda-derecha), y el panel para compartir ----
+// El dueño pidió propuestas de barras de progreso y de distribución de los macros, verlas "en un carrusel" dentro del panel
+// mientras elige, y una versión para compartir. Todas salen de aquí: el carrusel, el laboratorio del estudio y la tarjeta.
+// [clave, pestaña, solo laboratorio] · la dona es la única gráfica circular además del anillo de kcal (BRAND §4): solo entra
+// al carrusel si la eliges en el laboratorio.
+const MACRO_VIZ=[['rings','aros'],['bars','barras'],['meter','medidor'],['split','reparto'],['table','tabla'],['donut','dona',1]];
+function macroVizKey(){ const k=db.settings&&db.settings.macroViz; return MACRO_VIZ.some(v=>v[0]===k)?k:'rings'; }
+function macroVizList(){ const k=macroVizKey(); return MACRO_VIZ.filter(v=>!v[2]||v[0]===k); }
+// reparto por kcal (P·4, C·4, F·9); los tres enteros suman 100
+function macroSplit(t){ const p=(+t.protein||0)*4, c=(+t.carbs||0)*4, f=(+t.fat||0)*9, s=p+c+f; if(!s)return null; const pp=Math.round(p/s*100), pc=Math.round(c/s*100); return {p:pp,c:pc,f:100-pp-pc}; }
+function macroVizHTML(k,t,g,o){ o=o||{}; g=g||{}; const M=[['protein','protein','P'],['carbs','carbs','C'],['fat','fat','F']];
+  const gv=m=>+g[m]||0, tv=m=>+t[m]||0;
+  if(k==='bars') return M.map(([m,l])=>{ const v=tv(m), gl=gv(m), p=gl?v/gl*100:0, ov=gl&&v>gl*1.05;
+      return `<div class="mrow"><span class="ml">${l}</span><div class="bar">${trkBarI(o.share?'':'mv:'+m,Math.min(100,p),ov?'over':'')}</div><span class="mv${ov?' ovr':''}">${state.macroPct&&gl?Math.round(p)+'%':Math.round(v)+' <span class="g">/ '+gl+' g</span>'}</span></div>`; }).join('');
+  if(k==='meter') return '<div class="mvmeter">'+M.map(([m,l])=>{ const v=tv(m), gl=gv(m), p=gl?v/gl*100:0;
+      return `<div class="mvml"><span class="ml">${l}</span>${trkProgressHTML(Math.min(100,p),{cells:12})}<span class="mv">${Math.round(v)}<span class="g">/${gl} g</span></span></div>`; }).join('')+'</div>';
+  const leg=(s,gs)=>`<div class="mvleg">${[['p','P','protein'],['c','C','carbs'],['f','F','fat']].map(([x,L])=>`<span><i class="mv${x}"></i>${L} ${s?s[x]+'%':'—'}${gs?' <span class="g">· meta '+gs[x]+'</span>':''}</span>`).join('')}</div>`;
+  if(k==='split'){ const s=macroSplit(t), gs=macroSplit(g); const bar=(x,cl)=>`<div class="mvstack${cl||''}">${x?`<i class="mvp" style="width:${x.p}%"></i><i class="mvc" style="width:${x.c}%"></i><i class="mvf" style="width:${x.f}%"></i>`:''}</div>`;
+    return `<div class="mvsplit"><div class="mvsl"><span class="ml">hoy</span>${bar(s)}</div>${gs?`<div class="mvsl"><span class="ml">meta</span>${bar(gs,' thin')}</div>`:''}${leg(s,gs)}<div class="u-label u-o40 u-mt4">% de las kcal · P·4 C·4 F·9</div></div>`; }
+  if(k==='table'){ const row=(l,v,gl,u)=>{ const p=gl?Math.round(v/gl*100):null; return `<div class="mvtr"><span class="ml">${l}</span><span>${Math.round(v).toLocaleString()}</span><span class="g">${gl?gl.toLocaleString()+(u||''):'—'}</span><span class="${p!=null&&p>105?'u-bad':''}">${p!=null?p+'%':'—'}</span></div>`; };
+    return `<div class="mvtab"><div class="mvtr mvth"><span></span><span>hoy</span><span>meta</span><span>%</span></div>${row('kcal',tv('kcal'),gv('kcal'))}${M.map(([m,l])=>row(l,tv(m),gv(m),' g')).join('')}</div>`; }
+  if(k==='donut'){ const s=macroSplit(t); if(!s)return '<div class="empty">sin comida este día</div>';
+    const R=15.7, P=(a)=>[(18+R*Math.cos(a)).toFixed(2),(18+R*Math.sin(a)).toFixed(2)]; let a0=-Math.PI/2;
+    const arc=(x,cl)=>{ if(!x)return ''; const a1=a0+x/100*Math.PI*2-(x<100?0.06:0.0001), p0=P(a0), p1=P(a1), big=(a1-a0)>Math.PI?1:0; a0+=x/100*Math.PI*2; return `<path class="${cl}" d="M${p0[0]},${p0[1]} A${R},${R} 0 ${big} 1 ${p1[0]},${p1[1]}" fill="none" stroke-width="1.8"/>`; };
+    return `<div class="mvdonut"><svg viewBox="0 0 36 36" aria-hidden="true">${arc(s.p,'mvp')+arc(s.c,'mvc')+arc(s.f,'mvf')}</svg>${leg(s,macroSplit(g))}</div>`; }
+  return `<div class="macro-rad">${dayRadar(t,g)}</div><div class="rings">${o.rings||''}</div>`; }
+// el carrusel del panel abierto: una lámina por versión; pestañas de texto abajo; recuerda la última (db.settings.macroViz)
+function mvzHTML(t,g,rings){ const vk=macroVizKey(), VL=macroVizList();
+  return `<div class="mvz"><div class="mvtrack" id="mvtrack">${VL.map(([k])=>`<div class="mvslide" data-v="${k}">${macroVizHTML(k,t,g,{rings})}</div>`).join('')}</div></div>`
+    +`<div class="mdtabs tall mvtabs" data-tk="mvz" role="tablist">${VL.map(([k,l])=>`<span role="tab" aria-selected="${k===vk}" class="${k===vk?'on':''}" data-act="mvtab" data-v="${k}">${l}</span>`).join('')}</div>`; }
+// tras pintar: la lámina elegida a la vista sin animación (render() rehace el DOM y el carril nuevo nace en 0)
+function mvzSync(){ const tr=document.getElementById('mvtrack'); if(!tr)return; const VL=macroVizList(), i=Math.max(0,VL.findIndex(v=>v[0]===macroVizKey()));
+  // el carril toma la altura de la lámina a la vista (si no, la más alta deja huecos enormes en las demás)
+  const fit=j=>{ const sl=tr.children[j]; if(sl)tr.style.height=sl.offsetHeight+'px'; };
+  tr.scrollLeft=i*tr.clientWidth; fit(i); if(tr._mvz)return; tr._mvz=1; let tm=0;
+  // un carril que ya salió de la página (re-render o cambio de pantalla dentro de los 120 ms) lee scrollLeft 0: no guarda nada
+  tr.addEventListener('scroll',()=>{ clearTimeout(tm); tm=setTimeout(()=>{ if(!tr.isConnected||!tr.clientWidth)return; const j=Math.round(tr.scrollLeft/tr.clientWidth), v=(macroVizList()[j]||[])[0]; fit(j); if(!v||v===macroVizKey())return;
+    db.settings=db.settings||{}; db.settings.macroViz=v; save();
+    const tb=document.querySelector('.mvtabs'); if(tb){ tb.querySelectorAll('[data-v]').forEach(s=>{ const on=s.dataset.v===v; s.classList.toggle('on',on); s.setAttribute('aria-selected',on); }); slideTabs(tb.parentElement,true); } },120); },{passive:true}); }   // la rayita viaja a la pestaña nueva
+// compartir el panel: anillo de kcal + la versión elegida (vertical, a su altura natural, marca gym//TRK)
+function renderShareMacros(){ const iso=curDate(), g=goalsFor(iso), t=macroTotals().t, vk=macroVizKey();
+  const kpct=g.kcal?Math.min(100,Math.round(t.kcal/g.kcal*100)):0, kStat=macroStatus(t.kcal,g.kcal);
+  const ring=(m,l)=>{ const v=+t[m]||0, gl=+g[m]||0; return `<div class="cell ${macroStatus(v,gl)}">${ringHTML(gl?v/gl*100:0,'<div class="num">'+Math.round(v)+'</div>')}<div class="cap">${l}</div><div class="sub">/ ${gl} g</div></div>`; };
+  const hero=`<div class="shmhero ${kStat}">${ringHTML(kpct,'<div class="num">'+Math.round(t.kcal).toLocaleString()+'</div><div class="of">/ '+(g.kcal||0).toLocaleString()+' kcal</div>','lg')}</div>`;
+  return summaryShell(`<div class="shcap">// macros · ${escTxt(fmtShort(iso))}</div>`, hero+`<div class="shviz">${macroVizHTML(vk,t,g,{rings:ring('protein','protein')+ring('carbs','carbs')+ring('fat','fat'),share:true})}</div>`); }
+function macroShareText(){ const iso=curDate(), g=goalsFor(iso), t=macroTotals().t, s=macroSplit(t), r=v=>Math.round(+v||0);
+  return ['macros · '+fmtShort(iso), r(t.kcal).toLocaleString()+' / '+r(g.kcal).toLocaleString()+' kcal', 'P '+r(t.protein)+'/'+r(g.protein)+' g · C '+r(t.carbs)+'/'+r(g.carbs)+' g · F '+r(t.fat)+'/'+r(g.fat)+' g',
+    s?'reparto P '+s.p+'% · C '+s.c+'% · F '+s.f+'%':'', '', 'gym//TRK'].filter((x,i,a)=>x!==''||a[i-1]!=='').join('\n'); }
 function dayRadar(t,g){ g=g||{};
   const ax=[{k:'protein',l:'P'},{k:'fat',l:'F'},{k:'sodium',l:'Na'},{k:'water',l:'Liq'},{k:'carbs',l:'C'},{k:'fiber',l:'Fbr'},{k:'potassium',l:'K'}];
   const W=180,H=166,cx=90,cy=83,R=64,N=ax.length;
@@ -7299,6 +7391,7 @@ function render(){
   try{updateNowBar();}catch(_){}
   renderNav();
   if(sc==='macros')try{ suppWarnMaybe(); }catch(_){}   // v275 · una vez al día: lo que está por acabarse
+  if(sc==='macros')try{ mvzSync(); }catch(_){}         // v276 · el carrusel en la versión elegida
   v.scrollTop = state._scroll||0; state._scroll=0;
   if(state._autoScroll&&sc==='workout'){ state._autoScroll=false; const fp=v.querySelector('[data-act="setf"][data-f="rir"]:not([data-locked])'); if(fp)fp.scrollIntoView({block:'center',behavior:reducedMotion()?'auto':'smooth'}); }
   // v223: tras confirmar una serie, a la vista la SIGUIENTE de ese ejercicio (no la primera del documento)
@@ -8024,7 +8117,8 @@ document.getElementById('app').addEventListener('click',e=>{
     // v256: lo reversible se quita sin preguntar y se ofrece [deshacer] (vuelve el MISMO vaso al MISMO lugar)
     const m=arr[i]; arr.splice(i,1); save(); reRender();
     toast('✓ agua quitada · '+Math.round((+m.water||0)*1000)+' ml','ok',{undo:()=>{ (db.meals[d]=db.meals[d]||[]).splice(i,0,m); }}); }
-  else if(a==='share'){ state.shareType='food'; go('share'); }
+  else if(a==='share'){ trkMenu('compartir',[['el día · tus comidas',()=>{ state.shareType='food'; go('share'); }],['el panel de macros',()=>{ state.shareType='macros'; go('share'); }]]); }   // v276
+  else if(a==='mvtab'){ const tr=document.getElementById('mvtrack'), j=macroVizList().findIndex(v=>v[0]===el.dataset.v); if(tr&&j>=0)tr.scrollTo({left:j*tr.clientWidth,behavior:reducedMotion()?'auto':'smooth'}); }
   else if(a==='sharesession'){ state.shareType='session'; state.shareId=el.dataset.id; closeModal(); go('share'); }
   else if(a==='shcopy'){ const txt=shareTextFor(); if(!txt){ toast('⚠ nada que copiar','err'); return; }
     const done=()=>toast('✓ copiado como texto');
@@ -10519,7 +10613,7 @@ try{ offerLivePending(livePendingSync()); }catch(_){}
 // diario de arranque. Mientras decide, los respaldos se retienen para no pisar `latest`.
 try{ withTO(idbBootCheck(),12000).catch(()=>idbReleaseHold()); }catch(_){ idbReleaseHold(); }
 try{ growthLog(); }catch(_){}
-try{ promptIdleSession(); }catch(_){} try{ if(typeof location!=='undefined' && /[?&]selftest=1/.test(location.search)){ const _rawMain=(()=>{ try{ return localStorage.getItem(LS_KEY); }catch(_){ return null; } })(), _rawLive=(()=>{ try{ return localStorage.getItem(LS_LIVE); }catch(_){ return null; } })(), _lc0=_lastClosed; _sbx=true; try{ _identitySelfCheck(); _dropsetSelfCheck(); _baselineSelfCheck(); _variantSelfCheck(); _historyEditSelfCheck(); _idSelfCheck(); _cardioSelfCheck(); _tensionSelfCheck(); _healthSelfCheck(); _readinessSelfCheck(); _loggingSelfCheck(); _mergeSelfCheck(); _streakSelfCheck(); _chartSelfCheck(); _muscleSelfCheck(); _exProfileSelfCheck(); _recoverySelfCheck(); _diagSelfCheck(); _uiSelfCheck(); _v256SelfCheck(); _v257SelfCheck(); _sessSafetyCheck(); _storageSelfCheck(); _lateralitySelfCheck(); _v268SelfCheck(); _v269SelfCheck(); _healthPasteSelfCheck(); _v271SelfCheck(); _exStatusSelfCheck(); _scheduleSelfCheck(); _exHistSelfCheck(); _suppSelfCheck(); } finally{ _sbx=false; _lastClosed=_lc0; try{ if(_rawLive==null)localStorage.removeItem(LS_LIVE); else localStorage.setItem(LS_LIVE,_rawLive); }catch(_){} } let _rawAfter=null; try{ _rawAfter=localStorage.getItem(LS_KEY); }catch(_){} const _same=(()=>{ if(_rawAfter===_rawMain)return true; try{ const a=JSON.parse(_rawAfter), b=_rawMain==null?JSON.parse(JSON.stringify(db)):JSON.parse(_rawMain);   /* v267 · almacén vacío: se compara contra la base real en memoria */ return !!a&&!!b&&((a.profile||{}).username===(b.profile||{}).username)&&((a.sessions||[]).length===(b.sessions||[]).length)&&(JSON.stringify(a.split)===JSON.stringify(b.split)); }catch(_){ return false; } })(); if(!_same)console.error(new Error('SELFCHECK sandbox: una base de juguete llegó a tu disco')); else console.log('sandbox self-check OK'); setTimeout(()=>{ _idbSelfCheck(); },800); setTimeout(_dsRenderReport,1500); } }catch(e){ console.error(e); } try{ const _sp=new URLSearchParams(location.search); const _hasHistorical=_sp.has('stepsh')||_sp.has('weighth')||_sp.has('stepsq')||_sp.has('sleeph'); const _hk=['steps','stepsh','weight','weighth','stepsq','sleep','sleeph'].some(k=>_sp.has(k)); if(_hk&&!(db.profile&&db.profile.username)){ if(_bootJ)_bootJ.flags.push('urlImportEmpty'); if(history.replaceState)history.replaceState(null,'',location.pathname); setTimeout(()=>{ try{ toast('⚠ ese enlace abrió Safari, no tu app','err'); }catch(_){} },600); } else if(_hasHistorical){ const _hsp=_sp; if(history.replaceState)history.replaceState(null,'',location.pathname); setTimeout(()=>{ trkAsk({title:'importar datos históricos',detail:'este link trae pasos, peso o sueño de varios días · acepta solo si viene de tu propio Atajo de iOS',ok:'importar'},()=>{ try{ const _imp=importHealth(_hsp); if(_imp.length){ save(); render(); toast('✓ '+_imp.join(' · ')); } }catch(_){} }); },400); } else { const _imp=importHealth(_sp); if(_imp.length){ window._healthImported=_imp; if(history.replaceState)history.replaceState(null,'',location.pathname); } } }catch(_){} save(); render(); if(window._healthImported)setTimeout(()=>toast('✓ '+window._healthImported.join(' · ')),250); if(window._recoveredFromBackup)setTimeout(()=>{try{toast('⚠ se recuperó un respaldo local · revisa tus datos, podrían faltar cambios muy recientes','err');}catch(_){}},600);
+try{ promptIdleSession(); }catch(_){} try{ if(typeof location!=='undefined' && /[?&]selftest=1/.test(location.search)){ const _rawMain=(()=>{ try{ return localStorage.getItem(LS_KEY); }catch(_){ return null; } })(), _rawLive=(()=>{ try{ return localStorage.getItem(LS_LIVE); }catch(_){ return null; } })(), _lc0=_lastClosed; _sbx=true; try{ _identitySelfCheck(); _dropsetSelfCheck(); _baselineSelfCheck(); _variantSelfCheck(); _historyEditSelfCheck(); _idSelfCheck(); _cardioSelfCheck(); _tensionSelfCheck(); _healthSelfCheck(); _readinessSelfCheck(); _loggingSelfCheck(); _mergeSelfCheck(); _streakSelfCheck(); _chartSelfCheck(); _muscleSelfCheck(); _exProfileSelfCheck(); _recoverySelfCheck(); _diagSelfCheck(); _uiSelfCheck(); _v256SelfCheck(); _v257SelfCheck(); _sessSafetyCheck(); _storageSelfCheck(); _lateralitySelfCheck(); _v268SelfCheck(); _v269SelfCheck(); _healthPasteSelfCheck(); _v271SelfCheck(); _exStatusSelfCheck(); _scheduleSelfCheck(); _exHistSelfCheck(); _suppSelfCheck(); _macroVizSelfCheck(); } finally{ _sbx=false; _lastClosed=_lc0; try{ if(_rawLive==null)localStorage.removeItem(LS_LIVE); else localStorage.setItem(LS_LIVE,_rawLive); }catch(_){} } let _rawAfter=null; try{ _rawAfter=localStorage.getItem(LS_KEY); }catch(_){} const _same=(()=>{ if(_rawAfter===_rawMain)return true; try{ const a=JSON.parse(_rawAfter), b=_rawMain==null?JSON.parse(JSON.stringify(db)):JSON.parse(_rawMain);   /* v267 · almacén vacío: se compara contra la base real en memoria */ return !!a&&!!b&&((a.profile||{}).username===(b.profile||{}).username)&&((a.sessions||[]).length===(b.sessions||[]).length)&&(JSON.stringify(a.split)===JSON.stringify(b.split)); }catch(_){ return false; } })(); if(!_same)console.error(new Error('SELFCHECK sandbox: una base de juguete llegó a tu disco')); else console.log('sandbox self-check OK'); setTimeout(()=>{ _idbSelfCheck(); },800); setTimeout(_dsRenderReport,1500); } }catch(e){ console.error(e); } try{ const _sp=new URLSearchParams(location.search); const _hasHistorical=_sp.has('stepsh')||_sp.has('weighth')||_sp.has('stepsq')||_sp.has('sleeph'); const _hk=['steps','stepsh','weight','weighth','stepsq','sleep','sleeph'].some(k=>_sp.has(k)); if(_hk&&!(db.profile&&db.profile.username)){ if(_bootJ)_bootJ.flags.push('urlImportEmpty'); if(history.replaceState)history.replaceState(null,'',location.pathname); setTimeout(()=>{ try{ toast('⚠ ese enlace abrió Safari, no tu app','err'); }catch(_){} },600); } else if(_hasHistorical){ const _hsp=_sp; if(history.replaceState)history.replaceState(null,'',location.pathname); setTimeout(()=>{ trkAsk({title:'importar datos históricos',detail:'este link trae pasos, peso o sueño de varios días · acepta solo si viene de tu propio Atajo de iOS',ok:'importar'},()=>{ try{ const _imp=importHealth(_hsp); if(_imp.length){ save(); render(); toast('✓ '+_imp.join(' · ')); } }catch(_){} }); },400); } else { const _imp=importHealth(_sp); if(_imp.length){ window._healthImported=_imp; if(history.replaceState)history.replaceState(null,'',location.pathname); } } }catch(_){} save(); render(); if(window._healthImported)setTimeout(()=>toast('✓ '+window._healthImported.join(' · ')),250); if(window._recoveredFromBackup)setTimeout(()=>{try{toast('⚠ se recuperó un respaldo local · revisa tus datos, podrían faltar cambios muy recientes','err');}catch(_){}},600);
 applyDesign(); try{ if(/[?&]design\b/.test(location.search))localStorage.setItem('gymtrk_designmode','1'); if(localStorage.getItem('gymtrk_designmode')==='1')openDesignPanel(); }catch(_){}
 try{ bootScreen(()=>{ try{
   if(/[?&]wrap=1\b/.test(location.search)){ monthlyWrap(prevMonthYm(), true); return; }

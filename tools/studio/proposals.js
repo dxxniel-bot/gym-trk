@@ -45,6 +45,38 @@
 
   const P = (id, k) => 'html[data-v-' + id + '="' + k + '"]';
 
+  // ---------- v276 · laboratorio de macros (propuestas 25 y 26) ----------
+  // Cada opción pinta su versión con la función DE LA APP, W.macroVizHTML(clave, t, g, {rings}), con los números del día que
+  // se está viendo (tuyos, demo o archivo): en el panel abierto de macros en lugar del carrusel, y en la tarjeta de compartir
+  // el panel en lugar de la versión guardada. Elegir NO escribe db.settings.macroViz: la elección viaja en la hoja TRK-PICK
+  // (25macroprog=barras) y al hornearse esa versión queda como la que abre el carrusel y sale al compartir. El CSS de estas
+  // opciones solo esconde el carrusel en el estudio (no es para hornear). La k es la pestaña del carrusel; MV_KEY, la clave
+  // de MACRO_VIZ en index.html.
+  const MV_KEY = { aros:'rings', barras:'bars', medidor:'meter', reparto:'split', tabla:'table', dona:'donut' };
+  // los aros: en el panel, los de la lámina "aros" del carrusel (macroRing de la app, con su toque ringtog); en la tarjeta,
+  // los suyos si ya los pinta y si no, las mismas celdas que arma renderShareMacros (ringHTML + macroStatus de la app)
+  function mvRings(W, t, g, share){
+    const r = W.document.querySelector(share ? '.sharecard .shviz:not([data-trk-patch]) .rings' : '#view .mvslide[data-v="rings"] .rings');
+    if(r) return r.innerHTML; if(!share) return '';
+    const cell = (m, l) => { const v = +t[m] || 0, gl = +g[m] || 0;
+      return '<div class="cell ' + W.macroStatus(v, gl) + '">' + W.ringHTML(gl ? v / gl * 100 : 0, '<div class="num">' + Math.round(v) + '</div>')
+        + '<div class="cap">' + l + '</div><div class="sub">/ ' + gl + ' g</div></div>'; };
+    return cell('protein', 'protein') + cell('carbs', 'carbs') + cell('fat', 'fat'); }
+  // dom(W) de una opción: un nodo data-trk-patch antes del carrusel (#view .mvz) y otro antes de la versión de la tarjeta
+  // (.sharecard .shviz); idempotente (uno por propuesta y lugar). Con 25 y 26 elegidas salen las dos, 25 arriba
+  function mvPatch(pid, k){ return W => { const d = W.document, vk = MV_KEY[k];
+    if(!vk || typeof W.macroVizHTML !== 'function') return;
+    const t = W.macroTotals().t, g = W.goalsFor(W.curDate());
+    const put = (anchor, cls, share) => { if(!anchor || anchor.parentNode.querySelector(':scope > [data-trkp-mv="' + pid + '"]')) return;
+      const n = d.createElement('div'); n.className = cls; n.setAttribute('data-trk-patch', ''); n.setAttribute('data-trkp-mv', pid);
+      n.innerHTML = W.macroVizHTML(vk, t, g, { rings: mvRings(W, t, g, share), share }); anchor.parentNode.insertBefore(n, anchor); };
+    put(d.querySelector('#view .mvz'), 'trkp-mv', false);
+    put(d.querySelector('.sharecard .shviz:not([data-trk-patch])'), 'shviz trkp-mv', true); }; }
+  const mvCSS = (pid, k) => { const s = P(pid, k); return `
+${s} #view .mvz, ${s} #view .mvtabs, ${s} .sharecard .shviz:not([data-trk-patch]){display:none;}
+${s} .trkp-mv + .trkp-mv{margin-top:var(--s5);}`; };
+  const mvOpt = (pid, k, label, note) => ({ k, label, note, css: mvCSS(pid, k), dom: mvPatch(pid, k) });
+
   window.TRK_PROPOSALS = [
 
     // ======================= G0 · los 7 del brand-lab en la app real =======================
@@ -239,6 +271,28 @@ ${P('opacity','A')} .pftog.sug .t.on{opacity:var(--op-press);}` }
       options:[
         { k:'hoy', label:'hoy · modo widgets (v269)' },
         { k:'A', label:'modo edit tipo widgets', note:'horneado en index.html en v269 (db.settings.progLayout {order, hidden}, viaja con respaldos y sync; hereda una vez la config vieja del teléfono). En edición la nav se oculta; − (.pdel) arriba a la izquierda con toque de 44, ⠿ (.pgrip) arriba a la derecha; tocar ⠿ sin mover abre [mover antes] [mover después] [quitar]; barra fija .pedbar con ✓ done como único primario. Sin CSS de propuesta' }
+      ] },
+
+    // ---- v276 (24-sep): laboratorio de macros — abiertas; cada opción con la función de la app y los números de tu día ----
+    { id:'macroprog', n:25, group:'V276', title:'macros · progreso', rule:'BRAND §4 anillo y gráficas · B-07', src:'encargo 24-sep · v276',
+      question:'¿Cómo ves el avance de cada macro contra su meta? Desde v276 el panel abierto es un carrusel (desliza izquierda-derecha: aros · barras · medidor · reparto · tabla). Aquí cada opción ocupa el lugar del carrusel y de la tarjeta de compartir el panel, con tus números; la que elijas será con la que abre el carrusel y la que sale al compartir (las demás siguen a un deslizamiento).',
+      status:'open', decided:null, shipped:null,
+      scenarios:['macros:open', 'share:macros'],
+      options:[
+        { k:'hoy', label:'hoy · el carrusel (abre en tu última lámina; aros si nunca deslizaste)' },
+        mvOpt('macroprog', 'aros', 'radar + 3 anillos', 'la de antes de v276: el radar del día (7 ejes contra la meta) y un anillo por macro (toca uno: lo que queda); con [ver %] en %. Al hornear: macroViz = rings'),
+        mvOpt('macroprog', 'barras', 'una barra por macro con su meta', 'protein · barra · 142 / 180 g (o 79% con [ver %]); pasar la meta más de 5 % pinta la barra y el número en --bad. Al hornear: macroViz = bars'),
+        mvOpt('macroprog', 'medidor', 'medidor de terminal', 'el de la búsqueda y el OCR, de 12 celdas por macro con octavos de bloque y su %, y 153/150 g a la derecha; sin color. Al hornear: macroViz = meter')
+      ] },
+    { id:'macrodist', n:26, group:'V276', title:'macros · distribución', rule:'BRAND §4 anillo y gráficas · B-07', src:'encargo 24-sep · v276',
+      question:'¿Cómo ves de dónde salen tus kcal (P·4 C·4 F·9) contra la distribución de tu meta? Cada opción ocupa el lugar del carrusel y de la tarjeta de compartir el panel, con tus números; la que elijas será con la que abre el carrusel y la que sale al compartir.',
+      status:'open', decided:null, shipped:null,
+      scenarios:['macros:open', 'share:macros'],
+      options:[
+        { k:'hoy', label:'hoy · el carrusel (abre en tu última lámina; aros si nunca deslizaste)' },
+        mvOpt('macrodist', 'reparto', 'barra apilada hoy contra la meta', 'hoy en una barra de 10 y la meta en una fina debajo, en escala de opacidad (P --fill · C --o60 · F --o30); leyenda P 28% · meta 25 y "% de las kcal · P·4 C·4 F·9"; los tres enteros suman 100. Al hornear: macroViz = split'),
+        mvOpt('macrodist', 'tabla', 'tabla hoy / meta / %', 'kcal, protein, carbs y fat en filas; el % de la meta en --bad si pasa de 105 %. Al hornear: macroViz = table'),
+        mvOpt('macrodist', 'dona', 'dona por kcal', 'arcos P · C · F (trazo 1.8) con su leyenda y la meta al lado. Es la única que no está en el carrusel: BRAND §4 deja el anillo de kcal como única gráfica circular, así que entra solo si la eliges aquí (sería una decisión de BRAND §9). Al hornear: macroViz = donut')
       ] }
   ];
 

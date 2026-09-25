@@ -84,7 +84,9 @@ iframe.srcdoc = t.replace(/<head([^>]*)>/i, m => m + '<base href="'+base+'"><scr
   `exhist:top` y `workout:exname`, tras `live:machine`: solo estado de pantalla, y el reinicio de cada escenario cierra
   también la capa de TRKAsk; v275 + `stack:all`, `m:stackedit:product`, `m:stackmore`, `m:stackreadd`, `m:stackbrand` y
   `macros:supplow`, al final de S2 como los de v273: dan marca y frasco a un suplemento y agregan los de muestra en la db
-  del frame) + las 17 de `tools/ds-inventory.js` (v274 + `exhist`, tras las 4 hojas que se abren encima de
+  del frame; v276 + `m:sharemenu`, `share:macros` y los 6 `macros:viz:*`, también al final: fijan `settings.macroViz` y
+  `shareType`, y `vizTo` espera al listener del carrusel —`runDiff2` ya espera la promesa de un escenario—; `m:shareday` elige
+  `el día` en el menú nuevo: 83 en S2) + las 17 de `tools/ds-inventory.js` (v274 + `exhist`, tras las 4 hojas que se abren encima de
   progress) + arranque (`T.bootPreview(null,
   true, false)` y el corto `boot:short` con `true` y `live`), wrap (`W.monthlyWrap(W.prevMonthYm(), true)`), recap (forzar vía la lógica de `snapRecap` si es posible),
   aviso de inactividad (`W.promptIdleSession()` con una sesión en curso "vieja"), toasts (`W.toast('✓ guardado')`,
@@ -163,6 +165,19 @@ iframe.srcdoc = t.replace(/<head([^>]*)>/i, m => m + '<base href="'+base+'"><scr
   en todos los demás escenarios `wrapRun` lo da por visto hoy con `quietWarn` (temporal), así no tapa ni cuenta en su
   medición. `m:adhoc` se reetiqueta `hoja · toma puntual` (es el `[+ toma puntual]` del stack). `stack`, `m:stackedit`,
   `m:stacknew`, `m:supptime` y `m:supps-empty` no cambian de receta. Total v275: 123 escenarios.
+- v276 (macros: laboratorio, carrusel y compartir — `MACRO_VIZ` = aros `rings` · barras `bars` · medidor `meter` · reparto
+  `split` · tabla `table` · dona `donut` (solo laboratorio: BRAND §4); `macroVizHTML(k,t,g,o)` es LA función de las versiones
+  —carrusel, estudio y tarjeta—; `settings.macroViz` = con la que abre el carrusel, inválida → aros; el panel abierto ya no
+  tiene `.macro-rad` arriba: vive dentro de la lámina de aros): `macros:viz:rings|bars|meter|split|table|donut` (`vizOn`:
+  `settings.macroViz` con `tempKey` solo mientras se mira, `macrosOn` y el toque real de `togglemacros`; `render()` ya llama a
+  `mvzSync` —la lámina a la vista sin animación y el carril a su altura— y se llama otra vez; espera 200 ms para que el listener
+  del carrusel, que guarda la lámina a los 120 ms del scroll, corra con el valor puesto), `share:macros` (`shareType='macros'`
+  y el último día con comida con `tempKey`: `renderShareMacros`, anillo de kcal grande + la versión elegida, vertical, pie
+  `gym//TRK`) y `m:sharemenu` (`macrosOn` y el toque real de `[share]` → TRKMenu `compartir`: `el día · tus comidas` / `el
+  panel de macros`). `m:shareday` da ese toque y luego el de `el día · tus comidas` (`#asklayer .nvm[data-pop="0"]`).
+  `macrosOn` guarda también `settings.macroViz` (`keepViz`): lo que deje un deslizamiento del carrusel vuelve al salir.
+  `macros`, `macros:open`, `macros:unit` y `macros:high` no cambian de receta (el carrusel abre en la versión de los datos
+  cargados). Total v276: 131 escenarios.
 - Etiquetas cortas en español: `gym · inicio`, `macros`, `hoja · agregar alimento`, `sesión · tabla`, `arranque`…
 
 ## 4 · `window.TRK_KNOBS` — knobs.js
@@ -221,7 +236,15 @@ iframe.srcdoc = t.replace(/<head([^>]*)>/i, m => m + '<base href="'+base+'"><scr
   (opción D, `>` que parpadea), 2 primario, 9 secundarios `[verbo]`, 18 esquinas, 20 `type` (14·20), 21 `fields` (caja fina
   de 16), 22 `toggles` (`[elegida]`). Lote v269 (24-sep, `shipped v269`, sin CSS): 23 `camera` (cámara de video con punto
   REC en `--bad`; la propuesta 5 `icons` ya solo toca `[compartir]`), 24 `progedit` (//PROGRESS en modo widgets) y la nota
-  de 21 `fields` (letra de campo 14 app-wide, casillas del perfil de 36).
+  de 21 `fields` (letra de campo 14 app-wide, casillas del perfil de 36). Lote v276 (`group:'V276'`, `status:'open'`, con
+  CSS y `dom`): 25 `macroprog` (macros · progreso: `aros` `barras` `medidor`) y 26 `macrodist` (macros · distribución:
+  `reparto` `tabla` `dona`); la k es la pestaña del carrusel y `MV_KEY` da la clave de `MACRO_VIZ`. Cada opción pinta su
+  versión con la función de la app, `W.macroVizHTML(clave, W.macroTotals().t, W.goalsFor(W.curDate()), {rings})`, en un nodo
+  `data-trk-patch` antes de `#view .mvz` (los aros = los de la lámina de aros del carrusel) y antes de `.sharecard .shviz` (los
+  suyos, o las celdas de `renderShareMacros` con `ringHTML`/`macroStatus`); su CSS solo esconde el carrusel, las pestañas y la
+  versión guardada de la tarjeta (es del laboratorio, no para hornear). Elegir NUNCA escribe `settings.macroViz`: la elección
+  viaja en TRK-PICK (`25macroprog=barras`) y al hornearse queda como la versión con la que abre el carrusel y sale al compartir.
+  Escenarios: `macros:open` y `share:macros`.
 
 ## 6 · `window.TRK_DEMO` — demo.js
 
@@ -247,7 +270,8 @@ Fases: G1 (hecho), G2/v258 (hecho), F0/v259 (hecho), T/v260 (hecho), S1 estudio 
 sobrio (hecho), P1/v268 primer arranque (hecho), V269 lo del 24-sep (hecho), V270 salud por Atajo (hecho), V271 comida y
 unidades (hecho), V272 σ v2 y estado del progreso (hecho), V273 split: cómo entrenas (hecho), V274 progreso por ejercicio
 (hecho, con la cita del dueño como primer ítem), V275 suplementos con marca, frasco y aviso (hecho, con la cita del dueño
-como primer ítem), y en el orden aprobado por el dueño (24-sep): V276 macros: laboratorio y carrusel, V277 configuración
+como primer ítem), V276 macros: laboratorio, carrusel y compartir (hecho, con el encargo del dueño como primer ítem y dos
+ítems que abren las propuestas 25 y 26), y en el orden aprobado por el dueño (24-sep): V277 configuración
 paso a paso (antes V271a), V278 cuentas (antes V271b), V279 Pro y anuncios (antes V273), V280 tour (antes V274); G3a–d y
 G4a–c sin versión fija (del plan aprobado). `proposal` enlaza a TRK_PROPOSALS.
 
@@ -309,7 +333,8 @@ G4a–c sin versión fija (del plan aprobado). `proposal` enlaza a TRK_PROPOSALS
 Carga `scenarios.js`, `knobs.js`, `proposals.js`, `plan.js`, `looks.js`, `demo.js` con `vm` (window falso) y valida:
 - propuestas: ids únicos; opción `hoy` primero; cada regla CSS con su alcance exacto; `var(--x)` existente (en `:root` de
   `../../index.html`) o declarado en `tokens`; sin `font-family`, `#hex`, `rgb(`/`rgba(` literales, `backdrop-filter`
-  fuera del chrome, `font-weight:600`; glifos dentro de `GLYPHS` (leer `const GLYPHS=` de index.html); `decided` exige
+  fuera del chrome, `font-weight:600`; glifos dentro de `GLYPHS` o `GLYPHS_VIZ` (leer `const GLYPHS=` y `const GLYPHS_VIZ=` de
+  index.html, como `_dsRenderCheck`; v276: antes no leía `GLYPHS_VIZ` y rechazaba █ ░ ▏▎▍▋▊▉); `decided` exige
   `decided.quote` y que la fecha aparezca en BRAND.md §9; `shipped` sin CSS en sus opciones; `scenarios` existentes.
 - knobs: `tok` existe en `:root`; `d` = valor real de `:root`; `min≤d≤max` o, si no, `x` lo cubre; grupos con `key`.
 - escenarios: ids únicos; `run` es función.

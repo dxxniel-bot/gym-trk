@@ -46,7 +46,9 @@ const S2=[
 // v271 · alimento guardado: sin fila "guardar en mis alimentos" y [cancel] que cierra (ya no loguea)
 ['m:log:saved',(W,D)=>{ const f=(D.foods||[])[0]||food; W._faCtx=null; W.openLog(f,{fromId:f.id||null,tag:'meal'}); }],['m:lognutri',(W,D)=>W.openLog(food,{isNew:true})],['m:navmenu',W=>{ const u=W.document.querySelector('[data-act="navmenu"]'); if(u)u.click(); }],
 ['m:mealsum',(W,D)=>{ W.go('macros'); const d=Object.keys(D.meals||{}).sort().pop(); const t=((D.meals||{})[d]||[])[0]; if(t)W.openMealSummary(t.tag); }],
-['m:shareday',W=>{ W.go('macros'); const s=W.document.querySelector('[data-act="share"],[data-act="sharemacros"]'); if(s)s.click(); }],
+// v276 · [share] abre TRKMenu 'compartir' (el día · tus comidas / el panel de macros): aquí se elige 'el día', así A (antes
+// de v276, el botón iba directo) y B terminan en la misma pantalla; el menú solo es m:sharemenu, al final
+['m:shareday',W=>{ W.go('macros'); const s=W.document.querySelector('[data-act="share"],[data-act="sharemacros"]'); if(s)s.click(); const o=W.document.querySelector('#asklayer .nvm[data-pop="0"]'); if(o)o.click(); }],
 ['m:histrow',W=>{ W.go('history'); const r=W.document.querySelector('.hrow'); if(r)r.click(); const b=W.document.querySelector('.hbody [data-act="vieweditsession"]'); if(b)b.click(); }],
 ['share:session',(W,D)=>{ W.openSessionEdit(lastS(D).id); const b=W.document.querySelector('[data-act="sharesession"]'); if(b)b.click(); }],
 ['hist:open',W=>{ W.go('history'); const r=W.document.querySelector('.hitem .hrow'); if(r)r.click(); }],
@@ -81,8 +83,20 @@ const S2=[
 ['m:stackreadd',(W,D)=>{ suppSeed(W,D); const it=D.stack.find(x=>W.suppStatus(x)==='archived'); W.go('stack'); W.openStackEdit(null,'supp'); typeIn(W,'se_name',it.name); W.document.getElementById('se_save').click(); }],
 ['m:stackbrand',(W,D)=>{ const it=suppSeed(W,D), p=W.suppProd(it); W.go('stack'); W.openStackEdit(it.id); typeIn(W,'se_brand',String(p.brand).toLowerCase()==='kora'?'Norda':'Kora'); typeIn(W,'se_per',String((+p.per||1)>1?1:2)); sheetTop(W,prodLbl(W)); W.document.getElementById('se_save').click(); }],
 ['macros:supplow',(W,D)=>{ const it=suppSeed(W,D), S=W.__trk.state; delete D.settings.suppWarnDay; W.go('macros'); S.suppSeg=W.suppSlot(it); S.suppSegD=W.curDate(); W.reRender();
-  if(!W.document.querySelector('#view .lsec[data-k="supps"] .lbody')){ const b=W.document.querySelector('#view [data-act="lfold"][data-k="supps"]'); if(b)b.click(); } secTop(W,W.document.querySelector('#view .lsec[data-k="supps"]')); }]
+  if(!W.document.querySelector('#view .lsec[data-k="supps"] .lbody')){ const b=W.document.querySelector('#view [data-act="lfold"][data-k="supps"]'); if(b)b.click(); } secTop(W,W.document.querySelector('#view .lsec[data-k="supps"]')); }],
+// v276 · macros: el menú del [share], compartir el panel (en A, anterior a v276, cae a compartir el día) y el carrusel del
+// panel abierto en cada versión (settings.macroViz; en A la clave no existe y pinta el radar y los anillos). También AL
+// FINAL: sin later(), la versión y shareType quedan en la db y el estado del frame. vizTo espera al listener del carrusel
+// (120 ms tras el scroll) para que no quede un temporizador vivo que toque las pestañas del escenario siguiente
+['m:sharemenu',W=>{ W.go('macros'); const s=W.document.querySelector('#view [data-act="share"]'); if(s)s.click(); }],
+['share:macros',(W,D)=>{ const S=W.__trk.state, d=lastFood(D); S.shareType='macros'; if(d)S.macroDate=d; W.go('share'); }],
+...['rings','bars','meter','split','table','donut'].map(k=>['macros:viz:'+k,(W,D)=>vizTo(W,D,k)])
 ];
+// v276 · el último día con comida; el panel abierto (el toque real de togglemacros) con la versión k a la vista
+function lastFood(D){ return Object.keys(D.meals||{}).filter(k=>(D.meals[k]||[]).length).sort().pop()||null; }
+function vizTo(W,D,k){ const S=W.__trk.state, d=lastFood(D); D.settings=D.settings||{}; D.settings.macroViz=k; S.macroPct=false; S.macroOpen=false; W.go('macros');
+  if(d){ S.macroDate=d; W.render(); } const t=W.document.querySelector('#view [data-act="togglemacros"]'); if(t)t.click(); else { S.macroOpen=true; W.render(); }
+  if(W.mvzSync)W.mvzSync(); return new Promise(r=>setTimeout(r,200)); }
 // v275 · como suppLow/suppDormant del estudio, pero sin later() (van al final): el que está por acabarse (el tuyo, o marca y
 // frasco en el primer activo diario, o un omega-3 de muestra) y uno en pausa y uno archivado de muestra si faltan
 function suppSeed(W,D){ const st=D.stack||(D.stack=[]), t=W.todayISO(), d=k=>W.shiftDate(t,-k), nm=n=>st.some(x=>String((x&&x.name)||'').toLowerCase().trim()===n)?n+' (muestra)':n;
@@ -121,8 +135,8 @@ async function runDiff2(S){ const A=document.getElementById('A').contentWindow, 
   if(!A.__trk||!B.__trk)throw new Error('frames sin guardia: no se corre');
   const D=W=>W.__trk.db;
   for(const [name,fn] of S){ let ea='',eb='';
-    try{ try{A.closeModal()}catch(_){} try{A.closeAsk(true)}catch(_){} fn(A,D(A)); }catch(e){ ea=e.message; }   // v274 · también la capa de TRKAsk (workout:exname deja un trkMenu)
-    try{ try{B.closeModal()}catch(_){} try{B.closeAsk(true)}catch(_){} fn(B,D(B)); }catch(e){ eb=e.message; }
+    try{ try{A.closeModal()}catch(_){} try{A.closeAsk(true)}catch(_){} await fn(A,D(A)); }catch(e){ ea=e.message; }   // v274 · también la capa de TRKAsk (workout:exname deja un trkMenu) · v276 · un escenario puede devolver una promesa (vizTo)
+    try{ try{B.closeModal()}catch(_){} try{B.closeAsk(true)}catch(_){} await fn(B,D(B)); }catch(e){ eb=e.message; }
     await new Promise(r=>setTimeout(r,40));
     const a=snap(A), b=snap(B); const diffs=[];
     if(a.length!==b.length){ res[name]={err:ea||eb||null, struct:'A '+a.length+' vs B '+b.length}; continue; }

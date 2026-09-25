@@ -29,11 +29,14 @@ const rootVal = (tok, depth) => {           // sigue cadenas var() (alias como -
 const gm = html.match(/const GLYPHS\s*=\s*'([^']*)'/);
 const GLYPHS = gm ? gm[1] : '';
 if (!gm) bad('index.html', 'GLYPHS', 'no se encontró const GLYPHS=');
-// mismo criterio que _dsRenderCheck: GLYPHS o texto normal (se lee su regex; si no, el mismo respaldo)
+// v276 · GLYPHS_VIZ (v268): spinner y medidores de terminal ▖▘▝▗ █ ░ ▏▎▍▋▊▉ … que _dsRenderCheck también acepta
+const gvm = html.match(/const GLYPHS_VIZ\s*=\s*'([^']*)'/);
+const GLYPHS_VIZ = gvm ? gvm[1] : '';
+// mismo criterio que _dsRenderCheck: GLYPHS, GLYPHS_VIZ o texto normal (se lee su regex; si no, el mismo respaldo)
 let OKTXT = /[a-zA-Z0-9áéíóúüñÁÉÍÓÚÜÑ¿¡·–×\s.,:;!?'"()%+\-=<>*&$_|\\\[\]{}^`]/;
-const om = html.match(/okGlyph=ch=>GLYPHS\.indexOf\(ch\)>=0\|\|\/(.+?)\/\.test\(ch\)/);
+const om = html.match(/okGlyph=ch=>GLYPHS\.indexOf\(ch\)>=0(?:\|\|GLYPHS_VIZ\.indexOf\(ch\)>=0)?\|\|\/(.+?)\/\.test\(ch\)/);
 if (om) { try { OKTXT = new RegExp(om[1]); } catch (_) {} }
-const okGlyph = ch => GLYPHS.indexOf(ch) >= 0 || OKTXT.test(ch);
+const okGlyph = ch => GLYPHS.indexOf(ch) >= 0 || GLYPHS_VIZ.indexOf(ch) >= 0 || OKTXT.test(ch);
 
 const brand = read(path.join(REPO, 'BRAND.md')) || '';
 if (!brand) bad('BRAND.md', '§9', 'no se encontró BRAND.md');

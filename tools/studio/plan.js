@@ -11,7 +11,7 @@
 
   window.TRK_PLAN = {
     updated: '2026-09-24',
-    note: 'ruta de la guía: G1 y G2 hechos, F0 y T preparan el estudio; G0 se decide aquí, TS (v267) hornea el "terminal sobrio", P1 (v268) el primer arranque, v269 y v270 (salud por Atajo) lo que pediste el 24-sep, v271 comida y unidades, v272 σ v2 y estado del progreso, v273 split: cómo entrenas (diario, días fijos o rotativo, días sin gym, ciclo real y RIR o RPE), v274 progreso por ejercicio (la bitácora #1, #2, #3… con su gráfica) y v275 suplementos con marca, frasco y aviso (cuántas quedan, aviso a una semana, pausa, archivo y volver con otra marca); en el orden que aprobaste siguen macros: laboratorio y carrusel (v276), configuración paso a paso (v277), cuentas (v278), Pro y anuncios (v279) y tour (v280). G3 y G4 completan la identidad sin versión fija. Cada entrega borra el CSS de su propuesta y la marca shipped.',
+    note: 'ruta de la guía: G1 y G2 hechos, F0 y T preparan el estudio; G0 se decide aquí, TS (v267) hornea el "terminal sobrio", P1 (v268) el primer arranque, v269 y v270 (salud por Atajo) lo que pediste el 24-sep, v271 comida y unidades, v272 σ v2 y estado del progreso, v273 split: cómo entrenas (diario, días fijos o rotativo, días sin gym, ciclo real y RIR o RPE), v274 progreso por ejercicio (la bitácora #1, #2, #3… con su gráfica), v275 suplementos con marca, frasco y aviso (cuántas quedan, aviso a una semana, pausa, archivo y volver con otra marca) y v276 macros: laboratorio, carrusel y compartir (las versiones del panel en un carrusel, compartir el panel y las propuestas 25 y 26 para elegir la que abre); en el orden que aprobaste siguen configuración paso a paso (v277), cuentas (v278), Pro y anuncios (v279) y tour (v280). G3 y G4 completan la identidad sin versión fija. Cada entrega borra el CSS de su propuesta y la marca shipped.',
     phases: [
 
       P('G1', 'guía', null, 'hecho', [
@@ -167,10 +167,14 @@
         I('check', '_suppSelfCheck: tarde cuenta y saltada no, 19 días, sin frasco no hay cuenta, aviso a 7 días, se acabó, archivar conserva tomas y nutrición, otra marca cuenta desde su frasco, deshacer exacto, todo archivado → invitación, reactivar', 'hecho', { audit: '35 self-checks · dsSweep sin cambios · stack hit 43→41, editor 41→40' }),
       ]),
 
-      P('V276', 'macros: laboratorio y carrusel', 'v276', 'pendiente', [
-        I('lab', 'versiones de las barras y de la distribución para elegir', 'pendiente'),
-        I('carousel', 'carrusel del panel', 'pendiente'),
-        I('share', 'compartir el panel', 'pendiente'),
+      P('V276', 'macros: laboratorio, carrusel y compartir', 'v276', 'hecho', [
+        I('note', 'lo que pediste (24-sep): propuestas de barras de progreso y de distribución de los macros, verlas "en un carrusel" dentro del panel (izquierda-derecha) mientras eliges, y una versión para compartir', 'hecho'),
+        I('viz', 'una sola función para las versiones (el carrusel, el estudio y la tarjeta): aros (el radar y los 3 anillos de antes) · barras con la meta (142 / 180 g, o % con [ver %]) · medidor de terminal de 12 celdas · reparto por kcal P·4 C·4 F·9 (tres enteros que suman 100) contra la meta en escala de opacidad · tabla hoy / meta / % (más de 105 % en --bad) · dona solo de laboratorio (BRAND §4: el anillo de kcal es la única gráfica circular)', 'hecho'),
+        I('carousel', 'carrusel en el panel abierto, en lugar del radar y los anillos: una lámina por versión que deslizas izquierda-derecha (scroll-snap), pestañas de texto de 44 abajo (aros · barras · medidor · reparto · tabla; con movimiento reducido, sin animar), recuerda la última (settings.macroViz) y el carril toma la altura de la lámina a la vista (la más alta dejaba huecos)', 'hecho'),
+        I('share', '[share] en macros → compartir: el día · tus comidas / el panel de macros: el anillo de kcal grande (verde o rojo como en la app) y la versión elegida, vertical a su altura, con gym//TRK; copiar texto; la imagen ya pinta barras, reparto, radar y dona', 'hecho'),
+        I('labprog', 'laboratorio: 25 macros · progreso (aros · barras · medidor), cada opción con la función de la app y los números de tu día, en el panel y en la tarjeta; lo que elijas viaja en la hoja TRK-PICK y queda como la versión con la que abre el carrusel', 'hecho', { proposal: 'macroprog' }),
+        I('labdist', 'laboratorio: 26 macros · distribución (reparto · tabla · dona); la dona solo entra al carrusel si la eliges aquí', 'hecho', { proposal: 'macrodist' }),
+        I('check', '_macroVizSelfCheck: el reparto suma 100 (30/42 en el ejemplo), cada versión se pinta, barras en gramos contra la meta, medidor de terminal, tabla con el % de la meta, clave inválida → aros, la dona solo si la eliges y el carrusel trae 5', 'hecho', { audit: '36 self-checks · dsSweep sin cambios · panel abierto: 25 toques chicos en las 5 versiones, como v275' }),
       ]),
 
       P('V277', 'configuración paso a paso', 'v277', 'pendiente', [
