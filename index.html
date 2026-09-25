@@ -897,7 +897,7 @@
   .toasts{position:fixed; left:0; right:0; bottom:calc(var(--nav-clear) + env(safe-area-inset-bottom)); z-index:var(--z-toast); display:flex; flex-direction:column; align-items:center; gap:6px; padding:0 var(--sp-px); pointer-events:none;}
   .toast{max-width:100%; overflow:hidden; text-overflow:ellipsis; color:var(--fg); padding:10px var(--s5); border-radius:var(--r-toast); font-size:var(--t-data); font-weight:700; white-space:nowrap; pointer-events:auto; animation:toastin var(--dur-3) var(--ease-out);}   /* material: .glass-strong */
   .toast.out{animation:toastout var(--dur-3) var(--ease-in) forwards;}
-  .toast.ok{border-color:var(--glass-ring);}   /* v262 · el éxito ya no pinta el borde de verde */ .toast.err{border-color:var(--bad); cursor:pointer; white-space:normal; display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:2;}   /* G2 · un error no se corta: hasta 2 líneas */ .toast.err::after{content:' ✕'; color:var(--o40);} .toast.task{color:var(--o70);}
+  .toast.ok{border-color:var(--glass-ring);}   /* v262 · el éxito ya no pinta el borde de verde */ .toast.err{border-color:var(--bad); cursor:pointer; white-space:normal; display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:2;}   /* G2 · un error no se corta: hasta 2 líneas */ .toast.err::after{content:' ✕'; color:var(--o40);} .toast.task{color:var(--o70);} .toast.warn{border-color:var(--warn); cursor:pointer; white-space:normal; display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:2;}   /* v275 · un aviso (lo que se acaba) no es un error */
   @keyframes toastin{from{opacity:0; transform:translateY(10px)}}
   @keyframes toastout{to{opacity:0; transform:translateY(8px)}}
 
@@ -1052,7 +1052,7 @@
 
 <script>
 "use strict";
-const APP_V='v274';   // versión visible (arranque); R-DOC la compara con sw.js y con DESIGN_SYSTEM.md línea 3
+const APP_V='v275';   // versión visible (arranque); R-DOC la compara con sw.js y con DESIGN_SYSTEM.md línea 3
 const LS_KEY='gymtrk_db_v1';
 // BRAND.md §3 · diccionario cerrado de glifos de interfaz (un glifo = un significado). tools/ds-audit.cjs (R-GLY) lee
 // esta constante: cualquier otro símbolo no ASCII en un literal de interfaz es una desviación. Las etiquetas que el
@@ -4157,6 +4157,35 @@ function _scheduleSelfCheck(){ const A=(nm,c)=>{ if(!c) throw new Error('SELFCHE
     A('la etiqueta se calcula: @ RPE · F', (db.split.metric='rpe',intensityTag())==='@ RPE · F'&&(db.split.allowF=false,intensityTag())==='@ RPE');
   } finally { db=real; bumpIdx(); }
   console.log('schedule self-check OK'); }
+function _suppSelfCheck(){ const A=(nm,c)=>{ if(!c) throw new Error('SELFCHECK suplementos: '+nm); };
+  const D=k=>shiftDate(todayISO(),-k), real=db, rs=state.screen, rd=state.macroDate;
+  try{
+    const ticks={}; for(let k=1;k<=10;k++)ticks[D(k)]='taken'; ticks[D(11)]='skipped'; ticks[D(12)]='late'; ticks[D(40)]='taken';
+    db=migrate({_idfix:true,_fsfix:true,profile:{username:'t'},split:{name:'t',days:[]},sessions:[],stack:[
+      {id:'s1',name:'omega-3',category:'supp',dose:'2',unit:'g',when:['AM'],periodization:{type:'daily'},startDate:D(60),ticks,nutr:{kcal:20,fat:2},
+        products:[{id:'p1',brand:'Nordic',form:'softgels',per:2,size:60,dose:'2',unit:'g',nutr:{kcal:20,fat:2}}],cur:'p1',containers:[{id:'c1',prod:'p1',opened:D(12),size:60}]},
+      {id:'s2',name:'creatina',category:'supp',dose:'5',unit:'g',when:['PM'],periodization:{type:'daily'},startDate:D(30),ticks:{}},
+      {id:'s3',name:'zinc',category:'supp',dose:'15',unit:'mg',when:['PM'],periodization:{type:'daily'},startDate:D(30),ticks:{},archived:true}]});
+    const it=db.stack[0], L=suppLeft(it);
+    A('lo que queda sale de las tomas (tarde cuenta, saltada no, antes de abrir no)', L&&L.used===11&&L.left===38);
+    A('días que alcanzan: 38 softgels a 2 por día = 19', suppDaysLeft(it)===19);
+    A('sin frasco no hay cuenta y lo viejo no se reescribe', suppLeft(db.stack[1])===null&&suppStatus(db.stack[1])==='active'&&suppStatus(db.stack[2])==='archived');
+    it.containers[0].adj=-26; A('aviso a una semana: 12 softgels = ~6 días', suppStock(it).low&&suppDaysLeft(it)===6&&/⚠/.test(suppCellMark(it)));
+    it.containers[0].adj=-38; A('se acabó cuando no alcanza otra toma', suppStock(it).out&&suppStockTxt(suppStock(it))==='se acabó');
+    it.containers[0].adj=0;
+    state.macroDate=D(3); const k0=macroTotals().t.kcal; suppSetStatus(it,'archived','se acabó');
+    A('archivar: fuera de hoy, con sus tomas y la nutrición de sus días', !isDueToday(it,todayISO())&&it.archived===true&&Object.keys(it.ticks).length===13&&k0===20&&macroTotals().t.kcal===20&&!!it.containers[0].closed);
+    A('volver: encuentra el archivado por nombre', suppFindDormant(' Omega-3')===it&&!suppFindDormant('omega-3 extra'));
+    it.products.push({id:'p2',brand:'Kirkland',form:'softgels',per:1,size:100,dose:'1',unit:'g',nutr:{kcal:9,fat:1}}); it.cur='p2'; suppOpenContainer(it,'p2',100,todayISO()); suppReactivate(it,true);
+    it.ticks[todayISO()]='taken';
+    A('otra marca: cuenta desde su frasco', suppLeft(it).left===99&&suppStatus(it)==='active'&&!it.archived);
+    A('los días viejos usan el producto de entonces', suppNutrOn(it,D(3)).kcal===20&&suppNutrOn(it,todayISO()).kcal===9);
+    const sn=suppSnap(it); suppSetStatus(it,'paused','pausa'); suppRestore(it,sn); A('deshacer una pausa deja todo igual', suppStatus(it)==='active'&&suppSnap(it)===sn);
+    db.stack.forEach(x=>suppSetStatus(x,'archived','se acabó')); state.macroDate=todayISO();
+    A('todo archivado: vuelve la invitación de //SUPPS', /supempty/.test(suppSecHTML(todayISO())));
+    suppReactivate(db.stack[1]); A('reactivar', suppStatus(db.stack[1])==='active'&&isDueToday(db.stack[1],todayISO()));
+  } finally { db=real; state.screen=rs; state.macroDate=rd; }
+  console.log('supplements self-check OK'); }
 function _exHistSelfCheck(){ const A=(nm,c)=>{ if(!c) throw new Error('SELFCHECK historial por ejercicio: '+nm); };
   const D=k=>shiftDate(todayISO(),-k);
   const se=(id,k,day,ex)=>({id,date:D(k),dayId:day,dayName:day,gym:'G',type:'training',exercises:[ex]});
@@ -4776,7 +4805,7 @@ function dayLabel(iso,en){ const t=todayISO(); if(iso===t)return en?'TODAY':'HOY
 function macroTotals(){
   const today=curDate(); const items=db.meals[today]||[]; const t={kcal:0,protein:0,carbs:0,fat:0,sodium:0,potassium:0,sugar:0,fiber:0,water:0,caffeine:0,alcohol:0};
   items.forEach(m=>{ for(const k in t){ t[k]+=parseFloat(m[k])||0; } });
-  const micros={}; (db.stack||[]).forEach(x=>{ const _n=(x.nutr&&Object.keys(x.nutr).length?x.nutr:null)||(identifySubstance(x.name)||{}).nutr; if(_n&&tickDone(x.ticks&&x.ticks[today])){ for(const k in t){ t[k]+=parseFloat(_n[k])||0; } MICROS.forEach(mi=>{ const v=parseFloat(_n[mi.k]); if(!isNaN(v)) micros[mi.k]=(micros[mi.k]||0)+v; }); } }); (db.adhoc&&db.adhoc[today]||[]).forEach(a=>{ const _n=a.nutr; if(_n){ for(const k in t) t[k]+=parseFloat(_n[k])||0; MICROS.forEach(mi=>{const v=parseFloat(_n[mi.k]); if(!isNaN(v))micros[mi.k]=(micros[mi.k]||0)+v;}); } }); return {items,t,micros};
+  const micros={}; (db.stack||[]).forEach(x=>{ const _n=tickDone(x.ticks&&x.ticks[today])?suppNutrOn(x,today):null; if(_n){ for(const k in t){ t[k]+=parseFloat(_n[k])||0; } MICROS.forEach(mi=>{ const v=parseFloat(_n[mi.k]); if(!isNaN(v)) micros[mi.k]=(micros[mi.k]||0)+v; }); } }); (db.adhoc&&db.adhoc[today]||[]).forEach(a=>{ const _n=a.nutr; if(_n){ for(const k in t) t[k]+=parseFloat(_n[k])||0; MICROS.forEach(mi=>{const v=parseFloat(_n[mi.k]); if(!isNaN(v))micros[mi.k]=(micros[mi.k]||0)+v;}); } }); return {items,t,micros};
 }
 function bloating(t,g){
   // Subcutaneous (extracellular) water-retention tendency — acute, same-day heuristic.
@@ -4861,7 +4890,7 @@ function suppSegFor(iso,s){
 function suppSecHTML(iso){
   const s=suppDue(iso);
   // v269 · cuenta sin suplementos: la invitación vive aquí arriba de las comidas; ··· → ignorar (se reactiva en ajustes)
-  if(!s.all.length){ if((db.stack||[]).length||(db.settings&&db.settings.suppHide))return '';
+  if(!s.all.length){ if((db.stack||[]).some(x=>x&&suppStatus(x)==='active')||(db.settings&&db.settings.suppHide))return '';   // v275: solo cuentan los activos
     return logSecHTML({k:'supps',title:'SUPPS',v:'<span class="u-o40">—</span>',open:true,
       act:'<button type="button" class="lact" data-act="suppadd">+ supp</button><button type="button" class="lsmore" data-act="suppmenu" aria-label="opciones de suplementos"><span class="dots3" aria-hidden="true"></span></button>',
       body:'<div class="empty supempty">marca tus suplementos con un toque, aquí arriba de tus comidas</div>'}); }
@@ -4870,7 +4899,7 @@ function suppSecHTML(iso){
     return `<span class="${k===seg?'on':''}" role="tab" aria-selected="${k===seg}" data-act="suppseg" data-v="${k}">${l}<i>${d}/${its.length}</i></span>`; }).join('');
   const cur=s.all.filter(it=>suppSlot(it)===seg), pendSeg=cur.filter(it=>!s.done(it)).length;
   const cells=cur.map(it=>{ const on=s.done(it); const tt=on&&it.tickTimes&&it.tickTimes[iso];
-    return `<button type="button" class="lc${on?' on':''}" data-act="suppq" data-id="${escTxt(it.id)}" data-d="${iso}" aria-pressed="${on}" data-rk="sp:${escTxt(it.id)}" title="${on?'tomado'+(tt?' a las '+escTxt(tt):'')+' · toca para deshacer':'toca = tomado'}"><span class="k">${on?'✓':'○'}</span><span class="t">${escTxt(it.name||'supp')}</span></button>`; }).join('');
+    return `<button type="button" class="lc${on?' on':''}" data-act="suppq" data-id="${escTxt(it.id)}" data-d="${iso}" aria-pressed="${on}" data-rk="sp:${escTxt(it.id)}" title="${on?'tomado'+(tt?' a las '+escTxt(tt):'')+' · toca para deshacer':'toca = tomado'}"><span class="k">${on?'✓':'○'}</span><span class="t">${escTxt(it.name||'supp')}</span>${suppCellMark(it)}</button>`; }).join('');
   const lbl=(SUPP_SEG.find(x=>x[0]===seg)||['',''])[1];
   const act=`<button type="button" class="lact" data-act="suppall" data-d="${iso}" data-seg="${seg}"${pendSeg?'':' aria-disabled="true"'}>✓ ${lbl}</button>`;
   const v=`<b data-nk="lv-supps" data-nv="${s.n}">${s.n}</b> / ${s.all.length}`;
@@ -6634,10 +6663,53 @@ function openProgAdd(){ const e=state.progEdit; if(!e)return; const hid=['consis
 // ---------- stack: supplements / skincare / meds ----------
 // item shape: { id, name, category:'supp'|'skin'|'meds', dose, unit?, when:[], periodization:{type,value}, notes,
 //               startDate, endDate?, med?:{doctor,duration}, ticks:{'YYYY-MM-DD':'taken'|'late'|'skipped'}, archived? }
+// v275 + status:'active'|'paused'|'archived' (archived = status≠active: lo leen 8 lugares), statusLog:[{d,to,why}],
+//        products:[{id,brand,name,form,per,size,dose,unit,nutr?,added}], cur:productId, containers:[{id,prod,opened,size,adj?,closed?}]
 // (legacy: ticks guardaban `true` = taken; SIEMPRE leer vía tickState — migración lazy, sin reescribir)
 function tickState(v){ if(v===true)return 'taken'; if(v==='taken'||v==='late'||v==='skipped')return v; return null; }
 function tickDone(v){ const s=tickState(v); return s==='taken'||s==='late'; } // adherencia: tomado o tarde cuenta; saltado no
 const TICK_SYM={taken:'✓',late:'~',skipped:'✗'};
+// ---- v275 · suplementos con marca, frasco y aviso ----
+// El dueño: la marca/producto, "cuántas pastillas… por porción", la frecuencia, "cuántas… trae el frasco", que avise
+// "una semana antes de que se acabe", archivar / pausar / "no lo encontré", y si vuelve con otra marca, confirmar si cambió
+// la dosis o la presentación. Aditivo: el item sigue siendo el GENÉRICO (mismo id → sus tomas, su historial y "tomar X"
+// no se parten); la marca vive en products[], el frasco en containers[]. Lo que queda se CALCULA con las tomas: hay 4
+// caminos que escriben tomas + deshacer, y un contador guardado se desfasaría.
+const SUPP_FORMS=[['cápsulas','cáps'],['softgels','softgels'],['tabletas','tabs'],['gomitas','gomitas'],['polvo','g'],['líquido','ml'],['gotas','gotas'],['spray','sprays'],['crema','aplic'],['otro','u']];
+const SUPP_WARN_D=7;   // días: el aviso sale una semana antes
+function suppStatus(it){ return (it&&it.status)||(it&&it.archived?'archived':'active'); }
+function suppProd(it,id){ return ((it&&it.products)||[]).find(p=>p.id===(id||(it&&it.cur)))||null; }
+function suppCont(it){ const C=(it&&it.containers)||[]; for(let i=C.length-1;i>=0;i--){ if(!C[i].closed)return C[i]; } return null; }
+function suppPU(p){ return (p&&p.pu)||((SUPP_FORMS.find(f=>f[0]===(p&&p.form))||[])[1])||'u'; }
+function suppSetStatus(it,to,why){ const iso=todayISO(); it.status=to; it.archived=to!=='active'; (it.statusLog=it.statusLog||[]).push({d:iso,to,why:why||''});
+  const c=suppCont(it); if(to==='archived'&&why==='se acabó'&&c)c.closed=iso; }   // "se acabó" cierra el frasco; pausa y "no lo encontré" no
+function suppOpenContainer(it,prodId,size,iso){ const d=iso||todayISO(), c=suppCont(it); if(c){ const y=shiftDate(d,-1); c.closed=y<c.opened?c.opened:y; }
+  (it.containers=it.containers||[]).push({id:uid(),prod:prodId,opened:d,size:+size||0}); }
+function suppReactivate(it,keep,why){ suppSetStatus(it,'active',why||'reactivado'); const p=suppProd(it); if(!keep&&!suppCont(it)&&p&&p.size>0)suppOpenContainer(it,p.id,p.size,todayISO()); }
+// cuántas quedan: lo que trae el frasco − (días con toma tomada o tarde desde que lo abriste) × por toma + tu corrección
+function suppLeft(it,iso){ const c=suppCont(it); if(!c)return null; const p=suppProd(it,c.prod)||suppProd(it), size=+c.size||0; if(!p||!(size>0))return null;
+  const per=+p.per||1, end=iso||todayISO(); let used=0; Object.keys(it.ticks||{}).forEach(d=>{ if(d>=c.opened&&d<=end&&tickDone(it.ticks[d]))used++; });
+  return {left:Math.round((size-used*per+(+c.adj||0))*100)/100, per, pu:suppPU(p), size, used}; }
+// días que alcanzan: las tomas que quedan entre las que te tocan por día según su periodización (próximas 4 semanas)
+function suppDaysLeft(it){ const L=suppLeft(it); if(!L||((it.periodization||{}).type==='occasional'))return null;
+  const tmp=Object.assign({},it,{archived:false}), t=todayISO(); let due=0; for(let k=0;k<28;k++){ if(isDueToday(tmp,shiftDate(t,k)))due++; }
+  return due?Math.floor(Math.floor(Math.max(0,L.left)/L.per+1e-9)/(due/28)):null; }
+function suppStock(it){ if(suppStatus(it)!=='active')return null; const L=suppLeft(it); if(!L)return null; const d=suppDaysLeft(it), out=L.left<L.per-1e-9;
+  return {L,d,out,low:!out&&d!=null&&d<=SUPP_WARN_D}; }
+function suppStockTxt(k){ if(!k)return ''; if(k.out)return 'se acabó'; return 'quedan '+Math.max(0,Math.round(k.L.left*10)/10)+' '+k.L.pu+(k.d!=null?' · ~'+k.d+' d':''); }
+function suppCellMark(it){ const k=suppStock(it); return k&&(k.low||k.out)?'<span class="m"><span class="u-warn">⚠</span> '+(k.out?'se acabó':'~'+k.d+' d')+'</span>':''; }
+// la nutrición de un día: la del producto que estaba abierto ese día (si guardó la suya); si no, la del item; si no, la típica
+function suppProdOn(it,iso){ const C=((it&&it.containers)||[]).filter(c=>c.opened<=iso&&(!c.closed||c.closed>=iso)); const c=C[C.length-1]; return c?suppProd(it,c.prod):null; }
+function suppNutrOn(it,iso){ const p=suppProdOn(it,iso); if(p&&p.nutr&&Object.keys(p.nutr).length)return p.nutr; return (it.nutr&&Object.keys(it.nutr).length?it.nutr:null)||(identifySubstance(it.name)||{}).nutr; }
+// el mismo nombre en pausa o archivado: se retoma ESE (con otra marca si quieres) en vez de crear otro
+function suppFindDormant(name){ const k=nameKey(name); return k?(db.stack||[]).find(x=>x&&nameKey(x.name)===k&&suppStatus(x)!=='active')||null:null; }
+function suppSnap(it){ return JSON.stringify(['status','archived','statusLog','products','cur','containers'].map(k=>[k,it[k]])); }
+function suppRestore(it,sn){ JSON.parse(sn).forEach(([k,v])=>{ if(v===undefined||v===null)delete it[k]; else it[k]=v; }); }
+// una vez al día, al abrir macros: lo que está por acabarse (≤ 7 días) o ya se acabó
+function suppWarnMaybe(){ const t=todayISO(); db.settings=db.settings||{}; if(db.settings.suppWarnDay===t)return;
+  const L=(db.stack||[]).map(x=>({x,k:suppStock(x)})).filter(o=>o.k&&(o.k.low||o.k.out)); if(!L.length)return;
+  db.settings.suppWarnDay=t; save();
+  toast(L.length===1?'⚠ '+L[0].x.name+' · '+suppStockTxt(L[0].k):'⚠ '+L.length+' suplementos por acabarse · '+L.slice(0,3).map(o=>o.x.name).join(', '),'warn',{act:{label:'[ver]',fn:()=>{ window._stackView='all'; go('stack'); }}}); }
 function isDueToday(item, iso){
   if(!item || item.archived) return false;
   if(item.startDate && iso < item.startDate) return false;
@@ -6767,7 +6839,8 @@ function renderStack(){
       const st=it.ticks && tickState(it.ticks[iso]);
       const isDue=isDueToday(it,iso);
       const canTick=isDue||(it.periodization&&it.periodization.type==='occasional');
-      const dose=it.dose?(' · '+escTxt(it.dose)+(it.unit?' '+escTxt(it.unit):'')):'';
+      const _pr=suppProd(it), _sk=suppStock(it);   // v275 · su marca y cuántas quedan
+      const dose=(_pr&&_pr.brand?' · '+escTxt(_pr.brand):'')+(it.dose?(' · '+escTxt(it.dose)+(it.unit?' '+escTxt(it.unit):'')):'');
       const when=it.when&&it.when.length?(' · '+escTxt(it.when.join('/'))):'';
       const _tt=it.tickTimes&&it.tickTimes[iso]; const timeChip=tickDone(it.ticks&&it.ticks[iso])?` · <span data-act="supptime" data-id="${it.id}" data-d="${iso}" class="u-tap u-ul u-o50">${_tt?escTxt(_tt):'+hora'}</span>`:'';
       const period=escTxt(stackPeriodLabel(it));
@@ -6780,7 +6853,7 @@ function renderStack(){
       return `<div class="line u-py6 u-px0 u-ais">`
         +`<span class="k u-flex u-aic u-wrap">${tickDisp}<span data-act="stackedit" data-id="${it.id}" class="u-tap">${escTxt(it.name)}</span><span class="u-o40 u-label u-ml4">${dose}${when}${timeChip}</span>${cat}${idMark}</span>`
         +`<span class="dots"></span>`
-        +`<span class="v u-label u-o40 u-tr">${period}</span>`
+        +`<span class="v u-label u-o40 u-tr">${period}${_sk?'<br/><span class="'+(_sk.low||_sk.out?'u-fg':'')+'">'+(_sk.low||_sk.out?'<span class="u-warn">⚠</span> ':'')+escTxt(suppStockTxt(_sk))+'</span>':''}</span>`
         +`</div>`;
     };
     const visible=all.filter(x=>!x.archived && (view==='all'||isDueToday(x,iso)));
@@ -6806,6 +6879,11 @@ function renderStack(){
       const doneN=ocasional.filter(x=>tickDone(x.ticks&&x.ticks[iso])).length;
       out+=`<details class="stk-blk"><summary>OCASIONAL · sin horario <span class="u-o30">· ${doneN}/${ocasional.length}</span></summary>${ocasional.map(li).join('')}</details>`;
     }
+    // v275 · en pausa y archivados: fuera de HOY, abajo de TODOS, con su motivo y [reactivar] (sus tomas se quedan)
+    if(view==='all'){ const dz=all.filter(x=>suppStatus(x)!=='active');
+      const dl=it=>{ const lg=(it.statusLog||[]).slice(-1)[0], p=suppProd(it); const why=[p&&p.brand,lg&&lg.why&&lg.why!=='pausa'?lg.why:'',lg&&lg.d?fmtShort(lg.d):''].filter(Boolean).join(' · ');
+        return `<div class="line u-py6 u-px0 u-aic"><span class="k"><span data-act="stackedit" data-id="${it.id}" class="u-tap">${escTxt(it.name)}</span>${why?' <span class="u-o40 u-label">· '+escTxt(why)+'</span>':''}</span><span class="dots"></span><span class="v"><button type="button" class="b" data-act="suppreact" data-id="${it.id}">reactivar</button></span></div>`; };
+      [['paused','EN PAUSA',' open'],['archived','ARCHIVADOS','']].forEach(([k,l,o])=>{ const g=dz.filter(x=>suppStatus(x)===k); if(g.length)out+=`<details class="stk-blk"${o}><summary>${l} <span class="u-o30">· ${g.length}</span></summary>${g.map(dl).join('')}</details>`; }); }
     const adhocHoy=(db.adhoc&&db.adhoc[iso])||[];
     if(adhocHoy.length){
       const rows=adhocHoy.map((a,i)=>`<div class="line u-py6 u-px0 u-ais"><span class="k">${escTxt(a.name)}${a.compoundMg?' · '+a.compoundMg+' mg':''}${a.form?' ('+escTxt(a.form)+')':''}${a.time?' · '+escTxt(a.time):''}</span><span class="dots"></span><span class="v"><span data-act="deladhoc" data-i="${i}" class="u-tap u-bad">✕</span></span></div>`).join('');
@@ -6820,14 +6898,14 @@ function renderStack(){
     +`<div class="u-mt8"><button class="b u-w100" data-act="adhoclog">+ toma puntual</button></div>`;
   return out;
 }
-function openStackEdit(id, presetCat){
+function openStackEdit(id, presetCat, opt){ opt=opt||{};   // opt.newBrand: volver con otra marca · opt.forceNew: crear aparte aunque el nombre ya exista
   const existing=(db.stack||[]).find(x=>x.id===id);
   const isNew=!existing;
   const it=existing || {
     id:'st_'+Date.now()+Math.random().toString(36).slice(2,5),
     name:'', category:presetCat||'supp', dose:'', unit:'', when:[],
     periodization:{type:'daily'}, notes:'',
-    startDate:todayISO(), ticks:{}
+    startDate:(state.screen==='macros'&&curDate()<todayISO())?curDate():todayISO(), ticks:{}   // v275: agregado viendo otro día → se marca ese día
   };
   const p=it.periodization||{type:'daily'}; const nv=k=>{ const o=it.nutr||{}; return (k in o)?o[k]:''; };
   const catBtn=(k,l)=>`<button class="t ${it.category===k?'on':''}" data-cat="${k}" type="button">${l}</button>`;
@@ -6839,11 +6917,24 @@ function openStackEdit(id, presetCat){
   const dosePh=it.category==='skin'?'1':it.category==='meds'?'25':'5';
   const UNITS=['','mg','g','mcg','ml','cap','tab','UI','gotas','scoop','puff'];
   const unitOpts=UNITS.map(u=>`<option value="${u}"${(it.unit||'')===u?' selected':''}>${u||'—'}</option>`).join('');
+  // v275 · producto y frasco (opcional): marca, presentación, por toma, lo que trae, cuándo lo abriste y cuántas quedan
+  const _PB=suppProd(it), _PP=opt.newBrand?null:_PB, _C=opt.newBrand?null:suppCont(it), _L=opt.newBrand?null:suppLeft(it), _SK=opt.newBrand?null:suppStock(it);
+  const _pf=(_PB&&_PB.form)||'cápsulas', _brands=[...new Set((it.products||[]).map(p=>p.brand).filter(Boolean))], _per=(_PB&&_PB.per)||'';
+  const _formOpts=SUPP_FORMS.map(([f,u])=>`<option value="${f}"${_pf===f?' selected':''}>${f===u?f:f+' · '+u}</option>`).join('');
+  const _prodHTML=`<div class="grp-label sub">PRODUCTO · FRASCO <span class="u-o40 u-w4">· opcional · para avisarte antes de que se acabe</span></div>`
+    +(opt.newBrand?`<div class="submeta u-mb6">otra marca de ${escTxt(it.name)} · su historial sigue aquí</div>`:'')
+    +`<div class="field row2"><div><label>MARCA</label><input id="se_brand" list="se_brands" value="${escTxt((_PP&&_PP.brand)||'')}" placeholder="ej. Nordic Naturals" autocomplete="off"/><datalist id="se_brands">${_brands.map(b=>`<option value="${escTxt(b)}"></option>`).join('')}</datalist></div><div><label>PRODUCTO</label><input id="se_pname" value="${escTxt((_PP&&_PP.name)||'')}" placeholder="opcional" autocomplete="off"/></div></div>`
+    +`<div class="field row2"><div><label>PRESENTACIÓN</label><select id="se_pform">${_formOpts}</select></div><div><label>POR TOMA · <span id="se_pu">${escTxt(suppPU({form:_pf}))}</span></label><input id="se_per" value="${_per}" placeholder="2" inputmode="decimal" autocomplete="off"/></div></div>`
+    +`<div class="field row2"><div><label>TRAE EL FRASCO</label><input id="se_size" value="${(_C&&_C.size)||((_PB&&_PB.size)||'')}" placeholder="120" inputmode="decimal" autocomplete="off"/></div><div><label>LO ABRISTE</label><input id="se_opened" type="date" value="${(_C&&_C.opened)||todayISO()}"/></div></div>`
+    +`<div class="field row2"><div><label>QUEDAN HOY</label><input id="se_left" value="${_L?Math.max(0,_L.left):''}" data-v0="${_L?Math.max(0,_L.left):''}" placeholder="${_L?'':'lo que trae'}" inputmode="decimal" autocomplete="off"/></div><div></div></div>`
+    +(_L?`<div class="submeta u-mt-n2 u-mb6">${_SK&&(_SK.low||_SK.out)?'<span class="u-warn">⚠</span> ':''}${escTxt(_SK?suppStockTxt(_SK):('quedan '+Math.max(0,_L.left)+' '+_L.pu))} · abierto el ${escTxt(fmtShort(_C.opened))}</div>`
+      +`<div class="u-flex u-gap8 u-wrap u-mb8"><button type="button" class="b" id="se_bottle">abrí otro frasco</button>${_SK&&_SK.out?'<button type="button" class="b" id="se_finish">se acabó · archivar</button><button type="button" class="b" id="se_pause">pausar</button>':''}</div>`:'');
   openModal(`<h3>${isNew?'agregar a tu stack':'editar item'}</h3>
     <div class="field"><label>NOMBRE</label><input id="se_name" value="${escTxt(it.name||'')}" placeholder="ej. creatina monohidratada" autocomplete="off"/></div>
     <div class="field u-mt-n2"><div id="se_idstrip" style="min-height:14px"></div><div id="se_idcard"></div></div>
     <div class="field"><label>CATEGORÍA</label><div class="toggles" id="se_cat">${catBtn('supp','supp')}${catBtn('skin','skin')}${catBtn('meds','meds')}</div></div>
     <div class="field row2"><div><label>DOSIS</label><input id="se_dose" value="${escTxt(it.dose||'')}" placeholder="${dosePh}" inputmode="decimal" autocomplete="off"/></div><div><label>UNIDAD</label><select id="se_unit">${unitOpts}</select></div></div>
+    ${_prodHTML}
     <div class="field"><label>INICIO</label><input id="se_start" type="date" value="${it.startDate||todayISO()}"/></div>
     <div class="field"><label>CUÁNDO</label><div class="toggles wrap" id="se_when">${whenOpts.map(whenBtn).join('')}</div></div>
     <div class="field"><label>PERIODIZACIÓN</label>
@@ -6856,7 +6947,7 @@ function openStackEdit(id, presetCat){
     <div class="field"><label>NOTAS</label><input id="se_notes" value="${escTxt(it.notes||'')}" placeholder="opcional · ej. con grasa, no mezclar con C" autocomplete="off"/></div>
     <details class="field u-mt2"><summary class="u-label u-o50 u-tap u-lsui">VALORES NUTRICIONALES · por dosis (opcional)</summary><div class="submeta u-label u-my6 u-mx0">lo que aporta UNA dosis tomada · suma a tu total del día</div><div class="field row2"><div><label>KCAL</label><input id="se_n_kcal" type="number" inputmode="decimal" value="${nv('kcal')}"/></div><div><label>PROTEÍNA g</label><input id="se_n_protein" type="number" inputmode="decimal" value="${nv('protein')}"/></div></div><div class="field row2"><div><label>CARBOS g</label><input id="se_n_carbs" type="number" inputmode="decimal" value="${nv('carbs')}"/></div><div><label>GRASA g</label><input id="se_n_fat" type="number" inputmode="decimal" value="${nv('fat')}"/></div></div><div class="field row2"><div><label>AZÚCAR g</label><input id="se_n_sugar" type="number" inputmode="decimal" value="${nv('sugar')}"/></div><div><label>FIBRA g</label><input id="se_n_fiber" type="number" inputmode="decimal" value="${nv('fiber')}"/></div></div><div class="field row2"><div><label>SODIO mg</label><input id="se_n_sodium" type="number" inputmode="decimal" value="${nv('sodium')}"/></div><div><label>POTASIO mg</label><input id="se_n_potassium" type="number" inputmode="decimal" value="${nv('potassium')}"/></div></div><div class="field row2"><div><label>CAFEÍNA mg</label><input id="se_n_caffeine" type="number" inputmode="decimal" value="${nv('caffeine')}"/></div><div><label>ALCOHOL g</label><input id="se_n_alcohol" type="number" inputmode="decimal" value="${nv('alcohol')}"/></div></div><div class="grp-label sub">MICRONUTRIENTS</div><div class="field row2"><div><label>VIT A µg</label><input id="se_n_vitA" type="number" inputmode="decimal" value="${nv('vitA')}"/></div><div><label>VIT C mg</label><input id="se_n_vitC" type="number" inputmode="decimal" value="${nv('vitC')}"/></div></div><div class="field row2"><div><label>VIT D µg</label><input id="se_n_vitD" type="number" inputmode="decimal" value="${nv('vitD')}"/></div><div><label>VIT E mg</label><input id="se_n_vitE" type="number" inputmode="decimal" value="${nv('vitE')}"/></div></div><div class="field row2"><div><label>VIT K µg</label><input id="se_n_vitK" type="number" inputmode="decimal" value="${nv('vitK')}"/></div><div><label>VIT B6 mg</label><input id="se_n_vitB6" type="number" inputmode="decimal" value="${nv('vitB6')}"/></div></div><div class="field row2"><div><label>FOLATO µg</label><input id="se_n_folate" type="number" inputmode="decimal" value="${nv('folate')}"/></div><div><label>VIT B12 µg</label><input id="se_n_vitB12" type="number" inputmode="decimal" value="${nv('vitB12')}"/></div></div><div class="field row2"><div><label>CALCIO mg</label><input id="se_n_calcium" type="number" inputmode="decimal" value="${nv('calcium')}"/></div><div><label>HIERRO mg</label><input id="se_n_iron" type="number" inputmode="decimal" value="${nv('iron')}"/></div></div><div class="field row2"><div><label>MAGNESIO mg</label><input id="se_n_magnesium" type="number" inputmode="decimal" value="${nv('magnesium')}"/></div><div><label>ZINC mg</label><input id="se_n_zinc" type="number" inputmode="decimal" value="${nv('zinc')}"/></div></div></details>
     <div id="se_meds" style="display:${it.category==='meds'?'block':'none'}"><div class="field row2"><div><label>RECETADO POR</label><input id="se_doc" value="${escTxt((it.med&&it.med.doctor)||'')}" autocomplete="off"/></div><div><label>DURACIÓN</label><input id="se_dur" value="${escTxt((it.med&&it.med.duration)||'')}" placeholder="ej. 8 sem · indef" autocomplete="off"/></div></div></div>
-    <div class="sheetbtns"><button class="ok" id="se_save">guardar</button>${isNew?'':'<button class="cancel u-bad" id="se_del">borrar</button>'}<button class="cancel" data-act="closemodal">cancel</button></div>`);
+    <div class="sheetbtns"><button class="ok" id="se_save">guardar</button>${isNew?'':'<button class="cancel" id="se_more">más</button>'}<button class="cancel" data-act="closemodal">cancel</button></div>`);
   const root=document.getElementById('modal'); if(!root) return;
   root.querySelectorAll('#se_cat button').forEach(b=>b.onclick=()=>{
     root.querySelectorAll('#se_cat button').forEach(x=>x.classList.remove('on'));
@@ -6876,6 +6967,12 @@ function openStackEdit(id, presetCat){
     root.querySelector('#se_prg').style.display=t==='range'?'block':'none';
   });
   root.querySelectorAll('#se_dayrow button').forEach(b=>b.onclick=()=>b.classList.toggle('on'));
+  { const pfs=document.getElementById('se_pform'), pu=document.getElementById('se_pu'); if(pfs&&pu)pfs.onchange=()=>{ pu.textContent=suppPU({form:pfs.value}); }; }
+  const _stAct=(to,why)=>{ const sn=suppSnap(it); suppSetStatus(it,to,why); closeModal(); save(); reRender(); toast(it.name+(to==='paused'?' en pausa':' archivado · '+why),'',{undo:()=>suppRestore(it,sn)}); };
+  { const b=document.getElementById('se_bottle'); if(b)b.onclick=()=>{ const p=suppProd(it), c=suppCont(it), sz=(p&&p.size)||(c&&c.size); if(!p||!(sz>0)){ toast('⚠ pon lo que trae el frasco','err'); return; }
+      const sn=suppSnap(it); suppOpenContainer(it,p.id,sz,todayISO()); closeModal(); save(); reRender(); toast(it.name+' · frasco nuevo de '+sz+' '+suppPU(p),'',{undo:()=>suppRestore(it,sn)}); }; }
+  { const b=document.getElementById('se_finish'); if(b)b.onclick=()=>_stAct('archived','se acabó'); }
+  { const b=document.getElementById('se_pause'); if(b)b.onclick=()=>_stAct('paused','pausa'); }
 
   // Tarea 3: identificación de sustancia en el editor (reconoce nombre -> rellenar nutrición / ficha)
   var _idSel = it.subId || null;
@@ -6902,8 +6999,30 @@ function openStackEdit(id, presetCat){
   var _seNameEl=document.getElementById('se_name'); if(_seNameEl) _seNameEl.addEventListener('input',_renderId);
   root.querySelectorAll('[id^="se_n_"]').forEach(function(el){ el.addEventListener('input',function(){ _nutrFromDb=false; }); });
   _renderId();
+  // v275 · el producto del formulario, y qué cambió contra la marca anterior (se confirma antes de guardar)
+  const _prodForm=()=>{ const n=id=>{ const v=parseFloat(String(val(id)||'').replace(',','.')); return isFinite(v)?v:0; }, le=document.getElementById('se_left');
+    return {brand:(val('se_brand')||'').trim(),pname:(val('se_pname')||'').trim(),form:val('se_pform')||'cápsulas',per:n('se_per'),size:n('se_size'),opened:val('se_opened')||todayISO(),
+      left:le?n('se_left'):null,leftEdited:!!(le&&String(le.value).trim()!==''&&String(le.value).trim()!==String(le.dataset.v0))}; };
+  const _newProd=pf=>{ const pp=suppProd(it); return !!(pf.brand||pf.pname||pf.per>0||pf.size>0)&&(!pp||!!opt.newBrand||(!!pp.brand&&!!pf.brand&&nameKey(pf.brand)!==nameKey(pp.brand))); };
+  const _prodChanges=pf=>{ const pp=suppProd(it); if(!pp||!_newProd(pf))return []; const out=[];
+    if(pf.form!==pp.form)out.push('presentación: '+(pp.form||'—')+' → '+pf.form);
+    if(pf.per>0&&(+pp.per||0)!==pf.per)out.push('por toma: '+(pp.per||'—')+' '+suppPU(pp)+' → '+pf.per+' '+suppPU({form:pf.form}));
+    const d0=(((pp.dose!=null?pp.dose:it.dose)||'')+' '+((pp.unit!=null?pp.unit:it.unit)||'')).trim(), d1=((val('se_dose')||'')+' '+(val('se_unit')||'')).trim();
+    if(d0!==d1)out.push('dosis: '+(d0||'—')+' → '+(d1||'—'));
+    return out; };
   root.querySelector('#se_save').onclick=()=>{
     const name=val('se_name'); if(!name){ toast('⚠ pon un nombre','err'); return; }
+    // v275 · volver con otra marca: si el nombre ya estaba en pausa o archivado, se retoma ESE (sus tomas y su historial siguen)
+    const dor=isNew&&!opt.forceNew?suppFindDormant(name):null;
+    if(dor){ const dp=suppProd(dor); trkMenu('"'+dor.name+'" ya estaba '+(suppStatus(dor)==='paused'?'en pausa':'archivado')+(dp&&dp.brand?' · '+dp.brand:''),[
+      [dp&&dp.brand?'volver con '+dp.brand:'volver como estaba',()=>{ const sn=suppSnap(dor); suppReactivate(dor); closeModal(); save(); reRender(); toast(dor.name+' de vuelta','',{undo:()=>suppRestore(dor,sn)}); }],
+      ['volver con otra marca',()=>{ closeModal(); openStackEdit(dor.id,null,{newBrand:true}); }],
+      ['crear otro aparte',()=>{ opt.forceNew=true; const b=document.getElementById('se_save'); if(b)b.click(); }]]); return; }
+    const pf=_prodForm(), chg=_prodChanges(pf);
+    if(chg.length){ trkAsk({title:'cambió con la marca nueva',detail:chg.join('\n'),ok:'así queda',cancel:'revisar'},()=>_doSave(name,pf)); return; }
+    _doSave(name,pf); };
+  const _doSave=(name,pf)=>{
+    const _nutr0=it.nutr?JSON.parse(JSON.stringify(it.nutr)):null, _dose0={dose:it.dose,unit:it.unit};
     it.name=name;
     it.category=root.querySelector('#se_cat .on').dataset.cat;
     it.dose=val('se_dose'); it.unit=val('se_unit');
@@ -6925,15 +7044,32 @@ function openStackEdit(id, presetCat){
     var _fEl=document.getElementById('se_form'); var _se=_fEl?identifySubstance(it.name):null;   // forma química: guardar compuesto + elemental
     if(_fEl&&_se&&_se.forms){ it.elem=_se.elem; it.form=_fEl.value; it.compoundMg=parseFloat(val('se_dose'))||null; it.elementalMg=elementalMg(it.compoundMg,_se,it.form); }
     else { delete it.elem; delete it.form; delete it.compoundMg; delete it.elementalMg; }
+    _applyProd(pf,_nutr0,_dose0);
+    if(opt.newBrand&&suppStatus(it)!=='active')suppReactivate(it,true,'otra marca');
     if(isNew){ db.stack=db.stack||[]; db.stack.push(it); }
     savedToast('✓ suplemento guardado'); closeModal(); reRender();
   };
+  // v275 · marca nueva = producto nuevo con su frasco; el anterior guarda su dosis y nutrición para los días viejos
+  const _applyProd=(pf,nutr0,dose0)=>{ const pp=suppProd(it), any=!!(pf.brand||pf.pname||pf.per>0||pf.size>0); if(!any&&!pp)return;
+    const snapN=()=>it.nutr?JSON.parse(JSON.stringify(it.nutr)):undefined;
+    if(_newProd(pf)){
+      if(pp){ if(pp.nutr===undefined&&nutr0)pp.nutr=nutr0; if(pp.dose===undefined){ pp.dose=dose0.dose; pp.unit=dose0.unit; } }
+      const np={id:uid(),brand:pf.brand,name:pf.pname,form:pf.form,per:pf.per||1,size:pf.size||null,dose:it.dose,unit:it.unit,nutr:snapN(),added:todayISO()};
+      (it.products=it.products||[]).push(np); it.cur=np.id;
+      if(pf.size>0){ const oc=suppCont(it); suppOpenContainer(it,np.id,pf.size,(opt.newBrand||(oc&&pf.opened<=oc.opened))?todayISO():pf.opened); }   // marca nueva = frasco nuevo desde hoy (salvo una fecha posterior al frasco anterior)
+    } else if(pp){
+      Object.assign(pp,{brand:pf.brand,name:pf.pname,form:pf.form,per:pf.per||pp.per||1,size:pf.size||pp.size||null,dose:it.dose,unit:it.unit,nutr:snapN()});
+      const c=suppCont(it); if(c&&c.prod===pp.id){ if(pf.opened)c.opened=pf.opened; if(pf.size>0)c.size=pf.size; } else if(pf.size>0)suppOpenContainer(it,pp.id,pf.size,pf.opened);
+    }
+    if(pf.leftEdited){ const c=suppCont(it); if(c){ c.adj=0; const L=suppLeft(it); if(L)c.adj=Math.round((pf.left-L.left)*100)/100; } }
+  };
   if(!isNew){
-    root.querySelector('#se_del').onclick=()=>{
-      const _go2=()=>{
-      db.stack=(db.stack||[]).filter(x=>x.id!==it.id);
-      save(); closeModal(); reRender();
-    }; return holdConfirm({title:'borrar "'+it.name+'"',detail:'también su historial de tomas',verb:'borrar'},_go2);};
+    // v275 · "más" en lugar de "borrar": pausar, archivar con su motivo o reactivar; borrar queda al final (y se lleva sus tomas)
+    root.querySelector('#se_more').onclick=()=>{ const st=suppStatus(it);
+      const del=['borrar · con su historial',()=>holdConfirm({title:'borrar "'+it.name+'"',detail:'también su historial de tomas · para dejar de verlo sin perderlo, archívalo',verb:'borrar'},()=>{ db.stack=(db.stack||[]).filter(x=>x.id!==it.id); save(); closeModal(); reRender(); })];
+      trkMenu(it.name, st==='active'
+        ?[['pausar',()=>_stAct('paused','pausa')],['archivar · se acabó',()=>_stAct('archived','se acabó')],['archivar · no lo encontré',()=>_stAct('archived','no lo encontré')],del]
+        :[['reactivar',()=>{ const sn=suppSnap(it); suppReactivate(it); closeModal(); save(); reRender(); toast(it.name+' de vuelta','',{undo:()=>suppRestore(it,sn)}); }],del]); };
   }
 }
 
@@ -7162,6 +7298,7 @@ function render(){
   try{updateRestBar();}catch(_){}
   try{updateNowBar();}catch(_){}
   renderNav();
+  if(sc==='macros')try{ suppWarnMaybe(); }catch(_){}   // v275 · una vez al día: lo que está por acabarse
   v.scrollTop = state._scroll||0; state._scroll=0;
   if(state._autoScroll&&sc==='workout'){ state._autoScroll=false; const fp=v.querySelector('[data-act="setf"][data-f="rir"]:not([data-locked])'); if(fp)fp.scrollIntoView({block:'center',behavior:reducedMotion()?'auto':'smooth'}); }
   // v223: tras confirmar una serie, a la vista la SIGUIENTE de ese ejercicio (no la primera del documento)
@@ -7698,6 +7835,7 @@ document.getElementById('app').addEventListener('click',e=>{
   else if(a==='suppinfo'){ const it=(db.stack||[]).find(x=>x.id===el.dataset.id); const sid=el.dataset.sub; const s=it&&(sid?SUBSTANCE_DB.find(z=>z.id===sid):(identifySubstance(it.name)||(it.subId?SUBSTANCE_DB.find(z=>z.id===it.subId):null))); if(s) openModal(`<h3>${escTxt(s.name)}</h3>`+suppInfoCard(s)+`<div class="sheetbtns"><button class="cancel" data-act="closemodal">cerrar</button></div>`); }
   else if(a==='suppfill'){ const it=(db.stack||[]).find(x=>x.id===el.dataset.id); const sid=el.dataset.sub; const s=it&&(sid?SUBSTANCE_DB.find(z=>z.id===sid):identifySubstance(it.name)); if(s&&s.nutr&&Object.keys(s.nutr).length){ it.nutr=Object.assign({},it.nutr||{},s.nutr); it.nutrSrc='db'; it.subId=s.id; save(); render(); if(window.toast)toast(s.name+': nutrición aplicada · ajústala en el item'); } }
   else if(a==='stackadd'){ openStackEdit(null, el.dataset.c||'supp'); }
+  else if(a==='suppreact'){ const it=(db.stack||[]).find(x=>x.id===el.dataset.id); if(it){ const sn=suppSnap(it); suppReactivate(it); save(); reRender(); toast(it.name+' de vuelta','',{undo:()=>suppRestore(it,sn)}); } }
   else if(a==='suppadd'){ openStackEdit(null,'supp'); }
   else if(a==='suppmenu'){ trkMenu('suplementos',[['+ agregar suplemento',()=>openStackEdit(null,'supp')],['ignorar por ahora',()=>{ db.settings.suppHide=true; save(); reRender(); toast('supps ocultos · vuelven en ajustes','',{undo:()=>{ delete db.settings.suppHide; save(); reRender(); }}); }]]); }
   else if(a==='supphideoff'){ delete db.settings.suppHide; save(); reRender(); toast('✓ supps de vuelta en macros'); }
@@ -9984,9 +10122,11 @@ function toast(msg,type,opt){ try{ const s=String(msg==null?'':msg); opt=opt||{}
       const u=document.createElement('button'); u.type='button'; u.className='tundo'; u.textContent='[deshacer]';
       u.addEventListener('click',ev=>{ ev.stopPropagation(); t._kill(); try{ opt.undo(); save(); reRender(); toast('✓ restaurado'); }catch(_){ toast('⚠ no se pudo deshacer','err'); } });
       t.appendChild(u); }
+    if(opt.act&&typeof opt.act.fn==='function'){ const u=document.createElement('button'); u.type='button'; u.className='tundo'; u.textContent=opt.act.label||'[ver]';   // v275 · una acción: el aviso de suplementos → [ver]
+      u.addEventListener('click',ev=>{ ev.stopPropagation(); t._kill(); try{ opt.act.fn(); }catch(_){} }); t.appendChild(u); }
     t.addEventListener('click',()=>{ if(!t.classList.contains('task'))t._kill(); });
     box.appendChild(t); while(box.children.length>3)box.firstElementChild.remove();
-    if(ty==='ok'||ty==='')setTimeout(t._kill,opt.undo?durMs('--toast-life-err',4600):durMs('--toast-life',2300));
+    if(ty==='ok'||ty===''||opt.act)setTimeout(t._kill,(opt.undo||opt.act)?durMs('--toast-life-err',4600):durMs('--toast-life',2300));
     return t; }catch(_){ return null; } }
 // ---------- v268 · terminal: spinner ▖▘▝▗, barra [█░] y línea "pensando" con segundos ----------
 const TRK_SPIN='▖▘▝▗'; let _spinT=null;
@@ -10295,7 +10435,7 @@ function buildExportMd(db){
   const stack=(db.stack||[]).filter(x=>!x.archived);
   if(stack.length){
     L.push('## //REGÍMENES ('+stack.length+')','');
-    stack.forEach(it=>L.push('- '+it.name+(it.dose?' · '+it.dose+(it.unit?' '+it.unit:''):'')+(it.when&&it.when.length?' · '+it.when.join('/'):'')+(it.category?' ['+it.category+']':'')));
+    stack.forEach(it=>{ const p=suppProd(it), k=suppStock(it); L.push('- '+it.name+(p&&p.brand?' ('+p.brand+')':'')+(it.dose?' · '+it.dose+(it.unit?' '+it.unit:''):'')+(p&&p.per?' · '+p.per+' '+suppPU(p)+' por toma':'')+(it.when&&it.when.length?' · '+it.when.join('/'):'')+(it.category?' ['+it.category+']':'')+(k?' · '+suppStockTxt(k):'')); });
     L.push('');
   }
   return L.join('\n');
@@ -10379,7 +10519,7 @@ try{ offerLivePending(livePendingSync()); }catch(_){}
 // diario de arranque. Mientras decide, los respaldos se retienen para no pisar `latest`.
 try{ withTO(idbBootCheck(),12000).catch(()=>idbReleaseHold()); }catch(_){ idbReleaseHold(); }
 try{ growthLog(); }catch(_){}
-try{ promptIdleSession(); }catch(_){} try{ if(typeof location!=='undefined' && /[?&]selftest=1/.test(location.search)){ const _rawMain=(()=>{ try{ return localStorage.getItem(LS_KEY); }catch(_){ return null; } })(), _rawLive=(()=>{ try{ return localStorage.getItem(LS_LIVE); }catch(_){ return null; } })(), _lc0=_lastClosed; _sbx=true; try{ _identitySelfCheck(); _dropsetSelfCheck(); _baselineSelfCheck(); _variantSelfCheck(); _historyEditSelfCheck(); _idSelfCheck(); _cardioSelfCheck(); _tensionSelfCheck(); _healthSelfCheck(); _readinessSelfCheck(); _loggingSelfCheck(); _mergeSelfCheck(); _streakSelfCheck(); _chartSelfCheck(); _muscleSelfCheck(); _exProfileSelfCheck(); _recoverySelfCheck(); _diagSelfCheck(); _uiSelfCheck(); _v256SelfCheck(); _v257SelfCheck(); _sessSafetyCheck(); _storageSelfCheck(); _lateralitySelfCheck(); _v268SelfCheck(); _v269SelfCheck(); _healthPasteSelfCheck(); _v271SelfCheck(); _exStatusSelfCheck(); _scheduleSelfCheck(); _exHistSelfCheck(); } finally{ _sbx=false; _lastClosed=_lc0; try{ if(_rawLive==null)localStorage.removeItem(LS_LIVE); else localStorage.setItem(LS_LIVE,_rawLive); }catch(_){} } let _rawAfter=null; try{ _rawAfter=localStorage.getItem(LS_KEY); }catch(_){} const _same=(()=>{ if(_rawAfter===_rawMain)return true; try{ const a=JSON.parse(_rawAfter), b=_rawMain==null?JSON.parse(JSON.stringify(db)):JSON.parse(_rawMain);   /* v267 · almacén vacío: se compara contra la base real en memoria */ return !!a&&!!b&&((a.profile||{}).username===(b.profile||{}).username)&&((a.sessions||[]).length===(b.sessions||[]).length)&&(JSON.stringify(a.split)===JSON.stringify(b.split)); }catch(_){ return false; } })(); if(!_same)console.error(new Error('SELFCHECK sandbox: una base de juguete llegó a tu disco')); else console.log('sandbox self-check OK'); setTimeout(()=>{ _idbSelfCheck(); },800); setTimeout(_dsRenderReport,1500); } }catch(e){ console.error(e); } try{ const _sp=new URLSearchParams(location.search); const _hasHistorical=_sp.has('stepsh')||_sp.has('weighth')||_sp.has('stepsq')||_sp.has('sleeph'); const _hk=['steps','stepsh','weight','weighth','stepsq','sleep','sleeph'].some(k=>_sp.has(k)); if(_hk&&!(db.profile&&db.profile.username)){ if(_bootJ)_bootJ.flags.push('urlImportEmpty'); if(history.replaceState)history.replaceState(null,'',location.pathname); setTimeout(()=>{ try{ toast('⚠ ese enlace abrió Safari, no tu app','err'); }catch(_){} },600); } else if(_hasHistorical){ const _hsp=_sp; if(history.replaceState)history.replaceState(null,'',location.pathname); setTimeout(()=>{ trkAsk({title:'importar datos históricos',detail:'este link trae pasos, peso o sueño de varios días · acepta solo si viene de tu propio Atajo de iOS',ok:'importar'},()=>{ try{ const _imp=importHealth(_hsp); if(_imp.length){ save(); render(); toast('✓ '+_imp.join(' · ')); } }catch(_){} }); },400); } else { const _imp=importHealth(_sp); if(_imp.length){ window._healthImported=_imp; if(history.replaceState)history.replaceState(null,'',location.pathname); } } }catch(_){} save(); render(); if(window._healthImported)setTimeout(()=>toast('✓ '+window._healthImported.join(' · ')),250); if(window._recoveredFromBackup)setTimeout(()=>{try{toast('⚠ se recuperó un respaldo local · revisa tus datos, podrían faltar cambios muy recientes','err');}catch(_){}},600);
+try{ promptIdleSession(); }catch(_){} try{ if(typeof location!=='undefined' && /[?&]selftest=1/.test(location.search)){ const _rawMain=(()=>{ try{ return localStorage.getItem(LS_KEY); }catch(_){ return null; } })(), _rawLive=(()=>{ try{ return localStorage.getItem(LS_LIVE); }catch(_){ return null; } })(), _lc0=_lastClosed; _sbx=true; try{ _identitySelfCheck(); _dropsetSelfCheck(); _baselineSelfCheck(); _variantSelfCheck(); _historyEditSelfCheck(); _idSelfCheck(); _cardioSelfCheck(); _tensionSelfCheck(); _healthSelfCheck(); _readinessSelfCheck(); _loggingSelfCheck(); _mergeSelfCheck(); _streakSelfCheck(); _chartSelfCheck(); _muscleSelfCheck(); _exProfileSelfCheck(); _recoverySelfCheck(); _diagSelfCheck(); _uiSelfCheck(); _v256SelfCheck(); _v257SelfCheck(); _sessSafetyCheck(); _storageSelfCheck(); _lateralitySelfCheck(); _v268SelfCheck(); _v269SelfCheck(); _healthPasteSelfCheck(); _v271SelfCheck(); _exStatusSelfCheck(); _scheduleSelfCheck(); _exHistSelfCheck(); _suppSelfCheck(); } finally{ _sbx=false; _lastClosed=_lc0; try{ if(_rawLive==null)localStorage.removeItem(LS_LIVE); else localStorage.setItem(LS_LIVE,_rawLive); }catch(_){} } let _rawAfter=null; try{ _rawAfter=localStorage.getItem(LS_KEY); }catch(_){} const _same=(()=>{ if(_rawAfter===_rawMain)return true; try{ const a=JSON.parse(_rawAfter), b=_rawMain==null?JSON.parse(JSON.stringify(db)):JSON.parse(_rawMain);   /* v267 · almacén vacío: se compara contra la base real en memoria */ return !!a&&!!b&&((a.profile||{}).username===(b.profile||{}).username)&&((a.sessions||[]).length===(b.sessions||[]).length)&&(JSON.stringify(a.split)===JSON.stringify(b.split)); }catch(_){ return false; } })(); if(!_same)console.error(new Error('SELFCHECK sandbox: una base de juguete llegó a tu disco')); else console.log('sandbox self-check OK'); setTimeout(()=>{ _idbSelfCheck(); },800); setTimeout(_dsRenderReport,1500); } }catch(e){ console.error(e); } try{ const _sp=new URLSearchParams(location.search); const _hasHistorical=_sp.has('stepsh')||_sp.has('weighth')||_sp.has('stepsq')||_sp.has('sleeph'); const _hk=['steps','stepsh','weight','weighth','stepsq','sleep','sleeph'].some(k=>_sp.has(k)); if(_hk&&!(db.profile&&db.profile.username)){ if(_bootJ)_bootJ.flags.push('urlImportEmpty'); if(history.replaceState)history.replaceState(null,'',location.pathname); setTimeout(()=>{ try{ toast('⚠ ese enlace abrió Safari, no tu app','err'); }catch(_){} },600); } else if(_hasHistorical){ const _hsp=_sp; if(history.replaceState)history.replaceState(null,'',location.pathname); setTimeout(()=>{ trkAsk({title:'importar datos históricos',detail:'este link trae pasos, peso o sueño de varios días · acepta solo si viene de tu propio Atajo de iOS',ok:'importar'},()=>{ try{ const _imp=importHealth(_hsp); if(_imp.length){ save(); render(); toast('✓ '+_imp.join(' · ')); } }catch(_){} }); },400); } else { const _imp=importHealth(_sp); if(_imp.length){ window._healthImported=_imp; if(history.replaceState)history.replaceState(null,'',location.pathname); } } }catch(_){} save(); render(); if(window._healthImported)setTimeout(()=>toast('✓ '+window._healthImported.join(' · ')),250); if(window._recoveredFromBackup)setTimeout(()=>{try{toast('⚠ se recuperó un respaldo local · revisa tus datos, podrían faltar cambios muy recientes','err');}catch(_){}},600);
 applyDesign(); try{ if(/[?&]design\b/.test(location.search))localStorage.setItem('gymtrk_designmode','1'); if(localStorage.getItem('gymtrk_designmode')==='1')openDesignPanel(); }catch(_){}
 try{ bootScreen(()=>{ try{
   if(/[?&]wrap=1\b/.test(location.search)){ monthlyWrap(prevMonthYm(), true); return; }

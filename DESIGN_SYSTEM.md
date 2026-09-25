@@ -1,6 +1,6 @@
 # gym//TRK — DESIGN SYSTEM (referencia del estado actual)
 
-> Referencia del estado actual (v274). **Lee BRAND.md primero**: manda sobre este archivo. Sin historia: DESIGN_CHANGELOG.md.
+> Referencia del estado actual (v275). **Lee BRAND.md primero**: manda sobre este archivo. Sin historia: DESIGN_CHANGELOG.md.
 
 ---
 
@@ -475,15 +475,20 @@ changelog. Estado medido:
 
 - `✓ <objeto> <acción>` en español y minúscula, una línea, sin punto final: `✓ sesión guardada · 9 series`,
   `✓ sesión actualizada`, `✓ split actualizado`, `✓ ejercicio actualizado`, `✓ perfil del ejercicio guardado`,
-  `✓ comida guardada`, `✓ metas guardadas`, `✓ peso guardado`, `✓ sueño guardado`, `✓ ajustes guardados`.
+  `✓ comida guardada`, `✓ metas guardadas`, `✓ peso guardado`, `✓ sueño guardado`, `✓ ajustes guardados`,
+  `✓ suplemento guardado`.
 - Tareas (`toastTask()`, v268 con TRKSpin): `▖ sincronizando salud… 3s` → `✓ salud sincronizada · 12 días`;
   `▖ buscando producto…` → `✓ encontrado` / `⚠ no está en OpenFoodFacts`; `▖ generando imagen…` → `✓ imagen lista`. El
   verbo va en gerundio y en minúscula; los puntos suspensivos los pone el componente (el mensaje no los trae) y los
   segundos aparecen solos a partir de 1 s.
-- Error: `⚠ qué pasó · qué hacer` (`⚠ pon un nombre`), nunca un diálogo nativo.
+- Error: `⚠ qué pasó · qué hacer` (`⚠ pon un nombre`, `⚠ pon lo que trae el frasco`), nunca un diálogo nativo.
 - Reversible: `✓ alimento borrado [deshacer]`. v269: `✓ descanso · sigue <día> · mañana [deshacer]` (forma de v273),
-  `✓ saltado · sigue <día> [deshacer]`, `supps ocultos · vuelven en ajustes [deshacer]`; sin deshacer (se revierten con su propio control):
+  `✓ saltado · sigue <día> [deshacer]`, `supps ocultos · vuelven en ajustes [deshacer]`; v275 (suplementos, deshacer
+  exacto): `omega-3 en pausa [deshacer]`, `omega-3 archivado · se acabó [deshacer]` (o `· no lo encontré`),
+  `omega-3 de vuelta [deshacer]`, `omega-3 · frasco nuevo de 120 cáps [deshacer]`; sin deshacer (se revierten con su propio control):
   `✓ descanso quitado`, `✓ supps de vuelta en macros`, `✓ progreso acomodado`, `✓ peso corporal en lbs`.
+- Aviso con acción (v275, `opt.act`): `⚠ omega-3 · quedan 10 softgels · ~5 d [ver]` o `⚠ 3 suplementos por acabarse ·
+  omega-3, zinc, creatina [ver]` (hasta 3 nombres); `[ver]` lleva al stack en TODOS. Una vez al día, al abrir macros.
 - Vacío: `// sin registros · [+ acción]`. En Progreso, además, **la tile visible nunca desaparece por falta de datos**
   (v263): sin dato muestra `—` + `sin registro` y ella misma es el botón de registro; solo sale de la rejilla si la quitas
   en el modo editar (v269, §7.35).
@@ -774,14 +779,17 @@ La pieza más gym//TRK de la app: densa, afilada, técnica. **Nunca** vidrio, ra
 ### 7.12 TRKToast
 
 - **Rol:** decir qué pasó después de una acción; una sola voz para todo el feedback (§6.3).
-- **API:** `toast(msg, type, {undo})` (tipo `ok`/`err`/neutro, se infiere de `✓`/`⚠`) · `toastTask(msg)` → `{done, fail}`
+- **API:** `toast(msg, type, {undo, act})` (tipo `ok`/`err`/neutro, se infiere de `✓`/`⚠`; `act` = `{label, fn}` desde
+  v275: un segundo botón con la misma forma que `[deshacer]`, hoy solo `[ver]` del aviso de suplementos, que usa el tipo `warn`: borde `--warn` y sin `✕`, porque un aviso no es un error) · `toastTask(msg)` → `{done, fail}`
   para lo que tarda: desde v268 el toast de tarea lleva TRKSpin dentro de `.tm` (`▖ sincronizando salud… 3s`) y
   `done()`/`fail()` lo resuelven **en el mismo toast** con `✓`/`⚠` (al quitarse el spinner, el ticker se apaga solo).
 - **Anatomía:** `.toasts` (pila `aria-live`, máximo 3, sale la más vieja) · `.toast.glass-strong` `--r-toast` (=
   `--r-float` 8), `--t-data`/700; borde del vidrio (`.ok`, sin verde desde v262), `--bad` (`.err`, se queda hasta tocarlo,
   con ` ✕`), neutro; `.toast.task` en `--o70`;
   `[deshacer]` `.tundo` con toque ampliado.
-- **Vida:** éxito/neutro `--toast-life`; con deshacer o error `--toast-life-err`; un solo deshacer vivo a la vez.
+- **Vida:** éxito/neutro `--toast-life`; con deshacer o error `--toast-life-err`; un solo deshacer vivo a la vez. Un error
+  se queda hasta tocarlo, **salvo si lleva acción** (v275): entonces se va solo a los `--toast-life-err`, como uno con
+  deshacer (el aviso de suplementos no se queda pegado encima de macros).
 - **Hoy (v258):** `bottom` con `env(safe-area-inset-bottom)` (M6-06) y un error ocupa hasta 2 líneas en vez de cortarse
   (M6-07); ≤42 caracteres lo revisa R-TOAST. Objetivo G4: token `--nav-clear`. Sin confeti ni sonido.
 - **La revisa:** R-TOAST · `_uiSelfCheck`.
@@ -821,7 +829,10 @@ reemplaza, así lo escrito abajo se conserva. Diálogos nativos (`alert`/`confir
 #### TRKMenu
 - **Rol:** las acciones de una entidad (comida, ejercicio del catálogo: `perfil del ejercicio` · `historial` (v274; antes
   `historial · e1RM`) · `seleccionar para unir`; el nombre del ejercicio en el entreno, v274: `historial` · `cambiar
-  ejercicio`). **API:** `trkMenu(título, [[etiqueta, fn], …])` → filas `.nvm` con `›` en la capa de decisión.
+  ejercicio`; un suplemento, v275, §7.26: `más` → `pausar` · `archivar · se acabó` · `archivar · no lo encontré` ·
+  `borrar · con su historial`, o `reactivar` · `borrar · con su historial` si ya está en pausa o archivado; y al agregar uno
+  que ya estaba dormido, `"omega-3" ya estaba archivado · Nordic` → `volver con Nordic` · `volver con otra marca` · `crear
+  otro aparte`). **API:** `trkMenu(título, [[etiqueta, fn], …])` → filas `.nvm` con `›` en la capa de decisión.
 
 ### 7.14 Popovers
 
@@ -1068,7 +1079,19 @@ Decisión del dueño 2026-09-21: macros en orden **SUPPS → MEALS → WATER**, 
   · `›` `.lx` que gira) + acción `.lact`. Cuerpo `.lbody`.
 - **SUPPS:** momentos en TRKTabs (`.lseg`, `AM 2/6 · PM …`) y rejilla de 2 columnas `.lcg` de celdas `.lc` (36 de alto;
   tomado `.on` con ✓); `✓ AM` marca lo pendiente del momento. Un toque = tomado con su hora; marcar no mueve nada. Sin
-  ningún suplemento en el stack, la sección no desaparece: sale la invitación (v269, §7.36).
+  ningún suplemento **activo** en el stack, la sección no desaparece: sale la invitación (v269, §7.36; v275: los
+  pausados y archivados no cuentan).
+  - **Stock en la celda (v275):** si al suplemento le quedan ≤7 días (`SUPP_WARN_D`) o ya no alcanza otra toma, la celda
+    suma a la derecha del nombre `⚠ ~5 d` o `⚠ se acabó` (`suppCellMark()`: `--t-label` `--o40`, el `⚠` en `--warn`, que
+    es la única marca de color, B-07). Con stock de sobra o sin frasco registrado, nada: la celda sigue igual.
+  - **Aviso del día (v275):** cada vez que se pinta macros revisa (`suppWarnMaybe()` desde `render()`) y avisa **una sola
+    vez al día** (`db.settings.suppWarnDay`, que se marca solo cuando hubo algo que avisar): un toast `⚠ omega-3 · quedan 10 softgels · ~5 d` o `⚠ N
+    suplementos por acabarse · a, b, c` con `[ver]` → stack en TODOS (§6.3, §7.12).
+  - **Nutrición:** un suplemento tomado (o tarde) suma la nutrición del **producto que estaba abierto ese día**
+    (`suppNutrOn()`), si no la del item, si no la típica de la sustancia; `macroTotals()` la lee solo de lo marcado. Cambiar
+    de marca no reescribe los días de antes.
+  - **Días anteriores (v275):** un suplemento agregado mientras ves un día pasado en macros empieza ese día (`startDate` =
+    el día visto), para que se pueda marcar ahí.
 - **MEALS:** una `.mrec` por comida. Cabecera `.mhd` de 44 en **4 columnas** (v271: nombre | `[+ food]` | kcal | `···`):
   `.mtg` con `.mchev`, el nombre `.mnm` (`--t-section`/800 `--fg`, **manda**) y la meta `.mmeta` (`hora · P C F`,
   `--t-label` `--o40`) · `[+ food]` = `button.b` `.madd` (corchetes por CSS, 44 de alto, `--o60`; a la vista aunque
@@ -1093,6 +1116,39 @@ Decisión del dueño 2026-09-21: macros en orden **SUPPS → MEALS → WATER**, 
 
 - **Hoy:** `renderStack()` con TRKTabs HOY/TODOS y bloques `<details class="stk-blk">` por momento (todos abiertos); cada
   toma es una `.line` con utilidades y dos ✓ con significados distintos, `~` para "tarde" y `ⓘ` (M6-15/16).
+- **Marca y stock en la fila (v275):** tras el nombre, la marca del producto actual antes de la dosis (`· Nordic · 2 g ·
+  AM`, `--o40`). A la derecha, bajo la periodización, el stock (`suppStock()` → `suppStockTxt()`): `quedan 80 cáps ·
+  ~40 d` en `--o40`; con ≤7 días o sin otra toma, `⚠ quedan 10 softgels · ~5 d` / `⚠ se acabó` sube a `--fg` y solo el
+  `⚠` va en `--warn` (B-07). Sin frasco registrado no hay línea; un ocasional muestra lo que queda sin días. El export
+  `.md` (//REGÍMENES, solo activos) lleva lo mismo: `- omega-3 (Nordic) · 2 g · 2 softgels por toma · AM [supp] · quedan
+  38 softgels · ~19 d`.
+- **En pausa y archivados (v275):** fuera de HOY, de //SUPPS, del porcentaje de //STACK y del export. En TODOS, al final
+  (antes de las tomas puntuales), dos bloques `.stk-blk`: `EN PAUSA · N` (abierto) y `ARCHIVADOS · N` (cerrado). Fila
+  `.line`: nombre (tocar = su editor) · `· Nordic · no lo encontré · 24 sep` (`--o40`; el motivo `pausa` no se repite)
+  ···· `[reactivar]` (`button.b`, `suppreact`) → toast `omega-3 de vuelta [deshacer]`. Sus tomas, su historial y la
+  nutrición de sus días se quedan.
+- **Datos (v275; aditivos y perezosos, nada se reescribe):** el item de `db.stack` sigue siendo el **genérico** (mismo
+  `id` → sus tomas, su historial y la correlación de "tomar X" en //PERFORMANCE no se parten). Campos opcionales nuevos:
+  - `status` `'active'` · `'paused'` · `'archived'` (`suppStatus()`; sin campo: `archived` = archivado, si no, activo).
+    `archived` se sigue escribiendo como `status ≠ active` (**un pausado también lleva `archived:true`**), así los 8
+    lectores de `!x.archived` (HOY, //SUPPS, `isDueToday()`, export…) no cambian.
+  - `statusLog` `[{d, to, why}]` — `why`: `pausa` · `se acabó` · `no lo encontré` · `reactivado` · `otra marca` (volver con otra marca).
+  - `products` `[{id, brand, name, form, per, size, dose, unit, nutr?, added}]` y `cur` (el producto actual): la marca, la
+    presentación (`SUPP_FORMS`: cápsulas · cáps, softgels, tabletas · tabs, gomitas, polvo · g, líquido · ml, gotas,
+    spray · sprays, crema · aplic, otro · u; `suppPU()` da la unidad corta), cuántas por toma, cuántas trae, y la dosis y
+    la nutrición de ese producto (la foto que usan sus días).
+  - `containers` `[{id, prod, opened, size, adj?, closed?}]`: los frascos; el abierto es el último sin `closed`
+    (`suppCont()`).
+- **Motor:** **lo que queda se calcula, no se guarda** (`suppLeft()`): lo que trae el frasco − días con toma tomada o tarde
+  desde que lo abriste × por toma + la corrección `adj`; la saltada no gasta y lo de antes de abrirlo tampoco. Así los 4
+  caminos que escriben tomas y el deshacer nunca lo desfasan. `suppDaysLeft()` = tomas que quedan ÷ tomas por día según su
+  periodización en las próximas 4 semanas. `suppStock()` → `{L, d, out, low}`: `low` con ≤ `SUPP_WARN_D` (7) días, `out`
+  si no alcanza otra toma; solo para activos. `suppSetStatus()`: `se acabó` cierra el frasco; pausa y `no lo encontré` no.
+  `suppOpenContainer()` cierra el anterior el día previo. `suppReactivate()` abre un frasco nuevo (del tamaño del producto)
+  si no hay uno abierto. `suppSnap()`/`suppRestore()` = deshacer exacto. `suppFindDormant(nombre)` = el mismo nombre en
+  pausa o archivado.
+- **Estados:** vacío `stack vacío` (sin ningún item); HOY sin nada debido `no toca nada hoy ✓`; TODOS con todo pausado o
+  archivado `sin items activos` y debajo sus dos bloques.
 - **Objetivo G4:** fila de checklist propia (línea 1 `[✓] minoxidil 5%`, línea 2 tenue `1 ml · AM · 08:12 · skin`), un solo ✓,
   la marca de "tarde" como palabra. (Los botones del stack ya no salen nativos desde v258, T-01.)
 
@@ -1104,6 +1160,29 @@ Decisión del dueño 2026-09-21: macros en orden **SUPPS → MEALS → WATER**, 
   (sueño), el editor de máquina y el perfil de ajustes. Todos usan la familia formulario (§7.2), `.toggles` y `.sheetbtns`.
 - **Regla (ENT-1):** un editor = un sheet con `h3` · campos en el orden en que se piensan · lo sugerido punteado hasta que lo
   toques · un primario (`guardar`) · lo destructivo al final y separado (TRKHold si es irreversible) · toast al guardar.
+- **Suplemento (`openStackEdit(id, presetCat, opt)`, v275):** `opt.newBrand` = volver con otra marca (marca y producto
+  vacíos, una línea `.submeta` `otra marca de omega-3 · su historial sigue aquí`) · `opt.forceNew` = crear aparte aunque
+  el nombre exista.
+  - **Bloque `PRODUCTO · FRASCO`** justo después de DOSIS/UNIDAD: `.grp-label.sub` con `· opcional · para avisarte antes
+    de que se acabe`, y en filas `.field.row2`: `MARCA` (con `<datalist>` de sus marcas anteriores) | `PRODUCTO` ·
+    `PRESENTACIÓN` (select de `SUPP_FORMS`, `softgels` o `cápsulas · cáps`) | `POR TOMA · <unidad>` (la unidad sigue a la
+    presentación) · `TRAE EL FRASCO` | `LO ABRISTE` (fecha, hoy por defecto) · `QUEDAN HOY` (lo que calcula el motor; si
+    lo cambias, guarda la diferencia como `adj`). Con frasco: una `.submeta` `quedan 38 softgels · ~19 d · abierto el 12
+    sep` (con `⚠` en `--warn` si está bajo) y `[abrí otro frasco]` (mismo producto y tamaño, hoy; toast con
+    `[deshacer]`; sin tamaño, `⚠ pon lo que trae el frasco`); si ya se acabó, además `[se acabó · archivar]` `[pausar]`.
+    Todo es opcional: sin marca ni frasco el suplemento funciona como antes.
+  - **Pie:** `guardar` · `más` (antes `borrar` en rojo) · `cancel`. `más` → TRKMenu (§7.13) con el nombre: activo →
+    `pausar` / `archivar · se acabó` / `archivar · no lo encontré` / `borrar · con su historial` (TRKHold, lo último:
+    `también su historial de tomas · para dejar de verlo sin perderlo, archívalo`); en pausa o archivado → `reactivar` /
+    `borrar · con su historial`. Cada cambio de estado cierra el editor y deja un toast con `[deshacer]` exacto.
+  - **Volver a agregarlo:** guardar un item **nuevo** cuyo nombre (`nameKey()`) coincide con uno en pausa o archivado abre
+    TRKMenu `"omega-3" ya estaba archivado · Nordic` (o `en pausa`): `volver con Nordic` (lo reactiva; si su frasco se había cerrado, abre uno nuevo del mismo tamaño) · `volver
+    con otra marca` (abre el editor de ESE item con `opt.newBrand`; sus tomas siguen ahí) · `crear otro aparte`.
+  - **Marca nueva = producto nuevo con su frasco** (volver con otra marca, o escribir otra marca sobre una que ya tenía): el
+    producto anterior se queda con su dosis y su nutrición para los días de antes, y el frasco nuevo abre hoy (el anterior
+    cierra ayer) salvo que en `LO ABRISTE` pongas una fecha posterior a la del anterior. Si cambió la presentación, lo que va
+    por toma o la dosis, antes de guardar sale TRKAsk `cambió con la marca nueva` con una línea por cambio (`por toma: 2
+    softgels → 1 softgels`, `dosis: 2 g → 1 g`) y `[así queda]` / `[revisar]` (revisar vuelve al editor con lo escrito).
 - **Objetivo G4:** `style=""` que quedan (`openStackEdit` 9, `openExEdit` 8), textos
   de instrucción fijos al glosario.
 
@@ -1329,8 +1408,9 @@ quitar… acomodar tu orden y ya después confirmar… como una screen de widget
 Decisión del dueño 2026-09-24 (BRAND §9): "en una cuenta nueva, arriba de Meals, tendría que salir la opción de registrar
 suplementos. Y en caso de que no quieran, pues que sea tres puntitos e ignorar".
 
-- **Cuándo:** `suppSecHTML()` sin tomas debidas ese día, **sin nada en el stack** y sin `db.settings.suppHide`. Si el
-  stack tiene algo pero hoy no toca nada, la sección no sale.
+- **Cuándo:** `suppSecHTML()` sin tomas debidas ese día, **sin nada activo en el stack** y sin `db.settings.suppHide`.
+  Desde v275 solo cuentan los activos: con todo pausado o archivado la invitación vuelve (antes bastaba un item cualquiera
+  para esconderla). Si hay algo activo pero hoy no toca nada, la sección no sale.
 - **Anatomía:** la misma de TRKLog (§7.24): `//SUPPS` con lectura `—` (`--o40`), abierta; acción `.lact` `+ supp` y, a su
   derecha, `.lsmore` (44×44, se mete `--s4` en el margen) con `.dots3` en `--o50`. Cuerpo: vacío `.empty.supempty`
   alineado a la izquierda con interlineado de lectura: `// marca tus suplementos con un toque, aquí arriba de tus comidas`.
@@ -1338,7 +1418,7 @@ suplementos. Y en caso de que no quieran, pues que sea tres puntitos e ignorar".
   `ignorar por ahora` → `db.settings.suppHide`, toast `supps ocultos · vuelven en ajustes` con `[deshacer]`.
 - **Volver:** mientras estén ocultos, //SETTINGS muestra la fila `supps en macros ···· ocultos · mostrar ›`
   (`supphideoff`) → `✓ supps de vuelta en macros`.
-- **La revisa:** a ojo en una cuenta nueva a 393×852.
+- **La revisa:** a ojo en una cuenta nueva a 393×852 · `_suppSelfCheck` (todo archivado → vuelve la invitación, v275).
 
 ### 7.37 Descanso y salto de día en gym (`rest` ≠ `skip`, v269)
 
@@ -1774,7 +1854,7 @@ v267) · `_dsRenderCheck` glyph (acepta `GLYPHS_VIZ` desde v268).
 | ✕ | quitar | toast de error, ✕ de ejercicio, `.lc .x` | "quitar" |
 | ↩ | deshacer | `.footer .undo` | "deshacer" |
 | ~ | estimado | `~σ`, `~` de sugerido | "aproximado" |
-| ⚠ | aviso | toasts de error, alimentos a revisar | "aviso" |
+| ⚠ | aviso | toasts de error, alimentos a revisar, suplemento por acabarse (`⚠ ~5 d`, `⚠ se acabó`, v275) | "aviso" |
 | ▌ | cursor (solo arranque y vacíos) | `.cur` del landing, `.bcur` de `ready▌` en el arranque (v268); dentro de un medidor `[…]` es media celda | — |
 | × @ / → # | notación de series y datos | `160lbs×8@0 / …`, `→ acción` del diagnóstico, `#músculo` | — |
 | — | sin dato | lecturas vacías | "sin dato" |
@@ -1858,7 +1938,7 @@ hacer`; sin conexión `⚠ sin conexión · [reintentar]`.
 | Macros | `no meals logged`, `no water logged` (inglés: G3 → español); sin suplementos, la invitación de //SUPPS (§7.36) | — | `▖ buscando en línea… 3s` (TRKSpin); OCR `leyendo [██████▍░░░] 42%` (TRKProgress) | OpenFoodFacts falla **en silencio** y un código que no se pudo buscar sale como "no encontrado" (M4-09 → G4: `// 0 resultados` · `⚠ sin conexión · [reintentar]` · resultados) |
 | Progreso | **visible = recuadro (v263; desde v269 "visible" = no quitada en el modo editar, §7.35):** una tile visible se dibuja aunque no tenga un solo dato — sin tile no hay por dónde registrarla. Vacío = `emptyTile()`: `—` + `sin registro`, y el recuadro entero abre su registro (volumen/σ/e1rm → `loglater`; FC en reposo/HRV/energía activa → su hoja). "sin registros en este rango", "sin volumen registrado en este rango", "aún no hay levantamientos con peso × reps" | `sin normal · N/7 d`, diagnóstico "pocos datos" | — | — |
 | Historial | "sin sesiones registradas" | — | — | sesión inexistente en compartir (G4) |
-| Stack | "stack vacío", "no toca nada hoy ✓" | — | — | — |
+| Stack | "stack vacío", "no toca nada hoy ✓"; en TODOS con todo pausado o archivado, "sin items activos" + `EN PAUSA · N` / `ARCHIVADOS · N` con `[reactivar]` (v275) | sin frasco registrado no hay línea de stock (ni aviso); un ocasional dice lo que queda sin días | — | `⚠ pon lo que trae el frasco` (`[abrí otro frasco]` sin tamaño) |
 | Compartir | "sin sesión para compartir", "sin series registradas", "sin alimentos este día", "aún sin series con peso y reps" | — | `▖ generando imagen… 1s` (toast de tarea) | `⚠ no se pudo generar la imagen` |
 | Ajustes · salud | — | — | `▖ sincronizando salud… 3s` (toast de tarea) | `⚠ …` del sync; errores de permisos en el log |
 | Escáner | — | — | `iniciando cámara…`; al buscar o leer un código, `▖ buscando…` / `▖ leyendo…` (TRKSpin) | fallback a foto, búsqueda por nombre y tecleo |
@@ -2041,7 +2121,9 @@ que crea o reemplaza una sesión se oculta mientras hay una viva.** La revisa: R
 | Acción | Hoy | Objetivo |
 |---|---|---|
 | abortar sesión | TRKHold | `[abort]` sin `--abort` (G3) |
-| borrar sesión (dos lugares), borrar día del split, borrar una comida completa, borrar un suplemento con su historial | TRKHold | — |
+| borrar sesión (dos lugares), borrar día del split, borrar una comida completa, borrar un suplemento con su historial (v275: lo último de `más`, que ofrece archivar antes) | TRKHold | — |
+| pausar · archivar (`se acabó` / `no lo encontré`) · reactivar un suplemento · `[abrí otro frasco]` | v275 (§7.25, §7.26): inmediato, toast + `[deshacer]` exacto (`suppSnap()`/`suppRestore()`); sus tomas nunca se tocan | ✓ |
+| agregar un suplemento que ya estaba en pausa o archivado · guardar otra marca que cambia presentación, por toma o dosis | v275 (§7.26): TRKMenu `volver con … / volver con otra marca / crear otro aparte` · TRKAsk `cambió con la marca nueva` | ✓ |
 | cargar un respaldo (reemplaza todo) | TRKHold (`confirmReplace()`) | — |
 | borrar todos los datos | TRKHold | `[borrar todos los datos]` en `--bad`, al final y separado (M6-19) |
 | quitar un alimento · quitar un vaso de agua | toast + `[deshacer]` | — |
@@ -2203,10 +2285,21 @@ Línea base del 2026-09-21: todos en 0 salvo `style=""` 89, excepciones 33, lett
   una sola historia · una fila vieja sin tipo cuenta como libre y entra a la misma historia · uni ≠ bi · `#1` es la más
   vieja y la más nueva va arriba · la gráfica va en la unidad del ejercicio (`lbs`, no kg) · los drops salen en el texto
   (`↓`) y no en la gráfica. Imprime `exercise history self-check OK`.
+- **`_suppSelfCheck()`** (v275, al final de `?selftest=1`; corre sobre una base de juguete —omega-3 Nordic con frasco de 60
+  abierto hace 12 días, creatina sin frasco y un zinc viejo con `archived:true`— y restaura `db`, la pantalla y el día de
+  macros; **35 self-checks** en total): lo que queda sale de las tomas (tarde cuenta, saltada no, antes de abrir no: 60 −
+  11 × 2 = 38) · 38 softgels a 2 por día alcanzan 19 días · sin frasco no hay cuenta y lo viejo no se reescribe (sin
+  `status`, activo o archivado según `archived`) · aviso a una semana (12 softgels = ~6 días, `⚠` en la celda) · se acabó
+  cuando no alcanza otra toma · archivar con `se acabó`: sale de hoy, conserva sus 13 tomas y la nutrición de sus días, y
+  cierra el frasco · encontrar el dormido por nombre (` Omega-3` sí, `omega-3 extra` no) · otra marca cuenta desde su
+  frasco (100 − 1 = 99) · los días viejos usan la nutrición del producto de entonces · deshacer una pausa deja todo igual ·
+  todo archivado → vuelve la invitación de //SUPPS · reactivar. Imprime `supplements self-check OK`.
 - **Inventario en navegador** (`tools/ds-inventory.js`, se guarda en G1): tamaños, colores→token, radios, sombras, blur,
-  tracking, animaciones, glifos y toques por pantalla, con el respaldo real del dueño. **`dsSweep()` de hoy** (v274, 393×852,
+  tracking, animaciones, glifos y toques por pantalla, con el respaldo real del dueño. **`dsSweep()` de hoy** (v275, 393×852,
   su respaldo, sin sesión viva; es la línea base `render` de `tools/ds-baseline.json`): ua 0 · hit 715 · txt 133 · fsOff 0
-  · blur 0 · glyph 88 · rad 0. **v274:** glyph 72 → 88 porque la etiqueta del dueño `puh🥀` ahora también sale en
+  · blur 0 · glyph 88 · rad 0. **v275:** sin cambios, porque su stack todavía no tiene productos; medido aparte con
+  productos y frascos, el stack baja de hit 43 a 41 y el editor de suplemento de 41 a 40: ningún toque chico nuevo.
+  **v274:** glyph 72 → 88 porque la etiqueta del dueño `puh🥀` ahora también sale en
   //EXERCISES (+3 en `progress` y en cada una de las 4 hojas que el barrido abre encima; texto del dueño, B-08) y el `’`
   de un gym suyo en la bitácora; hit 713 → 715 solo por la pantalla nueva `exhist` (los 2 de la barra de estado que tiene
   cada pantalla): las filas de //EXERCISES y //RECORDS y las pestañas de la bitácora miden 44 (§7.40). v273: igual que v272; //SCHEDULE se midió aparte en el editor de split en sus tres modos: los

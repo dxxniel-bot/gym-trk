@@ -69,8 +69,38 @@ const S2=[
 ['splitedit:weekly',(W,D)=>{ const P=W.splitPlan?W.splitPlan():{blocked:[]}; D.split.plan={mode:'weekly',on:P.on,off:P.off,week:{},blocked:P.blocked.slice()}; if(W.defaultWeek)D.split.plan.week=W.defaultWeek(); W.__trk.state.selDay=null; W.go('splitedit'); schedTop(W); }],
 ['home:planrest',(W,D)=>planRest(W,D)],
 // la sesión congela su escala al nacer: se reemplaza la del frame (en memoria, detrás del guardia) y se abre el RPE de la 1.ª serie
-['workout:rpe',(W,D)=>{ D.split.metric='rpe'; D.activeWork=W.newWorkSession(); W.__trk.state._curEx=null; W.go('workout'); const b=W.document.querySelector('#view .rirb'); if(b)b.click(); }]
+['workout:rpe',(W,D)=>{ D.split.metric='rpe'; D.activeWork=W.newWorkSession(); W.__trk.state._curEx=null; W.go('workout'); const b=W.document.querySelector('#view .rirb'); if(b)b.click(); }],
+// v275 · suplementos con marca, frasco y aviso (en un _pre.html anterior a v275 suppStock no existe: ERR en A). También AL
+// FINAL: sin later(), suppSeed da marca y frasco (quedan 5 tomas · ~5 d) al primer suplemento activo diario —o agrega un
+// omega-3 de muestra— y uno en pausa y uno archivado de muestra si faltan, en la db del frame. Nada se guarda: los menús y
+// la pregunta solo se abren. El aviso de una vez al día sale en macros:supplow (suppWarnDay se quita antes de pintar)
+['stack:all',(W,D)=>{ suppSeed(W,D); W._stackView='all'; W.go('stack'); const f=re=>[...W.document.querySelectorAll('#view details.stk-blk')].find(b=>re.test(((b.querySelector('summary')||{}).textContent||'').trim()));
+  const pa=f(/^EN PAUSA\b/), ar=f(/^ARCHIVADOS\b/); if(ar&&!ar.open)ar.open=true; secTop(W,pa||ar); }],
+['m:stackedit:product',(W,D)=>{ const it=suppSeed(W,D); W._stackView='today'; W.go('stack'); W.openStackEdit(it.id); sheetTop(W,prodLbl(W)); }],
+['m:stackmore',(W,D)=>{ const it=suppSeed(W,D); W.go('stack'); W.openStackEdit(it.id); const b=W.document.getElementById('se_more'); if(b)b.click(); }],
+['m:stackreadd',(W,D)=>{ suppSeed(W,D); const it=D.stack.find(x=>W.suppStatus(x)==='archived'); W.go('stack'); W.openStackEdit(null,'supp'); typeIn(W,'se_name',it.name); W.document.getElementById('se_save').click(); }],
+['m:stackbrand',(W,D)=>{ const it=suppSeed(W,D), p=W.suppProd(it); W.go('stack'); W.openStackEdit(it.id); typeIn(W,'se_brand',String(p.brand).toLowerCase()==='kora'?'Norda':'Kora'); typeIn(W,'se_per',String((+p.per||1)>1?1:2)); sheetTop(W,prodLbl(W)); W.document.getElementById('se_save').click(); }],
+['macros:supplow',(W,D)=>{ const it=suppSeed(W,D), S=W.__trk.state; delete D.settings.suppWarnDay; W.go('macros'); S.suppSeg=W.suppSlot(it); S.suppSegD=W.curDate(); W.reRender();
+  if(!W.document.querySelector('#view .lsec[data-k="supps"] .lbody')){ const b=W.document.querySelector('#view [data-act="lfold"][data-k="supps"]'); if(b)b.click(); } secTop(W,W.document.querySelector('#view .lsec[data-k="supps"]')); }]
 ];
+// v275 · como suppLow/suppDormant del estudio, pero sin later() (van al final): el que está por acabarse (el tuyo, o marca y
+// frasco en el primer activo diario, o un omega-3 de muestra) y uno en pausa y uno archivado de muestra si faltan
+function suppSeed(W,D){ const st=D.stack||(D.stack=[]), t=W.todayISO(), d=k=>W.shiftDate(t,-k), nm=n=>st.some(x=>String((x&&x.name)||'').toLowerCase().trim()===n)?n+' (muestra)':n;
+  let it=st.find(x=>{ const k=W.suppStock(x); return k&&k.low; });
+  if(!it){ it=st.find(x=>x&&(x.category||'supp')==='supp'&&W.suppStatus(x)==='active'&&((x.periodization||{}).type||'daily')==='daily'&&W.isDueToday(x,t));
+    if(!it){ it={id:'st_diff_o3',name:nm('omega-3'),category:'supp',dose:'1000',unit:'mg',when:['PM'],periodization:{type:'daily'},notes:'',startDate:d(60),ticks:{}}; st.push(it); }
+    if(!W.suppProd(it)){ const FORM_OF={cap:'cápsulas',tab:'tabletas',g:'polvo',ml:'líquido',scoop:'otro',gotas:'gotas',puff:'spray'}, form=FORM_OF[String(it.unit||'').toLowerCase()]||'softgels', bulk=['polvo','líquido','otro'].indexOf(form)>=0, per=bulk?(+it.dose>0?+it.dose:5):2;   /* la misma muestra que el estudio (scenarios.js suppLow) */
+      const p={id:'p_diff_low',brand:'Norda',name:'',form,per,size:per*30,dose:it.dose,unit:it.unit,added:d(20)}; it.products=(it.products||[]).concat([p]); it.cur=p.id; }
+    const p=W.suppProd(it); if(!p.brand)p.brand='Norda'; let c=W.suppCont(it); if(!c||c.prod!==p.id){ c={id:'c_diff_low',prod:p.id,opened:d(20),size:+p.size||60}; it.containers=(it.containers||[]).concat([c]); }
+    if(!(+c.size>0))c.size=60; c.adj=0; const L=W.suppLeft(it); if(L)c.adj=Math.round((5*L.per-L.left)*100)/100; }
+  const dz=(s,name,o)=>{ if(!st.some(x=>W.suppStatus(x)===s))st.push(Object.assign({id:'st_diff_'+s,name:nm(name),category:'supp',periodization:{type:'daily'},notes:'',startDate:d(95),ticks:{},archived:true,status:s},o)); };
+  dz('paused','magnesio',{dose:'200',unit:'mg',when:['PM'],statusLog:[{d:d(19),to:'paused',why:'pausa'}],products:[{id:'p_diff_pa',brand:'Kora',name:'',form:'cápsulas',per:2,size:120,dose:'200',unit:'mg',added:d(60)}],cur:'p_diff_pa',containers:[{id:'c_diff_pa',prod:'p_diff_pa',opened:d(60),size:120}]});
+  dz('archived','zinc',{dose:'15',unit:'mg',when:['AM'],statusLog:[{d:d(35),to:'archived',why:'no lo encontré'}],products:[{id:'p_diff_ar',brand:'Norda',name:'',form:'tabletas',per:1,size:60,dose:'15',unit:'mg',added:d(95)}],cur:'p_diff_ar',containers:[{id:'c_diff_ar',prod:'p_diff_ar',opened:d(95),size:60}]});
+  return it; }
+// la hoja (#modal .sheet, su propio scroll) hasta un elemento; PRODUCTO · FRASCO del editor; una casilla como si se tecleara
+function sheetTop(W,el){ const s=W.document.querySelector('#modal .sheet'); if(s&&el)s.scrollTop+=el.getBoundingClientRect().top-s.getBoundingClientRect().top-12; }
+function prodLbl(W){ return [...W.document.querySelectorAll('#modal .grp-label')].find(e=>/^PRODUCTO\b/.test((e.textContent||'').trim()))||null; }
+function typeIn(W,id,v){ const e=W.document.getElementById(id); if(!e)return; e.value=v; e.dispatchEvent(new W.Event('input',{bubbles:true})); e.dispatchEvent(new W.Event('change',{bubbles:true})); }
 // v274 · #view hasta una sección (su regla arriba), como toSection del estudio; el ejercicio con más sesiones; la bitácora
 // abierta desde progreso con su estado por defecto (e1RM · 6M · solo los recientes)
 function secTop(W,el){ const v=W.document.getElementById('view'); if(!v||!el)return; const sec=el.closest('.section')||el, hr=sec.previousElementSibling, top=(hr&&hr.classList.contains('rule'))?hr:sec; v.scrollTop+=top.getBoundingClientRect().top-v.getBoundingClientRect().top; }

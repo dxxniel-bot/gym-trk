@@ -78,11 +78,13 @@ iframe.srcdoc = t.replace(/<head([^>]*)>/i, m => m + '<base href="'+base+'"><scr
   quita si no existía) — lo usan `splitedit:weekly`, `home:planrest` y `workout:rpe`, y `home:rest` cuando hoy toca descanso
   por el plan (entonces la app no ofrece `[rest day]`: el plan pasa a diario y sin hoy bloqueado para dar el toque real);
   `asideToday(W, T, conDescanso)` aparta la sesión viva y lo de hoy (`home:rest` y `home:planrest`).
-- Cubrir TODO: las 69 de `tools/ds-diff.html` (S2; v269 sin `m:mood`; v271 + `m:log:saved` y `macros:unit`; v272 +
+- Cubrir TODO: las 75 de `tools/ds-diff.html` (S2; v269 sin `m:mood`; v271 + `m:log:saved` y `macros:unit`; v272 +
   `home:stimulus` y `m:deload`; v273 + `splitedit:schedule`, `splitedit:weekly`, `home:planrest` y `workout:rpe`, al final
   de S2 porque allá no hay `later` y cambian la db del frame; v274 + `progress:exercises`, `exhist`, `exhist:log`,
   `exhist:top` y `workout:exname`, tras `live:machine`: solo estado de pantalla, y el reinicio de cada escenario cierra
-  también la capa de TRKAsk) + las 17 de `tools/ds-inventory.js` (v274 + `exhist`, tras las 4 hojas que se abren encima de
+  también la capa de TRKAsk; v275 + `stack:all`, `m:stackedit:product`, `m:stackmore`, `m:stackreadd`, `m:stackbrand` y
+  `macros:supplow`, al final de S2 como los de v273: dan marca y frasco a un suplemento y agregan los de muestra en la db
+  del frame) + las 17 de `tools/ds-inventory.js` (v274 + `exhist`, tras las 4 hojas que se abren encima de
   progress) + arranque (`T.bootPreview(null,
   true, false)` y el corto `boot:short` con `true` y `live`), wrap (`W.monthlyWrap(W.prevMonthYm(), true)`), recap (forzar vía la lógica de `snapRecap` si es posible),
   aviso de inactividad (`W.promptIdleSession()` con una sesión en curso "vieja"), toasts (`W.toast('✓ guardado')`,
@@ -136,6 +138,31 @@ iframe.srcdoc = t.replace(/<head([^>]*)>/i, m => m + '<base href="'+base+'"><scr
   toque real en el nombre —`[data-act="editexname"]`— del primer ejercicio con historia → trkMenu `[historial]` `[cambiar
   ejercicio]`; sin historia la app cambia directo). `m:lift` sigue abriendo `openLiftDetail` directo (queda de respaldo: la
   tile y //STRENGTH ya abren `exhist`). Nada toca la db. Total v274: 117 escenarios.
+- v275 (suplementos con marca, frasco y aviso — el item de `db.stack` sigue siendo el GENÉRICO; aditivo: `status`
+  active|paused|archived con `archived` = status≠active, `statusLog [{d,to,why}]`, `products`, `cur`, `containers`; lo que
+  queda se CALCULA con las tomas: `W.suppStock`/`suppStockTxt`; aviso ≤ `SUPP_WARN_D` 7 días). Los datos cargados mandan;
+  si no traen el estado que se quiere ver (tus datos aún sin frascos), se arma SOLO mientras se mira con `later`:
+  `suppLow` (el que ya está por acabarse, o marca `Norda` y frasco en tu primer suplemento activo diario —o un `omega-3`
+  genérico— con 5 tomas por delante: "quedan 10 softgels · ~5 d", o en polvo, líquido u otro por su dosis, según la
+  unidad de la dosis; `suppTemp` guarda y devuelve tal cual `status`,
+  `archived`, `statusLog`, `products`, `cur` y `containers`), `suppDormant` (uno en pausa y uno archivado por "no lo
+  encontré" si faltan: genéricos con nombre que no choque con los tuyos, `suppAdd` los mete en el mismo arreglo y los
+  quita al salir) y `tempKey` (estado en memoria: `window._stackView`, `state.suppSeg/suppSegD/_lfold/_lfoldD`,
+  `settings.suppWarnDay`). Escenarios: `stack:all` (TODOS con `_stackView='all'`: marca tras el nombre y bajo el periodo
+  `quedan … · ~N d` o `⚠ …`; abajo EN PAUSA · N abierto y ARCHIVADOS · N —se abre con el toque real de su summary—: nombre ·
+  marca · motivo · fecha ···· `[reactivar]`; `#view` hasta EN PAUSA), `m:stackedit:product` (el editor del que está por
+  acabarse con la hoja —`#modal .sheet`, `sheetTo`, sin `scrollIntoView`— hasta PRODUCTO · FRASCO), `m:stackmore` (el
+  toque real de `#se_more`: TRKMenu pausar / archivar · se acabó / archivar · no lo encontré / borrar · con su
+  historial), `m:stackreadd` (el editor nuevo con el nombre de uno archivado, tecleado con `typeIn` —evento `input`— y el
+  toque real de `#se_save` → TRKMenu `"zinc" ya estaba archivado · Norda`), `m:stackbrand` (el editor de uno con marca,
+  MARCA → otra y POR TOMA → otro número, `#se_save` → trkAsk `cambió con la marca nueva` · `por toma: 2 softgels → 1
+  softgels`) y `macros:supplow` (//SUPPS con la pestaña del momento del suplemento y abierta —toque real de `lfold`—: su
+  celda con `⚠ ~5 d` en `.lc .m`). Ninguno guarda: los menús y la pregunta se abren y nada cambia hasta elegir. **El aviso
+  de una vez al día** (`suppWarnMaybe`, al pintar macros: `settings.suppWarnDay=hoy; save()` y el toast `⚠ …` tipo `'warn'` —borde `--warn`, no es un error— con `[ver]`)
+  solo sale en `macros:supplow` (ahí `suppWarnDay` se quita mientras se mira; el `save()` de la app lo absorbe el guardia);
+  en todos los demás escenarios `wrapRun` lo da por visto hoy con `quietWarn` (temporal), así no tapa ni cuenta en su
+  medición. `m:adhoc` se reetiqueta `hoja · toma puntual` (es el `[+ toma puntual]` del stack). `stack`, `m:stackedit`,
+  `m:stacknew`, `m:supptime` y `m:supps-empty` no cambian de receta. Total v275: 123 escenarios.
 - Etiquetas cortas en español: `gym · inicio`, `macros`, `hoja · agregar alimento`, `sesión · tabla`, `arranque`…
 
 ## 4 · `window.TRK_KNOBS` — knobs.js
@@ -202,7 +229,10 @@ iframe.srcdoc = t.replace(/<head([^>]*)>/i, m => m + '<base href="'+base+'"><scr
 usuario `demo`, split push/pull/legs genérico (ids estables únicos; v273: `plan` rotativo
 `{mode:'cycle',on:3,off:1,blocked:[0]}`, así //SCHEDULE, el ciclo real y la racha con descansos del plan salen con datos;
 el `--check` lo exige y comprueba que `migrate()` no lo toque), ~10 semanas de sesiones con drop set, unilateral y
-cardio, comidas genéricas por día, agua, 2 suplementos, sueño, pasos y peso corporal; sin ánimo (v269: `migrate()` lo
+cardio, comidas genéricas por día, agua, suplementos (v275: creatina con frasco de sobra, vitamina D sin frasco, omega-3 de 2
+softgels por toma con su frasco de 60 abierto hace 25 tomas → "quedan 10 softgels · ~5 d", magnesio en pausa y zinc
+archivado por "no lo encontré", con `statusLog`; con su propio PRNG, así el resto de la demo no cambia; el `--check` corre
+el `suppStock` REAL de index.html sobre la demo migrada), sueño, pasos y peso corporal; sin ánimo (v269: `migrate()` lo
 purga con `purgeMood`, que el `--check` también extrae); fechas relativas a hoy (racha y "hoy" siempre con datos). PRNG con
 semilla fija. Nada del dueño. `node tools/studio/demo.js --check` valida la forma y
 sale con 1 si algo falta.
@@ -216,7 +246,8 @@ sale con 1 si algo falta.
 Fases: G1 (hecho), G2/v258 (hecho), F0/v259 (hecho), T/v260 (hecho), S1 estudio (hecho), G0 decisiones, TS/v267 terminal
 sobrio (hecho), P1/v268 primer arranque (hecho), V269 lo del 24-sep (hecho), V270 salud por Atajo (hecho), V271 comida y
 unidades (hecho), V272 σ v2 y estado del progreso (hecho), V273 split: cómo entrenas (hecho), V274 progreso por ejercicio
-(hecho, con la cita del dueño como primer ítem), y en el orden aprobado por el dueño (24-sep): V275 suplementos con marca y frasco, V276 macros: laboratorio y carrusel, V277 configuración
+(hecho, con la cita del dueño como primer ítem), V275 suplementos con marca, frasco y aviso (hecho, con la cita del dueño
+como primer ítem), y en el orden aprobado por el dueño (24-sep): V276 macros: laboratorio y carrusel, V277 configuración
 paso a paso (antes V271a), V278 cuentas (antes V271b), V279 Pro y anuncios (antes V273), V280 tour (antes V274); G3a–d y
 G4a–c sin versión fija (del plan aprobado). `proposal` enlaza a TRK_PROPOSALS.
 

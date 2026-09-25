@@ -1,9 +1,10 @@
 // gym//TRK · estudio · ESCENARIOS (tools/studio/scenarios.js) — contrato: tools/studio/CONTRACT.md §3
 // Cada escenario abre una pantalla, hoja, overlay o aviso de la app REAL dentro del frame (detrás de guard.js).
 //   { id, g, label, run(W,T), live? }   W = window del frame · T = W.__trk (T.db, T.state)
-// Fuentes: las 69 de tools/ds-diff.html (S2; allá D era la db → aquí T.db; v269 sin m:mood; v272 + home:stimulus y m:deload;
+// Fuentes: las 75 de tools/ds-diff.html (S2; allá D era la db → aquí T.db; v269 sin m:mood; v272 + home:stimulus y m:deload;
 // v273 + splitedit:schedule, splitedit:weekly, home:planrest y workout:rpe; v274 + progress:exercises, exhist, exhist:log,
-// exhist:top y workout:exname) + las 17 de dsSweep (tools/ds-inventory.js, sus ids son la línea base de
+// exhist:top y workout:exname; v275 + stack:all, m:stackedit:product, m:stackmore, m:stackreadd, m:stackbrand y
+// macros:supplow) + las 17 de dsSweep (tools/ds-inventory.js, sus ids son la línea base de
 // tools/ds-baseline.json; v274 + exhist) + los nuevos de §3. Un id aparece una sola vez.
 // Orden = como se recorre la app: gym (inicio, sesión) · macros · progreso · historial · ajustes · hojas sueltas ·
 // compartir · overlays · avisos.
@@ -16,6 +17,8 @@
 // suplementos, hoy de descanso) APARTA lo que estorba en T.db —misma referencia, misma posición— y deja cómo devolverlo;
 // el siguiente escenario lo devuelve antes de correr. Nada se borra ni se reescribe; lo que la app guarde en medio lo
 // absorbe el guardia. v273: también el plan de cómo entrenas (db.split.plan) y la escala de esfuerzo (db.split.metric).
+// v275: también marca y frasco de un suplemento (products/cur/containers), suplementos de muestra en pausa y archivado
+// cuando tus datos no los tienen, y settings.suppWarnDay (el aviso de una vez al día solo sale en macros:supplow).
 // run() nunca lanza: si algo falla devuelve {ok:false, err} (y lo deja en consola).
 (function(){ 'use strict';
   const MINE = new WeakSet(), STALE = new WeakSet(), ORIG = new WeakMap();
@@ -30,7 +33,7 @@
   const firstEx = T => { const d = ((T.db.split || {}).days || [])[0]; return d && (d.exercises || [])[0] || null; };
   // macros en el último día con comida (dsSweep); curDate() de la app lee state.macroDate
   // macroOpen vuelve a false: runIn no lo reinicia y 'macros:open' lo deja abierto
-  const macrosOn = (W, T) => { T.state.macroOpen = false; W.go('macros'); const d = foodDay(T); if(d){ T.state.macroDate = d; W.render(); } return d; };
+  const macrosOn = (W, T) => { const md = T.state.macroDate; later(W, () => { T.state.macroDate = md; }); T.state.macroOpen = false; W.go('macros'); const d = foodDay(T); if(d){ T.state.macroDate = d; W.render(); } return d; };
   // v272 · lleva #view (el contenedor con scroll de la app) a una sección: su regla arriba, sin scrollIntoView (ese también
   // movería la página del estudio). Solo posición de scroll; render() la vuelve a 0 en el siguiente go()
   // (v273: `s` también puede ser el elemento de la sección)
@@ -136,6 +139,79 @@
     if(i < 0) i = 0;
     click(W, '#view [data-act="editexname"][data-exi="' + i + '"]'); }
 
+  // ---- v275 · suplementos con marca, frasco y aviso ----
+  // El item del stack sigue siendo el GENÉRICO (sus tomas, su historial); la marca vive en products[] y el frasco en
+  // containers[]; lo que queda se CALCULA con las tomas (W.suppStock / suppStockTxt). Los datos cargados mandan: el que ya
+  // está por acabarse, el que ya tiene marca, los que ya están en pausa o archivados. Si no los hay (tus datos aún sin
+  // frascos), se arman SOLO mientras se mira y al salir todo vuelve tal cual (later): marca y frasco en tu primer
+  // suplemento activo diario (quedan 5 tomas · ~5 d) o en uno genérico, y dos genéricos en pausa y archivado.
+  const has = (o, k) => Object.prototype.hasOwnProperty.call(o, k);
+  const SUPPK = ['status', 'archived', 'statusLog', 'products', 'cur', 'containers'];
+  // los campos de v275 de un item vuelven a su valor exacto (o se quitan si no existían)
+  function suppTemp(W, it){ const prev = SUPPK.map(k => [k, has(it, k), JSON.stringify(it[k])]);
+    later(W, () => { prev.forEach(([k, h, v]) => { if(!h) delete it[k]; else it[k] = v === undefined ? undefined : JSON.parse(v); }); }); }
+  // un item de muestra dentro de T.db.stack mientras se mira (misma referencia del arreglo; al salir se quita)
+  function suppAdd(W, T, it){ const st = T.db.stack; if(!Array.isArray(st)) return null; st.push(it);
+    later(W, () => { const i = st.indexOf(it); if(i >= 0) st.splice(i, 1); }); return it; }
+  const isSupp = x => !!x && (x.category || 'supp') === 'supp';
+  // la presentación de muestra según la unidad de su dosis (SUPP_FORMS de la app): polvo, líquido u otro van por su dosis
+  // (5 g por toma → 'quedan 25 g'); sin pista, softgels de 2 por toma
+  const FORM_OF = { cap:'cápsulas', tab:'tabletas', g:'polvo', ml:'líquido', scoop:'otro', gotas:'gotas', puff:'spray' };
+  const suppActive = (W, T) => (T.db.stack || []).filter(x => isSupp(x) && W.suppStatus(x) === 'active');
+  // un nombre genérico que no choque con los tuyos
+  const freeName = (T, names) => { const ks = new Set((T.db.stack || []).map(x => String((x && x.name) || '').toLowerCase().trim()));
+    return names.find(n => !ks.has(n)) || names[0] + ' (muestra)'; };
+  function suppGen(W, T, names, o){ const t = W.todayISO(), name = freeName(T, names);
+    return Object.assign({ id: 'st_trk_' + name.replace(/[^a-z0-9]/gi, ''), name, category: 'supp', dose: '1', unit: 'cap', when: ['PM'],
+      periodization: { type: 'daily' }, notes: '', startDate: W.shiftDate(t, -60), ticks: {} }, o || {}); }
+  // el que está por acabarse (≤ 7 días): el tuyo si ya lo hay; si no, marca y frasco en tu primer suplemento activo diario
+  // (o uno genérico) con 5 tomas por delante —2 por toma: "quedan 10 softgels · ~5 d", como lo dijiste—
+  function suppLow(W, T){ const st = T.db.stack; if(!Array.isArray(st)) return null;
+    const lo = st.find(x => { const k = W.suppStock(x); return !!k && k.low; }); if(lo) return lo;
+    const t = W.todayISO();
+    let it = suppActive(W, T).find(x => ((x.periodization || {}).type || 'daily') === 'daily' && W.isDueToday(x, t));
+    if(!it) it = suppAdd(W, T, suppGen(W, T, ['omega-3', 'aceite de pescado'], { dose: '1000', unit: 'mg' })); else suppTemp(W, it);
+    if(!it) return null;
+    let p = W.suppProd(it);
+    if(!p){ const form = FORM_OF[String(it.unit || '').toLowerCase()] || 'softgels', bulk = ['polvo', 'líquido', 'otro'].indexOf(form) >= 0, per = bulk ? (+it.dose > 0 ? +it.dose : 5) : 2;
+      p = { id: 'p_trk_low', brand: 'Norda', name: '', form, per, size: per * 30, dose: it.dose, unit: it.unit, added: W.shiftDate(t, -20) };
+      it.products = (it.products || []).concat([p]); it.cur = p.id; }
+    let c = W.suppCont(it);
+    if(!c || c.prod !== p.id){ c = { id: 'c_trk_low', prod: p.id, opened: W.shiftDate(t, -20), size: +p.size || 60 }; it.containers = (it.containers || []).concat([c]); }
+    if(!(+c.size > 0)) c.size = 60;
+    c.adj = 0; const L = W.suppLeft(it); if(L) c.adj = Math.round((5 * L.per - L.left) * 100) / 100;
+    return it; }
+  // uno con marca (para cambiarla): el tuyo si ya lo hay (el que está por acabarse antes que los demás); si no, el de
+  // suppLow (con marca `Norda` mientras se mira si su
+  // producto no la tiene: sin marca anterior no hay "marca nueva" que confirmar)
+  function suppBranded(W, T){ const bs = suppActive(W, T).filter(x => (W.suppProd(x) || {}).brand);
+    const b = bs.find(x => { const k = W.suppStock(x); return !!k && k.low; }) || bs[0]; if(b) return b;   // el por acabarse primero: es el que cambiarías
+    const it = suppLow(W, T), p = it && W.suppProd(it); if(!it) return null;
+    if(p && !p.brand){ suppTemp(W, it); W.suppProd(it).brand = 'Norda'; } return it; }
+  // uno en pausa y uno archivado (con su motivo en statusLog, como los deja [más]); si faltan, genéricos
+  function suppDormant(W, T){ const st = T.db.stack || [], t = W.todayISO(), d = k => W.shiftDate(t, -k);
+    if(!st.some(x => W.suppStatus(x) === 'paused')) suppAdd(W, T, suppGen(W, T, ['magnesio', 'melatonina', 'ashwagandha'], { dose: '200', unit: 'mg',
+      status: 'paused', archived: true, statusLog: [{ d: d(19), to: 'paused', why: 'pausa' }],
+      products: [{ id: 'p_trk_pa', brand: 'Kora', name: '', form: 'cápsulas', per: 2, size: 120, dose: '200', unit: 'mg', added: d(60) }], cur: 'p_trk_pa',
+      containers: [{ id: 'c_trk_pa', prod: 'p_trk_pa', opened: d(60), size: 120 }] }));
+    if(!st.some(x => W.suppStatus(x) === 'archived')) suppAdd(W, T, suppGen(W, T, ['zinc', 'colágeno', 'electrolitos'], { dose: '15', unit: 'mg', when: ['AM'],
+      status: 'archived', archived: true, statusLog: [{ d: d(35), to: 'archived', why: 'no lo encontré' }],
+      products: [{ id: 'p_trk_ar', brand: 'Norda', name: '', form: 'tabletas', per: 1, size: 60, dose: '15', unit: 'mg', added: d(95) }], cur: 'p_trk_ar',
+      containers: [{ id: 'c_trk_ar', prod: 'p_trk_ar', opened: d(95), size: 60 }] })); }
+  // estado en memoria de la app (window._stackView, state.suppSeg…): vuelve tal cual al salir
+  function tempKey(W, o, k, v){ const h = has(o, k), p = o[k]; o[k] = v; later(W, () => { if(h) o[k] = p; else delete o[k]; }); }
+  // una casilla del editor, como si se tecleara (los listeners de la hoja leen el evento input)
+  const typeIn = (W, id, v) => { const e = W.document.getElementById(id); if(!e) return false; e.value = v;
+    try{ e.dispatchEvent(new W.Event('input', { bubbles: true })); e.dispatchEvent(new W.Event('change', { bubbles: true })); }catch(_){} return true; };
+  // la hoja (.sheet, con su propio scroll) hasta un elemento, sin scrollIntoView (movería la página del estudio)
+  const sheetTo = (W, el) => { const s = $(W, '#modal .sheet'); if(!s || !el) return false;
+    s.scrollTop += el.getBoundingClientRect().top - s.getBoundingClientRect().top - 12; return true; };
+  const prodLabel = W => Array.from(W.document.querySelectorAll('#modal .grp-label')).find(e => /^PRODUCTO\b/.test((e.textContent || '').trim())) || null;
+  // el aviso de una vez al día (suppWarnMaybe, al pintar macros) es de macros:supplow: en los demás escenarios se da por
+  // visto hoy SOLO mientras se mira, así no tapa ni cuenta en su medición
+  function quietWarn(W, T){ const s = T.db && T.db.settings; if(!s || typeof W.suppWarnMaybe !== 'function') return; const t = W.todayISO();
+    if(s.suppWarnDay !== t) tempKey(W, s, 'suppWarnDay', t); }
+
   // ---- sesión en vivo en memoria ----
   function restore(W, T){ T.db.activeWork = ORIG.has(W) ? ORIG.get(W) : null; ORIG.delete(W); }
   function ensureLive(W, T){ let w = T.db.activeWork;
@@ -223,7 +299,8 @@
     { id:'m:deload', g:'hoja', label:'hoja · fatiga acumulada', run(W){ W.go('home'); W.openDeloadInfo(); } },
     { id:'m:gympick', g:'hoja', label:'hoja · elegir gym', run(W){ W.openGymPicker(); } },
     { id:'m:sched', g:'hoja', label:'hoja · agenda del día', run(W){ W.openScheduleModal(0); } },
-    { id:'m:adhoc', g:'hoja', label:'hoja · sesión suelta', run(W){ W.openAdhocLog(); } },
+    // (openAdhocLog = [+ toma puntual] del stack: un suplemento fuera de horario, no una sesión)
+    { id:'m:adhoc', g:'hoja', label:'hoja · toma puntual', run(W){ W.openAdhocLog(); } },
     { id:'m:workshop', g:'hoja', label:'hoja · plantillas', run(W){ W.openWorkshop(); } },
     // ---------------- macros ----------------
     { id:'macros', g:'pantalla', label:'macros', run(W, T){ macrosOn(W, T); } },
@@ -241,6 +318,20 @@
         click(W, '#view [data-act="toggleMacroUnit"]'); } },
     // v269 · cuenta sin suplementos: //SUPPS arriba de las comidas invita a registrarlos ([+ supp] · ··· → ignorar por ahora)
     { id:'m:supps-empty', g:'pantalla', label:'macros · sin suplementos (invitación)', run(W, T){ noSupps(W, T); macrosOn(W, T); } },
+    // v275 · //SUPPS con el que está por acabarse: su celda lleva '⚠ ~5 d' (o '⚠ se acabó') en .lc .m, con el ⚠ en --warn
+    // solo en el glifo. El aviso de una vez al día (suppWarnMaybe al pintar macros: '⚠ omega-3 · quedan 10 softgels · ~5 d'
+    // o '⚠ N suplementos por acabarse · a, b, c', toast tipo 'warn' —borde --warn, no es un error— con [ver] → stack TODOS) sale aquí: settings.suppWarnDay se quita solo
+    // mientras se mira y vuelve tal cual al salir; lo que la app guarde al darlo por visto lo absorbe el guardia. La pestaña
+    // del momento del suplemento (state.suppSeg) y //SUPPS abierta (el toque real de lfold) también vuelven al salir
+    { id:'macros:supplow', g:'pantalla', label:'macros · //SUPPS por acabarse (⚠ y aviso)', run(W, T){ const st = T.state, s = T.db.settings || {};
+        const it = suppLow(W, T), hw = has(s, 'suppWarnDay'), w0 = s.suppWarnDay;
+        delete s.suppWarnDay; later(W, () => { if(hw) s.suppWarnDay = w0; else delete s.suppWarnDay; });
+        tempKey(W, st, '_lfold', st._lfold && Object.assign({}, st._lfold));   // el toque de lfold cambia el objeto EN SITIO: se mira una copia
+        ['_lfoldD', 'suppSeg', 'suppSegD'].forEach(k => tempKey(W, st, k, st[k]));
+        const d = macrosOn(W, T) || W.todayISO();
+        if(it){ st.suppSeg = W.suppSlot(it); st.suppSegD = d; W.reRender(); }
+        if(!$(W, '#view .lsec[data-k="supps"] .lbody')) click(W, '#view [data-act="lfold"][data-k="supps"]');
+        const sec = $(W, '#view .lsec[data-k="supps"]'); if(sec) toSection(W, sec); } },
     // retención "high": la fila solo sale fuera de rango (BRAND §4) → busca el día con comida más reciente que la tenga
     { id:'macros:high', g:'pantalla', label:'macros · retención alta', run(W, T){ macrosOn(W, T); T.state.macroOpen = true;
         const ds = Object.keys(T.db.meals || {}).filter(k => (T.db.meals[k] || []).length).sort().reverse();
@@ -337,6 +428,39 @@
     { id:'m:stackedit', g:'hoja', label:'hoja · editar suplemento', run(W, T){ W.openStackEdit(((T.db.stack || [])[0] || {}).id); } },
     { id:'m:stacknew', g:'hoja', label:'hoja · nuevo suplemento', run(W){ W.openStackEdit(null); } },
     { id:'m:supptime', g:'hoja', label:'hoja · hora de toma', run(W, T){ const it = (T.db.stack || [])[0]; if(it){ W.go('stack'); W.openSuppTime(it.id); } } },
+    // v275 · TODOS (window._stackView='all', como el toque de [TODOS]; vuelve al salir): cada fila con su marca tras el nombre
+    // y, bajo el periodo, 'quedan 80 cáps · ~40 d' (o '⚠ quedan 10 softgels · ~5 d' / '⚠ se acabó'); abajo EN PAUSA · N
+    // (abierto) y ARCHIVADOS · N (cerrado: aquí se abre con el toque real de su summary): nombre (toca = editar) · marca ·
+    // motivo · fecha ···· [reactivar]. #view hasta EN PAUSA con toSection
+    { id:'stack:all', g:'pantalla', label:'suplementos · todos (en pausa · archivados)', run(W, T){ suppLow(W, T); suppDormant(W, T);
+        tempKey(W, W, '_stackView', 'all'); W.go('stack');
+        const bl = Array.from(W.document.querySelectorAll('#view details.stk-blk')), f = re => bl.find(b => re.test(((b.querySelector('summary') || {}).textContent || '').trim()));
+        const pa = f(/^EN PAUSA\b/), ar = f(/^ARCHIVADOS\b/);
+        if(ar && !ar.open){ const s = ar.querySelector('summary'); if(s) s.click(); if(!ar.open) ar.open = true; }
+        if(pa || ar) toSection(W, pa || ar); } },
+    // v275 · el editor del que está por acabarse, con la hoja hasta 'PRODUCTO · FRASCO · opcional · para avisarte antes de que
+    // se acabe' (después de DOSIS): MARCA (datalist de sus marcas) | PRODUCTO; PRESENTACIÓN | POR TOMA · <unidad>; TRAE EL
+    // FRASCO | LO ABRISTE; QUEDAN HOY; la línea '⚠ quedan 10 softgels · ~5 d · abierto el …' y [abrí otro frasco]
+    { id:'m:stackedit:product', g:'hoja', label:'hoja · suplemento · producto y frasco', run(W, T){ const it = suppLow(W, T); if(!it) return;
+        W.go('stack'); W.openStackEdit(it.id); sheetTo(W, prodLabel(W)); } },
+    // v275 · [más] (antes 'borrar' en rojo) → TRKMenu del activo: pausar / archivar · se acabó / archivar · no lo encontré /
+    // borrar · con su historial (con holdConfirm, al final). Solo se abre: nada cambia hasta elegir
+    { id:'m:stackmore', g:'hoja', label:'hoja · suplemento · [más] (pausar · archivar)', run(W, T){ const it = suppBranded(W, T) || suppActive(W, T)[0]; if(!it) return;
+        W.go('stack'); W.openStackEdit(it.id); click(W, '#se_more'); } },
+    // v275 · volver a agregar el mismo genérico: el editor nuevo con el nombre de uno archivado → [guardar] (toque real) →
+    // TRKMenu '"zinc" ya estaba archivado · Norda': volver con Norda / volver con otra marca / crear otro aparte. Nada se
+    // guarda hasta elegir
+    { id:'m:stackreadd', g:'hoja', label:'hoja · suplemento · ya estaba archivado', run(W, T){ suppDormant(W, T);
+        const st = T.db.stack || [], dz = s => st.filter(x => W.suppStatus(x) === s);
+        const it = dz('archived').find(x => (W.suppProd(x) || {}).brand) || dz('archived')[0] || dz('paused')[0]; if(!it) return;
+        W.go('stack'); W.openStackEdit(null, 'supp'); typeIn(W, 'se_name', it.name); click(W, '#se_save'); } },
+    // v275 · otra marca con otra presentación: el editor de uno con marca, MARCA → otra y POR TOMA → otro número (lo que se
+    // teclearía), luego [guardar] (toque real) → trkAsk 'cambió con la marca nueva' · 'por toma: 2 softgels → 1 softgels' ·
+    // [así queda] [revisar]. Nada se guarda hasta [así queda]
+    { id:'m:stackbrand', g:'hoja', label:'hoja · suplemento · cambió con la marca nueva', run(W, T){ const it = suppBranded(W, T); if(!it) return;
+        const p = W.suppProd(it) || {}, per = +p.per || 1, b = String(p.brand || '').toLowerCase() === 'kora' ? 'Norda' : 'Kora';
+        W.go('stack'); W.openStackEdit(it.id); typeIn(W, 'se_brand', b); typeIn(W, 'se_per', String(per > 1 ? Math.max(1, Math.round(per / 2)) : 2));
+        const pl = prodLabel(W); if(pl) sheetTo(W, pl); click(W, '#se_save'); } },
     { id:'m:storage', g:'hoja', label:'hoja · almacenamiento', run(W){ W.openStorage(); } },
     // texto de muestra (nunca la db): la hoja que sale cuando el navegador no deja guardar el archivo
     { id:'m:textsheet', g:'hoja', label:'hoja · guardar como texto', run(W){ W.openTextSheet('gymtrk-respaldo.json', '{"version":1,"profile":{"username":"demo"},"sessions":[],"meals":{}}', noop); } },
@@ -392,6 +516,7 @@
   const wrapRun = s => { const fn = s.run, live = !!s.live, own = !!s.own;
     return async function(W, T){ try{
         undoAll(W);
+        if(s.id !== 'macros:supplow') quietWarn(W, T);   // v275 · el aviso de una vez al día solo en su escenario
         if(s.id !== 'rest') unrest(T);
         if(!own){ if(live) ensureLive(W, T); else calm(W, T); }
         await fn.call(s, W, T);

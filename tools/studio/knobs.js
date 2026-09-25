@@ -72,7 +72,7 @@
         { tok:'--ls-caps',  l:'mayúsculas · rótulo', d:.2,   min:.12, max:.24, step:.01, u:'em', kind:'num', x:{min:0,  max:.3},
           sel:'.rot .lbl,.whdr .wlbl,.grp-label,.pfl,.spl,.strk-k,.cm .cmh,.pthl,.lpr,.plbl,.hmon,.hcalh .hct,.tselh,.ready .rk,.field label,.shcap,.shstat-l,.nl-hd,.stk-blk summary,.ag-nohr .gl,.u-lscaps' },
         { tok:'--ls-title', l:'título de hoja',      d:.12,  min:.08, max:.16, step:.01, u:'em', kind:'num', x:{min:0,  max:.24},
-          sel:'.supps .sph .h,.sheet h3,.shr-ring .ring.lg .of,.sgh' },
+          sel:'.sheet h3,.shr-ring .ring.lg .of,.sgh' },
         { tok:'--ls-num',   l:'número grande',       d:-.03, min:-.05,max:0,   step:.01, u:'em', kind:'num', x:{min:-.08,max:.02},
           sel:'.whdr .wname,.strk-n,.mdval,.pval,.mkc,.msum-tot b,.shr-ring .ring.lg .num,.shm-g,.exov,.shstat-n,.u-lsnum' },
         { tok:'--ls-ui',    l:'texto de control',    d:.03,  min:0,   max:.05, step:.01, u:'em', kind:'num', x:{min:-.02,max:.1},

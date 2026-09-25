@@ -11,7 +11,7 @@
 
   window.TRK_PLAN = {
     updated: '2026-09-24',
-    note: 'ruta de la guía: G1 y G2 hechos, F0 y T preparan el estudio; G0 se decide aquí, TS (v267) hornea el "terminal sobrio", P1 (v268) el primer arranque, v269 y v270 (salud por Atajo) lo que pediste el 24-sep, v271 comida y unidades, v272 σ v2 y estado del progreso, v273 split: cómo entrenas (diario, días fijos o rotativo, días sin gym, ciclo real y RIR o RPE) y v274 progreso por ejercicio (la bitácora #1, #2, #3… con su gráfica); en el orden que aprobaste siguen suplementos con marca y frasco (v275), macros: laboratorio y carrusel (v276), configuración paso a paso (v277), cuentas (v278), Pro y anuncios (v279) y tour (v280). G3 y G4 completan la identidad sin versión fija. Cada entrega borra el CSS de su propuesta y la marca shipped.',
+    note: 'ruta de la guía: G1 y G2 hechos, F0 y T preparan el estudio; G0 se decide aquí, TS (v267) hornea el "terminal sobrio", P1 (v268) el primer arranque, v269 y v270 (salud por Atajo) lo que pediste el 24-sep, v271 comida y unidades, v272 σ v2 y estado del progreso, v273 split: cómo entrenas (diario, días fijos o rotativo, días sin gym, ciclo real y RIR o RPE), v274 progreso por ejercicio (la bitácora #1, #2, #3… con su gráfica) y v275 suplementos con marca, frasco y aviso (cuántas quedan, aviso a una semana, pausa, archivo y volver con otra marca); en el orden que aprobaste siguen macros: laboratorio y carrusel (v276), configuración paso a paso (v277), cuentas (v278), Pro y anuncios (v279) y tour (v280). G3 y G4 completan la identidad sin versión fija. Cada entrega borra el CSS de su propuesta y la marca shipped.',
     phases: [
 
       P('G1', 'guía', null, 'hecho', [
@@ -156,13 +156,15 @@
         I('check', '_exHistSelfCheck: 2 días del split = una historia, fila vieja sin tipo cuenta como libre, pista de lateralidad, uni ≠ bi, #1 la más vieja, unidad real, drops en texto', 'hecho', { audit: '34 self-checks · glyph 72→87 (etiqueta del dueño)' }),
       ]),
 
-      P('V275', 'suplementos con marca y frasco', 'v275', 'pendiente', [
-        I('brand', 'marca de cada suplemento', 'pendiente'),
-        I('dose', 'dosis', 'pendiente'),
-        I('stock', 'inventario del frasco', 'pendiente'),
-        I('warn', 'aviso 7 días antes de que se acabe', 'pendiente'),
-        I('archive', 'archivar o pausar', 'pendiente'),
-        I('swap', 'cambiar a otra marca', 'pendiente'),
+      P('V275', 'suplementos con marca, frasco y aviso', 'v275', 'hecho', [
+        I('note', 'lo que pediste: la marca o el producto, "cuántas pastillas… por porción" (p. ej. 2), la frecuencia, "cuántas… trae el frasco", que avise "una semana antes de que se acabe", archivar, pausar o "no lo encontré", y si vuelves al mismo con otra marca, que confirme si cambió la dosis o la presentación', 'hecho'),
+        I('brand', 'marca y frasco sin partir la historia: el suplemento sigue siendo el genérico (mismo item → sus tomas, su historial y "tomar X" no se parten); la marca vive en sus productos y el frasco en sus frascos; en el editor, PRODUCTO · FRASCO (opcional): marca (con tus marcas de antes) · producto · presentación (cápsulas, softgels, tabletas, gomitas, polvo, líquido, gotas, spray, crema, otro) · por toma · trae el frasco · lo abriste · quedan hoy', 'hecho'),
+        I('stock', 'lo que queda se calcula con tus tomas: lo que trae el frasco − los días con toma (tomada o tarde; saltada no) desde que lo abriste × por toma + tu corrección; los días que alcanza salen de tu periodización; en la lista: "quedan 80 cáps · ~40 d"', 'hecho'),
+        I('warn', 'aviso a una semana: "⚠ quedan 10 softgels · ~5 d" o "⚠ se acabó" en la lista, "⚠ ~5 d" en su celda de //SUPPS y, una vez al día al abrir macros, el aviso "⚠ omega-3 · quedan 10 softgels · ~5 d" con [ver] → TODOS (un aviso, no un error: borde --warn, sin ✕); se acabó → [abrí otro frasco], [se acabó · archivar] o [pausar]', 'hecho'),
+        I('status', '[más] en lugar de borrar: pausar / archivar · se acabó / archivar · no lo encontré / borrar · con su historial (al final); en TODOS, EN PAUSA y ARCHIVADOS con su motivo, fecha y [reactivar]; cada cambio con [deshacer] exacto; sus tomas y la nutrición de sus días se quedan', 'hecho'),
+        I('swap', 'volver con otra marca: si agregas uno que ya estaba en pausa o archivado sale "ya estaba archivado · Norda" → volver con esa marca, con otra (su historial sigue) o crear otro aparte; marca nueva = producto y frasco nuevos, el anterior guarda su dosis y nutrición para los días viejos; si cambió la presentación, lo que va por toma o la dosis, "cambió con la marca nueva" lo lista antes de guardar', 'hecho'),
+        I('fixes', 'la invitación de //SUPPS cuenta solo los activos (todo archivado → vuelve); uno agregado mientras ves otro día en macros empieza ese día; el export lista marca, por toma y lo que queda', 'hecho'),
+        I('check', '_suppSelfCheck: tarde cuenta y saltada no, 19 días, sin frasco no hay cuenta, aviso a 7 días, se acabó, archivar conserva tomas y nutrición, otra marca cuenta desde su frasco, deshacer exacto, todo archivado → invitación, reactivar', 'hecho', { audit: '35 self-checks · dsSweep sin cambios · stack hit 43→41, editor 41→40' }),
       ]),
 
       P('V276', 'macros: laboratorio y carrusel', 'v276', 'pendiente', [

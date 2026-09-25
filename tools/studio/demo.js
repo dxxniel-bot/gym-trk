@@ -1,7 +1,7 @@
 // gym//TRK · estudio · DEMO (tools/studio/demo.js) → window.TRK_DEMO
 // Base de datos 100 % sintética para las vistas previas del estudio (CONTRACT.md §6). Nada del dueño: usuario `demo`,
-// split push/pull/legs genérico (v273: rotativo 3 on / 1 off, domingo sin gym), comidas genéricas, fechas relativas a
-// hoy. PRNG mulberry32 con semilla fija: la misma fecha da siempre la misma base. `_demo:true` en la raíz → las rutas de importación reales de la app la rechazan.
+// split push/pull/legs genérico (v273: rotativo 3 on / 1 off, domingo sin gym), comidas genéricas, suplementos (v275: con
+// marca y frasco, uno por acabarse, uno en pausa y uno archivado), fechas relativas a hoy. PRNG mulberry32 con semilla fija: la misma fecha da siempre la misma base. `_demo:true` en la raíz → las rutas de importación reales de la app la rechazan.
 //   TRK_DEMO.build(hoy?)  → objeto db (JSON) que migrate() acepta tal cual · hoy = Date | 'YYYY-MM-DD' | nada
 //   TRK_DEMO.check(db, hoy?) → [problemas] (vacío = bien)
 // En node: `node tools/studio/demo.js --check` valida la forma (y, si encuentra index.html, la pasa por el migrate()
@@ -239,6 +239,35 @@
         const r = R(), st = r < 0.84 ? 'taken' : r < 0.94 ? 'late' : 'skipped'; it.ticks[date] = st;
         if(st !== 'skipped') it.tickTimes[date] = hm(i ? ri(840, 880) : ri(450, 520) + (st === 'late' ? 180 : 0)); }); }
 
+    // ---- v275 · marca, frasco y aviso (aditivo: el item sigue siendo el genérico; la marca en products[], el frasco en
+    // containers[]; lo que queda lo CALCULA la app con las tomas). Con su propio PRNG, así el resto de la demo no cambia:
+    //   creatina · con frasco y de sobra (~40 d) · vitamina D · sin frasco (no hay cuenta, como antes de v275)
+    //   omega-3 · 2 softgels por toma, frasco de 60 abierto hace 25 tomas → "quedan 10 softgels · ~5 d" (el aviso ≤ 7 d)
+    //   magnesio · en pausa · zinc · archivado por "no lo encontré" (statusLog, como los deja [más]) ----
+    { const R2 = mulberry32(SEED ^ 0x275), ri2 = (a, b) => a + Math.floor(R2() * (b - a + 1)), d = k => iso(dayAt(k));
+      const tick = (it, k, mn, mx) => { const r = R2(), st = r < 0.86 ? 'taken' : r < 0.94 ? 'late' : 'skipped'; it.ticks[d(k)] = st;
+        if(st !== 'skipped') it.tickTimes[d(k)] = hm(ri2(mn, mx) + (st === 'late' ? 90 : 0)); };
+      const prod = (pid, brand, name, form, per, size, dose, unit, added) => ({ id: pid, brand, name, form, per, size, dose, unit, added });
+      const cre = stack[0];
+      cre.products = [prod('pdemo_cre', 'Pura', 'monohidratada', 'polvo', 5, 300, '5', 'g', d(120))]; cre.cur = 'pdemo_cre';
+      cre.containers = [{ id: 'cdemo_cre', prod: 'pdemo_cre', opened: d(18), size: 300 }];
+      const o3 = { id: 'st_demo3', name: 'omega-3', category: 'supp', dose: '2', unit: 'g', when: ['PM'], periodization: { type: 'daily' }, notes: '',
+        startDate: d(75), ticks: {}, tickTimes: {}, products: [prod('pdemo_o3', 'Norda', 'omega-3 1000', 'softgels', 2, 60, '2', 'g', d(75))], cur: 'pdemo_o3' };
+      for(let k = 75; k >= 1; k--) tick(o3, k, 1230, 1290);   // hoy: sigue pendiente
+      let n25 = 0, open = 1; for(let k = 1; k <= 75; k++){ const s = o3.ticks[d(k)]; if(s === 'taken' || s === 'late'){ n25++; if(n25 === 25){ open = k; break; } } }
+      o3.containers = [{ id: 'cdemo_o3a', prod: 'pdemo_o3', opened: d(75), size: 90, closed: d(open + 1) }, { id: 'cdemo_o3b', prod: 'pdemo_o3', opened: d(open), size: 60 }];
+      const mg = { id: 'st_demo4', name: 'magnesio', category: 'supp', dose: '200', unit: 'mg', when: ['PM'], periodization: { type: 'daily' }, notes: '',
+        startDate: d(100), ticks: {}, tickTimes: {}, products: [prod('pdemo_mg', 'Kora', 'glicinato', 'cápsulas', 2, 120, '200', 'mg', d(100))], cur: 'pdemo_mg',
+        containers: [{ id: 'cdemo_mg', prod: 'pdemo_mg', opened: d(60), size: 120 }],
+        status: 'paused', archived: true, statusLog: [{ d: d(19), to: 'paused', why: 'pausa' }] };
+      for(let k = 100; k >= 20; k--) tick(mg, k, 1260, 1320);
+      const zn = { id: 'st_demo5', name: 'zinc', category: 'supp', dose: '15', unit: 'mg', when: ['AM'], periodization: { type: 'daily' }, notes: '',
+        startDate: d(95), ticks: {}, tickTimes: {}, products: [prod('pdemo_zn', 'Norda', 'picolinato', 'tabletas', 1, 60, '15', 'mg', d(95))], cur: 'pdemo_zn',
+        containers: [{ id: 'cdemo_zn', prod: 'pdemo_zn', opened: d(95), size: 60 }],
+        status: 'archived', archived: true, statusLog: [{ d: d(35), to: 'archived', why: 'no lo encontré' }] };
+      for(let k = 95; k >= 36; k--) tick(zn, k, 450, 520);
+      stack.push(o3, mg, zn); }
+
     // ---- máquinas por gym (clave '#'+exId, como machKey) ----
     const machines = { [GYM]: {} };
     split.days.forEach(d => d.exercises.forEach(e => { if(e.type === 'machine') machines[GYM]['#' + e.id] = { brand: 'selectorizada', setup: 'asiento ' + ri(2, 6), na: false }; }));
@@ -307,7 +336,25 @@
     A(mIds.size === mN, 'ids de comida únicos');
     let gap = 0; for(let k = 0; k < 30; k++){ const d = ago(k); if(!(M[d] || []).some(m => m.tag !== 'drink')) gap++; }
     A(!gap, 'racha: comida cada uno de los últimos 30 días');
-    A(Array.isArray(db.stack) && db.stack.filter(x => x.category === 'supp' && x.ticks && Object.keys(x.ticks).length).length === 2, '2 suplementos con marcas');
+    const SK = Array.isArray(db.stack) ? db.stack : [], stOf = x => x.status || (x.archived ? 'archived' : 'active');
+    A(SK.filter(x => x.category === 'supp' && stOf(x) === 'active' && x.ticks && Object.keys(x.ticks).length).length === 3, '3 suplementos activos con tomas');
+    // v275 · marca, frasco y aviso: productos y frascos bien enlazados; en pausa y archivado con su statusLog; y la cuenta
+    // (misma regla que suppLeft/suppDaysLeft para un diario): uno por acabarse (≤ 7 d), uno de sobra y uno sin frasco
+    SK.forEach(x => { const PI = new Set((x.products || []).map(p => p.id));
+      if(x.products && !PI.has(x.cur)) P.push('stack ' + x.name + ': cur no es uno de sus products');
+      (x.containers || []).forEach(c => { if(!PI.has(c.prod)) P.push('stack ' + x.name + ': un frasco sin su producto');
+        if(!(c.opened <= today) || (c.closed && c.closed < c.opened)) P.push('stack ' + x.name + ': fechas del frasco'); });
+      if((x.containers || []).filter(c => !c.closed).length > 1) P.push('stack ' + x.name + ': más de un frasco abierto'); });
+    ['paused', 'archived'].forEach(s => { const it = SK.find(x => stOf(x) === s), lg = it && (it.statusLog || []).slice(-1)[0];
+      A(!!it && it.archived === true && !!lg && lg.to === s && !!lg.why && !!lg.d, 'un suplemento ' + (s === 'paused' ? 'en pausa' : 'archivado') + ' con statusLog (v275)'); });
+    const daysLeft = x => { const C = x.containers || [], c = C.filter(z => !z.closed).pop(), p = c && (x.products || []).find(z => z.id === c.prod);
+      if(!c || !p || !(+c.size > 0)) return null; let used = 0;
+      Object.keys(x.ticks || {}).forEach(k => { if(k >= c.opened && k <= today && (x.ticks[k] === 'taken' || x.ticks[k] === 'late')) used++; });
+      return Math.floor(Math.max(0, +c.size - used * (+p.per || 1) + (+c.adj || 0)) / (+p.per || 1)); };
+    const act = SK.filter(x => stOf(x) === 'active'), dl = act.map(daysLeft);
+    A(dl.some(v => v != null && v >= 1 && v <= 7), 'un suplemento por acabarse (≤ 7 días, v275)');
+    A(dl.some(v => v != null && v > 7), 'un suplemento con frasco de sobra (v275)');
+    A(dl.some(v => v == null), 'un suplemento sin frasco (sin cuenta, como antes de v275)');
     A(db.sleep && db.sleep[today] != null, 'sueño hoy');
     A(Object.values(db.sleep || {}).some(v => typeof v === 'number') && Object.values(db.sleep || {}).some(v => Array.isArray(v) && v.some(b => b.ph)), 'sueño en ambas formas (número y bloques con fases)');
     A(db.steps && db.steps[today] > 0, 'pasos hoy');
@@ -360,6 +407,24 @@
         if('mood' in o) P.push('migrate() dejó pasar db.mood (v269 lo purga)');
         if(!o.split.plan || JSON.stringify(o.split.plan) !== JSON.stringify(db.split.plan)) P.push('migrate() tocó split.plan (v273: es aditivo)');
         mig = 'migrate() real: ok · goalHist ' + Object.keys(o.goalHist || {}).length + ' días';
+        // v275 · el motor REAL de suplementos (suppStock / suppStockTxt de index.html) sobre la demo ya migrada: omega-3 por
+        // acabarse con el texto del dueño, creatina de sobra, vitamina D sin frasco (sin cuenta), en pausa y archivado sin aviso
+        if(/\nfunction suppStock\(/.test(src)){
+          const grabConst = name => { const m = src.match(new RegExp('\\nconst ' + name + '=[^\\n]*')); if(!m) throw new Error('falta const ' + name); return m[0].slice(1); };
+          const scode = ['pad', 'SUPP_FORMS', 'SUPP_WARN_D'].map(grabConst).join('\n') + '\n'
+            + ['todayISO', 'shiftDate', 'tickState', 'tickDone', 'isDueToday', 'suppStatus', 'suppProd', 'suppCont', 'suppPU', 'suppLeft', 'suppDaysLeft', 'suppStock', 'suppStockTxt'].map(grab).join('\n')
+            + '\nout=JSON.parse(input).map(x=>{ const k=suppStock(x); return {n:x.name,s:suppStatus(x),k:!!k,low:!!(k&&k.low),out:!!(k&&k.out),d:k?k.d:null,t:suppStockTxt(k)}; });';
+          const sctx = { input: JSON.stringify(o.stack), out: null, JSON, Math, Date, Object, Array, String, isFinite };
+          vm.createContext(sctx); vm.runInContext(scode, sctx, { timeout: 5000 });
+          const S = {}; (sctx.out || []).forEach(r => { S[r.n] = r; });
+          const want = [['omega-3', r => r.s === 'active' && r.low && r.t === 'quedan 10 softgels · ~5 d', 'omega-3 por acabarse: "quedan 10 softgels · ~5 d"'],
+            ['creatina', r => r.s === 'active' && r.k && !r.low && !r.out && r.d > 7, 'creatina con frasco de sobra (> 7 d)'],
+            ['vitamina D', r => r.s === 'active' && !r.k, 'vitamina D sin frasco: sin cuenta'],
+            ['magnesio', r => r.s === 'paused' && !r.k, 'magnesio en pausa, sin aviso'],
+            ['zinc', r => r.s === 'archived' && !r.k, 'zinc archivado, sin aviso']];
+          want.forEach(([n, ok, msg]) => { if(!S[n] || !ok(S[n])) P.push('motor de suplementos (v275): ' + msg + ' · salió ' + JSON.stringify(S[n] || null)); });
+          mig += ' · suplementos: ' + ['omega-3', 'creatina'].map(n => n + ' ' + ((S[n] || {}).t || '—')).join(' · ');
+        }
       }
     }catch(e){ P.push('migrate() falló: ' + (e && e.message || e)); }
     let sets = 0, drops = 0, items = 0; db.sessions.forEach(s => s.exercises.forEach(e => { sets += e.sets.length; drops += e.sets.filter(x => x.isDrop).length; }));
