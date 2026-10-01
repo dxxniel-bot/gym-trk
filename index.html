@@ -5076,6 +5076,158 @@ function liveLatSet(exi,to){ const w=db.activeWork, ex=w&&w.exercises[exi]; if(!
     toast('✓ '+LAT_LBL[to]+(sx?' · también en tu split':''),'ok',{undo:()=>{ latRestore(ex,s0); ex.sets=sets0; if(sx)latRestore(sx,x0); }}); };
   const touches=(from==='uni')!==(to==='uni');   // hacia o desde uni cambia la forma de las series; bi ↔ alt no
   if(touches&&(ex.sets||[]).some(s=>s&&!s._pf&&(s.done||(+s.w>0)||(+s.r>0)))) trkAsk({title:'pasar a '+LAT_LBL[to],detail:to==='uni'?('lo ya registrado queda en el lado '+(ex.startSide==='L'?'L':'R')+' · el otro lado sale sugerido'):'cada lado registrado queda como una serie',ok:'cambiar'},go); else go(); }
+// v286 · self-check de [alt]. NO está en la lista del arranque: se corre a mano (_sbx=true; _altSelfCheck()). Con los datos
+// reales cargados afirma primero que ninguna fila guardada cambia de llave (variantKey y exHistKey contra la fórmula de v285);
+// después monta un db de juguete para identidad, sugerencias, el corchete, los formularios y las listas de copia. Restaura todo.
+function _altSelfCheck(){ const A=(nm,c)=>{ if(!c) throw new Error('SELFCHECK alt: '+nm); };
+  const real=db, sb0=_sbx, lc0=_lastClosed, v=document.getElementById('view'), K=['screen','_scroll','_paintedKey','_viewScroll','work','_wbar','selDay','_curEx','_focusSet','_enter','_align','_autoScroll'], st0={}; K.forEach(k=>{ st0[k]=state[k]; });
+  const ax0=window._axList, ac0=window._axCtx, ee0=window._exEdit, sid0=window._sessId; let live0=null, btn=null; try{ live0=localStorage.getItem(LS_LIVE); }catch(_){}
+  const tap=el=>el.dispatchEvent(new MouseEvent('click',{bubbles:true,cancelable:true})), near=(a,b)=>Math.abs(a-b)<=1;
+  const opts=()=>Array.from(document.querySelectorAll('#tsel .tselo')), ask=k=>document.querySelector('#asklayer [data-ask="'+k+'"]');
+  _sbx=true;
+  try{
+    // 0 · con tus datos: sin `lat`, cada fila guardada conserva su llave de variante y su historia
+    { bumpIdx(); const idx=exIndex();
+      const oldVK=e=>{ const t=canonType(e&&e.type); let k=t+'|'+(uniOf(e)?1:0)+'|'+(e&&e.assisted?1:0)+'|'+(e&&e.weighted?1:0); if(t==='cardio')k+='|'+(e&&e.cardioSub||'treadmill'); return k; };
+      const typed={}, alt={}; idx.forEach(r=>{ if(r.ex.lat==='alt')alt[r.name]=1; if(r.ex.type)(typed[r.name]=typed[r.name]||new Set()).add(oldVK(r.ex)); });
+      let n=0, skip=0; idx.forEach(r=>{ if(alt[r.name]){ skip++; return; } const e=r.ex, o=oldVK(e);
+        if(e.type){ n++; A('datos reales: la llave de variante no cambia', r.variant===o&&variantKey(e)===o); A('datos reales: la historia de una fila con tipo no cambia', exHistKey(e)===r.name+'|'+o); return; }
+        const T=typed[r.name], ty=T?new Set([...T].map(x=>x.split('|')[0])):null;
+        if(T&&T.size>1&&ty.size===1){ skip++; return; }   // varias lateralidades tipadas del mismo tipo: el pliegue nuevo, se prueba abajo
+        n++; A('datos reales: una fila vieja sin tipo conserva su historia', exHistKey(e)===r.name+'|'+((T&&T.size===1)?[...T][0]:o)); });
+      A('datos reales: se revisaron todas las filas', n+skip===idx.length); }
+    const S=(w,o)=>Object.assign({w:String(w),r:'8',rir:'1',unit:'lbs',side:null,done:true},o||{});
+    db=migrate({_idfix:true,_fsfix:true,profile:{username:'t'},gyms:['g1','g2'],activeGym:'g1',settings:{unit:'lbs'},
+      split:{name:'s',days:[{id:'d1',name:'A',exercises:[{id:'eC',name:'db curl',muscle:'biceps',type:'free',unilateral:false,sets:2},{id:'eL',name:'leg ext',muscle:'quads',type:'machine',unilateral:false,sets:2}]}]},
+      sessions:[
+        {id:'s0',date:'2026-08-01',gym:'g1',exercises:[{name:'leg ext',muscle:'quads',sets:[S(90)]},{name:'row',muscle:'lats',sets:[S(70)]},{name:'row',muscle:'lats',sets:[S(35,{side:'R'}),S(35,{side:'L'})]},{name:'db curl',muscle:'biceps',sets:[S(25)]},{name:'press',muscle:'chest',sets:[S(50)]}]},
+        {id:'s1',date:'2026-09-10',dayId:'d1',gym:'g1',exercises:[{exId:'eC',name:'db curl',muscle:'biceps',type:'free',unilateral:false,sets:[S(30),S(30)]},{exId:'eL',name:'leg ext',muscle:'quads',type:'machine',unilateral:false,sets:[S(100),S(100),S(45,{isDrop:true})]}]},
+        {id:'s2',date:'2026-09-12',gym:'g1',exercises:[{exId:'eK',name:'leg curl',muscle:'hams',type:'machine',unilateral:true,startSide:'R',sets:[S(40,{side:'R'}),S(40,{side:'L'}),S(40,{side:'R'}),S(40,{side:'L'})]},
+          {exId:'eP',name:'pull up',muscle:'lats',type:'bodyweight',unilateral:false,sets:[S(80,{bw:true,unit:'kg',extraW:'10'})]},
+          {exId:'eR1',name:'row',muscle:'lats',type:'machine',unilateral:false,sets:[S(120)]},{exId:'eR2',name:'row',muscle:'lats',type:'machine',unilateral:true,sets:[S(60,{side:'R'}),S(60,{side:'L'})]},
+          {exId:'eF1',name:'press',muscle:'chest',type:'free',unilateral:false,sets:[S(60)]},{exId:'eF2',name:'press',muscle:'chest',type:'machine',unilateral:false,sets:[S(90)]}]}]});
+    bumpIdx(); db.rotIdx=0; state.selDay=0; const day=db.split.days[0], sess=id=>db.sessions.find(s=>s.id===id);
+    // 1 · una sola puerta de escritura
+    { const e={name:'x',type:'free',unilateral:true};
+      A('setLat alt: unilateral false + lat', setLat(e,'alt')===e&&e.unilateral===false&&e.lat==='alt'&&latOf(e)==='alt');
+      setLat(e,'uni'); A('setLat uni borra lat', e.unilateral===true&&!('lat' in e)&&latOf(e)==='uni');
+      A('setLat acepta bi/uni/alt, true/false y 0/1/2', latOf(setLat({},'2'))==='alt'&&latOf(setLat({},1))==='uni'&&latOf(setLat({lat:'alt'},false))==='bi'&&latOf(setLat({},true))==='uni'&&latOf(setLat({lat:'alt'},'bi'))==='bi'&&latOf(setLat({},0))==='bi');
+      A('uni manda sobre un lat suelto', latOf({unilateral:true,lat:'alt'})==='uni'&&latOf({lat:'alt',sets:[{side:'R'}]})==='uni'&&latOf({lat:'alt'})==='alt'&&latOf({})==='bi'&&latOf(null)==='bi');
+      const z={}, s0=latSnap(z); setLat(z,'alt'); latRestore(z,s0); A('latRestore deja los campos como estaban', !('unilateral' in z)&&!('lat' in z)); }
+    // 2 · identidad: 0 bi · 1 uni · 2 alt en el 2º campo; tres historias; el pliegue de filas viejas
+    A('variantKey lleva la lateralidad en su 2º campo', variantKey({type:'cable'})==='cable|0|0|0'&&variantKey({type:'cable',unilateral:true})==='cable|1|0|0'&&variantKey({type:'cable',unilateral:false,lat:'alt'})==='cable|2|0|0'&&variantKey({type:'bodyweight',lat:'alt',weighted:true})==='bodyweight|2|0|1');
+    { const k=l=>exHistKey(setLat({name:'db curl',type:'free'},l));
+      A('bi, uni y alt son tres historias', k('bi')==='db curl|free|0|0|0'&&k('uni')==='db curl|free|1|0|0'&&k('alt')==='db curl|free|2|0|0');
+      const o=sess('s0').exercises;
+      A('una fila vieja sin tipo se pliega a su único gemelo tipado, como siempre', exHistKey(o[0])==='leg ext|machine|0|0|0'&&exHistKey(o[3])==='db curl|free|0|0|0');
+      A('con dos lateralidades tipadas del mismo tipo toma el tipo y SU lateralidad', exHistKey(o[1])==='row|machine|0|0|0'&&exHistKey(o[2])==='row|machine|1|0|0');
+      A('con tipos distintos no se adivina', exHistKey(o[4])==='press|'+variantKey(o[4])); }
+    // 3 · primera vez en una variante: aproximación gris desde la otra lateralidad
+    { const src0=JSON.stringify(db.sessions), mk=o=>Object.assign({exId:'n'+uid(),muscle:'x',startSide:'R',sets:[]},o);
+      const u=seedSets(mk({name:'leg ext',type:'machine',unilateral:true}),2,{gym:'g1'});
+      A('máquina bi → uni: pares R/L al 50 %, con su drop', u.length===6&&u.map(s=>s.side).join('')==='RLRLRL'&&u.slice(0,4).every(s=>s.w==='50')&&u[4].w==='25'&&u[4].isDrop&&u[5].isDrop&&!u[0].isDrop);
+      A('todo sale como sugerencia gris, sin confirmar', u.every(s=>s._pf&&!s.done));
+      A('una máquina no se aproxima desde otro gym', seedSets(mk({name:'leg ext',type:'machine',unilateral:true}),2,{gym:'g2'}).every(s=>!s.w));
+      const a=seedSets(mk({name:'leg ext',type:'machine',unilateral:false,lat:'alt'}),2,{gym:'g1'});
+      A('máquina bi → alt: el mismo peso, una fila por serie', a.length===3&&a.every(s=>!s.side&&s._pf)&&a[0].w==='100'&&a[2].w==='45'&&a[2].isDrop);
+      const b=seedSets(mk({name:'leg curl',type:'machine',unilateral:false}),2,{gym:'g1'});
+      A('máquina uni → bi: 2×, un par = una serie', b.length===2&&b.every(s=>!s.side&&s.w==='80'&&s._pf));
+      A('máquina uni → alt: como bi', seedSets(mk({name:'leg curl',type:'machine',unilateral:false,lat:'alt'}),2,{gym:'g1'}).map(s=>s.w+(s.side||'')).join()==='80,80');
+      const f=seedSets(mk({name:'db curl',type:'free',unilateral:true}),2,{gym:'g2'});
+      A('peso libre bi → uni: el mismo peso por lado, en cualquier gym', f.length===4&&f.every(s=>s.w==='30'&&(s.side==='R'||s.side==='L')));
+      A('peso libre bi → alt: el mismo peso', seedSets(mk({name:'db curl',type:'free',unilateral:false,lat:'alt'}),2,{gym:'g1'}).map(s=>s.w).join()==='30,30');
+      const p=seedSets(mk({name:'pull up',type:'bodyweight',unilateral:true}),1,{gym:'g1'});
+      A('peso corporal: ni el peso ni el lastre se escalan', p.length===2&&p.every(s=>s.bw&&s.w==='80'&&s.extraW==='10'&&s._pf));
+      A('otro tipo con el mismo nombre no sirve de fuente', seedSets(mk({name:'db curl',type:'cable',unilateral:true}),2,{gym:'g1'}).every(s=>!s.w));
+      A('la sesión fuente no se toca', JSON.stringify(db.sessions)===src0&&u[0]!==sess('s1').exercises[1].sets[0]);
+      db.activeWork={id:'w0',date:'2026-09-30',dayId:null,gym:'g1',startMs:Date.now(),exercises:[mk({exId:'eX',name:'leg ext',muscle:'quads',type:'machine',unilateral:true})]}; db.activeWork.exercises[0].sets=u;
+      const bl=baselineSetsFor(Object.assign(exIdentity(db.activeWork,0),{orderIdx:0})), hx=renderExercise(0,db.activeWork.exercises[0],sessIctx(db.activeWork),false);
+      A('sin ▲▼: esa variante no tiene con qué compararse', bl.sets===null&&hx.indexOf('sin baseline')>0&&!/[▲▼]/.test(hx)); db.activeWork=null; }
+    // 4 · el corchete de la sesión: tres opciones, escribe también al split, [deshacer] exacto, y no se mueve
+    const w=db.activeWork=newWorkSession(); w.gym='g1'; state.work=w; state.screen='workout'; state._viewScroll={};
+    const cx=w.exercises[0], sx=day.exercises[0]; cx.sets=[S(30),S(35)]; cx.sets.push(emptySet(cx,null,false,cx.sets[1])); const keep=cx.sets.slice(); render();
+    const br=()=>v.querySelector('[data-act="exlat"][data-exi="0"]'); let b0=br(); A('el corchete está en la sesión', !!b0&&b0.textContent==='[bi]'&&latOf(sx)==='bi');
+    const y0=b0.getBoundingClientRect().top, t0=v.scrollTop; tap(b0);
+    A('tocar el corchete abre tres opciones (no un ciclo)', opts().map(o=>o.textContent).join()==='bi,uni,alt'&&opts()[0].classList.contains('on')&&latOf(cx)==='bi');
+    tap(opts()[2]);
+    A('bi → alt con series registradas: no pregunta ni toca las series (tampoco la sugerida)', !document.getElementById('asklayer')&&latOf(cx)==='alt'&&cx.unilateral===false&&cx.sets.length===3&&cx.sets.every((s,i)=>s===keep[i]&&!s.side)&&cx.sets[0].done&&cx.sets[1].done&&!!cx.sets[2]._pf);
+    A('…y queda escrito en el split, solo en ese ejercicio', latOf(sx)==='alt'&&sx.unilateral===false&&latOf(day.exercises[1])==='bi');
+    b0=br(); A('el corchete dice [alt] y sigue bajo el dedo', !!b0&&b0.textContent==='[alt]'&&near(b0.getBoundingClientRect().top,y0)&&near(v.scrollTop,t0));
+    { const tu=Array.from(document.querySelectorAll('#toasts .toast:not(.out) .tundo')).pop(); A('el aviso lo dice y trae [deshacer]', !!tu&&/también en tu split/.test(tu.parentElement.textContent));
+      tap(tu); A('[deshacer] deja la sesión y el split como estaban', latOf(cx)==='bi'&&cx.lat==null&&latOf(sx)==='bi'&&!('lat' in sx)&&cx.sets.length===3&&cx.sets[0].w==='30'&&cx.sets[1].w==='35'&&!!cx.sets[2]._pf&&br().textContent==='[bi]'); }
+    tap(br()); tap(opts()[1]); A('hacia uni con series registradas: pregunta antes', !!ask('ok')&&latOf(cx)==='bi');
+    tap(ask('no')); A('cancelar no cambia nada', latOf(cx)==='bi'&&latOf(sx)==='bi'&&cx.sets.length===3);
+    tap(br()); tap(opts()[1]); tap(ask('ok'));
+    A('aceptar: cada serie queda en su lado y su pareja sale sugerida', latOf(cx)==='uni'&&latOf(sx)==='uni'&&cx.sets.map(s=>s.side).join('')==='RLRL'&&!cx.sets[0]._pf&&!!cx.sets[1]._pf);
+    b0=br(); A('el corchete [uni] tampoco se movió', b0.textContent==='[uni]'&&near(b0.getBoundingClientRect().top,y0)&&near(v.scrollTop,t0));
+    tap(b0); A('la opción en curso viene marcada', opts()[1].classList.contains('on')); tap(opts()[2]); A('uni → alt con series: también pregunta', !!ask('ok')); tap(ask('ok'));
+    A('uni → alt quita lados como uni → bi, sin borrar lo registrado', latOf(cx)==='alt'&&latOf(sx)==='alt'&&cx.sets.length===2&&cx.sets.every(s=>!s.side&&s.done)&&cx.sets[1].w==='35');
+    // 5 · listas de copia: guardada sigue alt, la siguiente del día sale alt, y su historia es la suya
+    { const saved={id:'s3',date:'2026-09-20',dayId:'d1',gym:'g1',exercises:JSON.parse(JSON.stringify(mapWorkExercises(w)))};
+      A('la sesión guardada conserva [alt] y un [bi] no gana campos', latOf(saved.exercises[0])==='alt'&&saved.exercises[0].lat==='alt'&&latOf(saved.exercises[1])==='bi'&&!('lat' in saved.exercises[1]));
+      db.sessions.push(saved); db.activeWork=null; bumpIdx(); }
+    const w2=newWorkSession();
+    A('la siguiente sesión del día sale [alt] con SU historial', latOf(w2.exercises[0])==='alt'&&w2.exercises[0].sets.map(s=>s.w+(s.side||'')+(s._pf?'':'!')).join()==='30,35');
+    A('la sugerencia de una lateralidad no sale de otra', baselineSetsFor({exId:'eC',name:'db curl',variant:'free|0|0|0',gym:'g1'}).date==='2026-09-10'&&baselineSetsFor({exId:'eC',name:'db curl',variant:'free|2|0|0',gym:'g1'}).date==='2026-09-20'&&baselineSetsFor({exId:'eC',name:'db curl',variant:'free|1|0|0',gym:'g1'}).sets===null);
+    A('cada bitácora trae solo lo suyo', exHistRows('db curl|free|2|0|0').length===1&&exHistRows('db curl|free|0|0|0').length===2);
+    A('con [bi] y [alt] tipados, la fila vieja sin lados sigue en [bi]', exHistKey(sess('s0').exercises[3])==='db curl|free|0|0|0');
+    A('exKeyByName: la pista elige su lateralidad', exKeyByName('db curl',{unilateral:false,lat:'alt'})==='db curl|free|2|0|0'&&exKeyByName('db curl',{unilateral:false})==='db curl|free|0|0|0');
+    A('con historia propia ya no se aproxima', approxSeed({name:'db curl',type:'free',unilateral:false,lat:'alt'},'g1')===null);
+    const kn=n=>knownExercises().find(x=>x.name===n);
+    A('knownExercises lleva [alt]', latOf(kn('db curl'))==='alt'&&latOf(kn('leg curl'))==='uni'&&latOf(kn('leg ext'))==='bi');
+    // 6 · formularios: tres botones
+    db.activeWork=w2; w2.gym='g1'; state.work=w2; render();
+    { openExEdit(0,0); const eb=Array.from(document.querySelectorAll('#ee_uni .t')), sw=()=>document.getElementById('ee_startwrap').style.display;
+      A('el editor trae bilateral · unilateral (R/L) · alternado', eb.map(x=>x.dataset.v+x.textContent).join('|')==='0bilateral|1unilateral (R/L)|2alternado'&&eb.filter(x=>x.classList.contains('on')).map(x=>x.dataset.v).join()==='2');
+      A('el lado inicial solo sale con unilateral', sw()==='none'&&(tap(eb[1]),sw()==='block')&&(tap(eb[2]),sw()==='none'));
+      tap(eb[0]); saveExEdit(); A('guardar bilateral borra el alt del split', latOf(day.exercises[0])==='bi'&&!('lat' in day.exercises[0])&&day.exercises[0].id==='eC');
+      openExEdit(0,0); tap(document.querySelector('#ee_uni [data-v="2"]')); saveExEdit(); A('guardar alternado lo escribe', latOf(day.exercises[0])==='alt'&&day.exercises[0].unilateral===false&&day.exercises[0].id==='eC');
+      const lx=w2.exercises[0]; lx.sets=[S(30),S(35)]; const k2=lx.sets.slice();
+      openExEdit(0,0,0); A('el editor de la sesión viva marca [alt]', document.querySelector('#ee_uni .t.on').dataset.v==='2');
+      tap(document.querySelector('#ee_uni [data-v="0"]')); saveExEdit();
+      A('en vivo alt → bi no toca las series ni el split', latOf(lx)==='bi'&&lx.sets[0]===k2[0]&&lx.sets[1]===k2[1]&&latOf(day.exercises[0])==='alt');
+      setLat(day.exercises[0],'bi'); openExEdit(0,0,0); tap(document.querySelector('#ee_uni [data-v="2"]')); document.getElementById('ee_tosplit').checked=true; saveExEdit();
+      A('en vivo bi → alt, con "también en el split"', latOf(lx)==='alt'&&lx.sets[0]===k2[0]&&latOf(day.exercises[0])==='alt'&&day.exercises[0].id==='eC'); }
+    { openAddExForm(null,'biceps'); const nm=document.getElementById('fx_name'), on=()=>document.querySelector('#fx_uni .t.on').dataset.v, sw=()=>document.getElementById('fx_startwrap').style.display;
+      const type=t=>{ nm.value=t; nm.dispatchEvent(new Event('input',{bubbles:true})); };
+      A('el alta trae los tres botones', Array.from(document.querySelectorAll('#fx_uni .t')).map(x=>x.dataset.v).join()==='0,1,2'&&on()==='0');
+      type('db curl'); A('el autollenado propone la lateralidad conocida: alternado', on()==='2'&&sw()==='none');
+      type('leg curl'); A('…unilateral, con su lado inicial', on()==='1'&&sw()==='block');
+      type('leg ext'); A('…y bilateral', on()==='0'&&sw()==='none');
+      tap(document.querySelector('#fx_uni [data-v="2"]')); type('leg curl'); A('lo que tocaste no lo pisa el autollenado', on()==='2'&&sw()==='none');
+      type('curl nuevo'); const n0=w2.exercises.length; tap(document.querySelector('[data-act="okaddex"]'));
+      A('un ejercicio nuevo alternado entra como [alt], una fila por serie', w2.exercises.length===n0+1&&latOf(w2.exercises[n0])==='alt'&&w2.exercises[n0].unilateral===false&&w2.exercises[n0].sets.every(s=>!s.side)); }
+    { openAddExStep2(0,'biceps',null); const row=Array.from(document.querySelectorAll('#modal .pickitem[data-act="axpick"]')).find(x=>/db curl/.test(x.textContent));
+      A('el selector de la sesión dice [alt]', !!row&&/^\[alt\]/.test(row.textContent.trim())); closeModal();
+      addExFromKnown(null,kn('db curl')); const li=w2.exercises.length-1;
+      A('agregar un ejercicio conocido [alt] lo deja [alt]', latOf(w2.exercises[li])==='alt'&&w2.exercises[li].sets.every(s=>!s.side));
+      replaceExFromKnown(li,kn('leg curl')); A('reemplazar limpia el [alt] anterior', latOf(w2.exercises[li])==='uni'&&!('lat' in w2.exercises[li])); }
+    // 7 · el resto de las listas de copia
+    { const imp=importIronlogSplit({name:'x',days:[{name:'d',exercises:[{name:'a',type:'free',lat:'alt'},{name:'b',type:'free',unilateral:true,lat:'alt'},{name:'c'}]}]}).days[0].exercises;
+      A('importar un split conserva [alt]', latOf(imp[0])==='alt'&&latOf(imp[1])==='uni'&&latOf(imp[2])==='bi');
+      db.activeWork=null; state.work=null; window._sessId='s3'; btn=document.createElement('button'); btn.type='button'; btn.hidden=true; btn.dataset.act='resumesession'; document.getElementById('app').appendChild(btn); btn.click();
+      A('una sesión [alt] reabierta sigue [alt]', !!db.activeWork&&db.activeWork.resumeOf==='s3'&&latOf(db.activeWork.exercises[0])==='alt'&&latOf(db.activeWork.exercises[1])==='bi');
+      db.activeWork=null; state.work=null; state.screen='home'; setLat(day.exercises[0],'bi');
+      db.sessions.push({id:'s5',date:'2026-09-28',dayId:'d1',gym:'g1',exercises:[{exId:'eC',name:'db curl',muscle:'biceps',type:'free',unilateral:false,lat:'alt',sets:[S(30)]},{exId:'eH',name:'hammer curl',muscle:'biceps',type:'free',unilateral:false,lat:'alt',sets:[S(25)]}]}); bumpIdx();
+      adoptDaySource(0); tap(ask('ok'));
+      A('adoptar el día como lo entrenaste conserva [alt]', day.exercises.length===2&&day.exercises[0].id==='eC'&&day.exercises.every(e=>latOf(e)==='alt')&&day.exercises[1].name==='hammer curl');
+      db.sessions.push({id:'s6',date:'2026-09-29',gym:'g1',exercises:[{exId:'eZ',name:'hammer curl',muscle:'biceps',type:'free',unilateral:false,sets:[S(32)]}]}); bumpIdx();
+      A('un [bi] posterior no hereda el [alt]', latOf(kn('hammer curl'))==='bi'&&kn('hammer curl').lat==null&&latOf(kn('db curl'))==='alt');
+      db.split.days.push({id:'d2',name:'B',exercises:[{id:'eS',name:'face pull',muscle:'rear delt',type:'cable',unilateral:false,lat:'alt',sets:2}]});
+      A('lo que solo está en el split también se conoce como [alt]', latOf(kn('face pull'))==='alt');
+      db.sessions.push({id:'s7',date:'2026-09-30',gym:'g1',exercises:[{name:'face pull',muscle:'rear delt',sets:[S(20)]}]}); bumpIdx();
+      A('…y lo último registrado manda, como siempre', latOf(kn('face pull'))==='bi'&&kn('face pull').lat==null); }
+    // 8 · etiquetas
+    A('las etiquetas dicen [alt]', latTxt({name:'x',type:'free',lat:'alt'})==='[alt] '&&latTxt({type:'cardio',lat:'alt'})===''&&exLatTagHead({type:'free',lat:'alt'}).indexOf('>[alt]<')>0&&exLatTagHead({type:'free',lat:'alt'},0).indexOf('aria-label="alternado · toca para cambiar"')>0);
+    A('compartir lleva [alt] y una fila por serie', (m=>m.lat==='[alt]'&&!m.uni&&m.toks.length===2)(shExModel({name:'x',type:'free',unilateral:false,lat:'alt',sets:[S(20),S(20)]})));
+    console.log('alt self-check OK');
+  } finally { try{ popClose(); }catch(_){} try{ closeAsk(true); }catch(_){} try{ if(document.getElementById('modal'))closeModal(); }catch(_){} if(btn)btn.remove();
+    try{ document.querySelectorAll('#toasts .toast').forEach(t=>t.remove()); _undoToast=null; }catch(_){}
+    window._axList=ax0; window._axCtx=ac0; window._exEdit=ee0; window._sessId=sid0; _lastTap=null; _sheetMem=null;
+    db=real; _lastClosed=lc0; K.forEach(k=>{ state[k]=st0[k]; }); state._scroll=null; bumpIdx();
+    try{ if(live0==null)localStorage.removeItem(LS_LIVE); else localStorage.setItem(LS_LIVE,live0); }catch(_){}
+    _sbx=sb0; try{ render(); }catch(_){} }
+}
 // variant chips shown in the exercise header — visible, never hidden in a submenu.
 // UNI/BI always shown for strength (identity-critical); free type itself is still the default (no type chip).
 // tap = {act,exi} hace que el chip del TIPO (machine/cable/smith) abra el editor de marca+setup: desde
@@ -9440,7 +9592,7 @@ function openExEdit(di,ei,liveExi){
       // set COUNT is only ever suggested for a brand-new exercise — never silently changed on an existing one
       if(isNew&&hit.sets!=null){ const sN=document.getElementById('ee_sets'); if(sN)sN.value=hit.sets; }
       if(hit.type&&!_eeT('ee_type')){ const tg=document.querySelector('#ee_type [data-v="'+hit.type+'"]'); if(tg&&!tg.classList.contains('on')){ document.querySelectorAll('#ee_type .t').forEach(x=>x.classList.remove('on')); tg.classList.add('on'); } }
-      const hv=hit.unilateral?'1':(hit.lat==='alt'?'2':'');   // v286 · propone la lateralidad de la fila conocida (también alternado)
+      const hv=hit.unilateral?'1':(hit.lat==='alt'?'2':(hit.unilateral===false?'0':''));   // v286 · propone la lateralidad de la fila conocida (bi · uni · alt)
       if(hv&&!_eeT('ee_uni')){ const ub=document.querySelector('#ee_uni [data-v="'+hv+'"]'); if(ub&&!ub.classList.contains('on')){ document.querySelectorAll('#ee_uni .t').forEach(x=>x.classList.remove('on')); ub.classList.add('on'); const w=document.getElementById('ee_startwrap'); if(w)w.style.display=hv==='1'?'block':'none'; } }
       if(hit.startSide&&!_eeT('ee_start')){ const sb=document.querySelector('#ee_start [data-v="'+hit.startSide+'"]'); if(sb&&!sb.classList.contains('on')){ document.querySelectorAll('#ee_start .t').forEach(x=>x.classList.remove('on')); sb.classList.add('on'); } }
     };
@@ -10078,7 +10230,7 @@ function openAddExForm(afterExi,muscle,replaceExi){
       setIf('fx_muscle',hit.muscle); setIf('fx_machine',hit.machine);
       if(hit.sets!=null){ const sN=document.getElementById('fx_sets'); if(sN)sN.value=hit.sets; }
       if(hit.type&&!_fxT('fx_type')){ const tg=document.querySelector('#fx_type [data-v="'+hit.type+'"]'); if(tg&&!tg.classList.contains('on')){ document.querySelectorAll('#fx_type .t').forEach(x=>x.classList.remove('on')); tg.classList.add('on'); } }
-      const hv=hit.unilateral?'1':(hit.lat==='alt'?'2':'');
+      const hv=hit.unilateral?'1':(hit.lat==='alt'?'2':(hit.unilateral===false?'0':''));
       if(hv&&!_fxT('fx_uni')){ const ub=document.querySelector('#fx_uni [data-v="'+hv+'"]'); if(ub&&!ub.classList.contains('on')){ document.querySelectorAll('#fx_uni .t').forEach(x=>x.classList.remove('on')); ub.classList.add('on'); const w=document.getElementById('fx_startwrap'); if(w)w.style.display=hv==='1'?'block':'none'; } }
       if(hit.startSide&&!_fxT('fx_start')){ const sb=document.querySelector('#fx_start [data-v="'+hit.startSide+'"]'); if(sb&&!sb.classList.contains('on')){ document.querySelectorAll('#fx_start .t').forEach(x=>x.classList.remove('on')); sb.classList.add('on'); } }
     };
