@@ -483,6 +483,9 @@
     { id:'m:weight', g:'hoja', label:'hoja · peso', run(W){ W.openWeightLog(); } },
     { id:'m:rhr', g:'hoja', label:'hoja · fc en reposo', run(W){ W.openHealthNumLog('rhr'); } },
     { id:'m:health', g:'hoja', label:'hoja · importar salud', run(W){ W.openHealthImport(); } },
+    { id:'m:bioinstall', g:'hoja', label:'hoja · sync biometrics · instalar atajo', run(W){ W.go('progress'); W.openBioInstall(); } },
+    { id:'m:biofetch', g:'hoja', label:'hoja · sync biometrics · traer datos', run(W){ W.go('progress'); W.openBioFetch(); } },
+    { id:'m:bioresult', g:'hoja', label:'hoja · sync biometrics · qué llegó', run(W){ W.go('progress'); W.openBioResult(); } },
     // ---------------- historial ----------------
     { id:'history', g:'pantalla', label:'historial', run(W){ W.go('history'); } },
     { id:'hist:open', g:'pantalla', label:'historial · sesión abierta', run(W){ W.go('history'); click(W, '.hitem .hrow'); } },
