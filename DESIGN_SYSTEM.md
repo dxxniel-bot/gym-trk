@@ -1,6 +1,6 @@
 # gym//TRK — DESIGN SYSTEM (referencia del estado actual)
 
-> Referencia del estado actual (v278). **Lee BRAND.md primero**: manda sobre este archivo. Sin historia: DESIGN_CHANGELOG.md.
+> Referencia del estado actual (v279). **Lee BRAND.md primero**: manda sobre este archivo. Sin historia: DESIGN_CHANGELOG.md.
 
 ---
 
@@ -1956,7 +1956,7 @@ Una forma de escribir cada tipo de dato, con su función (NUM-1). La revisa: a o
 | Conteo de series | `18 series` (series de trabajo; drops aparte; par R+L = 1) | `shExModel()` cuenta así; otras listas cuentan distinto (21 vs 18, M3-05) | `seriesOf()` (pendiente G4) |
 | Número de serie | `1, 1.5, 2, 3` (drop = .5, cadena .6/.7) | `setLabels()` | ✓ |
 | Intensidad (v273) | se **guarda** en RIR (`F`, 0–5, medios); se **lee** en la escala de la sesión: RIR `@2` · `RIR 2` · ` · RIR2`, RPE = 10 − RIR `@8` · `RPE 8` · ` · RPE8` (medios de 7 a 10; `F` queda `F`); la sigla va en MAYÚSCULAS, la cabecera de columna en minúsculas (`rir`/`rpe`) | `rpeToRir()` (para guardar) · `rirShow(v, m)` (para mostrar) · `_icM` (tabla) · `_shM` (compartir `shTokTxt()`/`exShRir()`, historial `_shRir()`) · export `.md` con `s.metric` · `intensityTag()` → `@ RIR · F` / `@ RPE` (cabecera del día, `.ics`) | ✓ en tabla, selector, compartir, historial y export; el `title` del ▲▼ (`setBadgeHTML()`) usa la escala del split, no la de la sesión |
-| Lateralidad | `[uni]`/`[bi]` al frente, misma fuente que el nombre; nunca la unidad | `latTxt()`, `exLatTagHead()` | ✓ (B-12) |
+| Lateralidad | `[uni]`/`[bi]` al frente, misma fuente que el nombre; nunca la unidad. En la sesión viva se toca para cambiar bi ↔ uni (toque de 44 por `::after`; con datos, pregunta) | `latTxt()`, `exLatTagHead()` | ✓ (B-12) |
 | Tipo de ejercicio | una sola forma (`[libre] [máquina] [smith] [cable] [bw]`, propuesta de la auditoría) | hoy 5 formas (`máquina`, `mach`, `pulley`, `machine`, `free`) en `variantChips()` y otros | `typeTag()` (pendiente G4) |
 | Carga | `effW()` (peso corporal vivo); `numTxt()` (hasta 2 decimales); `roundLoad()` (kg 2.5 · lbs 5 · pla 1); `kgLoad()` (lbs→kg, placas fuera) | ✓ | v272: el detalle de e1RM (`liftE1Series()`/`openLiftDetail()`) va en la unidad real de la vez más reciente (`lbs`, `placas`), sin drops ni sugerencias; desde v274 la tile y //STRENGTH abren la bitácora (`renderExHist()`, §7.40), también en la unidad real, y `openLiftDetail()` queda de respaldo; la tile de e1RM todavía dice `kg` (M5-04): G4 |
 | Lectura suelta | `59.8 kg`: número `--fg`, unidad separada y tenue (`.line .v .u`, `.pval span`) | ✓ | |
