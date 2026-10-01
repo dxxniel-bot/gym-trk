@@ -64,5 +64,22 @@ git(['config', 'user.email', cfg('user.email') || 'gymtrk@users.noreply.github.c
 git(['add', '-A'], tmp);
 git(['commit', '-q', '-m', 'gym//TRK ' + ver + ' · sitio (fuente ' + sha + ')'], tmp);
 git(['push', '--force', MIRROR, 'main'], tmp, { stdio: 'inherit' });
-try { fs.rmSync(tmp, { recursive: true, force: true }); } catch (_) {}
-console.log('publicado: https://gymtrk.app  (' + ver + ') · GitHub tarda ~1 min en servirlo');
+// "Publicado" = el sitio SIRVE esa versión. El 1-oct-2026 un push llegó al espejo y GitHub no lanzó el despliegue: se
+// anunció v280 y el teléfono siguió en v279. Ahora se espera a verlo en gymtrk.app/sw.js; si no llega, se vuelve a
+// empujar (commit nuevo = evento nuevo) y, si tampoco, el script termina en error en vez de decir que publicó.
+const SITE = 'https://gymtrk.app/sw.js', sleep = ms => new Promise(r => setTimeout(r, ms));
+const live = async () => { try { const t = await (await fetch(SITE + '?c=' + Date.now(), { cache: 'no-store' })).text(); return (t.match(/gymtrk-(v\d+)/) || [])[1] || ''; } catch (_) { return ''; } };
+const waitLive = async secs => { const end = Date.now() + secs * 1000; let got = ''; while (Date.now() < end) { got = await live(); if (got === ver) return true; await sleep(8000); } console.log('  el sitio sigue en ' + (got || '?')); return false; };
+(async () => {
+  let ok = false;
+  for (let attempt = 1; attempt <= 3 && !ok; attempt++) {
+    if (attempt > 1) { console.log('reintento ' + attempt + ': se vuelve a empujar para relanzar el despliegue');
+      git(['commit', '-q', '--allow-empty', '-m', 'gym//TRK ' + ver + ' · sitio (fuente ' + sha + ') · redeploy ' + attempt], tmp);
+      git(['push', '--force', MIRROR, 'main'], tmp, { stdio: 'inherit' }); }
+    console.log('esperando a que gymtrk.app sirva ' + ver + '…');
+    ok = await waitLive(attempt === 1 ? 200 : 240);
+  }
+  try { fs.rmSync(tmp, { recursive: true, force: true }); } catch (_) {}
+  if (!ok) { console.error('NO PUBLICADO: gymtrk.app no sirve ' + ver + ' tras 3 intentos. Revisa Actions en github.com/dxxniel-bot/gymtrk-app'); process.exit(1); }
+  console.log('publicado y comprobado: https://gymtrk.app sirve ' + ver);
+})();
