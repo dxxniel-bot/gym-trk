@@ -513,6 +513,7 @@
      historial) · .last cierra la rama. La franja .catbar mide siempre 44: [‹ back] [unir], o la selección para unir (pegada arriba). */
   .catbar{display:flex; align-items:center; gap:var(--s3); height:44px; box-sizing:border-box; font-size:var(--t-data); color:var(--o60); border-bottom:var(--bw-sep) solid transparent;}
   .cat.sel .catbar{position:sticky; top:0; z-index:1; background:var(--bg); border-bottom-color:var(--o20); box-shadow:0 calc(-1 * var(--s6)) 0 var(--bg);}   /* la sombra tapa el margen de arriba de la pantalla, como .mgbar */
+  .cat>.status{position:relative; z-index:2;}   /* …pero no la barra de estado cuando aún no has bajado */
   .catbar .catgo{flex:0 0 auto; width:auto; padding:0 var(--s5);} .catbar .catgo.off{opacity:var(--op-disabled);}
   .section.catsec{align-items:center; margin:var(--s2) 0;} .cattabs{flex:0 0 auto; flex-wrap:nowrap; gap:0 var(--s2);}
   .catgh,.catmh,.catlt,.catlr{margin:0; padding:0; background:none; border:0; border-radius:0; font:inherit; font-size:var(--t-data); color:var(--fg); text-align:left; cursor:pointer;}
@@ -527,9 +528,9 @@
   .catmn{flex:1; min-width:0; overflow-wrap:anywhere; line-height:var(--lh-ui); padding:var(--s2) 0;}
   .catmh .mgbox{flex:0 0 2ch; text-align:center; font-weight:400; color:var(--o40); visibility:hidden;} .cat.sel .catmh .mgbox{visibility:visible;} .catm.on>.catmh .mgbox{color:var(--fg);}
   .catl{display:flex; align-items:stretch; gap:var(--s2); min-height:44px;}
-  .catlt{flex:0 0 44px; display:flex; align-items:center; min-height:44px; color:var(--o70);}
-  .catlr{flex:1; min-width:0; min-height:44px; display:grid; grid-template-columns:minmax(0,1fr) 4ch 6ch; align-items:center; column-gap:var(--s3);}
-  .catll{min-width:0; overflow-wrap:anywhere; line-height:var(--lh-ui); padding:var(--s2) 0; color:var(--o60);} .catlc{text-align:right; color:var(--o70);} .catld{text-align:right; white-space:nowrap; color:var(--o50);}
+  .catlt{flex:0 0 44px; display:flex; align-items:flex-start; min-height:44px; line-height:44px; color:var(--o70);}   /* corchete, veces y fecha van en el primer renglón de 44 (a la altura del codo de la línea) aunque la etiqueta baje de renglón */
+  .catlr{flex:1; min-width:0; min-height:44px; display:grid; grid-template-columns:minmax(0,1fr) 4ch 6ch; align-items:start; column-gap:var(--s3);}
+  .catll{align-self:center; min-width:0; overflow-wrap:anywhere; line-height:var(--lh-ui); padding:var(--s2) 0; color:var(--o60);} .catlc{line-height:44px; text-align:right; color:var(--o70);} .catld{line-height:44px; text-align:right; white-space:nowrap; color:var(--o50);}
   span.catlt,span.catlr{cursor:default;}
   .exsub{display:flex; align-items:baseline; flex-wrap:wrap; gap:var(--s3); margin:calc(-1 * var(--s2)) 0 10px;}
   .exsub .note{font-size:var(--t-label); color:var(--o50);} .exsub .note.add{color:var(--o30);}
@@ -10121,8 +10122,9 @@ function catIndex(){ if(_catIdxCache)return _catIdxCache;
     G.n++; });
   // 2 · el split: las variantes que están en el plan y nunca se han registrado salen con —
   ((db.split&&db.split.days)||[]).forEach(d=>(d.exercises||[]).forEach(e=>{ const nk=nameKey(e&&e.name); if(nk)leafOf(mv(nk,e.name),e).split=true; }));
+  // …y lo que solo existe en sesiones sin series con dato (el selector de la sesión sí lo lista): ningún nombre se queda fuera
+  const known={}; knownExercises().forEach(x=>{ const nk=nameKey(x.name); known[nk]=x; if(nk&&!M[nk])leafOf(mv(nk,x.name),x); });
   // 3 · el músculo principal (la etiqueta del dueño, la misma del selector) y el texto de búsqueda: nombre, marca y gym
-  const known={}; knownExercises().forEach(x=>{ known[nameKey(x.name)]=x; });
   const moves=Object.keys(M).map(k=>{ const m=M[k], pm=exMuscles(known[k]||{})[0]; m.muscle=(pm&&pm.name)||'';
     m.leaves=Object.keys(m.leaves).map(x=>m.leaves[x]).sort((a,b)=>(a.cardio-b.cardio)||(CAT_LAT.indexOf(a.lat)-CAT_LAT.indexOf(b.lat))||(b.n-a.n)||a.key.localeCompare(b.key));
     m.lats=CAT_LAT.filter(l=>m.leaves.some(L=>!L.cardio&&L.lat===l));
@@ -10141,9 +10143,12 @@ function catGroups(view){ const I=catIndex(), by={}, put=(g,it)=>{ (by[g]=by[g]|
   return Object.keys(by).sort((a,b)=>(!a-!b)||a.localeCompare(b)).map(g=>({id:'mus|'+g,label:g||'sin músculo',tag:!!g,items:by[g].sort(byN)})); }
 // la etiqueta de una hoja: su marca (o el tipo, si no hay marca) y dónde; en la vista por gym el gym ya lo dice el grupo.
 // full = también el tipo aunque haya marca (cuando dos hojas del mismo ejercicio se leerían igual)
-function catLeafLbl(L,gym,full){ if(L.cardio)return CAT_TYPE.cardio; const ty=CAT_TYPE[L.type]||L.type, parts=[];
-  if(isMachType(L.type)){ (gym!=null?[gym]:Object.keys(L.byGym)).forEach(g=>{ const G=L.byGym[g]; if(!G)return; const t=[(full||!G.brand)?ty:'',G.brand,gym!=null?'':g].filter(Boolean).join(' · '); if(parts.indexOf(t)<0)parts.push(t); }); }
-  return [parts.join(', ')||ty,L.assisted?'asistido':'',L.weighted?'lastre':''].filter(Boolean).join(' · '); }
+function catLeafLbl(L,gym,full){ if(L.cardio)return CAT_TYPE.cardio; const ty=CAT_TYPE[L.type]||L.type; let base=ty;
+  if(isMachType(L.type)){ const gs=(gym!=null?[gym]:Object.keys(L.byGym)).filter(g=>L.byGym[g]), hd=g=>[(full||!L.byGym[g].brand)?ty:'',L.byGym[g].brand].filter(Boolean).join(' · ');
+    const heads=gs.map(hd).filter((h,i,a)=>a.indexOf(h)===i), at=g=>gym!=null?'':g;
+    if(heads.length===1)base=[heads[0],gs.map(at).filter(Boolean).join(', ')].filter(Boolean).join(' · ');   // la misma marca en varios gyms se dice una vez
+    else if(heads.length>1)base=gs.map(g=>[hd(g),at(g)].filter(Boolean).join(' · ')).join(', '); }
+  return [base,L.assisted?'asistido':'',L.weighted?'lastre':''].filter(Boolean).join(' · '); }
 function catLeafHTML(m,L,gym,last,lbl){ const G=(gym!=null&&L.byGym[gym])||null, n=G?G.n:L.n, dt=G?G.last:L.last, tag=L.cardio?'':'['+L.lat+']';
   const cols=`<span class="catll">${escTxt(lbl)}</span><span class="catlc">${n?n+'×':'—'}</span><span class="catld">${dt?escTxt(fmtShort(dt)):'—'}</span>`;
   // con bitácora: el renglón la abre; el corchete de [bi] y [alt] abre el menú de la hoja (como en la sesión: el corchete es la lateralidad)
@@ -10167,7 +10172,7 @@ function renderCatalog(){ const I=catIndex(), view=catView(), sel=!!state._catSe
     const op=t?vis.length>0:!!open[g.id];   // plegados de entrada; con búsqueda, abiertos los que tienen coincidencias
     body+=`<div class="catg" data-g="${escTxt(g.id)}"${t&&!vis.length?' hidden':''}><button type="button" class="catgh" data-act="catfold" aria-expanded="${op}"><span class="catgn">${g.tag?'<span class="s">#</span>':''}${escTxt(g.label)}</span><span class="catgc">· ${g.items.length}</span><span class="catgx">${op?'▾':'›'}</span></button>`
       +`<div class="catgb"${op?'':' hidden'}>${rows}</div></div>`; });
-  return statusBar(false)+`<div class="cat${sel?' sel':''}"><div class="catbar" id="catbar">${sel?mgBarHTML((window._mgSel||[]).length):catBarHTML()}</div>`
+  return `<div class="cat${sel?' sel':''}">`+statusBar(false)+`<div class="catbar" id="catbar">${sel?mgBarHTML((window._mgSel||[]).length):catBarHTML()}</div>`
     +`<div class="section catsec"><div class="h"><span class="s">//</span>CATALOG</div><div class="toggles cattabs" role="tablist">${tabs}</div></div>`
     +`<div class="field"><input data-act="catq" type="text" inputmode="search" enterkeyhint="search" placeholder="buscar" aria-label="buscar" autocomplete="off" autocapitalize="off" spellcheck="false" value="${escTxt(q)}"/></div>`
     +(I.moves.length?body+`<div class="submeta" id="catnone"${shown?' hidden':''}>nada con ese texto</div>`:`<div class="empty">aún no hay ejercicios</div>`)+`</div>`; }
@@ -10250,7 +10255,7 @@ function _catalogoSelfCheck(){ const A=(nm,c)=>{ if(!c) throw new Error('SELFCHE
       exNotes:{[N('db curl','free')]:'supino',[N('curl mancuerna','free')]:'codo pegado'},
       sessions:[
         {id:'s1',date:'2026-09-01',dayId:'d1',gym:'AGON',exercises:[{exId:'eC',name:'db curl',muscle:'biceps',type:'free',unilateral:false,sets:[S(30)]},{exId:'eL',name:'leg ext',muscle:'quads',type:'machine',unilateral:false,sets:[S(100)]},{exId:'eT',name:'trote',muscle:'cardio',type:'cardio',cardioSub:'treadmill',sets:[{minutes:'20'}]}]},
-        {id:'s2',date:'2026-09-08',dayId:'d1',gym:'AGON',exercises:[{exId:'eC',name:'db curl',muscle:'biceps',type:'free',unilateral:false,lat:'alt',sets:[S(25)]},{exId:'eL',name:'leg ext',muscle:'quads',type:'machine',unilateral:true,startSide:'R',sets:[S(50,{side:'R'}),S(50,{side:'L'})]}]},
+        {id:'s2',date:'2026-09-08',dayId:'d1',gym:'AGON',exercises:[{exId:'eC',name:'db curl',muscle:'biceps',type:'free',unilateral:false,lat:'alt',sets:[S(25)]},{exId:'eL',name:'leg ext',muscle:'quads',type:'machine',unilateral:true,startSide:'R',sets:[S(50,{side:'R'}),S(50,{side:'L'})]},{exId:'eF',name:'face pull',muscle:'rear delt',type:'cable',unilateral:false,sets:[]}]},
         {id:'s3',date:'2026-09-15',dayId:'d1',gym:'CAMPESTRE',exercises:[{exId:'eC',name:'db curl',muscle:'biceps',type:'free',unilateral:false,sets:[S(32)]},{exId:'eL',name:'leg ext',muscle:'quads',type:'machine',unilateral:false,sets:[S(90)]},
           {exId:'eP',name:'preacher curl',muscle:'biceps',type:'machine',machine:'precor',unilateral:true,sets:[S(20,{side:'R'}),S(20,{side:'L'})]},{exId:'eM',name:'curl mancuerna',muscle:'biceps',type:'free',unilateral:true,sets:[S(12,{side:'R'}),S(12,{side:'L'})]}]},
         {id:'s4',date:'2026-09-22',dayId:'d1',gym:'AGON',exercises:[{exId:'eC',name:'db curl',muscle:'biceps',type:'free',unilateral:false,sets:[S(34)]},
@@ -10266,17 +10271,18 @@ function _catalogoSelfCheck(){ const A=(nm,c)=>{ if(!c) throw new Error('SELFCHE
     // 2 · los datos: ejercicio → hojas; una hoja = una llave de historial
     { const X=catIndex(), m=X.byK['db curl'], lg=X.byK['leg ext'];
       A('el índice se memoriza y bumpIdx lo suelta', catIndex()===X&&(bumpIdx(),catIndex()!==X));
-      A('un ejercicio por nombre', X.moves.length===6&&X.moves.map(o=>o.k).sort().join()==='curl mancuerna,db curl,leg ext,nordic,preacher curl,trote');
+      A('un ejercicio por nombre', X.moves.length===7&&X.moves.map(o=>o.k).sort().join()==='curl mancuerna,db curl,face pull,leg ext,nordic,preacher curl,trote');
       A('bi + alt del mismo nombre = un ejercicio con dos hojas', m.leaves.length===2&&m.leaves.map(L=>L.lat+':'+L.n).join()==='bi:4,alt:1'&&m.leaves[0].key===BI&&m.leaves[1].key===ALT&&m.lats.join()==='bi,alt');
       A('cada hoja es UNA bitácora y sus conteos cuadran', X.moves.every(o=>o.leaves.every(L=>L.cardio||exHistRows(L.key).length===L.n)));
       A('la hoja lleva lateralidad, tipo, gyms, marca, veces, última y unidad', (L=>L.lat==='bi'&&L.type==='machine'&&L.gyms.join()==='CAMPESTRE,AGON'&&L.byGym.AGON.brand==='nautilus'&&L.byGym.AGON.n===1&&L.n===2&&L.last==='2026-09-15'&&L.unit==='lbs')(lg.leaves[0]));
       A('su etiqueta: la marca (o el tipo) y el gym', catLeafLbl(lg.leaves[0])==='máquina · CAMPESTRE, nautilus · AGON'&&catLeafLbl(lg.leaves[0],'AGON')==='nautilus'&&catLeafLbl(m.leaves[0])==='libre'&&catLeafLbl(X.byK['preacher curl'].leaves[0])==='precor · CAMPESTRE');
       A('lo que está en el split y nunca se registró sale sin veces', (L=>L.n===0&&L.split&&L.lat==='bi'&&L.type==='bodyweight'&&!L.last)(X.byK.nordic.leaves[0]));
+      A('…y también lo que solo quedó en una sesión sin series: ningún nombre conocido falta', (L=>L.n===0&&!L.split&&L.type==='cable')(X.byK['face pull'].leaves[0])&&knownExercises().every(o=>!!X.byK[nameKey(o.name)]));
       A('cardio: una hoja sin bitácora', (L=>X.byK.trote.leaves.length===1&&L.cardio&&L.n===1&&!exHistRows(L.key).length)(X.byK.trote.leaves[0]));
       A('el músculo es la etiqueta del dueño', m.muscle==='biceps'&&lg.muscle==='quads'); }
     // 3 · el dibujo: grupos plegados de entrada, se abren en su lugar; renglones de 44 y líneas de CSS
     { const root=q('.cat'), heads=qa('.catgh');
-      A('por músculo, con los grupos plegados de entrada', catView()==='mus'&&heads.map(h=>h.querySelector('.catgn').textContent+h.querySelector('.catgc').textContent).join('|')==='#biceps· 3|#cardio· 1|#hams· 1|#quads· 1'&&qa('.catgb').every(b=>b.hidden)&&heads.every(h=>h.getAttribute('aria-expanded')==='false'));
+      A('por músculo, con los grupos plegados de entrada', catView()==='mus'&&heads.map(h=>h.querySelector('.catgn').textContent+h.querySelector('.catgc').textContent).join('|')==='#biceps· 3|#cardio· 1|#hams· 1|#quads· 1|#rear delt· 1'&&qa('.catgb').every(b=>b.hidden)&&heads.every(h=>h.getAttribute('aria-expanded')==='false'));
       const h=heads[0], y=top(h); tap(h);
       A('tocar un grupo lo abre en su lugar (sin repintar, sin moverlo)', q('.cat')===root&&!h.parentElement.querySelector('.catgb').hidden&&h.getAttribute('aria-expanded')==='true'&&near(top(h),y)&&state._catOpen['mus|biceps']===true);
       const m=mv('db curl'), lv=Array.from(m.querySelectorAll('.catl'));
@@ -10285,7 +10291,7 @@ function _catalogoSelfCheck(){ const A=(nm,c)=>{ if(!c) throw new Error('SELFCHE
       A('las líneas del árbol son bordes y no se cortan', getComputedStyle(m,'::before').borderLeftStyle==='solid'&&getComputedStyle(lv[0],'::after').borderTopStyle==='solid'&&near(lv[0].getBoundingClientRect().bottom,top(lv[1]))&&!/[├└│─]/.test(root.textContent));
       tap(qa('.catgh')[2]); A('una variante sin registros y el cardio no abren nada', !mv('nordic').querySelector('button.catlr')&&mv('nordic').querySelector('.catl').textContent==='[bi]corporal——'&&(tap(qa('.catgh')[1]),!mv('trote').querySelector('button.catlr')&&mv('trote').querySelector('.catl').textContent==='cardio1×01 sep')); }
     // 4 · tocar una hoja abre SU bitácora y [‹ back] regresa por donde viniste, a la misma altura
-    { tap(qa('.catgh')[3]); const mx=v.scrollHeight-v.clientHeight; A('con todo abierto la pantalla se desplaza', mx>40); v.scrollTop=Math.min(120,mx); const t0=v.scrollTop;
+    { qa('.catgh').forEach(h=>{ if(h.getAttribute('aria-expanded')==='false')tap(h); }); const mx=v.scrollHeight-v.clientHeight; A('con todo abierto la pantalla se desplaza', mx>40); v.scrollTop=Math.min(120,mx); const t0=v.scrollTop;
       tap(leafBtn(ALT)); A('la hoja abre su bitácora', state.screen==='exhist'&&state._exKey===ALT&&state._back.map(o=>o.s).join()==='home,catalog');
       tap(q('[data-act="exback"]')); A('back vuelve al catálogo, a la misma altura y con lo abierto como estaba', state.screen==='catalog'&&near(v.scrollTop,t0)&&qa('.catgb').every(b=>!b.hidden)&&state._back.length===1);
       tap(leafBtn(BI)); openExerciseDirectory(); A('volver a entrar al catálogo desde la bitácora recorta la pila (sin ciclos)', state.screen==='catalog'&&state._back.map(o=>o.s).join()==='home');
@@ -10297,7 +10303,7 @@ function _catalogoSelfCheck(){ const A=(nm,c)=>{ if(!c) throw new Error('SELFCHE
       A('un grupo por gym (y lo que no tiene gym, aparte)', qa('.catgn').map(x=>x.textContent).join()==='AGON,CAMPESTRE,sin gym'&&qa('.catgb').every(b=>b.hidden));
       tap(qa('.catgh')[0]); const lg=q('.catg[data-g="gym|AGON"] .catm[data-k="leg ext"]');
       A('en cada gym, las hojas con los números de ESE gym', !!lg&&Array.from(lg.querySelectorAll('.catl')).map(x=>x.textContent).join()==='[bi]nautilus1×01 sep,[uni]nautilus1×08 sep'&&!q('.catg[data-g="gym|AGON"] .catm[data-k="preacher curl"]')&&!!q('.catg[data-g="gym|"] .catm[data-k="nordic"]'));
-      tap(tb('az')); A('A–Z: sin grupos, por nombre', db.settings.catView==='az'&&!q('.catgh')&&qa('.catm').map(x=>x.dataset.k).join()==='curl mancuerna,db curl,leg ext,nordic,preacher curl,trote'&&qa('.catm').filter(x=>x.classList.contains('last')).length===1);
+      tap(tb('az')); A('A–Z: sin grupos, por nombre', db.settings.catView==='az'&&!q('.catgh')&&qa('.catm').map(x=>x.dataset.k).join()==='curl mancuerna,db curl,face pull,leg ext,nordic,preacher curl,trote'&&qa('.catm').filter(x=>x.classList.contains('last')).length===1);
       tap(tb('mus')); A('y de vuelta a músculo, con lo abierto como lo dejaste', catView()==='mus'&&!q('.catg[data-g="mus|biceps"] .catgb').hidden); }
     // 6 · el buscador filtra en su lugar, por nombre, marca y gym
     { const root=q('.cat'), vis=()=>qa('.catm').filter(x=>!x.hidden&&!x.closest('[hidden]')).map(x=>x.dataset.k).join(), body=g=>q('.catg[data-g="mus|'+g+'"] .catgb');
