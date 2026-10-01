@@ -4517,7 +4517,7 @@ function _atajoSelfCheck(){ const A=(nm,c)=>{ if(!c) throw new Error('SELFCHECK 
     const ex=parseHealthPaste(HP_EXAMPLE);
     A('el ejemplo del atajo trae las 8 clases', ex&&ex.kinds.length===8);
     healthPasteApply('trk2\nsteps '+D2+' 4000\nrhr '+D2+' 55'); let html=''; openModal=x=>{ html=String(x); }; openHealthImport();
-    A('la receta ya no está en la app; pegar a mano sigue y ofrece instalar el atajo', typeof openShortcutSetup==='undefined'&&html.indexOf('id="hi_txt"')>0&&html.indexOf('data-act="biosetup"')>0);
+    A('la receta ya no está en la app; pegar a mano sigue y, en iPhone, ofrece instalar el atajo', typeof openShortcutSetup==='undefined'&&html.indexOf('id="hi_txt"')>0&&(html.indexOf('data-act="biosetup"')>0)===isIOS());
     A('y marca lo que llegó en el último pegado', html.indexOf('pasos ✓')>0&&html.indexOf('FC ✓')>0&&html.indexOf('HRV —')>0);
     console.log('atajo self-check OK');
   } finally { openModal=om; db=real; bumpIdx(); }
@@ -4540,7 +4540,8 @@ function _bioSyncSelfCheck(){ const A=(nm,c)=>{ if(!c) throw new Error('SELFCHEC
     v.style.maxHeight='300px'; A('la pantalla de prueba se puede desplazar', v.scrollHeight-v.clientHeight>120); v.scrollTop=90;   // vista recortada y desplazada: si algo sube el scroll, la fila se mueve y la prueba lo ve
     // 1 · otro sistema: no hay Atajos → pegar a mano
     isIOS=()=>false; tap(row());
-    A('fuera de iOS abre la hoja de pegar a mano, sin salir de la app', !!document.getElementById('hi_txt')&&!went.length&&has('instalar atajo'));
+    A('fuera de iOS abre la hoja de pegar a mano, sin salir de la app y sin ofrecer un atajo que ahí no existe', !!document.getElementById('hi_txt')&&!went.length&&!has('instalar atajo'));
+    closeModal(); bioRun(); A('y nunca navega a shortcuts:// fuera de iOS', !went.length&&!!document.getElementById('hi_txt')&&!H().shortcut.bio);
     closeModal(); isIOS=()=>true;
     // 2 · primera vez en iPhone: hoja corta de instalar
     const y0=row().getBoundingClientRect().top, t0=v.scrollTop; tap(row());
@@ -4576,7 +4577,7 @@ function _bioSyncSelfCheck(){ const A=(nm,c)=>{ if(!c) throw new Error('SELFCHEC
     A('si cambia lo que llega, lo dice: pasos ✓ · peso —', has('pasos ✓')&&has('peso —')&&has('sueño —'));
     // 8 · el atajo corrió con el iPhone bloqueado: copió solo el encabezado
     closeModal(); tap(row()); back(); paste='trk2\n'; said.length=0; tap(sheet().querySelector('[data-act="biofetch"]'));
-    A('atajo vacío: avisa "desbloquea el iPhone" y deja pegar a mano', said.some(x=>/desbloquea el iPhone/.test(x))&&!!document.getElementById('hi_txt')&&has('último pegado'));
+    A('atajo vacío: avisa "desbloquea el iPhone" y deja pegar a mano (con instalar a la mano)', said.some(x=>/desbloquea el iPhone/.test(x))&&!!document.getElementById('hi_txt')&&has('último pegado')&&!!sheet().querySelector('[data-act="biosetup"]'));
     A('en todo el recorrido el scroll no se movió', near(v.scrollTop,t0)&&t0===90);
     // 9 · la app nativa lee Salud directo: no usa el atajo
     closeModal(); isNative=()=>true; went.length=0; paste=''; bioSync(); isNative=()=>false;
@@ -6988,7 +6989,7 @@ function bioWaiting(){ const sc=H().shortcut, w=+sc.wait||0; return w>0&&Date.no
 function bioMark(){ const sc=H().shortcut; if(!sc.bio)sc.bio=Date.now(); return sc; }
 function bioSync(){ if(isNative()){ healthSync(); return; } if(!isIOS()){ openHealthImport(); return; }   // sin Atajos (Android, computadora): pegar a mano
   if(bioWaiting()){ openBioFetch(); return; } if(!H().shortcut.bio){ openBioInstall(); return; } bioRun(); }
-function bioRun(){ bioMark().wait=Date.now(); saveSoon(); closeModal(); bioGo(bioRunURL()); }
+function bioRun(){ if(!isIOS()){ openHealthImport(); return; } bioMark().wait=Date.now(); saveSoon(); closeModal(); bioGo(bioRunURL()); }   // shortcuts:// solo existe en iOS: en otro sistema nunca se navega ahí
 function bioFetch(){ H().shortcut.wait=0; closeModal(); healthPasteNow(); }
 // la lista de qué llegó sale la primera vez y cada vez que cambia; si llegó lo mismo que la vez pasada, basta el aviso
 function bioDone(r,k0){ H().shortcut.wait=0; savedToast('✓ Salud · '+r.days+(r.days===1?' día':' días')); reRender(); if(r.kinds.join()!==k0)openBioResult(); }
@@ -7006,7 +7007,7 @@ function healthSync(){
   healthPasteNow();
 }
 function openHealthImport(){
-  openModal('<h3>sync biometrics</h3><div class="submeta u-mb10">corre tu Atajo (copia los datos), regresa y pega abajo</div>'+hpLastHTML()+'<textarea id="hi_txt" class="ta md" placeholder="trk2\nsteps 2026-09-22 8200\nweight 2026-09-23 61.2 kg\nsleep 2026-09-22T23:10 2026-09-23T07:02 Núcleo"></textarea><div class="secondary u-my8"><button class="b" id="hi_paste">pegar del portapapeles</button><button class="b" data-act="biosetup">instalar atajo</button></div><div class="sheetbtns"><button class="ok" id="hi_go">importar</button><button class="cancel" data-act="closemodal">cancel</button></div>');
+  openModal('<h3>sync biometrics</h3><div class="submeta u-mb10">corre tu Atajo (copia los datos), regresa y pega abajo</div>'+hpLastHTML()+'<textarea id="hi_txt" class="ta md" placeholder="trk2\nsteps 2026-09-22 8200\nweight 2026-09-23 61.2 kg\nsleep 2026-09-22T23:10 2026-09-23T07:02 Núcleo"></textarea><div class="secondary u-my8"><button class="b" id="hi_paste">pegar del portapapeles</button>'+(isIOS()?'<button class="b" data-act="biosetup">instalar atajo</button>':'')+'</div><div class="sheetbtns"><button class="ok" id="hi_go">importar</button><button class="cancel" data-act="closemodal">cancel</button></div>');
   var p=document.getElementById("hi_paste"); if(p)p.onclick=function(){ try{ navigator.clipboard.readText().then(function(t){ var e=document.getElementById("hi_txt"); if(e)e.value=t; },function(){ toast('pega a mano: mantén presionado el cuadro y elige Pegar'); }); }catch(_){ toast('pega a mano: mantén presionado el cuadro y elige Pegar'); } };
   var g=document.getElementById("hi_go"); if(g)g.onclick=function(){ var _r=healthPasteApply(val("hi_txt")||""); if(_r){ savedToast('✓ Salud · '+_r.days+(_r.days===1?' día':' días')); closeModal(); reRender(); return; } var txt=(val("hi_txt")||"").trim(); if(txt.charAt(0)==="?")txt=txt.slice(1); var msg=[]; try{ msg=importHealth(new URLSearchParams(txt)); }catch(_){} if(msg.length){ save(); closeModal(); reRender(); setTimeout(function(){ toast("\u2713 "+msg.join(" \u00b7 ")); },120); } else { toast('⚠ no reconocí datos · formato stepsh=fecha:valor o weighth=fecha:kg','err'); } };
 }
