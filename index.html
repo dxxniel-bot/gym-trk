@@ -1867,7 +1867,7 @@ async function _idbSelfCheck(){ const N='gymtrk_selftest', A=(n,c)=>{ if(!c)thro
       A('la foto previa esperada responde que quedó', (await p)===true);
       const ix3=await idbIdx(N), pk=Object.keys(ix3).filter(k=>/^pre-merge-\d+$/.test(k)), pr=pk.length===1?await idbGet(pk[0],N):null; let pd=null; try{ pd=JSON.parse(pr.s); }catch(_){}
       A('la foto previa de unir existe y está en el índice', pk.length===1&&!!pr&&ix3[pk[0]].seq===7&&ix3[pk[0]].mass===1&&ix3[pk[0]].len===pr.s.length);
-      A('el respaldo previo conserva los nombres de antes', !!pd&&pd.sessions[0].exercises[0].name==='bb sldl'&&pd.sessions[0].exercises[0].sets[0].w==='110'); }
+      A('el respaldo previo conserva los nombres de antes', !!pd&&!!pd.sessions&&pd.sessions[0].exercises[0].name==='bb sldl'&&pd.sessions[0].exercises[0].sets[0].w==='110'); }
     console.log('idb self-check OK');
   }catch(e){ console.error(e); }
   finally{ try{ const d=await idbOpen(N); d.close(); }catch(_){} try{ delete _idbConns[N]; indexedDB.deleteDatabase(N); }catch(_){} } }
@@ -10400,7 +10400,7 @@ function _catalogoSelfCheck(){ const A=(nm,c)=>{ if(!c) throw new Error('SELFCHE
       A('si la foto previa falla no se une nada y se dice', !!md()&&db.sessions[3].exercises[2].name==='curl mancuerna'&&!!db.machines.AGON[I('curl mancuerna','free','')]&&fresh().some(t=>/sin copia previa/.test(t.textContent))&&lats()===l0); wipe();
       _snapT=true; tap(md().querySelector('[data-act="domerge"]')); tap(ask('ok'));
       A('con la foto hecha, se unen y vuelves al catálogo', !md()&&state.screen==='catalog'&&!state._catSel&&!window._mgSel.length&&db.sessions.every(s=>s.exercises.every(e=>e.name!=='curl mancuerna'))&&!catIndex().byK['curl mancuerna']);
-      A('la foto previa de unir se tomó ANTES de reescribir: conserva los nombres, la máquina y la nota de antes', (o=>!!o&&/^pre-merge-\d+$/.test(_snapLast.key)&&o.sessions[3].exercises[2].name==='curl mancuerna'&&o.sessions[2].exercises[3].name==='curl mancuerna'&&o.machines.AGON[I('curl mancuerna','free','')].setup==='banco 3'&&o.machines.AGON[I('db curl','free','')].setup==='banco 1'&&o.exNotes[N('db curl','free')]==='supino')(_snapLast&&JSON.parse(_snapLast.s)));
+      A('la foto previa de unir se tomó ANTES de reescribir: conserva los nombres, la máquina y la nota de antes', (o=>!!o&&!!o.sessions&&!!o.machines&&!!o.exNotes&&/^pre-merge-\d+$/.test(_snapLast.key)&&o.sessions[3].exercises[2].name==='curl mancuerna'&&o.sessions[2].exercises[3].name==='curl mancuerna'&&o.machines.AGON[I('curl mancuerna','free','')].setup==='banco 3'&&o.machines.AGON[I('db curl','free','')].setup==='banco 1'&&o.exNotes[N('db curl','free')]==='supino')(_snapLast&&JSON.parse(_snapLast.s)));
       A('unir no cambia la lateralidad de ningún registro', lats()===l0&&latOf(db.sessions[2].exercises[3])==='uni'&&latOf(db.sessions[3].exercises[2])==='alt'&&db.sessions[3].exercises[2].name==='db curl');
       A('el ejercicio unido tiene sus tres hojas', catIndex().byK['db curl'].leaves.map(L=>L.lat+':'+L.n).join()==='bi:4,uni:1,alt:2'&&Array.from(mv('db curl').querySelectorAll('.catl')).length===3);
       A('la máquina sigue al nombre nuevo; en el destino ocupado gana la que él eligió', db.machines.AGON[I('db curl','free','')].setup==='banco 3'&&!db.machines.AGON[I('curl mancuerna','free','')]&&db.machines.AGON[I('leg ext','machine','')].brand==='nautilus');
@@ -10420,7 +10420,7 @@ function _catalogoSelfCheck(){ const A=(nm,c)=>{ if(!c) throw new Error('SELFCHE
       A('renombrar no re-vincula nada: cada fila conserva su exId', ids()===i0&&db.sessions[2].exercises[1].exId==='eL9'&&db.sessions[1].exercises[1].exId===null);
       A('…la siguiente sesión sale con las mismas series sugeridas', seed()===s0);
       A('…y la marca guardada por instancia (#exId) sigue saliendo', machineRec('CAMPESTRE',{name:'leg extension',type:'machine'}).brand==='hoist');
-      A('la foto previa de renombrar trae el nombre de antes', (o=>!!o&&/^pre-rename-\d+$/.test(_snapLast.key)&&o.split.days[0].exercises[1].name==='leg ext'&&o.sessions[0].exercises[1].name==='leg ext')(_snapLast&&JSON.parse(_snapLast.s))); wipe(); }
+      A('la foto previa de renombrar trae el nombre de antes', (o=>!!o&&!!o.sessions&&!!o.split&&/^pre-rename-\d+$/.test(_snapLast.key)&&o.split.days[0].exercises[1].name==='leg ext'&&o.sessions[0].exercises[1].name==='leg ext')(_snapLast&&JSON.parse(_snapLast.s))); wipe(); }
     // 10 · corregir registros: mover bi ↔ alt con [deshacer] exacto; se salta las filas con series con lado
     { db.activeWork={id:'w',date:'2026-09-30',dayId:'d1',gym:'AGON',startMs:Date.now(),exercises:[{exId:'eC',name:'db curl',muscle:'biceps',type:'free',unilateral:false,sets:[S(36,{done:false})]}]}; bumpIdx();
       const b0=leafBtn(BI,'catlt'), u0=leafBtn(UNI,'catlt');
@@ -10469,7 +10469,7 @@ function _catalogoSelfCheck(){ const A=(nm,c)=>{ if(!c) throw new Error('SELFCHE
       tap(md().querySelector('[data-act="domerge"]')); A('la pregunta lo dice como es', /unir "row" en un solo tipo/.test((document.querySelector('#asklayer h3')||{}).textContent||'')); tap(ask('ok'));
       A('queda un solo tipo, cada registro con su lateralidad', !md()&&!state._catSel&&catTypes('row').join()==='machine'&&catIndex().byK.row.leaves.map(L=>L.type+':'+L.lat+':'+L.n).join()==='machine:bi:3,machine:uni:1'&&lats()===l0);
       A('…y con la máquina y la nota que él eligió', db.machines.AGON[I('row','machine','')].setup==='asiento 3'&&!db.machines.AGON[I('row','free','')]&&db.exNotes[N('row','machine')]==='agarre neutro'&&!(N('row','free') in db.exNotes));
-      A('…tras la foto previa, que trae los dos tipos de antes', (o=>!!o&&/^pre-merge-\d+$/.test(_snapLast.key)&&o.sessions.filter(s=>s.id==='r9')[0].exercises[0].type==='free'&&o.exNotes[N('row','free')]==='agarre neutro')(_snapLast&&JSON.parse(_snapLast.s))); wipe(); }
+      A('…tras la foto previa, que trae los dos tipos de antes', (o=>!!o&&!!o.sessions&&!!o.machines&&!!o.exNotes&&/^pre-merge-\d+$/.test(_snapLast.key)&&o.sessions.filter(s=>s.id==='r9')[0].exercises[0].type==='free'&&o.exNotes[N('row','free')]==='agarre neutro')(_snapLast&&JSON.parse(_snapLast.s))); wipe(); }
     // 12 · el perfil abierto desde el catálogo cierra y te deja donde estabas
     { const mx=v.scrollHeight-v.clientHeight; v.scrollTop=Math.min(60,mx); const t0=v.scrollTop; tap(mv('db curl').querySelector('.catmh')); pick('perfil');
       A('perfil abre su hoja sobre el catálogo', !!document.getElementById('modal')&&(window._exProf||{}).back==='catalog'&&state.screen==='catalog');
