@@ -1,6 +1,6 @@
 # gym//TRK — DESIGN SYSTEM (referencia del estado actual)
 
-> Referencia del estado actual (v285). **Lee BRAND.md primero**: manda sobre este archivo. Sin historia: DESIGN_CHANGELOG.md.
+> Referencia del estado actual (v286). **Lee BRAND.md primero**: manda sobre este archivo. Sin historia: DESIGN_CHANGELOG.md.
 
 ---
 
@@ -1665,7 +1665,7 @@ notas" (las de su amigo: `#1`, `#2`, `#3`… con fecha y series).
   rises); uni ≠ bi. `exKeyByName(name, hint)` resuelve un nombre suelto (tile, //STRENGTH, //RECORDS, catálogo) a la
   variante con más sesiones; con pista (un ejercicio), a la de su lateralidad. `exHistRows(key)` = sus filas de
   `exIndex()` (sin cardio), la más nueva primero.
-- **Abrir:** `openExHist(key)` cierra el sheet que haya, recuerda de qué pantalla vienes (`state._exFrom`) y hace
+- **Abrir:** `openExHist(key)` cierra el sheet que haya, recuerda de qué pantalla vienes (pila `state._back`, v286: `navPush`/`navPop`) y hace
   `go('exhist')` con `state._exKey`. En el marcado: `data-act="exhist"` + `data-k`.
 - **Anatomía** (de arriba abajo; §17.2):
   1. `statusBar(false)` y debajo `[‹ back]` (`button.b`, `exback`).
@@ -1693,7 +1693,7 @@ notas" (las de su amigo: `#1`, `#2`, `#3`… con fecha y series).
        §7.39), y la unidad una vez al final (`· kg` en `--o40`). Los drops salen en el texto (`↓`) aunque no entren a la
        gráfica.
      - Tocar la fila abre esa sesión (`vieweditsession`).
-- **Atrás y nav:** sin nav (`renderNav()` la oculta, como en history; NAV-2). `[‹ back]` vuelve a `state._exFrom` —la
+- **Atrás y nav:** sin nav (`renderNav()` la oculta, como en history; NAV-2). `[‹ back]` vuelve al origen (pila `state._back`, a la misma altura con `goBack`) —la
   pantalla de donde viniste; si no hay, progress— y a la misma altura (`state._exScroll`): es el primer atrás que vuelve
   al origen (§14.2).
 - **Entradas** (todas terminan en `openExHist()`):

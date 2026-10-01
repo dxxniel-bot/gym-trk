@@ -237,6 +237,8 @@ caracteres sin perder un dato?
 
 ## 10. Preguntas abiertas (se cierran en el estudio, `tools/studio.html`)
 
+**Abiertas desde v286 (catálogo):** ¿el tipo en español en el catálogo (`libre · máquina · polea`, como en el dibujo que aprobó) o en inglés como el resto (`free · machine · cable`)?; ¿el menú de una variante (historial · mover registros) abre al tocar su corchete, o va dentro del menú del ejercicio?; la etiqueta de la hoja dice la marca en lugar del tipo cuando hay marca: ¿así, o siempre `tipo · marca · gym`?; en la vista por gym solo salen ejercicios con registros ahí: ¿también los marcados a mano como "existe en este gym"?; al unir, el setup de máquina que no eliges se queda guardado sin mostrarse: ¿así o se borra?
+
 **Abiertas desde v280 (compartir sesión):** ¿la tabla con cajas como en la sesión viva o en texto (hoy en texto)?; ¿etiquetas de columna una vez o en cada ejercicio (hoy una vez)?; ¿se queda la línea de leyenda `σ 1.00 = una serie al fallo · ▲▼ vs la sesión anterior`?; ¿el texto copiable debe llevar σ y %?; ¿recordar la última vista elegida?
 
 Desde el 22-sep el dueño las ve **aplicadas a la app real** en el estudio (vista previa de cada pantalla con sus datos o con
