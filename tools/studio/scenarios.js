@@ -352,7 +352,7 @@
     // v272 · //STIMULUS = σ de 7 días por músculo REAL (etiquetas del dueño), barra con marcas neutras en 10 y 20, una frase
     // solo si hay algo que mover y el color solo en el ⚠. Arriba, una vez: fatiga acumulada (→ m:deload) y "mucho fallo en
     // N músculos" si sale en 3 o más. Meta 'σ · 7 d'. Fuera las "series efectivas" contra MEV/MRV de la guía RP
-    { id:'home:stimulus', g:'pantalla', label:'gym · //STIMULUS (σ 7 d)', run(W){ W.go('home'); toSection(W, '.section [data-gloss^="stim"]'); } },
+    { id:'home:stimulus', g:'pantalla', label:'gym · //STIMULUS (σ 7 d)', run(W){ W.go('home'); toSection(W, '[data-gloss="stim"]'); } },
     { id:'workout', g:'sesión', label:'sesión · tabla', live:true, run(W){ W.go('workout'); } },
     { id:'live:workout', g:'sesión', label:'sesión · desde inicio', live:true, run(W){ W.go('home'); click(W, '[data-act="start"],[data-act="resume"]'); W.go('workout'); } },
     { id:'live:exedit', g:'sesión', label:'sesión · editar ejercicio', live:true, run(W){ W.go('workout'); W.openExEdit(0, 0, 0); } },
