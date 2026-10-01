@@ -513,7 +513,7 @@
   /* v224 · aviso de deriva entre el split escrito y lo que de verdad entrenas */
   .sedrift{display:flex; align-items:center; gap:var(--s3); flex-wrap:wrap; margin:var(--s2) 0 6px; padding:6px var(--s3); border:var(--bw-box) dashed var(--o20); font-size:var(--t-label); color:var(--o50);}
   .sedrift b{color:var(--o70); font-weight:700;} .sedrift .b{background:none; border:0; color:var(--fg); font-size:var(--t-label); font-weight:700; cursor:pointer; padding:0; white-space:nowrap;}
-  .mgbar{display:flex; align-items:center; gap:var(--s3); flex-wrap:wrap; padding:var(--s3) 10px; margin-bottom:var(--s3); border:var(--bw-box) solid var(--o20); font-size:var(--t-data); color:var(--o60);}
+  .mgbar{display:flex; align-items:center; gap:var(--s3); flex-wrap:wrap; box-sizing:border-box; min-height:62px; padding:var(--s3) 10px; margin-bottom:var(--s3); border:var(--bw-box) solid var(--o20); font-size:var(--t-data); color:var(--o60); position:sticky; top:0; z-index:1; background:var(--sheet-bg);}   /* v285 · alto fijo y pegada arriba: elegir no mueve las filas y [unir] queda a la vista */
   .mgbar .b{background:none; border:0; color:var(--fg); font-size:var(--t-data); font-weight:700; cursor:pointer; padding:0;}
   .exrow{display:flex; align-items:center; gap:var(--s3); padding:6px 0; border-bottom:var(--bw-sep) solid var(--o10); cursor:pointer;}
   .exrow.on{background:var(--o10);} .exrow .mgbox{flex:0 0 auto; font-size:var(--t-data); color:var(--o35);} .exrow.on .mgbox{color:var(--fg);}
@@ -624,22 +624,28 @@
   /* footer (workout) */
   .footer{flex:0 0 auto; display:flex; gap:10px; padding: var(--s4) var(--sp-px); border-top:var(--bw-rule) solid var(--o12); background:var(--frame);}
   /* rest timer capsule — lives OUTSIDE #view so render() never destroys it */
-  .restbar{flex:0 0 auto; display:none; align-items:center; gap:10px; padding: 10px var(--sp-px); border-top:var(--bw-rule) solid var(--o12); background:var(--frame); font-size:var(--t-data);}
+  .restbar{display:none; flex:1; min-width:0; align-items:center; gap:var(--s3); height:44px; font-size:var(--t-data);}   /* v285 · dentro del pie de la sesión: aparecer o irse no cambia el alto de la pantalla */
   .restbar.on{display:flex;}
   /* v223: barra AHORA — mismo sitio que el descanso (fuera de #view, sobrevive a render()): dice en qué
      ejercicio y serie vas y un toque te lleva ahí. */
   .restbar .rl{color:var(--o50); font-size:var(--t-label); letter-spacing:var(--ls-ui);}
   .restbar .rt{font-weight:800; font-size:var(--t-section); font-variant-numeric:tabular-nums; min-width:52px;}
-  .restbar a{position:relative; display:inline-flex; align-items:center; height:32px; padding:0 var(--s4); color:var(--o60); border:var(--bw-ctl) solid var(--border); border-radius:var(--r-ctl); cursor:pointer; font-size:var(--t-data); -webkit-user-select:none; user-select:none;}
+  .restbar a{position:relative; display:inline-flex; align-items:center; height:32px; padding:0 var(--s3); color:var(--o60); border:var(--bw-ctl) solid var(--border); border-radius:var(--r-ctl); cursor:pointer; font-size:var(--t-data); -webkit-user-select:none; user-select:none;}
   .restbar a::after{content:''; position:absolute; inset:-6px -3px;}   /* se ve de 32, se toca de 44 */
   .restbar.fin .rt{color:var(--good);}
-  .restbar.fin{animation:restdone .5s ease 3/*ds:exempt*/;}   /* aviso: 3 destellos, ritmo propio (§15) */
-  @keyframes restdone{50%{border-top-color:var(--good);}}
+  .restbar.fin .rt{animation:restdone .5s ease 3/*ds:exempt*/;}   /* aviso: 3 destellos, ritmo propio (§15) */
+  @keyframes restdone{50%{opacity:.35;}}
   /* DS-3: antes ~30 px de alto, 10 px de letra y sin radio. En la barra acoplada el primario baja a 44 (no 48) para no
      robarle alto a la tabla; abort = secundario destructivo, ↩ = secundario neutro (antes llevaba el borde de abort). */
   .footer .abort::before,.footer .abort::after{color:var(--abort);}
   .footer .undo{font-size:var(--t-section);}
   .footer .save{flex:1; height:var(--h-pri); padding:0; text-align:center; font-size:var(--t-data); font-weight:800; letter-spacing:var(--ls-ui); color:var(--on-fill); background:var(--fill); border:0; border-radius:var(--r-ctl); cursor:pointer;}
+  /* v285 · G7 · "abort, save session y demás debe estar menos accesible para no misclickear" (el dueño, 1-oct; eligió "abajo
+     con seguro"). El pie va CERRADO: solo ··· (y el descanso, si corre). Tocar ··· lo abre: [abort] [↩] ▶ save session.
+     Cerrado y abierto miden lo mismo (una fila de 44): abrirlo no mueve la pantalla. */
+  .footer .wbar{flex:1; height:44px; padding:0; background:none; border:0; border-radius:var(--r-ctl); color:var(--o60); font-family:inherit; font-size:var(--t-section); font-weight:800; letter-spacing:.3em; cursor:pointer;} .footer .wbar:active{opacity:var(--op-press);}
+  .footer .restbar.on ~ .wbar{flex:0 0 48px;}
+  .footer.open .wbar,.footer.open .restbar{display:none;} .footer:not(.open) .abort,.footer:not(.open) .undo,.footer:not(.open) .save{display:none;}
   /* v280 · zona del pulgar. El dueño (30-sep): "guardar rutina o cancelar o salirte… está en la parte inferior, y si quieres
      swipear entre aplicaciones se hace desde la parte inferior… lo que sí se necesite, cerca del lado inferior derecho".
      · El pie de la sesión deja libre la franja del gesto de iOS: sus botones quedaban a 12 px del borde, 22 px DENTRO de los
@@ -647,7 +653,6 @@
      · Con el descanso corriendo, los avisos y la barra "no se está guardando" suben: si no, tapan −15 / +15 / skip.
      · [+ set] [↓ drop set] pasan a la derecha, bajo la ✓ (lo de cada serie, al pulgar); [+ exercise] a la izquierda. */
   .footer{padding-bottom:calc(var(--s4) + env(safe-area-inset-bottom));}
-  #resttimer.on ~ .savebar{bottom:calc(var(--nav-clear) + var(--s8) + env(safe-area-inset-bottom));}
   body:has(#resttimer.on) .toasts{bottom:calc(var(--nav-clear) + var(--s8) + env(safe-area-inset-bottom));}
   .savebar a{display:inline-flex; align-items:center; min-height:44px;}
   .addrow.afree .aleft,.addrow.amach .aleft,.addrow.auni .aleft{grid-column:2/-1; grid-row:1; justify-self:end;}
@@ -1143,8 +1148,7 @@
 <body>
   <div class="frame" id="app">
     <div class="scroll" id="view"></div>
-    <div class="restbar" id="resttimer"><span class="rl">rest</span><span class="rt" id="resttime">0:00</span><span class="u-f1"></span><a data-act="restminus">−15</a><a data-act="restplus">+15</a><a data-act="restskip">skip</a></div>
-    <div class="footer" id="wfooter" style="display:none"><button class="abort" data-act="abort">abort</button><button class="undo" data-act="undo" title="deshacer la última serie">↩</button><button class="save" data-act="save">save session</button></div>
+    <div class="footer" id="wfooter" style="display:none"><div class="restbar" id="resttimer"><span class="rl">rest</span><span class="rt" id="resttime">0:00</span><span class="u-f1"></span><a data-act="restminus">−15</a><a data-act="restplus">+15</a><a data-act="restskip">skip</a></div><button type="button" class="wbar" data-act="wbar" aria-expanded="false" aria-label="guardar, deshacer o abortar la sesión">···</button><button class="abort" data-act="abort">abort</button><button class="undo" data-act="undo" title="deshacer la última serie">↩</button><button class="save" data-act="save">save session</button></div>
     <nav class="nav glass" id="nav"></nav>
   </div>
 
@@ -2235,7 +2239,7 @@ function openStreakSheet(){ const a=activityDays(), now=new Date(), el=now.getDa
   openModal(`<h3>racha</h3>`+ln('actual',streak(),'racha')+ln('mejor',bestStreak())+ln('este mes',logged+'/'+el)+streakCalendarHTML()
     +`<div class="sheetbtns u-mt12"><button class="cancel" data-act="closemodal">cerrar</button></div>`); }
 // toque en un día del calendario: si hubo las dos cosas pregunta cuál abrir; si no, abre la que hubo
-function goPerfil(){ go('settings'); setTimeout(()=>{ const e=document.getElementById('perfil'); if(e&&e.scrollIntoView)e.scrollIntoView({block:'start'}); },60); }
+function goPerfil(){ go('settings'); setTimeout(()=>{ centerEl(document.getElementById('perfil'),'start',true); },60); }
 function openCalDay(iso){
   const ss=(db.sessions||[]).filter(x=>x.date===iso&&x.type!=='rest'&&x.exercises&&x.exercises.length);
   const food=((db.meals&&db.meals[iso])||[]).length>0;
@@ -2465,7 +2469,7 @@ function saveExProfile(){ const ctx=window._exProf; if(!ctx)return; const m=docu
     else { const secs=[]; m.querySelectorAll('select[data-sec]').forEach(s=>{ const w=m.querySelector('input[data-secw="'+s.dataset.sec+'"]'); if(s.value&&s.value!==prim)secs.push({id:s.value,w:Math.max(0,Math.min(1,parseFloat(w&&w.value)||0.5))}); });
       setExCat(nm,{targets:[{id:prim,w:1}].concat(secs)}); } }
   savedToast('✓ perfil del ejercicio guardado'); closeProfileBack(ctx.back); }
-function closeProfileBack(back){ window._exProf=null; if(back==='catalog')openExerciseDirectory(); else if(back==='muscles')openMuscleMap(); else { closeModal(); reRender(); } }
+function closeProfileBack(back){ window._exProf=null; if(back==='catalog')sheetBack(openExerciseDirectory); else if(back==='muscles')sheetBack(openMuscleMap); else { closeModal(); reRender(); } }
 // ---------- v230 · RECUPERACIÓN por músculo (estimada → observada) y tablero //MÚSCULOS ----------
 // PT2: "la recuperación debería ser individual, no un número fijo". Cada músculo canónico arranca con una
 // ventana ESTIMADA (MUSCLES[id].rec, ajustada por la dosis de esa sesión) y, cuando su propio historial tiene
@@ -5390,7 +5394,7 @@ function exHoldGo(){ const h=state._exHold; if(!h)return; exHoldClear(); const w
   if(state._curEx===w.exercises.indexOf(h.ex)){ state._curEx=null; const nt=currentSetTarget(); if(nt)state._focusSet={exi:nt.exi,si:nt.si}; if(state.screen==='workout')reRender(); } }
 function exHoldStart(ex){ exHoldClear();
   const fire=()=>{ const h=state._exHold; if(!h||h.ex!==ex)return; const ae=document.activeElement;
-    if(document.getElementById('modal')||document.getElementById('exsh')||(ae&&/^(INPUT|SELECT|TEXTAREA)$/.test(ae.tagName))){ h.t=setTimeout(fire,1500); return; }
+    if(state._wbar||document.getElementById('modal')||document.getElementById('exsh')||(ae&&/^(INPUT|SELECT|TEXTAREA)$/.test(ae.tagName))){ h.t=setTimeout(fire,1500); return; }
     exHoldGo(); };
   state._exHold={ex,t:setTimeout(fire,EX_HOLD_MS)}; }
 function exHoldCue(ex){ const h=state._exHold; if(!h||h.ex!==ex)return ''; const nt=currentSetTarget();
@@ -6098,7 +6102,7 @@ function onbSummaryHTML(d){ const P=onbProfile(d), g=Object.assign({},recalcGoal
     +L(!sk('split')&&!!(tp||d.tpl==='blank'),!sk('split')&&tp?escTxt(tp.name):!sk('split')&&d.tpl==='blank'?'rutina desde cero':'rutina · después')
     +L(false,'Salud · después, en ajustes')
     +`<div class="onbready">ready<span class="cur"></span></div>`; }
-function onbGo(i,fromPop,rep){ db.onb.step=Math.max(1,Math.min(ONB_STEPS.length,i)); state._onbErr=''; state._scroll=0; save(); render(); if(!fromPop)try{ history[rep?'replaceState':'pushState']({onb:db.onb.step},''); }catch(_){} }   // [‹ atrás] no apila historia
+function onbGo(i,fromPop,rep){ db.onb.step=Math.max(1,Math.min(ONB_STEPS.length,i)); state._onbErr=''; state._scroll=0; /*ds:top*/ save(); render(); if(!fromPop)try{ history[rep?'replaceState':'pushState']({onb:db.onb.step},''); }catch(_){} }   // [‹ atrás] no apila historia
 function onbNext(){ const d=onbD(), k=ONB_STEPS[(db.onb.step||1)-1].k, e=onbCheck(k,d); if(e){ state._onbErr=e; reRender(); return false; }
   d.skip=(d.skip||[]).filter(x=>x!==k); onbGo((db.onb.step||1)+1); return true; }
 function onbBack(fromPop){ if((db.onb.step||1)<=1){ db.onb.step=0; state._onbErr=''; state.screen='landing'; save(); render(); return; } onbGo(db.onb.step-1,fromPop,true); }
@@ -6142,7 +6146,7 @@ const TOUR_STEPS={
     {sel:()=>tourCurSet('.rirb'),t:()=>(db.activeWork&&db.activeWork.metric)==='rpe'?'RPE: 10 = no salía otra · 9 = te quedaba 1':'RIR: cuántas te quedaban · 0 o F = al fallo'},
     {sel:()=>tourCurSet('[data-act="done"]'),t:'✓ confirma la serie; en vivo también arranca el descanso'},
     {sel:'#view [data-act="addset"]',t:'[+ set] agrega una serie · [↓ drop set] una bajada de peso'},
-    {sel:'#wfooter .save',t:'al terminar, guarda la sesión'}],
+    {sel:'#wfooter .wbar',t:'al terminar, abre ··· y guarda la sesión'}],
   macros:[{sel:'#view [data-act="togglemacros"]',t:'el anillo: lo que llevas contra tu meta · tócalo para ver tus macros'},
     {sel:'#view [data-act="newmeal"]',t:'+ meal: busca, escanea o registra una comida'},
     {sel:'#view [data-act="waterpick"]',t:'el agua, de un toque'},
@@ -6170,7 +6174,7 @@ function tourShow(k){ if(tourKey()!==k||!tourOn(k))return; if(tourBusy()){ _tour
   const T=db.tour, L=TOUR_STEPS[k]; let i=(T.step&&T.step[k])||0, el=null;
   for(;i<L.length;i++){ el=typeof L[i].sel==='function'?L[i].sel():document.querySelector(L[i].sel); if(el&&el.getBoundingClientRect().width>0)break; el=null; }
   if(!el){ tourAdvance(T,k,L.length-1,L.length); save(); return; }   // sin anclas: la sección se da por vista
-  (T.step=T.step||{})[k]=i; if(el.closest('#view')&&el.scrollIntoView)el.scrollIntoView({block:'center'});
+  (T.step=T.step||{})[k]=i; if(el.closest('#view'))centerEl(el,'center',true);
   tourDraw(k,i,el); }
 function tourDraw(k,i,el){ tourHide(); const app=document.getElementById('app'); if(!app||!el.isConnected)return;
   const L=TOUR_STEPS[k], s=L[i], A=app.getBoundingClientRect(), r=el.getBoundingClientRect(), P=6, last=i===L.length-1;
@@ -8371,7 +8375,7 @@ function histGoDay(iso){
   const o=state._histOpen=state._histOpen||{}; const nw=ss.filter(s=>!o[s.id]); ss.forEach(s=>{ o[s.id]=1; }); state._histHit=ss[0].id;
   if(nw.length)state._enter={sel:nw.map(s=>q(s.id)+' .hbody').join(',')};
   reRender();
-  const el=document.getElementById('view').querySelector(q(ss[0].id)); if(el&&el.scrollIntoView)el.scrollIntoView({block:'start',behavior:reducedMotion()?'auto':'smooth'});
+  centerEl(document.getElementById('view').querySelector(q(ss[0].id)),'start');   // tocaste un día del calendario: su sesión, arriba
 }
 function openSessionEdit(id){
   const s=(db.sessions||[]).find(x=>x.id===id); if(!s)return; window._sessId=id;
@@ -8429,25 +8433,45 @@ function renderSettings(){
 let state={screen:'home',work:null,macroOpen:false};
 function render(){
   const v=document.getElementById('view');
+  const _want=state._scroll; state._scroll=null;   // v285 · se consume al entrar: si un renderer truena, la posición no se le queda a la pantalla siguiente
   let sc=state.screen;
   if(!db.profile.username){ sc = state.screen==='login' ? 'login' : (state.screen==='onboard'||(db.onb&&!db.onb.done&&(db.onb.step||0)>0)) ? 'onboard' : 'landing'; if(sc==='onboard')state.screen='onboard'; }   // v277: el alta a medias vuelve a su paso, y su pantalla queda "onboard" (si no, lo tecleado tras reabrir no se guardaba)
   if(sc==='workout'){ state.work=db.activeWork; if(!state.work){ state.screen=sc='home'; } }
+  // v285 · T1 · "con cada interacción, nunca debe de scrollearse para arriba. Nunca" (el dueño, 1-oct). Misma vista = se queda
+  // donde estaba, aunque el código llame render() pelado o go() a la misma pantalla; solo una vista NUEVA empieza arriba. Al
+  // dejar una vista se recuerda su posición (goBack la repone). Un valor explícito en state._scroll sigue mandando.
+  const _key=viewKey(sc), _prevTop=v.scrollTop, _same=state._paintedKey===_key;
+  if(state._paintedKey&&!_same)(state._viewScroll=state._viewScroll||{})[state._paintedKey]=_prevTop;
   v.innerHTML = sc==='landing'?renderLanding() : sc==='login'?renderLogin() : sc==='onboard'?renderOnboard() : sc==='home'?renderHome() : sc==='workout'?renderWorkout() : sc==='macros'?renderMacros() : sc==='share'?renderShare() : sc==='progress'?renderProgress() : sc==='stack'?renderStack() : sc==='settings'?renderSettings() : sc==='splitedit'?renderSplitEdit() : sc==='history'?renderHistory() : sc==='exhist'?renderExHist() : sc==='agenda'?renderAgenda() : sc==='histedit'?renderHistoryEditor() : renderHome();
-  document.getElementById('wfooter').style.display = sc==='workout'?'flex':'none';
+  document.getElementById('wfooter').style.display = sc==='workout'?'flex':'none'; if(sc!=='workout'&&state._wbar)wbarSet(false);
   try{updateRestBar();}catch(_){}
   try{updateNowBar();}catch(_){}
   renderNav();
   if(sc==='macros')try{ suppWarnMaybe(); }catch(_){}   // v275 · una vez al día: lo que está por acabarse
   if(sc==='macros')try{ mvzSync(); }catch(_){}         // v276 · el carrusel en la versión elegida
-  v.scrollTop = state._scroll||0; state._scroll=0;
-  if(state._autoScroll&&sc==='workout'){ state._autoScroll=false; const fp=v.querySelector('[data-act="setf"][data-f="rir"]:not([data-locked])'); if(fp)fp.scrollIntoView({block:'center',behavior:reducedMotion()?'auto':'smooth'}); }
+  { const keep=_want!=null?_want:(_same?_prevTop:0); if(v.scrollTop!==keep)v.scrollTop=keep; state._paintedKey=_key; }   // después de mvzSync() y renderNav(): los dos cambian el alto
+  if(state._autoScroll&&sc==='workout'){ state._autoScroll=false; const fp=v.querySelector('[data-act="setf"][data-f="rir"]:not([data-locked])'); if(fp)centerEl(fp); }
   // v223: tras confirmar una serie, a la vista la SIGUIENTE de ese ejercicio (no la primera del documento)
-  if(state._focusSet&&sc==='workout'){ const f=state._focusSet; state._focusSet=null; const fe=v.querySelector('.setn[data-exi="'+f.exi+'"][data-si="'+f.si+'"]'); if(fe&&fe.scrollIntoView)fe.scrollIntoView({block:'center',behavior:reducedMotion()?'auto':'smooth'}); }
+  if(state._focusSet&&sc==='workout'){ const f=state._focusSet; state._focusSet=null; const fe=v.querySelector('.setn[data-exi="'+f.exi+'"][data-si="'+f.si+'"]'); showEl(fe,64); }   // v285 · solo si la serie que sigue no se ve
   // fade ONLY on screen changes via go() — never on same-screen re-renders (every keystroke re-renders)
   const _nav=!!state._trans;
   if(state._trans){ state._trans=false; v.classList.remove('fadein'); void v.offsetWidth; v.classList.add('fadein'); }
   afterPaint(v,!_nav);
 }
+// v285 · T1 · la llave de una vista = la pantalla + lo que la hace OTRA vista (otra bitácora, otra sesión del historial, otra
+// tarjeta de compartir, otro paso del alta). render() conserva la posición mientras la llave no cambie.
+function viewKey(sc){ sc=sc||state.screen; return sc+(sc==='exhist'?'|'+(state._exKey||''):sc==='histedit'?'|'+(state._histSessId||''):sc==='share'?'|'+(state.shareType||'')+'|'+(state.shareId||''):sc==='onboard'?'|'+((db&&db.onb&&db.onb.step)||0):''); }
+// volver a una pantalla a la altura donde la dejaste (render() la apuntó al salir de ella)
+function goBack(screen){ const y=(state._viewScroll||{})[viewKey(screen)]; state._scroll=y>0?y:null; go(screen); }
+// el scroll A PROPÓSITO pasa por aquí. showEl: solo mueve si `el` no se ve entero dentro de su contenedor (la pantalla o la
+// hoja), y lo mínimo. centerEl: para una vista nueva o un salto que tú pediste (empezar la sesión, un día del calendario).
+// focusEl: foco sin que el navegador brinque, y a la vista. R-SCROLL marca cualquier scrollIntoView o focus() fuera de aquí.
+function scrollerOf(el){ return (el&&el.closest&&(el.closest('.sheet')||el.closest('#exsh')))||document.getElementById('view'); }
+function showEl(el,pad){ try{ const sc=scrollerOf(el); if(!el||!sc||!sc.contains(el))return; const a=sc.getBoundingClientRect(), b=el.getBoundingClientRect(); pad=pad==null?12:pad; let d=0;
+    if(b.top<a.top+pad)d=b.top-a.top-pad; else if(b.bottom>a.bottom-pad)d=Math.min(b.top-a.top-pad,b.bottom-a.bottom+pad);
+    if(Math.abs(d)>=1){ if(sc.scrollTo&&!reducedMotion())sc.scrollTo({top:sc.scrollTop+d,behavior:'smooth'}); else sc.scrollTop+=d; } }catch(_){} }
+function centerEl(el,block,now){ try{ if(el&&el.scrollIntoView)el.scrollIntoView({block:block||'center',behavior:(now||reducedMotion())?'auto':'smooth'}); }catch(_){} }
+function focusEl(el){ if(!el||!el.focus)return; try{ el.focus({preventScroll:true}); }catch(_){ try{ el.focus(); }catch(__){} } showEl(el); }
 // v223: re-render CONSERVANDO el scroll. Todo lo que se toca dentro de una sesión (o del editor de
 // historial) tiene que pasar por aquí: un render() pelado devuelve #view al inicio, que es exactamente
 // lo que hacía insoportable loggear en vivo ("siempre se me scrollea hasta arriba", fix.md).
@@ -8492,7 +8516,7 @@ function slideTabs(root,swap){ const red=reducedMotion();
 function applyEnter(root){ const e=state._enter, p=state._pop; state._enter=null; state._pop=null; if(reducedMotion())return;
   if(e&&e.sel){ root.querySelectorAll(e.sel).forEach(x=>x.classList.add('enter')); }
   else if(e){ const el=root.querySelector(e.ex!=null?'.ex[data-exi="'+e.ex+'"]':'.srow[data-exi="'+e.exi+'"][data-si="'+e.si+'"],.pair[data-exi="'+e.exi+'"][data-si="'+e.si+'"]');
-    if(el){ el.classList.add('enter'); if(e.scroll&&el.scrollIntoView)el.scrollIntoView({block:'center',behavior:reducedMotion()?'auto':'smooth'}); } }
+    if(el){ el.classList.add('enter'); if(e.scroll)showEl(el.querySelector('.exhd')||el,16); } }
   if(p){ const el=root.querySelector('.dchk[data-exi="'+p.exi+'"][data-si="'+p.si+'"],.pairdone[data-exi="'+p.exi+'"][data-si="'+p.si+'"]'); if(el)el.classList.add('pop'); } }
 function afterPaint(root,swap){ if(!root)return; try{ popClose(); }catch(_){} try{ animNums(root); }catch(_){} try{ animBars(root); }catch(_){} try{ slideTabs(root,swap); }catch(_){} try{ applyEnter(root); }catch(_){} try{ tourMaybe(); }catch(_){} }
 // ---- R4 · TRKRow reflow (§7.18): lo que queda se reacomoda en vez de saltar ----
@@ -8556,6 +8580,14 @@ function updateNowBar(){
 }
 // v282 · descanso ENTRE LADOS de un ejercicio unilateral (segundos; 0 = sin descanso). Aditivo: sin el campo, 30 s.
 function restSideSec(){ const v=db&&db.settings?db.settings.restSideSec:null; return (v==null||isNaN(+v))?30:Math.max(0,Math.min(300,+v)); }
+// v285 · G7 · el pie de la sesión, cerrado por defecto. Se abre con ··· y se cierra solo: al tocar fuera, al arrastrar la
+// lista o a los 6 s (el reloj se reinicia si tocas el pie y espera si hay una confirmación abierta). Solo cambia una clase:
+// ni repinta ni cambia de alto. Los primeros 300 ms no acepta toques (el dedo que abrió no puede caer en abort).
+let _wbarT=0, _wbarAt=0;
+function wbarArm(){ clearTimeout(_wbarT); _wbarT=setTimeout(()=>{ if(document.getElementById('asklayer')){ wbarArm(); return; } wbarSet(false); },6000); }
+function wbarSet(on){ const f=document.getElementById('wfooter'); if(!f)return; on=!!on; state._wbar=on; f.classList.toggle('open',on);
+  const b=f.querySelector('.wbar'); if(b)b.setAttribute('aria-expanded',on?'true':'false'); clearTimeout(_wbarT); if(on){ _wbarAt=Date.now(); wbarArm(); } }
+try{ document.addEventListener('pointerdown',e=>{ if(!state._wbar)return; const t=e.target; if(t&&t.closest&&t.closest('#wfooter')){ wbarArm(); return; } if(t&&t.closest&&t.closest('#asklayer,#toasts'))return; wbarSet(false); },true); }catch(_){}
 function updateRestBar(){
   const bar=document.getElementById('resttimer'), tEl=document.getElementById('resttime'); if(!bar||!tEl)return;
   const w=db&&db.activeWork;
@@ -8874,11 +8906,13 @@ document.getElementById('app').addEventListener('click',e=>{
   if(window._swipeGuard&&Date.now()-window._swipeGuard<350)return;
   const _hn=e.target.closest&&e.target.closest('[data-hint]'); if(_hn){ hintMark(_hn.dataset.hint); _hn.remove(); return; }   // §9.1: tocar la pista la despide
   const el=e.target.closest('[data-act]'); if(!el)return; const a=el.dataset.act;
+  if(a==='wbar'){ wbarSet(true); return; }
+  if((a==='abort'||a==='undo'||a==='save')&&state._wbar&&Date.now()-_wbarAt<300)return;   // v285 · el toque que abrió el pie no cuenta
   const exi=el.dataset.exi!=null?+el.dataset.exi:null, si=el.dataset.si!=null?+el.dataset.si:null;
   // v223: cualquier toque dentro de la sesión viva cuenta como actividad (ver sessionIdleEnd)
   if(db&&db.activeWork&&state.screen==='workout')db.activeWork.lastTouch=Date.now();
-  if(a==='setf'&&el.dataset.locked){ e.preventDefault(); const _go6=()=>{ document.querySelectorAll('[data-act="setf"][data-exi="'+el.dataset.exi+'"][data-si="'+el.dataset.si+'"]').forEach(f=>{f.removeAttribute('data-locked');f.removeAttribute('readonly');}); el.focus&&el.focus(); return; }; return trkAsk({title:'editar una serie completada',detail:'ya está confirmada en el historial',ok:'editar'},_go6);}
-  if(a==='h_setf'&&el.dataset.locked){ e.preventDefault(); const _go7=()=>{ document.querySelectorAll('[data-act="h_setf"][data-exi="'+el.dataset.exi+'"][data-si="'+el.dataset.si+'"]').forEach(f=>{f.removeAttribute('data-locked');f.removeAttribute('readonly');}); el.focus&&el.focus(); return; }; return trkAsk({title:'editar una serie completada',detail:'ya está confirmada en el historial',ok:'editar'},_go7);}
+  if(a==='setf'&&el.dataset.locked){ e.preventDefault(); const _go6=()=>{ document.querySelectorAll('[data-act="setf"][data-exi="'+el.dataset.exi+'"][data-si="'+el.dataset.si+'"]').forEach(f=>{f.removeAttribute('data-locked');f.removeAttribute('readonly');}); focusEl(el); return; }; return trkAsk({title:'editar una serie completada',detail:'ya está confirmada en el historial',ok:'editar'},_go6);}
+  if(a==='h_setf'&&el.dataset.locked){ e.preventDefault(); const _go7=()=>{ document.querySelectorAll('[data-act="h_setf"][data-exi="'+el.dataset.exi+'"][data-si="'+el.dataset.si+'"]').forEach(f=>{f.removeAttribute('data-locked');f.removeAttribute('readonly');}); focusEl(el); return; }; return trkAsk({title:'editar una serie completada',detail:'ya está confirmada en el historial',ok:'editar'},_go7);}
   // elegir la MISMA opción de un <select> (rir/unit) no dispara 'change' — así que tocarlo ES el gesto de
   // confirmar esa sugerencia gris. v223: confirma SOLO ese campo y parchea el DOM en sitio. El código
   // viejo re-renderizaba con el selector nativo ABIERTO: el <select> original quedaba huérfano, su
@@ -8945,7 +8979,7 @@ document.getElementById('app').addEventListener('click',e=>{
   else if(a==='loaddemo'){ db.split=demoSplit(); db.rotIdx=0; state.selDay=null; save(); render(); }
   else if(a==='loadmine'){ db.split=myStarterSplit(); db.rotIdx=0; state.selDay=null; if(!db.activeGym){db.activeGym='PRO GYM — arandas'; db.gyms=['PRO GYM — arandas'];} save(); render(); }
   else if(a==='workshop'){ openWorkshop(); }
-  else if(a==='usetpl'){ const t=(window._tpls||[])[+el.dataset.i]; if(t){ splitCarry(t.build()); db.rotIdx=0; state.selDay=null; save(); closeModal(); go('splitedit'); } }
+  else if(a==='usetpl'){ const t=(window._tpls||[])[+el.dataset.i]; if(t){ splitCarry(t.build()); db.rotIdx=0; state.selDay=null; save(); closeModal(); state._scroll=0; /*ds:top*/ go('splitedit'); } }
   else if(a==='logweight'){ openWeightLog(); }
   else if(a==='logsleep'){ openSleepLog(); }
   else if(a==='editsleep'){ const d=el.dataset.d; const dt=document.getElementById('sl_date'); if(dt){ dt.value=d; dt.dispatchEvent(new Event('change')); } }
@@ -8995,7 +9029,7 @@ document.getElementById('app').addEventListener('click',e=>{
   else if(a==='deladhoc'){ const d=todayISO(),i=+el.dataset.i; if(db.adhoc&&db.adhoc[d]){db.adhoc[d].splice(i,1); if(!db.adhoc[d].length)delete db.adhoc[d]; save(); render();} }
   else if(a==='stackview'){ window._stackView=el.dataset.v||'today'; render(); }
   else if(a==='chartpt'){ try{ const pts=JSON.parse(el.dataset.pts||'[]'); if(pts.length){ const r=el.getBoundingClientRect(); const x=(e.clientX-r.left)/(r.width||1); let best=pts[0],bd=9; pts.forEach(p=>{ const d=Math.abs(p.f-x); if(d<bd){bd=d;best=p;} }); if(best&&best.l)toast(best.l); } }catch(_){} }
-  else if(a==='editbw'){ const d=el.dataset.d; const dt=document.getElementById('bw_date'), kg=document.getElementById('bw_kg'); if(dt)dt.value=d; if(kg){ kg.value=(db.bodyweight&&db.bodyweight[d])||''; kg.focus(); } }
+  else if(a==='editbw'){ const d=el.dataset.d; const dt=document.getElementById('bw_date'), kg=document.getElementById('bw_kg'); if(dt)dt.value=d; if(kg){ kg.value=(db.bodyweight&&db.bodyweight[d])||''; focusEl(kg); } }
   else if(a==='delbw'){ const d=el.dataset.d; trkAsk({title:'borrar el peso del '+fmtShort(d),ok:'borrar',danger:true},()=>{ if(db.bodyweight)delete db.bodyweight[d]; const allk=Object.keys(db.bodyweight||{}).sort(); if(db.profile)db.profile.weightKg=allk.length?db.bodyweight[allk[allk.length-1]]:db.profile.weightKg; save(); openWeightLog(); }); }
   else if(a==='settings'){ go('settings'); }
   else if(a==='profile'||a==='editprofile'){ goPerfil(); }
@@ -9012,8 +9046,8 @@ document.getElementById('app').addEventListener('click',e=>{
   else if(a==='hcalm'){ state._histYM=(state._histYM||0)+(+el.dataset.d||0); reRender(); }
   else if(a==='hcalday'){ histGoDay(el.dataset.d); }
   else if(a==='openhistedit'){ closeModal(); state._histSessId=el.dataset.id; state.screen='histedit'; render(); }
-  else if(a==='h_close'){ state._histSessId=null; go('history'); }
-  else if(a==='h_delsession'){ holdConfirm({title:'borrar esta sesión',detail:'sale del historial y deja de contar para volumen, progreso y recuperación',verb:'borrar'},()=>{ db.sessions=db.sessions.filter(x=>x.id!==el.dataset.id); state._histSessId=null; save(); go('history'); }); }
+  else if(a==='h_close'){ state._histSessId=null; goBack('history'); }   // v285 · vuelve a la sesión que estabas viendo
+  else if(a==='h_delsession'){ holdConfirm({title:'borrar esta sesión',detail:'sale del historial y deja de contar para volumen, progreso y recuperación',verb:'borrar'},()=>{ db.sessions=db.sessions.filter(x=>x.id!==el.dataset.id); state._histSessId=null; save(); goBack('history'); }); }
   // history-edit set actions — isolated from the live setf/done/etc. handlers above (never touch db.activeWork).
   else if(a==='h_done'){ const s=db.sessions.find(x=>x.id===state._histSessId); if(!s)return; const ex=s.exercises[exi]; if(!ex||!ex.sets[si])return;
     if(ex.unilateral){ const v=!(ex.sets[si]&&ex.sets[si].done); [si,si+1].forEach(j=>{ const st=ex.sets[j]; if(!st)return; st.done=v; if(v)pfClearAll(st); }); }
@@ -9061,14 +9095,14 @@ document.getElementById('app').addEventListener('click',e=>{
     else run(); }
   else if(a==='exmenu'){ const nm=el.dataset.n, k=el.dataset.k;   // R3 · D10: acciones de la fila del catálogo
     const sel=(window._mgSel||[]).indexOf(k)>=0;
-    trkMenu(nm,[['perfil del ejercicio',()=>openExProfile(nm,'catalog')],['historial',()=>openExHist(exKeyByName(nm))],[sel?'quitar de la selección para unir':'seleccionar para unir',()=>{ window._mgSel=window._mgSel||[]; const i=window._mgSel.indexOf(k); if(i>=0)window._mgSel.splice(i,1); else window._mgSel.push(k); openExerciseDirectory(); }]]); }
+    trkMenu(nm,[['perfil del ejercicio',()=>openExProfile(nm,'catalog')],['historial',()=>openExHist(exKeyByName(nm))],[sel?'quitar de la selección para unir':'seleccionar para unir',()=>mgSelToggle(k)]]); }
   else if(a==='pf_save'){ saveExProfile(); }
   else if(a==='pf_close'){ closeProfileBack((window._exProf||{}).back); }
   else if(a==='pf_addsec'){ const box=document.getElementById('pf_secs'); if(box){ const i=box.querySelectorAll('select[data-sec]').length; if(i<3){
       box.insertAdjacentHTML('beforeend','<div class="pfsec"><select class="pfsel" data-sec="'+i+'"><option value="">— quitar —</option>'+Object.keys(MUSCLES).map(id=>'<option value="'+id+'">'+escTxt(MUSCLES[id].n)+' · '+escTxt(MUSCLES[id].es)+'</option>').join('')+'</select><input class="pfw" data-secw="'+i+'" type="number" inputmode="decimal" step="0.05" min="0" max="1" value="0.5"/></div>');
       const m=document.getElementById('modal'); if(m)m.dataset.tTouched='1'; } } }
-  else if(a==='exsel'){ const k=el.dataset.k; window._mgSel=window._mgSel||[]; const i=window._mgSel.indexOf(k); if(i>=0)window._mgSel.splice(i,1); else window._mgSel.push(k); openExerciseDirectory(); }
-  else if(a==='exselclear'){ window._mgSel=[]; openExerciseDirectory(); }
+  else if(a==='exsel'){ mgSelToggle(el.dataset.k); }
+  else if(a==='exselclear'){ window._mgSel=[]; if(!mgSelPaint())openExerciseDirectory(); }
   else if(a==='openmerge'){ openMergeModal(); }
   else if(a==='domerge'){ doMerge(); }
   else if(a==='okexedit'){ saveExEdit(); }
@@ -9122,7 +9156,6 @@ document.getElementById('app').addEventListener('click',e=>{
       const go=()=>{ restructureLat(ex,to,{dayId:w.dayId,orderIdx:exi}); save(); reRender(); toast(to?'✓ unilateral · una fila por lado':'✓ bilateral'); };
       if((ex.sets||[]).some(s=>s&&!s._pf&&(s.done||(+s.w>0)||(+s.r>0)))) trkAsk({title:to?'pasar a unilateral':'pasar a bilateral',detail:to?('lo ya registrado queda en el lado '+(ex.startSide==='L'?'L':'R')+' · el otro lado sale sugerido'):'cada lado registrado queda como una serie',ok:'cambiar'},go); else go(); } }
   else if(a==='wfull'){ state._wfull=!state._wfull; reRender(); }
-  else if(a==='gonow'){ const t=currentSetTarget(); if(t){ const fe=document.querySelector('.setn[data-exi="'+t.exi+'"][data-si="'+t.si+'"]'); if(fe&&fe.scrollIntoView)fe.scrollIntoView({block:'center',behavior:reducedMotion()?'auto':'smooth'}); } }
   else if(a==='fs'){ const s=db.activeWork.exercises[exi].sets[si]; if(!s||s.isDrop)return; s.fsOn=!s.fsOn; if(!s.fsOn&&!s.bw)s.extraW=''; save(); reRender(); }
   else if(a==='addset'){ const ex=db.activeWork.exercises[exi]; if(isCardio(ex)){ const lt=ex.sets[ex.sets.length-1]||null; ex.sets.push(emptySet(ex,null,false,lt)); } else if(ex.unilateral){ const [s1,s2]=uniSides(ex); const lr=workSource(ex,s1)||ex.sets[ex.sets.length-2]||null, ll=workSource(ex,s2)||ex.sets[ex.sets.length-1]||null; ex.sets.push(emptySet(ex,s1,false,lr)); ex.sets.push(emptySet(ex,s2,false,ll)); } else { ex.sets.push(emptySet(ex,null,false,workSource(ex,null))); } state._enter={exi,si:ex.unilateral&&!isCardio(ex)?ex.sets.length-2:ex.sets.length-1}; save(); reRender(); }
   else if(a==='dropset'){ const ex=db.activeWork.exercises[exi]; if(isCardio(ex))return; // cardio has no drop sets
@@ -9138,7 +9171,7 @@ document.getElementById('app').addEventListener('click',e=>{
   else if(a==='axmus'){ const c=window._axCtx||{}; openAddExStep2(c.afterExi, el.dataset.v, c.replaceExi); }
   else if(a==='axpick'){ const c=window._axCtx||{}; const x=(window._axList||[])[+el.dataset.i]; if(x){ if(c.replaceExi!=null)replaceExFromKnown(c.replaceExi,x); else addExFromKnown(c.afterExi,x); } }
   else if(a==='axnewex'){ const c=window._axCtx||{}; openAddExForm(c.afterExi,c.muscle,c.replaceExi); }
-  else if(a==='axback'){ const c=window._axCtx||{}; openAddExercise(c.afterExi,c.replaceExi); }
+  else if(a==='axback'){ const c=window._axCtx||{}; sheetBack(()=>openAddExercise(c.afterExi,c.replaceExi)); }
   else if(a==='axdetails'){ const c=window._axCtx||{}; if(c.replaceExi!=null)openExEdit(null,-1,c.replaceExi); }
   else if(a==='editmach'){ openMachineEdit(exi); }
   else if(a==='editexname'){ const w=db.activeWork; const ex=w&&w.exercises[exi]; const swap=()=>{ if(ex&&ex.muscle){ openAddExStep2(exi, ex.muscle, exi); } else { openAddExercise(exi, exi); } };
@@ -9201,7 +9234,7 @@ document.getElementById('app').addEventListener('click',e=>{
   else if(a==='mealsummary'){ openMealSummary(el.dataset.tag); }
   else if(a==='mealrename'){ const tag=el.dataset.tag; state.renamingTag=tag; render();
     const inp=document.getElementById('mealrnm'); if(!inp){ state.renamingTag=null; return; }
-    inp.focus(); try{inp.select();}catch(_){}
+    focusEl(inp); try{inp.select();}catch(_){}
     const commit=()=>{ const nv=(inp.value||'').trim(); state.renamingTag=null;
       if(nv && nv!==tag){ const t=curDate(); (db.meals[t]||[]).forEach(m=>{ if(m.tag===tag)m.tag=nv; });
         if(db.mealMeta&&db.mealMeta[t]&&db.mealMeta[t][tag]){ if(!db.mealMeta[t][nv])db.mealMeta[t][nv]=db.mealMeta[t][tag]; delete db.mealMeta[t][tag]; }
@@ -9245,7 +9278,7 @@ document.getElementById('app').addEventListener('click',e=>{
   else if(a==='fphoto'){ window._faTag=window._faTag||curTag(); const inp=document.createElement('input'); inp.type='file'; inp.accept='image/*'; inp.setAttribute('capture','environment'); inp.onchange=()=>{ if(inp.files&&inp.files[0]) labelPhoto(inp.files[0], window._linkBarcode||''); }; inp.click(); }
   else if(a==='nspick'){ snapshotFaCtx(); const f=(window._nsRes||[])[+el.dataset.i]; if(!f)return; if(window._linkBarcode)f.barcode=window._linkBarcode; openVerify(f,{isNew:true,tag:window._faTag||curTag()}); }
   else if(a==='ofpick'){ snapshotFaCtx(); const f=(window._ofRes||[])[+el.dataset.i]; if(!f)return; openLog(f,{tag:window._faTag||curTag(),isNew:true}); }
-  else if(a==='faback'){ const c=window._faCtx; window._faCtx=null; closeModal(); openFoodAdd(c&&c.tag, c&&c.lock); if(c&&c.q){ const q=document.getElementById('fa_q'); if(q){ q.value=c.q; q.dispatchEvent(new Event('input',{bubbles:true})); const term=(c.q||'').trim(); if(c.off && window._faLast===term){ renderOFFRows(term); } } } }
+  else if(a==='faback'){ const c=window._faCtx; window._faCtx=null; sheetBack(()=>{ closeModal(); openFoodAdd(c&&c.tag, c&&c.lock); }); if(c&&c.q){ const q=document.getElementById('fa_q'); if(q){ q.value=c.q; q.dispatchEvent(new Event('input',{bubbles:true})); const term=(c.q||'').trim(); if(c.off && window._faLast===term){ renderOFFRows(term); } } } }
   else if(a==='ftext'){ openTextParse(); }
   else if(a==='fmanual'){ openVerify({name:'',base:'g',per100:{},sizes:{}},{isNew:true,tag:window._faTag||curTag()}); }
   else if(a==='vcontinue'){ const f=readRegister(); if(!f.name){ toast('⚠ pon un nombre','err'); return; } const _go8=()=>{ const vv=window._verify||{}; openLog(f,{tag:vv.tag,barcode:f.barcode,fromId:vv.fromId,isNew:true}); }; if(!f.barcode) return trkAsk({title:'registrar sin código de barras',detail:'puedes vincular un código después',ok:'registrar'},_go8); return _go8();}
@@ -9379,7 +9412,7 @@ document.getElementById('app').addEventListener('change',e=>{
   app.addEventListener('pointerup',ev=>end(ev,false)); app.addEventListener('pointercancel',ev=>end(ev,true));
 })();
 document.getElementById('app').addEventListener('keydown',e=>{ if(e.key!=='Enter'||!e.target.classList||!e.target.classList.contains('obi'))return;
-  const all=[...document.querySelectorAll('.obi')], i=all.indexOf(e.target); e.preventDefault(); if(i>=0&&i<all.length-1)all[i+1].focus(); else e.target.blur(); });
+  const all=[...document.querySelectorAll('.obi')], i=all.indexOf(e.target); e.preventDefault(); if(i>=0&&i<all.length-1)focusEl(all[i+1]); else e.target.blur(); });
 document.getElementById('app').addEventListener('input',e=>{
   if(state.screen==='onboard'&&e.target.dataset&&(e.target.dataset.od||e.target.dataset.og)){ const d=onbD(), t=e.target;   // v277 · cada casilla del alta se guarda al teclear
     if(t.dataset.od){ d[t.dataset.od]=t.value; const p=document.getElementById('onb_prev'); if(p)p.innerHTML=onbPrevTxt(d); }
@@ -9436,7 +9469,7 @@ function openExEdit(di,ei,liveExi){
    <div class="sheetbtns"><button class="ok" data-act="okexedit">save</button><button class="cancel" data-act="closemodal">cancel</button></div>`);
   // muscle dropdowns: picking "+ nuevo músculo…" reveals a free-text input that feeds a hidden canonical field
   function wireMuscleSelect(selId,newId,hidId){ const sel=document.getElementById(selId),nw=document.getElementById(newId),hid=document.getElementById(hidId); if(!sel||!nw||!hid)return;
-    const apply=()=>{ if(sel.value==='__new__'){ nw.style.display='block'; nw.focus(); hid.value=nw.value.trim(); } else { nw.style.display='none'; hid.value=sel.value; } };
+    const apply=()=>{ if(sel.value==='__new__'){ nw.style.display='block'; focusEl(nw); hid.value=nw.value.trim(); } else { nw.style.display='none'; hid.value=sel.value; } };
     sel.addEventListener('change',apply); nw.addEventListener('input',()=>{ hid.value=nw.value.trim(); }); }
   function setMuscleSel(selId,newId,hidId,value){ if(value==null||value==='')return; const sel=document.getElementById(selId),nw=document.getElementById(newId),hid=document.getElementById(hidId); if(!sel)return; const opt=[...sel.options].find(o=>o.value.toLowerCase()===String(value).toLowerCase()); if(opt){sel.value=opt.value;} else { const o=document.createElement('option'); o.value=value; o.textContent=value; const newOpt=sel.querySelector('option[value="__new__"]'); sel.insertBefore(o,newOpt); sel.value=value; } if(nw)nw.style.display='none'; hid.value=sel.value; }
   wireMuscleSelect('ee_muscle_sel','ee_muscle_new','ee_muscle');
@@ -9453,7 +9486,7 @@ function openExEdit(di,ei,liveExi){
   }));
   // secondary muscle: show/hide via the visible button / ×
   const m2On=document.querySelector('[data-act="ee_mus2_on"]'); const m2Off=document.querySelector('[data-act="ee_mus2_off"]');
-  if(m2On)m2On.onclick=(ev)=>{ ev.preventDefault(); const w=document.getElementById('ee_mus2wrap'); const a=document.getElementById('ee_mus2_addwrap'); if(w)w.style.display='block'; if(a)a.style.display='none'; const s=document.getElementById('ee_mus2sel'); if(s)s.focus(); };
+  if(m2On)m2On.onclick=(ev)=>{ ev.preventDefault(); const w=document.getElementById('ee_mus2wrap'); const a=document.getElementById('ee_mus2_addwrap'); if(w)w.style.display='block'; if(a)a.style.display='none'; const s=document.getElementById('ee_mus2sel'); if(s)focusEl(s); };
   if(m2Off)m2Off.onclick=(ev)=>{ ev.preventDefault(); const w=document.getElementById('ee_mus2wrap'); const a=document.getElementById('ee_mus2_addwrap'); if(w)w.style.display='none'; if(a)a.style.display='block'; const s=document.getElementById('ee_mus2sel'); if(s)s.value=''; const n=document.getElementById('ee_mus2_new'); if(n){n.style.display='none';n.value='';} const h=document.getElementById('ee_mus2'); if(h)h.value=''; };
   // memory: typing OR picking a known name → autofill remembered variables, but ONLY for a brand-new
   // exercise or when the name actually changed to a different known one. Editing an EXISTING exercise
@@ -9556,7 +9589,7 @@ function openImportSplit(){
    <div class="sheetbtns u-mt10"><button class="ok" id="imp_go">importar</button><button class="cancel" data-act="closemodal">cancel</button></div>`);
   document.getElementById('imp_go').onclick=()=>{ const m=document.getElementById('imp_msg');
     try{ const d=JSON.parse(val('imp_txt')); const sp=importIronlogSplit(d); if(!sp.days.length)throw new Error('sin días');
-      splitCarry(sp); db.rotIdx=0; state.selDay=null; save(); closeModal(); go('splitedit'); toast('✓ split importado · '+sp.days.length+' días · '+sp.days.reduce((a,x)=>a+x.exercises.length,0)+' ejercicios');
+      splitCarry(sp); db.rotIdx=0; state.selDay=null; save(); closeModal(); state._scroll=0; /*ds:top*/ go('splitedit'); toast('✓ split importado · '+sp.days.length+' días · '+sp.days.reduce((a,x)=>a+x.exercises.length,0)+' ejercicios');
     }catch(e){ if(m)m.textContent='no se pudo importar: '+(e.message||'JSON inválido'); } };
 }
 function SPLIT_TEMPLATES(){
@@ -9588,7 +9621,7 @@ function openExName(exi){ const w=db.activeWork; if(!w)return; const ex=w.exerci
   openModal(`<h3>nombre del ejercicio</h3>
    <div class="field"><label>NOMBRE</label><input id="exn_in" value="${(ex.name||'').replace(/"/g,'&quot;')}" autocomplete="off"/></div>
    <div class="sheetbtns"><button class="ok" id="exn_save">guardar</button><button class="cancel" data-act="closemodal">cancel</button></div>`);
-  const inp=document.getElementById('exn_in'); if(inp){inp.focus();}
+  const inp=document.getElementById('exn_in'); if(inp){focusEl(inp);}
   document.getElementById('exn_save').onclick=()=>{ const v=val('exn_in'); if(v){ ex.name=v; savedToast('✓ nombre actualizado'); } closeModal(); reRender(); };
 }
 // shared exercise-mapping for a live work session → its persisted shape (used by both the manual
@@ -9698,11 +9731,40 @@ function setHistField(exi,si,f,val){
 // cls may include 'nodismiss' — for the rare modal where tapping the backdrop away must NOT silently
 // discard the decision (currently only promptIdleSession's idle-session prompt: continuing or closing
 // must be an explicit tap, never an accidental tap-outside).
-function openModal(html,cls){ const had=!!document.getElementById('modal'); closeModal();
+// v285 · T1 · una hoja que se vuelve a pintar NO pierde su altura (antes ninguna la guardaba: elegir en el catálogo, cambiar
+// el periodo de una gráfica, borrar un registro… todo regresaba arriba). La hoja anterior sigue viva 200 ms como _modalGhost:
+// se le lee el título, la altura y la de sus listas internas, y al montar la nueva se restaura así:
+//   a) el control que acabas de tocar existe UNA sola vez en la hoja nueva → queda a la misma altura bajo el dedo
+//   b) mismo título (no vacío) → misma altura · c) vuelves a la hoja madre (sheetBack) → la altura que tenía · d) si no, arriba
+const SHEET_INNER='.fa-listwrap,.lnut,#ns_list';
+let _lastTap=null, _sheetMem=null, _sheetIn=false, _sheetPend=null;
+function sheetTitle(sh){ const h=sh&&sh.querySelector('h3'); return h?(h.textContent||'').replace(/\s+/g,' ').trim():''; }
+function sheetSnap(m){ const sh=m&&m.querySelector&&m.querySelector('.sheet'); if(!sh)return null;
+  return {title:sheetTitle(sh),top:sh.scrollTop,inner:Array.from(sh.querySelectorAll(SHEET_INNER)).map(x=>x.scrollTop),dirty:!!m._dirty,node:sh}; }
+function tapSig(el){ if(!el||!el.tagName)return ''; const d=el.dataset||{}, ks=Object.keys(d).filter(k=>k!=='touched').sort(); if(!ks.length&&!el.id)return ''; return el.tagName+'|'+(el.id||'')+'|'+ks.map(k=>k+'='+d[k]).join('&'); }
+// el toque se apunta en fase de captura (los avisos y la capa de preguntas detienen la propagación) y se olvida en el mismo
+// tick: un pellizco de gráfica o una respuesta que llega después no usan un toque viejo
+function tapNote(e){ try{ const t=e.target&&e.target.closest&&(e.target.closest('[data-act]')||e.target), sh=t&&t.closest&&t.closest('#modal .sheet'); if(!sh){ _lastTap=null; return; }
+    const sig=tapSig(t); _lastTap=sig?{sig,tag:t.tagName,sheet:sh,off:t.getBoundingClientRect().top-sh.getBoundingClientRect().top}:null; setTimeout(()=>{ _lastTap=null; },0); }catch(_){ _lastTap=null; } }
+try{ document.addEventListener('click',tapNote,true); document.addEventListener('change',tapNote,true); }catch(_){}
+function sheetBack(fn){ window._sheetBackGo=true; try{ fn(); } finally { window._sheetBackGo=false; } }   // volver a la hoja madre, a su altura
+function sheetRestore(m,old,back,live){ const sh=m.querySelector('.sheet'); if(!sh)return; const title=sheetTitle(sh); let top=null, inner=null;
+  const tap=_lastTap; if(tap&&old&&tap.sheet===old.node){ const c=Array.from(sh.querySelectorAll(tap.tag)).filter(x=>tapSig(x)===tap.sig);
+    if(c.length===1)top=Math.max(0,(c[0].getBoundingClientRect().top-sh.getBoundingClientRect().top)+sh.scrollTop-tap.off); }
+  if(old&&title&&old.title===title){ if(top==null)top=old.top; inner=old.inner; if(old.dirty&&live)m._dirty=true; }   // lo escrito sin guardar sigue contando solo si la hoja estaba ABIERTA (no si ya la habías cerrado)
+  else if(back&&_sheetMem&&title&&_sheetMem.title===title){ top=_sheetMem.top; inner=_sheetMem.inner; _sheetMem=null; }
+  else if(old&&old.title&&old.title!==title&&!back)_sheetMem=old;   // la madre, por si vuelves a ella
+  const put=()=>{ try{ if(top>0&&Math.abs(sh.scrollTop-top)>=1)sh.scrollTop=top; if(inner)Array.from(sh.querySelectorAll(SHEET_INNER)).forEach((x,i)=>{ if(inner[i]>0&&Math.abs(x.scrollTop-inner[i])>=1)x.scrollTop=inner[i]; }); }catch(_){} };
+  put(); if(top>0||(inner&&inner.some(x=>x>0))){ _sheetPend=put; Promise.resolve().then(()=>{ if(_sheetPend===put){ _sheetPend=null; put(); } }); }   // las listas que se llenan después de montar
+}
+function sheetRestoreNow(){ const p=_sheetPend; _sheetPend=null; if(p)p(); }
+function openModal(html,cls){ const cur=document.getElementById('modal'); const had=!!cur; const back=!!window._sheetBackGo;
+  const g0=cur||(window._modalGhost&&window._modalGhost.isConnected?window._modalGhost:null), old=sheetSnap(g0);
+  _sheetIn=true; try{ closeModal(); } finally { _sheetIn=false; }
   // DS-3: si había un sheet (abierto o saliendo) esto es un cambio de contenido → sin animación de entrada
   const g=window._modalGhost; const swap=had||!!(g&&g.isConnected); if(g){ try{g.remove();}catch(_){} window._modalGhost=null; }
-  const m=document.createElement('div'); m.className='modal'+(swap?'':' in'); m.id='modal'; m.innerHTML=`<div class="sheet glass-strong ${cls||''}">${html}</div>`; if(!/\bnodismiss\b/.test(cls||''))m.addEventListener('click',ev=>{if(ev.target===m){ closeModal(); reRender(); }}); document.getElementById('app').appendChild(m); afterPaint(m,swap); }
-function closeModal(){ const s=window._scanner; if(s){ try{ if(s.timer)clearTimeout(s.timer); }catch(_){} try{ if(s._q&&typeof Quagga!=='undefined'){ if(s._fn)Quagga.offDetected(s._fn); Quagga.stop(); } }catch(_){} try{ if(s.stream)s.stream.getTracks().forEach(t=>t.stop()); }catch(_){} window._scanner=null; } window._linkBarcode=''; const m=document.getElementById('modal'); if(!m)return;
+  const m=document.createElement('div'); m.className='modal'+(swap?'':' in'); m.id='modal'; m.innerHTML=`<div class="sheet glass-strong ${cls||''}">${html}</div>`; if(!/\bnodismiss\b/.test(cls||''))m.addEventListener('click',ev=>{if(ev.target===m){ closeModal(); reRender(); }}); document.getElementById('app').appendChild(m); try{ sheetRestore(m,old,back,had); }catch(_){} afterPaint(m,swap); }
+function closeModal(){ const s=window._scanner; if(s){ try{ if(s.timer)clearTimeout(s.timer); }catch(_){} try{ if(s._q&&typeof Quagga!=='undefined'){ if(s._fn)Quagga.offDetected(s._fn); Quagga.stop(); } }catch(_){} try{ if(s.stream)s.stream.getTracks().forEach(t=>t.stop()); }catch(_){} window._scanner=null; } window._linkBarcode=''; if(!_sheetIn&&!window._sheetBackGo)_sheetMem=null; const m=document.getElementById('modal'); if(!m)return;
   // DS-3: el modal deja de existir YA para la lógica (sin id, sin clics); lo que queda es su fantasma saliendo 180 ms
   m.removeAttribute('id'); m.classList.remove('in'); m.classList.add('out'); window._modalGhost=m;
   setTimeout(()=>{ try{m.remove();}catch(_){} if(window._modalGhost===m)window._modalGhost=null; },200); }
@@ -9832,15 +9894,18 @@ function exerciseDirectory(){
 }
 // v224: el catálogo deja de ser solo lectura — cada fila se puede SELECCIONAR y dos o más se unen
 // en un solo ejercicio (el caso del dueño: "sldl" y "bb sldl" son el mismo peso muerto).
+// v285 · T1 · elegir para unir: el ▢/▣ y la barra cambian EN SU LUGAR. Antes cada toque reconstruía la hoja entera y
+// regresaba arriba ("le doy clic y se escala hasta arriba", el dueño, 1-oct).
+function mgBarHTML(n){ return `<span>${n?n+(n>1?' elegidos':' elegido'):'▢ elige dos para unir'}</span><span class="u-f1"></span>`+(n>1?`<button class="b" data-act="openmerge">unir</button>`:n?`<span class="u-o40">elige otro</span>`:'')+(n?`<button class="b u-o50" data-act="exselclear">limpiar</button>`:''); }
+function mgSelPaint(){ const sel=window._mgSel||[], m=document.getElementById('modal'); if(!m)return false; const bar=m.querySelector('#mgbar'); if(!bar)return false;
+  m.querySelectorAll('.exrow[data-k]').forEach(r=>{ const on=sel.indexOf(r.dataset.k)>=0; r.classList.toggle('on',on); const b=r.querySelector('.mgbox'); if(b)b.textContent=on?'▣':'▢'; });
+  bar.innerHTML=mgBarHTML(sel.length); return true; }
+function mgSelToggle(k){ const s=window._mgSel=window._mgSel||[], i=s.indexOf(k); if(i>=0)s.splice(i,1); else s.push(k); if(!mgSelPaint())openExerciseDirectory(); }
 function openExerciseDirectory(){
   const dir=exerciseDirectory(); const muscles=Object.keys(dir).sort(); const total=muscles.reduce((a,m)=>a+dir[m].length,0);
   const sel=window._mgSel=window._mgSel||[];
   let html=`<h3>catálogo de ejercicios</h3><div class="submeta u-mb10">${total} ejercicios · ▢ = elegir para unir duplicados · toca el nombre para su perfil (músculos, resistencia, longitud) · etiquetas = gyms donde lo has entrenado</div>`;
-  if(sel.length){
-    html+=`<div class="mgbar"><span>${sel.length} seleccionado${sel.length>1?'s':''}</span><span class="u-f1"></span>`
-      +(sel.length>1?`<button class="b" data-act="openmerge">unir</button>`:`<span class="u-o35">elige otro</span>`)
-      +`<button class="b u-o50" data-act="exselclear">limpiar</button></div>`;
-  }
+  html+=`<div class="mgbar" id="mgbar">${mgBarHTML(sel.length)}</div>`;   // v285 · siempre ocupa su alto: elegir no empuja las filas
   if(!total){ html+=`<div class="submeta">aún no hay ejercicios registrados</div>`; }
   muscles.forEach(m=>{
     html+=`<div class="u-label u-o50 u-mt12 u-mb4 u-mx0">#${escTxt(m)} <span class="u-o40">· ${dir[m].length}</span></div>`;
@@ -11798,8 +11863,8 @@ function openTextSheet(name,text,onDone){
   const ta=document.getElementById('ts_txt'); if(ta)ta.value=text;
   const b=document.getElementById('ts_copy');
   if(b)b.onclick=()=>{ const ok=()=>{ toast('✓ copiado · '+Math.round(text.length/1024)+' KB'); if(onDone)onDone(); };
-    try{ if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(text).then(ok,()=>{ ta.focus(); ta.select(); toast('selecciona y copia a mano'); }); return; } }catch(_){}
-    ta.focus(); ta.select(); try{ if(document.execCommand('copy'))ok(); }catch(_){} };
+    try{ if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(text).then(ok,()=>{ focusEl(ta); ta.select(); toast('selecciona y copia a mano'); }); return; } }catch(_){}
+    focusEl(ta); ta.select(); try{ if(document.execCommand('copy'))ok(); }catch(_){} };
 }
 function doBackupShare(){ doExport(); }
 // el recordatorio terco: si pasaron 7 días sin respaldo, se pide UNA vez (no un toast que se va)
@@ -11950,6 +12015,10 @@ try{ withTO(idbBootCheck(),12000).catch(()=>idbReleaseHold()); }catch(_){ idbRel
 try{ growthLog(); }catch(_){}
 try{ promptIdleSession(); }catch(_){} try{ if(typeof location!=='undefined' && /[?&]selftest=1/.test(location.search)){ const _rawMain=(()=>{ try{ return localStorage.getItem(LS_KEY); }catch(_){ return null; } })(), _rawLive=(()=>{ try{ return localStorage.getItem(LS_LIVE); }catch(_){ return null; } })(), _lc0=_lastClosed; _sbx=true; try{ _identitySelfCheck(); _dropsetSelfCheck(); _baselineSelfCheck(); _variantSelfCheck(); _historyEditSelfCheck(); _idSelfCheck(); _cardioSelfCheck(); _tensionSelfCheck(); _healthSelfCheck(); _readinessSelfCheck(); _loggingSelfCheck(); _mergeSelfCheck(); _streakSelfCheck(); _chartSelfCheck(); _muscleSelfCheck(); _exProfileSelfCheck(); _recoverySelfCheck(); _diagSelfCheck(); _uiSelfCheck(); _v256SelfCheck(); _v257SelfCheck(); _sessSafetyCheck(); _storageSelfCheck(); _lateralitySelfCheck(); _v268SelfCheck(); _v269SelfCheck(); _healthPasteSelfCheck(); _v271SelfCheck(); _exStatusSelfCheck(); _scheduleSelfCheck(); _exHistSelfCheck(); _suppSelfCheck(); _macroVizSelfCheck(); _onbSelfCheck(); _tourSelfCheck(); _v279SelfCheck(); _shareSessSelfCheck(); _atajoSelfCheck(); _v282SelfCheck(); _pulgarSelfCheck(); _comidaSelfCheck(); _estimuloSelfCheck(); _recovScoreSelfCheck(); } finally{ _sbx=false; _lastClosed=_lc0; try{ if(_rawLive==null)localStorage.removeItem(LS_LIVE); else localStorage.setItem(LS_LIVE,_rawLive); }catch(_){} } let _rawAfter=null; try{ _rawAfter=localStorage.getItem(LS_KEY); }catch(_){} const _same=(()=>{ if(_rawAfter===_rawMain)return true; try{ const a=JSON.parse(_rawAfter), b=_rawMain==null?JSON.parse(JSON.stringify(db)):JSON.parse(_rawMain);   /* v267 · almacén vacío: se compara contra la base real en memoria */ return !!a&&!!b&&((a.profile||{}).username===(b.profile||{}).username)&&((a.sessions||[]).length===(b.sessions||[]).length)&&(JSON.stringify(a.split)===JSON.stringify(b.split)); }catch(_){ return false; } })(); if(!_same)console.error(new Error('SELFCHECK sandbox: una base de juguete llegó a tu disco')); else console.log('sandbox self-check OK'); setTimeout(()=>{ _idbSelfCheck(); },800); setTimeout(_dsRenderReport,1500); } }catch(e){ console.error(e); } try{ const _sp=new URLSearchParams(location.search); const _hasHistorical=_sp.has('stepsh')||_sp.has('weighth')||_sp.has('stepsq')||_sp.has('sleeph'); const _hk=['steps','stepsh','weight','weighth','stepsq','sleep','sleeph'].some(k=>_sp.has(k)); if(_hk&&!(db.profile&&db.profile.username)){ if(_bootJ)_bootJ.flags.push('urlImportEmpty'); if(history.replaceState)history.replaceState(null,'',location.pathname); setTimeout(()=>{ try{ toast('⚠ ese enlace abrió Safari, no tu app','err'); }catch(_){} },600); } else if(_hasHistorical){ const _hsp=_sp; if(history.replaceState)history.replaceState(null,'',location.pathname); setTimeout(()=>{ trkAsk({title:'importar datos históricos',detail:'este link trae pasos, peso o sueño de varios días · acepta solo si viene de tu propio Atajo de iOS',ok:'importar'},()=>{ try{ const _imp=importHealth(_hsp); if(_imp.length){ save(); render(); toast('✓ '+_imp.join(' · ')); } }catch(_){} }); },400); } else { const _imp=importHealth(_sp); if(_imp.length){ window._healthImported=_imp; if(history.replaceState)history.replaceState(null,'',location.pathname); } } }catch(_){} save(); render(); if(window._healthImported)setTimeout(()=>toast('✓ '+window._healthImported.join(' · ')),250); if(window._recoveredFromBackup)setTimeout(()=>{try{toast('⚠ se recuperó un respaldo local · revisa tus datos, podrían faltar cambios muy recientes','err');}catch(_){}},600);
 applyDesign(); try{ if(/[?&]design\b/.test(location.search))localStorage.setItem('gymtrk_designmode','1'); if(localStorage.getItem('gymtrk_designmode')==='1')openDesignPanel(); }catch(_){}
+// v285 · T1 · tras una recarga por versión nueva: la pantalla y la altura donde ibas (solo pantallas que se sostienen solas)
+const _bootAt=Date.now(); try{ document.addEventListener('pointerdown',()=>{ window._touched=1; },{capture:true,once:true,passive:true}); }catch(_){}
+try{ const r=JSON.parse(sessionStorage.getItem('gymtrk_resume')||'null'); if(r){ sessionStorage.removeItem('gymtrk_resume');
+    if(db.profile.username&&Date.now()-r.t<12*3600000&&['home','workout','macros','progress','stack','settings','history','splitedit'].indexOf(r.s)>=0&&(r.s!=='workout'||db.activeWork)){ state.screen=r.s; state._scroll=r.y>0?r.y:null; render(); } } }catch(_){}
 try{ bootScreen(()=>{ try{
   if(/[?&]wrap=1\b/.test(location.search)){ monthlyWrap(prevMonthYm(), true); return; }
   const _due=monthlyWrapDue(); if(_due){ monthlyWrap(_due, false); return; }
@@ -11990,7 +12059,12 @@ else if('serviceWorker' in navigator){
     }).catch(()=>{});
     let reloaded=false;
     navigator.serviceWorker.addEventListener('controllerchange',()=>{
-      if(reloaded)return; reloaded=true; try{ flushSave(); }catch(_){} location.reload();
+      if(reloaded)return; reloaded=true;
+      // v285 · T1 · la recarga por versión nueva te regresaba al inicio a media uso. Sola, únicamente recién abierta la app y
+      // sin haber tocado nada; si ya la estás usando, espera a que la mandes a segundo plano. Y deja apuntado dónde ibas.
+      const doIt=()=>{ try{ flushSave(); }catch(_){} try{ const v=document.getElementById('view'); sessionStorage.setItem('gymtrk_resume',JSON.stringify({s:state.screen,y:v?v.scrollTop:0,t:Date.now()})); }catch(_){} location.reload(); };
+      if(!window._touched&&Date.now()-_bootAt<4000&&!document.getElementById('modal'))doIt();
+      else { const h=()=>{ if(document.hidden){ document.removeEventListener('visibilitychange',h); doIt(); } }; document.addEventListener('visibilitychange',h); }
     });
   });
 }
