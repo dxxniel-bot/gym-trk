@@ -350,7 +350,7 @@ async function runIn(fr, sc){ if(!fr.W || !sc) return 'sin frame';
   try{ W.closeExShare(); }catch(_){} try{ W.closeModal(); }catch(_){} try{ W.closeAsk(true); }catch(_){}
   try{ T.bootKill(); }catch(_){} try{ W.popClose(); }catch(_){} try{ W.saveOK(); }catch(_){}
   try{ const tb = W.document.getElementById('toasts'); if(tb) tb.textContent = ''; }catch(_){}   // toasts y barra de guardado de la pantalla anterior
-  try{ W.go('home'); }catch(_){}
+  try{ T.state._scroll = 0; W.go('home'); }catch(_){}   // v285 · la app conserva la posición en la misma pantalla: cada escenario parte de arriba
   inspClear(fr); fr.errs.length = 0; let err = null;
   // un escenario que nunca resuelve (p. ej. una búsqueda en línea colgada) no puede trabar el estudio: 6 s y sigue
   try{ await Promise.race([Promise.resolve().then(() => sc.run(W, T)), sleep(6000).then(() => { throw new Error('tardó más de 6 s'); })]); }catch(e){ err = errMsg(e); }

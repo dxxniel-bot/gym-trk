@@ -44,7 +44,7 @@
   // v276 · deslizar el carrusel del panel guarda la lámina en settings.macroViz (la app): al salir vuelve a como estaba
   const macrosOn = (W, T) => { const md = T.state.macroDate; later(W, () => { T.state.macroDate = md; }); keepViz(W, T); T.state.macroOpen = false; W.go('macros'); const d = foodDay(T); if(d){ T.state.macroDate = d; W.render(); } return d; };
   // v272 · lleva #view (el contenedor con scroll de la app) a una sección: su regla arriba, sin scrollIntoView (ese también
-  // movería la página del estudio). Solo posición de scroll; render() la vuelve a 0 en el siguiente go()
+  // movería la página del estudio). Solo posición de scroll; el estudio la reinicia antes de cada escenario (v285: render() ya no la reinicia sola)
   // (v273: `s` también puede ser el elemento de la sección)
   const toSection = (W, s) => { const v = W.document.getElementById('view'), e = typeof s === 'string' ? $(W, '#view ' + s) : s; if(!v || !e) return false;
     const sec = e.closest('.section') || e, hr = sec.previousElementSibling, top = (hr && hr.classList.contains('rule')) ? hr : sec;
@@ -134,13 +134,8 @@
     EXST.forEach(k => { delete st[k]; }); }
   // la bitácora del ejercicio con más sesiones, abierta como en la app: desde progreso (así [‹ back] vuelve ahí)
   function exHistOn(W, T){ exState(W, T); const k = topExKey(W); W.go('progress'); if(k) W.openExHist(k); return !!k; }
-  // la sección //LOG de la bitácora (la cabecera .section cuyo título es //LOG) y //EXERCISES de progreso (su .grp-label)
+  // la sección //LOG de la bitácora (la cabecera .section cuyo título es //LOG)
   const logSec = W => Array.from(W.document.querySelectorAll('#view .section')).find(s => /^\/\/\s*LOG\b/.test(((s.querySelector('.h') || s).textContent || '').trim())) || null;
-  const exListSec = W => Array.from(W.document.querySelectorAll('#view .grp-label')).find(e => /^\/\/EXERCISES\b/.test((e.textContent || '').trim())) || null;
-  // //EXERCISES solo sale con la tile de e1RM activa: si está oculta, se muestra solo mientras se mira
-  function exListOn(W, T){ exState(W, T); const L = W.progLayout(), i = L.hidden.indexOf('e1rm');
-    if(i >= 0){ L.hidden.splice(i, 1); later(W, () => { if(L.hidden.indexOf('e1rm') < 0) L.hidden.splice(Math.min(i, L.hidden.length), 0, 'e1rm'); }); }
-    W.go('progress'); const s = exListSec(W); if(s) toSection(W, s); }
   // en el entreno, tocar el nombre de un ejercicio con historia abre [historial] [cambiar ejercicio] (sin historia, cambiar
   // directo). Sesión PROPIA: el toque sella lastTouch en la sesión viva, así la del dueño no se toca
   function exNameMenu(W, T){ const w = ownLive(W, T); T.state._curEx = null; W.go('workout');
@@ -450,9 +445,7 @@
     // ---------------- progreso ----------------
     { id:'progress', g:'pantalla', label:'progreso', run(W){ W.go('progress'); } },
     { id:'nav:progress', g:'pantalla', label:'nav · progress activa', run(W){ navOn(W, () => W.go('progress')); } },
-    // v274 · //EXERCISES (con la tile de e1RM, después de //RECORDS): los de los últimos 60 días, '[bi] nombre ···· estado ·
-    // veces · última' en filas de 44 (el estado no sale con 'pocos datos'), [ver todos · N]. #view desplazado hasta ahí
-    { id:'progress:exercises', g:'pantalla', label:'progreso · //EXERCISES', run(W, T){ exListOn(W, T); } },
+    // v285 · //EXERCISES, //RECORDS, //STRENGTH y //MUSCLES salieron de progreso (y el 1RM de toda la app)
     { id:'sheet:metric-steps', g:'hoja', label:'hoja · métrica · pasos 30D', run(W){ W.go('progress'); mdRange(W, 30); W.openMetricDetail('steps'); } },
     { id:'m:metric', g:'hoja', label:'hoja · métrica · pasos 7D', run(W){ W.go('progress'); mdRange(W, 7); W.openMetricDetail('steps'); } },
     { id:'sheet:streak', g:'hoja', label:'hoja · racha', run(W){ W.openStreakSheet(); } },
@@ -465,8 +458,6 @@
     { id:'m:muscle', g:'hoja', label:'hoja · músculo', run(W){ W.openMuscleDetail('side_delts'); } },
     { id:'m:musclemap', g:'hoja', label:'hoja · mapa de músculos', run(W){ W.openMuscleMap(); } },
     { id:'m:volume', g:'hoja', label:'hoja · volumen', run(W){ W.openVolumeDetail(); } },
-    // v274 · el tile y //STRENGTH ya abren la bitácora del ejercicio (exhist); openLiftDetail queda de respaldo y se abre directo
-    { id:'m:lift', g:'hoja', label:'hoja · levantamiento (respaldo)', run(W, T){ const s = lastTrain(T) || lastAny(T); const e = s && (s.exercises || [])[0]; if(e) W.openLiftDetail(e.name); } },
     // v274 · progreso por ejercicio ("un enlistado de… la fecha de la sesión… peso, número de repeticiones e intensidad, y…
     // una gráfica"): el de más sesiones, abierto desde progreso con openExHist(clave). [‹ back] · //EXERCISE [bi] nombre ·
     // tipo · N sesiones · unidad · la línea de estado de v272 · e1RM | peso top | volumen · lineChart en su unidad real (sin

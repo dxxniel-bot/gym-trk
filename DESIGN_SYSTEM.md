@@ -1,6 +1,6 @@
 # gym//TRK — DESIGN SYSTEM (referencia del estado actual)
 
-> Referencia del estado actual (v284). **Lee BRAND.md primero**: manda sobre este archivo. Sin historia: DESIGN_CHANGELOG.md.
+> Referencia del estado actual (v285). **Lee BRAND.md primero**: manda sobre este archivo. Sin historia: DESIGN_CHANGELOG.md.
 
 ---
 
@@ -199,10 +199,10 @@ tabla) · a ojo.
 | Sección / título | `--t-section` | 800 | 0 (`--ls-title` si va en mayúsculas) | ui | `.section .h`, `.sheet h3`, `.lt .h`, `.mnm` (nombre de comida), `.exhead .n`, `.wline .wtn`, `.dnlbl`, `.shtt` |
 | Campo (solo editable) | `--t-field` (14, v269) | 400 / 700 (800 al renombrar) | 0 | — | `.field input`/`select`, `#fa_q`, `textarea.ta`, `.slph input`, `.slblk input`, `.mdcust input`, `select.pfsel`, `#pf_gym`, `.pfw`, `.msum-time`, `.gnmin`, `.senm`, `.obi` |
 | Glifo de control | `--t-section` | 400 | 0 | tight | `.dchk`, `.pairdone`, `.dnav`, `.lx`, `.mchev`, `.footer .undo`, `.exmore` |
-| Fila / dato | `--t-data` | 400 (valor 700/800) | 0 | ui; lectura en compartir | `.line`, `.mit`, `.lc`, `.trow`, `.srw`, `.stq`, `.inp`, `.pick` |
+| Fila / dato | `--t-data` | 400 (valor 700/800) | 0 | ui; lectura en compartir | `.line`, `.mit`, `.lc`, `.srw`, `.stq`, `.inp`, `.pick` |
 | Acción: botón, chip, tab | `--t-data` | 700 | `--ls-ui` | centrado por alto | `.lact` = `.mdtabs span` = `.nav a` a 700; el primario (`.start` = `.sheetbtns .ok` = `.footer .save`) a 800; los `[verbo]` (`button.b`, `button.cancel`, `.secondary .b`, `.sheetbtns .cancel`) y las opciones sin elegir (`button.t`) a 400, la elegida a 700 |
 | Etiqueta, meta, ayuda, vacío | `--t-label` | 400 | `--ls-caps` en MAYÚSCULAS · `--ls-ui` en meta de interfaz · 0 | ui | `.grp-label`, `.whdr .wlbl`, `.submeta`, `.empty`, `.wmeta`, `.thead .cl`, `.setn`, `.exsub .note`, `.mmac` (macros del alimento, v271; su fuente principal en `<b>` `--fg`/700) |
-| Estado semántico | `--t-label` | 700 | `--ls-caps` si es sigla | — | `.lpr` (PR), `.pst`, `.setprog`, `.vst` |
+| Estado semántico | `--t-label` | 700 | `--ls-caps` si es sigla | — | `.pst`, `.setprog` |
 
 - En la cabecera de una comida **manda el nombre** (`.mnm` `--t-section`/800 `--fg`) y el total va segundo (`.mkc`
   `--t-section`/700 en `--o70`, v271; el dueño, 24-sep: "…destaca más… las calorías totales que es el nombre de la
@@ -646,7 +646,7 @@ en `›` para navegar. Nada más. El árbol para elegir está en §17.3.
 | Familia | Clases | Anatomía | Función |
 |---|---|---|---|
 | **Etiqueta de dato** | `.exsub .note` (`[+ nota]`), `.exrow .exp` (perfil), `.exT` (σ del ejercicio, `~σ 2.6`), `.settens` (σ de la serie, `σ0.98`), `.exzones` (`obj RIR 1–2`) | texto sin caja, `--t-label`, `--o50`; si se toca, subrayado punteado | describe (tipo, σ, perfil, RIR objetivo) |
-| **Estado** | `.vst`, `.setprog`, `.lpr` (PR), `.pill`, `.pst` | texto `--t-label` **sin caja**, minúsculas salvo sigla; color = semántico del estado | dice cómo está (debajo del mínimo, ▲+3 %, PR) |
+| **Estado** | `.setprog`, `.pill`, `.pst` | texto `--t-label` **sin caja**, minúsculas salvo sigla; color = semántico del estado | dice cómo está (▲+3 %, retención alta) |
 | **Seleccionable** | `.chip`, `.spc`, `.wchip`, `.ag-chip` | caja `--r-ctl` 4, alto ≥36, borde .5 o `--card2`, `--t-data` | se toca para elegir o filtrar |
 
 - MRK-1: nada de cajas alrededor de un estado; nada de chips con otro radio que `--r-ctl`; no más familias.
@@ -887,8 +887,8 @@ Cómo la app **sugiere** sin inventar (//STIMULUS, //MUSCLES y el detalle de mú
 - **Anatomía:** `.dxrow`: hallazgo `.dxh` (`--t-data`/700, color por severidad `.dx-bad` / `.dx-warn` / `.dx-info` `--fg` /
   `.dx-ok`) · evidencia `.dxev` (`--t-label` `--o50`, con los números que lo disparan) · acción `.dxdo` (`→ …`, `--t-label`
   `--o70`) · separador .5 `--o10` · nota final `.dxnote`. Orden: grave → atención → sugerencia → "en orden".
-- **En una fila de lista** (`.mscdx`): solo el hallazgo principal en corto + `+N` (`.dxmore`); nunca repite lo que ya dice
-  un estado de la fila (en //MUSCLES `low` y `high` no salen: la banda ya va junto al nombre); "en orden" no ocupa renglón.
+- **En las listas no sale (v285):** las observaciones se leen solo al tocar un músculo (el dueño: "solamente al darle
+  clic"); //STIMULUS lista σ y recuperación y nada más.
 - **Reglas (`diagnoseMuscle()`, umbrales en `DIAG`; v272 quita `mrv`/`mev` y suma las de σ, `tension-v2.md` §4):**
   - grave: `fatigue` — más series, RIR más bajo y capacidad ≤ −3 % en 14 d, sin nada del día que lo explique.
   - atención: `early` (entrenado antes de su ventana y rindió menos) · `context` (la baja coincidió con sueño, comida, FC
@@ -949,7 +949,7 @@ componente, con una API. **Ninguna pantalla implementa su propia versión**: si 
 | **TRKRow** | la lista cambia sin saltos | `data-rk` con `rk()` (identidad en memoria, nunca se guarda) · `reRender()` = `flipCapture()` + `render()` + `flipPlay()` · `state._enter` = `{exi,si}`, `{ex,scroll}` o `{sel}` | §7.8, §10 |
 | **TRKBar** | barra que crece desde su valor anterior | `trkBarI()`, `trkMark()`, `animBars()` | §7.15 |
 | **TRKNum** | número que cuenta hasta su valor | `data-nk` (clave), `data-nv` (valor), `data-nd` (decimales) + `animNums()` | §10 |
-| **TRKTrend** | resumen de una serie antes de su gráfica | fila `.trow` con `lineChart(serie, {h, pad, noFill, noDots, margin, dates})` | §8 |
+| **TRKTrend** | retirado en v285 (era la fila de 1RM de //STRENGTH; el 1RM estimado ya no se muestra) | — | — |
 | **TRKCal** | un mes (o una franja) de días con intensidad | `monthCalHTML(y, m, mark, {head, num})`, `stripCalHTML(n, mark)`, `histCalHTML()` | §8 |
 | **TRKLog** | registrar lo del día con una sola anatomía | `logSecHTML({k, title, v, act, body, open})`, `lfoldInit()` | §7.24 |
 | **TRKRing** | el anillo de macros | `ringHTML(pct, center, size, inv)` | §7.28 |
@@ -1062,26 +1062,18 @@ de la guía RP ("esa madre realmente no sirve"). El modelo vive en `contexto/ten
   costo de fatiga (1 = una serie a RIR 2; más al fallo y en compuestos de pierna, `LEG_COMPOUND`). Perillas en `SIG`;
   `setTension`/`setFatigueCost` quedan como alias y `exTensionSets()` ya usa `setSigma`. Por sesión y músculo la σ satura
   desde 10 (`sigSat()`); la semana suma esas σ (`muscleWindowAgg().Ts`).
-- **//STIMULUS (gym):** `stimulusSection()` / `stimulusRows()` → cabecera `//STIMULUS` con meta `σ · 7 d`
-  (`data-gloss="stim"`) y una fila `.stq` por **músculo real** (canónico, mostrado con su etiqueta vía `muscleLabel()`):
-  `.stqh` con `.stqn` nombre y `.stqv` `σ 12.4` (`--t-data`/800) · `sigBarHTML()` (marcas neutras en 10 y 20) · frase
-  `.stqc` (`--t-label` `--o70`). Tocar la fila abre `openMuscleDetail()`.
-- **Arriba, solo si toca (v272):** 1) con `fatigueFlag()`, una fila `⚠ fatiga acumulada ›` —`bench press · pulldown
-  bajando · carga +24 % · ¿una semana ligera?`— que abre `openDeloadInfo()`: hoja que **ofrece** (nunca impone) 5–7 días,
-  series −30 a −50 %, RIR +2, los mismos ejercicios y días, con el porqué de Coleman 2024 ("una semana ligera no te hace
-  crecer más, y una semana sin entrenar no te quita músculo"). 2) si `failure` sale en 3 o más músculos es un hábito, no un
-  músculo: se dice **una vez** (`⚠ mucho fallo en N músculos` · `X% de sus series a F o RIR 0 · deja 1–2 reps en
-  reserva…`) y sale de cada fila.
-- **Regla (STQ-1):** la fila dice el hallazgo principal de `muscleDiag()` (sin `length` ni `sleep`, §7.16) o, si no hay
-  nada que mover, solo su banda de σ (`SIG_BANDS`: <4 `debajo del mínimo` · 4–10 `rinde mucho por serie` · 10–20 `zona
-  objetivo` · 20–30 `cada serie aporta poco` · >30 `muy poco extra`; Pelland 2026), sin glifo ni color. **El color va
-  solo en el `⚠`** (`dxGlyph(sev)`, `--bad`/`--warn`; B-07), nunca en la frase y nunca verde. Orden: lo que hay que mover
-  primero, después σ de mayor a menor. Es la regla que G3 extiende a toda la app. La revisa: `_v256SelfCheck` (nunca
-  verde, orden).
-- **//MUSCLES (progreso):** `musclesSectionHTML()` → `.grp-label` `//MUSCLES · σ · recuperación` y una fila `.mscrow` por
-  músculo con actividad en 28 d, de mayor a menor σ: `.mscn` nombre (con su banda en `.vst` solo si σ <4 o ≥20; `.vst.warn`
-  desde 30) · `.mscv` `σ 12.4 · 9 series · RIR 1.8` · `sigBarHTML()` · `.mscrec` recuperación · `.mscdx` el hallazgo
-  principal (§7.16).
+- **//STIMULUS (gym, v285):** `stimulusSection()` / `stimulusRows()` → cabecera `//STIMULUS` con meta `σ · unidad de
+  tensión mecánica · 7 d` (`data-gloss="stim"`), UNA cabecera de columnas `.stqh.c2.hd` (`músculo · σ · recovery`) y una
+  fila `.stq` por **músculo real** (canónico, mostrado con su etiqueta vía `muscleLabel()`), de mayor a menor σ: `.stqh.c2`
+  con `.stqn` nombre, `.stqv` σ (`--t-data`/800) y `.stqv.p` el % de recuperación (`recPct(muscleRecAt(id))`, el mismo de
+  gym), y debajo `sigBarHTML(key, v, ce, mark)`: todas las barras comparten escala y llevan UNA marca, tu habitual
+  (`muscleHabit(id)` = mediana de la σ semanal de tus 8 semanas anteriores con entreno de ese músculo; con menos de 3 no
+  hay marca). Sin pestañas, sin series, sin RIR, sin avisos y sin instrucciones. Tocar la fila abre `openMuscleDetail()`.
+- **Regla (STQ-2, v285):** las observaciones (aviso de fallo o fatiga `stimWarn`, fatiga acumulada `fatigueFlag` →
+  `openDeloadInfo()`, diagnóstico) solo se leen dentro del detalle del músculo. Ninguna regla compara contra un número
+  general (fuera `SIG_BANDS`, las marcas en 10 y 20 y las reglas `high`/`low`). El color sigue solo en el `⚠`
+  (`stimGlyph(sev)`; B-07). `openDeloadInfo()` **ofrece** (nunca impone) una semana ligera.
+- **//MUSCLES (progreso):** retirada en v285; su contenido es //STIMULUS.
 - **Detalle de músculo** (`openMuscleDetail(id)`; lecturas separadas, nunca una puntuación): DIAGNOSIS (§7.16) ·
   **VOLUME · 7 días** (barra de σ, `σ · estímulo` con su banda y ▲▼ vs 7 d previos, series duras, directas · indirectas,
   sesiones, `zona objetivo · 10–20 σ por semana · Pelland 2026`) · **STIMULUS · 7 días** (RIR medio y % a RIR ≤1, `al
@@ -1868,7 +1860,7 @@ Instrumentación, no infografía (B-02: la gráfica existe solo cuando el texto 
 | Gráfica | API / clase | Dónde | Reglas | Vacía |
 |---|---|---|---|---|
 | **Línea** | `lineChart(vals, opt)`, `chartNums()` | tiles de Progress, detalle de métrica | ver abajo | "sin registros en este rango" |
-| **Sparkline** (TRKTrend) | `.trow .trsp` + `lineChart` a 22 de alto sin relleno ni puntos | //FUERZA, //RECORDS | mismo eje de 30 días en todas las filas; sin línea con <2 sesiones | la fila sin línea |
+
 | **Barra fina** (TRKBar) | `.bar`, `.vbar`, `.wprog` | ingesta, //STIMULUS, //MUSCLES, progreso de sesión, detalle de músculo, versión `barras` del panel de macros (v276) | §7.15 | la pista sola |
 | **Barra apilada** (reparto, v276) | `.mvstack` (`.thin` para la meta) con `.mvp` `.mvc` `.mvf` | versión `reparto` del panel de macros y su tarjeta | un tramo por macro en escala de opacidad (`--fill` · `--o60` · `--o30`), hoy (10) sobre la meta (4); leyenda escrita con los %; suma 100 (`macroSplit()`), §7.41 | la pista sola y `—` en la leyenda |
 | **Columnas apiladas** | `.slfc` (FASES del sueño) | detalle de sueño | una columna por noche bajo la x de su fecha (mismo margen de eje que la línea), profundo abajo; 4 filas con etiqueta y valor escritos (`.slfr`) | sin columna |

@@ -7,7 +7,7 @@ const fs = require('fs'), path = require('path');
 const LEVEL = { ROLE: 'P0', GLYE: 'P0', SVGFS: 'P1', SEM: 'P1', GLY: 'P1', SAVE: 'P1', TOASTOK: 'P1', SCROLL: 'P1', RAD: 'P1', BLUR: 'P1',
   EXEMPT: 'P1', MOTION: 'P1', DOC: 'P1', RADF: 'P2', LANG: 'P2', BRK: 'P2', OK: 'P2', TOAST: 'P2', OP: 'P2', LH: 'P2', FONT: 'P2', A11Y: 'P2' };
 const NAME = { ROLE: 'botón sin estilo propio (cae al del navegador)', GLYE: 'emoji en la interfaz', SVGFS: 'SVG fuera de escala (font-size / stroke-width)',
-  SEM: 'color semántico (conteo; no debe crecer)', GLY: 'glifo fuera de GLYPHS', SAVE: 'save() sin feedback', TOASTOK: '✓ sin revisar si save() guardó', SCROLL: 'render() que salta el scroll',
+  SEM: 'color semántico (conteo; no debe crecer)', GLY: 'glifo fuera de GLYPHS', SAVE: 'save() sin feedback', TOASTOK: '✓ sin revisar si save() guardó', SCROLL: 'algo que puede mover el scroll (render() tras cerrar, scrollIntoView/focus() fuera de los ayudantes, arriba sin /*ds:top*/)',
   RAD: 'radio fuera de la familia (0 · 2 marcas · 4 control, tarjeta y gráfica · 8 solo lo que flota)', RADF: 'radio flotante ≠ --r-float', BLUR: 'blur fuera del chrome', EXEMPT: 'ds:exempt sin categoría',
   MOTION: 'movimiento de layout / bucle / smooth', DOC: 'la guía cita algo que no existe', LANG: 'componente con dos idiomas', BRK: '[ corchete ] con espacios',
   OK: 'más de un primario por plantilla', TOAST: 'toast de más de 42 caracteres', OP: 'opacidad literal', LH: 'interlineado literal', FONT: 'peso cargado sin uso',
@@ -111,6 +111,13 @@ module.exports = function rules(raw, repoDir) {
   // v271 · un interruptor de la misma pantalla (toggle*/*tog*) con render() pelado te sube hasta arriba (ver gramos/%)
   for (const m of js.matchAll(/a===['"](\w*(?:[Tt]og|toggle)\w*)['"]\)\s*\{/g)) { const a = m.index + m[0].length - 1, b = js.slice(a, blockEnd(js, a) + 1); if (/(^|[^e])render\(\)/.test(b.replace(/reRender/g, '')) && !/state\._scroll|\bgo\(/.test(b)) add('SCROLL', jsA + m.index, m[1] + ' · render()'); }
   for (const m of js.matchAll(/a===['"](sd_\w+)['"]\)\s*\{/g)) { const a = m.index + m[0].length - 1, b = js.slice(a, blockEnd(js, a) + 1); if (/(^|[^e])render\(\)/.test(b.replace(/reRender/g, ''))) add('SCROLL', jsA + m.index, m[1] + ' · render()'); }
+  // v285 · T1 · "con cada interacción, nunca debe de scrollearse para arriba" (el dueño, 1-oct). render() y openModal() ya
+  // conservan la posición por construcción (y _scrollSelfCheck lo comprueba en la app); aquí se cuida lo que eso no ve: el
+  // scroll A PROPÓSITO solo pasa por showEl / centerEl / focusEl, y mandar una vista arriba se dice con /*ds:top*/.
+  { const HELP = /^(showEl|centerEl|focusEl)$/, at = i => fnAt(jsA + i);
+    for (const m of js.matchAll(/\.scrollIntoView\(/g)) if (!skipped(jsA + m.index) && !HELP.test(at(m.index))) add('SCROLL', jsA + m.index, at(m.index) + ' · scrollIntoView fuera de showEl/centerEl');
+    for (const m of js.matchAll(/\.focus\((?!\{\s*preventScroll)/g)) if (!skipped(jsA + m.index) && !HELP.test(at(m.index))) add('SCROLL', jsA + m.index, at(m.index) + ' · focus() fuera de focusEl');
+    for (const m of js.matchAll(/(?:_scroll|\.scrollTop)\s*=\s*0\b(?!\s*;?\s*\/\*ds:top\*\/)/g)) if (!skipped(jsA + m.index)) add('SCROLL', jsA + m.index, at(m.index) + ' · arriba sin /*ds:top*/'); }
   // ---- R-RAD / R-RADF · radios ----
   // v259 · el valor de cada token de radio se resuelve desde :root siguiendo cadenas var() (un alias como
   // --r-nav:var(--r-pill) antes valía 0 y escondía el hallazgo). RADV solo es el respaldo si el token no se encuentra.
