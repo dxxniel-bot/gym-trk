@@ -4523,8 +4523,9 @@ function _atajoSelfCheck(){ const A=(nm,c)=>{ if(!c) throw new Error('SELFCHECK 
   } finally { openModal=om; db=real; bumpIdx(); }
 }
 // v287 · `sync biometrics` con el atajo que se descarga: la 1ª vez ofrece instalarlo · instalado, lo corre por su nombre · al volver
-// ofrece traer los datos · un pegado del atajo entra completo y dice qué llegó · un atajo vacío avisa · nada de esto mueve lo que
-// tocaste. No está en la lista del arranque: se corre a mano (_sbx=true; _bioSyncSelfCheck()).
+// ofrece traer los datos UNA vez (nunca con otra capa encima ni en plena sesión; cerrada sin traer, la fila lo corre otra vez) · un pegado
+// del atajo entra completo y dice qué llegó · un atajo vacío avisa · nada de esto mueve lo que tocaste. No está en la lista del arranque:
+// se corre a mano (_sbx=true; _bioSyncSelfCheck()); registrada pasa en cualquier posición (empieza cerrando las capas que encuentre).
 function _bioSyncSelfCheck(){ const A=(nm,c)=>{ if(!c) throw new Error('SELFCHECK biosync: '+nm); };
   const real=db, ios=isIOS, nat=isNative, go0=bioGo, tt=toast, rs=state.screen, sc0=state._scroll, v=document.getElementById('view');
   const tap=el=>el.dispatchEvent(new MouseEvent('click',{bubbles:true,cancelable:true})), near=(a,b)=>Math.abs(a-b)<=1;
