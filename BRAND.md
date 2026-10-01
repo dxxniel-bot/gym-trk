@@ -220,6 +220,11 @@ caracteres sin perder un dato?
 | 2026-09-30 | **Comidas compactas y en columnas** (v283): cabecera en dos renglones, `P C F` alineados entre comidas, `[+ food]` · total · `···` chicos a la derecha; nada con "…" | "el desglose sale con puntos suspensivos porque no cabe… los pinches tres puntitos que siguen estando muy grandes para el estilo gráfico que llevamos" · (1-oct) "como terminal, con el tab para espaciar o separar, organizar, que tenga jerarquía" |
 | 2026-09-30 | **Todo lo que estorba en comidas se puede quitar**, con `[deshacer]` (v283) | "no me deja eliminar comidas que ya tengo, las que se quedaron ahí están estorbando. No me deja limpiarlas" |
 | 2026-09-30 | **El nombre de la comida se elige junto al dedo** (v283) | "le das en agregar meal y tienes que desplazarte hasta arriba para alcanzar, de elegir el nombre" |
+| 2026-09-30 | **//STIMULUS con 4 vistas y sin regaños** (v284): σ · duras · totales · mezcla; un aviso de fallo o fatiga solo con pérdida real y sostenida, debajo del dato | "seleccionar entre cuatro variantes… un mix de las tres" · "mucho fallo, mucho fallo… como si fuera algo malo… lo que debe salir en estímulo es el estímulo… no me está diciendo ni cuánto estoy metiendo" |
+| 2026-09-30 | **El detalle de músculo abre con 3 líneas**; el resto tras `[más]` (v284) | "veo mucha información que me hace bolas… mucho ruido visual, mucho texto que no me dice nada" |
+| 2026-09-30 | **σ es una unidad propia de la app** y la banda 10–20 es referencia general, no regla por músculo (v284) | "especificar que son una medición nuestra, una cuantificación personalizada" · "eso de 10 a 20 series semanales hay que reanalizarlo" |
+| 2026-09-30 | **Recovery y readiness son dos puntajes** y cada sesión guarda su foto al empezar (v284) | "debería ser dos puntajes diferentes, el de recovery y el de readiness… descansas tres días y de los músculos andas al 100, pero si dormiste dos horas, de readiness andas al pito" · "una gráfica más, la de recovery… registrarlo justo antes de empezar una sesión" |
+| 2026-09-30 | **Los % por músculo del home pasan a columnas con medidor** (v284; formato por confirmar) | "los músculos que te ponen 78 %, 66 % y así: ese formato no me convence" |
 
 ## 10. Preguntas abiertas (se cierran en el estudio, `tools/studio.html`)
 
