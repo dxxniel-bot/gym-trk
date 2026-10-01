@@ -9983,9 +9983,10 @@ function knownExercises(){
 // (marcó como máquina algo que hace con peso libre). Un merge REESCRIBE etiquetas suyas, así que solo
 // ocurre cuando él lo pide en el catálogo y confirma el resumen — mismo caso legítimo que 'mealrename'.
 // Respaldo previo en SU PROPIA clave: LS_BACKUP la pisa save() cada pocos segundos y no serviría de nada.
+// (v286 · esa foto ya no va a localStorage: se espera en IndexedDB, ver snapExpect. La clave queda solo para leer la de antes.)
 const LS_PREMERGE='gymtrk_db_v1_premerge';
 function nameKey(s){ return String(s||'').toLowerCase().trim(); }
-// db.exCat['<nombre>'] = {name,gyms[],type,unilateral,unit,muscle,muscles,mergedFrom[]} — aditivo y solo
+// db.exCat['<nombre>'] = {name,gyms[],type,unit,muscle,muscles,mergedFrom[]} (v286: ya no se escribe `unilateral`) — aditivo y solo
 // informativo: ORDENA y ETIQUETA los pickers (los del gym activo primero), nunca esconde un ejercicio,
 // porque entrenar en otro gym no puede hacer desaparecer un ejercicio de la lista.
 function exCatRec(name){ const k=nameKey(name); return (db.exCat&&db.exCat[k])||null; }
