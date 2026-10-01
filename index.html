@@ -477,10 +477,16 @@
   .ex.current{position:relative;}
   /* v256 · //ESTÍMULO: silencio = en rango; una frase solo si hay algo que mover; color solo para frenar */
   .stq{padding:var(--s3) 0; border-bottom:var(--bw-sep) solid var(--o10);} .stq:last-child{border-bottom:0;} .stq.u-tap:active{opacity:var(--op-press);}
+  .stq.u-tap{min-height:44px; box-sizing:border-box; display:flex; flex-direction:column; justify-content:center;}   /* estímulo · la fila sin frase mide menos de 44: el toque no baja (B-11) */
   .stqh{display:flex; align-items:baseline; justify-content:space-between; gap:var(--s3);}
   .stqn{font-size:var(--t-data); font-weight:700; color:var(--fg); min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;} .stqv{font-size:var(--t-data); font-weight:800; color:var(--fg); white-space:nowrap;}
   .stq .vbar{margin-top:6px;}
   .stqc{font-size:var(--t-label); line-height:var(--lh-read); color:var(--o70); margin-top:6px;} .stqc.bad{color:var(--bad);} .stqc.warn{color:var(--warn);} .stqc.dim{color:var(--o40);}
+  /* estímulo · columnas alineadas (el dueño, 1-oct: "como terminal… que tenga jerarquía"): c4 = mezcla con sus 4 números por fila · stw = aviso y referencia en clave | valor · md3 = las 3 líneas del detalle en clave | valor | nota */
+  .stqh.c4{display:grid; grid-template-columns:minmax(0,1fr) repeat(4,7ch); column-gap:var(--s3); font-size:var(--t-data);} .stqh.c4 .stqv{text-align:right;} .stqh.c4 .stqv.p{font-weight:400; color:var(--o60);} .stqh.c4.hd .stqn,.stqh.c4.hd .stqv{font-size:var(--t-label); font-weight:400; color:var(--o40);}
+  .stw{display:grid; grid-template-columns:minmax(0,1fr) max-content; column-gap:var(--s3); row-gap:var(--s2); align-items:baseline; font-size:var(--t-label); color:var(--o70);} .stw .hd{font-size:var(--t-data); font-weight:700; color:var(--fg);} .stw .r{text-align:right; white-space:nowrap;} .stw .i{padding-left:var(--s5); min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;} .stw.dim{color:var(--o40);}
+  .stq[data-gloss]{border-bottom:var(--bw-sep) solid var(--o10);} .stq[data-gloss]:last-child{border-bottom:0;}
+  .md3{display:grid; grid-template-columns:max-content max-content minmax(0,1fr); column-gap:var(--s4); row-gap:var(--s4); align-items:baseline; font-size:var(--t-data); padding:var(--s2) 0;} .md3 .mdbar{grid-column:1/-1; margin:0;} .mscd .md3 .mdv{text-align:left; white-space:nowrap; font-weight:700;} .mscd .md3 .mdsub{margin-left:0; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
   /* v256 · modo enfoque: solo el ejercicio en curso se lee; lo demás queda tenue (tocarlo lo vuelve el actual) */
   .wline{position:relative; display:flex; align-items:center; gap:var(--s3); width:100%; height:32px; margin:var(--s3) 0 var(--s4); padding:0; border:0; background:none; color:var(--fg); font-family:inherit; text-align:left; cursor:pointer;}
   .wline .wtn{font-size:var(--t-section); font-weight:800; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
@@ -2531,15 +2537,18 @@ function muscleRowsData(){ const now=new Date(); const t=todayISO(now), d7=shift
   return Object.keys(idx).filter(id=>idx[id].some(a=>a.date>=d28)).map(id=>{ const cur=muscleWindowAgg(id,d7,t), prev=muscleWindowAgg(id,d14,d8);
     return {id,cur,prev,rec:muscleRecoveryState(id)}; }).sort((a,b)=>b.cur.Ts-a.cur.Ts); }
 // //MÚSCULOS en Progreso: una fila por músculo real con volumen 7d vs landmarks, RIR medio, y su recuperación
-// v272 · bandas semanales de σ por músculo (Pelland 2026; ACSM 2026): la serie extra vale la mitad a ~12 σ por semana
-const SIG_BANDS=[[4,'debajo del mínimo'],[10,'rinde mucho por serie'],[20,'zona objetivo'],[30,'cada serie aporta poco'],[Infinity,'muy poco extra']];
+// v272 · bandas semanales de σ por músculo (Pelland 2026; ACSM 2026) · estímulo: son una REFERENCIA GENERAL, no una regla igual
+// para cada músculo. La curva es un promedio de estudios (explica ~22 % de la diferencia entre ellos), no separa músculos,
+// no muestra un tope y arriba de ~25 series casi no hay datos (sigma-evidencia.md, dominio 6). Por eso el texto describe
+// el tramo ("cada serie rinde más/menos") en vez de juzgarlo ("debajo del mínimo", "zona objetivo").
+const SIG_BANDS=[[4,'poco volumen'],[10,'cada serie rinde más'],[20,'referencia general'],[30,'cada serie rinde menos'],[Infinity,'cada serie rinde poco']];
 function sigBand(v){ for(const [hi,t] of SIG_BANDS)if(v<hi)return t; return ''; }
-function sigBarHTML(key,v){ const CE=Math.max(30,v*1.1); return `<div class="vbar">${trkBarI(key,Math.min(100,Math.round(v/CE*100)))}${trkMark(10/CE*100,'mev','10')}${trkMark(20/CE*100,'mev','20')}</div>`; }
+function sigBarHTML(key,v){ const CE=Math.max(30,v*1.1); return `<div class="vbar">${trkBarI(key,Math.min(100,Math.round(v/CE*100)))}${trkMark(10/CE*100,'mev','referencia general: 10')}${trkMark(20/CE*100,'mev','referencia general: 20')}</div>`; }
 function musclesSectionHTML(){ const rows=muscleRowsData(); if(!rows.length)return '';
   const unres=muscleUnresolvedCount();
   let out=`<hr class="rule"/><div class="grp-label">//MUSCLES · σ · recuperación</div><div class="u-label u-o40 u-mt-n4 u-mb8 u-mx0">por músculo real · 7 días · marcas en 10 y 20 σ · toca uno para el detalle</div>`;
   rows.forEach(r=>{ const c=r.cur, v=c.Ts; const st=(v<4||v>=20)?sigBand(v):'';
-    out+=`<div class="mscrow" data-act="muscledetail" data-id="${r.id}"><div class="msctop"><span class="mscn">${escTxt(muscleLabel(r.id))}${st?` <span class="vst${v>=30?' warn':''}">${st}</span>`:''}</span><span class="mscv">σ ${fmtSig(v)} · ${r1m(c.sets)} series${c.rir!=null?' · RIR '+r1m(c.rir):''}</span></div>`
+    out+=`<div class="mscrow" data-act="muscledetail" data-id="${r.id}"><div class="msctop"><span class="mscn">${escTxt(muscleLabel(r.id))}${st?` <span class="vst">${st}</span>`:''}</span><span class="mscv">σ ${fmtSig(v)} · ${r1m(c.sets)} series${c.rir!=null?' · RIR '+r1m(c.rir):''}</span></div>`
       +sigBarHTML('msc:'+r.id,v)
       +`<div class="mscrec" style="color:${recStateCol(r.rec)}">${escTxt(recStateTxt(r.rec))}${r.rec&&r.rec.win.src==='observed'?' · observado':''}</div>${diagRowHTML(r.id)}</div>`; });
   if(unres)out+=`<div class="submeta u-mt6 u-warn" data-act="musclemap">${unres} ejercicio${unres>1?'s':''} con músculo sin resolver (p. ej. "delts" sin pista en el nombre) · toca para asignarlo ›</div>`;
@@ -2595,23 +2604,27 @@ const DX_RANK={bad:0,warn:1,info:2,ok:3};
 function diagnoseMuscle(inp){ const F=[]; if(!inp||!inp.n28)return {findings:F,state:'none'};
   const w1=inp.w1||{}, w2=inp.w2||{}, R=inp.recent||[]; const last=R[R.length-1]||null;
   const p14=median(inp.perf14||[]); const pc=x=>(x>0?'+':x<0?'−':'')+r1m(Math.abs(x))+'%'; const flagged=R.some(x=>x.flags&&x.flags.length);
+  // estímulo · un aviso de fallo o fatiga (DX_LOAD) solo existe si ADEMÁS hay pérdida de progreso SOSTENIDA: algún ejercicio
+  // primario del músculo retrocediendo o estancado según exStatus (≥6 sesiones en 4 semanas o más). Una sesión baja no basta,
+  // y el texto dice el dato, no regaña (el dueño, 30-sep: "mucho fallo, mucho fallo… como si fuera algo malo").
+  const loss=(inp.stat||[]).length>0;
   // 1 · fatiga acumulada: más series, más cerca del fallo y la capacidad cae — sin sueño/comida que lo expliquen
-  if(w2.sets>=3&&w1.sets>=w2.sets*DIAG.fatSets&&w1.rir!=null&&w2.rir!=null&&w1.rir<=w2.rir-DIAG.fatRIR&&p14!=null&&p14<=DIAG.drop&&!flagged)
-    F.push({k:'fatigue',sev:'bad',txt:'fatiga acumulada',row:'fatiga acumulada',ev:'series '+pc((w1.sets/w2.sets-1)*100)+' · RIR '+r1m(w2.rir)+' → '+r1m(w1.rir)+' · capacidad '+pc(p14)+' (14 d)',do:'bajar series, subir el RIR unos días o dar más descanso; no sumar volumen'});
+  if(loss&&w2.sets>=3&&w1.sets>=w2.sets*DIAG.fatSets&&w1.rir!=null&&w2.rir!=null&&w1.rir<=w2.rir-DIAG.fatRIR&&p14!=null&&p14<=DIAG.drop&&!flagged)
+    F.push({k:'fatigue',sev:'bad',txt:'más series y más cerca del fallo',row:'series '+pc((w1.sets/w2.sets-1)*100)+' · RIR '+r1m(w2.rir)+' → '+r1m(w1.rir),kv:['series',pc((w1.sets/w2.sets-1)*100),'RIR '+r1m(w2.rir)+' → '+r1m(w1.rir)],ev:'series '+pc((w1.sets/w2.sets-1)*100)+' · RIR '+r1m(w2.rir)+' → '+r1m(w1.rir)+' · capacidad '+pc(p14)+' (14 d)',do:'menos series o más RIR unos días suele devolver el avance'});
   // 2 · entrenado antes de su ventana y rindió menos
-  const early=R.filter(x=>x.gap!=null&&x.win&&x.gap<x.win.lo&&x.perf!=null&&x.perf<=DIAG.drop);
+  const early=loss?R.filter(x=>x.gap!=null&&x.win&&x.gap<x.win.lo&&x.perf!=null&&x.perf<=DIAG.drop):[];
   if(early.length){ const x=early[early.length-1];
-    F.push({k:'early',sev:'warn',txt:'entrenado antes de recuperarse',row:'antes de recuperarse · '+pc(x.perf),ev:fmtShort(x.date)+': '+Math.round(x.gap)+' h de descanso (ventana '+(x.win.src==='observed'?'observada':'estimada')+' '+winTxt(x.win.lo,x.win.hi)+') → '+pc(x.perf)+(early.length>1?' · '+early.length+' de las últimas '+R.length:''),do:'deja más horas entre sesiones de este músculo'}); }
+    F.push({k:'early',sev:'warn',txt:'menos descanso que su ventana',row:Math.round(x.gap)+' h de descanso · '+pc(x.perf),kv:['descanso',Math.round(x.gap)+' h','ventana '+winTxt(x.win.lo,x.win.hi)],ev:fmtShort(x.date)+': '+Math.round(x.gap)+' h de descanso (ventana '+(x.win.src==='observed'?'observada':'estimada')+' '+winTxt(x.win.lo,x.win.hi)+') → '+pc(x.perf)+(early.length>1?' · '+early.length+' de las últimas '+R.length:''),do:'con más horas entre sesiones de este músculo suele rendir más'}); }
   // 3 · la última baja coincidió con sueño, comida, FC o carga del día
   if(last&&last.perf!=null&&last.perf<=DIAG.drop&&last.flags&&last.flags.length)
-    F.push({k:'context',sev:'warn',txt:'la última baja coincidió con tu día',row:'baja '+pc(last.perf)+' · '+last.flags[0].split(' · ')[0],ev:fmtShort(last.date)+' '+pc(last.perf)+' · '+last.flags.join(' · '),do:'antes de cambiar el plan, revisa sueño y comida'});
-  // 4 · v272 · mucho fallo: el fallo cuesta ~2× la fatiga de RIR 2 por +0-10 % de estímulo (Refalo 2023/2024; Vieira 2022)
-  if(w1.nk>=DIAG.failMinN&&w1.nf/w1.nk>DIAG.failShare)
-    F.push({k:'failure',sev:'warn',txt:'mucho fallo',row:'mucho fallo · '+Math.round(w1.nf/w1.nk*100)+'% a F/RIR 0',ev:r1m(w1.nf)+' de '+r1m(w1.nk)+' series a F o RIR 0 en 7 días',do:'el fallo cansa ~2× por +0–10 % de estímulo: deja 1–2 reps en reserva; el fallo, solo en la última serie de máquina o aislamiento'});
+    F.push({k:'context',sev:'warn',txt:'la última baja coincidió con tu día',row:'baja '+pc(last.perf)+' · '+last.flags[0].split(' · ')[0],kv:['ese día',last.flags[0].split(' · ')[0],'baja '+pc(last.perf)],ev:fmtShort(last.date)+' '+pc(last.perf)+' · '+last.flags.join(' · '),do:'antes de cambiar el plan, revisa sueño y comida'});
+  // 4 · v272 · fallo: cuesta ~2× la fatiga de RIR 2 por +0-10 % de estímulo (Refalo 2023/2024; Vieira 2022) · estímulo: solo con pérdida sostenida
+  if(loss&&w1.nk>=DIAG.failMinN&&w1.nf/w1.nk>DIAG.failShare)
+    F.push({k:'failure',sev:'warn',txt:Math.round(w1.nf/w1.nk*100)+'% de las series a F o RIR 0',row:Math.round(w1.nf/w1.nk*100)+'% a F o RIR 0',kv:['a F o RIR 0',Math.round(w1.nf/w1.nk*100)+'%',r1m(w1.nf)+' de '+r1m(w1.nk)+' series'],ev:r1m(w1.nf)+' de '+r1m(w1.nk)+' series en 7 días',do:'a RIR 1–2 el estímulo es ~90 % y la fatiga, cerca de la mitad'});
   // 4b · fallo en compuesto pesado libre (IUSCA 2021; Cowley 2026)
-  if(w1.heavyF>=1)F.push({k:'heavyF',sev:'warn',txt:'fallo en compuesto pesado',row:'fallo en compuesto pesado',ev:w1.heavyF+' serie'+(w1.heavyF>1?'s':'')+' al fallo con 75 % o más de tu 1RM en 7 días',do:'aquí no vayas al fallo: cansa más y se recupera lento; para en RIR 1–2'});
-  // 4c · arriba de 30 σ por semana cada serie aporta muy poco (Pelland 2026)
-  if(w1.sig>DIAG.highSig)F.push({k:'high',sev:'warn',txt:'muy poco extra por serie',row:'muy poco extra por serie',ev:'σ '+fmtSig(w1.sig)+' en 7 días (lo que más rinde: 10–20)',do:'pasa series a otro día o a otro músculo; arriba de ~30 cada serie aporta muy poco'});
+  if(loss&&w1.heavyF>=1)F.push({k:'heavyF',sev:'warn',txt:'fallo en compuesto pesado',row:w1.heavyF+' al fallo en compuesto pesado',kv:['fallo pesado',w1.heavyF+(w1.heavyF>1?' series':' serie'),'con 75% o más de tu 1RM'],ev:w1.heavyF+' serie'+(w1.heavyF>1?'s':'')+' al fallo con 75 % o más de tu 1RM en 7 días',do:'en compuestos pesados el fallo cansa más y se recupera lento; a RIR 1–2 rinde casi igual'});
+  // 4c · arriba de 30 σ por semana cada serie extra aporta menos, sin tope claro y con pocos estudios (Pelland 2026): dato, no aviso
+  if(w1.sig>DIAG.highSig)F.push({k:'high',sev:'info',txt:'más de 30 σ en 7 días',row:'más de 30 σ en 7 días',ev:'σ '+fmtSig(w1.sig)+' · referencia general ~10–20',do:'arriba de ~25 cada serie extra suele aportar menos y hay pocos estudios; no es un tope'});
   // 4d · sesión cargada: desde ~10 σ en una sesión cada serie vale menos (Remmert 2025, débil)
   if(w1.maxVs>DIAG.sesVs)F.push({k:'session',sev:'info',txt:'sesión cargada',row:'sesión cargada · σ '+fmtSig(w1.maxVs),ev:'σ '+fmtSig(w1.maxVs)+' en una sola sesión (desde ~10 cada serie vale menos; la serie 15 vale la mitad)',do:'pasa algunas series a otro día de la semana'});
   // 5 · secuencia: cayó yendo tras otro al fallo, y la vez anterior NO iba así
@@ -2626,12 +2639,12 @@ function diagnoseMuscle(inp){ const F=[]; if(!inp||!inp.n28)return {findings:F,s
   if(w1.r30>=DIAG.r30N)F.push({k:'r30',sev:'info',txt:'series de más de 30 reps',row:'>30 reps',ev:w1.r30+' series de más de 30 reps en 7 días',do:'arriba de ~30 reps cada serie rinde menos y cansa ~2.5–3×; sube el peso hasta quedar en 8–30'});
   // 7c · debajo del mínimo dos semanas seguidas
   if(w1.sig<DIAG.lowSig&&w2.sig<DIAG.lowSig&&inp.n28>=2)
-    F.push({k:'low',sev:'info',txt:'debajo del mínimo 2 semanas',row:'debajo del mínimo 2 semanas',ev:'σ '+fmtSig(w2.sig)+' y '+fmtSig(w1.sig)+' (menos de 4 por semana)',do:F.some(f=>f.k==='far')?'primero acércate al fallo; después suma series':'suma series poco a poco: lo que más rinde es 10–20 σ por semana'});
-  // 7d · pierna al fallo: 48-72 h (Morán-Navarro 2017; Bartolomei 2017)
-  if(inp.legRecent)F.push({k:'legRec',sev:'info',txt:'pierna al fallo: 48–72 h',row:'pierna al fallo · descansa',ev:inp.legRecent.n+' series al fallo en compuestos de pierna hace '+fmtDur(Math.round(inp.legRecent.h)*60),do:'date 48–72 h antes de otra sesión dura de pierna'});
+    F.push({k:'low',sev:'info',txt:'menos de 4 σ dos semanas seguidas',row:'menos de 4 σ dos semanas',ev:'σ '+fmtSig(w2.sig)+' y '+fmtSig(w1.sig)+' · referencia general ~10–20',do:F.some(f=>f.k==='far')?'primero acércate al fallo; después suma series':'con ~10 o más por semana se suele crecer más; es una referencia general, no una regla'});
+  // 7d · pierna al fallo: 48-72 h (Morán-Navarro 2017; Bartolomei 2017) · estímulo: solo con pérdida sostenida
+  if(loss&&inp.legRecent)F.push({k:'legRec',sev:'info',txt:'pierna al fallo hace '+fmtDur(Math.round(inp.legRecent.h)*60),row:inp.legRecent.n+' al fallo en pierna hace '+fmtDur(Math.round(inp.legRecent.h)*60),kv:['fallo en pierna','hace '+fmtDur(Math.round(inp.legRecent.h)*60),inp.legRecent.n+(inp.legRecent.n===1?' serie':' series')],ev:inp.legRecent.n+' series al fallo en compuestos de pierna',do:'la fuerza puede seguir abajo 48–72 h'});
   // 7e · el estado de sus ejercicios principales
-  (inp.stat||[]).forEach(x=>{ if(x.st.state==='regress')F.push({k:'regress',sev:'warn',txt:'retrocede: '+x.name,row:x.name+' retrocede',ev:exStatusTxt(x.st),do:'revisa sueño, comida y cuánto fallo llevas; si otros ejercicios también bajan, una semana ligera ayuda'});
-    else if(x.st.state==='plateau')F.push({k:'plateau',sev:'info',txt:'estancado: '+x.name,row:x.name+' estancado',ev:exStatusTxt(x.st),do:'sube 1–2 reps con el mismo peso, o el peso cuando pases de tu rango; si ya lo haces, cambia el estímulo (ángulo o rango de reps)'}); });
+  (inp.stat||[]).forEach(x=>{ if(x.st.state==='regress')F.push({k:'regress',sev:'warn',nm:x.name,txt:x.name+' retrocediendo',row:x.name+' retrocediendo',ev:exStatusTxt(x.st),do:'si otros ejercicios también bajan, una semana ligera ayuda'});
+    else if(x.st.state==='plateau')F.push({k:'plateau',sev:'info',nm:x.name,txt:x.name+' estancado',row:x.name+' estancado',ev:exStatusTxt(x.st),do:'sube 1–2 reps con el mismo peso, o el peso cuando pases de tu rango; si ya lo haces, cambia el ángulo o el rango de reps'}); });
   // 8 · sueño y ESTE músculo (≥3 exposiciones en cada lado)
   const Z=inp.sleep; if(Z&&Z.lowN>=DIAG.splitN&&Z.restN>=DIAG.splitN&&Z.restMed-Z.lowMed>=DIAG.splitGap)
     F.push({k:'sleep',sev:'info',txt:'rinde menos tras dormir poco',ev:'tras <'+DIAG.lowSleep+' h: '+pc(Z.lowMed)+' (n'+Z.lowN+') · el resto: '+pc(Z.restMed)+' (n'+Z.restN+')',do:'correlación, no causa, pero es de tu historial'});
@@ -2640,7 +2653,7 @@ function diagnoseMuscle(inp){ const F=[]; if(!inp||!inp.n28)return {findings:F,s
   if(tot>=DIAG.lenMinSets&&known/tot>=DIAG.lenKnown&&!((len.long||0)+(len.mixed||0)))
     F.push({k:'length',sev:'info',txt:'sin trabajo en estiramiento'+(inp.lenSug>0?' ~':''),ev:'28 días: '+[['short','acortado'],['mid','media']].filter(k=>len[k[0]]).map(k=>k[1]+' '+Math.round(len[k[0]]/known*100)+'%').join(' · ')+' · estirado 0%'+(inp.lenSug>0?' · ~ incluye perfiles sugeridos que no has confirmado (catálogo › perfil)':''),do:'sumar un ejercicio en estiramiento puede aportar; la evidencia es mixta, no es regla'});
   if(!F.length){ if(inp.n28<2)return {findings:F,state:'little'};
-    F.push({k:'ok',sev:'ok',txt:'en orden',ev:[w1.sig>=10&&w1.sig<=20?'σ en zona objetivo':null,p14!=null?'capacidad '+pc(p14):null,last&&last.gap!=null&&last.win&&last.gap>=last.win.lo?'descansó dentro de su ventana':null].filter(Boolean).join(' · ')||'sin señales de exceso ni de falta',do:''}); }
+    F.push({k:'ok',sev:'ok',txt:'en orden',ev:[w1.sig>=10&&w1.sig<=20?'σ entre 10 y 20':null,p14!=null?'capacidad '+pc(p14):null,last&&last.gap!=null&&last.win&&last.gap>=last.win.lo?'descansó dentro de su ventana':null].filter(Boolean).join(' · ')||'sin señales de exceso ni de falta',do:''}); }
   F.sort((a,b)=>DX_RANK[a.sev]-DX_RANK[b.sev]);
   return {findings:F,state:F[0].k==='ok'?'ok':'findings'}; }
 let _diagCache={};   // por músculo; se limpia en bumpIdx() y al cambiar de día
@@ -2652,9 +2665,30 @@ function diagBlockHTML(dg){ if(!dg||!dg.findings.length)return `<div class="subm
 // en //MÚSCULOS: el hallazgo principal en corto. La banda de σ ya la dice la etiqueta junto al nombre y "en orden" no
 // ocupa renglón; el detalle los muestra todos.
 function diagRowHTML(id){ const fs=muscleDiag(id).findings.filter(x=>x.sev!=='ok'&&x.k!=='low'&&x.k!=='high'); const f=fs[0]; if(!f)return '';   // la banda ya va junto al nombre
-  const more=fs.length-1; return `<div class="mscdx dx-${f.sev}">${escTxt(f.row||f.txt)}${more>0?` <span class="dxmore">+${more}</span>`:''}</div>`; }
+  const w=DX_LOAD.indexOf(f.k)>=0?stimWarn(id):null;   // estímulo · un aviso de fallo/fatiga se lee junto al ejercicio que pierde progreso: una sola línea
+  const more=fs.length-(w?2:1); return `<div class="mscdx dx-${w?(w.sev||'info'):f.sev}">${escTxt(w?w.txt:(f.row||f.txt))}${more>0?` <span class="dxmore">+${more}</span>`:''}</div>`; }
 function muscleUnresolvedCount(){ let n=0; knownExercises().forEach(x=>{ if(targetsFor(x).some(t=>!t.id&&t.group))n++; }); return n; }
-// detalle: las cuatro lecturas por separado + rendimiento, cada una con su procedencia
+// ---- estímulo · detalle de un músculo: 3 líneas que se entienden y lo demás detrás de [más] ----
+// El dueño (30-sep): "veo mucha información que me hace bolas: del volumen, el estímulo, indirectas, sesiones… mucho texto
+// que no me dice nada". Arriba queda SOLO: cuánto estímulo esta semana (en la vista elegida en //STIMULUS) · cómo va (el
+// estado de sus ejercicios primarios, exStatus) · cuándo vuelve a estar listo (muscleRecoveryState). El aviso de fallo o
+// fatiga, si existe (stimWarn), va debajo y una sola vez. Las lecturas completas siguen ahí, detrás de [más], sin veredictos.
+// cómo va un músculo = el estado (exStatus) de sus ejercicios PRIMARIOS de 28 días. Si alguno retrocede, eso manda; si no,
+// el estado más repetido (en empate: estancado › estable › progresando). Sin ejercicios con 6 sesiones → pocos datos.
+function muscleTrend(id){ const t=todayISO(), d28=shiftDate(t,-27); const seen={}, L=[];
+  (muscleExposureIndex()[id]||[]).forEach(a=>{ if(a.date<d28||a.date>t)return; (a.ex||[]).forEach(x=>{ if(x.w<1||!x.key||seen[x.key])return; seen[x.key]=1; L.push({name:x.name,st:exStatus(x.key)}); }); });
+  const by=k=>L.filter(x=>x.st.state===k), known=L.filter(x=>x.st.state!=='little');
+  if(!known.length)return {state:'little',n:0,of:0,names:[],direct:L.length>0};
+  const R=by('regress'); const top=R.length?['regress',R]:[['plateau',by('plateau')],['stable',by('stable')],['progress',by('progress')]].sort((a,b)=>b[1].length-a[1].length)[0];
+  return {state:top[0],n:top[1].length,of:known.length,names:top[1].map(x=>x.name)}; }
+function muscleTrendSub(tr){ if(!tr||tr.state==='little')return tr&&tr.direct===false?'sin ejercicio directo':'desde 6 sesiones';
+  if(tr.state==='regress'||tr.state==='plateau')return escTxt(tr.names[0])+(tr.n>1?' +'+(tr.n-1):'');
+  return tr.of>1?tr.n+' de '+tr.of+' ejercicios':''; }
+// cuándo vuelve a estar listo: ya (pasó su ventana) · casi (dentro de ella) · en ~N h (lo que falta para que empiece)
+function muscleReadyTxt(rec){ if(!rec||!rec.win)return null; const w=rec.win, h=rec.h||0;
+  if(rec.state==='fresh')return {v:'ya',sub:'van '+fmtDur(Math.round(h)*60)};
+  if(rec.state==='likely')return {v:'casi',sub:'del todo en ~'+fmtDur(Math.max(1,Math.round(w.hi-h))*60)};
+  return {v:'en ~'+fmtDur(Math.max(1,Math.round(w.lo-h))*60),sub:w.src==='observed'?'observado':'estimado'}; }
 function openMuscleDetail(id){ const M=MUSCLES[id]; if(!M)return; const t=todayISO(); const d7=shiftDate(t,-6), d14=shiftDate(t,-13), d8=shiftDate(t,-7), d28=shiftDate(t,-27);
   const c=muscleWindowAgg(id,d7,t), p=muscleWindowAgg(id,d14,d8), m28=muscleWindowAgg(id,d28,t); const rec=muscleRecoveryState(id);
   const line=(k,v,sub)=>`<div class="mdline"><span class="mdk">${k}</span><span class="mddots"></span><span class="mdv">${v}${sub?` <span class="mdsub">${sub}</span>`:''}</span></div>`;
@@ -2667,19 +2701,28 @@ function openMuscleDetail(id){ const M=MUSCLES[id]; if(!M)return; const t=todayI
   const chronic=m28.C/(28/3); const fr=chronic>0?acute/chronic:null; const fmx=Math.max(acute,chronic*2);
   const obs=rec?rec.obs:observedRecovery(musclePairs(id)); const est=rec?rec.est:null;
   const last=exA.slice(-5).reverse();
+  // las 3 líneas, en columnas alineadas: clave | valor | nota (el aviso, si existe, es una cuarta fila con ⚠)
+  const row3=(k,v,sub,cls)=>`<span class="mdk${cls||''}">${k}</span><span class="mdv">${v}</span><span class="mdsub">${sub||''}</span>`;
+  const vk=stimViewKey(), VW=STIM_VIEWS.find(x=>x[0]===vk), V=stimVals(id,d7,t,c), PV=stimVals(id,d14,d8,p);
+  const chg=(a,b)=>{ const q=b>0?Math.round((a/b-1)*100):0; return q?(q>0?'▲ +':'▼ −')+Math.abs(q)+'% vs 7 d previos':''; };
+  const tr=muscleTrend(id), rd=muscleReadyTxt(rec), wn=stimWarn(id), dg=muscleDiag(id);
   let html=`<div class="mdetail mscd"><div class="mdhd"><h3>${escTxt(muscleLabel(id))} <span class="u-data u-o40 u-w4">${escTxt(M.es)}</span></h3></div>`
-    +`<div class="grp-label sub">DIAGNOSIS</div>`+diagBlockHTML(muscleDiag(id))
+    +`<div class="md3">`+row3(glossWrap('estímulo 7 d',VW[2]),stimFmt(vk,V[vk])+(vk==='sig'?'':' '+VW[1]),chg(V[vk],PV[vk]))
+    +`<div class="mdbar">${sigBarHTML('md:'+id+':sig',V[vk])}<span class="mdbc" data-gloss="lm">ref. ~10–20</span></div>`
+    +row3('cómo va',EXST_LBL[tr.state],muscleTrendSub(tr))
+    +(rd?row3('listo',rd.v,rd.sub):'')
+    +(wn?row3(stimGlyph(wn.sev)+escTxt(wn.kv[0]),escTxt(wn.kv[1]),escTxt(wn.kv[2]),' w'):'')+`</div>`
+    +`<div id="mdmore" hidden>`
+    +(dg.state==='findings'?`<div class="grp-label sub">DIAGNOSIS</div>`+diagBlockHTML(dg):'')
     +`<div class="grp-label sub">VOLUME · 7 días</div>`
-    +`<div class="mdbar">${sigBarHTML('md:'+id+':sig',c.Ts)}<span class="mdbc">marcas: 10 · 20</span></div>`
-    +line(glossWrap('σ · estímulo','stim'),fmtSig(c.Ts),sigBand(c.Ts)+(p.Ts>0?' · '+(c.Ts>=p.Ts?'▲ ':'▼ ')+Math.round((c.Ts/p.Ts-1)*100)+'% vs 7d previos':''))
-    +line('series duras',r1m(c.sets),(dv?(dv>0?'▲ +':'▼ ')+r1m(dv)+' vs 7d previos':'igual que 7d previos'))
+    +line(glossWrap('σ','stim'),fmtSig(c.Ts),chg(c.Ts,p.Ts))
+    +line(glossWrap('series duras','stimh'),r1m(c.sets),[c.n?c.n+(c.n===1?' sesión':' sesiones'):'',dv?(dv>0?'▲ +':'▼ −')+r1m(Math.abs(dv))+' vs 7 d previos':''].filter(Boolean).join(' · '))
+    +line(glossWrap('series totales','stima'),r1m(V.all))
     +line('directas · indirectas',r1m(c.direct)+' · '+r1m(c.indirect))
-    +line('sesiones',c.n)
-    +line(glossWrap('zona objetivo','lm'),'10–20 σ por semana','Pelland 2026')
-    +`<div class="grp-label sub">STIMULUS · 7 días</div>`
+    +`<div class="grp-label sub">EFFORT · 7 días</div>`
     +line(glossWrap('RIR medio','rirmed'),c.rir!=null?r1m(c.rir):'—',c.rn?Math.round(c.near/c.rn*100)+'% a RIR ≤1':'')
-    +line('al fallo o RIR 0',c.nk?Math.round(c.nf/c.nk*100)+'%':'—',c.nk?(c.nf/c.nk>DIAG.failShare?'mucho: cansa ~2× por poco estímulo extra':'bien: la mayoría a RIR 1–2'):'')
-    +line('sesión más cargada',c.maxVs>0?'σ '+fmtSig(c.maxVs):'—',c.maxVs>DIAG.sesVs?'desde ~10 cada serie vale menos':'')
+    +line('al fallo o RIR 0',c.nk?Math.round(c.nf/c.nk*100)+'%':'—')
+    +line('sesión más cargada',c.maxVs>0?'σ '+fmtSig(c.maxVs):'—')
     +line('longitud',[['long','estirado'],['mid','media'],['short','acortado'],['mixed','mixto']].filter(k=>pctOf(c.len,k[0])).map(k=>k[1]+' '+pctOf(c.len,k[0])+'%').join(' · ')||'—',pctOf(c.len,'unk')?pctOf(c.len,'unk')+'% sin definir':'')
     +line('perfil',[['asc','⬆'],['desc','⬇'],['mid','↔']].filter(k=>pctOf(c.rp,k[0])).map(k=>k[1]+' '+pctOf(c.rp,k[0])+'%').join(' · ')||'—',pctOf(c.rp,'unk')?pctOf(c.rp,'unk')+'% sin definir':'')
     +`<div class="grp-label sub">FATIGUE · 72 h</div>`
@@ -2692,11 +2735,11 @@ function openMuscleDetail(id){ const M=MUSCLES[id]; if(!M)return; const t=todayI
     +(est?line(glossWrap('ventana estimada','est'),est.lo+'–'+est.hi+' h','base '+M.rec[0]+'–'+M.rec[1]+' h × dosis '+est.f):'')
     +(obs&&obs.hours?line(glossWrap('ventana observada','est'),winTxt(obs.hours[0],obs.hours[1]),'tu historial · '+obs.n+' pares'):line(glossWrap('ventana observada','est'),'aún no',(obs?obs.n:0)+' de 6 pares necesarios'))
     +(obs&&obs.n?`<div class="submeta u-mt4 u-mb0 u-mx0">capacidad según horas de descanso: ${obs.buckets.filter(b=>b.n).map(b=>(b.b>=1e9?'>'+b.a:b.a+'-'+b.b)+' h '+(b.med>=0?'+':'')+r1m(b.med)+'% (n'+b.n+')').join(' · ')}</div>`:'')
-    +(rec?line('estado',`<span style="color:${recStateCol(rec)}">${escTxt(recStateTxt(rec))}</span>`,rec.win.src==='observed'?'con tu ventana observada':'con la ventana estimada'):'')
     +`<div class="grp-label sub">PERFORMANCE · últimas exposiciones</div>`
     +(last.length?last.map(a=>{ const pf=a.perf.length?a.perf.reduce((x,y)=>x+y,0)/a.perf.length:null; return line(fmtShort(a.date),r1m(a.sets)+' series'+(a.rn?' · RIR '+r1m(a.rs/a.rn):''),pf!=null?`<span style="color:${pf>0?'var(--good)':pf<0?'var(--bad)':'var(--o40)'}">${pf>0?'▲ +':pf<0?'▼ ':'= '}${r1m(pf)}%</span>`:'sin comparación'); }).join(''):'<div class="submeta">sin exposiciones</div>')
-    +`<div class="submeta u-mt10 u-o40">σ = estímulo en series efectivas (1 = una serie al fallo) · costo = fatiga (1 = una serie a RIR 2) · estimado = literatura ajustada a tu dosis · observado = tu historial · van separadas a propósito</div>`
-    +`<div class="sheetbtns u-mt12"><button class="cancel" data-act="closemodal">cerrar</button></div></div>`;
+    +`<div class="submeta u-mt10 u-o40">σ · unidades de tensión mecánica, medida propia de gym//TRK · costo = fatiga (1 = una serie a RIR 2)</div>`
+    +`</div>`
+    +`<div class="sheetbtns u-mt12"><button type="button" class="b" data-act="mdmore" aria-expanded="false" aria-controls="mdmore">más</button><button class="cancel" data-act="closemodal">cerrar</button></div></div>`;
   openModal(html,'mdetail-wrap'); }
 // gym (home): los músculos del día y su estado, bajo //NEXT
 function dayMusclesLineHTML(day){ if(!day)return ''; const {list}=daySource(day); const ids=[];
@@ -3102,25 +3145,160 @@ function plannedVolumeSection(){
 // son flojas, sumar series es el consejo equivocado (Refalo 2024, proximidad al fallo).
 // v272 · //STIMULUS = σ de 7 días por músculo REAL (antes: "series efectivas" por etiqueta contra MEV/MRV de la guía RP, que
 // el dueño descartó). Cada fila: σ, barra con marcas en 10 y 20, y una frase solo si hay algo que mover.
-function stimulusRows(){ const t=todayISO(), d7=shiftDate(t,-6); const idx=muscleExposureIndex();
-  return Object.keys(idx).filter(id=>idx[id].some(a=>a.date>=d7&&a.date<=t)).map(id=>{ const w=muscleWindowAgg(id,d7,t);
-    const fs=(muscleDiag(id).findings||[]).filter(f=>f.sev!=='ok'&&f.k!=='length'&&f.k!=='sleep');
-    const top=fs[0]; return {m:muscleLabel(id),id,eff:w.Ts,w,fs,top,txt:top?(top.row||top.txt):sigBand(w.Ts),rank:top?DX_RANK[top.sev]:(w.Ts<4?3:w.Ts>=30?1:5)}; })
-    .sort((a,b)=>a.rank-b.rank||b.eff-a.eff); }
+// ---- estímulo · //STIMULUS dice CUÁNTO estímulo hubo, en 4 vistas, y deja de regañar ----
+// El dueño (30-sep): "lo que debe salir en estímulo es el estímulo… no me está diciendo ni cuánto estoy metiendo" y "poder
+// seleccionar entre cuatro variantes: la tensión mecánica calculada, series efectivas duras, en general series por músculo,
+// y una cuarta como un mix de las tres". Cada fila = nombre · número · barra, ordenadas de más a menos. Sin frase por fila.
+//   σ        estímulo estimado (unidad propia de la app; muscleWindowAgg().Ts)
+//   duras    series a RIR ≤4 o sin RIR (isHardSet; muscleWindowAgg().sets)
+//   totales  todas las series registradas, a cualquier RIR (muscleAllSets)
+//   mezcla   promedio simple de las tres: las tres van en "series", así que el promedio se lee en series. No es una medida
+//            nueva ni pondera nada: sirve para ordenar de un vistazo, y la fila muestra sus tres partes.
+// Las tres cuentan igual: par unilateral = 1, drop = 0.5 y las indirectas con el peso que el dueño les puso.
+// La vista elegida se recuerda en db.settings.stimView (aditivo: sin el campo, o con un valor raro, es σ).
+// [clave, pestaña, glosario, rótulo de la cabecera]
+const STIM_VIEWS=[['sig','σ','stim','σ'],['hard','duras','stimh','series duras'],['all','totales','stima','series totales'],['mix','mezcla','stimm','mezcla']];
+function stimViewKey(){ const k=db.settings&&db.settings.stimView; return STIM_VIEWS.some(v=>v[0]===k)?k:'sig'; }
+// series TOTALES por músculo y fecha. Mismas reglas que muscleExposureIndex pero sin el filtro de serie dura. Vive aparte para
+// no tocar ese índice; su caché cuelga de la identidad del índice, así que bumpIdx() la invalida sola.
+let _allSetsCache=null;
+function muscleAllIndex(){ const src=muscleExposureIndex(); if(_allSetsCache&&_allSetsCache.src===src)return _allSetsCache.idx;
+  const idx={};
+  (db.sessions||[]).forEach(s=>{ if(!s||s.type==='rest'||!s.exercises||!s.date)return;
+    s.exercises.forEach((e,ei)=>{ if(isCardio(e))return; const tg=exTargets(s,ei).filter(t=>t.id); if(!tg.length)return;
+      let plain=0; const bySide={};
+      (e.sets||[]).forEach(st=>{ if(!st||st._pf||!(st.w||st.r))return; const v=st.isDrop?0.5:1; if(st.side)bySide[st.side]=(bySide[st.side]||0)+v; else plain+=v; });
+      const sides=Object.keys(bySide); const all=plain+(sides.length?Math.max(...sides.map(k=>bySide[k])):0); if(!(all>0))return;
+      tg.forEach(t=>{ const a=idx[t.id]||(idx[t.id]={}); a[s.date]=(a[s.date]||0)+all*t.w; }); }); });
+  _allSetsCache={src,idx}; return idx; }
+function muscleAllSets(id,fromISO,toISO){ const a=muscleAllIndex()[id]||{}; let n=0; Object.keys(a).forEach(d=>{ if(d>=fromISO&&d<=toISO)n+=a[d]; }); return n; }
+// los cuatro números de un músculo en una ventana (w = muscleWindowAgg ya calculado, opcional)
+function stimVals(id,fromISO,toISO,w){ w=w||muscleWindowAgg(id,fromISO,toISO); const sig=w.Ts||0, hard=w.sets||0, all=Math.max(hard,muscleAllSets(id,fromISO,toISO));
+  return {sig,hard,all,mix:(sig+hard+all)/3}; }
+function stimFmt(k,v){ return (k==='sig'?'σ ':'')+fmtSig(v); }   // siempre un decimal: la columna queda alineada
+// avisos de fallo o fatiga: diagnoseMuscle solo los emite con pérdida de progreso sostenida (exStatus). stimWarn los junta
+// en UN aviso por músculo, en tono de dato y en columnas (el dueño, 1-oct: "como terminal… que tenga jerarquía"):
+// ex = el ejercicio · st = su estado · kv = [qué, cuánto, detalle] de lo que lo acompaña. Sin ambos, no hay aviso.
+// El fallo no es "la única variable" (el dueño, 30-sep): el orden pone antes el volumen previo (fatigue: más series y más
+// cerca del fallo) y la recuperación (early: menos descanso que su ventana); y si la última baja coincidió con el día
+// (context: sueño, comida, FC, carga), se dice eso en lugar del fallo. El contexto solo no crea un aviso.
+const DX_LOAD=['fatigue','early','failure','heavyF','legRec'];
+function stimWarn(id){ const fs=muscleDiag(id).findings||[], at=k=>fs.find(f=>f.k===k); let g=DX_LOAD.map(at).find(Boolean); const p=at('regress')||at('plateau');
+  if(!g||!p)return null; const cx=at('context'); if(cx&&(g.k==='failure'||g.k==='heavyF'))g=cx;
+  return {id,sev:p.k==='regress'?'warn':'',ex:p.nm||'',st:EXST_LBL[p.k]||'',kv:g.kv||[g.row||g.txt,'',''],txt:p.row+' · '+g.row,k:g.k}; }
+// el glifo del aviso: ámbar si retrocede, sin color si solo está estancado (B-07: el color va en el glifo)
+const stimGlyph=sev=>`<span class="${sev==='warn'?'u-warn':'u-o60'}">⚠</span> `;
+function stimulusRows(vk){ vk=vk||stimViewKey(); const t=todayISO(), d7=shiftDate(t,-6); const idx=muscleExposureIndex();
+  return Object.keys(idx).filter(id=>idx[id].some(a=>a.date>=d7&&a.date<=t)).map(id=>{ const w=muscleWindowAgg(id,d7,t), vals=stimVals(id,d7,t,w);
+    return {m:muscleLabel(id),id,w,vals,v:vals[vk],eff:w.Ts}; })
+    .sort((a,b)=>b.v-a.v||b.eff-a.eff); }
 // B-07: el color va en el glifo, nunca en la frase
 const dxGlyph=sev=>sev==='bad'?'<span class="u-bad">⚠</span> ':sev==='warn'?'<span class="u-warn">⚠</span> ':'';
 function stimulusSection(){
-  const rows=stimulusRows(); const F=fatigueFlag();
-  // si "mucho fallo" sale en 3+ músculos es un hábito, no un músculo: se dice UNA vez arriba y las filas siguen con lo demás
-  const failR=rows.filter(r=>r.fs.some(f=>f.k==='failure')); const failAll=failR.length>=3;
-  if(failAll){ rows.forEach(r=>{ const fs=r.fs.filter(f=>f.k!=='failure'); r.top=fs[0]; r.txt=r.top?(r.top.row||r.top.txt):sigBand(r.eff); r.rank=r.top?DX_RANK[r.top.sev]:(r.eff<4?3:r.eff>=30?1:5); }); rows.sort((a,b)=>a.rank-b.rank||b.eff-a.eff); }
-  let head='';
-  if(F)head+=`<div class="stq u-tap" data-act="deloadinfo"><div class="stqh"><span class="stqn">${dxGlyph('warn')}fatiga acumulada</span><span class="stqv">›</span></div><div class="stqc">${escTxt(F.down.slice(0,2).join(' · '))} bajando${F.loadUp>0.2?' · carga +'+Math.round(F.loadUp*100)+' %':''} · ¿una semana ligera?</div></div>`;
-  if(failAll){ const nf=failR.reduce((a,r)=>a+(r.w.nf||0),0), nk=failR.reduce((a,r)=>a+(r.w.nk||0),0);
-    head+=`<div class="stq"><div class="stqh"><span class="stqn">${dxGlyph('warn')}mucho fallo en ${failR.length} músculos</span></div><div class="stqc">${nk?Math.round(nf/nk*100)+'% de sus series a F o RIR 0 · ':''}deja 1–2 reps en reserva; el fallo, solo en la última serie de máquina</div></div>`; }
-  const body=rows.length?head+rows.map(r=>`<div class="stq u-tap" data-act="muscledetail" data-id="${r.id}"><div class="stqh"><span class="stqn">${escTxt(r.m)}</span><span class="stqv">σ ${fmtSig(r.eff)}</span></div>${sigBarHTML('stim:'+r.id,r.eff)}${r.txt?`<div class="stqc">${r.top?dxGlyph(r.top.sev):''}${escTxt(r.txt)}</div>`:''}</div>`).join('')
-    :`<div class="submeta u-py6 u-px0">aún sin series esta semana</div>`;
-  return `<hr class="rule"/><div class="section u-mb12"><div class="h"><span class="s">//</span>STIMULUS</div><div class="meta" data-gloss="stim">σ · 7 d</div></div>`+body; }
+  const vk=stimViewKey(), VW=STIM_VIEWS.find(x=>x[0]===vk), rows=stimulusRows(vk); const F=fatigueFlag();
+  const tabs=`<div class="mdtabs tall stimtabs" data-tk="stimv" role="tablist">${STIM_VIEWS.map(([k,l])=>`<span role="tab" aria-selected="${k===vk}" class="${k===vk?'on':''}" data-act="stimview" data-v="${k}">${l}</span>`).join('')}</div>`;
+  // columnas: en σ, duras y totales, nombre | número. En mezcla, nombre | σ | duras | totales | mezcla, con su cabecera
+  const mix=vk==='mix', nv=(v,p)=>`<span class="stqv${p?' p':''}">${fmtSig(v)}</span>`, kvr=(k,v)=>`<span class="i">${k}</span><span class="r">${v}</span>`;
+  let body=(mix?`<div class="stq"><div class="stqh c4 hd"><span class="stqn">músculo</span>${STIM_VIEWS.map(x=>`<span class="stqv">${x[1]}</span>`).join('')}</div></div>`:'')
+    +rows.map(r=>`<div class="stq u-tap" role="button" data-act="muscledetail" data-id="${r.id}"><div class="stqh${mix?' c4':''}"><span class="stqn">${escTxt(r.m)}</span>${mix?nv(r.vals.sig,1)+nv(r.vals.hard,1)+nv(r.vals.all,1)+nv(r.v):`<span class="stqv">${stimFmt(vk,r.v)}</span>`}</div>${sigBarHTML('stim:'+r.id,r.v)}</div>`).join('');
+  if(!rows.length)return `<hr class="rule"/><div class="section u-mb12"><div class="h"><span class="s">//</span>STIMULUS</div><div class="meta" data-gloss="${VW[2]}">${VW[3]} · 7 d</div></div>`+`<div class="submeta u-py6 u-px0">aún sin series esta semana</div>`;   // sin datos no hay nada que comparar: sin pestañas
+  body+=`<div class="stq u-tap" data-gloss="lm"><div class="stw dim"><span><span data-gloss="lm">referencia general</span></span><span class="r">~10–20 por semana</span></div></div>`;   // las dos marcas de la barra; toda la fila abre el glosario (toque de 44)
+  // DEBAJO del dato y una sola vez: la fatiga acumulada (≥2 ejercicios retrocediendo) si existe; si no, los músculos con
+  // pérdida de progreso sostenida Y fallo o fatiga que la acompañe (máximo 3; el resto se cuenta)
+  // cada aviso es un bloque de columnas: cabecera (qué) y debajo clave | valor, un dato por celda
+  if(F)body+=`<div class="stq u-tap" role="button" data-act="deloadinfo"><div class="stw"><span class="hd">${stimGlyph('warn')}retrocediendo</span><span class="r hd">${F.down.length} ›</span>${F.down.slice(0,3).map(n=>kvr(escTxt(n),'')).join('')}${F.down.length>3?kvr('+'+(F.down.length-3)+' más',''):''}${F.loadUp>0.2?kvr('carga 7 d','+'+Math.round(F.loadUp*100)+'%'):''}${F.failSh>0.25?kvr('a F o RIR 0',Math.round(F.failSh*100)+'%'):''}</div></div>`;
+  else { const W=rows.map(r=>stimWarn(r.id)).filter(Boolean);
+    W.slice(0,3).forEach(x=>{ body+=`<div class="stq u-tap" role="button" data-act="muscledetail" data-id="${x.id}"><div class="stw"><span class="hd">${stimGlyph(x.sev)}${escTxt(muscleLabel(x.id))}</span><span class="r hd">›</span>${kvr(escTxt(x.ex),x.st)}${kvr(escTxt(x.kv[0]),escTxt(x.kv[1]))}</div></div>`; });
+    if(W.length>3)body+=`<div class="stq"><div class="stw dim"><span>+${W.length-3} más</span><span class="r"></span></div></div>`; }
+  return `<hr class="rule"/><div class="section u-mb12"><div class="h"><span class="s">//</span>STIMULUS</div><div class="meta" data-gloss="${VW[2]}">${VW[3]} · 7 d</div></div>`+tabs+body; }
+// estímulo self-check — //STIMULUS en 4 vistas, la vista recordada, el aviso de fallo/fatiga solo con pérdida sostenida y debajo
+// del dato, el detalle en 3 líneas con [más], y σ nombrada como unidad propia. db de juguete; se restaura todo al salir.
+function _estimuloSelfCheck(){ const A=(nm,c)=>{ if(!c) throw new Error('SELFCHECK estímulo: '+nm); };
+  const D=k=>{ const d=new Date(); d.setDate(d.getDate()-Math.round(k)); return todayISO(d); };
+  const S=(rir,o)=>Object.assign({w:'100',r:'8',rir:String(rir),unit:'kg',done:true},o||{});
+  const ses=(name,muscle,w,ago,rir,n,ex)=>({id:'q'+name.replace(/\W/g,'')+Math.round(ago*10),date:D(ago),dayId:'d1',dayName:'t',gym:'G',type:'training',startTime:'18:00',endTime:'19:00',
+    exercises:[Object.assign({exId:'e'+name.replace(/\W/g,''),name,muscle,type:'free',sets:Array.from({length:n||3},()=>S(rir,{w:String(w)}))},ex||{})]});
+  const mk=L=>migrate({_idfix:true,_fsfix:true,profile:{username:'t'},split:{name:'t',days:[{id:'d1',name:'t',exercises:[]}]},sessions:L});
+  const up=[], down=[], row=[];
+  for(let i=0;i<16;i++)up.push(ses('press up','chest',Math.round(80*Math.pow(1.02,i/2)*10)/10,(15-i)*3.5,'0'));      // +2 %/sem, todo a RIR 0
+  for(let i=0;i<10;i++)down.push(ses('press down','chest',Math.round(100*Math.pow(0.97,i/2)*10)/10,(9-i)*3.5,'0'));  // −3 %/sem, todo a RIR 0
+  for(let i=0;i<10;i++)row.push(ses('row down','lats',Math.round(90*Math.pow(0.97,i/2)*10)/10,(9-i)*3.5,'0'));
+  const real=db, rr=reRender, tmp=document.createElement('span'); let n=0;
+  try{
+    // 1 · los tres conteos y la mezcla: mismas reglas (par unilateral = 1, drop = 0.5, indirectas con su peso)
+    db=mk([{id:'m1',date:D(0),dayId:'d1',dayName:'t',gym:'G',type:'training',startTime:'18:00',endTime:'19:00',exercises:[
+      {exId:'b1',name:'bench',muscle:'chest',muscles:[{name:'chest',weight:1},{name:'tricep',weight:0.5}],type:'free',sets:[S(1),S(1),S(1),S(5),S(0,{isDrop:true})]},
+      {exId:'c1',name:'curl',muscle:'biceps',type:'free',unilateral:true,sets:[S(1,{side:'L'}),S(1,{side:'R'}),S(1,{side:'L'}),S(1,{side:'R'})]}]}]); bumpIdx();
+    const t=todayISO(), d7=shiftDate(t,-6); const C=stimVals('chest',d7,t), T=stimVals('triceps',d7,t), B=stimVals('biceps',d7,t);
+    A('series duras: RIR 5 no cuenta y el drop vale 0.5', C.hard===3.5);
+    A('series totales: todas las registradas', C.all===4.5);
+    A('la indirecta cuenta con su peso en las tres', T.hard===1.75&&T.all===2.25&&T.sig>0&&T.sig<C.sig);
+    A('un par unilateral es una serie', B.hard===2&&B.all===2);
+    A('σ no cambia: es la de muscleWindowAgg', C.sig===muscleWindowAgg('chest',d7,t).Ts&&C.sig>0);
+    A('la mezcla es el promedio simple de las tres', Math.abs(C.mix-(C.sig+C.hard+C.all)/3)<1e-9);
+    A('un músculo solo indirecto: pocos datos y se dice por qué', muscleTrend('triceps').state==='little'&&muscleTrend('triceps').direct===false&&/sin ejercicio directo/.test(muscleTrendSub(muscleTrend('triceps'))));
+    // 2 · la vista se recuerda en db.settings (aditivo) y una clave rara cae en σ
+    A('sin el campo, la vista es σ', stimViewKey()==='sig');
+    db.settings=db.settings||{}; db.settings.stimView='nope'; A('una clave rara cae en σ', stimViewKey()==='sig');
+    reRender=function(){ n++; }; tmp.dataset.act='stimview'; tmp.dataset.v='all'; document.getElementById('app').appendChild(tmp); tmp.click();
+    A('tocar una pestaña guarda la vista y repinta una vez', db.settings.stimView==='all'&&stimViewKey()==='all'&&n===1);
+    tmp.click(); A('tocar la misma pestaña no repinta', n===1); reRender=rr;
+    STIM_VIEWS.forEach(([k,l,g])=>{ db.settings.stimView=k; const h=stimulusSection(), rs=stimulusRows();
+      A(k+': 4 pestañas y la elegida marcada', (h.match(/data-act="stimview"/g)||[]).length===4&&new RegExp('class="on" data-act="stimview" data-v="'+k+'"').test(h));
+      A(k+': filas de más a menos', rs.length===3&&rs.every((r,i)=>!i||rs[i-1].v>=r.v)&&rs.every(r=>r.v===r.vals[k]));
+      A(k+': la cabecera abre su glosario', h.indexOf('data-gloss="'+g+'"')>0&&!!GLOSS[g]);
+      A(k+': las marcas se dicen como referencia general y aproximada', /data-gloss="lm"><div class="stw dim"><span><span data-gloss="lm">referencia general<\/span><\/span><span class="r">~10–20 por semana</.test(h)&&!/zona objetivo|debajo del mínimo|no regla/.test(h));
+      A(k+': filas en columnas, sin frases con separadores', h.indexOf('class="stqc"')<0&&(h.match(/class="stqh c4"/g)||[]).length===(k==='mix'?3:0)); });
+    db.settings.stimView='mix'; const h0=stimulusSection();
+    A('la mezcla enseña sus tres partes, una por columna y con cabecera', /class="stqh c4 hd"><span class="stqn">músculo<\/span><span class="stqv">σ<\/span><span class="stqv">duras<\/span><span class="stqv">totales<\/span><span class="stqv">mezcla<\/span>/.test(h0)&&/<span class="stqv p">[\d.]+<\/span><span class="stqv p">[\d.]+<\/span><span class="stqv p">[\d.]+<\/span><span class="stqv">[\d.]+<\/span>/.test(h0));
+    A('los números van con un decimal para que la columna cuadre', stimFmt('hard',7)==='7.0'&&stimFmt('all',6.5)==='6.5'&&stimFmt('sig',6)==='σ 6.0'&&stimFmt('mix',3)==='3.0');
+    delete db.settings.stimView;
+    // 3 · todo a RIR 0 pero progresando: ni "mucho fallo" ni aviso
+    db=mk(up); bumpIdx(); let h=stimulusSection();
+    A('progresando con todo al fallo: sin aviso', exStatus(exHistKey({name:'press up',type:'free'})).state==='progress'&&stimWarn('chest')===null&&h.indexOf('⚠')<0&&!/mucho fallo|descansa/.test(h));
+    A('…y el diagnóstico tampoco lo dice', !muscleDiag('chest').findings.some(f=>DX_LOAD.indexOf(f.k)>=0));
+    A('cómo va: progresando', muscleTrend('chest').state==='progress');
+    // 4 · retrocediendo con todo a RIR 0: UN aviso, debajo de las filas, en tono de dato
+    db=mk(down); bumpIdx(); h=stimulusSection(); const w=stimWarn('chest');
+    A('retrocediendo + fallo: hay aviso con el ejercicio y el dato', !!w&&/press down retrocediendo · \d+% a F o RIR 0/.test(w.txt)&&w.ex==='press down'&&w.st==='retrocediendo'&&w.kv[0]==='a F o RIR 0'&&/^\d+%$/.test(w.kv[1])&&/^\d+ de \d+ series$/.test(w.kv[2]));
+    A('el aviso sale una sola vez, debajo del dato y en columnas', h.split('>press down<').length===2&&h.indexOf('>press down<')>h.lastIndexOf('class="vbar"')&&/<span class="i">press down<\/span><span class="r">retrocediendo<\/span><span class="i">a F o RIR 0<\/span><span class="r">\d+%<\/span>/.test(h)&&!/mucho fallo|descansa|deja 1/.test(h));
+    A('cómo va: retrocediendo, con el ejercicio', muscleTrend('chest').state==='regress'&&muscleTrend('chest').names[0]==='press down');
+    // 5 · detalle: 3 líneas arriba, lo demás detrás de [más]
+    openMuscleDetail('chest'); const md=document.querySelector('#modal .mscd'), more=document.getElementById('mdmore'), btn=md&&md.querySelector('[data-act="mdmore"]');
+    A('el detalle abre', !!md&&!!more&&!!btn);
+    const g3=md.querySelector('.md3'), K=g3?Array.from(g3.querySelectorAll('.mdk:not(.w)')):[], KW=g3?Array.from(g3.querySelectorAll('.mdk.w')):[];
+    A('arriba van 3 líneas, en columnas y fuera de [más]', !!g3&&!more.contains(g3)&&K.length===3&&K.map(x=>x.textContent).join('|')==='estímulo 7 d|cómo va|listo'&&Array.from(md.querySelectorAll('.mdline')).every(x=>more.contains(x)));
+    A('cada línea es clave | valor | nota', K.every(x=>x.nextElementSibling.className==='mdv'&&x.nextElementSibling.nextElementSibling.className==='mdsub'));
+    A('el aviso va una vez, debajo de las 3 líneas y sin repetir el ejercicio', KW.length===1&&KW[0].textContent==='⚠ a F o RIR 0'&&/^\d+%$/.test(KW[0].nextElementSibling.textContent)&&(K[2].compareDocumentPosition(KW[0])&4)===4);
+    A('cómo va nombra el ejercicio', K[1].nextElementSibling.textContent==='retrocediendo'&&K[1].nextElementSibling.nextElementSibling.textContent==='press down');
+    A('[más] empieza cerrado', more.hidden===true&&btn.getAttribute('aria-expanded')==='false');
+    btn.click(); A('[más] abre y pasa a [menos]', more.hidden===false&&btn.textContent==='menos'&&btn.getAttribute('aria-expanded')==='true');
+    btn.click(); A('[menos] cierra', more.hidden===true&&btn.textContent==='más');
+    A('σ se nombra como unidad propia en el detalle', /σ · unidades de tensión mecánica, medida propia de gym\/\/TRK/.test(md.textContent));
+    A('el detalle no regaña', !/mucho fallo|mucho: cansa|zona objetivo/.test(md.textContent));
+    closeModal();
+    // 5b · el fallo no es la única variable: antes van el volumen previo y la recuperación; si la baja coincidió con el día
+    // (sueño, comida), se dice eso; el contexto solo no crea un aviso. Hallazgos inyectados en la caché del diagnóstico.
+    const fk=(k,row)=>({k,sev:'warn',txt:k,row:row||k}), inj=L=>{ _diagCache={_d:todayISO(),chest:{findings:L,state:'findings'}}; return stimWarn('chest'); };
+    A('con menos descanso que su ventana, se dice eso antes que el fallo', inj([fk('failure'),fk('early'),fk('plateau','x estancado')]).k==='early');
+    A('si la baja coincidió con el día, se dice eso y no el fallo', inj([fk('failure'),fk('context','baja −5% · dormiste 5 h'),fk('regress','x retrocediendo')]).txt==='x retrocediendo · baja −5% · dormiste 5 h');
+    A('el contexto solo no crea un aviso', inj([fk('context'),fk('plateau')])===null);
+    A('fallo sin pérdida de progreso: sin aviso', inj([fk('failure')])===null);
+    bumpIdx();
+    // 6 · dos ejercicios retrocediendo: la fatiga acumulada se dice UNA vez, abajo, y no se repite por músculo
+    db=mk(down.concat(row)); bumpIdx(); h=stimulusSection();
+    A('fatiga acumulada: una vez, debajo del dato y como dato', !!fatigueFlag()&&h.split('data-act="deloadinfo"').length===2&&/retrocediendo<\/span><span class="r hd">2 ›<\/span>/.test(h)&&h.indexOf('data-act="deloadinfo"')>h.lastIndexOf('class="vbar"')&&h.split('>press down<').length===2&&h.split('>row down<').length===2&&h.indexOf('data-id="chest"><div class="stw"')<0&&h.indexOf('data-id="lats"><div class="stw"')<0&&!/semana ligera|descansa|mucho fallo/.test(h));
+    // 6b · una semana sin series: ni pestañas ni avisos
+    db=mk([ses('old press','chest',50,20,'1')]); bumpIdx(); h=stimulusSection();
+    A('sin series en 7 días: solo el vacío', /aún sin series esta semana/.test(h)&&h.indexOf('data-act="stimview"')<0&&h.indexOf('⚠')<0);
+    // 7 · glosario: σ es una unidad propia y la banda es una referencia general
+    const U='σ · unidades de tensión mecánica: una medida propia de gym//TRK';
+    A('glosario: σ es unidad propia', GLOSS.t.indexOf(U)===0&&GLOSS.stim.indexOf(U)===0&&/no una medida de laboratorio/.test(GLOSS.t)&&/no una medida de laboratorio/.test(GLOSS.stim));
+    A('glosario: 10–20 es referencia general', /referencia general/.test(GLOSS.lm)&&/no es regla/.test(GLOSS.lm)&&!/zona objetivo/.test(GLOSS.lm));
+    A('glosario: la mezcla dice qué es', /promedio simple/.test(GLOSS.stimm));
+    A('sin MEV/MRV ni guía RP', !/\b(MEV|MRV|MAV)\b|Israetel|guía RP/.test(Object.keys(GLOSS).map(k=>GLOSS[k]).join(' ')+SIG_BANDS.map(b=>b[1]).join(' ')));
+  } finally { reRender=rr; try{ tmp.remove(); }catch(_){} try{ if(document.querySelector('#modal .mscd'))closeModal(); }catch(_){} db=real; bumpIdx(); }
+  console.log('estímulo self-check OK'); }
 function repsOpts(sel){ let o='<option value="">—</option>'; for(let i=1;i<=25;i++)o+=`<option ${sel==String(i)?'selected':''}>${i}</option>`; return o; }
 function rirOpts(sel,allowF){ let o='<option value="">—</option>'; if(allowF)o+=`<option ${sel==='F'?'selected':''}>F</option>`; for(let i=0;i<=5;i++)o+=`<option ${sel==String(i)?'selected':''}>${i}</option>`; return o; }
 function unitOpts(sel){ return ['kg','lbs','pla'].map(u=>`<option ${sel===u?'selected':''}>${u}</option>`).join(''); }
@@ -3999,20 +4177,25 @@ function _diagSelfCheck(){
   A('sin exposiciones → nada que inventar', diagnoseMuscle(X(b=>{ b.n28=0; })).state==='none');
   A('una sola exposición → pocos datos, no "en orden"', diagnoseMuscle(X(b=>{ b.n28=1; })).state==='little');
   // 1 · fatiga acumulada: series +30 %, RIR −1, capacidad −4 % y el día sin banderas
-  const fat=X(b=>{ b.w2={sets:10,rir:2.2,rn:8,n:2}; b.w1={sets:13,rir:1.2,rn:10,n:2}; b.perf14=[-5,-4,-3]; });
+  // estímulo · fallo y fatiga solo se dicen con pérdida de progreso SOSTENIDA (un ejercicio primario retrocediendo o estancado)
+  const LOSS=[{name:'press',key:'press|free',st:{state:'regress',pct:-2,n:8,weeks:5}}];
+  const fat=X(b=>{ b.w2={sets:10,rir:2.2,rn:8,n:2}; b.w1={sets:13,rir:1.2,rn:10,n:2}; b.perf14=[-5,-4,-3]; b.stat=LOSS; });
   A('fatiga acumulada con evidencia', ks(fat)[0]==='fatigue');
+  A('…y sin pérdida sostenida no se dice', ks(X(b=>{ Object.assign(b,fat); b.stat=[]; })).indexOf('fatigue')<0);
   A('…pero no si el día (sueño/comida) lo explica', (()=>{ const f=X(b=>{ Object.assign(b,fat); b.recent=fat.recent.map(r=>Object.assign({},r,{perf:-4,flags:['dormiste 5.1h']})); }); const k=ks(f); return k.indexOf('fatigue')<0&&k.indexOf('context')>=0; })());
   A('ruido: capacidad −1 % no es fatiga', ks(X(b=>{ Object.assign(b,fat); b.perf14=[-1,0]; })).indexOf('fatigue')<0);
   // 2 · antes de su ventana
-  A('entrenado antes de recuperarse', ks(X(b=>{ b.recent[1]=Object.assign({},b.recent[1],{gap:30,perf:-5}); })).indexOf('early')>=0);
+  A('entrenado antes de recuperarse', ks(X(b=>{ b.stat=LOSS; b.recent[1]=Object.assign({},b.recent[1],{gap:30,perf:-5}); })).indexOf('early')>=0);
+  A('una sesión baja sola no es aviso', ks(X(b=>{ b.recent[1]=Object.assign({},b.recent[1],{gap:30,perf:-5}); })).indexOf('early')<0);
   A('ruido: pocas horas pero rindió igual', ks(X(b=>{ b.recent[1]=Object.assign({},b.recent[1],{gap:30,perf:1}); })).indexOf('early')<0);
   // v272 · reglas de σ
   A('σ sobre 30 → muy poco extra', ks(X(b=>{ b.w1.sig=34; })).indexOf('high')>=0);
   A('debajo del mínimo dos semanas', ks(X(b=>{ b.w1.sig=2; b.w2.sig=3; })).indexOf('low')>=0);
   A('debajo del mínimo UNA semana no alcanza', ks(X(b=>{ b.w1.sig=2; b.w2.sig=12; })).indexOf('low')<0);
-  A('mucho fallo con evidencia', ks(X(b=>{ b.w1.nk=10; b.w1.nf=4; })).indexOf('failure')>=0);
-  A('ruido: 2 de 4 al fallo con pocas series no alcanza', ks(X(b=>{ b.w1.nk=4; b.w1.nf=2; })).indexOf('failure')<0);
-  A('fallo en compuesto pesado', ks(X(b=>{ b.w1.heavyF=1; })).indexOf('heavyF')>=0);
+  A('mucho fallo con evidencia', ks(X(b=>{ b.stat=LOSS; b.w1.nk=10; b.w1.nf=4; })).indexOf('failure')>=0);
+  A('mucho fallo sin pérdida de progreso no se dice', ks(X(b=>{ b.w1.nk=10; b.w1.nf=10; })).indexOf('failure')<0);
+  A('ruido: 2 de 4 al fallo con pocas series no alcanza', ks(X(b=>{ b.stat=LOSS; b.w1.nk=4; b.w1.nf=2; })).indexOf('failure')<0);
+  A('fallo en compuesto pesado', ks(X(b=>{ b.stat=LOSS; b.w1.heavyF=1; })).indexOf('heavyF')>=0&&ks(X(b=>{ b.w1.heavyF=1; })).indexOf('heavyF')<0);
   A('sesión cargada', ks(X(b=>{ b.w1.maxVs=12; })).indexOf('session')>=0);
   A('un ejercicio que retrocede se dice', ks(X(b=>{ b.stat=[{name:'press',key:'press|free',st:{state:'regress',pct:-2,n:8,weeks:5}}]; })).indexOf('regress')>=0);
   // 5 · secuencia: solo si la vez anterior NO iba tras uno al fallo
@@ -4090,8 +4273,8 @@ function _v256SelfCheck(){
   const bx=document.createElement('div'); bx.innerHTML=uniHeadHTML(false,true); const hd=bx.querySelector('.thead');
   A('la cabecera unilateral usa el template de la fila', hd.classList.contains('gc-uni')&&hd.classList.contains('ps')&&hd.children.length===6&&!bx.querySelector('.pairdone'));
   // 5 · //ESTÍMULO ordena lo accionable primero y nunca usa verde
-  const rs=stimulusRows(); A('//ESTÍMULO va ordenado por lo que hay que mover', rs.every((r,i)=>!i||rs[i-1].rank<=r.rank));
-  A('//ESTÍMULO no pinta verde', rs.every(r=>r.cls!=='good'));
+  const rs=stimulusRows(); A('//ESTÍMULO va ordenado por cuánto estímulo, de más a menos', rs.every((r,i)=>!i||rs[i-1].v>=r.v));   // estímulo
+  A('//ESTÍMULO no pinta verde', !/u-good|var\(--good\)/.test(stimulusSection()));
   console.log('v256 self-check OK');
 }
 // v257 self-check — sueño por duraciones, compartir ejercicio sin tocar db, rayita de pestañas sin viaje
@@ -8606,6 +8789,8 @@ document.getElementById('app').addEventListener('click',e=>{
   else if(a==='sd_addday'){ db.split.days.push({id:'d'+uid(),name:'new day',tag:'@ RIR · F',metric:'rir',allowFailure:true,exercises:[]}); save(); reRender(); }
   else if(a==='exdirectory'){ window._mgSel=[]; openExerciseDirectory(); }
   else if(a==='muscledetail'){ openMuscleDetail(el.dataset.id); }
+  else if(a==='stimview'){ const v=el.dataset.v; if(STIM_VIEWS.some(x=>x[0]===v)&&v!==stimViewKey()){ db.settings=db.settings||{}; db.settings.stimView=v; save(); reRender(); } }   // estímulo · la vista de //STIMULUS se recuerda
+  else if(a==='mdmore'){ const bx=document.getElementById('mdmore'); if(bx){ const op=bx.hidden; bx.hidden=!op; el.textContent=op?'menos':'más'; el.setAttribute('aria-expanded',op?'true':'false'); } }   // estímulo · detalle de músculo: [más]/[menos]
   else if(a==='musclemap'){ openMuscleMap(); }
   else if(a==='exprof'){ const run=()=>openExProfile(el.dataset.n,el.dataset.back||'');
     // R3: el nombre tocado viaja al título del perfil (View Transitions); sin soporte o con reduced-motion abre normal
@@ -11164,14 +11349,17 @@ function _pulgarSelfCheck(){ const A=(nm,c)=>{ if(!c) throw new Error('SELFCHECK
 const GLOSS={
   rpe:'RPE · esfuerzo de la serie: 10 = no salía otra, 9 = te quedaba 1, 8 = te quedaban 2 (medios puntos de 7 a 10). Se guarda como RIR (10 − RPE) para que todo se calcule igual.',
   rir:'RIR · repeticiones en reserva: cuántas más te quedaban. 0 = al fallo · F = fallo con media rep extra. Se registra por serie.',
-  t:'σ · estímulo de hipertrofia en series efectivas: 1.0 = una serie al fallo con ≥30 % de tu 1RM. Parar a RIR 1–2 da ~90 % del estímulo con mucha menos fatiga. ~ = con RIR estimado.',
+  t:'σ · unidades de tensión mecánica: una medida propia de gym//TRK que estima el estímulo de cada serie. 1.0 = una serie al fallo con 30 % o más de tu 1RM; a RIR 1–2 vale ~0.9. Es un cálculo de la app, no una medida de laboratorio. ~ = con RIR estimado.',
   cap:'% de capacidad: tu e1RM de hoy contra la sesión equivalente anterior, descontando la fatiga acumulada en la sesión. ▲ más · ▼ menos · ~ comparación de baja confianza.',
-  lm:'zona objetivo: 10–20 σ por músculo a la semana. Menos de 4 casi no estimula; arriba de 20 cada serie aporta poco y arriba de 30 muy poco (Pelland 2026). Orienta, no es regla.',
+  lm:'referencia general: con ~10 o más series por músculo a la semana se suele crecer más (ACSM 2026), y cada serie extra aporta menos, sin un tope claro (Pelland 2026). Es un promedio de estudios: no hay una cifra por músculo, varía mucho entre personas y arriba de ~25 casi no hay datos. Orienta; no es regla.',
   est:'estimado = ventana de la literatura ajustada a tu dosis (series, fallo, estiramiento) · observado = lo que muestra tu propio historial, desde 6 pares de sesiones.',
   rirmed:'RIR medio de tus series duras con RIR registrado · "% a RIR ≤1" = qué parte fue al fallo o casi.',
   e1rm:'e1RM: el máximo estimado para 1 repetición (Epley + RIR) de tus series de trabajo. Compara días con pesos y reps distintos.',
   racha:'racha: días seguidos con comida o gym registrados a mano. Solo se corta el día sin ninguno de los dos; hoy cuenta hasta medianoche.',
-  stim:'σ de 7 días por músculo real: cada serie cuenta según su peso relativo y su cercanía al fallo, y en una misma sesión rinde menos pasadas ~10. Marcas en 10 y 20 (la zona objetivo). La frase dice su banda y, si hay algo que mover, qué (el color solo en el ⚠).',
+  stim:'σ · unidades de tensión mecánica: una medida propia de gym//TRK que estima el estímulo de cada serie, sumado por músculo en 7 días. Cada serie cuenta según su peso relativo y su cercanía al fallo; las indirectas, con su peso. Es un cálculo de la app, no una medida de laboratorio.',
+  stimh:'series duras de 7 días por músculo: las que quedaron a RIR 4 o menos (o sin RIR anotado). Par unilateral = 1, drop = 0.5; las indirectas cuentan con su peso.',
+  stima:'series totales de 7 días por músculo: todas las registradas, a cualquier RIR. Par unilateral = 1, drop = 0.5; las indirectas cuentan con su peso.',
+  stimm:'mezcla · promedio simple de σ, series duras y series totales (las tres se leen en series: 1 σ = una serie al fallo). Sirve para ordenar músculos de un vistazo; no es una medida nueva.',
 };
 const glossWrap=(t,k)=>'<span data-gloss="'+k+'">'+t+'</span>';
 function popClose(){ const g=document.getElementById('gloss'); if(g)g.remove(); window._glossEl=null; const t=document.getElementById('tsel'); if(t)t.remove(); window._tselEl=null; }
