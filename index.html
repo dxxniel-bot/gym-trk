@@ -1861,6 +1861,13 @@ async function _idbSelfCheck(){ const N='gymtrk_selftest', A=(n,c)=>{ if(!c)thro
     await idbPut('k','v',N); A('tras cerrarse la conexión, reconecta y escribe', (await idbGet('k',N))==='v');
     await idbDelCopies(['day-2026-09-01'],N); const ix2=await idbIdx(N);
     A('borrar quita la copia y su índice', !ix2['day-2026-09-01']&&!(await idbGet('day-2026-09-01',N)));
+    // v286 · la foto previa ESPERADA de unir / renombrar / mover (snapExpect): se escribe de verdad, queda en el índice y trae
+    // la base de ANTES. La base de juguete solo vive dentro de la llamada (snapExpect la serializa en el acto), sin ningún await.
+    { const real=db; let p=null; try{ db={_meta:{seq:7},sessions:[{id:'s1',date:'2026-09-08',exercises:[{name:'bb sldl',sets:[{w:'110',r:'8'}]}]}]}; p=snapExpect('merge',N); } finally{ db=real; }
+      A('la foto previa esperada responde que quedó', (await p)===true);
+      const ix3=await idbIdx(N), pk=Object.keys(ix3).filter(k=>/^pre-merge-\d+$/.test(k)), pr=pk.length===1?await idbGet(pk[0],N):null; let pd=null; try{ pd=JSON.parse(pr.s); }catch(_){}
+      A('la foto previa de unir existe y está en el índice', pk.length===1&&!!pr&&ix3[pk[0]].seq===7&&ix3[pk[0]].mass===1&&ix3[pk[0]].len===pr.s.length);
+      A('el respaldo previo conserva los nombres de antes', !!pd&&pd.sessions[0].exercises[0].name==='bb sldl'&&pd.sessions[0].exercises[0].sets[0].w==='110'); }
     console.log('idb self-check OK');
   }catch(e){ console.error(e); }
   finally{ try{ const d=await idbOpen(N); d.close(); }catch(_){} try{ delete _idbConns[N]; indexedDB.deleteDatabase(N); }catch(_){} } }
@@ -4106,10 +4113,32 @@ function _mergeSelfCheck(){
     A('unir no cambia la lateralidad de ningún registro', c.every(e=>e.name==='curl'&&e.type==='free')&&latOf(c[0])==='bi'&&!('lat' in c[0])&&latOf(c[1])==='alt'&&c[1].unilateral===false&&latOf(c[2])==='uni'&&c[2].sets.length===2&&c[2].sets[0].side==='R');
     A('…y siguen siendo tres historias del mismo ejercicio', new Set(c.map(exHistKey)).size===3);
     A('la máquina por identidad sigue al nombre nuevo, con el tipo final y su marca', (db.machines.AGON[I('curl','free','prime')]||{}).setup==='pin 3'&&!db.machines.AGON[I('db curl','cable','prime')]);
-    A('un destino que ya existe no se pisa', db.machines.AGON[I('curl','free','')].setup==='banco 2'&&!db.machines.AGON[I('db curl','cable','')]);
+    A('un destino que ya existe no se pisa, y lo que no cupo NO se borra: se queda donde estaba', db.machines.AGON[I('curl','free','')].setup==='banco 2'&&(db.machines.AGON[I('db curl','cable','')]||{}).setup==='otro');
     A('gym por gym: donde no había nada llega lo de la fuente', (db.machines.CAMPESTRE[I('curl','free','')]||{}).setup==='polea baja'&&!db.machines.CAMPESTRE[I('db curl','cable','')]);
     A('la nota sigue al nombre nuevo (una vacía cede el lugar)', db.exNotes[N('curl','free')]==='agarre neutro'&&!(N('db curl','cable') in db.exNotes));
     A('el catálogo de identidad ya no guarda lateralidad', !('unilateral' in db.exCat.curl)&&!('lat' in db.exCat.curl));
+    // v286 · un MISMO nombre registrado con dos tipos: al unir queda un solo tipo y sus dos claves (máquina y nota) caen en el
+    // mismo destino. Sin elección no se borra ninguna; con elección queda la elegida. Antes la del otro tipo se perdía callada.
+    db.sessions.push({id:'s5',date:'2026-09-14',dayId:'dX',gym:'AGON',type:'training',exercises:[
+      {exId:null,name:'row',type:'machine',unilateral:false,sets:[{w:'120',r:'8',rir:'1',unit:'kg'}]},
+      {exId:null,name:'row',type:'cable',unilateral:false,sets:[{w:'70',r:'8',rir:'1',unit:'kg'}]},
+      {exId:null,name:'remo',type:'machine',unilateral:false,sets:[{w:'110',r:'8',rir:'1',unit:'kg'}]}]});
+    db.machines.AGON[I('row','machine','')]={brand:'',setup:'asiento 3',na:false}; db.machines.AGON[I('row','cable','')]={brand:'',setup:'polea 7',na:false};
+    db.machines.AGON[I('remo','machine','')]={brand:'',setup:'polea 7',na:false};   // dice lo mismo que la que queda: esa sí sobra
+    db.exNotes[N('row','machine')]='pecho pegado'; db.exNotes[N('row','cable')]='agarre neutro'; bumpIdx();
+    const somewhere=()=>{ const t=JSON.stringify([db.machines,db.exNotes]); return ['asiento 3','polea 7','pecho pegado','agarre neutro'].filter(x=>t.indexOf(x)>=0).length; };
+    mergeExercises(['row','remo'],{name:'row',type:'cable',unit:'kg',muscle:'back',gyms:['AGON']});
+    const r5=db.sessions[4].exercises;
+    A('un nombre con dos tipos queda en uno solo', r5.every(e=>e.name==='row'&&e.type==='cable')&&new Set(r5.map(exHistKey)).size===1);
+    A('sin elección, unir no borra el setup ni la nota del otro tipo', somewhere()===4&&db.machines.AGON[I('row','cable','')].setup==='polea 7'&&(db.machines.AGON[I('row','machine','')]||{}).setup==='asiento 3'&&db.exNotes[N('row','cable')]==='agarre neutro'&&db.exNotes[N('row','machine')]==='pecho pegado');
+    A('un registro que dice lo mismo que el que queda no se duplica', !db.machines.AGON[I('remo','machine','')]);
+    mergeExercises(['row'],{name:'row',type:'cable',machineWinner:{AGON:[I('row','machine','')]},noteWinner:N('row','machine')});
+    A('con elección queda la que él eligió, en el destino', db.machines.AGON[I('row','cable','')].setup==='asiento 3'&&!db.machines.AGON[I('row','machine','')]&&db.exNotes[N('row','cable')]==='pecho pegado'&&!(N('row','machine') in db.exNotes));
+    // v286 · renombrar (una fuente, sin tipo): cada fila conserva su exId; unir de verdad sí re-vincula (arriba)
+    db.sessions[0].exercises[0].exId='x9'; const ex0=JSON.stringify(db.sessions.map(s=>s.exercises.map(e=>e.exId)));
+    mergeExercises(['sldl'],{name:'stiff leg'});
+    A('renombrar cambia el nombre en el split y en las sesiones', db.split.days[0].exercises[0].name==='stiff leg'&&db.sessions.slice(0,3).every(s=>s.exercises[0].name==='stiff leg')&&!db.exCat.sldl&&db.exCat['stiff leg'].mergedFrom.indexOf('sldl')>=0);
+    A('renombrar no re-vincula ningún exId', JSON.stringify(db.sessions.map(s=>s.exercises.map(e=>e.exId)))===ex0&&db.sessions[0].exercises[0].exId==='x9');
   } finally {
     db=real;
     try{ if(realPre==null)localStorage.removeItem(LS_PREMERGE); else localStorage.setItem(LS_PREMERGE,realPre); }catch(_){}
@@ -9998,12 +10027,19 @@ function exGymsFor(name){ const k=nameKey(name); const g=new Set();
   ((exCatRec(name)||{}).gyms||[]).forEach(x=>g.add(x));
   return [...g];
 }
+// v286 · lo que dice un registro de máquina (marca · setup · n/a), para saber si dos son el mismo dato
+function machSig(r){ return (typeof r==='string')?(r.trim()+'||0'):[String((r&&r.brand)||'').trim(),String((r&&r.setup)||'').trim(),(r&&r.na)?1:0].join('|'); }
 // v286 · foto previa ESPERADA (unir, renombrar, mover registros): resuelve true solo cuando la copia completa quedó escrita en
 // IndexedDB (`pre-<qué>-<hora>`, se poda a los 60 días como las demás); si falla, quien la pidió no toca nada y lo dice (⚠).
 // Reemplaza a la copia en localStorage (LS_PREMERGE): duplicaba la base dentro del cupo de 5 MB.
-let _snapT=null;   // solo pruebas: respuesta síncrona (true/false) en vez de IndexedDB
-function snapExpect(kind){ if(_snapT!=null){ const ok=!!_snapT; return {then:f=>f(ok)}; } if(_sbx)return Promise.resolve(true);
-  try{ const t=Date.now(); return idbPutCopy('pre-'+kind+'-'+t,{t:t,day:todayISO(),mass:dbMass(db),seq:seqOf(db),sid:_sid,s:JSON.stringify(db)}).then(()=>true,()=>false); }catch(_){ return Promise.resolve(false); } }
+// Pruebas: en sandbox (o con el doble _snapT) no se escribe en la base real, pero la foto SÍ se arma y queda en _snapLast,
+// para afirmar que se tomó ANTES de reescribir; `name` = otra base de IndexedDB (la de pruebas de _idbSelfCheck), donde la
+// escritura es la de verdad y se relee.
+let _snapT=null, _snapLast=null;   // solo pruebas: respuesta síncrona (true/false) en vez de IndexedDB · la última foto armada
+function snapExpect(kind,name){ const dbl=!name&&_snapT!=null, test=dbl||(!name&&_sbx);
+  try{ const t=Date.now(), key='pre-'+kind+'-'+t, rec={t:t,day:todayISO(),mass:dbMass(db),seq:seqOf(db),sid:_sid,s:JSON.stringify(db)};
+    if(test){ const ok=dbl?!!_snapT:true; _snapLast=ok?{key:key,s:rec.s}:null; return dbl?{then:f=>f(ok)}:Promise.resolve(ok); }
+    return idbPutCopy(key,rec,name).then(()=>true,()=>false); }catch(_){ return dbl?{then:f=>f(false)}:Promise.resolve(false); } }
 // Reescritura masiva, explícita y confirmada. sources = claves de nombre; target = configuración final.
 // Devuelve un resumen de lo tocado (para el toast) o null si no había nada que unir.
 // v286 · cada registro CONSERVA su lateralidad (el dueño: "bi, uni o alternado es nomás una variante"): unir ya no fuerza
@@ -10014,6 +10050,11 @@ function mergeExercises(sourceNames,target){
   const tgtKey=nameKey(target&&target.name); if(!tgtKey||!src.size)return null;
   const stat={split:0,ex:0,sets:0,machines:0,notes:0,relinked:0,unlinked:0};
   const has=(o,k)=>Object.prototype.hasOwnProperty.call(o,k);
+  // v286 · un RENOMBRAR (una sola fuente, sin tipo nuevo y hacia un nombre que no existía) no junta historias: cada fila conserva
+  // su exId tal cual. Re-vincular ahí cambiaba la sesión de referencia (▲▼) y las series sugeridas de la siguiente sesión solo
+  // por cambiar el nombre.
+  const named=k=>((db.split&&db.split.days)||[]).concat(db.sessions||[],db.activeWork?[db.activeWork]:[]).some(s=>((s&&s.exercises)||[]).some(e=>e&&nameKey(e.name)===k));
+  const ren=src.size===1&&!target.type&&(src.has(tgtKey)||!named(tgtKey));
   const norm=e=>{ e.name=target.name;
     if(target.type)e.type=target.type;
     if(target.unit)e.unit=target.unit;
@@ -10030,7 +10071,7 @@ function mergeExercises(sourceNames,target){
   // fixDuplicateExIds: match único por día+nombre → ese id; ambiguo o inexistente → null, que la
   // escalera de baselineSetsFor resuelve por nombre+variante sin adivinar.
   const touch=s=>{ (s.exercises||[]).forEach(e=>{ if(!e||!src.has(nameKey(e.name)))return;
-      norm(e); stat.ex++; stat.sets+=(e.sets||[]).length;
+      norm(e); stat.ex++; stat.sets+=(e.sets||[]).length; if(ren)return;
       const day=(db.split&&db.split.days||[]).find(dd=>dd.id===s.dayId);
       const cands=day?(day.exercises||[]).filter(x=>nameKey(x.name)===tgtKey):[];
       const nid=cands.length===1?cands[0].id:null;
@@ -10042,22 +10083,33 @@ function mergeExercises(sourceNames,target){
   // Gym por gym y por separado: la polea de AGON no es la de Club Campestre aunque el ejercicio se llame
   // igual. Si dos fuentes tienen registro en el MISMO gym, manda el que él eligió en el modal.
   const order=[...src].sort((a,b)=>(b===tgtKey)-(a===tgtKey));   // lo del propio destino primero: es "lo que ya existe"
-  Object.keys(db.machines||{}).forEach(g=>{ const m=db.machines[g]||{}; const win=(target.machineWinner||{})[g];
+  // v286 · un registro que cae en un destino ya ocupado NO se borra por su cuenta: se descarta solo aquello contra lo que él
+  // eligió en el modal (o lo que es idéntico a lo que queda). Sin elección, se queda donde estaba.
+  Object.keys(db.machines||{}).forEach(g=>{ const m=db.machines[g]||{}; const wins=[].concat((target.machineWinner||{})[g]||[]);   // lo elegido en ese gym: claves de registro (o de fuente)
     [...src].forEach(k=>{ if(k===tgtKey)return; if(!has(m,k))return;
       const rec=m[k]; delete m[k];
       const taken=has(m,tgtKey);
-      if(!taken || win===k){ m[tgtKey]=rec; stat.machines++; }
+      if(!taken || wins.indexOf(k)>=0){ m[tgtKey]=rec; stat.machines++; }
     });
-    // v286 · por identidad: mismo gym, el tipo final y SU marca. Un destino ocupado no se pisa salvo que él haya elegido esa fuente.
-    order.forEach(k=>{ const pre='='+k+MACH_SEP; Object.keys(m).filter(x=>x.indexOf(pre)===0).forEach(x=>{ const p=x.slice(pre.length).split(MACH_SEP);
-        const nk='='+tgtKey+MACH_SEP+(target.type?canonType(target.type):p[0])+MACH_SEP+p.slice(1).join(MACH_SEP); if(nk===x)return;
-        const rec=m[x]; delete m[x]; if(!has(m,nk)||win===k){ m[nk]=rec; stat.machines++; } }); });
+    // v286 · por identidad: mismo gym, el tipo final y SU marca. Varias claves pueden caer en el MISMO destino: dos fuentes con la
+    // misma marca, o UN nombre registrado con dos tipos (al unir queda un solo tipo). Queda la que él eligió; si no eligió, la que
+    // ya estaba en el destino (o la primera) y las demás se quedan en su clave de siempre.
+    const G={}; order.forEach(k=>{ const pre='='+k+MACH_SEP; Object.keys(m).filter(x=>x.indexOf(pre)===0).forEach(x=>{ const p=x.slice(pre.length).split(MACH_SEP);
+        const nk='='+tgtKey+MACH_SEP+(target.type?canonType(target.type):p[0])+MACH_SEP+p.slice(1).join(MACH_SEP); (G[nk]=G[nk]||[]).push({k,x}); }); });
+    Object.keys(G).forEach(nk=>{ const grp=G[nk], at=grp.filter(o=>o.x===nk)[0]; if(has(m,nk)&&!at)return;   // el destino es de un ejercicio que no se está uniendo: no se toca nada
+      const chosen=o=>wins.indexOf(o.x)>=0||wins.indexOf(o.k)>=0, pick=grp.filter(o=>wins.indexOf(o.x)>=0)[0]||grp.filter(chosen)[0], w=pick||at||grp[0], rec=m[w.x], sg=machSig(rec);
+      grp.forEach(o=>{ if(o!==w&&o!==at&&(machSig(m[o.x])===sg||(pick&&!chosen(o))))delete m[o.x]; });
+      if(w.x!==nk){ delete m[w.x]; m[nk]=rec; stat.machines++; } });
   });
-  // 3b · v286 · la nota del ejercicio también sigue al nombre nuevo. Una nota que ya existe en el destino no se pisa (una
-  // vacía sí cede el lugar) salvo que él haya elegido la de esa fuente.
-  if(db.exNotes){ const N=db.exNotes; order.forEach(k=>{ const pre=k+MACH_SEP; Object.keys(N).filter(x=>x.indexOf(pre)===0).forEach(x=>{
-      const nk=tgtKey+MACH_SEP+(target.type?canonType(target.type):x.slice(pre.length)); if(nk===x)return;
-      const v=N[x]; delete N[x]; if(!has(N,nk)||(v&&(!N[nk]||target.noteWinner===k))){ N[nk]=v; if(v)stat.notes++; } }); }); }
+  // 3b · v286 · la nota del ejercicio también sigue al nombre nuevo. Varias notas pueden caer en el mismo destino (dos fuentes, o
+  // un nombre con dos tipos): queda la que él eligió; si no eligió, la que ya estaba (una vacía cede el lugar) y una nota DISTINTA
+  // no se borra: se queda en su clave de siempre.
+  if(db.exNotes){ const N=db.exNotes, G={}, nw=target.noteWinner;
+    order.forEach(k=>{ const pre=k+MACH_SEP; Object.keys(N).filter(x=>x.indexOf(pre)===0).forEach(x=>{ const nk=tgtKey+MACH_SEP+(target.type?canonType(target.type):x.slice(pre.length)); (G[nk]=G[nk]||[]).push({k,x}); }); });
+    Object.keys(G).forEach(nk=>{ const grp=G[nk], at=grp.filter(o=>o.x===nk)[0], full=grp.filter(o=>N[o.x]); if(has(N,nk)&&!at&&N[nk])return;   // la nota de un ejercicio que no se está uniendo
+      const pick=nw?(full.filter(o=>o.x===nw)[0]||full.filter(o=>o.k===nw)[0]):null, w=pick||(at&&N[at.x]?at:null)||full[0]||at||grp[0], v=N[w.x];
+      grp.forEach(o=>{ if(o!==w&&o!==at&&(!N[o.x]||N[o.x]===v||(pick&&o.x!==nw&&o.k!==nw)))delete N[o.x]; });
+      if(w.x!==nk){ delete N[w.x]; N[nk]=v; if(v)stat.notes++; } }); }
   // 4 · catálogo de identidad (dónde existe + configuración canónica). Solo se escribe lo que el target trae.
   const prev=exCatRec(target.name)||{};
   const srcRecs=[...src].map(k=>(db.exCat&&db.exCat[k])||null).filter(Boolean);
@@ -10163,7 +10215,11 @@ function catMoveHTML(it,gym,last,hid){ const m=it.m, on=!!state._catSel&&(window
     +lv.map((L,i)=>catLeafHTML(m,L,gym,i===lv.length-1,lbl[i])).join('')+`</div>`; }
 function catBarHTML(){ return `<button type="button" class="b" data-act="catback">‹ back</button><span class="u-f1"></span><button type="button" class="b" data-act="catmerge">unir</button>`; }
 // la franja de elegir para unir: mismo lugar y mismo alto que [‹ back] [unir], pegada arriba mientras eliges
-function mgBarHTML(n){ return `<span>${n} ${n===1?'elegido':'elegidos'}</span><span class="u-f1"></span><button type="button" class="start catgo${n>1?'':' off'}" data-act="openmerge" aria-disabled="${n>1?'false':'true'}">▶ unir</button><button type="button" class="b" data-act="catselx">cancelar</button>`; }
+// qué se puede unir: dos o más ejercicios, o UNO SOLO cuando está partido por tipo (el mismo nombre registrado como libre y como
+// máquina: en el árbol se ve duplicado y unirlo lo deja en un solo tipo; cada registro conserva su lateralidad)
+function catTypes(k){ const m=catIndex().byK[k]; return m?m.leaves.filter(L=>!L.cardio).map(L=>L.type).filter((t,i,a)=>a.indexOf(t)===i):[]; }
+function mgCan(keys){ keys=keys||window._mgSel||[]; return keys.length>1||(keys.length===1&&catTypes(keys[0]).length>1); }
+function mgBarHTML(n){ const ok=mgCan(); return `<span>${n} ${n===1?'elegido':'elegidos'}</span><span class="u-f1"></span><button type="button" class="start catgo${ok?'':' off'}" data-act="openmerge" aria-disabled="${ok?'false':'true'}">▶ unir</button><button type="button" class="b" data-act="catselx">cancelar</button>`; }
 function renderCatalog(){ const I=catIndex(), view=catView(), sel=!!state._catSel, q=state._catQ||'', t=catNorm(q), open=state._catOpen||{};
   const tabs=[['mus','músculo'],['gym','gym'],['az','A–Z']].map(([v,l])=>`<button type="button" class="t${view===v?' on':''}" data-act="catview" data-v="${v}" role="tab" aria-selected="${view===v}">${l}</button>`).join('');
   let body='', shown=0;
@@ -10241,6 +10297,9 @@ function catLeafMenu(mk,key){ const m=catIndex().byK[mk], L=m&&m.leaves.filter(x
 function _catalogoSelfCheck(){ const A=(nm,c)=>{ if(!c) throw new Error('SELFCHECK catálogo: '+nm); };
   const real=db, sb0=_sbx, sn0=_snapT, sg0=window._swipeGuard, v=document.getElementById('view'), K=['screen','_scroll','_paintedKey','_viewScroll','_exKey','_exTab','_exDays','work','_catSel','_catOpen','_catQ','_back','_from','selDay'], st0={}; K.forEach(k=>{ st0[k]=state[k]; });
   const mg0=window._mgSel, ax0=window._axList, ac0=window._axCtx, pf0=window._exProf, old=new Set(document.querySelectorAll('.toast'));
+  // el almacenamiento REAL no se toca: save() va al sandbox, pero mirrorLive() escribe el espejo de la sesión viva aunque _sbx
+  // esté puesto (como en _altSelfCheck: se guarda al entrar y se repone al salir)
+  const lsLive=()=>{ try{ return localStorage.getItem(LS_LIVE); }catch(_){ return null; } }, lsAll=()=>{ try{ return Object.keys(localStorage).sort().map(k=>k+':'+String(localStorage.getItem(k)).length).join('|'); }catch(_){ return ''; } }, live0=lsLive(), ls0=lsAll();
   const fresh=()=>Array.from(document.querySelectorAll('.toast')).filter(t=>!old.has(t)&&!t.classList.contains('out')), wipe=()=>Array.from(document.querySelectorAll('.toast')).filter(t=>!old.has(t)).forEach(t=>t.remove());
   const tap=el=>el.dispatchEvent(new MouseEvent('click',{bubbles:true,cancelable:true})), near=(a,b)=>Math.abs(a-b)<=1, q=s=>v.querySelector(s), qa=s=>Array.from(v.querySelectorAll(s)), top=el=>el.getBoundingClientRect().top;
   const menu=()=>Array.from(document.querySelectorAll('#asklayer .nvm')), pick=t=>{ const m=menu().filter(x=>x.textContent.indexOf(t)>=0)[0]; if(m)tap(m); return !!m; }, ask=k=>document.querySelector('#asklayer [data-ask="'+k+'"]');
@@ -10335,23 +10394,33 @@ function _catalogoSelfCheck(){ const A=(nm,c)=>{ if(!c) throw new Error('SELFCHE
     { const l0=lats(), md=()=>document.getElementById('modal'), el=id=>document.getElementById(id); tap(q('#catbar [data-act="openmerge"]'));
       A('la hoja de unir no pregunta la variante y dice las de cada fuente', !!md()&&!el('mg_uni')&&/\[bi·alt\] db curl/.test(md().textContent)&&/\[uni·alt\] curl mancuerna/.test(md().textContent));
       A('dos máquinas en el mismo gym y dos notas: él elige', !!el('mg_win_0')&&el('mg_win_0').options.length===2&&!!el('mg_note')&&el('mg_note').options.length===2&&el('mg_name').value==='db curl');
-      el('mg_win_0').value='curl mancuerna'; el('mg_note').value='curl mancuerna';
+      el('mg_win_0').value=I('curl mancuerna','free',''); el('mg_note').value=N('curl mancuerna','free');
+      A('lo que se elige es el REGISTRO (su clave), no la fuente', el('mg_win_0').value===I('curl mancuerna','free','')&&el('mg_note').value===N('curl mancuerna','free')&&/^curl mancuerna → banco 3$/.test(el('mg_win_0').selectedOptions[0].textContent));
       _snapT=false; tap(md().querySelector('[data-act="domerge"]')); tap(ask('ok'));
       A('si la foto previa falla no se une nada y se dice', !!md()&&db.sessions[3].exercises[2].name==='curl mancuerna'&&!!db.machines.AGON[I('curl mancuerna','free','')]&&fresh().some(t=>/sin copia previa/.test(t.textContent))&&lats()===l0); wipe();
       _snapT=true; tap(md().querySelector('[data-act="domerge"]')); tap(ask('ok'));
       A('con la foto hecha, se unen y vuelves al catálogo', !md()&&state.screen==='catalog'&&!state._catSel&&!window._mgSel.length&&db.sessions.every(s=>s.exercises.every(e=>e.name!=='curl mancuerna'))&&!catIndex().byK['curl mancuerna']);
+      A('la foto previa de unir se tomó ANTES de reescribir: conserva los nombres, la máquina y la nota de antes', (o=>!!o&&/^pre-merge-\d+$/.test(_snapLast.key)&&o.sessions[3].exercises[2].name==='curl mancuerna'&&o.sessions[2].exercises[3].name==='curl mancuerna'&&o.machines.AGON[I('curl mancuerna','free','')].setup==='banco 3'&&o.machines.AGON[I('db curl','free','')].setup==='banco 1'&&o.exNotes[N('db curl','free')]==='supino')(_snapLast&&JSON.parse(_snapLast.s)));
       A('unir no cambia la lateralidad de ningún registro', lats()===l0&&latOf(db.sessions[2].exercises[3])==='uni'&&latOf(db.sessions[3].exercises[2])==='alt'&&db.sessions[3].exercises[2].name==='db curl');
       A('el ejercicio unido tiene sus tres hojas', catIndex().byK['db curl'].leaves.map(L=>L.lat+':'+L.n).join()==='bi:4,uni:1,alt:2'&&Array.from(mv('db curl').querySelectorAll('.catl')).length===3);
       A('la máquina sigue al nombre nuevo; en el destino ocupado gana la que él eligió', db.machines.AGON[I('db curl','free','')].setup==='banco 3'&&!db.machines.AGON[I('curl mancuerna','free','')]&&db.machines.AGON[I('leg ext','machine','')].brand==='nautilus');
       A('la nota sigue al nombre nuevo, la que él eligió', db.exNotes[N('db curl','free')]==='codo pegado'&&!(N('curl mancuerna','free') in db.exNotes));
       A('el catálogo de identidad no guarda lateralidad', !('unilateral' in db.exCat['db curl'])&&!('lat' in db.exCat['db curl'])&&db.exCat['db curl'].mergedFrom.join()==='curl mancuerna'); wipe(); }
     // 9 · renombrar: el nombre nuevo en todo, con su máquina; un nombre que ya existe se manda a unir
-    { const l0=lats(); tap(mv('leg ext').querySelector('.catmh')); pick('renombrar'); const inp=()=>document.getElementById('tp_in');
+    { // filas que el re-vínculo de UNIR cambiaría: una instancia propia (con su marca guardada por '#exId') y una sin vincular
+      db.sessions[2].exercises[1].exId='eL9'; db.sessions[1].exercises[1].exId=null; db.machines.CAMPESTRE={'#eL9':{brand:'hoist',setup:'',na:false}}; bumpIdx();
+      const ids=()=>JSON.stringify(db.sessions.map(s=>s.exercises.map(e=>e.exId===undefined?'—':e.exId))), seed=()=>{ db.rotIdx=0; state.selDay=null; return JSON.stringify(newWorkSession().exercises.map(e=>[variantKey(e),(e.sets||[]).map(s=>[s.w,s.r,s.side||''])])); }, i0=ids(), s0=seed();
+      A('antes de renombrar, la marca por instancia sale', machineRec('CAMPESTRE',{name:'leg ext',type:'machine'}).brand==='hoist');
+      const l0=lats(); tap(mv('leg ext').querySelector('.catmh')); pick('renombrar'); const inp=()=>document.getElementById('tp_in');
       A('renombrar abre un campo con el nombre', !!inp()&&inp().value==='leg ext');
       inp().value='db curl'; tap(document.getElementById('tp_ok')); A('un nombre que ya existe no se pisa', !!inp()&&!!catIndex().byK['leg ext']&&fresh().some(t=>/ya existe/.test(t.textContent))); wipe();
       inp().value='leg extension'; tap(document.getElementById('tp_ok'));
       A('queda renombrado en el split (con su id) y en las sesiones', !document.getElementById('modal')&&db.split.days[0].exercises[1].name==='leg extension'&&db.split.days[0].exercises[1].id==='eL'&&db.sessions.slice(0,3).every(s=>s.exercises[1].name==='leg extension')&&!catIndex().byK['leg ext']&&!!mv('leg extension'));
-      A('conserva tipo, lateralidades y su máquina', lats()===l0&&db.sessions[0].exercises[1].type==='machine'&&machineRec('AGON',{name:'leg extension',type:'machine'}).brand==='nautilus'&&!db.machines.AGON[I('leg ext','machine','')]&&catIndex().byK['leg extension'].leaves.map(L=>L.lat+':'+L.n).join()==='bi:2,uni:1'); wipe(); }
+      A('conserva tipo, lateralidades y su máquina', lats()===l0&&db.sessions[0].exercises[1].type==='machine'&&machineRec('AGON',{name:'leg extension',type:'machine'}).brand==='nautilus'&&!db.machines.AGON[I('leg ext','machine','')]&&catIndex().byK['leg extension'].leaves.map(L=>L.lat+':'+L.n).join()==='bi:2,uni:1');
+      A('renombrar no re-vincula nada: cada fila conserva su exId', ids()===i0&&db.sessions[2].exercises[1].exId==='eL9'&&db.sessions[1].exercises[1].exId===null);
+      A('…la siguiente sesión sale con las mismas series sugeridas', seed()===s0);
+      A('…y la marca guardada por instancia (#exId) sigue saliendo', machineRec('CAMPESTRE',{name:'leg extension',type:'machine'}).brand==='hoist');
+      A('la foto previa de renombrar trae el nombre de antes', (o=>!!o&&/^pre-rename-\d+$/.test(_snapLast.key)&&o.split.days[0].exercises[1].name==='leg ext'&&o.sessions[0].exercises[1].name==='leg ext')(_snapLast&&JSON.parse(_snapLast.s))); wipe(); }
     // 10 · corregir registros: mover bi ↔ alt con [deshacer] exacto; se salta las filas con series con lado
     { db.activeWork={id:'w',date:'2026-09-30',dayId:'d1',gym:'AGON',startMs:Date.now(),exercises:[{exId:'eC',name:'db curl',muscle:'biceps',type:'free',unilateral:false,sets:[S(36,{done:false})]}]}; bumpIdx();
       const b0=leafBtn(BI,'catlt'), u0=leafBtn(UNI,'catlt');
@@ -10374,20 +10443,50 @@ function _catalogoSelfCheck(){ const A=(nm,c)=>{ if(!c) throw new Error('SELFCHE
     // 11 · el selector de la sesión: una fila por nombre con sus variantes; al elegir entra la más usada
     { openAddExStep2(0,'biceps',null); const row=Array.from(document.querySelectorAll('#modal .pickitem[data-act="axpick"]')).filter(x=>/db curl/.test(x.textContent))[0], x=(window._axList||[]).filter(o=>o.name==='db curl')[0];
       A('una fila por nombre, con sus variantes', !!row&&/^\[bi·uni·alt\] db curl/.test(row.textContent.trim())&&Array.from(document.querySelectorAll('#modal .pickitem[data-act="axpick"]')).filter(o=>/db curl/.test(o.textContent)).length===1);
-      A('al elegir entra la variante más usada ([bi]), no la última registrada ([alt])', !!x&&latOf(x)==='bi'&&latOf(knownExercises().filter(o=>o.name==='db curl')[0])==='alt'); closeModal(); }
+      A('al elegir entra la variante más usada ([bi]), no la última registrada ([alt])', !!x&&latOf(x)==='bi'&&latOf(knownExercises().filter(o=>o.name==='db curl')[0])==='alt'); closeModal();
+      // un nombre con dos TIPOS: máquina [bi] ×3 y, lo último registrado, libre [uni] ×1 → entra la hoja más usada completa
+      ['2026-08-01','2026-08-08','2026-08-15'].forEach((d,i)=>db.sessions.push({id:'r'+i,date:d,gym:'AGON',exercises:[{exId:'a1',name:'row',muscle:'lats',type:'machine',machine:'prime',unilateral:false,sets:[S(120+i)]}]}));
+      db.sessions.push({id:'r9',date:'2026-09-29',gym:'AGON',exercises:[{exId:'a2',name:'row',muscle:'lats',type:'free',unilateral:true,startSide:'R',sets:[S(40,{side:'R'}),S(40,{side:'L'})]}]});
+      db.activeWork={id:'w2',date:'2026-09-30',dayId:null,gym:'AGON',startMs:Date.now(),exercises:[]}; bumpIdx();
+      openAddExStep2(null,'lats',null); const pk=()=>Array.from(document.querySelectorAll('#modal .pickitem[data-act="axpick"]')), y=(window._axList||[]).filter(o=>o.name==='row')[0], kn=knownExercises().filter(o=>o.name==='row')[0];
+      A('con dos tipos entra la hoja más usada COMPLETA (máquina [bi]), no el último tipo cruzado con otra lateralidad', !!y&&exHistKey(y)==='row|machine|0|0|0'&&y.machine==='prime'&&!!kn&&exHistKey(kn)==='row|free|1|0|0');
+      A('lo que ofrece el selector siempre tiene historia propia', (window._axList||[]).filter(o=>!isCardio(o)&&catIndex().byK[nameKey(o.name)].n>0).every(o=>exHistRows(exHistKey(o)).length>0));
+      const en0=state._enter; tap(pk().filter(o=>/\] row/.test(o.textContent))[0]); state._enter=en0; const ne=db.activeWork.exercises[0]||{};
+      A('al tocarla entra a la sesión con esa llave y sembrada de SU historia (no por aproximación)', exHistKey(ne)==='row|machine|0|0|0'&&exHistRows(exHistKey(ne)).length===3&&(ne.sets||[]).length>0&&ne.sets[0].w==='122'&&!ne.sets.some(s=>s.side));
+      db.activeWork=null; bumpIdx(); }
+    // 11b · el MISMO ejercicio partido por tipo (row: máquina y libre) se une él solo; uno de un solo tipo, no. Sus dos registros de
+    // máquina y sus dos notas caen en un solo destino: se pregunta (antes no se preguntaba y los del otro tipo se perdían)
+    { const md=()=>document.getElementById('modal'), el=id=>document.getElementById(id), bar=()=>document.getElementById('catbar'), l0=lats();
+      db.machines.AGON[I('row','machine','')]={brand:'',setup:'asiento 3',na:false}; db.machines.AGON[I('row','free','')]={brand:'',setup:'banco 5',na:false};
+      db.exNotes[N('row','machine')]='pecho pegado'; db.exNotes[N('row','free')]='agarre neutro'; bumpIdx(); reRender();
+      A('row está partido por tipo; db curl no', catTypes('row').join()==='machine,free'&&catTypes('db curl').join()==='free'&&mgCan(['row'])&&!mgCan(['db curl'])&&mgCan(['db curl','row'])&&!mgCan([]));
+      catSelSet(true,'db curl'); A('con uno solo de un solo tipo, ▶ unir sigue apagado y no abre nada', /^1 elegido/.test(bar().textContent)&&bar().querySelector('.catgo').classList.contains('off')&&(tap(bar().querySelector('[data-act="openmerge"]')),!md())); wipe();
+      catSelSet(true,'row'); A('un ejercicio partido por tipo se puede unir él solo', /^1 elegido/.test(bar().textContent)&&!bar().querySelector('.catgo').classList.contains('off')&&bar().querySelector('.catgo').getAttribute('aria-disabled')==='false');
+      tap(bar().querySelector('[data-act="openmerge"]'));
+      A('su hoja dice sus tipos y pregunta máquina y nota (dos registros del mismo nombre, un solo destino)', !!md()&&/row · machine · free/.test(md().textContent)&&!!el('mg_win_0')&&!el('mg_win_1')&&Array.from(el('mg_win_0').options).map(o=>o.textContent).join('|')==='row · machine → asiento 3|row · free → banco 5'&&!!el('mg_note')&&el('mg_note').options.length===2&&el('mg_name').value==='row');
+      A('de entrada va elegido lo del tipo que sale marcado', md().querySelector('#mg_type .t.on').dataset.v==='free'&&el('mg_win_0').value===I('row','free','')&&el('mg_note').value===N('row','free'));
+      tap(md().querySelector('#mg_type [data-v="machine"]')); el('mg_win_0').value=I('row','machine',''); el('mg_note').value=N('row','free');
+      tap(md().querySelector('[data-act="domerge"]')); A('la pregunta lo dice como es', /unir "row" en un solo tipo/.test((document.querySelector('#asklayer h3')||{}).textContent||'')); tap(ask('ok'));
+      A('queda un solo tipo, cada registro con su lateralidad', !md()&&!state._catSel&&catTypes('row').join()==='machine'&&catIndex().byK.row.leaves.map(L=>L.type+':'+L.lat+':'+L.n).join()==='machine:bi:3,machine:uni:1'&&lats()===l0);
+      A('…y con la máquina y la nota que él eligió', db.machines.AGON[I('row','machine','')].setup==='asiento 3'&&!db.machines.AGON[I('row','free','')]&&db.exNotes[N('row','machine')]==='agarre neutro'&&!(N('row','free') in db.exNotes));
+      A('…tras la foto previa, que trae los dos tipos de antes', (o=>!!o&&/^pre-merge-\d+$/.test(_snapLast.key)&&o.sessions.filter(s=>s.id==='r9')[0].exercises[0].type==='free'&&o.exNotes[N('row','free')]==='agarre neutro')(_snapLast&&JSON.parse(_snapLast.s))); wipe(); }
     // 12 · el perfil abierto desde el catálogo cierra y te deja donde estabas
     { const mx=v.scrollHeight-v.clientHeight; v.scrollTop=Math.min(60,mx); const t0=v.scrollTop; tap(mv('db curl').querySelector('.catmh')); pick('perfil');
       A('perfil abre su hoja sobre el catálogo', !!document.getElementById('modal')&&(window._exProf||{}).back==='catalog'&&state.screen==='catalog');
       tap(document.querySelector('#modal [data-act="pf_close"]')); A('cerrarla te deja en el catálogo, a la misma altura', !document.getElementById('modal')&&state.screen==='catalog'&&near(v.scrollTop,t0)); }
-    console.log('catálogo self-check OK');
   } finally { try{ popClose(); }catch(_){} try{ closeAsk(true); }catch(_){} try{ if(document.getElementById('modal'))closeModal(); }catch(_){} wipe(); try{ _undoToast=null; }catch(_){}
-    window._mgSel=mg0; window._axList=ax0; window._axCtx=ac0; window._exProf=pf0; window._swipeGuard=sg0; _lastTap=null; _sheetMem=null; _snapT=sn0;
-    db=real; K.forEach(k=>{ state[k]=st0[k]; }); state._scroll=null; bumpIdx(); _sbx=sb0; try{ render(); }catch(_){} }
+    window._mgSel=mg0; window._axList=ax0; window._axCtx=ac0; window._exProf=pf0; window._swipeGuard=sg0; _lastTap=null; _sheetMem=null; _snapT=sn0; _snapLast=null;
+    db=real; K.forEach(k=>{ state[k]=st0[k]; }); state._scroll=null; bumpIdx(); _sbx=sb0; try{ render(); }catch(_){}
+    try{ if(live0==null)localStorage.removeItem(LS_LIVE); else localStorage.setItem(LS_LIVE,live0); }catch(_){} }
+  // 13 · ya con todo repuesto: el almacenamiento real quedó como estaba (la red de seguridad de una sesión en curso no desaparece)
+  A('el espejo de la sesión viva queda como estaba', lsLive()===live0);
+  A('y nada más del almacenamiento real cambió', lsAll()===ls0);
+  console.log('catálogo self-check OK');
 }
 // paso 2 del merge: nombre final, configuración y en qué gyms existe. Todo sale precargado de la fuente
 // con MÁS sesiones (la que más historia tiene manda), pero él decide cada campo.
 function openMergeModal(){
-  const keys=(window._mgSel||[]).slice(); if(keys.length<2){ toast('⚠ elige al menos dos ejercicios','err'); return; }
+  const keys=(window._mgSel||[]).slice(); if(!mgCan(keys)){ toast('⚠ elige al menos dos ejercicios','err'); return; }   // v286 · o uno solo partido por tipo
   const all=knownExercises();
   const rows=keys.map(k=>{ const e=all.find(x=>nameKey(x.name)===k)||{name:k};
     let sess=0,sets=0; (db.sessions||[]).forEach(s=>{ if(s.type==='rest')return; (s.exercises||[]).forEach(se=>{ if(nameKey(se.name)===k){ sess++; sets+=(se.sets||[]).length; } }); });
@@ -10398,37 +10497,39 @@ function openMergeModal(){
   const pre=new Set([].concat(...rows.map(r=>r._gyms)));
   // conflicto: dos fuentes con registro de máquina POR NOMBRE en el MISMO gym (son la misma máquina
   // solo si él lo dice — por eso se pregunta en vez de adivinar)
-  // v286 · también las claves por identidad (=nombre§tipo§marca): chocan cuando dos fuentes traen la MISMA marca (o ninguna)
-  // en ese gym, porque al unir quedan con el mismo nombre y tipo. recs[i] = la clave del registro de keys[i] (para su etiqueta)
+  // v286 · también las claves por identidad (=nombre§tipo§marca): chocan cuando dos REGISTROS traen la MISMA marca (o ninguna)
+  // en ese gym, porque al unir quedan con el mismo nombre y tipo — sean de dos fuentes o de UN nombre registrado con dos tipos
+  // (antes eso no se preguntaba y el del otro tipo se perdía). Una pregunta por destino, solo si de verdad dicen cosas distintas.
+  // keys[i] = la fuente y recs[i] = la clave del registro (lo que se elige: mergeExercises recibe esa clave).
   window._mgConf=[]; Object.keys(db.machines||{}).forEach(g=>{ const m=db.machines[g]||{}, by={}, add=(d,k,x)=>{ (by[d]=by[d]||[]).push({k,x}); };
     keys.forEach(k=>{ if(Object.prototype.hasOwnProperty.call(m,k))add('',k,k); const pre='='+k+MACH_SEP; Object.keys(m).forEach(x=>{ if(x.indexOf(pre)===0)add('='+x.slice(pre.length).split(MACH_SEP).slice(1).join(MACH_SEP),k,x); }); });
-    const hit=[]; Object.keys(by).forEach(d=>{ if(new Set(by[d].map(o=>o.k)).size>1)by[d].forEach(o=>{ if(!hit.some(h=>h.k===o.k))hit.push(o); }); });
-    if(hit.length>1)window._mgConf.push({gym:g,keys:hit.map(o=>o.k),recs:hit.map(o=>o.x)}); });
-  // la nota del ejercicio: si dos fuentes traen notas distintas, él elige cuál queda
-  const notes=[]; keys.forEach(k=>{ const pre=k+MACH_SEP, x=Object.keys(db.exNotes||{}).filter(n=>n.indexOf(pre)===0&&db.exNotes[n])[0]; if(x&&!notes.some(o=>o.t===db.exNotes[x]))notes.push({k,t:db.exNotes[x]}); });
+    Object.keys(by).forEach(d=>{ if(new Set(by[d].map(o=>machSig(m[o.x]))).size>1)window._mgConf.push({gym:g,keys:by[d].map(o=>o.k),recs:by[d].map(o=>o.x)}); }); });
+  // la nota del ejercicio: si hay notas distintas (de dos fuentes, o de un mismo nombre con dos tipos), él elige cuál queda
+  const notes=[]; keys.forEach(k=>{ const pre=k+MACH_SEP; Object.keys(db.exNotes||{}).filter(n=>n.indexOf(pre)===0&&db.exNotes[n]).forEach(x=>{ if(!notes.some(o=>o.t===db.exNotes[x]))notes.push({k,x,t:db.exNotes[x]}); }); });
+  const winK=nameKey(win.name), winN=winK+MACH_SEP+canonType(win.type);   // lo que ya está en el destino que sale marcado: esa opción va elegida de entrada
   const types=[['free','freeweight'],['machine','machine'],['smith','smith'],['cable','cable'],['bodyweight','bodyweight'],['cardio','cardio']];
   const muscles=muscleSuggest(); const curM=(exMuscles(win)[0]||{}).name||'';
   const uOpts=['','kg','lbs','pla'].map(u=>`<option value="${u}"${(win.unit||'')===u?' selected':''}>${u||'—'}</option>`).join('');
   openModal(`<h3>unir ejercicios</h3>
    <div class="submeta u-mb8">un solo nombre y tipo · cada registro conserva su lateralidad</div>
-   <div class="u-mb10">${rows.map(r=>`<div class="u-flex u-gap8 u-data u-py4 u-px0 u-sep"><span class="u-f1">${(l=>l&&l.length?'['+l.join('·')+'] ':'')((catIndex().byK[r._k]||{}).lats)}${escTxt(r.name)}${r.type?` <span class="u-o40">· ${escTxt(r.type)}</span>`:''}</span><span class="u-o50 u-nowrap">${r._sess} ses · ${r._sets} series</span></div>`).join('')}</div>
+   <div class="u-mb10">${rows.map(r=>`<div class="u-flex u-gap8 u-data u-py4 u-px0 u-sep"><span class="u-f1">${(l=>l&&l.length?'['+l.join('·')+'] ':'')((catIndex().byK[r._k]||{}).lats)}${escTxt(r.name)}${(ts=>ts.length?` <span class="u-o40">· ${escTxt(ts.join(' · '))}</span>`:'')((ts=>ts.length>1?ts:(r.type?[r.type]:[]))(catTypes(r._k)))}</span><span class="u-o50 u-nowrap">${r._sess} ses · ${r._sets} series</span></div>`).join('')}</div>
    <div class="field"><label>NOMBRE FINAL</label><input id="mg_name" value="${(win.name||'').replace(/"/g,'&quot;')}" list="mg_namelist"/><datalist id="mg_namelist">${rows.map(r=>`<option value="${escTxt(r.name)}"></option>`).join('')}</datalist></div>
    <div class="field"><label>MÚSCULO</label><select id="mg_muscle">${[...new Set([curM,...muscles].filter(Boolean))].map(m=>`<option value="${escTxt(m)}"${m===curM?' selected':''}>${escTxt(m)}</option>`).join('')}</select></div>
    <div class="field"><label>TYPE</label><div class="toggles u-wrap u-gap4" id="mg_type">${types.map(([v,lbl])=>`<button class="t ${canonType(win.type)===v||(v==='free'&&!win.type)?'on':''} u-fhalf u-min0" data-act="optpick" data-v="${v}">${lbl}</button>`).join('')}</div></div>
    <div class="field"><label>UNIDAD POR DEFECTO</label><select id="mg_unit">${uOpts}</select></div>
    <div class="field"><label>EN QUÉ GYMS EXISTE</label>${window._mgGyms.length?window._mgGyms.map((g,i)=>`<label class="u-label u-o60 u-block u-mb4"><input type="checkbox" id="mg_g_${i}" ${pre.has(g)?'checked':''} class="u-vam u-wauto"/> ${escTxt(g)}</label>`).join(''):'<div class="submeta">sin gyms registrados</div>'}
      <div class="submeta u-mt2 u-o40">solo etiqueta y ordena los pickers · nunca esconde el ejercicio si entrenas en otro lado</div></div>
-   ${window._mgConf.length?`<div class="field"><label>MARCA DE MÁQUINA · hay dos registros en el mismo gym</label>${window._mgConf.map((c,i)=>`<div class="u-mb6"><div class="u-label u-o50">${escTxt(c.gym)}</div><select id="mg_win_${i}">${c.keys.map((k,j)=>{ const r=(db.machines[c.gym]||{})[(c.recs||c.keys)[j]]||{}; const lb=(typeof r==='string')?r:[r.brand,r.setup].filter(Boolean).join(' · ')||'sin marca'; return '<option value="'+escTxt(k)+'">'+escTxt(k)+' → '+escTxt(lb)+'</option>'; }).join('')}</select></div>`).join('')}</div>`:''}
-   ${notes.length>1?`<div class="field"><label>NOTA · hay dos</label><select id="mg_note">${notes.map(o=>'<option value="'+escTxt(o.k)+'">'+escTxt(o.t.length>48?o.t.slice(0,48)+'…':o.t)+'</option>').join('')}</select></div>`:''}
+   ${window._mgConf.length?`<div class="field"><label>MARCA DE MÁQUINA · hay dos registros en el mismo gym</label>${window._mgConf.map((c,i)=>`<div class="u-mb6"><div class="u-label u-o50">${escTxt(c.gym)}</div><select id="mg_win_${i}">${c.recs.map((x,j)=>{ const k=c.keys[j], r=(db.machines[c.gym]||{})[x]||{}; const lb=(typeof r==='string')?r:[r.brand,r.setup].filter(Boolean).join(' · ')||'sin marca'; const ty=(x!==k&&c.keys.indexOf(k)!==c.keys.lastIndexOf(k))?' · '+x.slice(k.length+2).split(MACH_SEP)[0]:''; return '<option value="'+escTxt(x)+'"'+((x===winK||x.indexOf('='+winN+MACH_SEP)===0)?' selected':'')+'>'+escTxt(k+ty)+' → '+escTxt(lb)+'</option>'; }).join('')}</select></div>`).join('')}</div>`:''}
+   ${notes.length>1?`<div class="field"><label>NOTA · hay dos</label><select id="mg_note">${notes.map(o=>'<option value="'+escTxt(o.x)+'"'+(o.x===winN?' selected':'')+'>'+escTxt(o.t.length>48?o.t.slice(0,48)+'…':o.t)+'</option>').join('')}</select></div>`:''}
    <div class="submeta u-mt8 u-mb10 u-mx0 u-o50">lo que ya quedó grabado en cada sesión (marca, setup, pesos, fechas) NO se toca · se guarda un respaldo antes de unir</div>
    <div class="sheetbtns"><button class="ok" data-act="domerge">unir</button><button class="cancel" data-act="closemodal">cancel</button></div>`);
 }
 function doMerge(){
-  const keys=(window._mgSel||[]).slice(); if(keys.length<2)return;
+  const keys=(window._mgSel||[]).slice(); if(!mgCan(keys))return;
   const pv=id=>{ const e=document.querySelector('#'+id+' .t.on'); return e?e.dataset.v:''; };
   const name=(val('mg_name')||'').trim(); if(!name){ toast('⚠ pon el nombre final','err'); return; }
   const gyms=[]; (window._mgGyms||[]).forEach((g,i)=>{ const c=document.getElementById('mg_g_'+i); if(c&&c.checked)gyms.push(g); });
-  const machineWinner={}; (window._mgConf||[]).forEach((c,i)=>{ const s=document.getElementById('mg_win_'+i); if(s)machineWinner[c.gym]=s.value; });
+  const machineWinner={}; (window._mgConf||[]).forEach((c,i)=>{ const s=document.getElementById('mg_win_'+i); if(s)(machineWinner[c.gym]=machineWinner[c.gym]||[]).push(s.value); });   // v286 · una elección por destino: la clave del registro que queda
   const muscle=val('mg_muscle')||'';
   // si cambia el músculo primario, los secundarios heredados dejarían de cuadrar → se sueltan
   const src=knownExercises().find(x=>nameKey(x.name)===keys[0]);
@@ -10439,7 +10540,7 @@ function doMerge(){
   const st=mergeExercises(keys,target);
   window._mgSel=[]; state._catSel=false; closeModal(); reRender();
   if(st)toast('✓ unidos en '+name+' · '+st.ex+' ejercicios · '+st.sets+' series');
-}); }; return trkAsk({title:'unir '+keys.length+' ejercicios en "'+name+'"',detail:'se reescribe el nombre y el tipo en tu split, en todas las sesiones y en la sesión en curso · hay copia previa',ok:'unir'},_go9);}
+}); }; return trkAsk({title:keys.length>1?'unir '+keys.length+' ejercicios en "'+name+'"':'unir "'+name+'" en un solo tipo',detail:'se reescribe el nombre y el tipo en tu split, en todas las sesiones y en la sesión en curso · hay copia previa',ok:'unir'},_go9);}
 // schedule a future rotation day into the user's native calendar (iOS PWA opens .ics with "Add to Calendar")
 function openScheduleModal(di){
   if(!db.split||!db.split.days[di])return; const day=db.split.days[di]; const defISO=nextDateForDay(di)||todayISO();   // v273 · la fecha real de ese día con tu plan
@@ -10505,8 +10606,12 @@ function openAddExStep2(afterExi,muscle,replaceExi){
   const all=list.concat(rest);
   // v286 · sigue una fila por nombre, pero dice sus variantes ([bi·alt]) y al elegir entra la más usada (la más reciente si
   // empatan); el corchete se cambia ya en la sesión. `all` son copias: knownExercises() no se toca.
+  // La variante entra COMPLETA (tipo + lateralidad + asistido/lastre), tal como está en esa hoja: knownExercises() trae el tipo de
+  // lo ÚLTIMO registrado, y mezclarlo con la lateralidad de la hoja más usada armaba una variante que nunca existió (sin historia).
   all.forEach(x=>{ if(isCardio(x))return; const mv=catIndex().byK[nameKey(x.name)]; if(!mv)return; x._lats=mv.lats;
-    const top=mv.leaves.filter(L=>!L.cardio&&L.n>0).sort((a,b)=>(b.n-a.n)||String(b.last).localeCompare(String(a.last)))[0]; if(top)setLat(x,top.lat); });
+    const top=mv.leaves.filter(L=>!L.cardio&&L.n>0).sort((a,b)=>(b.n-a.n)||String(b.last).localeCompare(String(a.last)))[0]; if(!top)return;
+    if(canonType(x.type)!==top.type){ const r=exHistRows(top.key)[0]; x.type=top.type; x.machine=(r&&r.ex&&r.ex.machine)||''; }   // otro tipo: su marca es la de ESA hoja
+    setLat(x,top.lat); x.assisted=top.assisted; x.weighted=top.weighted; });
   window._axList=all; window._axCtx={afterExi,muscle:key,replaceExi};
   const row=(x,i)=>`<div class="pickitem" data-act="axpick" data-i="${i}" data-q="${escTxt([x.name,x.machine||'',x.type||'',x._m||key].join(' ').toLowerCase())}">${!isCardio(x)?`<span>[${(x._lats&&x._lats.length?x._lats:[latOf(x)]).join('·')}]</span> `:''}${escTxt(x.name)}${x.machine?` <span class="u-o40 u-label">${escTxt(x.machine)}</span>`:''}${x.type&&x.type!=='free'?` <span class="u-o35 u-label">${escTxt(x.type)}</span>`:''}${x._m?` <span class="u-o35 u-label">#${escTxt(x._m)}</span>`:''}<span class="u-fr u-o40 u-label">${x._here?'':'· otro gym '}${x._sess||0}×</span></div>`;
   openModal(`<h3>${escTxt(muscle)} · ${replaceExi!=null?'cambiar ejercicio':'elige ejercicio'}</h3>
