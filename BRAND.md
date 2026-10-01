@@ -217,6 +217,9 @@ caracteres sin perder un dato?
 | 2026-10-01 | **Compartir sesión: quiere el formato de la sesión viva, con jerarquía** — el viejo (nombre y series con diagonales en un renglón) no | "quiero uno como el de Working Sesh, pero más sintetizado, sin las opciones de poder alterar… enseguida sale la serie y divido por los slashes, toca en el mismo renglón, parece nada más que está escrito con texto, no hay jerarquía… como terminal, con el tab para espaciar o separar, organizar" · eligió "ver las dos en mi teléfono" (cajas y columnas) |
 | 2026-10-01 | **Unilateral: cada lado es su serie, con un descanso corto entre lados que se pueda ajustar** (pendiente, ticket G6) | "haces un lado, descansas un poco y haces el otro" · "y el tiempo de descanso es menor, que sea customizable" |
 | 2026-10-01 | **Cómo se trabaja:** un ticket por problema de su MD, plan y orden; lo que cambia el look se publica y él corrige después | "analizarlo a profundidad, hacer tickets para cada problema, hacer un plan y resolverlo de manera estratégica" · "publica y corrijo después" |
+| 2026-09-30 | **Comidas compactas y en columnas** (v283): cabecera en dos renglones, `P C F` alineados entre comidas, `[+ food]` · total · `···` chicos a la derecha; nada con "…" | "el desglose sale con puntos suspensivos porque no cabe… los pinches tres puntitos que siguen estando muy grandes para el estilo gráfico que llevamos" · (1-oct) "como terminal, con el tab para espaciar o separar, organizar, que tenga jerarquía" |
+| 2026-09-30 | **Todo lo que estorba en comidas se puede quitar**, con `[deshacer]` (v283) | "no me deja eliminar comidas que ya tengo, las que se quedaron ahí están estorbando. No me deja limpiarlas" |
+| 2026-09-30 | **El nombre de la comida se elige junto al dedo** (v283) | "le das en agregar meal y tienes que desplazarte hasta arriba para alcanzar, de elegir el nombre" |
 
 ## 10. Preguntas abiertas (se cierran en el estudio, `tools/studio.html`)
 
