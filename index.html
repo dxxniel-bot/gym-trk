@@ -4118,7 +4118,7 @@ function _mergeSelfCheck(){
     A('la nota sigue al nombre nuevo (una vacía cede el lugar)', db.exNotes[N('curl','free')]==='agarre neutro'&&!(N('db curl','cable') in db.exNotes));
     A('el catálogo de identidad ya no guarda lateralidad', !('unilateral' in db.exCat.curl)&&!('lat' in db.exCat.curl));
     // v286 · un MISMO nombre registrado con dos tipos: al unir queda un solo tipo y sus dos claves (máquina y nota) caen en el
-    // mismo destino. Sin elección no se borra ninguna; con elección queda la elegida. Antes la del otro tipo se perdía callada.
+    // mismo destino. Elegir decide cuál va al destino; la otra no se borra (se queda en su clave). Antes se perdía callada.
     db.sessions.push({id:'s5',date:'2026-09-14',dayId:'dX',gym:'AGON',type:'training',exercises:[
       {exId:null,name:'row',type:'machine',unilateral:false,sets:[{w:'120',r:'8',rir:'1',unit:'kg'}]},
       {exId:null,name:'row',type:'cable',unilateral:false,sets:[{w:'70',r:'8',rir:'1',unit:'kg'}]},
@@ -4132,8 +4132,10 @@ function _mergeSelfCheck(){
     A('un nombre con dos tipos queda en uno solo', r5.every(e=>e.name==='row'&&e.type==='cable')&&new Set(r5.map(exHistKey)).size===1);
     A('sin elección, unir no borra el setup ni la nota del otro tipo', somewhere()===4&&db.machines.AGON[I('row','cable','')].setup==='polea 7'&&(db.machines.AGON[I('row','machine','')]||{}).setup==='asiento 3'&&db.exNotes[N('row','cable')]==='agarre neutro'&&db.exNotes[N('row','machine')]==='pecho pegado');
     A('un registro que dice lo mismo que el que queda no se duplica', !db.machines.AGON[I('remo','machine','')]);
+    mergeExercises(['row'],{name:'row',type:'cable',machineWinner:{AGON:[I('row','cable','')]},noteWinner:N('row','cable')});
+    A('elegir lo que ya está en el destino tampoco borra lo otro', somewhere()===4&&db.machines.AGON[I('row','cable','')].setup==='polea 7'&&db.machines.AGON[I('row','machine','')].setup==='asiento 3'&&db.exNotes[N('row','cable')]==='agarre neutro'&&db.exNotes[N('row','machine')]==='pecho pegado');
     mergeExercises(['row'],{name:'row',type:'cable',machineWinner:{AGON:[I('row','machine','')]},noteWinner:N('row','machine')});
-    A('con elección queda la que él eligió, en el destino', db.machines.AGON[I('row','cable','')].setup==='asiento 3'&&!db.machines.AGON[I('row','machine','')]&&db.exNotes[N('row','cable')]==='pecho pegado'&&!(N('row','machine') in db.exNotes));
+    A('elegir el otro registro lo pone en el destino (solo se reemplaza lo que estaba ahí)', db.machines.AGON[I('row','cable','')].setup==='asiento 3'&&!db.machines.AGON[I('row','machine','')]&&db.exNotes[N('row','cable')]==='pecho pegado'&&!(N('row','machine') in db.exNotes));
     // v286 · renombrar (una fuente, sin tipo): cada fila conserva su exId; unir de verdad sí re-vincula (arriba)
     db.sessions[0].exercises[0].exId='x9'; const ex0=JSON.stringify(db.sessions.map(s=>s.exercises.map(e=>e.exId)));
     mergeExercises(['sldl'],{name:'stiff leg'});
@@ -10083,8 +10085,8 @@ function mergeExercises(sourceNames,target){
   // Gym por gym y por separado: la polea de AGON no es la de Club Campestre aunque el ejercicio se llame
   // igual. Si dos fuentes tienen registro en el MISMO gym, manda el que él eligió en el modal.
   const order=[...src].sort((a,b)=>(b===tgtKey)-(a===tgtKey));   // lo del propio destino primero: es "lo que ya existe"
-  // v286 · un registro que cae en un destino ya ocupado NO se borra por su cuenta: se descarta solo aquello contra lo que él
-  // eligió en el modal (o lo que es idéntico a lo que queda). Sin elección, se queda donde estaba.
+  // v286 · un registro que cae en un destino ya ocupado NO se borra: se queda en su clave de siempre (solo sobra el que dice lo
+  // mismo que el que queda). Elegir en el modal decide QUÉ registro va al destino: lo único que se reemplaza es lo que estaba ahí.
   Object.keys(db.machines||{}).forEach(g=>{ const m=db.machines[g]||{}; const wins=[].concat((target.machineWinner||{})[g]||[]);   // lo elegido en ese gym: claves de registro (o de fuente)
     [...src].forEach(k=>{ if(k===tgtKey)return; if(!has(m,k))return;
       const rec=m[k]; delete m[k];
@@ -10092,23 +10094,23 @@ function mergeExercises(sourceNames,target){
       if(!taken || wins.indexOf(k)>=0){ m[tgtKey]=rec; stat.machines++; }
     });
     // v286 · por identidad: mismo gym, el tipo final y SU marca. Varias claves pueden caer en el MISMO destino: dos fuentes con la
-    // misma marca, o UN nombre registrado con dos tipos (al unir queda un solo tipo). Queda la que él eligió; si no eligió, la que
-    // ya estaba en el destino (o la primera) y las demás se quedan en su clave de siempre.
+    // misma marca, o UN nombre registrado con dos tipos (al unir queda un solo tipo). Va al destino la que él eligió; si no eligió,
+    // la que ya estaba ahí (o la primera). Las demás se quedan en su clave de siempre.
     const G={}; order.forEach(k=>{ const pre='='+k+MACH_SEP; Object.keys(m).filter(x=>x.indexOf(pre)===0).forEach(x=>{ const p=x.slice(pre.length).split(MACH_SEP);
         const nk='='+tgtKey+MACH_SEP+(target.type?canonType(target.type):p[0])+MACH_SEP+p.slice(1).join(MACH_SEP); (G[nk]=G[nk]||[]).push({k,x}); }); });
     Object.keys(G).forEach(nk=>{ const grp=G[nk], at=grp.filter(o=>o.x===nk)[0]; if(has(m,nk)&&!at)return;   // el destino es de un ejercicio que no se está uniendo: no se toca nada
-      const chosen=o=>wins.indexOf(o.x)>=0||wins.indexOf(o.k)>=0, pick=grp.filter(o=>wins.indexOf(o.x)>=0)[0]||grp.filter(chosen)[0], w=pick||at||grp[0], rec=m[w.x], sg=machSig(rec);
-      grp.forEach(o=>{ if(o!==w&&o!==at&&(machSig(m[o.x])===sg||(pick&&!chosen(o))))delete m[o.x]; });
+      const pick=grp.filter(o=>wins.indexOf(o.x)>=0)[0]||grp.filter(o=>wins.indexOf(o.k)>=0)[0], w=pick||at||grp[0], rec=m[w.x], sg=machSig(rec);
+      grp.forEach(o=>{ if(o!==w&&o!==at&&machSig(m[o.x])===sg)delete m[o.x]; });
       if(w.x!==nk){ delete m[w.x]; m[nk]=rec; stat.machines++; } });
   });
   // 3b · v286 · la nota del ejercicio también sigue al nombre nuevo. Varias notas pueden caer en el mismo destino (dos fuentes, o
-  // un nombre con dos tipos): queda la que él eligió; si no eligió, la que ya estaba (una vacía cede el lugar) y una nota DISTINTA
-  // no se borra: se queda en su clave de siempre.
+  // un nombre con dos tipos): va al destino la que él eligió; si no eligió, la que ya estaba (una vacía cede el lugar). Una nota
+  // DISTINTA que no cupo no se borra: se queda en su clave de siempre.
   if(db.exNotes){ const N=db.exNotes, G={}, nw=target.noteWinner;
     order.forEach(k=>{ const pre=k+MACH_SEP; Object.keys(N).filter(x=>x.indexOf(pre)===0).forEach(x=>{ const nk=tgtKey+MACH_SEP+(target.type?canonType(target.type):x.slice(pre.length)); (G[nk]=G[nk]||[]).push({k,x}); }); });
     Object.keys(G).forEach(nk=>{ const grp=G[nk], at=grp.filter(o=>o.x===nk)[0], full=grp.filter(o=>N[o.x]); if(has(N,nk)&&!at&&N[nk])return;   // la nota de un ejercicio que no se está uniendo
       const pick=nw?(full.filter(o=>o.x===nw)[0]||full.filter(o=>o.k===nw)[0]):null, w=pick||(at&&N[at.x]?at:null)||full[0]||at||grp[0], v=N[w.x];
-      grp.forEach(o=>{ if(o!==w&&o!==at&&(!N[o.x]||N[o.x]===v||(pick&&o.x!==nw&&o.k!==nw)))delete N[o.x]; });
+      grp.forEach(o=>{ if(o!==w&&o!==at&&(!N[o.x]||N[o.x]===v))delete N[o.x]; });
       if(w.x!==nk){ delete N[w.x]; N[nk]=v; if(v)stat.notes++; } }); }
   // 4 · catálogo de identidad (dónde existe + configuración canónica). Solo se escribe lo que el target trae.
   const prev=exCatRec(target.name)||{};
@@ -10468,7 +10470,7 @@ function _catalogoSelfCheck(){ const A=(nm,c)=>{ if(!c) throw new Error('SELFCHE
       tap(md().querySelector('#mg_type [data-v="machine"]')); el('mg_win_0').value=I('row','machine',''); el('mg_note').value=N('row','free');
       tap(md().querySelector('[data-act="domerge"]')); A('la pregunta lo dice como es', /unir "row" en un solo tipo/.test((document.querySelector('#asklayer h3')||{}).textContent||'')); tap(ask('ok'));
       A('queda un solo tipo, cada registro con su lateralidad', !md()&&!state._catSel&&catTypes('row').join()==='machine'&&catIndex().byK.row.leaves.map(L=>L.type+':'+L.lat+':'+L.n).join()==='machine:bi:3,machine:uni:1'&&lats()===l0);
-      A('…y con la máquina y la nota que él eligió', db.machines.AGON[I('row','machine','')].setup==='asiento 3'&&!db.machines.AGON[I('row','free','')]&&db.exNotes[N('row','machine')]==='agarre neutro'&&!(N('row','free') in db.exNotes));
+      A('…y con la máquina y la nota que él eligió en el destino; el registro que no eligió no se borra', db.machines.AGON[I('row','machine','')].setup==='asiento 3'&&db.machines.AGON[I('row','free','')].setup==='banco 5'&&db.exNotes[N('row','machine')]==='agarre neutro'&&!(N('row','free') in db.exNotes));
       A('…tras la foto previa, que trae los dos tipos de antes', (o=>!!o&&!!o.sessions&&!!o.machines&&!!o.exNotes&&/^pre-merge-\d+$/.test(_snapLast.key)&&o.sessions.filter(s=>s.id==='r9')[0].exercises[0].type==='free'&&o.exNotes[N('row','free')]==='agarre neutro')(_snapLast&&JSON.parse(_snapLast.s))); wipe(); }
     // 12 · el perfil abierto desde el catálogo cierra y te deja donde estabas
     { const mx=v.scrollHeight-v.clientHeight; v.scrollTop=Math.min(60,mx); const t0=v.scrollTop; tap(mv('db curl').querySelector('.catmh')); pick('perfil');
