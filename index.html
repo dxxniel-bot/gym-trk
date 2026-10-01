@@ -595,6 +595,24 @@
   .hrblk{margin:var(--s2) 0 10px;}
   .ready{text-align:left; font-size:var(--t-label); color:var(--o50); margin:6px 0 0; cursor:pointer; letter-spacing:var(--ls-ui);} .ready b{color:var(--fg); font-weight:700;} .ready .rk{letter-spacing:var(--ls-caps);} .ready .rl{color:var(--o35);}
   .ready.rec{display:flex; align-items:center; min-height:44px; margin-top:0; font-size:var(--t-data);} .ready.rec .rk{font-weight:800; letter-spacing:var(--ls-ui); color:var(--o50);} .ready.rec b{font-weight:800; margin-left:1ch;} .ready.rec .rl{color:var(--o40); margin-left:1ch;} .hrsvg{display:block; width:100%; height:56px; color:var(--o60); margin-bottom:var(--s2);}
+  /* E5 · recovery (los músculos de la sesión) y readiness (tú) en una fila; debajo, los músculos de hoy: una fila por músculo
+     en columnas alineadas (músculo · medidor · estado · falta). Monocromo y con jerarquía por FILA entera: lo que falta (.no) va
+     en blanco, lo que casi (.ca) en medio y lo fresco / sin dato (.fr .sd) tenue con su medidor apagado (B-07: lo que está en
+     orden no se enfatiza). Si todo está fresco el bloque no se pinta: "recovery ~100" ya lo dice. */
+  .scores{display:flex; flex-wrap:wrap; column-gap:var(--s6);} .ready.rec .rw{font-weight:400; color:var(--o40); margin-left:1ch;}
+  .dmus{display:grid; grid-template-columns:max-content max-content max-content 1fr; column-gap:2ch; align-content:center; min-height:44px; margin-bottom:var(--s2); font-size:var(--t-data); line-height:var(--lh-read); letter-spacing:0; cursor:pointer;}
+  .dmr{display:contents;} .dmn,.dmw,.dmt{color:var(--o70);} .dmt{font-variant-numeric:tabular-nums;} .dmr.no .dmn,.dmr.no .dmw,.dmr.no .dmt{color:var(--fg);} .dmr.ca .tprog b{color:var(--o70);}
+  .dmr.fr .dmn,.dmr.fr .dmw,.dmr.sd .dmn,.dmr.sd .dmw{color:var(--o50);} .dmr.fr .tprog,.dmr.fr .tprog b,.dmr.sd .tprog,.dmr.sd .tprog b{color:var(--o40);}
+  .dmus.estado{grid-template-columns:max-content 1fr;} .dmk{color:var(--o50);} .dmv{min-width:0; color:var(--o70);} .dmv i{font-style:normal; color:var(--o50);}
+  .dmus.filas{display:block;} .dmus.filas .line .v{color:var(--o70);}
+  /* tablas de las hojas de recovery / readiness y de la lista de sesiones de su gráfica: columnas de ancho fijo en ch (la
+     fuente es mono), un dato por columna; .hd = encabezado, .n = a la derecha, .q = tenue. La fila que se toca mide 44. */
+  .rvr{display:grid; column-gap:2ch; align-items:center; min-height:44px; font-size:var(--t-data); letter-spacing:0; font-variant-numeric:tabular-nums;}
+  .rvr.hd{min-height:0; padding-bottom:var(--s2); color:var(--o50);} .rvr .k{min-width:0; overflow-wrap:anywhere; color:var(--o70);} .rvr .n{text-align:right;} .rvr .q{color:var(--o50);}
+  .rvr.m{grid-template-columns:minmax(0,1fr) 6ch 8ch 8ch 1ch;} .rvr.m .w{grid-column:2/5;}
+  .rvr.y{grid-template-columns:10ch 4ch minmax(0,1fr) max-content; min-height:32px;} .rvr.y.hd{min-height:0;} .rvr.y.u-tap{min-height:44px;}
+  .rvr.s{grid-template-columns:6ch minmax(0,1fr) 8ch 9ch 1ch;}
+  .rvleg{display:flex; gap:var(--s5); margin:var(--s2) 0 var(--s3); font-size:var(--t-label); color:var(--o50); letter-spacing:var(--ls-ui);} .rvleg i{display:inline-block; width:16px; margin-right:var(--s2); vertical-align:middle; border-top:var(--bw-mark) solid var(--fill);} .rvleg i.d{border-top:var(--bw-dash) dashed var(--o50);} .rvleg i.o{border-top-color:var(--o50);}
   .exT{font-size:var(--t-label); font-weight:700; color:var(--o50); margin-left:6px; letter-spacing:var(--ls-ui); white-space:nowrap;}
   .del{font-size:var(--t-section); color:var(--o40); text-align:center; cursor:pointer; background:none; border:0; height:36px; line-height:36px; padding:0;}
   .pair{display:flex; align-items:center; gap:var(--s2); margin-bottom:6px;} .pair .setn{width:22px; flex:0 0 22px;} .pair .prows{flex:1;}
@@ -2741,11 +2759,102 @@ function openMuscleDetail(id){ const M=MUSCLES[id]; if(!M)return; const t=todayI
     +`</div>`
     +`<div class="sheetbtns u-mt12"><button type="button" class="b" data-act="mdmore" aria-expanded="false" aria-controls="mdmore">más</button><button class="cancel" data-act="closemodal">cerrar</button></div></div>`;
   openModal(html,'mdetail-wrap'); }
-// gym (home): los músculos del día y su estado, bajo //NEXT
-function dayMusclesLineHTML(day){ if(!day)return ''; const {list}=daySource(day); const ids=[];
-  (list||[]).forEach(e=>{ const t=targetsFor(e)[0]; if(t&&t.id&&ids.indexOf(t.id)<0)ids.push(t.id); });
-  const parts=ids.map(id=>{ const r=muscleRecoveryState(id); if(!r)return null; return `<span style="color:${recStateCol(r)}">${escTxt(muscleLabel(id))} ${escTxt(r.state==='fresh'?'fresco':r.state==='likely'?'casi':'~'+r.pct+'%')}</span>`; }).filter(Boolean);
-  return parts.length?`<div class="ready" data-act="nav" data-screen="progress" title="recuperación estimada por músculo (observada cuando hay datos)"><span class="rk">MUSCLES</span> ${parts.join(' · ')}</div>`:''; }
+// ---------- E5 · RECOVERY (los músculos de la sesión que toca) ≠ READINESS (tú hoy) ----------
+// El dueño (30-sep): "debería ser dos puntajes diferentes… el de recovery en base al descanso de los grupos musculares que
+// siguen por sesión e igual de que si le picas puedes ver cómo va cada músculo… y el readiness… sueño y descanso y estrés por
+// el ejercicio". Y de la línea MUSCLES de gym ("78%, 66% y así"): "ese formato no me convence".
+// RECOVERY = promedio, pesado por series, de cuánto de su ventana de recuperación lleva cada músculo PRIMARIO de la sesión.
+// Escala D19 (la de la barra del detalle de músculo): 100 ⇔ pasó el fin de su ventana ⇔ "fresco". Un músculo sin historial
+// no tiene dato y no entra al promedio (no se rellena). READINESS vive junto a readinessFor (readinessScore).
+const REC_WORD={fresh:'fresco',likely:'casi',recovering:'falta'};   // una palabra por estado ("fresco" y "casi" ya las decía la línea vieja)
+const REC_ORD={recovering:0,likely:1,fresh:2};
+let _recWinC={idx:null,m:{}};   // ventana observada por músculo; se renueva sola cuando bumpIdx() cambia el índice de exposiciones
+function recObsWin(id){ const idx=muscleExposureIndex(); if(_recWinC.idx!==idx)_recWinC={idx,m:{}};
+  if(!(id in _recWinC.m)){ const o=observedRecovery(musclePairs(id)); _recWinC.m[id]=o.hours?{lo:o.hours[0],hi:o.hours[1],src:'observed'}:null; }
+  return _recWinC.m[id]; }
+// estado de un músculo EN un instante: su última exposición ANTERIOR a ms (con ms = ahora da el mismo estado, horas y ventana
+// que muscleRecoveryState, que no se toca). Sirve para la foto de inicio y para leer sesiones anteriores a la foto sin
+// escribirles nada. `p` (0–100 contra el FIN de la ventana) solo alimenta el puntaje y la foto: en pantalla van horas.
+function muscleRecAt(id,ms){ ms=ms||Date.now(); const all=muscleExposureIndex()[id]||[]; let last=null;
+  for(let i=all.length-1;i>=0;i--){ if(expEnd(all[i])<=ms){ last=all[i]; break; } }
+  if(!last)return null; const win=recObsWin(id)||recoveryEstimate(last); if(!win)return null;
+  const h=(ms-expEnd(last))/3600000, state=h>=win.hi?'fresh':h>=win.lo?'likely':'recovering';
+  return {id,h,win,state,date:last.date,p:state==='fresh'?100:Math.max(0,Math.min(99,Math.floor(h/Math.max(1,win.hi)*100)))}; }
+// músculos primarios de una lista de ejercicios (la del día que toca, o la de una sesión `sw`), con sus series como peso
+function listMuscles(list,sw){ const m={}, order=[];
+  (list||[]).forEach((e,ei)=>{ if(!e||isCardio(e))return; const t=(sw?exTargets(sw,ei):targetsFor(e))[0]; if(!t||!t.id)return;
+    if(!(t.id in m)){ m[t.id]=0; order.push(t.id); }
+    m[t.id]+=Math.max(1,Array.isArray(e.sets)?e.sets.length:(parseInt(e.sets,10)||1)); });
+  return order.map(id=>({id,sets:m[id]})); }
+function recoveryOf(mus,ms){ const rows=(mus||[]).map(x=>({id:x.id,sets:x.sets,r:muscleRecAt(x.id,ms)}));
+  const ok=rows.filter(x=>x.r), w=ok.reduce((a,x)=>a+x.sets,0);
+  return {score:w>0?Math.round(ok.reduce((a,x)=>a+x.r.p*x.sets,0)/w):null,rows}; }
+function dayRecovery(day,ms){ if(!day)return {score:null,rows:[]}; const src=daySource(day); return recoveryOf(listMuscles(src.list,src.fromPrior?src.prior:null),ms); }
+// gym (home), bajo //NEXT: los músculos de hoy. El "78 %, 66 %" no decía de qué era el porcentaje; lo que ayuda a decidir si
+// hoy toca este día es qué músculo AÚN NO está y CUÁNTO LE FALTA. Publicado ('barras', lo que pidió el 1-oct: "como terminal…
+// columnas… jerarquía"): una fila por músculo en cuatro columnas alineadas, músculo · medidor [███░░] · estado en una palabra ·
+// lo que falta; lo menos recuperado arriba. 'estado' (una fila por estado) y 'filas' (clave ···· valor) son las alternativas
+// que se le entregaron en capturas; cuando elija, se deja una y se borra lo que sobre.
+const REC_FMT='barras';
+// horas que le faltan para salir de su ventana. Un tramo ABIERTO del historial no es una cuenta exacta y se dice como abierto
+// (D20, igual que winTxt): ">168 h" ⇒ faltan MÁS de (">6 d", en días enteros: una cota no lleva horas sueltas); "<48 h" ⇒
+// faltan MENOS de ("<25 h"). Lleva "<": va con escTxt.
+const recLeft=r=>{ const h=Math.max(1,Math.round(r.win.hi-r.h)), op=r.win.lo<=0?'<':r.win.lo>=r.win.hi?'>':'';
+  return op+fmtDur((op&&h>=48?(op==='>'?Math.floor(h/24):Math.ceil(h/24))*24:h)*60); };
+// el estado que se DICE en gym y en la hoja: el del motor, salvo que con ventana "<48 h" (lo=0) el motor da "casi" desde la
+// hora 0; recién entrenado eso no se lee bien, así que antes de la mitad de la ventana se dice "falta". No toca el puntaje.
+const recShow=r=>r.state==='likely'&&r.win.lo<=0&&r.h<r.win.hi/2?'recovering':r.state;
+const REC_CLS={recovering:'no',likely:'ca',fresh:'fr'};
+function dayMusclesHTML(rc,fmt){ fmt=fmt||REC_FMT; const rows=(rc&&rc.rows)||[]; if(!rows.some(x=>x.r))return '';
+  const known=rows.filter(x=>x.r).map(x=>({id:x.id,r:x.r,st:recShow(x.r)})).sort((a,b)=>REC_ORD[a.st]-REC_ORD[b.st]||a.r.p-b.r.p), none=rows.filter(x=>!x.r);
+  if(!known.some(x=>x.st!=='fresh'))return '';   // todo fresco: el bloque no dice nada que "recovery ~100" no diga ya (la hoja sigue a un toque)
+  const nm=x=>escTxt(muscleLabel(x.id)), left=x=>escTxt(recLeft(x.r)); let body;
+  if(fmt==='estado')body=['recovering','likely','fresh'].map(st=>{ const g=known.filter(x=>x.st===st); return g.length?`<div class="dmr"><span class="dmk">${REC_WORD[st]}</span><span class="dmv">${g.map(x=>nm(x)+(st==='recovering'?' <i>'+left(x)+'</i>':'')).join(' · ')}</span></div>`:''; }).join('')
+    +(none.length?`<div class="dmr"><span class="dmk">sin dato</span><span class="dmv">${none.map(nm).join(' · ')}</span></div>`:'');
+  else if(fmt==='filas')body=known.concat(none).map(x=>`<div class="line"><span class="k">${nm(x)}</span><span class="dots"></span><span class="v">${!x.r?'sin dato':REC_WORD[x.st]+(x.st==='recovering'?' '+left(x):'')}</span></div>`).join('');
+  // el medidor va en celdas ENTERAS (una fracción deja un hueco entre lo lleno y lo vacío) y solo se llena cuando ya está fresco
+  else body=known.concat(none).map(x=>`<div class="dmr ${x.r?REC_CLS[x.st]:'sd'}"><span class="dmn">${nm(x)}</span><span class="tprog">[<b>${trkBarTxt(!x.r?0:x.st==='fresh'?100:Math.floor(x.r.p/10)*10,10)}</b>]</span><span class="dmw">${x.r?REC_WORD[x.st]:'sin dato'}</span><span class="dmt">${x.r&&x.st!=='fresh'?left(x):''}</span></div>`).join('');
+  return `<div class="dmus ${fmt}" role="button" tabindex="0" data-act="recovery">${body}</div>`; }
+// los dos puntajes en una fila (BRAND §4: 12/800, sin héroe ni color de veredicto) y, debajo, los músculos de hoy
+function dayScoresHTML(day){ const rc=dayRecovery(day);
+  const rcH=rc.score!=null?`<div class="ready rec" role="button" tabindex="0" data-act="recovery"><span class="rk">recovery</span><b>~${rc.score}</b><span class="rl">›</span></div>`:'';
+  const rdH=readinessLineHTML(todayISO()); if(!rcH&&!rdH)return '';
+  return `<div class="scores">${rcH}${rdH}</div>`+dayMusclesHTML(rc); }
+// "si le picas puedes ver cómo va cada músculo": una fila por músculo en columnas (estado · cuánto lleva descansando · cuánto
+// le falta); cada fila abre el detalle de ese músculo
+function openRecovery(){ const day=db.split&&db.split.days&&db.split.days[selIdx()]; const rc=dayRecovery(day); if(!rc.rows.length)return;
+  const rows=rc.rows.map(x=>({id:x.id,r:x.r,st:x.r?recShow(x.r):''})).sort((a,b)=>(a.r?REC_ORD[a.st]:3)-(b.r?REC_ORD[b.st]:3)||(a.r?a.r.p:0)-(b.r?b.r.p:0));
+  const body=rows.map(x=>{ const r=x.r; return `<div class="rvr m u-tap" role="button" tabindex="0" data-act="muscledetail" data-id="${escTxt(String(x.id))}"><span class="k">${escTxt(muscleLabel(x.id))}</span>`
+    +(r?`<span${x.st==='recovering'?'':' class="q"'}>${REC_WORD[x.st]}</span><span class="n q">${fmtDur(Math.round(r.h)*60)}</span><span class="n">${x.st==='fresh'?'':escTxt(recLeft(r))}</span>`:`<span class="q w">sin dato</span>`)
+    +`<span class="q">›</span></div>`; }).join('');
+  openModal(`<h3><span data-gloss="recov">recovery</span> ${rc.score!=null?'~'+rc.score:'—'}<span class="u-o40 u-w4"> · ${escTxt(day.name)}</span></h3>
+    <div class="rvr m hd"><span>músculo</span><span>estado</span><span class="n">descanso</span><span class="n">falta</span><span></span></div>${body}
+    <div class="sheetbtns u-mt12"><button class="cancel" data-act="closemodal">cerrar</button></div>`); }
+// FOTO al iniciar la sesión ("registrarlo justo antes de empezar… lo más fresco posible… justo antes de meterle estrés al
+// cuerpo"). Aditiva: w.pre = {at, recovery, muscles:{id:%}, readiness, parts:{sleep,load,rhr,hrv}} con null donde no hubo
+// dato. Solo al tocar start (una sesión registrada después no la lleva) y las sesiones viejas simplemente no la tienen.
+function stampSessionPre(w){ if(!w||w.pre||w.loggedAfter)return w;
+  try{ const at=Date.now(), day=w.dayId!=null?((db.split&&db.split.days)||[]).find(d=>d.id===w.dayId):null;
+    const rc=day?dayRecovery(day,at):recoveryOf(listMuscles(w.exercises,w),at);   // la misma cuenta que acabas de ver en gym
+    const rd=readinessScore(w.date||todayISO()), muscles={}, parts={};
+    rc.rows.forEach(x=>{ if(x.r)muscles[x.id]=x.r.p; }); Object.keys(rd.parts).forEach(k=>{ parts[k]=rd.parts[k].score; });
+    w.pre={at,recovery:rc.score,muscles,readiness:rd.score,parts}; }catch(_){}
+  return w; }
+// al guardar (o al continuar una sesión ya guardada) la foto viaja con la sesión: nunca se recalcula ni se pierde
+function carryPre(sess,w){ const p=(w&&w.pre)||(w&&w.resumeOf!=null?((db.sessions||[]).find(x=>x&&x.id===w.resumeOf)||{}).pre:null);
+  if(p&&typeof p==='object')sess.pre=p; return sess; }
+const preNum=v=>(typeof v==='number'&&isFinite(v))?Math.max(0,Math.min(100,Math.round(v))):null;
+// lo que valían recovery y readiness ANTES de una sesión: su foto si la tiene; si no (anteriores a la foto), se lee de lo ya
+// registrado con la misma cuenta. El readiness que faltaba en la foto se completa si el sueño de ese día se pegó después.
+function sessionPre(s){ if(!s||s.type==='rest'||!s.exercises||!s.date)return null;
+  const P=(s.pre&&typeof s.pre==='object')?s.pre:null, win=sessionWindow(s);
+  const t=(P&&+P.at>0?+P.at:0)||(win&&win.startMs)||Date.parse(s.date+'T18:00:00');
+  const rec=P?preNum(P.recovery):recoveryOf(listMuscles(s.exercises,s),t).score; let rdy=P?preNum(P.readiness):null;
+  if(rdy==null)rdy=readinessScore(s.date).score;
+  return {s,t,rec,rdy,snap:!!P}; }
+// la línea de contexto de la sesión viva dice la foto tal cual quedó (no un número que cambia mientras entrenas)
+function preNoteTxt(w){ const P=w&&w.pre; if(!P||typeof P!=='object')return ''; const a=preNum(P.recovery), b=preNum(P.readiness);
+  return [a!=null?'recovery ~'+a:'',b!=null?'readiness ~'+b:''].filter(Boolean).join(' · '); }
 // ---- exercise IDENTITY: a same-name exercise in a different type/laterality is a DIFFERENT exercise ----
 // type synonyms → canonical form, ONLY for variant matching/lookup (never rewrites the user's stored value,
 // same spirit as MUSCLE_ALIAS/canonM above — internal comparison only).
@@ -3091,7 +3200,7 @@ function renderHome(){
     +`<div class="segs">${segs}</div>`
     +`<div class="ctrls"><a data-act="changesplit">[change split]</a><a data-act="changegym">[change gym]</a><a data-act="history">[history]</a></div>`
     +dayHeadHTML(l1,escTxt(day.name),[escTxt(db.split.name),escTxt(intensityTag()),escTxt(db.activeGym||''),day.exercises.length+' ejercicios'].filter(Boolean).join(' · '))
-    +(isCurrent?readinessLineHTML(todayISO())+dayMusclesLineHTML(day):'')
+    +(isCurrent?dayScoresHTML(day):'')
     +`<div class="u-mt10 u-mb2 u-mx0"><a data-act="togglepreview" class="u-label u-o60 u-tap u-py2 u-px6 u-lsui">${state.previewDay?'[ ocultar rutina ▴ ]':'[ ver rutina ▾ ]'}</a></div>`
     +(state.previewDay?dayPreviewHTML(day):'')
     +cta
@@ -5265,7 +5374,8 @@ function sessionContextNote(w){
     if(kcal>0) parts.push(Math.round(kcal)+' kcal antes');
   }
   const bwk=Object.keys(db.bodyweight||{}).sort(); if(bwk.length){ const bw=db.bodyweight[bwk[bwk.length-1]]; if(bw) parts.push(numTxt(bw)+'kg'); }
-  const rd=readinessFor(date); if(rd){ parts.unshift('recuperación '+rd.score); const rh=rd.parts.rhr; if(rh&&rh.z>1.5)parts.push(rh.txt); const ld=rd.parts.load; if(ld&&ld.ratio>1.4)parts.push(ld.txt); }
+  const _pn=preNoteTxt(w); if(_pn)parts.unshift(_pn);   // E6 · la foto de inicio (recovery · readiness), no el número viejo mezclado
+  const rd=readinessFor(date); if(rd){ const rh=rd.parts.rhr; if(rh&&rh.z>1.5)parts.push(rh.txt); const ld=rd.parts.load; if(ld&&ld.ratio>1.4)parts.push(ld.txt); }
   if(!parts.length)return '';
   return `<div class="submeta u-mt4 u-mb0 u-mx0 u-o40">${escTxt(parts.join(' · '))}</div>`;
 }
@@ -6150,6 +6260,7 @@ function lineChart(vals,opt){ opt=opt||{};
   // pueden salirse del cuadro, como al hacer zoom en Bevel); <1 = más plano. Doble toque vuelve a 1.
   const z=opt.yZoom||1;
   if(z!==1){ const c=(opt.avg!=null&&isFinite(opt.avg))?opt.avg:(rlo+rhi)/2; const half=(hi-lo)/2/z; lo=c-half; hi=c+half; }
+  if(opt.dom){ lo=opt.dom[0]; hi=opt.dom[1]; }   // E6 · eje fijo: un puntaje 0–100 no se estira a su propio rango
   let xs;
   if(opt.dates&&opt.dates.length===n&&(n>1||opt.tlo!=null)){ const ts=opt.dates.map(d=>Date.parse(d+(String(d).length===10?'T12:00:00':''))||0);
     const tlo=opt.tlo!=null?opt.tlo:Math.min(...ts), thi=opt.thi!=null?opt.thi:Math.max(...ts), tsp=(thi-tlo)||1;
@@ -6177,6 +6288,12 @@ function lineChart(vals,opt){ opt=opt||{};
   let dots='';
   nums.forEach((v,i)=>{ if(v==null||i===last)return; if(lone.has(i)||(!opt.noDots&&i%every===0))dots+=dot(i,opt.detail?2:1.7,opt.detail?'var(--o60)':'var(--o40)'); });
   if(last>=0){ if(opt.detail)dots+=dot(last,6,'var(--sheet-bg)'); dots+=dot(last,opt.detail?3.8:2.8,'var(--fill)'); }
+  // E6 · opt.s2 = segunda serie sobre la misma X y el mismo eje (readiness bajo recovery): punteada y tenue, debajo de la
+  // principal, con huecos donde no hay dato y un punto por registro (dos marcas por sesión)
+  if(opt.s2){ const n2=chartNums(opt.s2), P=i=>xs[i].toFixed(1)+','+Y(n2[i]); let run=[], l2='', d2='';
+    const cut=()=>{ if(run.length>1)l2+='<path d="M'+run.map(P).join(' L')+'" fill="none" stroke="var(--o50)" stroke-width="1" class="sw-ref" stroke-dasharray="3 4" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>'; run=[]; };
+    n2.forEach((v,i)=>{ if(v==null||i>=n){ cut(); return; } run.push(i); d2+='<path d="M'+P(i)+' l0,0" stroke="var(--o50)" stroke-width="'+(opt.detail?3.2:2.6)+'" stroke-linecap="round" fill="none" vector-effect="non-scaling-stroke"/>'; }); cut();
+    line=l2+d2+line; }
   const svg='<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" style="width:100%;height:'+H+'px;display:block'+(opt.detail?'':';margin:'+(opt.margin!=null?opt.margin:'10px 0 2px'))+'"><defs><linearGradient id="'+gid+'" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--fill)" stop-opacity="'+(opt.detail?'.12':'.16')+'"/><stop offset="1" stop-color="var(--fill)" stop-opacity="0"/></linearGradient></defs>'+band+area+avgL+line+dots+'</svg>';
   if(!opt.detail)return svg;
   // ---- detalle: etiquetas HTML sobre el SVG (el texto dentro de un SVG estirado se deformaría) ----
@@ -6189,6 +6306,9 @@ function lineChart(vals,opt){ opt=opt||{};
   if(opt.dates&&opt.dates.length===n&&n){ const k=Math.min(opt.xticks||4,n); const used={};
     for(let j=0;j<k;j++){ const i=k>1?Math.round(j*(n-1)/(k-1)):n-1; if(used[i])continue; used[i]=1;
       xt+='<span class="chx'+(j===0?' a0':j===k-1?' a1':'')+'" style="left:'+(xs[i]/W*100).toFixed(2)+'%">'+escTxt(fmtShort(String(opt.dates[i]).slice(0,10)))+'</span>'; } }
+  // E6 · opt.xtime (solo con ventana fija tlo/thi): el eje X se rotula por TIEMPO (inicio · mitad · fin de la ventana) y no por
+  // índice de punto; con pocas sesiones o agrupadas, las fechas por índice caían una encima de otra. Sin la opción, nada cambia.
+  if(opt.xtime&&opt.tlo!=null&&opt.thi!=null){ xt=[0,.5,1].map((f,j)=>'<span class="chx'+(j===0?' a0':j===2?' a1':'')+'" style="left:'+((padX+f*(W-2*padX))/W*100).toFixed(2)+'%">'+escTxt(fmtShort(todayISO(new Date(opt.tlo+f*(opt.thi-opt.tlo)))))+'</span>').join(''); }
   const lbls=opt.labels||nums.map(v=>v==null?'':fmt(v));
   const pd=[]; nums.forEach((v,i)=>{ if(v==null)return; pd.push({f:+(xs[i]/W).toFixed(4),y:+(Y(v)/H).toFixed(4),l:lbls[i]||''}); });
   return '<div class="chwrap" data-chart="1" data-kind="'+(opt.kind||'')+'" data-ladder="'+(opt.ladder||[]).join(',')+'" data-cur="'+(opt.cur||'')+'" data-pts=\''+JSON.stringify(pd).replace(/'/g,'&#39;')+'\' style="height:'+H+'px">'
@@ -6490,21 +6610,36 @@ function readinessFor(date){
     const hrvSrc=Object.keys(h.daily).some(d=>h.daily[d]&&h.daily[d].hrv);
     const possible=READY_W.sleep+READY_W.rhr+READY_W.load+READY_W.food+(hrvSrc?READY_W.hrv:0);
     res={score:Math.round(s/ws),parts,conf:Math.round(ws/possible*100)/100}; }
-  _readyCache[date]={at:Date.now(),v:res}; return res;
+  _readyCache[date]={at:Date.now(),v:res,parts}; return res;   // E5 · las partes quedan a la vista de readinessScore aunque no haya puntaje
 }
 const READY_ORDER=['sleep','rhr','hrv','load','food'];
-function readinessLineHTML(date){ const r=readinessFor(date); if(!r)return '';
-  const bits=READY_ORDER.filter(k=>r.parts[k]&&r.parts[k].score<90).map(k=>r.parts[k].txt).slice(0,3);
-  // v262 · look "1" (decidido 21-sep, "lo más reduccionista posible"): una línea "recovery ~43 ›"; el desglose vive en su hoja
-  void bits; return `<div class="ready rec" data-act="readiness" data-d="${date}"><span class="rk">recovery</span><b>~${r.score}</b><span class="rl">›</span></div>`; }
-function openReadiness(date){ const r=readinessFor(date); if(!r)return;
-  const names={sleep:'sueño',rhr:'FC en reposo',hrv:'HRV',load:'carga de entreno',food:'comida (ayer)'};
-  const rows=READY_ORDER.filter(k=>r.parts[k]).map(k=>`<div class="line"><span class="k">${names[k]}</span><span class="dots"></span><span class="v">${r.parts[k].score} · ${escTxt(r.parts[k].txt)}</span></div>`).join('');
-  const miss=READY_ORDER.filter(k=>!r.parts[k]).map(k=>names[k]);
-  openModal(`<h3>recuperación · ${fmtShort(date)}</h3><div class="mdval">${r.score}<span class="u-o40 u-w4 u-data"> / 100</span></div>
-    <div class="submeta u-mb10">estimación descriptiva con lo que registraste · confianza ${Math.round(r.conf*100)}%</div>${rows}
-    ${miss.length?`<div class="submeta u-mt10">sin datos: ${escTxt(miss.join(', '))}</div>`:''}
-    <div class="submeta u-mt10">sueño vs tu meta · FC en reposo vs tus últimos 28 días · carga = últimas 72 h vs tu promedio de 4 semanas · comida del día anterior vs tu meta. No es un diagnóstico.</div>
+// E5 · READINESS = qué tan listo estás TÚ hoy ("sueño y descanso y estrés por el ejercicio", el dueño 30-sep): el sueño de
+// anoche, la carga acumulada de 72 h y, si hay fuente, FC en reposo y HRV, con los pesos de READY_W. Lo que antes salía como
+// "recovery ~43" era esto mismo mezclado con la comida de ayer; la comida sale del número (sigma-evaluacion §4.5: es contexto
+// de capacidad) y dayFlags la sigue leyendo de readinessFor. Sin el sueño de anoche NO hay número: se dice y no se rellena
+// con lo demás. Los músculos van aparte, en recovery (dayRecovery, junto a dayScoresHTML).
+const READY_KEYS=['sleep','load','rhr','hrv'];
+function readinessScore(date){ date=date||todayISO(); readinessFor(date); const all=(_readyCache[date]||{}).parts||{};
+  const parts={}; READY_KEYS.forEach(k=>{ if(all[k])parts[k]=all[k]; }); const ks=Object.keys(parts); let score=null;
+  if(parts.sleep&&ks.length>=2){ let ws=0, s=0; ks.forEach(k=>{ ws+=READY_W[k]; s+=parts[k].score*READY_W[k]; }); score=Math.round(s/ws); }
+  return {date,score,parts,miss:score!=null?'':(parts.sleep?'more':'sleep'),why:score!=null?'':'sin dato'}; }
+// una cuenta sin sueño ni entrenos registrados no ve la línea (silencio); con historial, la falta se dice: "readiness — sin dato"
+// (cuál falta lo dice su hoja, con [registrar] en la fila del sueño)
+function readinessLineHTML(date){ const r=readinessScore(date);
+  if(r.score==null&&!Object.keys(r.parts).length&&!Object.keys(db.sleep||{}).length)return '';
+  return `<div class="ready rec" role="button" tabindex="0" data-act="readiness" data-d="${date}"><span class="rk">readiness</span><b>${r.score!=null?'~'+r.score:'—'}</b>${r.why?`<span class="rw">${r.why}</span>`:''}<span class="rl">›</span></div>`; }
+function openReadiness(date){ date=date||todayISO(); const r=readinessScore(date), D=H().daily||{};
+  const names={sleep:'sueño',load:'carga',rhr:'FC reposo',hrv:'HRV'};
+  // el dato de cada señal, uno por columna: lo que dormiste · la carga de 72 h contra tu promedio · tus lpm · tu HRV
+  const dato={sleep:p=>fmtH(p.v),load:p=>(+p.ratio||0).toFixed(1)+'×',rhr:p=>Math.round(p.v)+' lpm',hrv:p=>Math.round(p.v)+' ms'};
+  const src={sleep:true,load:true,rhr:Object.keys(D).some(d=>D[d]&&+D[d].rhr>0),hrv:Object.keys(D).some(d=>D[d]&&D[d].hrv)};   // sin reloj que las mande, esas filas no salen
+  const rows=READY_KEYS.filter(k=>r.parts[k]||src[k]).map(k=>{ const p=r.parts[k];
+    if(p)return `<div class="rvr y"><span class="k">${names[k]}</span><span class="n">${p.score}</span><span class="q">${escTxt(dato[k](p))}</span><span></span></div>`;
+    return k==='sleep'&&date===todayISO()?`<div class="rvr y u-tap" role="button" tabindex="0" data-act="logsleep"><span class="k">${names[k]}</span><span class="n q">—</span><span class="q">sin dato</span><span>registrar ›</span></div>`
+      :`<div class="rvr y"><span class="k">${names[k]}</span><span class="n q">—</span><span class="q">sin dato</span><span></span></div>`; }).join('');
+  openModal(`<h3><span data-gloss="ready">readiness</span> ${r.score!=null?'~'+r.score:'—'}<span class="u-o40 u-w4"> · ${fmtShort(date)}</span></h3>
+    <div class="rvr y hd"><span>señal</span><span class="n">/100</span><span>dato</span><span></span></div>${rows}
+    <div class="submeta u-mt10">estimado con lo que registraste · no es un diagnóstico</div>
     <div class="sheetbtns u-mt12"><button class="cancel" data-act="closemodal">cerrar</button></div>`); }
 // probable causes when an exercise's capacity dropped ("esa disminución tiene una causa" — owner, 2026-09-16).
 // Descriptive only: lists what was different, never changes any number.
@@ -7492,6 +7627,7 @@ function renderProgress(){
       +`<div class="pval">${_td.tdee.toLocaleString()}<span>kcal/d</span></div>`
       +`<div class="pst flat">intake ${_td.avgK} · peso ${_td.dWk>0?'+':''}${_td.dWk}kg/${_td.spanDays}d</div>`
       +`<div class="pst flat" style="opacity:.65">${_td.loggedDays} días · conf ${_td.conf}${_diff!=null?' · vs meta '+(_diff>0?'+':'')+_diff:''}</div></div>`); } }
+  if(cfg.recov)put('recov',recovTileHTML(emptyTile));   // E6 · recovery y readiness antes de cada sesión
   out+=progGridHTML(T,_ed);
   if(_fresh&&!_ed)out+=`<div class="u-tc u-mt12"><span class="ehint">toca cualquier recuadro para registrar tu primer dato</span></div>`
     +`<button class="start u-mt12" data-act="logweight">+ registrar peso corporal</button>`;
@@ -7539,6 +7675,128 @@ function progGripMenu(k){ trkMenu('mover · '+(PROG_LBL[k]||k),[['mover antes',(
 function openProgAdd(){ const e=state.progEdit; if(!e)return; const hid=['consistency'].concat(PROG_KEYS).filter(k=>e.hidden.indexOf(k)>=0);
   openModal('<h3>agregar a progreso</h3>'+(hid.length?hid.map(k=>'<div class="line u-tap" data-act="progaddk" data-k="'+k+'"><span class="k">'+escTxt(PROG_LBL[k])+'</span><span class="dots"></span><span class="v">+ ›</span></div>').join(''):'<div class="empty">ya tienes todo a la vista</div>')
     +'<div class="sheetbtns u-mt12"><button class="cancel" data-act="closemodal">cerrar</button></div>'); }
+// ---------- E6 · //PROGRESS · recovery y readiness antes de cada sesión ----------
+// El dueño (30-sep): "añadir una gráfica más que sería la de recovery… registrarlo justo antes de empezar una sesión… llevar
+// un registro… de cómo has estado y que se pueda ver qué sesión fue previa a eso… que haya dos markers". Una marca de cada
+// puntaje por sesión, en su hora real (sessionPre: la foto guardada, o lo ya registrado en las sesiones anteriores a la foto).
+// La tile se registra aquí, sin tocar la lista de arriba: entra visible al final de tu acomodo y se quita como las demás.
+PROG_KEYS.push('recov'); PROG_LBL.recov='recovery · readiness';
+const RV_LADDER=[30,90,180];
+// lo que se toca en E5/E6 (role="button") también responde a Enter / espacio con teclado
+const RV_KEYS='.ready.rec,.dmus,.rvr[role="button"],.ptile[data-act="recovdetail"]';
+document.addEventListener('keydown',e=>{ const t=e.target; if((e.key!=='Enter'&&e.key!==' ')||!t||!t.matches||!t.matches(RV_KEYS))return; e.preventDefault(); t.click(); });
+function preSeries(days,end){ end=end||todayISO(); const from=daysEnding(days,end)[0];
+  return (db.sessions||[]).filter(s=>s&&s.date>=from&&s.date<=end).map(sessionPre).filter(p=>p&&(p.rec!=null||p.rdy!=null)).sort((a,b)=>a.t-b.t); }
+function rvChart(ps,days,end,detail){ if(!ps.length)return ''; const win=daysEnding(days,end);
+  const iso=t=>{ const d=new Date(t); return todayISO(d)+'T'+pad(d.getHours())+':'+pad(d.getMinutes())+':00'; }, n=v=>v!=null?v:'—';
+  const o={dates:ps.map(p=>iso(p.t)),tlo:Date.parse(win[0]+'T00:00:00'),thi:Date.parse(end+'T23:59:59')};
+  if(!detail)return lineChart(ps.map(p=>p.rec),Object.assign(o,{h:32}));   // la tile, como las demás: una sola línea a su propia escala
+  Object.assign(o,{h:150,detail:true,noFill:true,dom:[0,100],xtime:true,fmt:v=>String(Math.round(v)),labels:ps.map(p=>n(p.rec)+' · '+n(p.rdy)+' · '+fmtShort(p.s.date))});
+  // sin ningún recovery en el rango (primeras sesiones de una cuenta) el readiness va solo, tenue, en vez de quedar sin gráfica
+  if(!ps.some(p=>p.rec!=null))return lineChart(ps.map(p=>p.rdy),Object.assign(o,{stroke:'var(--o50)'}));
+  return lineChart(ps.map(p=>p.rec),Object.assign(o,{s2:ps.map(p=>p.rdy)})); }
+// el primer rango de la escalera que tiene sesiones: tras un mes sin entrenar la tile y su detalle no se quedan vacíos
+function rvFirst(){ let days=RV_LADDER[0], ps=preSeries(days); for(let i=1;!ps.length&&i<RV_LADDER.length;i++){ days=RV_LADDER[i]; ps=preSeries(days); } return {days,ps}; }
+function recovTileHTML(emptyTile){ const f=rvFirst(), ps=f.ps, L=ps[ps.length-1], n=v=>v!=null?v:'—'; if(!L)return emptyTile('recovery','/ 100','loglater');
+  return `<div class="ptile tap" role="button" tabindex="0" data-act="recovdetail"><div class="ptlh"><div class="plbl">recovery</div><span class="ptchev">›</span></div>`
+    +`<div class="pval">${n(L.rec)}<span>/ 100</span></div><div class="pst flat">readiness ${n(L.rdy)} · ${fmtShort(L.s.date)}</div>${rvChart(ps,f.days,todayISO(),false)}</div>`; }
+// detalle: la gráfica (línea = recovery, punteada = readiness; el eje va de 0 a 100) y, debajo, una línea por sesión
+function openRecovDetail(){ const days=window._rvRange||rvFirst().days, end=todayISO(), ps=preSeries(days,end), n=v=>v!=null?v:'—';
+  const hasR=ps.some(p=>p.rec!=null), hasY=ps.some(p=>p.rdy!=null);   // la leyenda solo anuncia la serie que sí se dibuja
+  const tabs=RV_LADDER.map(d=>`<span role="tab" aria-selected="${days===d}" data-act="rvrange" data-r="${d}" class="${days===d?'on':''}">${MD_LBL[d]}</span>`).join('');
+  // la sesión que siguió a cada marca, en columnas: fecha · día · recovery · readiness (la fila abre esa sesión)
+  const list=`<div class="rvr s hd"><span>sesión</span><span></span><span class="n">recovery</span><span class="n">readiness</span><span></span></div>`
+    +ps.slice().reverse().slice(0,14).map(p=>`<div class="rvr s u-tap" role="button" tabindex="0" data-act="vieweditsession" data-id="${escTxt(String(p.s.id))}"><span class="q">${fmtShort(p.s.date)}</span><span class="k">${escTxt(p.s.dayName||'')}</span><span class="n">${n(p.rec)}</span><span class="n q">${n(p.rdy)}</span><span class="q">›</span></div>`).join('');
+  openModal(`<div class="mdetail">
+    <div class="mdhd"><h3><span data-gloss="recov">recovery</span> · <span data-gloss="ready">readiness</span></h3></div>
+    <div class="mdtabs tall" data-tk="rv" role="tablist">${tabs}</div>
+    ${!ps.length?`<div class="empty u-py32 u-px0">sin sesiones en este rango</div>`:`
+      <div class="mdmeta">antes de cada sesión · ${ps.length} ${ps.length===1?'sesión':'sesiones'}</div>
+      ${rvChart(ps,days,end,true)}
+      <div class="rvleg">${hasR?`<span><i></i>recovery</span>`:''}${hasY?`<span><i class="${hasR?'d':'o'}"></i>readiness</span>`:''}</div>
+      <div class="mdstats">${list}</div>`}
+    <div class="sheetbtns u-mt12"><button class="cancel" data-act="closemodal">cerrar</button></div>
+  </div>`,'mdetail-wrap'); }
+// E5 · E6 · G10 · self-check de recovery / readiness / foto de inicio / gráfica. db de juguete con horas relativas a ahora; restaura todo.
+// (El nombre _recoverySelfCheck ya es del v230. Esta NO está en la lista del arranque: la registra quien integre.)
+function _recovScoreSelfCheck(){ const A=(nm,c)=>{ if(!c) throw new Error('SELFCHECK recovScore: '+nm); }; const real=db, sd0=state.selDay;
+  try{ const now=Date.now(), HR=3600000, iso=ms=>todayISO(new Date(ms)), today=todayISO();
+    const st=()=>({w:'100',r:'8',rir:'2',unit:'lbs',done:true});
+    const P0={at:now-10*HR,recovery:64,muscles:{quads:64},readiness:null,parts:{}};
+    db=migrate({_idfix:true,_fsfix:true,profile:{username:'t'},
+      split:{name:'t',days:[{id:'d1',name:'legs',exercises:[{id:'q1',name:'leg ext',muscle:'quads',type:'machine',unilateral:false,sets:3},{id:'b1',name:'curl',muscle:'biceps',type:'free',unilateral:false,sets:1},{id:'c1',name:'calf raise',muscle:'calves',type:'machine',unilateral:false,sets:2}]}]},
+      sessions:[{id:'sb',date:iso(now-400*HR),dayId:'dz',dayName:'arms',type:'training',startMs:now-401*HR,endMs:now-400*HR,exercises:[{name:'curl',muscle:'biceps',type:'free',unilateral:false,sets:[st(),st()]}]},
+        {id:'sq',date:iso(now-10*HR),dayId:'dz',dayName:'legs z',type:'training',startMs:now-11*HR,endMs:now-10*HR,pre:P0,exercises:[{name:'leg ext',muscle:'quads',type:'machine',unilateral:false,sets:[st(),st(),st()]}]}]});
+    db.sleep={}; db.meals={}; db.health=healthShape({}); db.rotIdx=0; state.selDay=null; bumpIdx();
+    A('migrate conserva la foto de la sesión', !!db.sessions[1].pre&&db.sessions[1].pre.recovery===64);
+    const q=muscleRecAt('quads',now), q0=muscleRecoveryState('quads',now), b=muscleRecAt('biceps',now);
+    A('ahora coincide con el motor de músculos (mismo estado, mismas horas, misma ventana)', !!q&&!!q0&&q.state===q0.state&&Math.abs(q.h-q0.h)<1e-6&&q.win.lo===q0.win.lo&&q.win.hi===q0.win.hi&&b.state===muscleRecoveryState('biceps',now).state);
+    A('a las 10 h aún no; 100 solo si ya pasó su ventana', q.state==='recovering'&&q.p<100&&q.p===Math.floor(10/q.win.hi*100)&&b.state==='fresh'&&b.p===100);
+    A('en un instante pasado cuenta solo lo anterior', muscleRecAt('quads',now-10.5*HR)===null&&Math.abs(muscleRecAt('biceps',now-390*HR).h-10)<1e-6);
+    const day=db.split.days[0], rc=dayRecovery(day,now);
+    A('recovery = promedio por series de los músculos de hoy', rc.rows.length===3&&rc.score===Math.round((q.p*3+100*1)/4));
+    A('un músculo sin historial no tiene dato y no entra al promedio', rc.rows[2].id==='calves'&&rc.rows[2].r===null);
+    const hB=dayMusclesHTML(rc), hE=dayMusclesHTML(rc,'estado'), hF=dayMusclesHTML(rc,'filas');
+    A('gym: una fila por músculo en cuatro columnas (músculo · medidor · estado · falta), lo que falta primero, sin porcentajes y sin color', REC_FMT==='barras'&&(hB.match(/class="dmr [a-z]{2}"/g)||[]).length===3&&hB.indexOf('>quads<')<hB.indexOf('>biceps<')&&hB.indexOf('>biceps<')<hB.indexOf('>calves<')&&hB.indexOf('<span class="dmw">falta</span><span class="dmt">'+recLeft(q)+'</span>')>0&&hB.indexOf('<span class="dmw">fresco</span><span class="dmt"></span>')>0&&/^\d+ [hd]/.test(recLeft(q))&&hB.indexOf('<span class="dmw">sin dato</span><span class="dmt"></span>')>0&&!/%|var\(--(warn|good|bad)\)|style=/.test(hE+hB+hF));
+    const qc=Math.floor(q.p/10), F10='█'.repeat(10);
+    A('jerarquía por fila: lo que falta va marcado (.no) y lo fresco / sin dato apagado (.fr .sd), con el medidor en celdas enteras', hB.indexOf('<div class="dmr no"><span class="dmn">')>0&&hB.indexOf('[<b>'+'█'.repeat(qc)+'░'.repeat(10-qc)+'</b>]</span><span class="dmw">falta')>0&&hB.indexOf('<div class="dmr fr">')>0&&hB.indexOf('[<b>'+F10+'</b>]</span><span class="dmw">fresco')>0&&hB.indexOf('<div class="dmr sd">')>0&&!/[▏▎▍▌▋▊▉]/.test(hB));
+    A('si todo está fresco el bloque no se pinta', dayMusclesHTML(recoveryOf([{id:'biceps',sets:1}],now))===''&&dayMusclesHTML(recoveryOf([{id:'biceps',sets:1},{id:'calves',sets:1}],now))===''&&dayMusclesHTML(recoveryOf([{id:'biceps',sets:1}],now),'estado')==='');
+    const oA={state:'recovering',win:{lo:168,hi:168},h:24,p:14}, oB={state:'likely',win:{lo:0,hi:48},h:10,p:20}, hO=dayMusclesHTML({rows:[{id:'quads',sets:1,r:oB},{id:'biceps',sets:1,r:oA}]});
+    A('una ventana abierta no se dice como cuenta exacta (>6 d, <38 h) y "<48 h" recién entrenado no es "casi"', recLeft(oA)==='>6 d'&&recLeft({win:{lo:168,hi:168},h:23})==='>6 d'&&recLeft(oB)==='<38 h'&&recShow(oB)==='recovering'&&recShow({state:'likely',win:{lo:0,hi:48},h:30})==='likely'&&recShow(q)===q.state&&hO.indexOf('<span class="dmw">falta</span><span class="dmt">&gt;6 d</span>')>0&&hO.indexOf('<span class="dmw">falta</span><span class="dmt">&lt;38 h</span>')>0&&hO.indexOf('<38')<0);
+    A('el medidor es de terminal (10 celdas) y las alternativas se dibujan', /\[<b>[█░]{10}<\/b>\]/.test(hB)&&hE.indexOf('falta')<hE.indexOf('fresco')&&hE.indexOf('<i>'+recLeft(q)+'</i>')>0&&/class="line"/.test(hF));
+    openRecovery(); const shR=(document.getElementById('modal')||{}).innerHTML||''; closeModal();
+    A('la hoja de recovery lista cada músculo en columnas y cada fila abre su detalle', (shR.match(/class="rvr m u-tap"/g)||[]).length===3&&shR.indexOf('class="rvr m hd"')>0&&shR.indexOf('data-act="muscledetail" data-id="quads"')>0&&shR.indexOf('<span class="q w">sin dato</span>')>0);
+    // readiness: sin el sueño de anoche no hay número; la comida no entra; una sola señal no alcanza
+    for(let i=1;i<=20;i++){ const d=shiftDate(today,-i); db.sleep[d]=[{date:d,type:'nocturno',hours:8}]; H().daily[d]={rhr:58}; }
+    H().daily[today]={rhr:64}; bumpIdx();
+    let r=readinessScore(today);
+    A('sin el sueño de anoche no hay número y se dice', r.score===null&&r.why==='sin dato'&&r.miss==='sleep'&&!!r.parts.rhr&&/readiness<\/span><b>—<\/b><span class="rw">sin dato/.test(readinessLineHTML(today)));
+    openReadiness(today); const shY=(document.getElementById('modal')||{}).innerHTML||''; closeModal();
+    A('su hoja dice qué falta sin rellenarlo y deja registrarlo; una señal sin fuente no sale', shY.indexOf('data-act="logsleep"><span class="k">sueño</span><span class="n q">—</span><span class="q">sin dato</span>')>0&&/<span class="k">FC reposo<\/span><span class="n">\d+<\/span><span class="q">64 lpm<\/span>/.test(shY)&&shY.indexOf('HRV')<0);
+    db.sleep[today]=[{date:today,type:'nocturno',hours:5}]; bumpIdx(); r=readinessScore(today);
+    A('con sueño y otra señal sale el puntaje', r.why===''&&r.score===Math.round((r.parts.sleep.score*READY_W.sleep+r.parts.rhr.score*READY_W.rhr)/(READY_W.sleep+READY_W.rhr)));
+    const s0=r.score; db.meals[shiftDate(today,-1)]=[{name:'x',kcal:300,protein:5}]; bumpIdx();
+    A('la comida de ayer no mueve el readiness (readinessFor la conserva para el diagnóstico)', !!readinessFor(today).parts.food&&readinessScore(today).score===s0&&!readinessScore(today).parts.food);
+    delete H().daily[today]; bumpIdx(); r=readinessScore(today);
+    A('una sola señal no alcanza', r.score===null&&r.why==='sin dato'&&r.miss==='more');
+    H().daily[today]={rhr:64}; bumpIdx();
+    // la foto al iniciar
+    const w=stampSessionPre(newWorkSession()), rc2=dayRecovery(day,w.pre&&w.pre.at), rd2=readinessScore(today);
+    A('start guarda la foto con su hora', !!w.pre&&Math.abs(w.pre.at-Date.now())<5000);
+    A('…el recovery que se veía en gym y cada músculo con dato', w.dayId==='d1'&&w.pre.recovery===rc2.score&&w.pre.muscles.quads===rc2.rows[0].r.p&&w.pre.muscles.biceps===100&&!('calves' in w.pre.muscles));
+    A('…y el readiness con sus partes', w.pre.readiness===rd2.score&&rd2.score!=null&&w.pre.parts.sleep===rd2.parts.sleep.score&&w.pre.parts.rhr===rd2.parts.rhr.score);
+    const p1=w.pre; stampSessionPre(w); A('la foto no se pisa', w.pre===p1);
+    const la=newWorkSession(); la.loggedAfter=true; A('una sesión registrada después no lleva foto', !stampSessionPre(la).pre);
+    A('al guardar, la foto viaja con la sesión', carryPre({},w).pre===p1&&carryPre({},{resumeOf:'sq'}).pre===db.sessions[1].pre&&!('pre' in carryPre({},{resumeOf:'sb'})));
+    const pq=sessionPre(db.sessions[1]), pb=sessionPre(db.sessions[0]);
+    A('la sesión con foto se lee de su foto', pq.snap&&pq.rec===64&&pq.t===P0.at);
+    A('el readiness que faltaba en la foto se completa con lo registrado', pq.rdy===readinessScore(db.sessions[1].date).score);
+    A('una sesión vieja se lee sin escribirle nada', !!pb&&!pb.snap&&!('pre' in db.sessions[0]));
+    A('una foto con basura no se pinta', sessionPre({id:'x',date:today,exercises:[],pre:{at:'<i>',recovery:'<img>',readiness:1e9}}).rec===null&&sessionPre({id:'x',date:today,exercises:[],pre:{recovery:NaN,readiness:1e9}}).rdy===100);
+    const ps=preSeries(30);
+    A('la serie va por sesión, en orden', ps.length>=1&&ps[ps.length-1].s.id==='sq');
+    const g=lineChart([50,100],{h:56,dom:[0,100],s2:[40,null],noFill:true}), g2=lineChart([50,100],{h:56,dom:[0,100],s2:[40,60],noFill:true});
+    A('la gráfica lleva las dos series en un eje fijo 0–100', /L293\.0,7"/.test(g)&&!/stroke-dasharray/.test(g)&&/stroke-dasharray="3 4"/.test(g2)&&/M7\.0,32\.2 L293\.0,23\.8"/.test(g2));
+    // el eje X de esta gráfica va por tiempo: tres fechas fijas (inicio · mitad · fin) aunque las sesiones estén pegadas
+    const t0=Date.parse(shiftDate(today,-29)+'T00:00:00'), t1=Date.parse(today+'T23:59:59'), dd=[today+'T10:00:00',today+'T11:00:00',today+'T12:00:00',today+'T13:00:00'];
+    const gx=lineChart([50,60,70,80],{detail:true,dates:dd,tlo:t0,thi:t1,xtime:true}), gi=lineChart([50,60,70,80],{detail:true,dates:dd,tlo:t0,thi:t1}), lefts=h=>(h.match(/class="chx[^"]*" style="left:[\d.]+%/g)||[]).map(s=>+s.split('left:')[1].replace('%',''));
+    A('las fechas del eje no se enciman (por tiempo: inicio · mitad · fin)', lefts(gx).join()==='1.33,50,98.67'&&gx.indexOf('>'+fmtShort(shiftDate(today,-29))+'<')>0&&gx.indexOf('>'+fmtShort(today)+'<')>0&&lefts(gi).length===4&&lefts(gi)[3]-lefts(gi)[0]<5);
+    const gy=rvChart([{rec:null,rdy:50,t:now-2*HR,s:{date:today}},{rec:null,rdy:70,t:now-HR,s:{date:today}}],30,today,true);
+    A('sin recovery en el rango el readiness se dibuja solo', gy.indexOf('<svg')>0&&gy.indexOf('stroke="var(--o50)"')>0&&(gy.match(/class="chx[ "]/g)||[]).length===3);
+    const ss0=db.sessions; db.sessions=[Object.assign({},ss0[0],{id:'old',date:iso(now-1440*HR),startMs:now-1441*HR,endMs:now-1440*HR,pre:{at:now-1441*HR,recovery:70,muscles:{},readiness:null,parts:{}}})]; bumpIdx();
+    const fb=rvFirst(), tl=recovTileHTML(()=>'VACIA'); db.sessions=ss0; bumpIdx();
+    A('tras un mes sin sesiones la tile toma el primer rango con datos', fb.days===90&&fb.ps.length===1&&/data-act="recovdetail"/.test(tl)&&tl.indexOf('>70<span>/ 100')>0&&rvFirst().days===30);
+    A('el guardado lleva la foto (cableado)', /carryPre\(sess,w\)/.test(String(saveSession))&&/carryPre\(sess,w\)/.test(String(finalizeIdleSession)));
+    const kb=document.createElement('div'); let kh=0; kb.className='dmus'; kb.onclick=()=>kh++; document.body.appendChild(kb);
+    try{ kb.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true})); kb.dispatchEvent(new KeyboardEvent('keydown',{key:'a',bubbles:true})); }finally{ kb.remove(); }
+    A('Enter activa lo que se toca', kh===1);
+    A('la tile entra a //PROGRESS sin tocar el acomodo guardado', PROG_KEYS.indexOf('recov')>=0&&progMetrics().recov===true&&progLayout().order.indexOf('recov')>=0&&/data-act="recovdetail"/.test(recovTileHTML(()=>'')));
+    const hs=dayScoresHTML(day);
+    A('gym muestra dos puntajes con nombre', /data-act="recovery"><span class="rk">recovery<\/span><b>~\d+/.test(hs)&&/data-act="readiness"[^>]*><span class="rk">readiness<\/span><b>~\d+/.test(hs));
+    A('la línea de la sesión viva dice la foto', preNoteTxt(w)==='recovery ~'+w.pre.recovery+' · readiness ~'+w.pre.readiness&&preNoteTxt({})==='');
+    console.log('recovScore self-check OK');
+  } finally { try{ closeModal(); }catch(_){} db=real; state.selDay=sd0; bumpIdx(); }
+}
 // ---------- stack: supplements / skincare / meds ----------
 // item shape: { id, name, category:'supp'|'skin'|'meds', dose, unit?, when:[], periodization:{type,value}, notes,
 //               startDate, endDate?, med?:{doctor,duration}, ticks:{'YYYY-MM-DD':'taken'|'late'|'skipped'}, archived? }
@@ -8641,7 +8899,7 @@ document.getElementById('app').addEventListener('click',e=>{
   if(a==='nav'){ go(el.dataset.screen); }
   // G2 · R-SESS: lo que CREA una sesión o mueve la rotación nunca corre con una sesión viva (antes reemplazaba la tuya)
   else if((a==='start'||a==='loglater'||a==='rest'||a==='skip'||a==='unrest')&&db.activeWork){ toast('⚠ sesión en curso · termínala o abórtala','err'); }
-  else if(a==='start'){ db.activeWork=newWorkSession(); save(); state._autoScroll=true; go('workout'); }
+  else if(a==='start'){ db.activeWork=stampSessionPre(newWorkSession()); save(); state._autoScroll=true; go('workout'); }
   else if(a==='togglepreview'){ state.previewDay=!state.previewDay; reRender(); }
   else if(a==='loglater'){ const w=newWorkSession(); w.loggedAfter=true; w.startMs=null; const y=new Date(); y.setDate(y.getDate()-1); w.date=todayISO(y); db.activeWork=w; save(); go('workout'); }
   else if(a==='togglenoadv'){ if(db.activeWork){ db.activeWork.noAdvance=!db.activeWork.noAdvance; reRender(); } }
@@ -8699,6 +8957,9 @@ document.getElementById('app').addEventListener('click',e=>{
   else if(a==='healthsync'){ healthSync(); }
   else if(a==='healthjson'){ openHealthJsonImport(); }
   else if(a==='readiness'){ openReadiness(el.dataset.d||todayISO()); }
+  else if(a==='recovery'){ openRecovery(); }
+  else if(a==='recovdetail'){ openRecovDetail(); }
+  else if(a==='rvrange'){ window._rvRange=+el.dataset.r||30; openRecovDetail(); }
   else if(a==='healthnative'){ healthSyncNative('manual'); }
   else if(a==='healthconnect'){ healthSyncNative('connect'); }
   else if(a==='healthhc'){ const hp=capP('Health'); if(hp&&hp.openHealthConnectSettings)hp.openHealthConnectSettings().catch(()=>{}); }
@@ -9352,6 +9613,7 @@ function saveSession(){
   touched.forEach(pfClearAll);
   const sess={id:w.id,date:w.date,dayId:w.dayId,dayName:w.dayName,gym:w.gym,metric:w.metric==='rpe'?'rpe':undefined,type:'training',savedMs:Date.now(),loggedAfter:!!w.loggedAfter,durSec:w.loggedAfter?((parseInt(w.manualDur,10)||0)*60):(w.startMs?Math.round((Date.now()-w.startMs)/1000):0),startTime:w.loggedAfter?(w.startTime||null):(w.startTs||null),endTime:w.loggedAfter?(w.endTime||null):nowHM(),startMs:w.loggedAfter?null:(w.startMs||null),endMs:w.loggedAfter?null:Date.now(),
     exercises:mapWorkExercises(w)};
+  carryPre(sess,w);   // E6 · la foto de recovery/readiness del inicio viaja con la sesión
   // v254: la sesión NO se suelta de memoria hasta confirmar que se escribió en disco
   const _rot=db.rotIdx, _aw=db.activeWork, _sessBak=db.sessions.slice();
   if(w.resumeOf!=null){ db.sessions=db.sessions.filter(x=>x.id!==w.resumeOf); if(w.resumeRot!=null)db.rotIdx=w.resumeRot; }   // G2 · continuar reemplaza la original y no mueve la rotación
@@ -9401,6 +9663,7 @@ function finalizeIdleSession(){
     durSec:w.startMs?Math.max(0,Math.round((endMs-w.startMs)/1000)):0,
     startTime:w.startTs||null, endTime:pad(endD.getHours())+':'+pad(endD.getMinutes()), startMs:w.startMs||null, endMs,
     exercises:mapWorkExercises(w)};
+  carryPre(sess,w);   // E6 · igual que en saveSession
   if(w.resumeOf!=null){ db.sessions=db.sessions.filter(x=>x.id!==w.resumeOf); if(w.resumeRot!=null)db.rotIdx=w.resumeRot; }
   else if(!w.noAdvance&&dayCount()){ const idx=db.split.days.findIndex(d=>d.id===w.dayId); db.rotIdx=(idx>=0?idx:db.rotIdx)+1; }
   db.activeWork=null; db.sessions.push(sess); save();
@@ -11353,6 +11616,8 @@ const GLOSS={
   cap:'% de capacidad: tu e1RM de hoy contra la sesión equivalente anterior, descontando la fatiga acumulada en la sesión. ▲ más · ▼ menos · ~ comparación de baja confianza.',
   lm:'referencia general: con ~10 o más series por músculo a la semana se suele crecer más (ACSM 2026), y cada serie extra aporta menos, sin un tope claro (Pelland 2026). Es un promedio de estudios: no hay una cifra por músculo, varía mucho entre personas y arriba de ~25 casi no hay datos. Orienta; no es regla.',
   est:'estimado = ventana de la literatura ajustada a tu dosis (series, fallo, estiramiento) · observado = lo que muestra tu propio historial, desde 6 pares de sesiones.',
+  recov:'recovery · qué tan recuperados están los músculos de la sesión que toca: las horas desde su última sesión contra su ventana de recuperación (estimada, u observada con tu historial). 100 = todos frescos; es el promedio por series. Se guarda al tocar start; en las sesiones de antes se lee de lo que quedó registrado.',
+  ready:'readiness · qué tan listo estás tú hoy: el sueño de anoche contra tu meta, la carga de las últimas 72 h contra tu promedio de 4 semanas y, si tu reloj los manda, FC en reposo y HRV. Sin el sueño de anoche no se calcula. No es un diagnóstico.',
   rirmed:'RIR medio de tus series duras con RIR registrado · "% a RIR ≤1" = qué parte fue al fallo o casi.',
   e1rm:'e1RM: el máximo estimado para 1 repetición (Epley + RIR) de tus series de trabajo. Compara días con pesos y reps distintos.',
   racha:'racha: días seguidos con comida o gym registrados a mano. Solo se corta el día sin ninguno de los dos; hoy cuenta hasta medianoche.',
