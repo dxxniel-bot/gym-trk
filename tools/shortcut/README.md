@@ -14,6 +14,7 @@ lo pega. El atajo no abre ninguna página ni manda nada a internet.
 | `../../TRK Biometrics.shortcut` (raíz) | el **firmado** (AEA1); `tools/publish-site.cjs` lo publica en `https://gymtrk.app/TRK%20Biometrics.shortcut` |
 | `aea.cjs` | abre un atajo firmado (AEA1 → LZFSE → Apple Archive → plist) para ver qué lleva dentro |
 | `plist.cjs` | plist de Apple en node puro: escribir XML, leer XML y binario |
+| `test.cjs` | pruebas sin iPhone: el validador, el corredor de mentira, `--check` y `--verify` |
 | `fetch-ref.cjs`, `dump.cjs` | bajan y leen atajos públicos de referencia (se guardan fuera del repo) |
 | `FUENTES.md` | de qué atajo real salió cada identificador y qué quedó sin confirmar |
 
@@ -24,6 +25,7 @@ node tools/shortcut/build.cjs            # reescribe el plist y enseña lo que c
 node tools/shortcut/sign.cjs             # lo firma (sube SOLO el plist a HubSign) y verifica lo que vuelve
 node tools/shortcut/build.cjs --check    # el plist en disco es el de hoy y HP_EXAMPLE de index.html coincide
 node tools/shortcut/sign.cjs --verify    # el firmado de la raíz lleva exactamente esas acciones
+node tools/shortcut/test.cjs             # todo lo anterior + 14 roturas a propósito que el validador y el corredor deben ver
 ```
 
 Si cambia lo que el atajo copia, `build.cjs` imprime el `HP_EXAMPLE` nuevo: se pega en `index.html` (la app prueba con ese
