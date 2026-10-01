@@ -10464,7 +10464,7 @@ function _catalogoSelfCheck(){ const A=(nm,c)=>{ if(!c) throw new Error('SELFCHE
       catSelSet(true,'row'); A('un ejercicio partido por tipo se puede unir él solo', /^1 elegido/.test(bar().textContent)&&!bar().querySelector('.catgo').classList.contains('off')&&bar().querySelector('.catgo').getAttribute('aria-disabled')==='false');
       tap(bar().querySelector('[data-act="openmerge"]'));
       A('su hoja dice sus tipos y pregunta máquina y nota (dos registros del mismo nombre, un solo destino)', !!md()&&/row · machine · free/.test(md().textContent)&&!!el('mg_win_0')&&!el('mg_win_1')&&Array.from(el('mg_win_0').options).map(o=>o.textContent).join('|')==='row · machine → asiento 3|row · free → banco 5'&&!!el('mg_note')&&el('mg_note').options.length===2&&el('mg_name').value==='row');
-      A('de entrada va elegido lo del tipo que sale marcado', md().querySelector('#mg_type .t.on').dataset.v==='free'&&el('mg_win_0').value===I('row','free','')&&el('mg_note').value===N('row','free'));
+      A('de entrada sale marcado el tipo del aparato (no lo último registrado, que fue libre) y va elegido lo suyo', canonType(knownExercises().filter(o=>o.name==='row')[0].type)==='free'&&md().querySelector('#mg_type .t.on').dataset.v==='machine'&&md().querySelectorAll('#mg_type .t.on').length===1&&el('mg_win_0').value===I('row','machine','')&&el('mg_note').value===N('row','machine'));
       tap(md().querySelector('#mg_type [data-v="machine"]')); el('mg_win_0').value=I('row','machine',''); el('mg_note').value=N('row','free');
       tap(md().querySelector('[data-act="domerge"]')); A('la pregunta lo dice como es', /unir "row" en un solo tipo/.test((document.querySelector('#asklayer h3')||{}).textContent||'')); tap(ask('ok'));
       A('queda un solo tipo, cada registro con su lateralidad', !md()&&!state._catSel&&catTypes('row').join()==='machine'&&catIndex().byK.row.leaves.map(L=>L.type+':'+L.lat+':'+L.n).join()==='machine:bi:3,machine:uni:1'&&lats()===l0);
@@ -10506,7 +10506,11 @@ function openMergeModal(){
     Object.keys(by).forEach(d=>{ if(new Set(by[d].map(o=>machSig(m[o.x]))).size>1)window._mgConf.push({gym:g,keys:by[d].map(o=>o.k),recs:by[d].map(o=>o.x)}); }); });
   // la nota del ejercicio: si hay notas distintas (de dos fuentes, o de un mismo nombre con dos tipos), él elige cuál queda
   const notes=[]; keys.forEach(k=>{ const pre=k+MACH_SEP; Object.keys(db.exNotes||{}).filter(n=>n.indexOf(pre)===0&&db.exNotes[n]).forEach(x=>{ if(!notes.some(o=>o.t===db.exNotes[x]))notes.push({k,x,t:db.exNotes[x]}); }); });
-  const winK=nameKey(win.name), winN=winK+MACH_SEP+canonType(win.type);   // lo que ya está en el destino que sale marcado: esa opción va elegida de entrada
+  // v286 · el tipo que sale marcado: el de la fuente con más historia (lo último que registró). Con UN solo ejercicio partido por
+  // tipo, el del aparato con más registros si alguna vez se anotó con aparato (el dueño, 30-sep: "si ya está un nombre de un
+  // ejercicio con una … máquina, ese es… es la misma pinche máquina, nomás es una variante"). Él lo cambia con un toque.
+  const defT=(keys.length===1&&(ls=>ls.length?ls.sort((a,b)=>b.n-a.n)[0].t:'')(catTypes(keys[0]).filter(isMachType).map(ty=>({t:ty,n:catIndex().byK[keys[0]].leaves.reduce((a,L)=>a+(L.type===ty?L.n:0),0)}))))||canonType(win.type);
+  const winK=nameKey(win.name), winN=winK+MACH_SEP+defT;   // lo que ya está en el destino que sale marcado: esa opción va elegida de entrada
   const types=[['free','freeweight'],['machine','machine'],['smith','smith'],['cable','cable'],['bodyweight','bodyweight'],['cardio','cardio']];
   const muscles=muscleSuggest(); const curM=(exMuscles(win)[0]||{}).name||'';
   const uOpts=['','kg','lbs','pla'].map(u=>`<option value="${u}"${(win.unit||'')===u?' selected':''}>${u||'—'}</option>`).join('');
@@ -10515,7 +10519,7 @@ function openMergeModal(){
    <div class="u-mb10">${rows.map(r=>`<div class="u-flex u-gap8 u-data u-py4 u-px0 u-sep"><span class="u-f1">${(l=>l&&l.length?'['+l.join('·')+'] ':'')((catIndex().byK[r._k]||{}).lats)}${escTxt(r.name)}${(ts=>ts.length?` <span class="u-o40">· ${escTxt(ts.join(' · '))}</span>`:'')((ts=>ts.length>1?ts:(r.type?[r.type]:[]))(catTypes(r._k)))}</span><span class="u-o50 u-nowrap">${r._sess} ses · ${r._sets} series</span></div>`).join('')}</div>
    <div class="field"><label>NOMBRE FINAL</label><input id="mg_name" value="${(win.name||'').replace(/"/g,'&quot;')}" list="mg_namelist"/><datalist id="mg_namelist">${rows.map(r=>`<option value="${escTxt(r.name)}"></option>`).join('')}</datalist></div>
    <div class="field"><label>MÚSCULO</label><select id="mg_muscle">${[...new Set([curM,...muscles].filter(Boolean))].map(m=>`<option value="${escTxt(m)}"${m===curM?' selected':''}>${escTxt(m)}</option>`).join('')}</select></div>
-   <div class="field"><label>TYPE</label><div class="toggles u-wrap u-gap4" id="mg_type">${types.map(([v,lbl])=>`<button class="t ${canonType(win.type)===v||(v==='free'&&!win.type)?'on':''} u-fhalf u-min0" data-act="optpick" data-v="${v}">${lbl}</button>`).join('')}</div></div>
+   <div class="field"><label>TYPE</label><div class="toggles u-wrap u-gap4" id="mg_type">${types.map(([v,lbl])=>`<button class="t ${defT===v?'on':''} u-fhalf u-min0" data-act="optpick" data-v="${v}">${lbl}</button>`).join('')}</div></div>
    <div class="field"><label>UNIDAD POR DEFECTO</label><select id="mg_unit">${uOpts}</select></div>
    <div class="field"><label>EN QUÉ GYMS EXISTE</label>${window._mgGyms.length?window._mgGyms.map((g,i)=>`<label class="u-label u-o60 u-block u-mb4"><input type="checkbox" id="mg_g_${i}" ${pre.has(g)?'checked':''} class="u-vam u-wauto"/> ${escTxt(g)}</label>`).join(''):'<div class="submeta">sin gyms registrados</div>'}
      <div class="submeta u-mt2 u-o40">solo etiqueta y ordena los pickers · nunca esconde el ejercicio si entrenas en otro lado</div></div>
