@@ -3157,7 +3157,7 @@ function stimulusSection(){
   let body=(mix?`<div class="stq"><div class="stqh c4 hd"><span class="stqn">músculo</span>${STIM_VIEWS.map(x=>`<span class="stqv">${x[1]}</span>`).join('')}</div></div>`:'')
     +rows.map(r=>`<div class="stq u-tap" role="button" data-act="muscledetail" data-id="${r.id}"><div class="stqh${mix?' c4':''}"><span class="stqn">${escTxt(r.m)}</span>${mix?nv(r.vals.sig,1)+nv(r.vals.hard,1)+nv(r.vals.all,1)+nv(r.v):`<span class="stqv">${stimFmt(vk,r.v)}</span>`}</div>${sigBarHTML('stim:'+r.id,r.v)}</div>`).join('');
   if(!rows.length)return `<hr class="rule"/><div class="section u-mb12"><div class="h"><span class="s">//</span>STIMULUS</div><div class="meta" data-gloss="${VW[2]}">${VW[3]} · 7 d</div></div>`+`<div class="submeta u-py6 u-px0">aún sin series esta semana</div>`;   // sin datos no hay nada que comparar: sin pestañas
-  body+=`<div class="stq u-tap" data-gloss="lm"><div class="stw dim"><span>referencia general</span><span class="r">~10–20 por semana</span></div></div>`;   // las dos marcas de la barra; toda la fila abre el glosario (toque de 44)
+  body+=`<div class="stq u-tap" data-gloss="lm"><div class="stw dim"><span><span data-gloss="lm">referencia general</span></span><span class="r">~10–20 por semana</span></div></div>`;   // las dos marcas de la barra; toda la fila abre el glosario (toque de 44)
   // DEBAJO del dato y una sola vez: la fatiga acumulada (≥2 ejercicios retrocediendo) si existe; si no, los músculos con
   // pérdida de progreso sostenida Y fallo o fatiga que la acompañe (máximo 3; el resto se cuenta)
   // cada aviso es un bloque de columnas: cabecera (qué) y debajo clave | valor, un dato por celda
@@ -3202,7 +3202,7 @@ function _estimuloSelfCheck(){ const A=(nm,c)=>{ if(!c) throw new Error('SELFCHE
       A(k+': 4 pestañas y la elegida marcada', (h.match(/data-act="stimview"/g)||[]).length===4&&new RegExp('class="on" data-act="stimview" data-v="'+k+'"').test(h));
       A(k+': filas de más a menos', rs.length===3&&rs.every((r,i)=>!i||rs[i-1].v>=r.v)&&rs.every(r=>r.v===r.vals[k]));
       A(k+': la cabecera abre su glosario', h.indexOf('data-gloss="'+g+'"')>0&&!!GLOSS[g]);
-      A(k+': las marcas se dicen como referencia general y aproximada', /data-gloss="lm"><div class="stw dim"><span>referencia general<\/span><span class="r">~10–20 por semana</.test(h)&&!/zona objetivo|debajo del mínimo|no regla/.test(h));
+      A(k+': las marcas se dicen como referencia general y aproximada', /data-gloss="lm"><div class="stw dim"><span><span data-gloss="lm">referencia general<\/span><\/span><span class="r">~10–20 por semana</.test(h)&&!/zona objetivo|debajo del mínimo|no regla/.test(h));
       A(k+': filas en columnas, sin frases con separadores', h.indexOf('class="stqc"')<0&&(h.match(/class="stqh c4"/g)||[]).length===(k==='mix'?3:0)); });
     db.settings.stimView='mix'; const h0=stimulusSection();
     A('la mezcla enseña sus tres partes, una por columna y con cabecera', /class="stqh c4 hd"><span class="stqn">músculo<\/span><span class="stqv">σ<\/span><span class="stqv">duras<\/span><span class="stqv">totales<\/span><span class="stqv">mezcla<\/span>/.test(h0)&&/<span class="stqv p">[\d.]+<\/span><span class="stqv p">[\d.]+<\/span><span class="stqv p">[\d.]+<\/span><span class="stqv">[\d.]+<\/span>/.test(h0));
