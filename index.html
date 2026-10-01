@@ -1979,6 +1979,7 @@ function seedSets(ex,fallbackN,ctx){
   // y "no se actualizaba"), y el orden de cada par sigue al lado por el que se empieza HOY
   const _u=uniOf(ex);
   if(last&&last.length&&(!_u||last.every(s=>s&&s.side))){ const out=last.map(s=>emptySet(ex,_u?(s.side||null):null,!!s.isDrop,s)); if(_u)swapSides({startSide:ex.startSide,sets:out}); return out; }
+  { const ap=approxSeed(ex,gym); if(ap)return ap; }   // v286 · primera vez en esta variante
   const n=Math.max(1,fallbackN||(typeof ex.sets==='number'?ex.sets:2)); const out=[];
   // cardio never uses unilateral R/L pairs — one row per bout
   if(ex&&String(ex.type||'').toLowerCase()==='cardio'){ for(let i=0;i<n;i++) out.push(emptySet(ex,null,false,null)); return out; }
@@ -1986,6 +1987,25 @@ function seedSets(ex,fallbackN,ctx){
   for(let i=0;i<n;i++){ if(ex.unilateral){ out.push(emptySet(ex,s1,false,null)); out.push(emptySet(ex,s2,false,null)); } else out.push(emptySet(ex,null,false,null)); }
   return out;
 }
+// v286 · primera vez en una variante ("un aprox al 50 % si es que nunca se ha hecho", el dueño): si ESTA lateralidad nunca se
+// ha registrado, la sugerencia sale de la última sesión del mismo nombre + tipo en otra lateralidad. Máquina, polea y smith:
+// uni = 50 % de bi · bi = 2× uni · alt = bi. Peso libre y peso corporal: el mismo peso. Son series NUEVAS (la sesión fuente
+// no se toca), todas sugerencia gris (_pf); bw y extraW no se escalan; en máquinas, solo del mismo gym. No hay ▲▼: esta
+// variante no tiene con qué compararse (baselineSetsFor no encuentra nada).
+const APPROX_LOAD={bi:1,alt:1,uni:0.5};
+function approxSeed(ex,gym){ if(!ex||isCardio(ex))return null; const nk=String(ex.name||'').toLowerCase().trim(); if(!nk)return null;
+  const vk=variantKey(ex).split('|'), to=latOf(ex), mach=/^(machine|cable|smith)$/.test(vk[0]); const idx=exIndex();
+  const twin=r=>{ if(r.name!==nk||isCardio(r.ex))return false; const v=String(r.variant||'').split('|'); return v[0]===vk[0]&&v[2]===vk[2]&&v[3]===vk[3]; };
+  if(idx.some(r=>twin(r)&&latOf(r.ex)===to))return null;   // esta variante ya tiene historia (aunque sea en otro gym): no se inventa nada
+  const real=s=>!!s&&!s._pf&&!!(s.w||s.r);
+  const src=idx.find(r=>twin(r)&&(!mach||gymMatch(r.gym,gym))&&(r.sets||[]).some(real)); if(!src)return null;
+  const from=latOf(src.ex), k=mach?APPROX_LOAD[to]/APPROX_LOAD[from]:1; let rows=src.sets.filter(real);
+  if(from==='uni'){ const nR=rows.filter(s=>s.side==='R').length, nL=rows.filter(s=>s.side==='L').length;   // un par R/L = una serie: se toma el lado con más filas
+    if(nR||nL){ const side=nL>nR?'L':'R'; rows=rows.filter(s=>s.side===side); } }
+  const tpl=s=>{ const c=Object.assign({},s); const w=parseFloat(s.w); if(k!==1&&!s.bw&&w>0)c.w=String(roundLoad(w*k,s.unit||ex.unit)); return c; };
+  const out=[]; const [s1,s2]=uniSides(ex);
+  rows.forEach(s=>{ const c=tpl(s); if(to==='uni'){ out.push(emptySet(ex,s1,!!s.isDrop,c)); out.push(emptySet(ex,s2,!!s.isDrop,c)); } else out.push(emptySet(ex,null,!!s.isDrop,c)); });
+  return out.length?out:null; }
 // ---- drop sets are SUBSERIES of their parent working set, not independent entries ----
 // resolve the insertion index for a NEW drop hung off the set at `triggerIdx`: walks back to the
 // nearest working (non-drop) set at/before triggerIdx (so tapping ↓ on an existing drop CHAINS another
@@ -2107,7 +2127,7 @@ function newWorkSession(){
   const exs=list.map((pe,ei)=>{
     const sp=fromPrior?splitExFor(prior,ei):pe;
     const base=sp||pe;
-    const ex={exId:(sp&&sp.id)||pe.exId||pe.id||null,name:base.name,muscle:base.muscle,muscles:Array.isArray(base.muscles)?base.muscles.slice():undefined,type:base.type,machine:base.machine,unilateral:base.unilateral,startSide:base.startSide,assisted:base.assisted,weighted:base.weighted,cardioSub:base.cardioSub,unit:base.unit,useFS:base.useFS,note:base.note||'',sets:[]};
+    const ex={exId:(sp&&sp.id)||pe.exId||pe.id||null,name:base.name,muscle:base.muscle,muscles:Array.isArray(base.muscles)?base.muscles.slice():undefined,type:base.type,machine:base.machine,unilateral:base.unilateral,lat:base.lat,startSide:base.startSide,assisted:base.assisted,weighted:base.weighted,cardioSub:base.cardioSub,unit:base.unit,useFS:base.useFS,note:base.note||'',sets:[]};
     const name=String(ex.name||'').toLowerCase().trim(), variant=variantKey(ex);
     ex.note=exNoteFor(ex,base.note);   // v279 · la nota es del ejercicio, no del día
     const fallbackN=(sp&&typeof sp.sets==='number')?sp.sets:((pe.sets&&pe.sets.length)||1);
@@ -2816,6 +2836,17 @@ function preNoteTxt(w){ const P=w&&w.pre; if(!P||typeof P!=='object')return ''; 
 const EX_TYPE_ALIAS={pulley:'cable'};
 function canonType(t){ t=String(t||'free').toLowerCase().trim()||'free'; return EX_TYPE_ALIAS[t]||t; }
 function uniOf(e){ return e&&e.unilateral!=null ? !!e.unilateral : !!((e&&e.sets||[]).some(x=>x&&x.side)); }
+// v286 · tercera lateralidad: [alt] (alternado: un brazo y luego el otro, se anota como serie normal). El dueño (1-oct): "ocupaba
+// una tercera opción de alternado". Campo aditivo ex.lat: 'alt' es el único valor que cambia algo; `unilateral` se sigue
+// escribiendo (uni = true; bi y alt = false) y sigue mandando entre uni y bi. Sin `lat`, todo se lee igual que antes.
+// setLat es la ÚNICA puerta de escritura (acepta 'bi'|'uni'|'alt', true/false y 0/1/2 de los formularios).
+const LAT_LBL={bi:'bilateral',uni:'unilateral',alt:'alternado'};
+function latNorm(to){ return (to===true||to==='uni'||to===1||to==='1')?'uni':((to==='alt'||to===2||to==='2')?'alt':'bi'); }
+function latOf(e){ return uniOf(e)?'uni':((e&&e.lat==='alt')?'alt':'bi'); }
+function setLat(ex,to){ if(!ex)return ex; to=latNorm(to); ex.unilateral=(to==='uni'); if(to==='alt')ex.lat='alt'; else delete ex.lat; return ex; }
+// la lateralidad tal como estaba guardada (para un [deshacer] exacto: un campo que no existía vuelve a no existir)
+function latSnap(e){ return {hasU:!!e&&Object.prototype.hasOwnProperty.call(e,'unilateral'),u:e&&e.unilateral,hasL:!!e&&Object.prototype.hasOwnProperty.call(e,'lat'),l:e&&e.lat}; }
+function latRestore(e,s){ if(!e||!s)return; if(s.hasU)e.unilateral=s.u; else delete e.unilateral; if(s.hasL)e.lat=s.l; else delete e.lat; }
 // cardio subtype catalog — each subtype lists which fields its set-rows show (extensible)
 const CARDIO_SUBS={
   treadmill:{l:'caminadora',f:['minutes','distance','speed','incline','hr','calories','intensity']},
@@ -2838,7 +2869,8 @@ function cardioFields(e){ const sub=(e&&e.cardioSub&&CARDIO_SUBS[e.cardioSub])?e
 // treadmill ≠ bike even with the same exercise name.
 function variantKey(e){
   const t=canonType(e&&e.type);
-  let k=t+'|'+(uniOf(e)?1:0)+'|'+(e&&e.assisted?1:0)+'|'+(e&&e.weighted?1:0);
+  const lt=latOf(e);   // v286 · 2º campo: 0 bi · 1 uni · 2 alt (baselineSetsFor lo lee por posición; sin `lat` la llave es la de siempre)
+  let k=t+'|'+(lt==='uni'?1:lt==='alt'?2:0)+'|'+(e&&e.assisted?1:0)+'|'+(e&&e.weighted?1:0);
   if(t==='cardio') k+='|'+(e&&e.cardioSub||'treadmill');
   return k;
 }
@@ -2923,8 +2955,13 @@ function exIndex(){
 let _exKeyFold=null, _exStCache={}, _fatFlagCache=null;
 function exHistKey(e){ const nk=String((e&&e.name)||'').toLowerCase().trim(); if(!nk)return ''; if(e.type)return nk+'|'+variantKey(e);
   if(!_exKeyFold){ _exKeyFold={}; const typed={}; exIndex().forEach(r=>{ if(r.ex&&r.ex.type)(typed[r.name]=typed[r.name]||new Set()).add(r.variant); });
-    Object.keys(typed).forEach(k=>{ if(typed[k].size===1)_exKeyFold[k]=[...typed[k]][0]; }); }
-  return nk+'|'+(_exKeyFold[nk]||variantKey(e)); }
+    Object.keys(typed).forEach(k=>{ const vs=[...typed[k]], ts=new Set(vs.map(v=>v.split('|')[0])); _exKeyFold[k]={one:vs.length===1?vs[0]:'',type:ts.size===1?[...ts][0]:'',vs}; }); }
+  // v286 · un solo gemelo tipado: la fila vieja es ese ejercicio (igual que siempre). Varios gemelos del MISMO tipo (el nombre
+  // ya tiene [bi] y [alt], o [bi] y [uni]): se compara SOLO el tipo y la lateralidad sale de la propia fila; antes esas filas
+  // se quedaban en una historia fantasma en cuanto el nombre ganaba una segunda lateralidad. Tipos distintos: no se adivina.
+  const F=_exKeyFold[nk]; if(!F)return nk+'|'+variantKey(e); if(F.one)return nk+'|'+F.one; if(!F.type)return nk+'|'+variantKey(e);
+  const own=variantKey(Object.assign({},e,{type:F.type})), lt=own.split('|')[1], same=F.vs.filter(v=>v.split('|')[1]===lt);
+  return nk+'|'+(same.length===1?same[0]:own); }
 // e1RM de una sesión (Reynolds 2006, Nuzzo 2024): solo series de trabajo con RIR o F y ≤15 reps al fallo, con peso de
 // confianza q (1-6 reps 1 · 7-10 .8 · 11-12 .5 · 13-15 .25; ×.5 lejos del fallo); el valor = media ponderada de las 2 mejores
 function e1rmQ(rtf,k){ if(k>=6)return 0; const q=rtf<=6?1:rtf<=10?0.8:rtf<=12?0.5:rtf<=15?0.25:0; return k>=4?q*0.5:q; }
@@ -5022,11 +5059,23 @@ function exUnitTagHead(ex,sets){ if(!ex||isCardio(ex)||ex.type==='bodyweight')re
 // v224: la misma etiqueta en TEXTO plano, para las listas donde no cabe un <span> con la fuente del
 // nombre (preview //NEXT, editor de split, catálogo, hoja de sesión, compartir, fuerza/records).
 // La lateralidad es identidad: uni y bi NUNCA son el mismo ejercicio, así que se ve en todos lados.
-function latTxt(ex){ return (!ex||isCardio(ex))?'':('['+(uniOf(ex)?'uni':'bi')+'] '); }
-// v279 · con exi (sesión viva) el corchete se toca para cambiar bi ↔ uni; sigue siendo SOLO lateralidad
-function exLatTagHead(ex,exi){ if(!ex||isCardio(ex))return ''; const u=uniOf(ex);
-  return exi==null?`<span class="n u-mr2">[${u?'uni':'bi'}]</span>`
-    :`<span class="n u-mr2 u-tap" role="button" tabindex="0" data-act="exlat" data-exi="${exi}" aria-label="${u?'unilateral · toca para bilateral':'bilateral · toca para unilateral'}">[${u?'uni':'bi'}]</span>`; }
+function latTxt(ex){ return (!ex||isCardio(ex))?'':('['+latOf(ex)+'] '); }
+// v279 · con exi (sesión viva) el corchete se toca para cambiar la lateralidad; sigue siendo SOLO lateralidad · v286 · [bi] [uni] [alt]
+function exLatTagHead(ex,exi){ if(!ex||isCardio(ex))return ''; const l=latOf(ex);
+  return exi==null?`<span class="n u-mr2">[${l}]</span>`
+    :`<span class="n u-mr2 u-tap" role="button" tabindex="0" data-act="exlat" data-exi="${exi}" aria-label="${LAT_LBL[l]} · toca para cambiar">[${l}]</span>`; }
+// v286 · el corchete abre las tres opciones (no un ciclo: bi → alt no pasa por uni, que reestructura y pregunta). El cambio
+// se escribe también en el ejercicio del split con el mismo exId: antes un cambio hecho en vivo se perdía en la sesión
+// siguiente, porque newWorkSession toma la lateralidad del split. [deshacer] deja sesión y split exactamente como estaban.
+function splitExById(id){ if(!id)return null; const days=(db.split&&db.split.days)||[]; for(let i=0;i<days.length;i++){ const hit=(days[i].exercises||[]).find(x=>x&&x.id===id); if(hit)return hit; } return null; }
+function openLatSelect(anchor,exi){ const w=db.activeWork, ex=w&&w.exercises[exi]; if(!ex||isCardio(ex))return null;
+  return trkSelect(anchor,['bi','uni','alt'],latOf(ex),v=>liveLatSet(exi,v)); }
+function liveLatSet(exi,to){ const w=db.activeWork, ex=w&&w.exercises[exi]; if(!ex||isCardio(ex))return; to=latNorm(to); const from=latOf(ex); if(from===to)return;
+  const go=()=>{ const sx=splitExById(ex.exId), s0=latSnap(ex), x0=sx?latSnap(sx):null, sets0=(ex.sets||[]).map(s=>Object.assign({},s));
+    restructureLat(ex,to,{dayId:w.dayId,orderIdx:exi}); if(sx)setLat(sx,to); save(); reRender();
+    toast('✓ '+LAT_LBL[to]+(sx?' · también en tu split':''),'ok',{undo:()=>{ latRestore(ex,s0); ex.sets=sets0; if(sx)latRestore(sx,x0); }}); };
+  const touches=(from==='uni')!==(to==='uni');   // hacia o desde uni cambia la forma de las series; bi ↔ alt no
+  if(touches&&(ex.sets||[]).some(s=>s&&!s._pf&&(s.done||(+s.w>0)||(+s.r>0)))) trkAsk({title:'pasar a '+LAT_LBL[to],detail:to==='uni'?('lo ya registrado queda en el lado '+(ex.startSide==='L'?'L':'R')+' · el otro lado sale sugerido'):'cada lado registrado queda como una serie',ok:'cambiar'},go); else go(); }
 // variant chips shown in the exercise header — visible, never hidden in a submenu.
 // UNI/BI always shown for strength (identity-critical); free type itself is still the default (no type chip).
 // tap = {act,exi} hace que el chip del TIPO (machine/cable/smith) abra el editor de marca+setup: desde
@@ -5864,7 +5913,7 @@ function shareExLines(e){
 // La clave es exHistKey (v272: nombre + variante, con el pliegue legacy), nunca exId (cambia por día del split).
 // por nombre (tiles, //RECORDS, catálogo): la variante con más sesiones; con pista (un ejercicio), la de su lateralidad
 function exKeyByName(name,hint){ const nk=String(name||'').toLowerCase().trim(); if(!nk)return ''; const pick=useHint=>{ const c={};
-    exIndex().forEach((r,i)=>{ if(r.name!==nk||isCardio(r.ex))return; if(useHint&&uniOf(r.ex)!==uniOf(hint))return; const k=exHistKey(r.ex); (c[k]=c[k]||{k,n:0,i}).n++; });
+    exIndex().forEach((r,i)=>{ if(r.name!==nk||isCardio(r.ex))return; if(useHint&&latOf(r.ex)!==latOf(hint))return; const k=exHistKey(r.ex); (c[k]=c[k]||{k,n:0,i}).n++; });
     const L=Object.values(c).sort((a,b)=>b.n-a.n||a.i-b.i); return L.length?L[0].k:''; };
   return (hint&&pick(true))||pick(false); }
 function exHistRows(key){ return key?exIndex().filter(r=>!isCardio(r.ex)&&exHistKey(r.ex)===key):[]; }   // la más reciente primero
@@ -8098,7 +8147,7 @@ function adoptDaySource(di){
     return Object.assign(base,{
       name:se.name, muscle:se.muscle||base.muscle,
       muscles:Array.isArray(se.muscles)?se.muscles.slice():base.muscles,
-      type:se.type||base.type, unilateral:!!se.unilateral, startSide:se.startSide||base.startSide,
+      type:se.type||base.type, unilateral:!!se.unilateral, lat:(se.lat==='alt'&&!se.unilateral)?'alt':undefined, startSide:se.startSide||base.startSide,
       assisted:se.assisted, weighted:se.weighted, cardioSub:se.cardioSub, unit:se.unit||base.unit,
       sets:Math.max(1,nn||base.sets||1)
     });
@@ -9008,7 +9057,7 @@ document.getElementById('app').addEventListener('click',e=>{
       startMs:s.loggedAfter?null:(s.savedMs-(s.durSec||0)*1000),
       resumedAt:Date.now(), // idle clock restarts from now — see sessionIdleEnd
       loggedAfter:!!s.loggedAfter,
-      exercises:s.exercises.map(e=>({exId:e.exId||null,name:e.name,muscle:e.muscle,muscles:Array.isArray(e.muscles)?e.muscles.slice():undefined,type:e.type,machine:e.machine,unilateral:e.unilateral,startSide:e.startSide,assisted:e.assisted,weighted:e.weighted,cardioSub:e.cardioSub,unit:e.unit,useFS:e.useFS,note:e.note||'',sets:(e.sets||[]).map(st=>Object.assign({},st))})) };
+      exercises:s.exercises.map(e=>({exId:e.exId||null,name:e.name,muscle:e.muscle,muscles:Array.isArray(e.muscles)?e.muscles.slice():undefined,type:e.type,machine:e.machine,unilateral:e.unilateral,lat:e.lat,startSide:e.startSide,assisted:e.assisted,weighted:e.weighted,cardioSub:e.cardioSub,unit:e.unit,useFS:e.useFS,note:e.note||'',sets:(e.sets||[]).map(st=>Object.assign({},st))})) };
     if(s.loggedAfter){ w.manualDur=Math.round((s.durSec||0)/60); w.startTime=s.startTime||null; w.endTime=s.endTime||null; }
     db.activeWork=w; closeModal(); save(); go('workout');
   }
@@ -9033,10 +9082,8 @@ document.getElementById('app').addEventListener('click',e=>{
     save(); reRender(); }
   else if(a==='excur'){ exHoldClear(); state._curEx=exi; reRender(); }
   else if(a==='exholdgo'){ exHoldGo(); }
-  // v279 · el corchete [bi]/[uni] se toca para cambiar la variante del MISMO ejercicio (con datos, pregunta antes)
-  else if(a==='exlat'){ const w=db.activeWork, ex=w&&w.exercises[exi]; if(ex&&!isCardio(ex)){ const to=!uniOf(ex);
-      const go=()=>{ restructureLat(ex,to,{dayId:w.dayId,orderIdx:exi}); save(); reRender(); toast(to?'✓ unilateral · una fila por lado':'✓ bilateral'); };
-      if((ex.sets||[]).some(s=>s&&!s._pf&&(s.done||(+s.w>0)||(+s.r>0)))) trkAsk({title:to?'pasar a unilateral':'pasar a bilateral',detail:to?('lo ya registrado queda en el lado '+(ex.startSide==='L'?'L':'R')+' · el otro lado sale sugerido'):'cada lado registrado queda como una serie',ok:'cambiar'},go); else go(); } }
+  // v279 · el corchete se toca para cambiar la variante del MISMO ejercicio (con datos, pregunta antes) · v286 · tres opciones: openLatSelect
+  else if(a==='exlat'){ openLatSelect(el,exi); }
   else if(a==='wfull'){ state._wfull=!state._wfull; reRender(); }
   else if(a==='fs'){ const s=db.activeWork.exercises[exi].sets[si]; if(!s||s.isDrop)return; s.fsOn=!s.fsOn; if(!s.fsOn&&!s.bw)s.extraW=''; save(); reRender(); }
   else if(a==='addset'){ const ex=db.activeWork.exercises[exi]; if(isCardio(ex)){ const lt=ex.sets[ex.sets.length-1]||null; ex.sets.push(emptySet(ex,null,false,lt)); } else if(ex.unilateral){ const [s1,s2]=uniSides(ex); const lr=workSource(ex,s1)||ex.sets[ex.sets.length-2]||null, ll=workSource(ex,s2)||ex.sets[ex.sets.length-1]||null; ex.sets.push(emptySet(ex,s1,false,lr)); ex.sets.push(emptySet(ex,s2,false,ll)); } else { ex.sets.push(emptySet(ex,null,false,workSource(ex,null))); } state._enter={exi,si:ex.unilateral&&!isCardio(ex)?ex.sets.length-2:ex.sets.length-1}; save(); reRender(); }
@@ -9339,7 +9386,7 @@ function openExEdit(di,ei,liveExi){
    })()}
    <div class="field"><label>TYPE</label><div class="toggles u-wrap u-gap4" id="ee_type">${types.map(([v,lbl])=>`<button class="t ${canonType(e.type)===v||(v==='free'&&!e.type)?'on':''} u-fhalf u-min0" data-act="optpick" data-v="${v}">${lbl}</button>`).join('')}</div></div>
    <div class="field row2"><div><label>SETS</label><input id="ee_sets" type="number" value="${Array.isArray(e.sets)?e.sets.length:(e.sets||2)}"/></div><div><label>MACHINE/NOTE</label><input id="ee_machine" value="${(e.machine||'').replace(/"/g,'&quot;')}" placeholder="opcional"/></div></div>
-   <div class="field" id="ee_uniwrap" style="display:${isCardioEdit?'none':'block'}"><label>VARIANTE</label><div class="toggles" id="ee_uni"><button class="t ${!e.unilateral?'on':''}" data-act="optpick" data-v="0">bilateral</button><button class="t ${e.unilateral?'on':''}" data-act="optpick" data-v="1">unilateral (R/L)</button></div></div>
+   <div class="field" id="ee_uniwrap" style="display:${isCardioEdit?'none':'block'}"><label>VARIANTE</label><div class="toggles" id="ee_uni"><button class="t ${!e.unilateral&&e.lat!=='alt'?'on':''}" data-act="optpick" data-v="0">bilateral</button><button class="t ${e.unilateral?'on':''}" data-act="optpick" data-v="1">unilateral (R/L)</button><button class="t ${!e.unilateral&&e.lat==='alt'?'on':''}" data-act="optpick" data-v="2">alternado</button></div></div>
    <div class="field" id="ee_startwrap" style="display:${!isCardioEdit&&e.unilateral?'block':'none'}"><label>UNILATERAL · EMPEZAR POR</label><div class="toggles" id="ee_start"><button class="t ${e.startSide!=='L'?'on':''}" data-act="optpick" data-v="R">R primero</button><button class="t ${e.startSide==='L'?'on':''}" data-act="optpick" data-v="L">L primero</button></div></div>
    <div class="field" id="ee_bwflags" style="display:${canonType(e.type)==='bodyweight'?'block':'none'}"><label>BODYWEIGHT · variante</label>
      <label class="u-label u-o50 u-block u-mb4"><input type="checkbox" id="ee_assisted" ${e.assisted?'checked':''} class="u-vam u-wauto"/> asistido (máquina de asistencia)</label>
@@ -9393,7 +9440,8 @@ function openExEdit(di,ei,liveExi){
       // set COUNT is only ever suggested for a brand-new exercise — never silently changed on an existing one
       if(isNew&&hit.sets!=null){ const sN=document.getElementById('ee_sets'); if(sN)sN.value=hit.sets; }
       if(hit.type&&!_eeT('ee_type')){ const tg=document.querySelector('#ee_type [data-v="'+hit.type+'"]'); if(tg&&!tg.classList.contains('on')){ document.querySelectorAll('#ee_type .t').forEach(x=>x.classList.remove('on')); tg.classList.add('on'); } }
-      if(hit.unilateral&&!_eeT('ee_uni')){ const ub=document.querySelector('#ee_uni [data-v="1"]'); if(ub&&!ub.classList.contains('on')){ document.querySelectorAll('#ee_uni .t').forEach(x=>x.classList.remove('on')); ub.classList.add('on'); const w=document.getElementById('ee_startwrap'); if(w)w.style.display='block'; } }
+      const hv=hit.unilateral?'1':(hit.lat==='alt'?'2':'');   // v286 · propone la lateralidad de la fila conocida (también alternado)
+      if(hv&&!_eeT('ee_uni')){ const ub=document.querySelector('#ee_uni [data-v="'+hv+'"]'); if(ub&&!ub.classList.contains('on')){ document.querySelectorAll('#ee_uni .t').forEach(x=>x.classList.remove('on')); ub.classList.add('on'); const w=document.getElementById('ee_startwrap'); if(w)w.style.display=hv==='1'?'block':'none'; } }
       if(hit.startSide&&!_eeT('ee_start')){ const sb=document.querySelector('#ee_start [data-v="'+hit.startSide+'"]'); if(sb&&!sb.classList.contains('on')){ document.querySelectorAll('#ee_start .t').forEach(x=>x.classList.remove('on')); sb.classList.add('on'); } }
     };
     nm.addEventListener('input',autofill); nm.addEventListener('change',autofill); nm.addEventListener('blur',autofill);
@@ -9415,18 +9463,19 @@ function saveExEdit(){
   const isCardioT=validT==='cardio';
   const cardioSub=isCardioT?(pv('ee_cardiosub')||'treadmill'):undefined;
   const ex={name,muscle:m1,muscles,type:validT,machine:val('ee_machine'),unilateral:!isCardioT&&pv('ee_uni')==='1',startSide:(pv('ee_start')==='L'?'L':'R'),assisted:isBwT&&document.getElementById('ee_assisted')&&document.getElementById('ee_assisted').checked,weighted:isBwT&&document.getElementById('ee_weighted')&&document.getElementById('ee_weighted').checked,cardioSub,sets:Math.max(1,+val('ee_sets')||1)};
+  const exLat=isCardioT?'bi':latNorm(pv('ee_uni')); setLat(ex,exLat);   // v286 · 0 bilateral · 1 unilateral · 2 alternado
   const {liveExi,origName}=window._exEdit||{};
   if(liveExi!=null && db.activeWork && db.activeWork.exercises[liveExi]){
     const w=db.activeWork; const lx=w.exercises[liveExi];
     // update metadata IN PLACE — keep logged sets + the unilateral structure of the live session intact.
     // by default this change lives ONLY in today's session; the split stays untouched unless opted in below.
     const typeChanged=lx.type!==ex.type || (isCardioT&&lx.cardioSub!==ex.cardioSub);
-    const latChanged=!isCardioT&&!typeChanged&&(!!lx.unilateral)!==(!!ex.unilateral);
+    const latChanged=!isCardioT&&!typeChanged&&latOf(lx)!==exLat;   // v286 · compara la lateralidad (bi · uni · alt), no el booleano
     const sideChanged=!isCardioT&&!!lx.unilateral&&!!ex.unilateral&&(lx.startSide==='L'?'L':'R')!==ex.startSide;   // v279
-    lx.name=ex.name; lx.muscle=ex.muscle; lx.muscles=ex.muscles; lx.type=ex.type; lx.machine=ex.machine; lx.assisted=ex.assisted; lx.weighted=ex.weighted; lx.cardioSub=ex.cardioSub; lx.unilateral=ex.unilateral; lx.startSide=ex.startSide;
+    lx.name=ex.name; lx.muscle=ex.muscle; lx.muscles=ex.muscles; lx.type=ex.type; lx.machine=ex.machine; lx.assisted=ex.assisted; lx.weighted=ex.weighted; lx.cardioSub=ex.cardioSub; if(!latChanged)setLat(lx,exLat); lx.startSide=ex.startSide;
     // switching into/out of cardio reseeds the set bag (field shapes differ)
     if(typeChanged){ lx.sets=seedSets(lx,Array.isArray(lx.sets)?Math.max(1,lx.sets.length):ex.sets,{dayId:w.dayId,orderIdx:liveExi}); }
-    else if(latChanged){ restructureLat(lx,!!ex.unilateral,{dayId:w.dayId,orderIdx:liveExi}); }
+    else if(latChanged){ restructureLat(lx,exLat,{dayId:w.dayId,orderIdx:liveExi}); }
     else if(sideChanged){ swapSides(lx); }   // v279 · "le ponía que empezaba con el lado izquierdo, no se actualizaba"
     const toSplit=document.getElementById('ee_tosplit');
     if(toSplit && toSplit.checked){
@@ -9434,7 +9483,7 @@ function saveExEdit(){
       if(di2>=0){ const arr=db.split.days[di2].exercises||[];
         let j=lx.exId!=null?arr.findIndex(x=>x.id===lx.exId):-1;
         if(j<0){ const on=String(origName||'').toLowerCase().trim(); j=arr.findIndex(x=>(x.name||'').toLowerCase().trim()===on); }
-        if(j>=0) arr[j]=Object.assign({},arr[j],{name:ex.name,muscle:ex.muscle,muscles:ex.muscles,type:ex.type,machine:ex.machine,unilateral:ex.unilateral,startSide:ex.startSide,assisted:ex.assisted,weighted:ex.weighted,cardioSub:ex.cardioSub});
+        if(j>=0) arr[j]=setLat(Object.assign({},arr[j],{name:ex.name,muscle:ex.muscle,muscles:ex.muscles,type:ex.type,machine:ex.machine,unilateral:ex.unilateral,startSide:ex.startSide,assisted:ex.assisted,weighted:ex.weighted,cardioSub:ex.cardioSub}),exLat);
       }
     }
     save(); closeModal(); reRender(); return;
@@ -9442,7 +9491,7 @@ function saveExEdit(){
   // merge (never replace) so fields this form doesn't manage (note/unit/useFS from ironLOG import) survive,
   // and the instance id is preserved across edits — this only ever writes to THIS day's exercise, never others.
   if(ei<0){ db.split.days[di].exercises.push(Object.assign({id:'e'+uid()},ex)); }
-  else { const prev=db.split.days[di].exercises[ei]||{}; db.split.days[di].exercises[ei]=Object.assign({},prev,ex,{id:prev.id||('e'+uid())}); }
+  else { const prev=db.split.days[di].exercises[ei]||{}; db.split.days[di].exercises[ei]=setLat(Object.assign({},prev,ex,{id:prev.id||('e'+uid())}),exLat); }   // v286 · setLat borra un `lat` viejo que el merge dejaría
   savedToast('✓ ejercicio actualizado'); closeModal(); reRender();
 }
 
@@ -9458,7 +9507,7 @@ function importIronlogSplit(d){
       name:(e.name||'').trim(),
       muscle:(e.muscleTag||e.muscle||'other').replace(/^#/,'').toLowerCase(),
       type:['machine','pulley','smith','cable','bodyweight'].indexOf(e.type)>=0?e.type:'free',
-      machine:e.machine||'', unilateral:!!e.unilateral,
+      machine:e.machine||'', unilateral:!!e.unilateral, lat:(e.lat==='alt'&&!e.unilateral)?'alt':undefined,
       sets:Math.max(1,+e.sets||1), unit:e.unit||'', useFS:!!e.useFS, note:e.note||''
     }))
   }));
@@ -9511,14 +9560,16 @@ function openExName(exi){ const w=db.activeWork; if(!w)return; const ex=w.exerci
 // save and the idle auto-finalize, so the two paths can never drift apart).
 // v266 · cambiar bi ↔ uni en vivo: hacia uni, cada serie con dato queda del primer lado y su pareja sale sugerida (gris);
 // hacia bi, las series pierden el lado (ninguna se borra); sin nada registrado, se vuelve a sembrar.
-function restructureLat(ex,toUni,ctx){ ex.unilateral=!!toUni; const has=s=>!!s&&!s._pf&&(s.done||(+s.w>0)||(+s.r>0));
+// v286 · `to` = 'bi'|'uni'|'alt' (o true/false); uni → alt quita lados como uni → bi; bi ↔ alt no toca lo registrado (misma forma).
+function restructureLat(ex,to,ctx){ to=latNorm(to); const wasUni=uniOf(ex), toUni=to==='uni'; setLat(ex,to); const has=s=>!!s&&!s._pf&&(s.done||(+s.w>0)||(+s.r>0));
   if(!(ex.sets||[]).some(has)){ ex.sets=seedSets(ex,Math.max(1,(ex.sets||[]).length),ctx); return; }
+  if(wasUni===toUni)return;
   if(!toUni){ ex.sets=ex.sets.filter(s=>has(s)||!s._pf); ex.sets.forEach(s=>{ s.side=null; }); return; }
   const a=ex.startSide==='L'?'L':'R', b=a==='L'?'R':'L', out=[];
   ex.sets.forEach(s=>{ if(!has(s))return; s.side=a; out.push(s); out.push(emptySet(ex,b,!!s.isDrop,s)); });
   ex.sets=out; }
 function mapWorkExercises(w){
-  return w.exercises.map(e=>{const r=machineRec(w.gym,e); return {exId:e.exId||null,name:e.name,muscle:e.muscle,muscles:Array.isArray(e.muscles)?e.muscles.slice():undefined,type:e.type,unilateral:e.unilateral,startSide:e.startSide,assisted:e.assisted,weighted:e.weighted,cardioSub:e.cardioSub,unit:e.unit,note:e.note||'',machine:r.na?'':r.brand,setup:r.na?'':r.setup,sets:e.sets.filter(setPersistable)};});
+  return w.exercises.map(e=>{const r=machineRec(w.gym,e); return {exId:e.exId||null,name:e.name,muscle:e.muscle,muscles:Array.isArray(e.muscles)?e.muscles.slice():undefined,type:e.type,unilateral:e.unilateral,lat:e.lat,startSide:e.startSide,assisted:e.assisted,weighted:e.weighted,cardioSub:e.cardioSub,unit:e.unit,note:e.note||'',machine:r.na?'':r.brand,setup:r.na?'':r.setup,sets:e.sets.filter(setPersistable)};});
 }
 function saveSession(){
   const w=db.activeWork; if(!w){go('home');return;}
@@ -9700,10 +9751,11 @@ function knownExercises(){
     if(!map[k])map[k]={name:e.name};
     const o=map[k];
     ['muscle','type','machine','unilateral','startSide','useFS','unit','note','assisted','weighted'].forEach(p=>{ if(e[p]!=null&&e[p]!=='')o[p]=e[p]; });
+    if(e.unilateral!=null)o.lat=(e.lat==='alt'&&!e.unilateral)?'alt':undefined;   // v286 · explícito junto a unilateral: un [bi] posterior no hereda el [alt]
     if(Array.isArray(e.muscles)&&e.muscles.length) o.muscles=e.muscles.slice();  // remember primary+secondary muscles
     if(e.sets!=null && typeof e.sets==='number') o.sets = e.sets;
     if(fromSets && Array.isArray(e.sets) && e.sets.length){
-      o.unilateral=uniOf(e);   // v266 · la bandera manda (antes cualquier serie con lado lo volvía [uni])
+      setLat(o,latOf(e));   // v266 · la bandera manda (antes cualquier serie con lado lo volvía [uni]) · v286 · y [alt] viaja con ella
       const lastUnit=(e.sets[e.sets.length-1]||{}).unit; if(lastUnit) o.unit=lastUnit;
     }
   };
@@ -9741,7 +9793,7 @@ function mergeExercises(sourceNames,target){
   const stat={split:0,ex:0,sets:0,machines:0,relinked:0,unlinked:0};
   const norm=e=>{ e.name=target.name;
     if(target.type)e.type=target.type;
-    e.unilateral=!!target.unilateral;
+    setLat(e,target.lat==='alt'?'alt':!!target.unilateral);   // v286 · por la única puerta; [alt] solo si el destino lo dice
     if(target.unit)e.unit=target.unit;
     if(target.muscle)e.muscle=target.muscle;
     if(Array.isArray(target.muscles)&&target.muscles.length)e.muscles=target.muscles.slice();
@@ -9778,7 +9830,7 @@ function mergeExercises(sourceNames,target){
   const prev=exCatRec(target.name)||{};
   // v228: el músculo del motor fijado en una fuente viaja al ejercicio unido (solo si el primario no cambió)
   const srcT=[...src].map(k=>(db.exCat&&db.exCat[k]&&db.exCat[k].targets)||null).find(Boolean);
-  setExCat(target.name,{name:target.name,gyms:(target.gyms||[]).slice(),type:target.type,unilateral:!!target.unilateral,
+  setExCat(target.name,{name:target.name,gyms:(target.gyms||[]).slice(),type:target.type,unilateral:!!target.unilateral&&target.lat!=='alt',lat:target.lat==='alt'?'alt':undefined,
     unit:target.unit,muscle:target.muscle,muscles:target.muscles,targets:target.muscles?(prev.targets||srcT):prev.targets,
     mergedFrom:[...new Set([].concat(prev.mergedFrom||[],[...src].filter(k=>k!==tgtKey)))]});
   // v229: el perfil (resistencia por gym, resistencia libre, longitud) de las fuentes viaja al ejercicio unido; lo del destino gana
@@ -9862,7 +9914,7 @@ function openMergeModal(){
    <div class="field"><label>NOMBRE FINAL</label><input id="mg_name" value="${(win.name||'').replace(/"/g,'&quot;')}" list="mg_namelist"/><datalist id="mg_namelist">${rows.map(r=>`<option value="${escTxt(r.name)}"></option>`).join('')}</datalist></div>
    <div class="field"><label>MÚSCULO</label><select id="mg_muscle">${[...new Set([curM,...muscles].filter(Boolean))].map(m=>`<option value="${escTxt(m)}"${m===curM?' selected':''}>${escTxt(m)}</option>`).join('')}</select></div>
    <div class="field"><label>TYPE</label><div class="toggles u-wrap u-gap4" id="mg_type">${types.map(([v,lbl])=>`<button class="t ${canonType(win.type)===v||(v==='free'&&!win.type)?'on':''} u-fhalf u-min0" data-act="optpick" data-v="${v}">${lbl}</button>`).join('')}</div></div>
-   <div class="field"><label>VARIANTE</label><div class="toggles" id="mg_uni"><button class="t ${!win.unilateral?'on':''}" data-act="optpick" data-v="0">bilateral</button><button class="t ${win.unilateral?'on':''}" data-act="optpick" data-v="1">unilateral (R/L)</button></div></div>
+   <div class="field"><label>VARIANTE</label><div class="toggles" id="mg_uni"><button class="t ${!win.unilateral&&win.lat!=='alt'?'on':''}" data-act="optpick" data-v="0">bilateral</button><button class="t ${win.unilateral?'on':''}" data-act="optpick" data-v="1">unilateral (R/L)</button><button class="t ${!win.unilateral&&win.lat==='alt'?'on':''}" data-act="optpick" data-v="2">alternado</button></div></div>
    <div class="field"><label>UNIDAD POR DEFECTO</label><select id="mg_unit">${uOpts}</select></div>
    <div class="field"><label>EN QUÉ GYMS EXISTE</label>${window._mgGyms.length?window._mgGyms.map((g,i)=>`<label class="u-label u-o60 u-block u-mb4"><input type="checkbox" id="mg_g_${i}" ${pre.has(g)?'checked':''} class="u-vam u-wauto"/> ${escTxt(g)}</label>`).join(''):'<div class="submeta">sin gyms registrados</div>'}
      <div class="submeta u-mt2 u-o40">solo etiqueta y ordena los pickers · nunca esconde el ejercicio si entrenas en otro lado</div></div>
@@ -9880,7 +9932,7 @@ function doMerge(){
   // si cambia el músculo primario, los secundarios heredados dejarían de cuadrar → se sueltan
   const src=knownExercises().find(x=>nameKey(x.name)===keys[0]);
   const keepM=src&&((exMuscles(src)[0]||{}).name||'')===muscle&&Array.isArray(src.muscles)?src.muscles.slice():undefined;
-  const target={name,type:pv('mg_type')||'free',unilateral:pv('mg_uni')==='1',unit:val('mg_unit')||'',muscle,muscles:keepM,gyms,machineWinner};
+  const target={name,type:pv('mg_type')||'free',unilateral:pv('mg_uni')==='1',lat:pv('mg_uni')==='2'?'alt':undefined,unit:val('mg_unit')||'',muscle,muscles:keepM,gyms,machineWinner};
   const _go9=()=>{
   const st=mergeExercises(keys,target);
   window._mgSel=[]; closeModal(); reRender();
@@ -9950,7 +10002,7 @@ function openAddExStep2(afterExi,muscle,replaceExi){
   rest.sort((a,b)=>((b._sec?1:0)-(a._sec?1:0))||srt(a,b));
   const all=list.concat(rest);
   window._axList=all; window._axCtx={afterExi,muscle:key,replaceExi};
-  const row=(x,i)=>`<div class="pickitem" data-act="axpick" data-i="${i}" data-q="${escTxt([x.name,x.machine||'',x.type||'',x._m||key].join(' ').toLowerCase())}">${!isCardio(x)?`<span>[${uniOf(x)?'uni':'bi'}]</span> `:''}${escTxt(x.name)}${x.machine?` <span class="u-o40 u-label">${escTxt(x.machine)}</span>`:''}${x.type&&x.type!=='free'?` <span class="u-o35 u-label">${escTxt(x.type)}</span>`:''}${x._m?` <span class="u-o35 u-label">#${escTxt(x._m)}</span>`:''}<span class="u-fr u-o40 u-label">${x._here?'':'· otro gym '}${x._sess||0}×</span></div>`;
+  const row=(x,i)=>`<div class="pickitem" data-act="axpick" data-i="${i}" data-q="${escTxt([x.name,x.machine||'',x.type||'',x._m||key].join(' ').toLowerCase())}">${!isCardio(x)?`<span>[${latOf(x)}]</span> `:''}${escTxt(x.name)}${x.machine?` <span class="u-o40 u-label">${escTxt(x.machine)}</span>`:''}${x.type&&x.type!=='free'?` <span class="u-o35 u-label">${escTxt(x.type)}</span>`:''}${x._m?` <span class="u-o35 u-label">#${escTxt(x._m)}</span>`:''}<span class="u-fr u-o40 u-label">${x._here?'':'· otro gym '}${x._sess||0}×</span></div>`;
   openModal(`<h3>${escTxt(muscle)} · ${replaceExi!=null?'cambiar ejercicio':'elige ejercicio'}</h3>
    ${all.length?`<div class="field u-mb6"><input id="ax_q" type="text" inputmode="search" enterkeyhint="search" placeholder="buscar en todo tu catálogo · ${all.length}" autocomplete="off" autocapitalize="off"/></div>`:''}
    ${list.length?`<div class="submeta u-mb6" id="ax_h1">ya los usas · toca para agregar</div><div>${list.map(row).join('')}</div>`:`<div class="submeta u-mb10">sin ejercicios registrados para "${escTxt(muscle)}" todavía</div>`}
@@ -9973,7 +10025,7 @@ function openAddExStep2(afterExi,muscle,replaceExi){
 // this freshly-minted id matches nothing in db.split; they still resolve by name+variant as a fallback).
 function addExFromKnown(afterExi,x){
   const w=db.activeWork; if(!w||!x)return;
-  const newEx={exId:'e'+uid(),name:x.name,muscle:x.muscle||((x.muscles&&x.muscles[0]&&x.muscles[0].name)||'other'),muscles:x.muscles,type:x.type||'free',machine:x.machine||'',unilateral:!!x.unilateral,startSide:x.startSide||'R',assisted:!!x.assisted,weighted:!!x.weighted,note:exNoteFor({name:x.name,type:x.type||'free'},''),sets:[]};
+  const newEx={exId:'e'+uid(),name:x.name,muscle:x.muscle||((x.muscles&&x.muscles[0]&&x.muscles[0].name)||'other'),muscles:x.muscles,type:x.type||'free',machine:x.machine||'',unilateral:!!x.unilateral,lat:(x.lat==='alt'&&!x.unilateral)?'alt':undefined,startSide:x.startSide||'R',assisted:!!x.assisted,weighted:!!x.weighted,note:exNoteFor({name:x.name,type:x.type||'free'},''),sets:[]};
   let insertAt; if(afterExi!=null&&afterExi>=0&&afterExi<w.exercises.length){ insertAt=afterExi+1; w.exercises.splice(insertAt,0,newEx); } else { w.exercises.push(newEx); insertAt=w.exercises.length-1; }
   const ex=w.exercises[insertAt]; ex.sets=seedSets(ex,(typeof x.sets==='number'?x.sets:2),{dayId:w.dayId,orderIdx:insertAt});
   save(); closeModal(); state._enter={ex:insertAt,scroll:true}; reRender();
@@ -9984,7 +10036,7 @@ function replaceExFromKnown(exi,x){
   const _go10=()=>{
   // fresh exId, never the old one or null (Bloque 3.2) — a replacement is a genuinely different
   // exercise: it must not inherit the old one's history, but it still gets ITS OWN going forward.
-  ex.exId='e'+uid(); ex.name=x.name; ex.muscle=x.muscle||((x.muscles&&x.muscles[0]&&x.muscles[0].name)||'other'); ex.muscles=x.muscles; ex.type=x.type||'free'; ex.machine=x.machine||''; ex.unilateral=!!x.unilateral; ex.startSide=x.startSide||'R'; ex.assisted=!!x.assisted; ex.weighted=!!x.weighted; ex.note=exNoteFor(ex,'');
+  ex.exId='e'+uid(); ex.name=x.name; ex.muscle=x.muscle||((x.muscles&&x.muscles[0]&&x.muscles[0].name)||'other'); ex.muscles=x.muscles; ex.type=x.type||'free'; ex.machine=x.machine||''; setLat(ex,x.unilateral?'uni':(x.lat==='alt'?'alt':'bi')); ex.startSide=x.startSide||'R'; ex.assisted=!!x.assisted; ex.weighted=!!x.weighted; ex.note=exNoteFor(ex,'');
   // v266 · unidad, full stack y subtipo de cardio salen del ejercicio elegido, no del que se reemplaza
   ex.unit=x.unit||db.settings.unit||'lbs'; ex.useFS=!!x.useFS; if(x.cardioSub)ex.cardioSub=x.cardioSub; else delete ex.cardioSub;
   ex.sets=seedSets(ex,(typeof x.sets==='number'?x.sets:2),{dayId:w.dayId,orderIdx:exi});
@@ -10001,7 +10053,7 @@ function openAddExForm(afterExi,muscle,replaceExi){
    <div class="chips u-mt-n4 u-mb12 u-mx0" id="fx_msugg">${muscles.map(mm=>`<span class="chip" data-v="${escTxt(mm)}">${escTxt(mm)}</span>`).join('')}</div>
    <div class="field"><label>TYPE</label><div class="toggles u-wrap u-gap4" id="fx_type">${types.map(([v,lbl])=>`<button class="t ${v==='free'?'on':''} u-fhalf u-min0" data-act="optpick" data-v="${v}">${lbl}</button>`).join('')}</div></div>
    <div class="field"><label>MACHINE / NOTE (optional)</label><input id="fx_machine" placeholder="barbell / pulley"/></div>
-   <div class="field" id="fx_uniwrap"><label>VARIANTE</label><div class="toggles" id="fx_uni"><button class="t on" data-act="optpick" data-v="0">bilateral</button><button class="t" data-act="optpick" data-v="1">unilateral (R/L)</button></div></div>
+   <div class="field" id="fx_uniwrap"><label>VARIANTE</label><div class="toggles" id="fx_uni"><button class="t on" data-act="optpick" data-v="0">bilateral</button><button class="t" data-act="optpick" data-v="1">unilateral (R/L)</button><button class="t" data-act="optpick" data-v="2">alternado</button></div></div>
    <div class="field u-mt8" id="fx_startwrap" style="display:none"><label>UNILATERAL · EMPEZAR POR</label><div class="toggles" id="fx_start"><button class="t on" data-act="optpick" data-v="R">R primero</button><button class="t" data-act="optpick" data-v="L">L primero</button></div></div>
    <div class="field" id="fx_cardio" style="display:none"><label>CARDIO · subtipo</label>
      <div class="toggles u-wrap u-gap4" id="fx_cardiosub">${Object.keys(CARDIO_SUBS).map((k,i)=>`<button class="t ${i===0?'on':''} u-min0 u-fthird" data-act="optpick" data-v="${k}">${CARDIO_SUBS[k].l}</button>`).join('')}</div>
@@ -10017,14 +10069,18 @@ function openAddExForm(afterExi,muscle,replaceExi){
   }));
   // memory autofill — input + change + blur for cross-browser datalist reliability
   const nm=document.getElementById('fx_name'); if(nm){
+    // v286 · como en el editor: lo que TÚ tocaste (tipo, variante, lado inicial) no lo pisa el autollenado
+    const _fxT=id=>{ const el=document.getElementById(id); return !!(el&&el.dataset.touched); };
+    ['fx_type','fx_uni','fx_start'].forEach(id=>{ const el=document.getElementById(id); if(el)el.addEventListener('click',()=>{ el.dataset.touched='1'; }); });
     const autofill=()=>{
       const k=(nm.value||'').toLowerCase().trim(); const hit=exs.find(x=>x.name.toLowerCase().trim()===k); if(!hit)return;
       const setIf=(id,v)=>{ const el=document.getElementById(id); if(el&&!el.value&&v!=null&&v!=='')el.value=v; };
       setIf('fx_muscle',hit.muscle); setIf('fx_machine',hit.machine);
       if(hit.sets!=null){ const sN=document.getElementById('fx_sets'); if(sN)sN.value=hit.sets; }
-      if(hit.type){ const tg=document.querySelector('#fx_type [data-v="'+hit.type+'"]'); if(tg&&!tg.classList.contains('on')){ document.querySelectorAll('#fx_type .t').forEach(x=>x.classList.remove('on')); tg.classList.add('on'); } }
-      if(hit.unilateral){ const ub=document.querySelector('#fx_uni [data-v="1"]'); if(ub&&!ub.classList.contains('on')){ document.querySelectorAll('#fx_uni .t').forEach(x=>x.classList.remove('on')); ub.classList.add('on'); const w=document.getElementById('fx_startwrap'); if(w)w.style.display='block'; } }
-      if(hit.startSide){ const sb=document.querySelector('#fx_start [data-v="'+hit.startSide+'"]'); if(sb&&!sb.classList.contains('on')){ document.querySelectorAll('#fx_start .t').forEach(x=>x.classList.remove('on')); sb.classList.add('on'); } }
+      if(hit.type&&!_fxT('fx_type')){ const tg=document.querySelector('#fx_type [data-v="'+hit.type+'"]'); if(tg&&!tg.classList.contains('on')){ document.querySelectorAll('#fx_type .t').forEach(x=>x.classList.remove('on')); tg.classList.add('on'); } }
+      const hv=hit.unilateral?'1':(hit.lat==='alt'?'2':'');
+      if(hv&&!_fxT('fx_uni')){ const ub=document.querySelector('#fx_uni [data-v="'+hv+'"]'); if(ub&&!ub.classList.contains('on')){ document.querySelectorAll('#fx_uni .t').forEach(x=>x.classList.remove('on')); ub.classList.add('on'); const w=document.getElementById('fx_startwrap'); if(w)w.style.display=hv==='1'?'block':'none'; } }
+      if(hit.startSide&&!_fxT('fx_start')){ const sb=document.querySelector('#fx_start [data-v="'+hit.startSide+'"]'); if(sb&&!sb.classList.contains('on')){ document.querySelectorAll('#fx_start .t').forEach(x=>x.classList.remove('on')); sb.classList.add('on'); } }
     };
     nm.addEventListener('input',autofill); nm.addEventListener('change',autofill); nm.addEventListener('blur',autofill);
   }
@@ -10038,6 +10094,7 @@ function openAddExForm(afterExi,muscle,replaceExi){
     // exercise instance; it gets its own stable identity to build history/baseline/machine across
     // future sessions, never null and never the id of whatever it's replacing.
     const meta={exId:'e'+uid(),name,muscle:val('fx_muscle')||(validT==='cardio'?'cardio':'other'),type:validT,machine:val('fx_machine'),unilateral:validT!=='cardio'&&(fxUniOn&&fxUniOn.v)==='1',startSide,cardioSub:validT==='cardio'?(fxCardioOn&&fxCardioOn.v)||'treadmill':undefined,note:''};
+    setLat(meta,validT==='cardio'?'bi':latNorm(fxUniOn&&fxUniOn.v));   // v286 · 0 bilateral · 1 unilateral · 2 alternado
     // REPLACE mode (entró por "cambiar ejercicio"): sobreescribe el ejercicio actual en su lugar + re-siembra series
     if(replaceExi!=null && w && w.exercises[replaceExi]){ const ex=w.exercises[replaceExi];
       const _go11=()=>{
