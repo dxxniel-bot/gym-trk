@@ -61,9 +61,14 @@ git(['init', '-q', '-b', 'main'], tmp);
 git(['config', 'core.autocrlf', 'false'], tmp);
 git(['config', 'user.name', cfg('user.name') || 'gymtrk'], tmp);
 git(['config', 'user.email', cfg('user.email') || 'gymtrk@users.noreply.github.com'], tmp);
+// El commit nuevo se monta SOBRE el último del espejo (push normal). Un commit suelto empujado a la fuerza llegaba al
+// espejo pero dos de tres veces GitHub no lanzó el despliegue; uno encadenado sí. El espejo solo guarda archivos del sitio.
+let chained = false;
+try { git(['fetch', '-q', '--depth', '1', MIRROR, 'main'], tmp, { stdio: 'ignore' }); git(['reset', '-q', '--soft', 'FETCH_HEAD'], tmp); chained = true; } catch (_) {}
 git(['add', '-A'], tmp);
-git(['commit', '-q', '-m', 'gym//TRK ' + ver + ' · sitio (fuente ' + sha + ')'], tmp);
-git(['push', '--force', MIRROR, 'main'], tmp, { stdio: 'inherit' });
+git(['commit', '-q', '--allow-empty', '-m', 'gym//TRK ' + ver + ' · sitio (fuente ' + sha + ')'], tmp);
+const push = () => { try { git(['push', MIRROR, 'HEAD:main'], tmp, { stdio: 'inherit' }); } catch (_) { git(['push', '--force', MIRROR, 'HEAD:main'], tmp, { stdio: 'inherit' }); } };
+if (chained) push(); else git(['push', '--force', MIRROR, 'HEAD:main'], tmp, { stdio: 'inherit' });
 // "Publicado" = el sitio SIRVE esa versión. El 1-oct-2026 un push llegó al espejo y GitHub no lanzó el despliegue: se
 // anunció v280 y el teléfono siguió en v279. Ahora se espera a verlo en gymtrk.app/sw.js; si no llega, se vuelve a
 // empujar (commit nuevo = evento nuevo) y, si tampoco, el script termina en error en vez de decir que publicó.
@@ -75,7 +80,7 @@ const waitLive = async secs => { const end = Date.now() + secs * 1000; let got =
   for (let attempt = 1; attempt <= 3 && !ok; attempt++) {
     if (attempt > 1) { console.log('reintento ' + attempt + ': se vuelve a empujar para relanzar el despliegue');
       git(['commit', '-q', '--allow-empty', '-m', 'gym//TRK ' + ver + ' · sitio (fuente ' + sha + ') · redeploy ' + attempt], tmp);
-      git(['push', '--force', MIRROR, 'main'], tmp, { stdio: 'inherit' }); }
+      push(); }
     console.log('esperando a que gymtrk.app sirva ' + ver + '…');
     ok = await waitLive(attempt === 1 ? 200 : 240);
   }
