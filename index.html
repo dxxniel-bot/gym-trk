@@ -4537,6 +4537,7 @@ function _bioSyncSelfCheck(){ const A=(nm,c)=>{ if(!c) throw new Error('SELFCHEC
     Object.defineProperty(navigator,'clipboard',{configurable:true,value:{readText:()=>({then:ok=>{ ok(paste); }})}});
     closeModal(); state.screen='progress'; render();
     A('la fila sync biometrics está en //PROGRESS y llama a biosync', !!row()&&/sync biometrics/.test(row().textContent));
+    v.style.maxHeight='300px'; A('la pantalla de prueba se puede desplazar', v.scrollHeight-v.clientHeight>120); v.scrollTop=90;   // vista recortada y desplazada: si algo sube el scroll, la fila se mueve y la prueba lo ve
     // 1 · otro sistema: no hay Atajos → pegar a mano
     isIOS=()=>false; tap(row());
     A('fuera de iOS abre la hoja de pegar a mano, sin salir de la app', !!document.getElementById('hi_txt')&&!went.length&&has('instalar atajo'));
@@ -4545,16 +4546,14 @@ function _bioSyncSelfCheck(){ const A=(nm,c)=>{ if(!c) throw new Error('SELFCHEC
     const y0=row().getBoundingClientRect().top, t0=v.scrollTop; tap(row());
     const a=sheet()&&sheet().querySelector('a.ok');
     A('primera vez: hoja con ▶ instalar atajo y [ya lo tengo], un solo primario', has('▶ instalar atajo')&&has('ya lo tengo')&&pri()===1&&!went.length&&!H().shortcut.bio);
-    A('el enlace baja el archivo firmado con el nombre del atajo', !!a&&a.getAttribute('href')==='TRK%20Biometrics.shortcut'&&a.getAttribute('download')==='TRK Biometrics.shortcut'&&a.dataset.act==='bioinstall');
+    A('el enlace baja el archivo firmado con el nombre del atajo', !!a&&a.getAttribute('href')==='TRK%20Biometrics.shortcut'&&a.getAttribute('download')==='TRK Biometrics.shortcut'&&a.getAttribute('target')==='_blank');
     A('abrir la hoja no mueve la fila que tocaste', near(row().getBoundingClientRect().top,y0)&&near(v.scrollTop,t0));
-    a.addEventListener('click',e=>e.preventDefault()); tap(a);   // la prueba no baja el archivo; el toque sí llega a la app
-    A('tocar instalar deja anotado el atajo', H().shortcut.bio>0&&!went.length);
-    openBioRun(); A('y la hoja queda lista para correrlo: ▶ sync', has('▶ sync')&&pri()===1);
+    a.addEventListener('click',e=>e.preventDefault()); tap(a);   // la prueba no baja el archivo; el toque sí pasa por la app
+    A('tocar instalar no cambia nada en la app: la hoja sigue ahí para cuando vuelvas', has('ya lo tengo')&&!H().shortcut.bio&&!went.length&&near(row().getBoundingClientRect().top,y0));
+    // 3 · [ya lo tengo]: queda anotado y corre el atajo por su nombre
     tap(sheet().querySelector('[data-act="biorun"]'));
-    A('▶ sync abre Atajos con el nombre exacto y cierra la hoja', went.length===1&&went[0]==='shortcuts://run-shortcut?name=TRK%20Biometrics'&&!sheet()&&bioWaiting());
-    // 3 · [ya lo tengo] hace lo mismo sin instalar
-    db.health=healthShape({}); went.length=0; tap(row()); tap(sheet().querySelector('[data-act="biorun"]'));
-    A('[ya lo tengo] anota el atajo y lo corre', H().shortcut.bio>0&&went.length===1&&!sheet());
+    A('[ya lo tengo] anota el atajo, abre Atajos con el nombre exacto y cierra la hoja', H().shortcut.bio>0&&went.length===1&&went[0]==='shortcuts://run-shortcut?name=TRK%20Biometrics'&&!sheet()&&bioWaiting());
+    A('y la pantalla sigue donde estaba', near(row().getBoundingClientRect().top,y0)&&near(v.scrollTop,t0));
     // 4 · al volver a la app ofrece traer los datos (y no pisa otra hoja abierta)
     openModal('<h3>otra hoja</h3>'); back(); A('al volver no pisa una hoja que ya estaba abierta', has('otra hoja')&&!has('traer datos'));
     closeModal(); back();
@@ -4578,11 +4577,12 @@ function _bioSyncSelfCheck(){ const A=(nm,c)=>{ if(!c) throw new Error('SELFCHEC
     // 8 · el atajo corrió con el iPhone bloqueado: copió solo el encabezado
     closeModal(); tap(row()); back(); paste='trk2\n'; said.length=0; tap(sheet().querySelector('[data-act="biofetch"]'));
     A('atajo vacío: avisa "desbloquea el iPhone" y deja pegar a mano', said.some(x=>/desbloquea el iPhone/.test(x))&&!!document.getElementById('hi_txt')&&has('último pegado'));
+    A('en todo el recorrido el scroll no se movió', near(v.scrollTop,t0)&&t0===90);
     // 9 · la app nativa lee Salud directo: no usa el atajo
     closeModal(); isNative=()=>true; went.length=0; paste=''; bioSync(); isNative=()=>false;
-    A('en la app nativa sync biometrics no sale a Atajos ni ofrece instalar nada', went.length===0&&!has('▶ instalar atajo')&&!has('▶ sync'));
+    A('en la app nativa sync biometrics no sale a Atajos ni ofrece instalar nada', went.length===0&&!has('▶ instalar atajo')&&!has('▶ traer datos'));
     console.log('biosync self-check OK');
-  } finally { try{ delete navigator.clipboard; }catch(_){} closeModal(); bioGo=go0; toast=tt; isIOS=ios; isNative=nat; db=real; bumpIdx(); state.screen=rs; state._scroll=sc0; render(); }
+  } finally { try{ delete navigator.clipboard; }catch(_){} closeModal(); v.style.maxHeight=''; bioGo=go0; toast=tt; isIOS=ios; isNative=nat; db=real; bumpIdx(); state.screen=rs; state._scroll=sc0; render(); }
 }
 function _v271SelfCheck(){ const A=(nm,c)=>{ if(!c) throw new Error('SELFCHECK v271: '+nm); };
   // h y min
@@ -6971,7 +6971,7 @@ function healthPasteNow(){ const done=t=>{ t=String(t||''); const k0=(H().shortc
     if(msg.length){ savedToast('✓ '+msg.join(' · ')); reRender(); return; } openHealthImport(); if(hpEmpty(t))toast('⚠ Atajo sin datos · desbloquea el iPhone','err'); };
   try{ if(navigator.clipboard&&navigator.clipboard.readText)navigator.clipboard.readText().then(done,()=>openHealthImport()); else openHealthImport(); }catch(_){ openHealthImport(); } }
 // v287 · el Atajo se descarga, no se arma. `TRK Biometrics.shortcut` (firmado; lo generan tools/shortcut/build.cjs y sign.cjs) lee 7 días
-// de Salud y copia el texto trk2. `sync biometrics`: la 1ª vez abre una hoja con ▶ instalar atajo · ya instalado, abre Atajos y lo corre ·
+// de Salud y copia el texto trk2. `sync biometrics`: la 1ª vez abre una hoja con ▶ instalar atajo y [ya lo tengo] · ya instalado, abre Atajos y lo corre ·
 // al volver, ▶ traer datos lee el portapapeles dentro de ese toque (iOS enseña su burbuja "Pegar") y dice qué llegó.
 // El archivo se llama como el atajo: el iPhone le pone al atajo el nombre del archivo, y aquí se corre por nombre.
 // HP_EXAMPLE es, letra por letra, lo que el atajo copia con la Salud de ejemplo de build.cjs (`node tools/shortcut/build.cjs --check` lo compara).
@@ -6983,21 +6983,20 @@ function bioKindsTxt(k){ k=Array.isArray(k)?k:[]; return HP_KINDS.map(x=>x[1]+' 
 function hpLastHTML(){ const sc=H().shortcut||{}; if(!sc.lastPaste)return ''; return '<div class="submeta u-mb10">último pegado · '+escTxt(agoTxt(sc.lastPaste))+(Array.isArray(sc.lastKinds)?'<br>'+bioKindsTxt(sc.lastKinds):'')+'</div>'; }
 let bioGo=u=>{ try{ location.href=u; }catch(_){} };   // salir a la app Atajos (la prueba la cambia por una que solo anota)
 function bioRunURL(){ return 'shortcuts://run-shortcut?name='+encodeURIComponent(BIO_NAME); }
-// shortcut.bio = cuándo se instaló (o dijo "ya lo tengo") el atajo que se descarga · shortcut.wait = cuándo se mandó a correr. Campos nuevos, sin migración.
+// shortcut.bio = cuándo dijo "ya lo tengo" (el atajo que se descarga está en su iPhone) · shortcut.wait = cuándo se mandó a correr. Campos nuevos, sin migración.
 function bioWaiting(){ const sc=H().shortcut, w=+sc.wait||0; return w>0&&Date.now()-w<BIO_WAIT&&!(+sc.lastPaste>w); }   // corrió hace poco y todavía no trae los datos
 function bioMark(){ const sc=H().shortcut; if(!sc.bio)sc.bio=Date.now(); return sc; }
 function bioSync(){ if(isNative()){ healthSync(); return; } if(!isIOS()){ openHealthImport(); return; }   // sin Atajos (Android, computadora): pegar a mano
   if(bioWaiting()){ openBioFetch(); return; } if(!H().shortcut.bio){ openBioInstall(); return; } bioRun(); }
 function bioRun(){ bioMark().wait=Date.now(); saveSoon(); closeModal(); bioGo(bioRunURL()); }
-// ▶ instalar atajo es un enlace de verdad (el navegador baja el archivo o abre iCloud); aquí solo se anota y la hoja queda lista para correrlo al volver
-function bioInstalled(){ bioMark(); saveSoon(); setTimeout(()=>{ if(!document.querySelector('#modal [data-act="bioinstall"]'))return; if(state.screen==='onboard')closeModal(); else openBioRun(); },400); }
 function bioFetch(){ H().shortcut.wait=0; closeModal(); healthPasteNow(); }
 // la lista de qué llegó sale la primera vez y cada vez que cambia; si llegó lo mismo que la vez pasada, basta el aviso
 function bioDone(r,k0){ H().shortcut.wait=0; savedToast('✓ Salud · '+r.days+(r.days===1?' día':' días')); reRender(); if(r.kinds.join()!==k0)openBioResult(); }
+// ▶ instalar atajo es un enlace de verdad (el navegador baja el archivo o abre iCloud): la app no hace nada con ese toque y la hoja
+// se queda, así al volver de instalarlo [ya lo tengo] lo anota y lo corre. En el alta solo se instala; se corre después, desde la app.
 function openBioInstall(){ const ob=state.screen==='onboard';
-  openModal('<h3>sync biometrics</h3><div class="submeta u-mb10">un Atajo copia tus datos de Salud y aquí se pegan.</div><div class="sheetbtns"><a class="ok" href="'+(SHORTCUT_URL||BIO_FILE)+'"'+(SHORTCUT_URL?'':' download="'+BIO_NAME+'.shortcut"')+' target="_blank" rel="noopener" data-act="bioinstall">▶ instalar atajo</a>'
+  openModal('<h3>sync biometrics</h3><div class="submeta u-mb10">un Atajo copia tus datos de Salud y aquí se pegan.</div><div class="sheetbtns"><a class="ok" href="'+(SHORTCUT_URL||BIO_FILE)+'"'+(SHORTCUT_URL?'':' download="'+BIO_NAME+'.shortcut"')+' target="_blank" rel="noopener">▶ instalar atajo</a>'
     +(ob?'<button class="cancel" data-act="closemodal">cerrar</button>':'<button class="cancel" data-act="biorun">ya lo tengo</button>')+'</div>'); }
-function openBioRun(){ openModal('<h3>sync biometrics</h3><div class="sheetbtns"><button class="ok" data-act="biorun">▶ sync</button><button class="cancel" data-act="closemodal">cerrar</button></div>'); }
 function openBioFetch(){ openModal('<h3>sync biometrics</h3><div class="sheetbtns"><button class="ok" data-act="biofetch">▶ traer datos</button><button class="cancel" data-act="healthimport">pegar a mano</button></div>'); }
 function openBioResult(){ openModal('<h3>sync biometrics</h3><div class="submeta u-o60 u-mb10">'+bioKindsTxt(H().shortcut.lastKinds)+'</div><div class="sheetbtns"><button class="cancel" data-act="closemodal">cerrar</button></div>'); }
 // al volver de Atajos: si se mandó a correr y no hay otra hoja abierta, ofrece traer los datos
@@ -9195,7 +9194,6 @@ document.getElementById('app').addEventListener('click',e=>{
   else if(a==='pf_bwu'){ trkSelect(el,['kg','lbs'],bwU(),v=>{ db.settings.bwUnit=v; savedToast('✓ peso corporal en '+v); reRender(); },{title:'peso corporal en'}); }
   else if(a==='pf_liftu'){ trkSelect(el,['lbs','kg'],db.settings.unit||'lbs',v=>{ db.settings.unit=v; savedToast('✓ pesas nuevas en '+v); reRender(); },{title:'pesas del gym en · para ejercicios nuevos'}); }
   else if(a==='biosync'){ bioSync(); }
-  else if(a==='bioinstall'){ bioInstalled(); }
   else if(a==='biorun'){ bioRun(); }
   else if(a==='biofetch'){ bioFetch(); }
   else if(a==='biosetup'){ openBioInstall(); }
