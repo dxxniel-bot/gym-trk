@@ -4531,7 +4531,12 @@ function _bioSyncSelfCheck(){ const A=(nm,c)=>{ if(!c) throw new Error('SELFCHEC
   const sheet=()=>document.querySelector('#modal .sheet'), has=t=>{ const m=sheet(); return !!m&&m.textContent.indexOf(t)>=0; }, pri=()=>sheet()?sheet().querySelectorAll('.ok').length:0;
   const row=()=>v.querySelector('[data-act="biosync"]'), back=()=>document.dispatchEvent(new Event('visibilitychange'));
   const went=[], said=[]; let paste='';
-  try{ db=migrate({_idfix:true,_fsfix:true,profile:{username:'t',weightKg:61},gyms:['g'],activeGym:'g',sessions:[]}); db.steps={}; db.bodyweight={}; db.sleep={}; db.health=healthShape({}); bumpIdx();
+  // la prueba empieza sin nada encima, corra donde corra: cierra lo que otra prueba dejó abierto (la de ui deja su capa de confirmar viva hasta su
+  // microtarea: en la lista del arranque seguía ahí y la hoja de traer no salía) y aparta, mientras dura, lo que tape la pantalla
+  closeModal(); try{ closeAsk(true); closeExShare(); }catch(_){}
+  const park=['tour','tsel','bootov'].map(id=>document.getElementById(id)).filter(Boolean).map(el=>({el,p:el.parentNode,n:el.nextSibling})); park.forEach(x=>x.el.remove());
+  try{ A('la prueba empieza sin capas encima', !bioCovered());
+    db=migrate({_idfix:true,_fsfix:true,profile:{username:'t',weightKg:61},gyms:['g'],activeGym:'g',sessions:[]}); db.steps={}; db.bodyweight={}; db.sleep={}; db.health=healthShape({}); bumpIdx();
     bioGo=u=>{ went.push(u); }; toast=m=>{ said.push(String(m)); return null; }; isNative=()=>false;
     // el portapapeles de mentira responde en el mismo toque (como la burbuja "Pegar" ya aceptada)
     Object.defineProperty(navigator,'clipboard',{configurable:true,value:{readText:()=>({then:ok=>{ ok(paste); }})}});
@@ -4555,11 +4560,23 @@ function _bioSyncSelfCheck(){ const A=(nm,c)=>{ if(!c) throw new Error('SELFCHEC
     tap(sheet().querySelector('[data-act="biorun"]'));
     A('[ya lo tengo] anota el atajo, abre Atajos con el nombre exacto y cierra la hoja', H().shortcut.bio>0&&went.length===1&&went[0]==='shortcuts://run-shortcut?name=TRK%20Biometrics'&&!sheet()&&bioWaiting());
     A('y la pantalla sigue donde estaba', near(row().getBoundingClientRect().top,y0)&&near(v.scrollTop,t0));
-    // 4 · al volver a la app ofrece traer los datos (y no pisa otra hoja abierta)
-    openModal('<h3>otra hoja</h3>'); back(); A('al volver no pisa una hoja que ya estaba abierta', has('otra hoja')&&!has('traer datos'));
-    closeModal(); back();
+    // 4 · al volver a la app ofrece traer los datos: nunca con algo encima ni en plena sesión (ahí la espera sigue viva)
+    openModal('<h3>otra hoja</h3>'); back(); A('al volver no pisa una hoja que ya estaba abierta', has('otra hoja')&&!has('traer datos')&&bioWaiting());
+    closeModal(); const cov=document.createElement('div'); cov.id='exsh'; document.getElementById('app').appendChild(cov); back(); cov.remove();
+    A('ni se abre debajo de la tarjeta de compartir', !sheet()&&bioWaiting());
+    askLayer('<h3>otra capa</h3>'); back(); closeAsk(true); A('ni debajo de una confirmación', !sheet()&&bioWaiting());
+    state.screen='workout'; back(); state.screen='progress'; A('ni interrumpe una sesión en curso', !sheet()&&bioWaiting());
+    back();
     A('al volver: ▶ traer datos y [pegar a mano], un solo primario', has('▶ traer datos')&&has('pegar a mano')&&pri()===1);
-    closeModal(); tap(row()); A('si acaba de correr, la fila ofrece traer en vez de correrlo otra vez', has('▶ traer datos')&&went.length===1);
+    A('la hoja de traer no mueve la pantalla', near(row().getBoundingClientRect().top,y0)&&near(v.scrollTop,t0));
+    // 4b · se ofrece UNA vez por corrida: cerrada sin traer no vuelve a salir sola, y la fila corre el atajo otra vez
+    tap(document.getElementById('modal')); back(); back();
+    A('cerrada tocando fuera, no vuelve a salir al regresar a la app', !sheet()&&!bioWaiting()&&near(row().getBoundingClientRect().top,y0)&&near(v.scrollTop,t0));
+    tap(row()); A('y la fila corre el atajo otra vez', went.length===2&&went[1]===bioRunURL()&&!sheet()&&bioWaiting());
+    tap(row()); A('si corrió y todavía no se ofreció traer, la fila lo ofrece en vez de correrlo de nuevo', has('▶ traer datos')&&pri()===1&&went.length===2);
+    tap(sheet().querySelector('[data-act="healthimport"]')); A('[pegar a mano] lleva al cuadro de pegar', !!document.getElementById('hi_txt'));
+    closeModal(); back(); A('y tras salir por [pegar a mano] tampoco vuelve a salir sola', !sheet()&&!bioWaiting());
+    tap(row()); back(); A('la fila lo corre de nuevo y al volver ofrece traer', went.length===3&&has('▶ traer datos'));
     // 5 · traer: el pegado del atajo entra completo y dice qué llegó
     paste=HP_EXAMPLE; const y1=row().getBoundingClientRect().top; tap(sheet().querySelector('[data-act="biofetch"]'));
     const h=H(), night=Object.keys(h.sleep);
@@ -4583,7 +4600,8 @@ function _bioSyncSelfCheck(){ const A=(nm,c)=>{ if(!c) throw new Error('SELFCHEC
     closeModal(); isNative=()=>true; went.length=0; paste=''; bioSync(); isNative=()=>false;
     A('en la app nativa sync biometrics no sale a Atajos ni ofrece instalar nada', went.length===0&&!has('▶ instalar atajo')&&!has('▶ traer datos'));
     console.log('biosync self-check OK');
-  } finally { try{ delete navigator.clipboard; }catch(_){} closeModal(); v.style.maxHeight=''; bioGo=go0; toast=tt; isIOS=ios; isNative=nat; db=real; bumpIdx(); state.screen=rs; state._scroll=sc0; render(); }
+  } finally { try{ delete navigator.clipboard; }catch(_){} closeModal(); try{ closeAsk(true); const x=document.getElementById('exsh'); if(x&&!x.firstChild)x.remove(); }catch(_){}
+    park.forEach(x=>{ try{ x.p.insertBefore(x.el,x.n); }catch(_){} }); v.style.maxHeight=''; bioGo=go0; toast=tt; isIOS=ios; isNative=nat; db=real; bumpIdx(); state.screen=rs; state._scroll=sc0; render(); }
 }
 function _v271SelfCheck(){ const A=(nm,c)=>{ if(!c) throw new Error('SELFCHECK v271: '+nm); };
   // h y min
@@ -6984,7 +7002,7 @@ function bioKindsTxt(k){ k=Array.isArray(k)?k:[]; return HP_KINDS.map(x=>x[1]+' 
 function hpLastHTML(){ const sc=H().shortcut||{}; if(!sc.lastPaste)return ''; return '<div class="submeta u-mb10">último pegado · '+escTxt(agoTxt(sc.lastPaste))+(Array.isArray(sc.lastKinds)?'<br>'+bioKindsTxt(sc.lastKinds):'')+'</div>'; }
 let bioGo=u=>{ try{ location.href=u; }catch(_){} };   // salir a la app Atajos (la prueba la cambia por una que solo anota)
 function bioRunURL(){ return 'shortcuts://run-shortcut?name='+encodeURIComponent(BIO_NAME); }
-// shortcut.bio = cuándo dijo "ya lo tengo" (el atajo que se descarga está en su iPhone) · shortcut.wait = cuándo se mandó a correr. Campos nuevos, sin migración.
+// shortcut.bio = cuándo dijo "ya lo tengo" (el atajo que se descarga está en su iPhone) · shortcut.wait = cuándo se mandó a correr (0 en cuanto se ofrece traer). Campos nuevos, sin migración.
 function bioWaiting(){ const sc=H().shortcut, w=+sc.wait||0; return w>0&&Date.now()-w<BIO_WAIT&&!(+sc.lastPaste>w); }   // corrió hace poco y todavía no trae los datos
 function bioMark(){ const sc=H().shortcut; if(!sc.bio)sc.bio=Date.now(); return sc; }
 function bioSync(){ if(isNative()){ healthSync(); return; } if(!isIOS()){ openHealthImport(); return; }   // sin Atajos (Android, computadora): pegar a mano
@@ -6998,10 +7016,13 @@ function bioDone(r,k0){ H().shortcut.wait=0; savedToast('✓ Salud · '+r.days+(
 function openBioInstall(){ const ob=state.screen==='onboard';
   openModal('<h3>sync biometrics</h3><div class="submeta u-mb10">un Atajo copia tus datos de Salud y aquí se pegan.</div><div class="sheetbtns"><a class="ok" href="'+(SHORTCUT_URL||BIO_FILE)+'"'+(SHORTCUT_URL?'':' download="'+BIO_NAME+'.shortcut"')+' target="_blank" rel="noopener">▶ instalar atajo</a>'
     +(ob?'<button class="cancel" data-act="closemodal">cerrar</button>':'<button class="cancel" data-act="biorun">ya lo tengo</button>')+'</div>'); }
-function openBioFetch(){ openModal('<h3>sync biometrics</h3><div class="sheetbtns"><button class="ok" data-act="biofetch">▶ traer datos</button><button class="cancel" data-act="healthimport">pegar a mano</button></div>'); }
+// traer se ofrece UNA vez por corrida: al abrir la hoja se apaga la espera. Si la cierras sin traer (tocar fuera, [pegar a mano]) no vuelve a salir sola y la fila corre el atajo otra vez.
+function openBioFetch(){ H().shortcut.wait=0; saveSoon(); openModal('<h3>sync biometrics</h3><div class="sheetbtns"><button class="ok" data-act="biofetch">▶ traer datos</button><button class="cancel" data-act="healthimport">pegar a mano</button></div>'); }
 function openBioResult(){ openModal('<h3>sync biometrics</h3><div class="submeta u-o60 u-mb10">'+bioKindsTxt(H().shortcut.lastKinds)+'</div><div class="sheetbtns"><button class="cancel" data-act="closemodal">cerrar</button></div>'); }
-// al volver de Atajos: si se mandó a correr y no hay otra hoja abierta, ofrece traer los datos
-document.addEventListener('visibilitychange',()=>{ try{ if(document.hidden||!db||!bioWaiting())return; if(!document.getElementById('modal')&&!document.getElementById('asklayer')&&!document.getElementById('tour')&&state.screen!=='onboard')openBioFetch(); }catch(_){} });
+// al volver de Atajos: si se mandó a correr, ofrece traer los datos. No se abre con algo encima (otra hoja, una confirmación, el tour, la tarjeta de
+// compartir, un menú, la portada) ni en plena sesión: ahí la espera sigue viva y la fila `sync biometrics` lo ofrece en el siguiente toque.
+function bioCovered(){ return ['modal','asklayer','tour','exsh','tsel','bootov'].some(id=>!!document.getElementById(id)); }
+document.addEventListener('visibilitychange',()=>{ try{ if(document.hidden||!db||!bioWaiting())return; if(!bioCovered()&&state.screen!=='onboard'&&state.screen!=='workout')openBioFetch(); }catch(_){} });
 function healthSync(){
   if(NATIVE_APP){ healthSyncNative('manual'); return; }
   healthPasteNow();
