@@ -760,6 +760,22 @@
   .shsn{font-size:var(--t-display); font-weight:800; line-height:var(--lh-ui);}
   .shsm{margin-top:var(--s2); font-size:var(--t-label); color:var(--o50);}
   .shsum{margin-top:var(--s3); font-size:var(--t-data); color:var(--o70);}
+  /* v285 · la sesión en el formato de la sesión, de solo lectura y compacta: #músculo · [bi] nombre ▲ +3% · y la tabla
+     nº · lado · peso unidad · reps · rir · σ, en texto (sin cajas: nada se toca). Una sola rejilla para todos los ejercicios.
+     La jerarquía va por COLOR, nunca por opacity (el pintor de la imagen lee el color computado), y cada dato es una línea. */
+  .shxm{margin:var(--s5) 0 var(--s2); font-size:var(--t-label); color:var(--o40);} .shxm:first-child{margin-top:0;}
+  .shx + .shx{margin-top:var(--s4);}
+  .shxh{display:flex; align-items:baseline; gap:var(--s3); line-height:var(--lh-read);}
+  .shxn{flex:1; min-width:0; font-size:var(--t-section); font-weight:800; overflow-wrap:anywhere;}
+  .shxp{flex:0 0 auto; font-size:var(--t-data); font-weight:700; white-space:nowrap;}
+  .shxr{display:grid; grid-template-columns:18px 14px minmax(0,1.5fr) repeat(3,minmax(0,1fr)); column-gap:var(--s2); align-items:baseline; font-size:var(--t-data); line-height:var(--lh-share); white-space:nowrap;}
+  .shxr .o,.shxr .sd{font-size:var(--t-label); color:var(--o50);} .shxr .sd{font-weight:700;}
+  .shxr .w i{margin-left:var(--s2); font-style:normal; color:var(--o50);}
+  .shxr .c{text-align:center;} .shxr .r{color:var(--o70);} .shxr .g{text-align:right; color:var(--o60);}
+  .shxr.hd,.shxr.hd .r,.shxr.hd .g{font-size:var(--t-label); color:var(--o40); letter-spacing:var(--ls-ui);}
+  .shxr.dr,.shxr.dr .r,.shxr.dr .g{color:var(--o50);}
+  .shxl{margin-top:var(--s5); font-size:var(--t-label); color:var(--o40); text-align:center;}
+  .shvt{margin:var(--s5) 0 0;}
   .srw{display:grid; grid-template-columns:64px minmax(0,1fr); column-gap:var(--s3); align-items:baseline; font-size:var(--t-data); line-height:var(--lh-share);}
   .srw + .srw{margin-top:var(--s5);}
   .srm{font-size:var(--t-label); color:var(--o40); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
@@ -5210,22 +5226,23 @@ function mealFoodRows(items){ const kp=kcalParts(items);
 // de v256 recortaba — comida perdía TODOS sus alimentos — y apretaba las series: "amontonado". Aquí nada se recorta,
 // nada baja de tamaño y nada hace scroll dentro. Las acciones van FUERA de la tarjeta. La tarjeta y el texto copiable
 // salen del MISMO modelo, así nunca dicen cosas distintas.
-function summaryShell(top,body){
+function summaryShell(top,body,pre){   // v285 · pre: lo que va entre la tarjeta y las acciones (el selector de vista), fuera de la imagen
   return statusBar(true)
    +`<div class="sharecard">${top||''}<div class="shbody">${body||''}</div><div class="shfoot">gym<span class="u-o40">//</span>TRK</div></div>`
+   +(pre||'')
    +`<div class="secondary shacts"><button class="b" data-act="shcopy">copiar texto</button><button class="b" data-act="shimg">guardar imagen</button></div>`; }
 function shTopRow(title,meta){ return `<div class="shtop"><span class="shtt">${title}</span><span class="shtm">${meta||''}</span></div>`; }
 // ---- sesión: duración · series · ejercicios arriba (sin tonelaje ni tensión, pedido del dueño); cada serie numerada
 // con la unidad pegada al peso y su RIR escrito completo.
 function shSessModel(s){ _shM=(s&&s.metric)==='rpe'?'rpe':'rir';
   const hh=Math.floor((s.durSec||0)/3600), mm=Math.floor(((s.durSec||0)%3600)/60);
-  const exs=[]; let series=0;
-  (s.exercises||[]).forEach(e=>{ const x=shExModel(e); if(!x)return; series+=x.series; exs.push(x); });
+  const exs=[]; let series=0, T=[]; try{ T=sessionTension(s)||[]; }catch(_){}   // v285 · σ por serie y ▲▼ del ejercicio contra su sesión equivalente anterior
+  (s.exercises||[]).forEach((e,ei)=>{ const x=shExModel(e,T[ei]); if(!x)return; try{ x.prog=histProgress(s,ei); }catch(_){ x.prog=null; } series+=x.series; exs.push(x); });
   return {title:s.dayName||'sesión', meta:[fmtShort(s.date||''),s.gym||''].filter(Boolean).join(' · '),
     dur:s.durSec?(hh?{h:hh,m:pad(mm)}:{min:mm}):null, series, exn:exs.length, exs}; }
 // v257 · el modelo de UN ejercicio: lo usan el share de sesión y compartir ejercicio con 📷. Cada token sabe su serie
 // (`si`, el índice en e.sets; en unilateral el del par) para que la marca apunte a la misma fila en las tres vistas.
-function shExModel(e){ const ok=x=>!!(x&&(x.w||x.r)&&!x._pf);
+function shExModel(e,tn){ const ok=x=>!!(x&&(x.w||x.r)&&!x._pf);   // v285 · tn (opcional) = exTensionSets del ejercicio: cada token lleva su σ en `sg`
   if(!e||isCardio(e))return null; const all=e.sets||[]; if(!all.some(ok))return null;
   const uni=!!e.unilateral, labels=setLabels(all,uni?2:1); let maxInt=0, drops=0; const toks=[];
   for(let i=0;i<all.length;i+=uni?2:1){
@@ -5233,8 +5250,9 @@ function shExModel(e){ const ok=x=>!!(x&&(x.w||x.r)&&!x._pf);
     grp.forEach((x,k)=>{ const lb=String(labels[i]); const n=parseFloat(lb);
       if(!x.isDrop&&Number.isInteger(n)&&n>maxInt)maxInt=n; if(x.isDrop)drops++;
       const r=String(x.rir==null?'':x.rir).trim().toUpperCase();
-      toks.push({ord:lb+(uni?(x.side||(k?'L':'R')):''), drop:!!x.isDrop, w:numTxt(effW(x)), unit:x.unit||e.unit||'', r:(x.r!=null&&x.r!=='')?String(x.r):'-', rir:rirShow(r,_shM), si:uni?all.indexOf(x):i}); }); }   // v279 · en unilateral cada LADO es su propia serie
-  return {name:e.name||'', muscle:e.muscle||'', series:maxInt, drops, uni, toks}; }
+      const si=uni?all.indexOf(x):i, g=tn&&tn.per&&tn.per[si];
+      toks.push({ord:lb+(uni?(x.side||(k?'L':'R')):''), drop:!!x.isDrop, w:numTxt(effW(x)), unit:x.unit||e.unit||'', r:(x.r!=null&&x.r!=='')?String(x.r):'-', rir:rirShow(r,_shM), si, sg:(g&&g.t>0)?{t:g.t,est:!!g.est}:null}); }); }   // v279 · en unilateral cada LADO es su propia serie
+  return {name:e.name||'', muscle:e.muscle||'', series:maxInt, drops, uni, toks, lat:latTxt(e).trim()}; }
 function shTokTxt(t){ const side=/[RL]$/.test(t.ord)?t.ord.slice(-1)+' ':''; return side+(t.drop?'↓':'')+t.w+t.unit+'×'+t.r+(t.rir?'@'+t.rir:''); }
 function shTokHTML(t){ return `<span class="srs1${t.drop?' dr':''}">${escTxt(shTokTxt(t))}</span>`; }
 // ---- v257 · compartir UN ejercicio (historia de Instagram) ------------------------------------------------------------
@@ -5296,6 +5314,67 @@ function paintExShare(swap){ const L=document.getElementById('exsh'), S=state._e
       if(r.classList.contains('pair')){ const p=+r.dataset.si; r.querySelectorAll('.prows>.srow').forEach((sr,k)=>{ sr.dataset.camsi=String(p+k); }); } else r.dataset.camsi=r.dataset.si; }); }
   if(cam!=null)C.querySelectorAll('[data-camsi="'+cam+'"]').forEach(r=>{ r.classList.add('camon'); if(!r.querySelector('.camic'))r.insertAdjacentHTML('afterbegin','<span class="camic">'+CAM_SVG+'</span>'); });
   slideTabs(L,!!swap); }
+// ---- v285 · compartir la sesión EN EL FORMATO DE LA SESIÓN -------------------------------------------------------------
+// El dueño (30-sep): "me gusta más el formato que mientras estamos haciendo la sesión… pero un poquito más sencillo, que no
+// sea interactivo, que simplemente esté la info un poquito más compacta… ahí se podría incluir las unidades de tensión
+// mecánica dentro de cada serie y el progreso de porcentaje respecto a la sesión pasada". Es la tabla de la sesión viva
+// ([bi]/[uni] al frente · nº · R/L · peso unidad · reps · rir) en texto: sin cajas, sin ✓, sin botones. Cada serie lleva su σ
+// y cada ejercicio su ▲▼ de capacidad contra la sesión equivalente anterior (histProgress). Sale del MISMO modelo que la
+// lista (shSessModel); la lista (su vista RECENT, 21-sep) se conserva como segunda vista. La vista elegida vive en memoria.
+const SHSESS_V=[['sesion','sesión'],['lista','lista']];
+function shSessView(){ return state._shv==='lista'?'lista':'sesion'; }
+function shSessTabsHTML(){ const v=shSessView();
+  return `<div class="mdtabs tall shvt" data-tk="shv" role="tablist">${SHSESS_V.map(([k,l])=>`<span role="tab" aria-selected="${k===v}" class="${k===v?'on':''}" data-act="shview" data-v="${k}">${l}</span>`).join('')}</div>`; }
+function shSigTxt(g){ return g?((g.est?'~':'')+g.t.toFixed(2)):'—'; }
+// ▲ +3% / ▼ −4% (signo menos real, BRAND §3); el color sale de progBadgeParts, el mismo de la sesión, y va solo en el glifo y el número
+function shProgHTML(pr){ const p=progBadgeParts(pr,'exact'); if(!p)return ''; const n=Math.abs(pr.pct||0);
+  return `<span class="shxp" style="color:${p.col}">${p.ar}${n?' '+(pr.pct>0?'+':'−')+n+'%':''}</span>`; }
+function shSetRowHTML(t,uni){ const n=t.drop?'↓':String(t.ord).replace(/[RL]$/,''), sd=uni?String(t.ord).slice(-1):'';
+  return `<div class="shxr${t.drop?' dr':''}"><span class="o">${escTxt(n)}</span><span class="sd">${escTxt(sd)}</span><span class="w">${escTxt(t.w)}<i>${escTxt(t.unit)}</i></span><span class="c">${escTxt(t.r)}</span><span class="c r">${escTxt(t.rir||'—')}</span><span class="g">${shSigTxt(t.sg)}</span></div>`; }
+function shSessTableHTML(M){ let pm=null; const hd=`<div class="shxr hd"><span></span><span></span><span class="w">peso</span><span class="c">reps</span><span class="c">${_shM}</span><span class="g">σ</span></div>`;
+  const h=M.exs.map((x,i)=>{ const m=x.muscle&&x.muscle!==pm?`<div class="shxm">#${escTxt(x.muscle)}</div>`:''; pm=x.muscle;   // las etiquetas de columna van UNA vez (B-10), en el primer ejercicio
+    return m+`<div class="shx"><div class="shxh"><span class="shxn">${escTxt((x.lat?x.lat+' ':'')+x.name)}</span>${shProgHTML(x.prog)}</div>${i?'':hd}${x.toks.map(t=>shSetRowHTML(t,x.uni)).join('')}</div>`; }).join('');
+  return h?h+`<div class="shxl">σ 1.00 = una serie al fallo · ▲▼ vs la sesión anterior</div>`:''; }
+// self-check de v285 (síncrono; no está en la lista del arranque: lo corre el integrador). Monta una base de juguete, pinta
+// la tarjeta en un nodo suelto y restaura todo en finally.
+function _shareSessSelfCheck(){ const A=(nm,c)=>{ if(!c) throw new Error('SELFCHECK share-sess: '+nm); };
+  const real=db, t0=state.shareType, i0=state.shareId, v0=state._shv, m0=_shM, rr=reRender; let btn=null;
+  try{ const S=(w,r,rir,o)=>Object.assign({w:String(w),r:String(r),rir:String(rir),unit:'lbs',done:true},o||{});
+    const E1=sets=>({exId:'e1',name:'press banca',muscle:'chest',type:'machine',unilateral:false,sets}), E2=sets=>({exId:'e2',name:'curl',muscle:'bicep',type:'machine',unilateral:true,sets});
+    db=migrate({profile:{username:'t'},gyms:['g1'],activeGym:'g1',
+      split:{name:'s',days:[{id:'d1',name:'push A',exercises:[{id:'e1',name:'press banca',muscle:'chest',type:'machine',sets:2},{id:'e2',name:'curl',muscle:'bicep',type:'machine',sets:2}]}]},
+      sessions:[{id:'p0',date:'2026-09-20',dayId:'d1',dayName:'push A',gym:'g1',durSec:3000,exercises:[E1([S(100,8,1),S(100,7,1)]),E2([S(20,10,1,{side:'R'}),S(20,10,1,{side:'L'})])]},
+        {id:'p1',date:'2026-09-27',dayId:'d1',dayName:'push A',gym:'g1',durSec:4500,exercises:[E1([S(110,8,1),S(110,7,1),S(60,10,0,{isDrop:true})]),
+          E2([S(20,10,1,{side:'R'}),S(20,9,'F',{side:'L'}),S(20,8,0,{side:'R'}),S(20,8,0,{side:'L'})]),{name:'caminadora',muscle:'cardio',type:'cardio',sets:[{min:'10',done:true}]}]}]});
+    bumpIdx(); const h0=JSON.stringify(db), s=db.sessions.find(x=>x.id==='p1'), M=shSessModel(s);
+    const tx=(root,sel)=>[...root.querySelectorAll(sel)].map(e=>e.textContent).join(), paint=()=>{ const b=document.createElement('div'); b.innerHTML=renderShareSession('p1'); return b; };
+    A('el cardio no entra', M.exn===2&&M.exs[0].name==='press banca');
+    A('cada serie lleva su σ', M.exs.every(x=>x.toks.every(t=>t.sg&&t.sg.t>0)));
+    A('la σ de la serie es la de la sesión', Math.abs(M.exs[0].toks[0].sg.t-sessionTension(s)[0].per[0].t)<1e-9&&Math.abs(M.exs[1].toks[3].sg.t-sessionTension(s)[1].per[3].t)<1e-9);
+    A('▲ contra la sesión equivalente anterior', !!M.exs[0].prog&&M.exs[0].prog.dir==='up'&&M.exs[0].prog.pct>0);
+    A('sin sesión anterior no hay ▲▼', shSessModel(db.sessions.find(x=>x.id==='p0')).exs[0].prog==null);
+    state.shareType='session'; state.shareId='p1'; delete state._shv;
+    let box=paint(), card=box.querySelector('.sharecard'); const X=card.querySelectorAll('.shx');
+    A('la vista por defecto es la de la sesión', shSessView()==='sesion'&&X.length===2&&!card.querySelector('.srw'));
+    A('solo lectura: nada que tocar dentro de la tarjeta', !card.querySelector('[data-act],input,select,textarea,button'));
+    A('[bi]/[uni] al frente del nombre', tx(card,'.shxn')==='[bi] press banca,[uni] curl');
+    A('una fila por serie: peso, unidad, reps, rir y σ', tx(X[0],'.shxr:not(.hd) .w')==='110lbs,110lbs,60lbs'&&tx(X[0],'.shxr:not(.hd) .c')==='8,1,7,1,10,0'&&[...X[0].querySelectorAll('.shxr:not(.hd) .g')].every(e=>/^~?\d\.\d\d$/.test(e.textContent)));
+    A('el drop lleva ↓ y va tenue', tx(X[0],'.shxr:not(.hd) .o')==='1,2,↓'&&X[0].querySelectorAll('.shxr.dr').length===1);
+    A('unilateral: cada lado es una serie (1 1 2 2) con R/L', tx(X[1],'.shxr .o')==='1,1,2,2'&&tx(X[1],'.shxr .sd')==='R,L,R,L'&&tx(X[1],'.shxr .r')==='1,F,0,0');
+    A('▲ +N% con signo y espacio (BRAND §3)', /^▲ \+\d+%$/.test(tx(X[0],'.shxp')));
+    A('las columnas se rotulan una vez', card.querySelectorAll('.shxr.hd').length===1&&tx(card,'.shxr.hd span')===',,peso,reps,rir,σ');
+    A('cabecera: día, fecha, gym y duración', tx(card,'.shsn')==='push A'&&tx(card,'.shsm').indexOf(fmtShort('2026-09-27'))>=0&&tx(card,'.shsm').indexOf('g1')>=0&&tx(card,'.shsum').indexOf(fmtDur(75))===0);
+    A('marca gym//TRK', tx(card,'.shfoot')==='gym//TRK');
+    A('el selector va fuera de la imagen, con la sesión primero', !card.querySelector('.shvt')&&tx(box,'.shvt [role="tab"]')==='sesión,lista'&&box.querySelector('.shvt .on').dataset.v==='sesion');
+    s.metric='rpe'; box=paint(); A('una sesión en RPE se lee en RPE', tx(box,'.shxr.hd span')===',,peso,reps,rpe,σ'&&tx(box,'.shxr:not(.hd) .r').indexOf('9,9,10')===0); delete s.metric;
+    let n=0; reRender=function(){ n++; }; btn=document.createElement('button'); btn.type='button'; btn.hidden=true; btn.dataset.act='shview'; btn.dataset.v='lista'; document.getElementById('app').appendChild(btn); btn.click();
+    A('tocar [lista] cambia la vista y repinta una vez', state._shv==='lista'&&n===1);
+    box=paint(); A('la lista se conserva tal cual', box.querySelectorAll('.srw').length===2&&!box.querySelector('.shxr')&&tx(box,'.srs1').indexOf('110lbs×8@1,110lbs×7@1,↓60lbs×10@0')===0&&box.querySelector('.shvt .on').dataset.v==='lista');
+    A('el texto copiable no cambia', shareTextFor().indexOf('#chest press banca 110lbs×8@1 / 110lbs×7@1 / ↓60lbs×10@0')>0);
+    A('compartir no escribe en db', JSON.stringify(db)===h0);
+    console.log('share-sess self-check OK');
+  } finally { reRender=rr; if(btn)btn.remove(); db=real; state.shareType=t0; state.shareId=i0; if(v0===undefined)delete state._shv; else state._shv=v0; _shM=m0; bumpIdx(); }
+}
 function renderShareSession(id){
   const s=(db.sessions||[]).find(x=>x.id===id)||(db.sessions||[]).filter(x=>x.type!=='rest').slice(-1)[0];
   if(!s)return summaryShell(shTopRow('sesión',''),`<div class="empty">sin sesión para compartir</div>`);
@@ -5306,7 +5385,7 @@ function renderShareSession(id){
   let prevM=null;
   const body=M.exs.map(x=>{ const m=x.muscle&&x.muscle!==prevM?'#'+x.muscle:''; prevM=x.muscle;
     return `<div class="srw"><span class="srm">${escTxt(m)}</span><span class="srb"><span class="srn">${escTxt(x.name)}</span> ${x.toks.map(shTokHTML).join('<span class="srsep">&nbsp;/</span> ')}</span></div>`; }).join('');
-  return summaryShell(top,body||'<div class="empty">sin series registradas</div>'); }
+  return summaryShell(top,(shSessView()==='lista'?body:shSessTableHTML(M))||'<div class="empty">sin series registradas</div>',shSessTabsHTML()); }
 function shFoodModel(iso){
   const {items,t}=macroTotals(); const food=items.filter(m=>!isWaterItem(m));
   const P=dayMealParts(iso,food,t.kcal);
@@ -5393,6 +5472,8 @@ async function shareImage(){
     let n; while((n=tw.nextNode())){ const el=n.parentElement, cs=getComputedStyle(el); const rg=document.createRange(); rg.selectNodeContents(n); const rects=rg.getClientRects(); if(!rects.length)continue;
       const fs=parseFloat(cs.fontSize), ls=parseFloat(cs.letterSpacing)||0, adv=0.6*fs+ls; x.font=cs.fontWeight+' '+(fs*K)+'px "JetBrains Mono", ui-monospace, monospace'; x.fillStyle=cs.color; x.textBaseline='middle';
       const clip=el.getBoundingClientRect(); x.save(); x.beginPath(); x.rect((clip.left-box.left)*K,(clip.top-box.top)*K,clip.width*K,clip.height*K); x.clip();
+      // v285 · un texto que dobló de línea (un nombre largo: B-12, no se corta) se pinta carácter por carácter donde quedó; antes salía todo en la primera línea
+      if(rects.length>1){ const s=n.nodeValue; for(let i=0;i<s.length;){ const len=s.codePointAt(i)>0xFFFF?2:1, ch=s.slice(i,i+len); rg.setStart(n,i); rg.setEnd(n,i+len); const q=rg.getClientRects()[0]; if(q&&q.width>0&&ch.trim())x.fillText(ch,(q.left-box.left)*K,(q.top+q.height/2-box.top)*K); i+=len; } x.restore(); continue; }
       let px=rects[0].left, txt=n.nodeValue.replace(/\s+/g,' '); const cy=(rects[0].top+rects[0].height/2-box.top)*K;
       for(const ch of txt){ x.fillText(ch,(px-box.left)*K,cy); px+=adv; } x.restore(); }
     const blob=await new Promise(r=>c.toBlob(r,'image/png')); if(!blob)throw new Error('sin imagen');
@@ -8434,6 +8515,7 @@ document.getElementById('app').addEventListener('click',e=>{
     try{ if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(txt).then(done,()=>trkPrompt({title:'copiar',label:'TEXTO',value:txt,ok:'listo'},()=>{})); }
       else trkPrompt({title:'copiar',label:'TEXTO',value:txt,ok:'listo'},()=>{}); }catch(_){ trkPrompt({title:'copiar',label:'TEXTO',value:txt,ok:'listo'},()=>{}); } }
   else if(a==='shimg'){ shareImage(); }
+  else if(a==='shview'){ state._shv=el.dataset.v==='lista'?'lista':'sesion'; reRender(); }   // v285 · sesión (formato de la sesión) | lista
   else if(a==='shareweight'){ state.shareType='weight'; go('share'); }
   else if(a==='mealsummary'){ openMealSummary(el.dataset.tag); }
   else if(a==='mealrename'){ const tag=el.dataset.tag; state.renamingTag=tag; render();
