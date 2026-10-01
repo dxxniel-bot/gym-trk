@@ -233,9 +233,12 @@ caracteres sin perder un dato?
 | 2026-10-01 | **El 1RM estimado no se muestra en ningún lado** y Progress va corto (v285) | "Records 1RM… a mí no me sirve de nada" · "en progreso hay un cagadero" |
 | 2026-10-01 | **`sync biometrics`** es el nombre y va arriba (v285) | "está hasta abajo el pegar salud. Tiene que estar en una parte más accesible y que diga Sync Biometrics" |
 | 2026-10-01 | **Los días del split se pliegan** y coverage es una lista con número (v285) | "los días del split deben de ser desplegables porque quedan súper largos" |
+| 2026-10-01 | **El Atajo se descarga, no se arma** (v287): `sync biometrics` instala y corre `TRK Biometrics`; la receta sale de la app | "Esta madre no tiene que ser un tutorial para que lo haga el usuario… crear un shortcut y poderlo compartir… El chiste es minimizar la fricción" |
 | 2026-10-01 | **El catálogo es un árbol con líneas**: ejercicio → variantes `[bi] [uni] [alt]`, con vistas por músculo, por gym y A–Z (v286; las líneas se dibujan con CSS) | "leg extension… que salgan las variantes: unilateral, bilateral… curl de bíceps, bilateral, alternado" · eligió "árbol con líneas" |
 
 ## 10. Preguntas abiertas (se cierran en el estudio, `tools/studio.html`)
+
+**Abiertas desde v287 (sync biometrics):** ¿la lista de qué llegó en cada sync o solo cuando cambia (hoy: la primera vez y cuando cambia)?; en plena sesión, al volver de Atajos no sale la hoja de traer (la ofrece la fila al salir): ¿así, o un aviso corto?; si el iPhone rechaza el archivo firmado por HubSign: ¿membresía de RoutineHub o armarlo una vez a mano y compartir el enlace de iCloud?
 
 **Abiertas desde v286 (catálogo):** ¿el tipo en español en el catálogo (`libre · máquina · polea`, como en el dibujo que aprobó) o en inglés como el resto (`free · machine · cable`)?; ¿el menú de una variante (historial · mover registros) abre al tocar su corchete, o va dentro del menú del ejercicio?; la etiqueta de la hoja dice la marca en lugar del tipo cuando hay marca: ¿así, o siempre `tipo · marca · gym`?; en la vista por gym solo salen ejercicios con registros ahí: ¿también los marcados a mano como "existe en este gym"?; al unir, el setup de máquina que no eliges se queda guardado sin mostrarse: ¿así o se borra?
 

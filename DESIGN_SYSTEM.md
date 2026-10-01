@@ -1,6 +1,6 @@
 # gym//TRK — DESIGN SYSTEM (referencia del estado actual)
 
-> Referencia del estado actual (v286). **Lee BRAND.md primero**: manda sobre este archivo. Sin historia: DESIGN_CHANGELOG.md.
+> Referencia del estado actual (v287). **Lee BRAND.md primero**: manda sobre este archivo. Sin historia: DESIGN_CHANGELOG.md.
 
 ---
 
@@ -1571,16 +1571,17 @@ Day sí es saltar el día del split". Antes los dos avanzaban la rotación.
   - Sin encabezado `trk2` pide al menos 2 líneas válidas (así un texto cualquiera no se importa).
 - **Lo tecleado gana:** `ingestHealth` suma `body[]`; el peso que registras a mano queda `H().src.weight[fecha]='manual'`
   y el Atajo no lo pisa. El formato viejo de URL (`?steps=…`) sigue entrando por `importHealth`.
-- **Entradas:** //STATS en gym `health · paste ···· 3 min` (con más de 18 h: `· tap`) · //HEALTH en ajustes
-  `[pegar de Salud] [cómo armar el Atajo] [importar JSON]` · el enlace `↻ pegar de Salud` al final de //PROGRESS · en el
-  alta (v277, §7.34), el paso `conecta Salud` con `[cómo se arma el Atajo]` (solo en iPhone).
-- **Pegar = 2 toques:** `healthPasteNow()` lee el portapapeles dentro del toque (iOS muestra su burbuja "Pegar"); si no hay
-  permiso o el texto no es del Atajo, abre la hoja `pegar de Salud` con la casilla.
-- **La receta** (`openShortcutSetup()`): 7 pasos numerados (`.hpst`: número `--o40`, texto `--o70`, acciones del iPhone en
-  `--fg`/700), el ejemplo de lo copiado en `.hpfmt` (caja fina `--o20`, radio `--r-ctl`) y `pegar ahora` como primario.
-  Explica en una línea que aún no somos app nativa. `SHORTCUT_URL` (vacío hoy) muestra `[instalar atajo]` cuando el dueño
-  comparta el Atajo por iCloud: un `[verbo]` (clase `b`, v271; antes era un segundo primario junto a `pegar ahora`:
-  R-OK vuelve a 6).
+- **Entradas (v287):** la fila `sync biometrics ···· hace 3 h ›` (`syncRowHTML()`) arriba de //PROGRESS y en gym //STATS ·
+  //HEALTH en ajustes `[sync biometrics] [pegar a mano] [importar JSON]` · en el alta (§7.34), el paso `conecta Salud`
+  con `[instalar atajo]` (solo en iPhone).
+- **Hojas de `sync biometrics` (v287; cada una con un primario o ninguno, sin texto instructivo de más):**
+  instalar (`openBioInstall`): una línea + `▶ instalar atajo` (enlace `<a class="ok">` al archivo firmado, o a
+  `SHORTCUT_URL` cuando exista) + `[ya lo tengo]` · traer (`openBioFetch`): `▶ traer datos` + `[pegar a mano]`, una vez por
+  corrida y nunca encima de otra capa ni en plena sesión · qué llegó (`openBioResult`): `pasos ✓ · peso ✓ · grasa — …` +
+  `[cerrar]`, sin primario · pegar a mano (`openHealthImport`): la casilla con `[pegar del portapapeles]`.
+- **Traer = 2 toques:** `▶ traer datos` lee el portapapeles dentro del toque (iOS muestra su burbuja "Pegar"); si no hay
+  permiso o el texto no es del Atajo, abre pegar a mano. La receta paso a paso salió de la interfaz (el dueño: "no tiene
+  que ser un tutorial"); queda en `tools/shortcut/README.md`.
 - **Renglones tocables de //STATS:** `.line.stat.tap` = el renglón entero es el botón (antes solo el número), con el
   mismo alto que sus vecinos: `steps · today`, `sleep · last night`, `health · paste`. **Hoy → objetivo:** siguen bajo 44 de
   alto como todo //STATS (B-11); subirlos a 44 solo a ellos deja el bloque disparejo (probado en v270 y revertido).
