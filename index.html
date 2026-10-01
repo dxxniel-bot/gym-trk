@@ -126,6 +126,7 @@
   .section .h{font-size:var(--t-section); font-weight:800;} .section .h .s{color:var(--o50);}
   .section .meta{font-size:var(--t-label); color:var(--o50); cursor:pointer; padding:6px var(--s2);}
   .section .meta[data-act]{border-radius:var(--r-ctl); padding:var(--s1) var(--s3);}   /* el borde usaba --o15 (no existe) y nunca se pintó; los [ ] ya dicen "acción" */
+  .section .meta[data-act]{position:relative;} .section .meta[data-act]::after{content:''; position:absolute; inset:-14px -6px;}   /* v285 · se ve chico, se toca de 44 ([catalog], [settings]) */
 
   /* CTA buttons */
   .cta{margin-top:var(--s5);}
@@ -500,8 +501,10 @@
   /* v224 · aviso de deriva entre el split escrito y lo que de verdad entrenas */
   .sedrift{display:flex; align-items:center; gap:var(--s3); flex-wrap:wrap; margin:var(--s2) 0 6px; padding:6px var(--s3); border:var(--bw-box) dashed var(--o20); font-size:var(--t-label); color:var(--o50);}
   .sedrift b{color:var(--o70); font-weight:700;} .sedrift .b{background:none; border:0; color:var(--fg); font-size:var(--t-label); font-weight:700; cursor:pointer; padding:0; white-space:nowrap;}
-  .mgbar{display:flex; align-items:center; gap:var(--s3); flex-wrap:wrap; box-sizing:border-box; min-height:62px; padding:var(--s3) 10px; margin-bottom:var(--s3); border:var(--bw-box) solid var(--o20); font-size:var(--t-data); color:var(--o60); position:sticky; top:0; z-index:1; background:var(--sheet-bg);}   /* v285 · alto fijo y pegada arriba: elegir no mueve las filas y [unir] queda a la vista */
+  .mgbar{display:flex; align-items:center; gap:var(--s3); flex-wrap:wrap; box-sizing:border-box; min-height:62px; padding:var(--s3) 10px; margin-bottom:var(--s3); border:var(--bw-box) solid var(--o20); font-size:var(--t-data); color:var(--o60); position:sticky; top:0; z-index:1; background:var(--sheet-bg); box-shadow:0 calc(-1 * var(--s6)) 0 var(--sheet-bg);}   /* v285 · alto fijo y pegada arriba (la sombra tapa la franja de arriba): elegir no mueve las filas y [unir] queda a la vista */
   .mgbar .b{background:none; border:0; color:var(--fg); font-size:var(--t-data); font-weight:700; cursor:pointer; padding:0;}
+  /* v285 · T1 · el colchón de scrollHold (lo tocado no sube aunque el contenido se acorte) y sin anclaje propio del navegador */
+  .vpad{flex:0 0 auto; pointer-events:none; transition:none; animation:none;} #view,.sheet,#exsh,.fa-listwrap{overflow-anchor:none;}
   .exrow{display:flex; align-items:center; gap:var(--s3); padding:6px 0; border-bottom:var(--bw-sep) solid var(--o10); cursor:pointer;}
   .exrow.on{background:var(--o10);} .exrow .mgbox{flex:0 0 auto; font-size:var(--t-data); color:var(--o35);} .exrow.on .mgbox{color:var(--fg);}
   .exrow .exn{flex:1; font-size:var(--t-data);} .exrow .exc{font-size:var(--t-label); color:var(--o50); white-space:nowrap;}
@@ -611,8 +614,8 @@
   .restbar.on{display:flex;}
   /* v223: barra AHORA — mismo sitio que el descanso (fuera de #view, sobrevive a render()): dice en qué
      ejercicio y serie vas y un toque te lleva ahí. */
-  .restbar .rl{color:var(--o50); font-size:var(--t-label); letter-spacing:var(--ls-ui);}
-  .restbar .rt{font-weight:800; font-size:var(--t-section); font-variant-numeric:tabular-nums; min-width:52px;}
+  .restbar .rl{color:var(--o50); font-size:var(--t-label); letter-spacing:var(--ls-ui); white-space:nowrap;}
+  .restbar .rt{font-weight:800; font-size:var(--t-section); font-variant-numeric:tabular-nums; min-width:0; white-space:nowrap;}
   .restbar a{position:relative; display:inline-flex; align-items:center; height:32px; padding:0 var(--s3); color:var(--o60); border:var(--bw-ctl) solid var(--border); border-radius:var(--r-ctl); cursor:pointer; font-size:var(--t-data); -webkit-user-select:none; user-select:none;}
   .restbar a::after{content:''; position:absolute; inset:-6px -3px;}   /* se ve de 32, se toca de 44 */
   .restbar.fin .rt{color:var(--good);}
@@ -629,6 +632,7 @@
   .footer .wbar{flex:1; height:44px; padding:0; background:none; border:0; border-radius:var(--r-ctl); color:var(--o60); font-family:inherit; font-size:var(--t-section); font-weight:800; letter-spacing:.3em; cursor:pointer;} .footer .wbar:active{opacity:var(--op-press);}
   .footer .restbar.on ~ .wbar{flex:0 0 48px;}
   .footer.open .wbar,.footer.open .restbar{display:none;} .footer:not(.open) .abort,.footer:not(.open) .undo,.footer:not(.open) .save{display:none;}
+  @media(max-width:350px){ .footer .restbar a[data-act="restminus"]{display:none;} .mscd .md3 .mdsub{white-space:normal;} }   /* a lo angosto: −15 cede su lugar y la nota del detalle baja de renglón */
   /* v280 · zona del pulgar. El dueño (30-sep): "guardar rutina o cancelar o salirte… está en la parte inferior, y si quieres
      swipear entre aplicaciones se hace desde la parte inferior… lo que sí se necesite, cerca del lado inferior derecho".
      · El pie de la sesión deja libre la franja del gesto de iOS: sus botones quedaban a 12 px del borde, 22 px DENTRO de los
@@ -2445,7 +2449,7 @@ function openExProfile(name,back,gymSel){
   // una sugerencia solo se vuelve tuya si TOCAS esa fila (aunque elijas lo mismo)
   ['pf_rp','pf_len'].forEach(id=>{ const el=document.getElementById(id); if(el)el.addEventListener('click',()=>{ el.dataset.touched='1'; el.classList.remove('sug'); }); });
   const tw=document.getElementById('modal'); if(tw)tw.querySelectorAll('#pf_prim,.pfsel,.pfw').forEach(x=>x.addEventListener('change',()=>{ tw.dataset.tTouched='1'; }));
-  const gs=document.getElementById('pf_gym'); if(gs)gs.addEventListener('change',()=>openExProfile(ex.name,back,gs.value));
+  const gs=document.getElementById('pf_gym'); if(gs)gs.addEventListener('change',()=>{ openExProfile(ex.name,back,gs.value); const _m=document.getElementById('modal'); if(_m)_m._dirty=false; });   // v285 · cambiar de gym repinta desde lo guardado: no hay nada escrito que perder
 }
 function saveExProfile(){ const ctx=window._exProf; if(!ctx)return; const m=document.getElementById('modal'); const nm=ctx.name;
   const pv=id=>{ const e=document.querySelector('#'+id+' .t.on'); return e?e.dataset.v:''; };
@@ -2620,7 +2624,7 @@ function diagnoseMuscle(inp){ const F=[]; if(!inp||!inp.n28)return {findings:F,s
   if(loss&&w1.nk>=DIAG.failMinN&&w1.nf/w1.nk>DIAG.failShare)
     F.push({k:'failure',sev:'warn',txt:Math.round(w1.nf/w1.nk*100)+'% de las series a F o RIR 0',row:Math.round(w1.nf/w1.nk*100)+'% a F o RIR 0',kv:['a F o RIR 0',Math.round(w1.nf/w1.nk*100)+'%',r1m(w1.nf)+' de '+r1m(w1.nk)+' series'],ev:r1m(w1.nf)+' de '+r1m(w1.nk)+' series en 7 días',do:'a RIR 1–2 el estímulo es ~90 % y la fatiga, cerca de la mitad'});
   // 4b · fallo en compuesto pesado libre (IUSCA 2021; Cowley 2026)
-  if(loss&&w1.heavyF>=1)F.push({k:'heavyF',sev:'warn',txt:'fallo en compuesto pesado',row:w1.heavyF+' al fallo en compuesto pesado',kv:['fallo pesado',w1.heavyF+(w1.heavyF>1?' series':' serie'),'con 75% o más de tu 1RM'],ev:w1.heavyF+' serie'+(w1.heavyF>1?'s':'')+' al fallo con 75 % o más de tu 1RM en 7 días',do:'en compuestos pesados el fallo cansa más y se recupera lento; a RIR 1–2 rinde casi igual'});
+  if(loss&&w1.heavyF>=1)F.push({k:'heavyF',sev:'warn',txt:'fallo en compuesto pesado',row:w1.heavyF+' al fallo en compuesto pesado',kv:['fallo pesado',w1.heavyF+(w1.heavyF>1?' series':' serie'),'con 75% o más de tu máximo'],ev:w1.heavyF+' serie'+(w1.heavyF>1?'s':'')+' al fallo con 75 % o más de tu máximo en 7 días',do:'en compuestos pesados el fallo cansa más y se recupera lento; a RIR 1–2 rinde casi igual'});
   // 4d · sesión cargada: desde ~10 σ en una sesión cada serie vale menos (Remmert 2025, débil)
   if(w1.maxVs>DIAG.sesVs)F.push({k:'session',sev:'info',txt:'sesión cargada',row:'sesión cargada · σ '+fmtSig(w1.maxVs),ev:'σ '+fmtSig(w1.maxVs)+' en una sola sesión (desde ~10 cada serie vale menos; la serie 15 vale la mitad)',do:'pasa algunas series a otro día de la semana'});
   // 5 · secuencia: cayó yendo tras otro al fallo, y la vez anterior NO iba así
@@ -2630,7 +2634,7 @@ function diagnoseMuscle(inp){ const F=[]; if(!inp||!inp.n28)return {findings:F,s
   if(w1.rir!=null&&w1.rn>=DIAG.farMinRN&&w1.rir>=DIAG.farRIR&&(p14==null||p14>=-1)&&!flagged)
     F.push({k:'far',sev:'info',txt:'lejos del fallo',row:'lejos del fallo · RIR '+r1m(w1.rir),ev:'RIR medio '+r1m(w1.rir)+' en 7 días · capacidad '+(p14==null?'sin comparación':pc(p14)),do:'antes de sumar series, acércate a RIR 1–2: rinde ~90 % de una serie al fallo con mucha menos fatiga (Robinson 2024; Refalo 2024)'});
   // 7 · v272 · ligero y lejos del fallo: con poco peso quedarse lejos casi no estimula (Lasevicius 2022)
-  if(w1.lightFar>=DIAG.lightFarN)F.push({k:'lightFar',sev:'info',txt:'ligero y lejos del fallo',row:'ligero y lejos',ev:w1.lightFar+' series con menos de 50 % de tu 1RM y RIR 3 o más en 7 días',do:'con este peso, lejos del fallo casi no estimula: llega a RIR 0–1 o sube el peso'});
+  if(w1.lightFar>=DIAG.lightFarN)F.push({k:'lightFar',sev:'info',txt:'ligero y lejos del fallo',row:'ligero y lejos',ev:w1.lightFar+' series con menos de 50 % de tu máximo y RIR 3 o más en 7 días',do:'con este peso, lejos del fallo casi no estimula: llega a RIR 0–1 o sube el peso'});
   // 7b · más de 30 reps: el estímulo baja y la fatiga sube (Lasevicius 2018; Buckner 2020; Pareja-Blanco 2019)
   if(w1.r30>=DIAG.r30N)F.push({k:'r30',sev:'info',txt:'series de más de 30 reps',row:'>30 reps',ev:w1.r30+' series de más de 30 reps en 7 días',do:'arriba de ~30 reps cada serie rinde menos y cansa ~2.5–3×; sube el peso hasta quedar en 8–30'});
   // 7d · pierna al fallo: 48-72 h (Morán-Navarro 2017; Bartolomei 2017) · estímulo: solo con pérdida sostenida
@@ -2699,9 +2703,10 @@ function openMuscleDetail(id){ const M=MUSCLES[id]; if(!M)return; const t=todayI
     +`<div class="mdbar">${sigBarHTML('md:'+id+':sig',c.Ts,CE,hb?hb.med:0)}${hb?`<span class="mdbc">marca: tu habitual</span>`:''}</div>`
     +row3(glossWrap('tu habitual','lm'),hb?fmtSig(hb.med):'—',hb?'por semana · '+hb.n+' sem':'desde 3 semanas')
     +row3('cómo va',EXST_LBL[tr.state],muscleTrendSub(tr))
-    +(rd?row3(glossWrap('recovery','recov'),rd.v,escTxt(rd.sub)):'')
+    +(rd?row3(glossWrap('recovery','recm'),rd.v,escTxt(rd.sub)):'')
     +(wn?row3(stimGlyph(wn.sev)+escTxt(wn.kv[0]),escTxt(wn.kv[1]),escTxt(wn.kv[2]),' w'):'')
     +(FF?`<div class="mdfl u-tap" role="button" tabindex="0" data-act="deloadinfo"><span>${stimGlyph('warn')}${FF.down.length} ejercicios retrocediendo</span><span class="u-o40">›</span></div>`:'')+`</div>`
+    +`<div class="sheetbtns u-mt8"><button type="button" class="b" data-act="mdmore" aria-expanded="false" aria-controls="mdmore">más</button><button class="cancel" data-act="closemodal">cerrar</button></div>`
     +`<div id="mdmore" hidden>`
     +(dg.state==='findings'?`<div class="grp-label sub">DIAGNOSIS</div>`+diagBlockHTML(dg):'')
     +`<div class="grp-label sub">VOLUME · 7 días</div>`
@@ -2727,8 +2732,7 @@ function openMuscleDetail(id){ const M=MUSCLES[id]; if(!M)return; const t=todayI
     +`<div class="grp-label sub">PERFORMANCE · últimas exposiciones</div>`
     +(last.length?last.map(a=>{ const pf=a.perf.length?a.perf.reduce((x,y)=>x+y,0)/a.perf.length:null; return line(fmtShort(a.date),r1m(a.sets)+' series'+(a.rn?' · RIR '+r1m(a.rs/a.rn):''),pf!=null?`<span style="color:${pf>0?'var(--good)':pf<0?'var(--bad)':'var(--o40)'}">${pf>0?'▲ +':pf<0?'▼ ':'= '}${r1m(pf)}%</span>`:'sin comparación'); }).join(''):'<div class="submeta">sin exposiciones</div>')
     +`<div class="submeta u-mt10 u-o40">σ · unidades de tensión mecánica, medida propia de gym//TRK · costo = fatiga (1 = una serie a RIR 2)</div>`
-    +`</div>`
-    +`<div class="sheetbtns u-mt12"><button type="button" class="b" data-act="mdmore" aria-expanded="false" aria-controls="mdmore">más</button><button class="cancel" data-act="closemodal">cerrar</button></div></div>`;
+    +`<div class="sheetbtns u-mt12"><button class="cancel" data-act="closemodal">cerrar</button></div></div></div>`;
   openModal(html,'mdetail-wrap'); }
 // ---------- E5 · RECOVERY (los músculos de la sesión que toca) ≠ READINESS (tú hoy) ----------
 // El dueño (30-sep): "debería ser dos puntajes diferentes… el de recovery en base al descanso de los grupos musculares que
@@ -3227,10 +3231,9 @@ function stimulusRows(){ const t=todayISO(), d7=shiftDate(t,-6); const idx=muscl
 function stimulusSection(){ const rows=stimulusRows();
   const head=`<hr class="rule"/><div class="section u-mb12"><div class="h"><span class="s">//</span>STIMULUS</div><div class="meta" data-gloss="stim">σ · unidad de tensión mecánica · 7 d</div></div>`;
   if(!rows.length)return head+`<div class="submeta u-py6 u-px0">aún sin series esta semana</div>`;
-  const CE=Math.max(0.1,...rows.map(r=>Math.max(r.v,r.hb?r.hb.med:0)))*1.1, unres=muscleUnresolvedCount();   // una sola escala: las barras se comparan entre músculos
+  const CE=Math.max(0.1,...rows.map(r=>r.v))*1.1;   // una sola escala: las barras se comparan entre músculos
   return head+`<div class="stqh c2 hd"><span class="stqn">músculo</span><span class="stqv">σ</span><span class="stqv">recovery</span></div>`
-    +rows.map(r=>`<div class="stq u-tap" role="button" tabindex="0" data-act="muscledetail" data-id="${r.id}"><div class="stqh c2"><span class="stqn">${escTxt(r.m)}</span><span class="stqv">${fmtSig(r.v)}</span><span class="stqv p">${recPct(r.rec)}</span></div>${sigBarHTML('stim:'+r.id,r.v,CE,r.hb?r.hb.med:0)}</div>`).join('')
-    +(unres?`<div class="stq u-tap" role="button" tabindex="0" data-act="musclemap"><div class="stw dim"><span>${unres} ${unres===1?'ejercicio':'ejercicios'} sin músculo asignado</span><span class="r">›</span></div></div>`:''); }
+    +rows.map(r=>`<div class="stq u-tap" role="button" tabindex="0" data-act="muscledetail" data-id="${r.id}"><div class="stqh c2"><span class="stqn">${escTxt(r.m)}</span><span class="stqv">${fmtSig(r.v)}</span><span class="stqv p">${recPct(r.rec)}</span></div>${sigBarHTML('stim:'+r.id,r.v,CE,0)}</div>`).join(''); }   // la marca de tu habitual vive en el detalle (ahí se dice qué es): en la lista, nada sin explicar
 // estímulo self-check (v285) — //STIMULUS = σ + recovery por músculo en columnas, sin pestañas ni avisos en la lista; tu
 // habitual (la mediana de tus semanas) como única referencia; el detalle en filas con [más]. db de juguete; se restaura todo.
 function _estimuloSelfCheck(){ const A=(nm,c)=>{ if(!c) throw new Error('SELFCHECK estímulo: '+nm); };
@@ -3264,9 +3267,9 @@ function _estimuloSelfCheck(){ const A=(nm,c)=>{ if(!c) throw new Error('SELFCHE
     A('el % es el mismo de gym', rs.every(r=>recPct(r.rec)===recPct(muscleRecAt(r.id))));
     A('cada fila abre el detalle de su músculo', rs.every(r=>h.indexOf('data-act="muscledetail" data-id="'+r.id+'"')>0));
     // 3 · tu habitual: la mediana de tus semanas con entreno; con menos de 3 no hay referencia ni marca
-    A('sin 3 semanas de historia no hay habitual ni marca', muscleHabit('chest')===null&&h.indexOf('class="mev"')<0);
+    A('sin 3 semanas de historia no hay habitual', muscleHabit('chest')===null);
     db=mk(up); bumpIdx(); h=stimulusSection(); const hb=muscleHabit('chest');
-    A('con historia: la mediana de tus semanas y UNA marca en la barra', !!hb&&hb.n>=3&&hb.med>0&&(h.match(/class="mev"/g)||[]).length===1&&/title="tu habitual: σ [\d.]+"/.test(h));
+    A('con historia hay habitual, y la lista no lleva marcas sin explicar', !!hb&&hb.n>=3&&hb.med>0&&h.indexOf('class="mev"')<0&&h.indexOf('sin músculo asignado')<0);
     { const wk=[]; for(let k=1;k<=8;k++){ const to=shiftDate(t,-7*k), s=muscleWindowAgg('chest',shiftDate(to,-6),to).Ts||0; if(s>0)wk.push(s); } A('…que es la mediana de las 8 semanas anteriores a esta', hb.med===median(wk)&&hb.n===wk.length); }
     // 4 · todo a RIR 0 pero progresando: ni aviso ni regaño
     A('progresando con todo al fallo: sin aviso', exStatus(exHistKey({name:'press up',type:'free'})).state==='progress'&&stimWarn('chest')===null&&h.indexOf('⚠')<0&&!/mucho fallo|descansa/.test(h));
@@ -3402,7 +3405,7 @@ function totalScore(sets,confirmedOnly){ let sum=0,n=0; (sets||[]).forEach(s=>{ 
 function avgE1RM(sets,confirmedOnly){ let sum=0,n=0; (sets||[]).forEach(s=>{ if(confirmedOnly&&s._pf)return; const v=e1rmOf(s); if(v>0){sum+=v;n++;} }); return n?sum/n:0; }
 // ── σ v2 · ESTÍMULO Y COSTO POR SERIE (v272; el dueño aprobó el modelo el 24-sep: contexto/tension-v2.md §3 y §6) ──
 // Dos lecturas, a propósito: el ▲▼% es CAPACIDAD (arriba); σ es el estímulo de hipertrofia que la serie APLICÓ, en "series
-// efectivas" (1.0 = una serie al fallo con ≥30 % de tu 1RM, la unidad de los estudios de volumen). Reemplaza a la T de v219,
+// efectivas" (1.0 = una serie al fallo con ≥30 % de tu máximo, la unidad de los estudios de volumen). Reemplaza a la T de v219,
 // que premiaba de más el fallo (RIR 0 valía 1.95× RIR 2; la evidencia dice 1.05-1.10×). Por serie, con I = carga / tu 1RM:
 //   k_ef  RIR efectivo (el RIR anotado tiene sesgo): F → 0 · RIR 0 anotado → 0.5 (+ hasta 2.5 si pasa de 20 reps: el
 //         "ardor" no es fallo) · RIR k ≥ 1 → k + min(5, 0.1·k·(r−12)⁺) · sin RIR → Epley inversa con tu 1RM, o 3 (estimado)
@@ -4928,7 +4931,7 @@ function progBadgeFromProg(pr,title){ if(!pr)return ''; const col=pr.dir==='up'?
 // v272 · RIR objetivo según tu peso relativo (tension-v2.md §4): lejos del fallo con peso ligero casi no estimula; con
 // peso alto, RIR 2-3 ya da casi todo. Reemplaza al contador de zonas (salía de reps+RIR, no de la carga real).
 function rirTargetTxt(I){ return !(I>0)?'':I<0.55?'RIR 0–1':I<0.70?'RIR 1–2':I<0.85?'RIR 2':'RIR 2–3'; }
-function progBadgeHTML(ex,tn){ const x=tn&&tn.per&&tn.per.find((p,i)=>p&&p.I>0&&!((ex.sets||[])[i]||{}).isDrop); const t=x?rirTargetTxt(x.I):''; return t?`<span class="exzones u-label u-o50 u-ml6 u-lsui" title="RIR objetivo con este peso (~${Math.round(x.I*100)}% de tu 1RM)">obj ${t}</span>`:''; }
+function progBadgeHTML(ex,tn){ const x=tn&&tn.per&&tn.per.find((p,i)=>p&&p.I>0&&!((ex.sets||[])[i]||{}).isDrop); const t=x?rirTargetTxt(x.I):''; return t?`<span class="exzones u-label u-o50 u-ml6 u-lsui" title="RIR objetivo con este peso (~${Math.round(x.I*100)}% de tu máximo)">obj ${t}</span>`:''; }
 function progBadgeHTMLold(ex){ const z=exerciseZones(ex); const total=z.light+z.productive+z.heavy; if(!total)return ''; const parts=[]; if(z.productive)parts.push(`<span class="u-good">${z.productive}✓</span>`); if(z.light)parts.push(`<span class="u-warn" title="series flojas — sube peso o llega más cerca al fallo">${z.light}↑</span>`); if(z.heavy)parts.push(`<span class="u-warn" title="series demasiado pesadas — baja peso o sube reps">${z.heavy}↓</span>`); return `<span class="exzones u-label u-w7 u-ml6 u-lsui">${parts.join(' ')}</span>`; }
 // fresh-equivalent e1RM when a fatigue-context row is available (from sessionFatigueContext), else raw.
 function effE1RM(s,ctx){ return ctx?correctedE1RM(s,ctx):e1rmOf(s); }
@@ -5292,7 +5295,8 @@ function sessionContextNote(w){
 const EX_HOLD_MS=4000;
 function exHoldClear(){ const h=state._exHold; if(h){ clearTimeout(h.t); state._exHold=null; } }
 function exHoldGo(){ const h=state._exHold; if(!h)return; exHoldClear(); const w=db.activeWork; if(!w||!w.exercises)return;
-  if(state._curEx===w.exercises.indexOf(h.ex)){ state._curEx=null; const nt=currentSetTarget(); if(nt)state._focusSet={exi:nt.exi,si:nt.si}; if(state.screen==='workout')reRender(); } }
+  if(state._curEx===w.exercises.indexOf(h.ex)){ state._curEx=null; const nt=currentSetTarget(); if(nt)state._focusSet={exi:nt.exi,si:nt.si};
+    if(state.screen==='workout'){ try{ const v=document.getElementById('view'), b=nt&&v.querySelector('.ex[data-exi="'+nt.exi+'"]'); if(b&&b.dataset.rk)_lastTap={sig:'',sel:'',el:null,sheet:null,view:true,off:0,rk:b.dataset.rk,rkOff:b.getBoundingClientRect().top-v.getBoundingClientRect().top}; }catch(_){} reRender(); _lastTap=null; } } }
 function exHoldStart(ex){ exHoldClear();
   const fire=()=>{ const h=state._exHold; if(!h||h.ex!==ex)return; const ae=document.activeElement;
     if(state._wbar||document.getElementById('modal')||document.getElementById('exsh')||(ae&&/^(INPUT|SELECT|TEXTAREA)$/.test(ae.tagName))){ h.t=setTimeout(fire,1500); return; }
@@ -5885,7 +5889,7 @@ function renderExHist(){ const key=state._exKey, rows=exHistRows(key); const bac
   return statusBar(false)+back
     +dayHeadHTML('EXERCISE',latTxt(ex)+escTxt(ex.name),[canonType(ex.type),n+' sesiones',U].filter(Boolean).join(' · '))
     +'<div class="submeta u-mb10">'+escTxt(exStatusTxt(st))+'</div>'
-    +'<div class="mdtabs tall" data-tk="exh-t">'+tabs+'</div>'+chart+(cmp.length<rows.length?'<div class="u-label u-o40 u-mt4">la línea: solo '+escTxt(g0||'este gym')+' · otra máquina no se compara</div>':'')+(offU?'<div class="u-label u-o40 u-mt4">'+offU+(offU===1?' sesión en otra unidad no entra':' sesiones en otra unidad no entran')+' en la línea ('+escTxt(U)+')</div>':'')+'<div class="mdtabs tall u-mt8" data-tk="exh-r">'+per+'</div>'
+    +'<div class="mdtabs tall" data-tk="exh-t">'+tabs+'</div><div class="mdtabs tall u-mb8" data-tk="exh-r">'+per+'</div>'+chart+(cmp.length<rows.length?'<div class="u-label u-o40 u-mt4">la línea: solo '+escTxt(g0||'este gym')+' · otra máquina no se compara</div>':'')+(offU?'<div class="u-label u-o40 u-mt4">'+offU+(offU===1?' sesión en otra unidad no entra':' sesiones en otra unidad no entran')+' en la línea ('+escTxt(U)+')</div>':'')
     +'<hr class="rule"/><div class="section u-mb10"><div class="h"><span class="s">//</span>LOG</div><div class="meta">'+n+' sesiones · la más nueva arriba</div></div>'+log; }
 // un ejercicio en el formato compacto de compartir: [bi] nombre · músculo · unidad · T (+ extra) y sus series en una línea
 function sessExBlockHTML(e,r,t,extra){ return `<div class="sxr"><div class="sxh"><span class="sxn">${latTxt(e)}${escTxt(e.name)}</span><span class="sxk">${escTxt(e.muscle||'')}${r.unit?' · '+escTxt(r.unit):''}${t||''}${extra||''}</span></div><div class="sxs">${r.lines.join(' · ')}</div></div>`; }
@@ -6276,7 +6280,7 @@ function openMetricDetail(key){
   openModal(`<div class="mdetail">
     <div class="mdhd"><h3>${sp.title}</h3>${headBtn}</div>
     <div class="mdtabs" data-tk="md-${key}">${segs}</div>${custBox}
-    ${!real.length?`${nav}<div class="empty u-py32 u-px0">sin registros en este rango</div>`:`
+    ${!real.length?`<div class="mdtop2"><div><div class="mdval u-o30">—</div><div class="mdmeta">sin registros en este rango</div></div></div>${nav}<div class="empty u-py32 u-px0">sin registros en este rango</div>`:`
       <div class="mdtop2"><div><div class="mdval">${sp.valHTML?sp.valHTML(mdRound(lastV)):escTxt(vf(lastV))}</div><div class="mdmeta">${li>=0?fmtShort(sp.dates[li]):''}${avg!=null?' · prom '+escTxt(vf(avg)):''}</div></div>
         ${st?`<div class="mdst" style="color:${stCol}">${st}<div class="mdstl">tu normal ${escTxt(vf(lastBand[0]))} – ${escTxt(vf(lastBand[1]))}</div></div>`
             :(nb&&nb.lo==null?`<div class="mdst u-o40">sin normal<div class="mdstl">${nb.n}/${nb.need} d</div></div>`:'')}</div>
@@ -6396,8 +6400,8 @@ function macroVizHTML(k,t,g,o){ o=o||{}; g=g||{}; const M=[['protein','protein',
   return `<div class="macro-rad">${dayRadar(t,g)}</div><div class="rings">${o.rings||''}</div>`; }
 // el carrusel del panel abierto: una lámina por versión; pestañas de texto abajo; recuerda la última (db.settings.macroViz)
 function mvzHTML(t,g,rings){ const vk=macroVizKey(), VL=macroVizList();
-  return `<div class="mvz"><div class="mvtrack" id="mvtrack">${VL.map(([k])=>`<div class="mvslide" data-v="${k}">${macroVizHTML(k,t,g,{rings})}</div>`).join('')}</div></div>`
-    +`<div class="mdtabs tall mvtabs" data-tk="mvz" role="tablist">${VL.map(([k,l])=>`<span role="tab" aria-selected="${k===vk}" class="${k===vk?'on':''}" data-act="mvtab" data-v="${k}">${l}</span>`).join('')}</div>`; }
+  return `<div class="mdtabs tall mvtabs" data-tk="mvz" role="tablist">${VL.map(([k,l])=>`<span role="tab" aria-selected="${k===vk}" class="${k===vk?'on':''}" data-act="mvtab" data-v="${k}">${l}</span>`).join('')}</div>`   // v285 · antes del carril: lo que tocas no se mueve cuando la lámina cambia de alto
+    +`<div class="mvz"><div class="mvtrack" id="mvtrack">${VL.map(([k])=>`<div class="mvslide" data-v="${k}">${macroVizHTML(k,t,g,{rings})}</div>`).join('')}</div></div>`; }
 // tras pintar: la lámina elegida a la vista sin animación (render() rehace el DOM y el carril nuevo nace en 0)
 function mvzSync(){ const tr=document.getElementById('mvtrack'); if(!tr)return; const VL=macroVizList(), i=Math.max(0,VL.findIndex(v=>v[0]===macroVizKey()));
   // el carril toma la altura de la lámina a la vista (si no, la más alta deja huecos enormes en las demás)
@@ -7356,7 +7360,7 @@ function estimateTDEE(days){ days=days||90; const cut=lastDays(days)[0];
 function pearson(xs,ys){ var n=xs.length; if(n<2)return 0; var mx=0,my=0; for(var i=0;i<n;i++){mx+=xs[i];my+=ys[i];} mx/=n;my/=n; var num=0,dx=0,dy=0; for(var i=0;i<n;i++){var a=xs[i]-mx,b=ys[i]-my; num+=a*b; dx+=a*a; dy+=b*b;} return (dx&&dy)?num/Math.sqrt(dx*dy):0; }
 // v285 · H3 · "está hasta abajo el pegar salud. Tiene que estar en una parte más accesible y que diga Sync Biometrics" (el
 // dueño, 1-oct). La misma fila en gym //STATS y arriba de //PROGRESS: cuándo fue la última vez; tocarla sincroniza.
-function syncRowHTML(){ const lp=H().shortcut.lastPaste; return `<div class="line stat tap" role="button" tabindex="0" data-act="healthpaste"><span class="k">sync biometrics</span><span class="dots"></span><span class="v">${lp?escTxt(agoTxt(lp)):'—'} ›</span></div>`; }
+function syncRowHTML(tall,off){ const lp=H().shortcut.lastPaste; return `<div class="line stat ${tall?'lnav':'tap'}${off?' u-o40':''}"${off?'':' role="button" tabindex="0" data-act="healthpaste"'}><span class="k">sync biometrics</span><span class="dots"></span><span class="v">${lp?escTxt(agoTxt(lp)):'—'} ›</span></div>`; }
 // //PERFORMANCE: qué coincide con sesiones de más o menos capacidad (antes una sección entera de Progress)
 function openPerfInfo(){ const L=performanceInsights();
   openModal(`<h3>performance</h3><div class="submeta u-mb10">qué coincide con sesiones de más o menos capacidad · correlación, no causa</div>`
@@ -7380,7 +7384,7 @@ function renderProgress(){
   // featured: esta semana (consistencia)
   // v226: la tira de 7 puntos (solo gym) se reemplaza por la racha de registro con su calendario
   if(cfg.consistency){ out+=_ed?`<div class="pwide ed" data-pk="consistency"><button type="button" class="pdel" data-act="progdel" data-k="consistency" aria-label="quitar racha">−</button>${streakStripHTML()}</div>`:streakStripHTML(); void str; void s7; }
-  if(!_ed)out+=syncRowHTML();   // v285 · H3 · arriba, bajo la racha
+  out+=syncRowHTML(true,!!_ed);   // v285 · H3 · arriba, bajo la racha (en modo editar se queda en su sitio, apagada: la rejilla no brinca)
   out+=throwbackBlock();
   const T={}, put=(k,h)=>{ T[k]=h; };   // v269 · cada tile con su clave; el orden lo decide progLayout()
   // v256 · una métrica ACTIVA de registro manual nunca desaparece por no tener datos: sin tile no había por dónde
@@ -7467,7 +7471,7 @@ function renderProgress(){
   try{ const _wp=prevMonthYm().split('-'); if(wrapMonthData(+_wp[0],+_wp[1]-1).hasData) out+='<div class="u-tc u-mt16 u-mb2 u-mx0"><a data-act="wrapview" class="u-data u-o60 u-tap">▸ ver tu wrap · '+escTxt(MONFULL[+_wp[1]-1])+'</a></div>'; }catch(_){}
   // v285 · P2 · "en progreso hay un cagadero… quedó bien largo": fuera //STRENGTH, //RECORDS y //EXERCISES; //MUSCLES pasó a
   // //STIMULUS; las correlaciones quedan en UNA fila que abre su hoja
-  { const _pins=_ed?[]:performanceInsights(); if(_pins.length)out+=`<hr class="rule"/><div class="line lnav" role="button" tabindex="0" data-act="perfinfo"><span class="k">performance</span><span class="dots"></span><span class="v">${_pins.length}<span class="rchev">›</span></span></div>`; }
+  { const _pins=_ed?[]:performanceInsights(); if(_pins.length)out+=`<hr class="rule"/><div class="line lnav" role="button" tabindex="0" data-act="perfinfo"><span class="k">performance</span><span class="dots"></span><span class="v"><span class="rchev">›</span></span></div>`; }
   if(_ed)return out+`<div class="pedbar"><button type="button" class="b" data-act="progadd">+ add</button><button type="button" class="b" data-act="progcancel">cancel</button><button type="button" class="start pedok" data-act="progdone">✓ done</button></div>`;
   return out;
 }
@@ -7819,9 +7823,9 @@ function renderStack(){
       const incomplete=due.some(x=>!tickState(x.ticks&&x.ticks[iso]));
       // v226: TODOS abiertos. Antes se abría "solo el primer bloque con algo pendiente" y en cada check el
       // re-render cerraba ese bloque y abría el siguiente — el "se colapsan o se despliegan solos" del dueño.
-      const openAttr=' open'; void incomplete; void openedYet;
+      void incomplete; void openedYet;
       const cnt=due.length?` <span class="u-o30">· ${doneN}/${due.length}</span>`:'';
-      out+=`<details class="stk-blk"${openAttr}><summary>${b.lbl}${cnt}</summary>${items.map(li).join('')}</details>`;
+      out+=`<details class="stk-blk" data-sk="${b.k}"${stkOpen(b.k,true)}><summary>${b.lbl}${cnt}</summary>${items.map(li).join('')}</details>`;
     });
     if(!anyShown){
       out+=`<div class="empty u-mt24 u-mb16 u-mx0">${view==='today'?'no toca nada hoy ✓<br/>cambia a TODOS para ver tu lista completa':'sin items activos'}</div>`;
@@ -7829,17 +7833,17 @@ function renderStack(){
     const ocasional=all.filter(x=>!x.archived&&x.periodization&&x.periodization.type==='occasional');
     if(ocasional.length){
       const doneN=ocasional.filter(x=>tickDone(x.ticks&&x.ticks[iso])).length;
-      out+=`<details class="stk-blk"><summary>OCASIONAL · sin horario <span class="u-o30">· ${doneN}/${ocasional.length}</span></summary>${ocasional.map(li).join('')}</details>`;
+      out+=`<details class="stk-blk" data-sk="oc"${stkOpen('oc',false)}><summary>OCASIONAL · sin horario <span class="u-o30">· ${doneN}/${ocasional.length}</span></summary>${ocasional.map(li).join('')}</details>`;
     }
     // v275 · en pausa y archivados: fuera de HOY, abajo de TODOS, con su motivo y [reactivar] (sus tomas se quedan)
     if(view==='all'){ const dz=all.filter(x=>suppStatus(x)!=='active');
       const dl=it=>{ const lg=(it.statusLog||[]).slice(-1)[0], p=suppProd(it); const why=[p&&p.brand,lg&&lg.why&&lg.why!=='pausa'?lg.why:'',lg&&lg.d?fmtShort(lg.d):''].filter(Boolean).join(' · ');
         return `<div class="line u-py6 u-px0 u-aic"><span class="k"><span data-act="stackedit" data-id="${it.id}" class="u-tap">${escTxt(it.name)}</span>${why?' <span class="u-o40 u-label">· '+escTxt(why)+'</span>':''}</span><span class="dots"></span><span class="v"><button type="button" class="b" data-act="suppreact" data-id="${it.id}">reactivar</button></span></div>`; };
-      [['paused','EN PAUSA',' open'],['archived','ARCHIVADOS','']].forEach(([k,l,o])=>{ const g=dz.filter(x=>suppStatus(x)===k); if(g.length)out+=`<details class="stk-blk"${o}><summary>${l} <span class="u-o30">· ${g.length}</span></summary>${g.map(dl).join('')}</details>`; }); }
+      [['paused','EN PAUSA',' open'],['archived','ARCHIVADOS','']].forEach(([k,l,o])=>{ const g=dz.filter(x=>suppStatus(x)===k); if(g.length)out+=`<details class="stk-blk" data-sk="${k}"${stkOpen(k,!!o)}><summary>${l} <span class="u-o30">· ${g.length}</span></summary>${g.map(dl).join('')}</details>`; }); }
     const adhocHoy=(db.adhoc&&db.adhoc[iso])||[];
     if(adhocHoy.length){
       const rows=adhocHoy.map((a,i)=>`<div class="line u-py6 u-px0 u-ais"><span class="k">${escTxt(a.name)}${a.compoundMg?' · '+a.compoundMg+' mg':''}${a.form?' ('+escTxt(a.form)+')':''}${a.time?' · '+escTxt(a.time):''}</span><span class="dots"></span><span class="v"><span data-act="deladhoc" data-i="${i}" class="u-tap u-bad">✕</span></span></div>`).join('');
-      out+=`<details class="stk-blk" open><summary>TOMAS PUNTUALES · hoy</summary>${rows}</details>`;
+      out+=`<details class="stk-blk" data-sk="adhoc"${stkOpen('adhoc',true)}><summary>TOMAS PUNTUALES · hoy</summary>${rows}</details>`;
     }
   }
   out+=`<hr class="rule"/><div class="u-flex u-gap8 u-mt12">`
@@ -8118,6 +8122,10 @@ function scheduleBlockHTML(){ if(!dayCount())return ''; const P=splitPlan(), day
 // ¿este día va abierto? Lo que tú tocaste manda (en memoria, por id: reordenar días no lo pierde); si no, abierto cuando no
 // hay nada que plegar (día vacío o split de un solo día: ahí el único control es "+ ejercicio")
 function sdOpen(d,sp){ const o=state._sdOpen&&state._sdOpen[d.id]; return o!=null?!!o:(!(d.exercises||[]).length||((sp&&sp.days)||[]).length<=1); }
+// v285 · un bloque plegable recuerda lo que hiciste con él mientras la app está abierta (los de suplementos se abrían o
+// cerraban solos en cada repintada)
+function stkOpen(k,def){ const o=state._stkOpen&&state._stkOpen[k]; return (o!=null?o:def)?' open':''; }
+try{ document.addEventListener('toggle',e=>{ const d=e.target; if(d&&d.dataset&&d.dataset.sk)(state._stkOpen=state._stkOpen||{})[d.dataset.sk]=!!d.open; },true); }catch(_){}
 function renderSplitEdit(){
   const sp=db.split||{name:'',days:[]};
   let body=statusBar(true)
@@ -8127,16 +8135,17 @@ function renderSplitEdit(){
    +`<hr class="rule"/><div class="section u-mb6"><div class="h"><span class="s">//</span>DAYS</div><div class="meta">${(sp.days||[]).length} ${(sp.days||[]).length===1?'día':'días'}</div></div>`;
   // v285 · SP1 · "los días del split deben ser desplegables porque quedan súper largos" (el dueño, 1-oct). Cada día es una fila
   // (nombre · ejercicios · sets) que se abre al tocarla. Abierto de entrada si está vacío o si el split tiene un solo día.
-  (sp.days||[]).forEach((d,di)=>{ const _drift=dayDrift(d);
-    if(!sdOpen(d,sp)){ const nx=(d.exercises||[]).length, ns=(d.exercises||[]).reduce((a,e)=>a+(parseInt(e.sets,10)||0),0);
+  (sp.days||[]).forEach((d,di)=>{ const _drift=dayDrift(d), _op=sdOpen(d,sp);
+    if(_op&&!(state._sdOpen&&d.id in state._sdOpen))(state._sdOpen=state._sdOpen||{})[d.id]=true;   // abierto de entrada = abierto hasta que TÚ lo pliegues (no se cierra solo al dejar de estar vacío)
+    if(!_op){ const nx=(d.exercises||[]).length, ns=(d.exercises||[]).reduce((a,e)=>a+(parseInt(e.sets,10)||0),0);
       body+=`<div class="seday shut"><div class="sefold" role="button" tabindex="0" data-act="sd_fold" data-di="${di}" aria-expanded="false"><span class="sefn">${escTxt(d.name||'día')}</span><span class="sefm">${nx} ${nx===1?'ejercicio':'ejercicios'} · ${ns} sets${_drift?' · <span class="u-o70">⚠ distinto a lo que entrenas</span>':''}</span><span class="sefx">›</span></div></div>`; return; }
-    body+=`<div class="seday"><div class="sehead"><span class="sefx" role="button" tabindex="0" data-act="sd_fold" data-di="${di}" aria-expanded="true" aria-label="plegar el día">▾</span><input class="senm" data-act="sd_name" data-di="${di}" value="${(d.name||'').replace(/"/g,'&quot;')}"/><span class="semv"><span data-act="sd_dayup" data-di="${di}">▲</span><span data-act="sd_daydn" data-di="${di}">▼</span></span>${sp.days.length>1?`<span class="sedel" data-act="sd_deld" data-di="${di}">✕</span>`:''}</div>`;
-    if(_drift) body+=`<div class="sedrift"><span class="u-f1">lo que entrenas este día ya no es esto · <b>${escTxt(_drift.list.map(x=>x.name).join(' · '))}</b></span><button class="b" data-act="sd_adopt" data-di="${di}">adoptar</button></div>`;
+    body+=`<div class="seday" data-id="${escTxt(d.id)}"><div class="sehead"><span class="sefx" role="button" tabindex="0" data-act="sd_fold" data-di="${di}" aria-expanded="true" aria-label="plegar el día">▾</span><input class="senm" data-act="sd_name" data-di="${di}" value="${(d.name||'').replace(/"/g,'&quot;')}"/><span class="semv"><span data-act="sd_dayup" data-di="${di}">▲</span><span data-act="sd_daydn" data-di="${di}">▼</span></span>${sp.days.length>1?`<span class="sedel" data-act="sd_deld" data-di="${di}">✕</span>`:''}</div>`;
     (d.exercises||[]).forEach((e,ei)=>{
       const tlbl={machine:' · mach',pulley:' · pulley',smith:' · smith',cable:' · cable',bodyweight:' · bw'}[e.type]||'';
       body+=`<div class="seex"><span class="seexn" data-act="sd_ex" data-di="${di}" data-ei="${ei}">${latTxt(e)}${escTxt(e.name)} <span class="seexm">${escTxt(fmtMuscles(e))}${tlbl}${e.assisted?' · assisted':''}${e.weighted?' · weighted':''} · ${e.sets||1}×</span></span><span class="semv"><span data-act="sd_exup" data-di="${di}" data-ei="${ei}">▲</span><span data-act="sd_exdn" data-di="${di}" data-ei="${ei}">▼</span></span><span class="sedel" data-act="sd_delex" data-di="${di}" data-ei="${ei}">✕</span></div>`;
     });
-    body+=`<div class="seadd" data-act="sd_addex" data-di="${di}">+ ejercicio</div></div>`;
+    body+=`<div class="seadd" data-act="sd_addex" data-di="${di}">+ ejercicio</div>`
+      +(_drift?`<div class="sedrift"><span class="u-f1">lo que entrenas este día ya no es esto · <b>${escTxt(_drift.list.map(x=>x.name).join(' · '))}</b></span><button class="b" data-act="sd_adopt" data-di="${di}">adoptar</button></div>`:'')+`</div>`;   // v285 · el aviso va DEBAJO de la lista: al aparecer no empuja lo que tocaste
   });
   return body+`<div class="secondary u-mt6"><button class="b" data-act="sd_addday">+ agregar día</button></div>`+plannedVolumeSection();   // v285 · el catálogo subió a la cabecera de //SPLIT y al menú u/; coverage, al final
 }
@@ -8257,7 +8266,7 @@ function render(){
   // v285 · T1 · "con cada interacción, nunca debe de scrollearse para arriba. Nunca" (el dueño, 1-oct). Misma vista = se queda
   // donde estaba, aunque el código llame render() pelado o go() a la misma pantalla; solo una vista NUEVA empieza arriba. Al
   // dejar una vista se recuerda su posición (goBack la repone). Un valor explícito en state._scroll sigue mandando.
-  const _key=viewKey(sc), _prevTop=v.scrollTop, _same=state._paintedKey===_key;
+  const _key=viewKey(sc), _prevTop=v.scrollTop, _same=state._paintedKey===_key, _anc=(_same&&_want==null)?viewAnchor(v):null;
   if(state._paintedKey&&!_same)(state._viewScroll=state._viewScroll||{})[state._paintedKey]=_prevTop;
   v.innerHTML = sc==='landing'?renderLanding() : sc==='login'?renderLogin() : sc==='onboard'?renderOnboard() : sc==='home'?renderHome() : sc==='workout'?renderWorkout() : sc==='macros'?renderMacros() : sc==='share'?renderShare() : sc==='progress'?renderProgress() : sc==='stack'?renderStack() : sc==='settings'?renderSettings() : sc==='splitedit'?renderSplitEdit() : sc==='history'?renderHistory() : sc==='exhist'?renderExHist() : sc==='agenda'?renderAgenda() : sc==='histedit'?renderHistoryEditor() : renderHome();
   document.getElementById('wfooter').style.display = sc==='workout'?'flex':'none'; if(sc!=='workout'&&state._wbar)wbarSet(false);
@@ -8266,10 +8275,14 @@ function render(){
   renderNav();
   if(sc==='macros')try{ suppWarnMaybe(); }catch(_){}   // v275 · una vez al día: lo que está por acabarse
   if(sc==='macros')try{ mvzSync(); }catch(_){}         // v276 · el carrusel en la versión elegida
-  { const keep=_want!=null?_want:(_same?_prevTop:0); if(v.scrollTop!==keep)v.scrollTop=keep; state._paintedKey=_key; }   // después de mvzSync() y renderNav(): los dos cambian el alto
+  // después de mvzSync() y renderNav() (los dos cambian el alto). Misma vista: lo que tocaste (o lo primero a la vista) queda a
+  // la misma altura, con colchón si el contenido se acortó. Vista nueva: arriba, o donde diga state._scroll.
+  { let keep=_want!=null?_want:(_same?_prevTop:0); const ae=_anc?sigFind(v,_anc):null, ar=(!ae&&_anc)?rkFind(v,_anc.rk):null;
+    if(ae)keep=(ae.getBoundingClientRect().top-v.getBoundingClientRect().top)+v.scrollTop-_anc.off; else if(ar)keep=(ar.getBoundingClientRect().top-v.getBoundingClientRect().top)+v.scrollTop-_anc.rkOff;
+    if(_same&&_want==null)scrollHold(v,keep); else if(v.scrollTop!==keep)v.scrollTop=keep; state._paintedKey=_key; }
   if(state._autoScroll&&sc==='workout'){ state._autoScroll=false; const fp=v.querySelector('[data-act="setf"][data-f="rir"]:not([data-locked])'); if(fp)centerEl(fp); }
   // v223: tras confirmar una serie, a la vista la SIGUIENTE de ese ejercicio (no la primera del documento)
-  if(state._focusSet&&sc==='workout'){ const f=state._focusSet; state._focusSet=null; const fe=v.querySelector('.setn[data-exi="'+f.exi+'"][data-si="'+f.si+'"]'); showEl(fe,64); }   // v285 · solo si la serie que sigue no se ve
+  if(state._focusSet&&sc==='workout'){ const f=state._focusSet; state._focusSet=null; const fe=v.querySelector('.setn[data-exi="'+f.exi+'"][data-si="'+f.si+'"]'); showEl(fe); }   // v285 · solo si la serie que sigue no se ve
   // fade ONLY on screen changes via go() — never on same-screen re-renders (every keystroke re-renders)
   const _nav=!!state._trans;
   if(state._trans){ state._trans=false; v.classList.remove('fadein'); void v.offsetWidth; v.classList.add('fadein'); }
@@ -8286,8 +8299,8 @@ function goBack(screen){ const y=(state._viewScroll||{})[viewKey(screen)]; state
 function scrollerOf(el){ return (el&&el.closest&&(el.closest('.sheet')||el.closest('#exsh')))||document.getElementById('view'); }
 function showEl(el,pad){ try{ const sc=scrollerOf(el); if(!el||!sc||!sc.contains(el))return; const a=sc.getBoundingClientRect(), b=el.getBoundingClientRect(); pad=pad==null?12:pad; let d=0;
     if(b.top<a.top+pad)d=b.top-a.top-pad; else if(b.bottom>a.bottom-pad)d=Math.min(b.top-a.top-pad,b.bottom-a.bottom+pad);
-    if(Math.abs(d)>=1){ if(sc.scrollTo)sc.scrollTo({top:sc.scrollTop+d,behavior:reducedMotion()?'auto':'smooth'}); else sc.scrollTop+=d; } }catch(_){} }
-function centerEl(el,block,now){ try{ if(el&&el.scrollIntoView)el.scrollIntoView({block:block||'center',behavior:(now||reducedMotion())?'auto':'smooth'}); }catch(_){} }
+    if(Math.abs(d)>=1){ _lastTap=null; if(sc.scrollTo)sc.scrollTo({top:sc.scrollTop+d,behavior:reducedMotion()?'auto':'smooth'}); else sc.scrollTop+=d; } }catch(_){} }
+function centerEl(el,block,now){ try{ _lastTap=null; if(el&&el.scrollIntoView)el.scrollIntoView({block:block||'center',behavior:(now||reducedMotion())?'auto':'smooth'}); }catch(_){} }
 function focusEl(el){ if(!el||!el.focus)return; try{ el.focus({preventScroll:true}); }catch(_){ try{ el.focus(); }catch(__){} } showEl(el); }
 // v285 · T1 · self-check del scroll: misma vista conserva, vista nueva arriba, volver regresa, las hojas conservan su altura
 // (por título, por el control tocado y al volver a la hoja madre), elegir para unir no reconstruye la hoja y el pie de la
@@ -8305,8 +8318,12 @@ function _scrollSelfCheck(){ const A=(nm,c)=>{ if(!c) throw new Error('SELFCHECK
     go('splitedit'); A('go() a la misma pantalla la conserva', near(v.scrollTop,300));
     { const f=v.querySelectorAll('.sehead [data-act="sd_fold"]')[2], y=f.getBoundingClientRect().top, di=f.dataset.di; tap(f); const f2=v.querySelector('[data-act="sd_fold"][data-di="'+di+'"]');
       A('una acción real (plegar un día) no mueve lo que tocaste', !!f2&&f2.getAttribute('aria-expanded')==='false'&&near(f2.getBoundingClientRect().top,y)); }
-    v.scrollTop=max(); const top0=v.scrollTop; days.forEach(d=>{ state._sdOpen[d.id]=false; }); render();
-    A('si el contenido se acorta queda al fondo, no arriba', v.scrollTop>0&&v.scrollTop<top0&&near(v.scrollTop,max()));
+    v.scrollTop=max(); { const fs=v.querySelectorAll('.sehead [data-act="sd_fold"]'), f=fs[fs.length-1], y=f.getBoundingClientRect().top, di=f.dataset.di, t0=v.scrollTop; tap(f); const f2=v.querySelector('[data-act="sd_fold"][data-di="'+di+'"]');
+      A('plegar el ÚLTIMO día estando al fondo no sube la pantalla: lo tocado queda bajo el dedo', !!f2&&near(f2.getBoundingClientRect().top,y)&&v.scrollTop>=t0-1&&!!v.querySelector(':scope > .vpad')); }
+    { _lastTap=null; const top0=v.scrollTop, a=viewAnchor(v); days.forEach(d=>{ state._sdOpen[d.id]=false; }); render(); const e1=a?sigFind(v,a):null;
+      A('sin toque (un reloj, una respuesta): lo primero que se veía sigue en su sitio, o la posición se sostiene', e1?near(e1.getBoundingClientRect().top-v.getBoundingClientRect().top,a.off):near(v.scrollTop,top0));
+      A('…y nunca cae arriba', v.scrollTop>0);
+      v.scrollTop=0; padTrim({target:v}); A('el colchón se va solo al salir de él', !v.querySelector(':scope > .vpad')); }
     v.scrollTop=180; go('home'); A('otra pantalla empieza arriba', v.scrollTop===0);
     goBack('splitedit'); A('volver regresa a donde estabas', near(v.scrollTop,180));
     state._scroll=250; renderSettings=()=>{ throw new Error('x'); }; state.screen='settings'; try{ render(); }catch(_){} renderSettings=rs; state.screen='home'; render();
@@ -8319,6 +8336,8 @@ function _scrollSelfCheck(){ const A=(nm,c)=>{ if(!c) throw new Error('SELFCHECK
     sh.scrollTop=280; openModal(long); sheetRestoreNow(); sh=document.querySelector('#modal .sheet'); A('una hoja que se vuelve a pintar conserva su altura', near(sh.scrollTop,280));
     { const r=sh.querySelector('[data-zz="30"]'), y=r.getBoundingClientRect().top; tapNote({target:r}); openModal('<h3>hoja de prueba</h3>'+'<div class="line"><span class="k">nueva</span></div>'.repeat(5)+rows); sheetRestoreNow(); sh=document.querySelector('#modal .sheet');
       A('lo que tocaste queda bajo el dedo aunque la hoja crezca arriba', near(sh.querySelector('[data-zz="30"]').getBoundingClientRect().top,y)); }
+    sh.scrollTop=220; openModal(long,'mdetail-wrap'); sheetRestoreNow(); sh=document.querySelector('#modal .sheet'); A('mismo título pero otra clase de hoja = hoja distinta: arriba', sh.scrollTop===0);
+    openModal('<h3>hoja de prueba</h3>'+'<div class="line"><span class="k">nueva</span></div>'.repeat(5)+rows); sheetRestoreNow(); sh=document.querySelector('#modal .sheet'); sh.scrollTop=260;
     const pTop=sh.scrollTop; _lastTap=null; openModal('<h3>otra hoja</h3>'+rows); sheetRestoreNow(); sh=document.querySelector('#modal .sheet'); A('una hoja distinta empieza arriba', sh.scrollTop===0);
     sheetBack(()=>openModal('<h3>hoja de prueba</h3>'+'<div class="line"><span class="k">nueva</span></div>'.repeat(5)+rows)); sheetRestoreNow(); sh=document.querySelector('#modal .sheet');
     A('volver a la hoja madre la deja donde estaba', pTop>0&&near(sh.scrollTop,pTop));
@@ -8400,7 +8419,7 @@ function flipPlay(root,prev){ if(!root||!prev||!prev.size||reducedMotion())retur
   const D=durMs('--dur-2',180);
   dys.forEach((dy,el)=>{ let a=el.parentElement&&el.parentElement.closest('[data-rk]'), up=0; while(a){ if(dys.has(a)){ up=dys.get(a); break; } a=a.parentElement&&a.parentElement.closest('[data-rk]'); }
     const rel=dy-up; if(Math.abs(rel)<1)return; try{ el.animate([{transform:'translateY('+rel+'px)'},{transform:'none'}],{duration:D,easing:'cubic-bezier(.22,1,.36,1)'}); }catch(_){} }); }
-function reRender(){ let v=null, prev=null; try{ v=document.getElementById('view'); if(v){ state._scroll=v.scrollTop; prev=flipCapture(v); } }catch(_){} render(); try{ flipPlay(v,prev); }catch(_){} }
+function reRender(){ let v=null, prev=null; try{ v=document.getElementById('view'); if(v)prev=flipCapture(v); }catch(_){} render(); try{ flipPlay(v,prev); }catch(_){} }   // v285 · la posición la conserva render() (misma vista), con ancla
 // primera serie sin ✓, en orden de documento — alimenta la barra AHORA, la guía .ex.current y el foco.
 function currentSetTarget(){
   const w=db&&db.activeWork; if(!w||!w.exercises)return null;
@@ -8425,7 +8444,7 @@ function nextSetTarget(exi,si){
   return null;
 }
 function go(s){ if(state.progEdit&&s!=='progress')state.progEdit=null; return _goInner(s); }
-function _goInner(screen){ flushSave(); state._trans=(state.screen!==screen); state.screen=screen; if(screen==='macros') state.macroDate=todayISO(); render(); }
+function _goInner(screen){ flushSave(); state._trans=(state.screen!==screen); if(state._trans)state._from=state.screen; state.screen=screen; if(screen==='macros') state.macroDate=todayISO(); render(); }
 
 // ---------- rest timer (between sets) ----------
 // state lives in db.activeWork.restEnd (epoch ms) → persisted by save(), survives re-renders, reloads and iOS kills.
@@ -8802,8 +8821,8 @@ document.getElementById('app').addEventListener('click',e=>{
   else if(a==='togglepreview'){ state.previewDay=!state.previewDay; reRender(); }
   else if(a==='loglater'){ const w=newWorkSession(); w.loggedAfter=true; w.startMs=null; const y=new Date(); y.setDate(y.getDate()-1); w.date=todayISO(y); db.activeWork=w; save(); go('workout'); }
   else if(a==='togglenoadv'){ if(db.activeWork){ db.activeWork.noAdvance=!db.activeWork.noAdvance; reRender(); } }
-  else if(a==='resume'){ go('workout'); }
-  else if(a==='leave'){ go('home'); }
+  else if(a==='resume'){ goBack('workout'); }   // v285 · a la serie donde ibas
+  else if(a==='leave'){ if(state._from==='home')goBack('home'); else go('home'); }   // ‹ back vuelve a la altura de gym solo si venías de ahí
   else if(a==='abort'){ const _w=db.activeWork, _re=_w&&_w.resumeOf!=null;
     holdConfirm({title:'abortar la sesión',detail:_re?'se descartan los cambios · la sesión original queda intacta en el historial':'lo registrado en esta sesión se descarta · no se guarda nada',verb:'abortar'},()=>{
       if(_re&&_w.resumeRot!=null)db.rotIdx=_w.resumeRot;   // G2 · M3-09: continuar + abortar ya no borra ni mueve nada
@@ -8907,9 +8926,9 @@ document.getElementById('app').addEventListener('click',e=>{
   else if(a==='hexp'){ const id=el.dataset.id, o=state._histOpen=state._histOpen||{}; if(o[id])delete o[id]; else { o[id]=1; state._enter={sel:'.hitem[data-hid="'+(window.CSS&&CSS.escape?CSS.escape(id):id)+'"] .hbody'}; } reRender(); }
   else if(a==='hcalm'){ state._histYM=(state._histYM||0)+(+el.dataset.d||0); reRender(); }
   else if(a==='hcalday'){ histGoDay(el.dataset.d); }
-  else if(a==='openhistedit'){ closeModal(); state._histSessId=el.dataset.id; state.screen='histedit'; render(); }
-  else if(a==='h_close'){ state._histSessId=null; goBack('history'); }   // v285 · vuelve a la sesión que estabas viendo
-  else if(a==='h_delsession'){ holdConfirm({title:'borrar esta sesión',detail:'sale del historial y deja de contar para volumen, progreso y recuperación',verb:'borrar'},()=>{ db.sessions=db.sessions.filter(x=>x.id!==el.dataset.id); state._histSessId=null; save(); goBack('history'); }); }
+  else if(a==='openhistedit'){ closeModal(); state._histFrom=state.screen; state._histSessId=el.dataset.id; state.screen='histedit'; render(); }
+  else if(a==='h_close'){ state._histSessId=null; if(state._histFrom==='history')goBack('history'); else go('history'); }   // v285 · vuelve a la sesión que estabas viendo (si venías del historial)
+  else if(a==='h_delsession'){ holdConfirm({title:'borrar esta sesión',detail:'sale del historial y deja de contar para volumen, progreso y recuperación',verb:'borrar'},()=>{ db.sessions=db.sessions.filter(x=>x.id!==el.dataset.id); state._histSessId=null; save(); if(state._histFrom==='history')goBack('history'); else go('history'); }); }
   // history-edit set actions — isolated from the live setf/done/etc. handlers above (never touch db.activeWork).
   else if(a==='h_done'){ const s=db.sessions.find(x=>x.id===state._histSessId); if(!s)return; const ex=s.exercises[exi]; if(!ex||!ex.sets[si])return;
     if(ex.unilateral){ const v=!(ex.sets[si]&&ex.sets[si].done); [si,si+1].forEach(j=>{ const st=ex.sets[j]; if(!st)return; st.done=v; if(v)pfClearAll(st); }); }
@@ -8943,12 +8962,12 @@ document.getElementById('app').addEventListener('click',e=>{
     trkMenu(DOW_LONG[d],[['descanso',()=>pick('')]].concat((db.split.days||[]).map(x=>[x.name,()=>pick(x.id)]))); }
   else if(a==='sp_metric'){ db.split.metric=el.dataset.v==='rpe'?'rpe':'rir'; save(); reRender(); }
   else if(a==='sp_allowf'){ db.split.allowF=el.dataset.v==='1'; save(); reRender(); }
-  else if(a==='sd_addday'){ const _nd={id:'d'+uid(),name:'new day',tag:'@ RIR · F',metric:'rir',allowFailure:true,exercises:[]}; db.split.days.push(_nd); (state._sdOpen=state._sdOpen||{})[_nd.id]=true; state._enter={sel:'.seday:last-of-type'}; save(); reRender(); }
+  else if(a==='sd_addday'){ const _nd={id:'d'+uid(),name:'new day',tag:'@ RIR · F',metric:'rir',allowFailure:true,exercises:[]}; db.split.days.push(_nd); (state._sdOpen=state._sdOpen||{})[_nd.id]=true; state._enter={sel:'.seday[data-id="'+_nd.id+'"]'}; save(); reRender(); }
   else if(a==='sd_fold'){ const _d=db.split.days[+el.dataset.di]; if(_d){ (state._sdOpen=state._sdOpen||{})[_d.id]=!sdOpen(_d,db.split); reRender(); } }   // v285 · SP1
   else if(a==='sd_cov'){ state._covOpen=!state._covOpen; reRender(); }   // v285 · SP2
   else if(a==='exdirectory'){ window._mgSel=[]; openExerciseDirectory(); }
   else if(a==='muscledetail'){ openMuscleDetail(el.dataset.id); }
-  else if(a==='mdmore'){ const bx=document.getElementById('mdmore'); if(bx){ const op=bx.hidden; bx.hidden=!op; el.textContent=op?'menos':'más'; el.setAttribute('aria-expanded',op?'true':'false'); } }   // estímulo · detalle de músculo: [más]/[menos]
+  else if(a==='mdmore'){ const bx=document.getElementById('mdmore'); if(bx)keepUnder(el,()=>{ const op=bx.hidden; bx.hidden=!op; el.textContent=op?'menos':'más'; el.setAttribute('aria-expanded',op?'true':'false'); }); }   // estímulo · detalle de músculo: [más]/[menos]
   else if(a==='musclemap'){ openMuscleMap(); }
   else if(a==='exprof'){ const run=()=>openExProfile(el.dataset.n,el.dataset.back||'');
     // R3: el nombre tocado viaja al título del perfil (View Transitions); sin soporte o con reduced-motion abre normal
@@ -9603,23 +9622,54 @@ function setHistField(exi,si,f,val){
 const SHEET_INNER='.fa-listwrap,.lnut,#ns_list';
 let _lastTap=null, _sheetMem=null, _sheetIn=false, _sheetPend=null;
 function sheetTitle(sh){ const h=sh&&sh.querySelector('h3'); return h?(h.textContent||'').replace(/\s+/g,' ').trim():''; }
+// una hoja ES su clase + su título: "steps" como detalle de métrica y "steps" como registro son hojas distintas
+function sheetKey(sh){ return sh?String(sh.className||'').replace(/\s+/g,' ').trim()+'|'+sheetTitle(sh):''; }
 function sheetSnap(m){ const sh=m&&m.querySelector&&m.querySelector('.sheet'); if(!sh)return null;
-  return {title:sheetTitle(sh),top:sh.scrollTop,inner:Array.from(sh.querySelectorAll(SHEET_INNER)).map(x=>x.scrollTop),dirty:!!m._dirty,node:sh}; }
-function tapSig(el){ if(!el||!el.tagName)return ''; const d=el.dataset||{}, ks=Object.keys(d).filter(k=>k!=='touched').sort(); if(!ks.length&&!el.id)return ''; return el.tagName+'|'+(el.id||'')+'|'+ks.map(k=>k+'='+d[k]).join('&'); }
+  return {key:sheetKey(sh),title:sheetTitle(sh),top:sh.scrollTop,inner:Array.from(sh.querySelectorAll(SHEET_INNER)).map(x=>x.scrollTop),dirty:!!m._dirty,node:sh}; }
+// la firma de un control: su id + sus data-* (sin lo que cambia solo). Con ella se le vuelve a encontrar tras repintar.
+const SIG_SKIP={touched:1,nv:1,locked:1};
+function tapSig(el){ if(!el||!el.dataset)return ''; const d=el.dataset, ks=Object.keys(d).filter(k=>!SIG_SKIP[k]).sort(); if(!ks.length&&!el.id)return ''; return (el.id||'')+'|'+ks.map(k=>k+'='+d[k]).join('&'); }
+function sigSel(el){ if(!el)return ''; if(el.id)return '#'+(window.CSS&&CSS.escape?CSS.escape(el.id):el.id); const d=el.dataset||{}; if(d.act)return '[data-act="'+String(d.act).replace(/"/g,'')+'"]';
+  const k=Object.keys(d).filter(x=>!SIG_SKIP[x]).sort()[0]; return k?'[data-'+k.replace(/[A-Z]/g,m=>'-'+m.toLowerCase())+']':''; }
+function sigFind(root,a){ if(!root||!a||!a.sel)return null; let c=[]; try{ c=Array.from(root.querySelectorAll(a.sel)).filter(x=>tapSig(x)===a.sig); }catch(_){} return c.length===1?c[0]:null; }
 // el toque se apunta en fase de captura (los avisos y la capa de preguntas detienen la propagación) y se olvida en el mismo
-// tick: un pellizco de gráfica o una respuesta que llega después no usan un toque viejo
-function tapNote(e){ try{ const t=e.target&&e.target.closest&&(e.target.closest('[data-act]')||e.target), sh=t&&t.closest&&t.closest('#modal .sheet'); if(!sh){ _lastTap=null; return; }
-    const sig=tapSig(t); _lastTap=sig?{sig,tag:t.tagName,sheet:sh,off:t.getBoundingClientRect().top-sh.getBoundingClientRect().top}:null; setTimeout(()=>{ _lastTap=null; },0); }catch(_){ _lastTap=null; } }
+// tick: un pellizco de gráfica o una respuesta que llega después no usan un toque viejo. Vale para hojas y para #view.
+function tapNote(e){ try{ const t=e.target&&e.target.closest&&(e.target.closest('[data-act]')||e.target), sh=t&&t.closest&&t.closest('#modal .sheet'), vw=!sh&&t&&t.closest&&t.closest('#view'), sc=sh||vw;
+    const sig=sc?tapSig(t):'', sel=sig?sigSel(t):'', top0=sc?sc.getBoundingClientRect().top:0, rk=sc&&t.closest('[data-rk]');
+    _lastTap=sc?{sig,sel,el:t,sheet:sh||null,view:!!vw,off:t.getBoundingClientRect().top-top0,rk:rk?rk.dataset.rk:'',rkOff:rk?rk.getBoundingClientRect().top-top0:0}:null; if(_lastTap)setTimeout(()=>{ _lastTap=null; },0); }catch(_){ _lastTap=null; } }
+// red de seguridad para lo que cambia EN SU LUGAR (sin repintar ni reabrir): después de que corrió el handler, si el control
+// tocado sigue en la página y se movió, el contenedor se acomoda para que quede donde estaba (con colchón si hace falta)
+function tapSettle(){ try{ const a=_lastTap; if(!a||!a.el)return; const sc=a.sheet||document.getElementById('view'); if(!sc||!sc.isConnected)return;
+    const el=a.el.isConnected&&sc.contains(a.el)?a.el:(a.sel?sigFind(sc,a):null); if(!el)return;
+    const d=(el.getBoundingClientRect().top-sc.getBoundingClientRect().top)-a.off; if(Math.abs(d)>=1)scrollHold(sc,sc.scrollTop+d); }catch(_){} }
+try{ document.addEventListener('click',tapSettle,false); document.addEventListener('change',tapSettle,false); }catch(_){}
 try{ document.addEventListener('click',tapNote,true); document.addEventListener('change',tapNote,true); }catch(_){}
+function rkFind(root,rk){ if(!rk)return null; let c=[]; try{ c=Array.from(root.querySelectorAll('[data-rk]')).filter(x=>x.dataset.rk===rk); }catch(_){} return c.length===1?c[0]:null; }
+// pone un contenedor en `top` y, si el contenido ya no llega hasta ahí (algo se plegó o se borró), le cuelga un colchón al
+// final para que NO suba: lo que tocaste se queda bajo el dedo. El colchón se va solo en cuanto sales de él (padTrim).
+function scrollHold(sc,top){ if(!sc)return; top=Math.max(0,Math.round(top)); const old=sc.querySelector(':scope > .vpad'); if(old)old.remove(); const max=sc.scrollHeight-sc.clientHeight;
+  // el alto exacto del colchón se mide con uno de sobra: así no importa si el contenido es más corto que el contenedor ni si
+  // el contenedor crece con su contenido hasta un tope (las hojas)
+  if(top>max+0.5){ const p=document.createElement('div'); p.className='vpad'; sc.appendChild(p); const L=top+2*(window.innerHeight||900); p.style.height=L+'px';
+    const m=sc.scrollHeight-sc.clientHeight, h=Math.ceil(L-(m-top)); if(h>0)p.style.height=h+'px'; else p.remove(); }
+  if(Math.abs(sc.scrollTop-top)>=1)sc.scrollTop=top; }
+function padTrim(e){ try{ const sc=e&&e.target; if(!sc||!sc.querySelector)return; const p=sc.querySelector(':scope > .vpad'); if(p&&sc.scrollTop+sc.clientHeight<=sc.scrollHeight-p.offsetHeight+1)p.remove(); }catch(_){} }
+try{ document.addEventListener('scroll',padTrim,{capture:true,passive:true}); }catch(_){}
+// un cambio hecho EN SU LUGAR (sin repintar): lo tocado queda a la misma altura aunque arriba o abajo cambie el alto
+function keepUnder(el,fn){ const sc=scrollerOf(el), y=el&&el.getBoundingClientRect?el.getBoundingClientRect().top:0; fn(); try{ if(el&&el.isConnected&&sc)scrollHold(sc,sc.scrollTop+(el.getBoundingClientRect().top-y)); }catch(_){} }
+// el ancla de #view: lo que tocaste; si no hubo toque (un reloj, una respuesta que llega), el primer control a la vista
+function viewAnchor(v){ if(_lastTap&&_lastTap.view&&(_lastTap.sel||_lastTap.rk))return _lastTap; if(!(v.scrollTop>0))return null; const a=v.getBoundingClientRect(), L=v.querySelectorAll('[data-act],[data-rk]');
+  for(let i=0,n=0;i<L.length&&n<24;i++){ const el=L[i], b=el.getBoundingClientRect(); if(!b.height||b.top<a.top)continue; if(b.top>a.bottom)break; n++; const c={sig:tapSig(el),sel:sigSel(el),off:b.top-a.top}; if(c.sig&&c.sel&&sigFind(v,c)===el)return c; }
+  return null; }
 function sheetBack(fn){ window._sheetBackGo=true; try{ fn(); } finally { window._sheetBackGo=false; } }   // volver a la hoja madre, a su altura
-function sheetRestore(m,old,back,live){ const sh=m.querySelector('.sheet'); if(!sh)return; const title=sheetTitle(sh); let top=null, inner=null;
-  const tap=_lastTap; if(tap&&old&&tap.sheet===old.node){ const c=Array.from(sh.querySelectorAll(tap.tag)).filter(x=>tapSig(x)===tap.sig);
-    if(c.length===1)top=Math.max(0,(c[0].getBoundingClientRect().top-sh.getBoundingClientRect().top)+sh.scrollTop-tap.off); }
-  if(old&&title&&old.title===title){ if(top==null)top=old.top; inner=old.inner; if(old.dirty&&live)m._dirty=true; }   // lo escrito sin guardar sigue contando solo si la hoja estaba ABIERTA (no si ya la habías cerrado)
-  else if(back&&_sheetMem&&title&&_sheetMem.title===title){ top=_sheetMem.top; inner=_sheetMem.inner; _sheetMem=null; }
-  else if(old&&old.title&&old.title!==title&&!back)_sheetMem=old;   // la madre, por si vuelves a ella
-  const put=()=>{ try{ if(top>0&&Math.abs(sh.scrollTop-top)>=1)sh.scrollTop=top; if(inner)Array.from(sh.querySelectorAll(SHEET_INNER)).forEach((x,i)=>{ if(inner[i]>0&&Math.abs(x.scrollTop-inner[i])>=1)x.scrollTop=inner[i]; }); }catch(_){} };
-  put(); if(top>0||(inner&&inner.some(x=>x>0))){ _sheetPend=put; Promise.resolve().then(()=>{ if(_sheetPend===put){ _sheetPend=null; put(); } }); }   // las listas que se llenan después de montar
+function sheetRestore(m,old,back,live){ const sh=m.querySelector('.sheet'); if(!sh)return; const title=sheetTitle(sh), key=sheetKey(sh); let base=null, inner=null, tap=null;
+  if(old&&title&&old.key===key){ base=old.top; inner=old.inner; if(old.dirty&&live)m._dirty=true; if(_lastTap&&_lastTap.sel&&_lastTap.sheet===old.node)tap=_lastTap; }   // lo escrito sin guardar sigue contando solo si la hoja estaba ABIERTA
+  else if(back&&_sheetMem&&title&&_sheetMem.key===key){ base=_sheetMem.top; inner=_sheetMem.inner; _sheetMem=null; }
+  else if(old&&old.title&&old.key!==key&&!back)_sheetMem=old;   // la madre, por si vuelves a ella
+  // se mide CADA vez (ahora y en microtarea): hay hojas que terminan de llenarse después de montar (metas, lista de alimentos)
+  const put=()=>{ try{ let top=base; if(tap){ const el=sigFind(sh,tap); if(el)top=(el.getBoundingClientRect().top-sh.getBoundingClientRect().top)+sh.scrollTop-tap.off; }
+      if(top!=null&&(top>0||sh.scrollTop>0))scrollHold(sh,top); if(inner)Array.from(sh.querySelectorAll(SHEET_INNER)).forEach((x,i)=>{ if(inner[i]>0&&Math.abs(x.scrollTop-inner[i])>=1)x.scrollTop=inner[i]; }); }catch(_){} };
+  put(); if(base>0||tap||(inner&&inner.some(x=>x>0))){ _sheetPend=put; Promise.resolve().then(()=>{ if(_sheetPend===put){ _sheetPend=null; put(); } }); }
 }
 function sheetRestoreNow(){ const p=_sheetPend; _sheetPend=null; if(p)p(); }
 function openModal(html,cls){ const cur=document.getElementById('modal'); const had=!!cur; const back=!!window._sheetBackGo;
@@ -11541,9 +11591,10 @@ function _pulgarSelfCheck(){ const A=(nm,c)=>{ if(!c) throw new Error('SELFCHECK
 const GLOSS={
   rpe:'RPE · esfuerzo de la serie: 10 = no salía otra, 9 = te quedaba 1, 8 = te quedaban 2 (medios puntos de 7 a 10). Se guarda como RIR (10 − RPE) para que todo se calcule igual.',
   rir:'RIR · repeticiones en reserva: cuántas más te quedaban. 0 = al fallo · F = fallo con media rep extra. Se registra por serie.',
-  t:'σ · unidades de tensión mecánica: una medida propia de gym//TRK que estima el estímulo de cada serie. 1.0 = una serie al fallo con 30 % o más de tu 1RM; a RIR 1–2 vale ~0.9. Es un cálculo de la app, no una medida de laboratorio. ~ = con RIR estimado.',
+  t:'σ · unidades de tensión mecánica: una medida propia de gym//TRK que estima el estímulo de cada serie. 1.0 = una serie al fallo con 30 % o más de tu máximo; a RIR 1–2 vale ~0.9. Es un cálculo de la app, no una medida de laboratorio. ~ = con RIR estimado.',
   cap:'% de capacidad: lo que rindes hoy (peso, reps y RIR de cada serie) contra la sesión equivalente anterior, descontando la fatiga acumulada en la sesión. ▲ más · ▼ menos · ~ comparación de baja confianza.',
   lm:'tu habitual: la mediana de tu σ semanal en tus últimas 8 semanas con entreno de ese músculo (hacen falta 3). Es la marca de la barra. Tu referencia sale de lo que tú haces y de cómo te va con eso; no hay un número igual para todos.',
+  recm:'recovery de un músculo: las horas desde su última sesión contra su ventana de recuperación (estimada con lo que le hiciste, u observada con tu historial). 100% = ya pasó su ventana.',
   est:'estimado = ventana de la literatura ajustada a tu dosis (series, fallo, estiramiento) · observado = lo que muestra tu propio historial, desde 6 pares de sesiones.',
   recov:'recovery · qué tan recuperados están los músculos de la sesión que toca: las horas desde su última sesión contra su ventana de recuperación (estimada, u observada con tu historial). 100 = todos frescos; es el promedio por series. Se guarda al tocar start; en las sesiones de antes se lee de lo que quedó registrado.',
   ready:'readiness · qué tan listo estás tú hoy: el sueño de anoche contra tu meta, la carga de las últimas 72 h contra tu promedio de 4 semanas y, si tu reloj los manda, FC en reposo y HRV. Sin el sueño de anoche no se calcula. No es un diagnóstico.',
@@ -11627,14 +11678,14 @@ function openDesignPanel(){ if(document.getElementById('dz_panel'))return; const
 }
 // consolidated navigation menu (from the u/name in the header) — one place for the secondary screens
 function openNavMenu(){
-  const item=(lbl,act)=>`<div class="nvm" data-nav="${act}"><span>${lbl}</span><span class="nvm-x">›</span></div>`;
+  const item=(lbl,act)=>`<div class="nvm" data-nav="${act}"><span>${lbl}</span><span class="nvm-x">›</span></div>`; let _un=0; try{ _un=muscleUnresolvedCount(); }catch(_){}
   openModal(`<h3>menú</h3>
    <div class="nvm-list">
      ${item('perfil / ajustes','settings')}
      ${item('historial de sesiones','history')}
      ${item('editar split','splitedit')}
      ${item('catálogo de ejercicios','catalog')}
-     ${item('músculos · cómo los cuenta el motor','muscles')}
+     ${item('músculos · cómo los cuenta el motor'+(_un?' · '+_un+' sin asignar':''),'muscles')}
      ${item('suplementos · administrar','stack')}
      ${item('compartir el día','sharefood')}
      ${item('respaldo / exportar','sync')}

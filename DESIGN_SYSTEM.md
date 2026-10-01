@@ -1066,9 +1066,11 @@ de la guía RP ("esa madre realmente no sirve"). El modelo vive en `contexto/ten
   tensión mecánica · 7 d` (`data-gloss="stim"`), UNA cabecera de columnas `.stqh.c2.hd` (`músculo · σ · recovery`) y una
   fila `.stq` por **músculo real** (canónico, mostrado con su etiqueta vía `muscleLabel()`), de mayor a menor σ: `.stqh.c2`
   con `.stqn` nombre, `.stqv` σ (`--t-data`/800) y `.stqv.p` el % de recuperación (`recPct(muscleRecAt(id))`, el mismo de
-  gym), y debajo `sigBarHTML(key, v, ce, mark)`: todas las barras comparten escala y llevan UNA marca, tu habitual
+  gym), y debajo `sigBarHTML(key, v, ce, mark)`: todas las barras comparten escala y en la lista van SIN marca (una marca
+  sin explicación era lo que no entendía en //COVERAGE). En el detalle del músculo la barra lleva UNA marca, tu habitual
   (`muscleHabit(id)` = mediana de la σ semanal de tus 8 semanas anteriores con entreno de ese músculo; con menos de 3 no
-  hay marca). Sin pestañas, sin series, sin RIR, sin avisos y sin instrucciones. Tocar la fila abre `openMuscleDetail()`.
+  hay marca), y se dice: `marca: tu habitual`. Sin pestañas, sin series, sin RIR, sin avisos y sin instrucciones. Tocar la
+  fila abre `openMuscleDetail()`.
 - **Regla (STQ-2, v285):** las observaciones (aviso de fallo o fatiga `stimWarn`, fatiga acumulada `fatigueFlag` →
   `openDeloadInfo()`, diagnóstico) solo se leen dentro del detalle del músculo. Ninguna regla compara contra un número
   general (fuera `SIG_BANDS`, las marcas en 10 y 20 y las reglas `high`/`low`). El color sigue solo en el `⚠`
