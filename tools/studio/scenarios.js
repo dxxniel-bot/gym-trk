@@ -128,10 +128,18 @@
     return best; }
   // estado en memoria de la pantalla (de dónde vienes, el ejercicio, la pestaña, el periodo, ver todos): sale de sus valores
   // por defecto y al salir vuelve tal cual (o se quita si no existía); si aún se está en exhist, se vuelve a la pantalla previa
-  const EXST = ['_exFrom', '_exKey', '_exTab', '_exDays', '_exAll'];
+  const EXST = ['_exFrom', '_back', '_exKey', '_exTab', '_exDays', '_exAll'];   // v286 · de dónde vienes ya es una pila (_back), compartida con el catálogo
   function exState(W, T){ const st = T.state, scr = st.screen, prev = EXST.map(k => [k, Object.prototype.hasOwnProperty.call(st, k), st[k]]);
     later(W, () => { prev.forEach(([k, had, v]) => { if(had) st[k] = v; else delete st[k]; }); if(st.screen === 'exhist'){ try{ W.go(scr || 'home'); }catch(_){} } });
     EXST.forEach(k => { delete st[k]; }); }
+  // v286 · //CATALOG: pantalla con su vista (settings.catView), lo abierto, el buscador y el modo unir en memoria. Sale de sus
+  // valores por defecto y al salir todo vuelve tal cual (catView incluido: lo que la app guarde en medio lo absorbe el guardia)
+  const CATST = ['_catSel', '_catOpen', '_catQ', '_back'];
+  function catOn(W, T, view){ const st = T.state, scr = st.screen, s = T.db.settings || (T.db.settings = {}), hadV = Object.prototype.hasOwnProperty.call(s, 'catView'), v0 = s.catView, mg = W._mgSel;
+    const prev = CATST.map(k => [k, Object.prototype.hasOwnProperty.call(st, k), st[k]]);
+    later(W, () => { prev.forEach(([k, had, v]) => { if(had) st[k] = v; else delete st[k]; }); if(hadV) s.catView = v0; else delete s.catView; W._mgSel = mg;
+      if(st.screen === 'catalog'){ try{ W.go(scr && scr !== 'catalog' ? scr : 'home'); }catch(_){} } });
+    CATST.forEach(k => { delete st[k]; }); s.catView = view; W._mgSel = []; W.go('home'); W.openExerciseDirectory(); }
   // la bitácora del ejercicio con más sesiones, abierta como en la app: desde progreso (así [‹ back] vuelve ahí)
   function exHistOn(W, T){ exState(W, T); const k = topExKey(W); W.go('progress'); if(k) W.openExHist(k); return !!k; }
   // la sección //LOG de la bitácora (la cabecera .section cuyo título es //LOG)
@@ -471,7 +479,15 @@
     { id:'exhist:top', g:'pantalla', label:'progreso · un ejercicio · peso top · todo', run(W, T){ const st = T.state; exHistOn(W, T);
         if(!click(W, '#view [data-act="extab"][data-t="top"]')){ st._exTab = 'top'; W.reRender(); }
         if(!click(W, '#view [data-act="exrange"][data-r="9999"]')){ st._exDays = 9999; W.reRender(); } } },
-    { id:'m:catalog', g:'hoja', label:'hoja · catálogo de ejercicios', run(W){ W._mgSel = []; W.openExerciseDirectory(); } },
+    // v286 · el catálogo ya es una pantalla (//CATALOG en árbol: ejercicio → variantes [bi] [uni] [alt], líneas con CSS).
+    // [‹ back] [unir] · //CATALOG [músculo] gym A–Z · buscar · grupos plegados (aquí el primero abierto) · hoja = una bitácora.
+    // El id m:catalog se conserva (lo citan propuestas y la línea base). Estado en memoria y settings.catView con `later`.
+    { id:'m:catalog', g:'pantalla', label:'catálogo · por músculo (un grupo abierto)', run(W, T){ catOn(W, T, 'mus'); click(W, '#view [data-act="catfold"]'); } },
+    { id:'catalog:gym', g:'pantalla', label:'catálogo · por gym', run(W, T){ catOn(W, T, 'gym'); click(W, '#view [data-act="catfold"]'); } },
+    { id:'catalog:az', g:'pantalla', label:'catálogo · A–Z', run(W, T){ catOn(W, T, 'az'); } },
+    // el modo unir: la franja ocupa el lugar de [‹ back] [unir] (mismo alto) y los dos primeros quedan elegidos ▣
+    { id:'catalog:merge', g:'pantalla', label:'catálogo · elegir para unir', run(W, T){ catOn(W, T, 'az'); click(W, '#view [data-act="catmerge"]');
+        [...W.document.querySelectorAll('#view .catm .catmh')].slice(0, 2).forEach(b => b.click()); } },
     { id:'m:profile', g:'hoja', label:'hoja · perfil del ejercicio', run(W, T){ const e = firstEx(T); if(e) W.openExProfile(e.name); } },
     // v269 · //PROGRESS en modo widgets ([edit] o mantener 0.5 s una tile): − quitar, ⠿ arrastrar, [+ add] [cancel] ✓ done.
     // openProgConfig() conserva el nombre y ya no abre una hoja: entra al modo (solo desde progress). Salir = go() a otra
@@ -501,7 +517,8 @@
     // días fijos: una fila por día de la semana con [su rutina] → trkMenu (descanso o un día del split); sin gym = 'sin gym'
     { id:'splitedit:weekly', g:'pantalla', label:'ajustes · split · días fijos', run(W, T){ weeklyPlan(W, T); splitEdit(W); } },
     { id:'m:exedit', g:'hoja', label:'hoja · editar ejercicio del split', run(W){ W.go('splitedit'); W.openExEdit(0, 0); } },
-    { id:'m:merge', g:'hoja', label:'hoja · unir ejercicios', run(W){ const ks = W.knownExercises().slice(0, 2).map(e => W.nameKey(e.name)); W._mgSel = ks; W.openMergeModal(); } },
+    // v286 · sin VARIANTE (cada registro conserva su lateralidad); cada fuente dice sus variantes ([bi·alt])
+    { id:'m:merge', g:'hoja', label:'hoja · unir ejercicios', run(W){ const mg = W._mgSel, ks = W.knownExercises().slice(0, 2).map(e => W.nameKey(e.name)); later(W, () => { W._mgSel = mg; }); W._mgSel = ks; W.openMergeModal(); } },
     { id:'m:import', g:'hoja', label:'hoja · importar split', run(W){ W.openImportSplit(); } },
     { id:'agenda', g:'pantalla', label:'ajustes · agenda', run(W){ W.go('agenda'); } },
     { id:'stack', g:'pantalla', label:'suplementos', run(W){ W.go('stack'); } },

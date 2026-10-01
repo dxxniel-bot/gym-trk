@@ -61,6 +61,11 @@
     await S('settings',async()=>{ go('settings'); });
     await S('stack',async()=>{ go('stack'); });
     await S('splitedit',async()=>{ go('splitedit'); });
+    // v286 · //CATALOG (pantalla, antes una hoja que el barrido no medía): por músculo con el primer grupo abierto, para que el
+    // árbol entre en la medida. Solo lectura; la vista elegida y lo abierto vuelven a como estaban. tools/ds-baseline.json aún no la tiene
+    { const cv=db.settings.catView, co=state._catOpen, cq=state._catQ;
+      await S('catalog',async()=>{ state._catOpen={}; state._catQ=''; state._catSel=false; db.settings.catView='mus'; go('splitedit'); openExerciseDirectory(); const g=document.querySelector('#view [data-act="catfold"]'); if(g)g.click(); });
+      if(cv===undefined)delete db.settings.catView; else db.settings.catView=cv; state._catOpen=co; state._catQ=cq; state._back=[]; }
     await S('share:food',async()=>{ state.shareType='food'; state.macroDate=food; go('share'); });
     if(last)await S('share:session',async()=>{ state.shareType='session'; state.shareId=last.id; go('share'); });
     // la sesión en vivo se mide con una sesión de prueba que NO se guarda (se restaura lo que hubiera)

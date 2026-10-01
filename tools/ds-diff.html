@@ -40,10 +40,10 @@ const S2=[
 ...[1,2,3,4,5,6,7,8,9,10].map(n=>['onb:'+n,(W,D)=>onbAt(W,D,n,null,()=>W.go('onboard'))]),
 ['onb:error',(W,D)=>onbAt(W,D,3,{w:15},()=>{ W.go('onboard'); if(typeof W.onbCheck==='function'&&W.onbCheck('body',D.onb.d))W.onbNext(); })],
 ['onboard',(W,D)=>onbAt(W,D,3,null,()=>W.go('home'))],
-['m:metric',W=>{W.go('progress');W.openMetricDetail('steps')}],['m:muscle',W=>W.openMuscleDetail('side_delts')],['m:catalog',W=>W.openExerciseDirectory()],['m:session',(W,D)=>W.openSessionEdit(lastS(D).id)],
+['m:metric',W=>{W.go('progress');W.openMetricDetail('steps')}],['m:muscle',W=>W.openMuscleDetail('side_delts')],['m:catalog',W=>{ W.go('home'); W.openExerciseDirectory(); const g=W.document.querySelector('#view [data-act="catfold"]'); if(g)g.click(); }],['m:session',(W,D)=>W.openSessionEdit(lastS(D).id)],
 ['m:ready',W=>W.openReadiness(W.todayISO())],['m:food',W=>W.openFoodAdd()],['m:goals',W=>W.openGoals()],['m:sleep',W=>W.openSleepLog()],['m:weight',W=>W.openWeightLog()],['m:rhr',W=>W.openHealthNumLog('rhr')],
 ['m:profile',(W,D)=>W.openExProfile(D.split.days[0].exercises[0].name)],['m:musclemap',W=>W.openMuscleMap()],['m:exedit',W=>{W.go('splitedit');W.openExEdit(0,0)}],['m:stackedit',(W,D)=>W.openStackEdit((D.stack[0]||{}).id)],['m:stacknew',W=>W.openStackEdit(null)],
-['m:merge',W=>W.openMergeModal()],['m:addex2',W=>{W.go('workout');W.openAddExStep2(0,'chest')}],['m:addexform',W=>{W.go('workout');W.openAddExForm(0,'chest')}],
+['m:merge',W=>{ W._mgSel=W.knownExercises().slice(0,2).map(e=>W.nameKey(e.name)); W.openMergeModal(); }],['m:addex2',W=>{W.go('workout');W.openAddExStep2(0,'chest')}],['m:addexform',W=>{W.go('workout');W.openAddExForm(0,'chest')}],
 ['m:namesearch',W=>W.openNameSearch()],['m:machine',W=>{W.go('workout');W.openMachineEdit(0)}],['m:volume',W=>W.openVolumeDetail()],['m:deload',W=>{ W.go('home'); W.openDeloadInfo(); }],['m:workshop',W=>W.openWorkshop()],['m:approx',W=>W.openApproxMeal()],['m:progcfg',W=>{W.go('progress');W.openProgConfig()}],
 ['m:adhoc',W=>W.openAdhocLog()],['m:import',W=>W.openImportSplit()],['m:gympick',W=>W.openGymPicker()],['m:sched',W=>W.openScheduleModal(0)],['m:drink',W=>W.openDrink()],['m:text',W=>W.openTextParse()],['m:health',W=>W.openHealthImport()],['m:mealcode',W=>W.openMealCode()],
 ['m:verify',W=>W.openVerify(food,{})],['m:log',(W,D)=>W.openLog((D.foods||[])[0]||food,{isNew:true})],
@@ -157,7 +157,7 @@ function typeIn(W,id,v){ const e=W.document.getElementById(id); if(!e)return; e.
 // abierta desde progreso con su estado por defecto (e1RM · 6M · solo los recientes)
 function secTop(W,el){ const v=W.document.getElementById('view'); if(!v||!el)return; const sec=el.closest('.section')||el, hr=sec.previousElementSibling, top=(hr&&hr.classList.contains('rule'))?hr:sec; v.scrollTop+=top.getBoundingClientRect().top-v.getBoundingClientRect().top; }
 function topExKey(W){ const c={}; let best=null; W.exIndex().forEach(r=>{ if(!r||!r.ex||W.isCardio(r.ex))return; const k=W.exHistKey(r.ex); if(!k)return; c[k]=(c[k]||0)+1; if(!best||c[k]>c[best])best=k; }); return best; }
-function exReset(W){ const S=W.__trk.state; ['_exFrom','_exKey','_exTab','_exDays','_exAll'].forEach(k=>{ delete S[k]; }); }
+function exReset(W){ const S=W.__trk.state; ['_exFrom','_back','_exKey','_exTab','_exDays','_exAll'].forEach(k=>{ delete S[k]; }); }
 function exOpen(W){ exReset(W); W.go('progress'); W.openExHist(topExKey(W)); }
 // v273 · #view hasta //SCHEDULE (la cabecera justo antes de la fila `modo`), como toSection del estudio
 function schedTop(W){ const v=W.document.getElementById('view'), b=W.document.querySelector('#view [data-act="sp_mode"]'), ln=b&&b.closest('.line'), sec=ln&&ln.previousElementSibling; if(!v||!sec)return;
