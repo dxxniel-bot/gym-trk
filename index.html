@@ -606,6 +606,18 @@
   .footer .abort::before,.footer .abort::after{color:var(--abort);}
   .footer .undo{font-size:var(--t-section);}
   .footer .save{flex:1; height:var(--h-pri); padding:0; text-align:center; font-size:var(--t-data); font-weight:800; letter-spacing:var(--ls-ui); color:var(--on-fill); background:var(--fill); border:0; border-radius:var(--r-ctl); cursor:pointer;}
+  /* v280 · zona del pulgar. El dueño (30-sep): "guardar rutina o cancelar o salirte… está en la parte inferior, y si quieres
+     swipear entre aplicaciones se hace desde la parte inferior… lo que sí se necesite, cerca del lado inferior derecho".
+     · El pie de la sesión deja libre la franja del gesto de iOS: sus botones quedaban a 12 px del borde, 22 px DENTRO de los
+       34 del indicador de inicio (la nav ya la respetaba; el pie no).
+     · Con el descanso corriendo, los avisos y la barra "no se está guardando" suben: si no, tapan −15 / +15 / skip.
+     · [+ set] [↓ drop set] pasan a la derecha, bajo la ✓ (lo de cada serie, al pulgar); [+ exercise] a la izquierda. */
+  .footer{padding-bottom:calc(var(--s4) + env(safe-area-inset-bottom));}
+  #resttimer.on ~ .savebar{bottom:calc(var(--nav-clear) + var(--s8) + env(safe-area-inset-bottom));}
+  body:has(#resttimer.on) .toasts{bottom:calc(var(--nav-clear) + var(--s8) + env(safe-area-inset-bottom));}
+  .savebar a{display:inline-flex; align-items:center; min-height:44px;}
+  .addrow.afree .aleft,.addrow.amach .aleft,.addrow.auni .aleft{grid-column:2/-1; grid-row:1; justify-self:end;}
+  .addrow.afree .aex,.addrow.amach .aex,.addrow.auni .aex{grid-column:2/-1; grid-row:1; justify-self:start;}
 
 
   /* modal / forms */
@@ -8046,13 +8058,13 @@ function setField(exi,si,f,val,skipMirror){ const w=db.activeWork; if(!w)return;
 function delSetLive(exi,si){
   const w=db.activeWork; const ex=w&&w.exercises[exi]; if(!ex)return false;
   const step=ex.unilateral?2:1; const p=Math.floor(si/step)*step; const s=ex.sets[p]; if(!s)return false;
-  if(s.isDrop){ ex.sets.splice(p,step); }
+  if(s.isDrop){ setGoneUndo(ex,p,ex.sets.splice(p,step),true); }
   else {
     let end=p+step; while(end<ex.sets.length&&ex.sets[end]&&ex.sets[end].isDrop)end+=step;
     const trailing=ex.sets.slice(p+step,end);
     const hasData=trailing.some(x=>x&&!x._pf&&(x.done||(+x.w>0)||(+x.r>0)));
     const _go4=()=>{
-    ex.sets.splice(p,end-p); save(); reRender(); return true;   // v279 · antes salía de aquí sin guardar ni repintar: la serie borrada seguía en pantalla hasta el siguiente toque
+    setGoneUndo(ex,p,ex.sets.splice(p,end-p),true); save(); reRender(); return true;   // v279 · antes salía de aquí sin guardar ni repintar: la serie borrada seguía en pantalla hasta el siguiente toque
   }; if(trailing.length&&hasData) return trkAsk({title:'borrar la serie y sus drops',detail:'tiene '+(trailing.length/step)+' drop set(s) con datos',ok:'borrar todo',danger:true},_go4); return _go4();}
   save(); reRender(); return true;
 }
@@ -8060,14 +8072,18 @@ function delSetHist(exi,si){
   const s=(db.sessions||[]).find(x=>x.id===state._histSessId); if(!s)return false;
   const ex=s.exercises[exi]; if(!ex)return false;
   const step=ex.unilateral?2:1; const p=Math.floor(si/step)*step; const st=ex.sets[p]; if(!st)return false;
-  if(st.isDrop){ ex.sets.splice(p,step); }
+  if(st.isDrop){ setGoneUndo(ex,p,ex.sets.splice(p,step)); }
   else { let end=p+step; while(end<ex.sets.length&&ex.sets[end]&&ex.sets[end].isDrop)end+=step;
     const trailing=ex.sets.slice(p+step,end); const hasData=trailing.some(x=>x&&(x.done||(+x.w>0)||(+x.r>0)));
     const _go5=()=>{
-    ex.sets.splice(p,end-p); save(); reRender(); return true;   // v279 · igual que en vivo
+    setGoneUndo(ex,p,ex.sets.splice(p,end-p)); save(); reRender(); return true;   // v279 · igual que en vivo
   }; if(trailing.length&&hasData) return trkAsk({title:'borrar la serie y sus drops',detail:'tiene '+(trailing.length/step)+' drop set(s) con datos',ok:'borrar todo',danger:true},_go5); return _go5();}
   save(); reRender(); return true;
 }
+// v280 · zona del pulgar: una serie CON datos que se va (deslizando) ofrece [deshacer]. El borrado sigue siendo al instante
+// (decisión del 30-sep); una serie vacía, o solo sugerida en gris en la sesión viva (`live`), se va sin aviso.
+function setGoneUndo(ex,p,gone,live){ if(!ex||!gone||!gone.some(x=>x&&!(live&&x._pf)&&(x.done||(+x.w>0)||(+x.r>0))))return;
+  toast('serie borrada','',{undo:()=>{ ex.sets.splice(Math.min(p,ex.sets.length),0,...gone); }}); }
 // Gesto: solo se engancha si el movimiento es CLARAMENTE horizontal (si no, manda el scroll vertical de
 // #view) y solo hacia la derecha. Empezar sobre un input/select/✓ nunca cuenta: ahí estás tecleando.
 (function(){
@@ -8276,7 +8292,8 @@ document.getElementById('app').addEventListener('click',e=>{
   else if(a==='schedcal'){ openScheduleModal(+el.dataset.di); }
   else if(a==='dl_ics'){ downloadIcs(+el.dataset.di); }
   else if(a==='sd_deld'){ const di=+el.dataset.di; if(db.split.days.length>1){ holdConfirm({title:'borrar este día del split',detail:'sus sesiones pasadas se quedan en el historial',verb:'borrar'},()=>{ db.split.days.splice(di,1); if(typeof db.rotIdx==='number'){ if(di<db.rotIdx)db.rotIdx--; if(db.rotIdx>=db.split.days.length)db.rotIdx=Math.max(0,db.split.days.length-1); } save(); reRender(); }); } }
-  else if(a==='sd_delex'){ db.split.days[+el.dataset.di].exercises.splice(+el.dataset.ei,1); save(); reRender(); }
+  else if(a==='sd_delex'){ const _d=db.split.days[+el.dataset.di], _i=+el.dataset.ei, _x=_d&&_d.exercises&&_d.exercises[_i]; if(!_x)return; _d.exercises.splice(_i,1); save(); reRender();   // v280 · la ✕ va en el borde derecho (donde descansa el pulgar) y borraba sin aviso ni vuelta atrás
+    toast((_x.name||'ejercicio')+' · fuera del split','',{undo:()=>{ _d.exercises.splice(Math.min(_i,_d.exercises.length),0,_x); }}); }
   else if(a==='sd_addex'){ openExEdit(+el.dataset.di,-1); }
   else if(a==='sd_dayup'){ const i=+el.dataset.di, d=db.split.days; if(i>0){ const t=d[i-1];d[i-1]=d[i];d[i]=t; if(db.rotIdx===i)db.rotIdx=i-1; else if(db.rotIdx===i-1)db.rotIdx=i; save(); reRender(); } }
   else if(a==='sd_daydn'){ const i=+el.dataset.di, d=db.split.days; if(i<d.length-1){ const t=d[i+1];d[i+1]=d[i];d[i]=t; if(db.rotIdx===i)db.rotIdx=i+1; else if(db.rotIdx===i+1)db.rotIdx=i; save(); reRender(); } }
@@ -10612,6 +10629,85 @@ function holdConfirm(o,onOk,onCancel){ const verb=o.verb||'confirmar', idle='man
     raf=requestAnimationFrame(tick); });
   ['pointerup','pointercancel'].forEach(t=>b.addEventListener(t,stop));
   m.querySelector('[data-ask="no"]').addEventListener('click',ev=>{ ev.stopPropagation(); stop(); closeAsk(); if(onCancel)onCancel(); }); }
+// ---------- v280 · zona del pulgar: el velo de las hojas ----------
+// El dueño (30-sep): "sigue pasando muchas veces el hecho de guardar rutina o de cancelar o de salirte… porque está en la
+// parte inferior, y si tú quieres swipear entre aplicaciones, pues se hace desde la parte inferior". Las hojas bajan desde
+// arriba, así que su velo (tocar fuera = cerrar) ocupa toda la parte baja de la pantalla, franja del gesto incluida.
+//  1 · un toque en el velo dentro de la franja del gesto de iOS no cierra nada (ni hojas ni avisos);
+//  2 · tocar fuera de una hoja de gym con algo escrito y sin guardar pregunta antes de tirarlo (TRKAsk); [cancel] sigue directo.
+// Va en fase de captura, sin tocar openModal ni askLayer: si el toque se detiene aquí, sus listeners no llegan a verlo.
+const EDGE_PAD=10;   // colchón sobre env(safe-area-inset-bottom): el dedo no es un punto
+let _sabT=null;      // solo pruebas: fuerza el alto de la franja (en escritorio env() vale 0)
+function safeBottomPx(){ if(_sabT!=null)return _sabT;
+  try{ const p=document.createElement('div'); p.style.cssText='position:fixed;left:0;bottom:0;width:0;height:env(safe-area-inset-bottom);visibility:hidden;pointer-events:none';
+    document.body.appendChild(p); const h=p.offsetHeight||0; p.remove(); return h; }catch(_){ return 0; } }
+// sin franja (escritorio, teléfono con botón) no hay nada que proteger: con 0 todo sigue como antes
+function inGestureStrip(y){ const s=safeBottomPx(); return s>0&&typeof y==='number'&&y>=window.innerHeight-(s+EDGE_PAD); }
+// hojas del flujo de gym que guardan lo escrito con SU botón (las demás guardan al tocar: no tienen nada que perder)
+const SHEET_GUARD='[data-act="okexedit"],[data-act="okaddex"],[data-act="ss_save"],[data-act="pf_save"],#mc_save,#exn_save,#ng_add,#ax_newmus_go,#tp_ok';
+function sheetUnsaved(m){ return !!(m&&m._dirty&&m.querySelector(SHEET_GUARD)); }
+function scrimGuard(ev){ const m=ev.target; if(!m||!m.classList||!m.classList.contains('modal'))return false;   // solo el velo, nunca la hoja
+  if(inGestureStrip(ev.clientY)){ ev.stopPropagation(); return true; }
+  if(m.id==='modal'&&sheetUnsaved(m)&&!m.querySelector('.sheet.nodismiss')){ ev.stopPropagation();
+    trkAsk({title:'cerrar sin guardar',detail:'lo que escribiste en esta hoja no se guarda',ok:'cerrar',cancel:'seguir',danger:true},()=>{ closeModal(); reRender(); });
+    return true; }
+  return false; }
+document.addEventListener('input',ev=>{ const t=ev.target, m=t&&t.closest&&t.closest('#modal'); if(m)m._dirty=true; },true);
+document.addEventListener('click',scrimGuard,true);
+// v280 · self-check de la zona del pulgar (síncrono): el pie fuera de la franja del gesto, el velo que no cierra por un roce,
+// lo escrito que no se tira sin preguntar, [deshacer] al quitar un ejercicio del split o una serie con datos, [+ set] a la
+// derecha y los avisos por encima del descanso. Monta una base de juguete y al final repinta la real.
+function _pulgarSelfCheck(){ const A=(nm,c)=>{ if(!c) throw new Error('SELFCHECK pulgar: '+nm); };
+  const real=db, rs=state.screen, rw=state.work, c0=state._curEx, sab0=_sabT, sg=window._swipeGuard, H=window.innerHeight;
+  const old=new Set(document.querySelectorAll('.toast')), rb=document.getElementById('resttimer'), rbOn=!!(rb&&rb.classList.contains('on'));
+  const fresh=()=>Array.from(document.querySelectorAll('.toast')).filter(t=>!old.has(t)), wipe=()=>fresh().forEach(t=>t.remove());
+  const tap=(el,y)=>el.dispatchEvent(new MouseEvent('click',{bubbles:true,cancelable:true,clientX:120,clientY:y==null?200:y}));
+  const rule=(sel,prop)=>{ let out=''; Array.from(document.styleSheets).forEach(ss=>{ let l=null; try{ l=ss.cssRules; }catch(_){ return; } Array.from(l||[]).forEach(r=>{ if(r.selectorText===sel&&r.style&&r.style[prop])out=r.style[prop]; }); }); return out; };
+  try{ window._swipeGuard=0;
+    A('el pie de la sesión deja libre la franja del gesto', rule('.footer','paddingBottom').indexOf('safe-area-inset-bottom')>=0);
+    _sabT=34; A('la franja es el inset más su colchón', inGestureStrip(H-1)&&inGestureStrip(H-34-EDGE_PAD)&&!inGestureStrip(H-35-EDGE_PAD));
+    _sabT=0; A('sin franja no cambia nada', !inGestureStrip(H-1)); _sabT=34;
+    openModal('<h3>x</h3><div class="sheetbtns"><button class="cancel" data-act="closemodal">cerrar</button></div>'); let m=document.getElementById('modal');
+    tap(m,H-20); A('un roce en la franja no cierra la hoja', document.getElementById('modal')===m);
+    tap(m,H-120); A('tocar fuera, arriba de la franja, sí la cierra', !document.getElementById('modal'));
+    let ok=0, no=0; trkAsk({title:'x'},()=>ok++,()=>no++); const al=document.getElementById('asklayer');
+    tap(al,H-20); A('un roce en la franja no contesta un aviso', document.getElementById('asklayer')===al&&ok===0&&no===0);
+    tap(al,H-120); A('tocar fuera de un aviso sigue siendo cancelar', !document.getElementById('asklayer')&&ok===0&&no===1);
+    let saved=0; trkPrompt({title:'nota',label:'NOTA',value:''},()=>saved++); m=document.getElementById('modal');
+    const inp=document.getElementById('tp_in'); inp.value='asiento 4'; inp.dispatchEvent(new Event('input',{bubbles:true}));
+    tap(m,H-120); A('tocar fuera con algo escrito pregunta antes de tirarlo', document.getElementById('modal')===m&&!!document.getElementById('asklayer'));
+    tap(document.querySelector('#asklayer [data-ask="no"]')); A('seguir conserva la hoja y lo escrito', document.getElementById('modal')===m&&document.getElementById('tp_in').value==='asiento 4'&&!document.getElementById('asklayer'));
+    tap(m,H-120); tap(document.querySelector('#asklayer [data-ask="ok"]')); A('cerrar la descarta sin guardar', !document.getElementById('modal')&&saved===0);
+    trkPrompt({title:'nota',label:'NOTA',value:'x'},()=>saved++); m=document.getElementById('modal'); tap(m,H-120);
+    A('sin nada escrito, tocar fuera cierra directo', !document.getElementById('modal')&&!document.getElementById('asklayer'));
+    openModal('<h3>x</h3><div class="field"><input id="zz_q"/></div><div class="sheetbtns"><button class="ok" id="zz_go">buscar</button></div>'); m=document.getElementById('modal');
+    document.getElementById('zz_q').dispatchEvent(new Event('input',{bubbles:true})); tap(m,H-120);
+    A('una hoja que no guarda con su botón cierra como siempre', !document.getElementById('modal')&&!document.getElementById('asklayer'));
+    db=migrate({profile:{username:'t'},gyms:['g1'],activeGym:'g1',sessions:[],
+      split:{name:'s',days:[{id:'d1',name:'A',exercises:[{id:'e1',name:'press',muscle:'chest',type:'machine',unilateral:false,sets:2},{id:'e2',name:'fly',muscle:'chest',type:'machine',unilateral:false,sets:2},{id:'e3',name:'dips',muscle:'chest',type:'free',unilateral:false,sets:2}]}]}}); bumpIdx();
+    const D=db.split.days[0], names=()=>D.exercises.map(e=>e.name).join();
+    state.screen='splitedit'; render(); wipe(); tap(document.querySelector('[data-act="sd_delex"][data-ei="1"]'));
+    A('la ✕ del split quita el ejercicio al instante', names()==='press,dips');
+    let u=fresh().map(t=>t.querySelector('.tundo')).filter(Boolean).pop(); A('…y ofrece deshacer', !!u); tap(u);
+    A('deshacer lo devuelve a su lugar', names()==='press,fly,dips'); wipe();
+    const S=(w,o)=>Object.assign({w:String(w),r:'8',rir:'1',unit:'lbs',done:false},o||{});
+    db.activeWork={id:'w',date:todayISO(),dayId:'d1',dayName:'A',gym:'g1',exercises:[{exId:'e1',name:'press',muscle:'chest',type:'machine',unilateral:false,sets:[S(60,{done:true}),S(60),S('',{r:'',rir:''})]}]}; bumpIdx();
+    state.screen='workout'; state.work=db.activeWork; state._curEx=0; render(); wipe();
+    const X=db.activeWork.exercises[0], s1=X.sets[1];
+    delSetLive(0,2); A('una serie vacía se va sin aviso', X.sets.length===2&&!fresh().length);
+    delSetLive(0,1); A('una serie con datos se va al instante', X.sets.length===1);
+    u=fresh().map(t=>t.querySelector('.tundo')).filter(Boolean).pop(); A('…y ofrece deshacer', !!u); tap(u);
+    A('deshacer la devuelve a su lugar', X.sets.length===2&&X.sets[1]===s1); wipe();
+    const q=k=>document.querySelector('.ex.current [data-act="'+k+'"]').getBoundingClientRect(), fr=document.getElementById('app').getBoundingClientRect();
+    A('[+ set] y [↓ drop set] quedan a la derecha de [+ exercise]', q('addset').left>q('addex').right&&q('dropset').left>q('addset').left);
+    A('…en la mitad derecha de la pantalla', q('addset').left>fr.left+fr.width/2);
+    toast('x'); const box=document.getElementById('toasts'), LIFT='body:has(#resttimer.on) .toasts';   // el estilo calculado de :has() llega un cuadro después: se afirma la regla y su alcance
+    rb.classList.remove('on'); const off=box.matches(LIFT); rb.classList.add('on');
+    A('con el descanso corriendo los avisos suben', !(window.CSS&&CSS.supports&&CSS.supports('selector(body:has(a))'))||(!off&&box.matches(LIFT)&&rule(LIFT,'bottom').indexOf('--s8')>=0));
+    console.log('pulgar self-check OK');
+  } finally { _sabT=sab0; window._swipeGuard=sg; try{ closeAsk(true); }catch(_){} try{ closeModal(); }catch(_){} wipe(); if(rb)rb.classList.toggle('on',rbOn);
+    db=real; state.screen=rs; state.work=rw; state._curEx=c0; bumpIdx(); try{ render(); }catch(_){} }
+}
 // ---- R3 · TRKPop (Smart Popover, §7.18): texto corto anclado al término; un MENÚ va en la capa de TRKAsk (en el
 // marco del teléfono siempre es "móvil": popover en pantalla ancha, sheet en la angosta) ----
 const GLOSS={
