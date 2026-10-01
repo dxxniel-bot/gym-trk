@@ -5073,7 +5073,7 @@ function openLatSelect(anchor,exi){ const w=db.activeWork, ex=w&&w.exercises[exi
 function liveLatSet(exi,to){ const w=db.activeWork, ex=w&&w.exercises[exi]; if(!ex||isCardio(ex))return; to=latNorm(to); const from=latOf(ex); if(from===to)return;
   const go=()=>{ const sx=splitExById(ex.exId), s0=latSnap(ex), x0=sx?latSnap(sx):null, sets0=(ex.sets||[]).map(s=>Object.assign({},s));
     restructureLat(ex,to,{dayId:w.dayId,orderIdx:exi}); if(sx)setLat(sx,to); save(); reRender();
-    toast('✓ '+LAT_LBL[to]+(sx?' · también en tu split':''),'ok',{undo:()=>{ latRestore(ex,s0); ex.sets=sets0; if(sx)latRestore(sx,x0); }}); };
+    toast('✓ ['+to+']'+(sx?' · también en tu split':''),'ok',{undo:()=>{ latRestore(ex,s0); ex.sets=sets0; if(sx)latRestore(sx,x0); }}); };
   const touches=(from==='uni')!==(to==='uni');   // hacia o desde uni cambia la forma de las series; bi ↔ alt no
   if(touches&&(ex.sets||[]).some(s=>s&&!s._pf&&(s.done||(+s.w>0)||(+s.r>0)))) trkAsk({title:'pasar a '+LAT_LBL[to],detail:to==='uni'?('lo ya registrado queda en el lado '+(ex.startSide==='L'?'L':'R')+' · el otro lado sale sugerido'):'cada lado registrado queda como una serie',ok:'cambiar'},go); else go(); }
 // v286 · self-check de [alt]. NO está en la lista del arranque: se corre a mano (_sbx=true; _altSelfCheck()). Con los datos
@@ -5153,7 +5153,7 @@ function _altSelfCheck(){ const A=(nm,c)=>{ if(!c) throw new Error('SELFCHECK al
     A('bi → alt con series registradas: no pregunta ni toca las series (tampoco la sugerida)', !document.getElementById('asklayer')&&latOf(cx)==='alt'&&cx.unilateral===false&&cx.sets.length===3&&cx.sets.every((s,i)=>s===keep[i]&&!s.side)&&cx.sets[0].done&&cx.sets[1].done&&!!cx.sets[2]._pf);
     A('…y queda escrito en el split, solo en ese ejercicio', latOf(sx)==='alt'&&sx.unilateral===false&&latOf(day.exercises[1])==='bi');
     b0=br(); A('el corchete dice [alt] y sigue bajo el dedo', !!b0&&b0.textContent==='[alt]'&&near(b0.getBoundingClientRect().top,y0)&&near(v.scrollTop,t0));
-    { const tu=Array.from(document.querySelectorAll('#toasts .toast:not(.out) .tundo')).pop(); A('el aviso lo dice y trae [deshacer]', !!tu&&/también en tu split/.test(tu.parentElement.textContent));
+    { const tu=Array.from(document.querySelectorAll('#toasts .toast:not(.out) .tundo')).pop(); A('el aviso lo dice, trae [deshacer] y es corto (más de 29 letras ya no cabe con el botón)', !!tu&&(m=>/^✓ \[alt\] · también en tu split$/.test(m)&&m.length<=29)(tu.parentElement.querySelector('.tm').textContent));
       tap(tu); A('[deshacer] deja la sesión y el split como estaban', latOf(cx)==='bi'&&cx.lat==null&&latOf(sx)==='bi'&&!('lat' in sx)&&cx.sets.length===3&&cx.sets[0].w==='30'&&cx.sets[1].w==='35'&&!!cx.sets[2]._pf&&br().textContent==='[bi]'); }
     tap(br()); tap(opts()[1]); A('hacia uni con series registradas: pregunta antes', !!ask('ok')&&latOf(cx)==='bi');
     tap(ask('no')); A('cancelar no cambia nada', latOf(cx)==='bi'&&latOf(sx)==='bi'&&cx.sets.length===3);
