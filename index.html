@@ -401,7 +401,7 @@
   .mdmeal{padding:var(--s2) var(--mcol,0px) var(--s2) var(--s5); margin-bottom:var(--s1); background:var(--o10);}   /* G2 · X1-02: entra solo al abrirse (state._enter); antes re-animaba en cada toque cercano */ .mdmeal .mdm{font-size:var(--t-label); color:var(--o50); padding-top:var(--s2);}
   /* v256 · TRKLog: agua, supps y comida con el MISMO formato (Item Action List de 21st.dev, solo la anatomía) */
   .lsec{margin-top:var(--s4);}
-  .hpst{display:grid; grid-template-columns:2ch 1fr; gap:var(--s3); font-size:var(--t-data); color:var(--o70); line-height:var(--lh-read); margin-bottom:var(--s3);} .hpst .hpn{color:var(--o40); font-weight:700;} .hpst b{color:var(--fg);} .hpst code,.hpfmt{font-family:inherit; color:var(--fg);}
+  .hpst{display:grid; grid-template-columns:2ch 1fr; gap:var(--s3); font-size:var(--t-data); color:var(--o70); line-height:var(--lh-read); margin-bottom:var(--s3);} .hpst.kv{grid-template-columns:7ch 1fr;} .hpst .hpn{color:var(--o40); font-weight:700;} .hpst b{color:var(--fg);} .hpst code,.hpfmt{font-family:inherit; color:var(--fg);}
   .hpfmt{white-space:pre; overflow-x:auto; font-size:var(--t-label); line-height:var(--lh-read); padding:var(--s3); border:var(--bw-box) solid var(--o20); border-radius:var(--r-ctl); margin:0 0 var(--s4);}
   .empty.supempty{text-align:left; padding:var(--s2) 0 var(--s3); line-height:var(--lh-read);}
   .lsmore{flex:0 0 auto; width:44px; height:44px; margin-right:calc(-1 * var(--s4)); padding:0 var(--s4) 0 0; display:flex; align-items:center; justify-content:flex-end; background:none; border:0; color:var(--o50); cursor:pointer;}
@@ -4204,6 +4204,91 @@ function _healthPasteSelfCheck(){ const A=(nm,c)=>{ if(!c) throw new Error('SELF
     A('pegar dos veces no duplica', db.steps['2026-09-20']===8200&&Object.keys(H().sleep).length===1);
   } finally { db=real; }
   console.log('health paste self-check OK'); }
+// v285 · el Atajo de punta a punta: pegados como los arma un iPhone (español de México, de España e inglés) con TODO —pasos, energía
+// activa y en reposo, peso, grasa, FC en reposo, HRV y sueño con fases— metidos por parseHealthPaste → ingestHealth. No está en la
+// lista del arranque: se corre a mano (_sbx=true; _atajoSelfCheck()).
+function _atajoSelfCheck(){ const A=(nm,c)=>{ if(!c) throw new Error('SELFCHECK atajo: '+nm); }; const real=db, om=openModal;
+  // fechas fijas y pasadas; la zona es la del equipo (como en el iPhone), así el día de despertar no depende de dónde corra la prueba
+  const off=(d,hm)=>{ const o=-new Date(d+'T'+hm+':00').getTimezoneOffset(), a=Math.abs(o); return (o<0?'-':'+')+pad(Math.floor(a/60))+':'+pad(a%60); };
+  const iso=(d,hm)=>d+'T'+hm+':00'+off(d,hm), D1='2026-09-21', D2='2026-09-22', D3='2026-09-23', D4='2026-09-24';
+  const MX=['trk2','steps '+iso(D1,'00:00')+' 9120','steps '+iso(D2,'00:00')+' 8214','steps '+iso(D3,'00:00')+' 3050.999',
+    'act '+iso(D1,'00:00')+' 498.217','act '+iso(D2,'00:00')+' 512.482','act '+iso(D3,'00:00')+' 120.5','bas '+iso(D1,'00:00')+' 1650.25','bas '+iso(D2,'00:00')+' 1648.9','','   ',
+    'weight '+iso(D2,'21:00')+' 62.1 kg','weight '+iso(D2,'07:10')+' 61.4 kg','weight '+iso(D3,'07:05')+' 61.2 kg','fat '+iso(D3,'07:05')+' 14.2 %',
+    'rhr '+iso(D2,'00:00')+' 56 count/min','rhr '+iso(D3,'00:00')+' 55 count/min','hrv '+iso(D3,'02:10')+' 41.3 ms','hrv '+iso(D3,'04:40')+' 48.25 ms','hrv '+iso(D3,'06:05')+' 60.02 ms',
+    'sleep '+iso(D2,'23:00')+' '+iso(D3,'07:00')+' En cama','sleep '+iso(D2,'23:10')+' '+iso(D3,'00:40')+' Esencial','sleep '+iso(D3,'00:40')+' '+iso(D3,'01:30')+' Profundo',
+    'sleep '+iso(D3,'01:30')+' '+iso(D3,'01:40')+' Despierto','sleep '+iso(D3,'01:40')+' '+iso(D3,'03:10')+' REM','sleep '+iso(D3,'03:10')+' '+iso(D3,'06:50')+' Esencial',
+    'sleep '+iso(D1,'23:30')+' '+iso(D2,'06:30')+' Dormido'].join('\r\n');
+  try{ db=migrate({profile:{username:'t',weightKg:61}}); db.steps={}; db.bodyweight={}; db.sleep={}; db.health=healthShape({}); bumpIdx();
+    // 1 · lo tecleado antes del pegado
+    db.steps[D1]=7000; H().src.steps[D1]='manual'; db.bodyweight[D3]=60.8; H().src.weight[D3]='manual';
+    H().daily[D2]={rhr:50,src:{rhr:'manual'}}; db.sleep[D2]=[{date:D2,type:'nocturno',hours:6}];
+    const r=healthPasteApply(MX), h=H(), dy=d=>h.daily[d]||{};
+    A('el pegado de México se lee completo (8 clases de dato)', r&&r.kinds.length===8&&r.days===3);
+    A('pasos por día, con decimales de sobra', db.steps[D2]===8214&&db.steps[D3]===3051&&dy(D1).steps===9120);
+    A('pasos tecleados ganan', db.steps[D1]===7000);
+    A('energía activa con tres decimales no se lee como miles', dy(D1).activeKcal===498&&dy(D2).activeKcal===512&&dy(D3).activeKcal===121);
+    A('energía en reposo', dy(D1).basalKcal===1650&&dy(D2).basalKcal===1649);
+    A('peso: gana la muestra más tardía del día, venga en el orden que venga', db.bodyweight[D2]===62.1);
+    A('peso tecleado gana y el perfil sigue al último día', db.bodyweight[D3]===60.8&&db.profile.weightKg===60.8);
+    A('grasa corporal al día', dy(D3).fat===14.2);
+    A('FC en reposo: la tecleada gana, la otra entra', dy(D2).rhr===50&&dy(D3).rhr===55);
+    A('HRV: mediana del día', dy(D3).hrv&&dy(D3).hrv.v===48.3&&dy(D3).hrv.kind==='sdnn');
+    const n3=sleepBlocks(db.sleep[D3]);
+    A('la noche cae en el día de despertar, con sus horas', n3.length===1&&n3[0].start==='23:10'&&n3[0].end==='06:50'&&n3[0].src==='shortcut'&&n3[0].hours===7.5);
+    A('y con sus fases (en cama fuera, despierto aparte)', n3[0].ph&&n3[0].ph.core===310&&n3[0].ph.deep===50&&n3[0].ph.rem===90&&n3[0].ph.awake===10);
+    A('dormido = suma de fases; el detalle de sueño las ve', sleepMinOf(db.sleep[D3])===450&&sleepPhDay(D3).deep===50);
+    A('una noche tecleada no se pisa (la de Salud queda aparte)', sleepHours(db.sleep[D2])===6&&h.sleep[D2].length===1&&Math.round(asleepMin(h.sleep[D2][0]))===420);
+    A('queda anotado qué llegó', h.shortcut.lastKinds.length===8&&h.shortcut.lastPaste>0);
+    // 2 · repetir el pegado no duplica nada
+    const snap=()=>JSON.stringify([db.steps,db.bodyweight,db.sleep,h.daily,h.sleep,db.profile.weightKg]); const s1=snap(); healthPasteApply(MX);
+    A('pegar otra vez deja todo igual', snap()===s1);
+    // 3 · al día siguiente el día más viejo llega cortado: no pisa lo que ya estaba completo
+    healthPasteApply(['trk2','steps '+iso(D2,'00:00')+' 1200','steps '+iso(D3,'00:00')+' 9400','steps '+iso(D4,'00:00')+' 5000','act '+iso(D2,'00:00')+' 90',
+      'sleep '+iso(D3,'06:20')+' '+iso(D3,'06:50')+' Esencial','sleep '+iso(D3,'23:40')+' '+iso(D4,'06:10')+' Esencial'].join('\n'));
+    A('el día cortado conserva su total; los demás se actualizan', db.steps[D2]===8214&&dy(D2).activeKcal===512&&db.steps[D3]===9400&&db.steps[D4]===5000);
+    A('la noche cortada conserva la completa; la nueva entra', sleepMinOf(db.sleep[D3])===450&&sleepMinOf(db.sleep[D4])===390);
+    // 4 · iPhone en inglés: libras, fracción de grasa, miles con coma, fechas de Estados Unidos con a. m. / p. m.
+    db.steps={}; db.bodyweight={}; db.sleep={}; db.health=healthShape({});
+    const EN=['trk2','steps 9/22/26 10,432','steps 9/23/26 2100','weight Sep 23, 2026 at 7:00 AM 135.4 lb','fat Sep 23, 2026 at 7:00 AM 0.142 %','rhr 9/23/26 58 count/min','hrv 9/23/26 52.7 ms',
+      'act 9/22/26 1,204.5 Cal','bas 9/22/26 1,650 Cal','act 9/23/26 2092 kJ','sleep Sep 22, 2026 at 11:10 PM Sep 23, 2026 at 12:40 AM Core','sleep Sep 23, 2026 at 12:40 AM Sep 23, 2026 at 1:30 AM Deep',
+      'sleep Sep 23, 2026 at 1:30 AM Sep 23, 2026 at 2:00 AM Awake','sleep Sep 23, 2026 at 2:00 AM Sep 23, 2026 at 6:40 AM REM','sleep Sep 22, 2026 at 11:00 PM Sep 23, 2026 at 6:45 AM In Bed'].join('\n');
+    const e=healthPasteApply(EN), g=H(), de=d=>g.daily[d]||{};
+    A('inglés: mes/día/año y miles con coma', e&&e.kinds.length===8&&db.steps[D2]===10432&&db.steps[D3]===2100);
+    A('inglés: libras → kg y fracción de grasa → %', Math.abs(db.bodyweight[D3]-61.42)<0.01&&de(D3).fat===14.2);
+    A('inglés: Cal con miles y kJ', de(D2).activeKcal===1205&&de(D2).basalKcal===1650&&de(D3).activeKcal===500);
+    const ne=sleepBlocks(db.sleep[D3]);
+    A('inglés: hora con AM/PM y fases', ne.length===1&&ne[0].start==='23:10'&&ne[0].end==='06:40'&&ne[0].ph.core===90&&ne[0].ph.deep===50&&ne[0].ph.awake===30&&ne[0].ph.rem===280);
+    // 5 · iPhone de España: coma decimal, punto de miles, día/mes/año, mes escrito, claves en español, espacios raros y BOM
+    db.steps={}; db.bodyweight={}; db.sleep={}; db.health=healthShape({}); const nb=String.fromCharCode(160), nn=String.fromCharCode(0x202f);
+    const ES=[String.fromCharCode(0xfeff)+'TRK2','pasos 22/09/2026 8.214','pasos: 23/09/2026 3'+nn+'051','peso 23/09/2026 61,2'+nb+'kg','grasa 23/09/2026 14,2 %','fcr 23/09/2026 55','vfc 23/09/2026 48,25 ms',
+      'activa 22/09/2026 512,482','reposo 22/09/2026 1.648,9','sueño 22 sept 2026, 23:10 23 sept 2026, 6:40 Principal','sueño 23 de septiembre de 2026 a las 6:40 23 de septiembre de 2026 a las 7:02 REM'].join('\r\n');
+    const s=healthPasteApply(ES), k=H(), ds=d=>k.daily[d]||{};
+    A('España: día/mes/año, punto de miles y espacio fino', s&&s.kinds.length===8&&db.steps[D2]===8214&&db.steps[D3]===3051);
+    A('España: coma decimal', db.bodyweight[D3]===61.2&&ds(D3).fat===14.2&&ds(D3).hrv.v===48.3&&ds(D3).rhr===55);
+    A('España: 512,482 es decimal y 1.648,9 lleva miles', ds(D2).activeKcal===512&&ds(D2).basalKcal===1649);
+    A('España: fechas con el mes escrito', sleepMinOf(db.sleep[D3])===472&&sleepBlocks(db.sleep[D3])[0].ph.core===450);
+    // 6 · basura y valores raros: nada truena, nada falso entra
+    db.steps={}; db.bodyweight={}; db.sleep={}; db.health=healthShape({});
+    A('vacío, texto ajeno y Atajo sin datos → nada', parseHealthPaste('')===null&&parseHealthPaste('hola\nqué tal')===null&&parseHealthPaste('trk2')===null&&hpEmpty(' trk2\n')&&!hpEmpty('hola'));
+    const bad=parseHealthPaste(['trk2','steps mañana 100','steps '+D2+' abc','weight 2026-13-45 60','steps 2099-01-01 5000','steps 31/02/2026 900','steps '+D2+' 250000','act '+D2+' 999999','rhr '+D2+' 300','hrv '+D2+' 0','weight '+D2+' 900 kg',';;','sleep '+D2+' '+D3+' REM','sleep '+iso(D3,'07:00')+' '+iso(D2,'23:00')+' REM','steps '+D3+' 8.200'].join('\n'));
+    A('de un pegado sucio solo entra lo legible', bad&&bad.payload.daily.length===1&&bad.payload.daily[0].date===D3&&bad.payload.daily[0].steps===8200&&!bad.payload.sleep.length);
+    healthPasteApply('trk2\nweight '+D2+' 900 kg\nsteps '+D2+' 4000'); A('un peso imposible no se guarda', db.bodyweight[D2]==null&&db.steps[D2]===4000);
+    healthPasteApply('trk2\nweight '+D2+' 135\nweight '+D3+' 61.5'); A('peso sin unidad: libras solo si cuadra con tu peso', Math.abs(db.bodyweight[D2]-61.23)<0.01&&db.bodyweight[D3]===61.5);
+    const st=parseHealthPaste('trk2\nsleep '+D2+' 23:00 '+D3+' 01:00\nsleep '+D3+'T01:00 '+D3+'T02:00 4').payload.sleep[0].stages;
+    A('sueño sin fase escrita o con el número de Salud', st.length===2&&st[0][2]==='asleep'&&st[1][2]==='deep');
+    A('fases en cualquier idioma', hpStage('Sueño esencial')==='core'&&hpStage('Asleep (Deep)')==='deep'&&hpStage('Dormido')==='asleep'&&hpStage('In Bed')==='inBed'&&hpStage('Sueño REM')==='rem'&&hpStage('Awake')==='awake');
+    A('fechas: el día escrito no cambia de zona', hpStamp('2026-09-23T00:30:00+09:00').d===D3&&hpStamp('Tuesday, September 22, 2026').d===D2&&hpStamp('22.09.26').d===D2&&hpStamp('32/01/2026')===null);
+    A('hora con a. m. / p. m. como la escribe el iPhone en español', hpStamp('22 sep 2026, 11:10 p. m.').ms===new Date(2026,8,22,23,10).getTime()&&hpStamp('23 sep 2026 a la(s) 12:05 a.m. Esencial').ms===new Date(2026,8,23,0,5).getTime()&&hpStamp('23/09/2026 6:40').t===true);
+    // 7 · la receta enseña lo mismo que la app lee
+    const ex=parseHealthPaste(HP_EXAMPLE);
+    A('el ejemplo de la receta trae las 8 clases', ex&&ex.kinds.length===8);
+    A('cada bloque de la receta usa una palabra que el parser conoce', HP_BLOCKS.length===8&&new Set(HP_BLOCKS.map(b=>HP_KEY[b[0]])).size===8&&HP_KINDS.every(x=>HP_BLOCKS.some(b=>HP_KEY[b[0]]===x[0])));
+    healthPasteApply('trk2\nsteps '+D2+' 4000\nrhr '+D2+' 55'); let html=''; openModal=x=>{ html=String(x); }; openShortcutSetup();
+    A('la receta nombra cada acción y cada palabra', ['Buscar muestras de salud','Repetir con cada','Agregar a variable','Copiar al portapapeles','Automatización','ISO 8601'].every(x=>html.indexOf(x)>=0)&&HP_BLOCKS.every(b=>html.indexOf('<code>'+b[0]+'</code>')>=0));
+    A('y marca lo que llegó en el último pegado', html.indexOf('pasos ✓')>0&&html.indexOf('FC ✓')>0&&html.indexOf('HRV —')>0);
+    console.log('atajo self-check OK');
+  } finally { openModal=om; db=real; bumpIdx(); }
+}
 function _v271SelfCheck(){ const A=(nm,c)=>{ if(!c) throw new Error('SELFCHECK v271: '+nm); };
   // h y min
   A('5.2 h → 5 h 12 min', fmtH(5.2)==='5 h 12 min'); A('0.5 h → 30 min', fmtH(0.5)==='30 min'); A('7 h exactas', fmtH(7)==='7 h');
@@ -6235,6 +6320,10 @@ function hmOfMs(ms){ const d=new Date(ms); return pad(d.getHours())+':'+pad(d.ge
 function agoTxt(ms){ if(!ms)return 'nunca'; const m=Math.round((Date.now()-ms)/60000); if(m<1)return 'ahora'; if(m<60)return 'hace '+m+' min'; const h=Math.round(m/60); if(h<48)return 'hace '+h+' h'; return 'hace '+Math.round(h/24)+' d'; }
 const SLEEP_ASLEEP={deep:1,rem:1,light:1,core:1,asleep:1};
 function asleepMin(seg){ const st=seg.stages||[]; if(!st.length)return (seg.endMs-seg.startMs)/60000; return st.reduce((a,x)=>a+(SLEEP_ASLEEP[x[2]]?(x[1]-x[0])/60000:0),0); }
+// v285 · las fases de una noche sincronizada, en minutos y con la misma forma que las tecleadas (ph:{awake,rem,core,deep}; 'light' de
+// Android cuenta como core): así el detalle de sueño y su bloque PHASES las muestran. Sin REM, core ni profundo no hay fases que mostrar.
+function segPh(seg){ const o={awake:0,rem:0,core:0,deep:0}; let any=false; (seg.stages||[]).forEach(x=>{ const k=x[2]==='light'?'core':x[2]; if(o[k]==null)return; o[k]+=(x[1]-x[0])/60000; if(k!=='awake')any=true; });
+  if(!any)return null; const ph={}; Object.keys(o).forEach(k=>{ const v=Math.round(o[k]); if(v>0)ph[k]=v; }); return ph; }
 // absolute window (ms) of a saved session / the live workout. Sessions saved before v220 derive it from date + HH:MM;
 // doneAt stamps widen it (backdated "log later" sessions excluded — their stamps are logging time, not training time).
 function sessionWindow(s){ if(!s)return null; let a=s.startMs||null, b=s.endMs||null;
@@ -6306,7 +6395,7 @@ function ingestHealth(p,opts){ opts=opts||{}; const h=H(); const out={daily:0,sl
     h.sleep[day]=segs;
     const cur=sleepBlocks(db.sleep&&db.sleep[day]); const auto=!cur.length||cur.every(b=>b&&typeof b==='object'&&b.src);
     if(auto){ db.sleep=db.sleep||{};
-      db.sleep[day]=segs.map(sg=>{ const st=hmOfMs(sg.startMs); return {start:st,end:hmOfMs(sg.endMs),date:day,type:isNocturnal(st)?'nocturno':'siesta',hours:Math.round(asleepMin(sg)/6)/10,src:sg.src}; }).filter(b=>b.hours>0);
+      db.sleep[day]=segs.map(sg=>{ const st=hmOfMs(sg.startMs), ph=segPh(sg); return Object.assign({start:st,end:hmOfMs(sg.endMs),date:day,type:isNocturnal(st)?'nocturno':'siesta',hours:Math.round(asleepMin(sg)/6)/10,src:sg.src},ph?{ph,inBed:Math.round((sg.endMs-sg.startMs)/360000)/10}:{}); }).filter(b=>b.hours>0);
       h.src.sleep[day]=plat; }
     out.sleep++; });
   (p.workouts||[]).forEach(r=>{ if(!r||!r.id||!(r.endMs>r.startMs))return; const o=h.workouts[r.id]||{};
@@ -6449,29 +6538,66 @@ function importHealth(sp){ const msg=[];
 //   sleep 2026-09-22T23:10:00-06:00 2026-09-23T07:02:00-06:00 Núcleo
 const SHORTCUT_URL='';   // enlace de iCloud del Atajo, cuando el dueño lo arme una vez y lo comparta
 const HP_KEY={steps:'steps',pasos:'steps',weight:'weight',peso:'weight',rhr:'rhr',fcr:'rhr',hrv:'hrv',vfc:'hrv',act:'act',activa:'act',bas:'bas',basal:'bas',reposo:'bas',fat:'fat',grasa:'fat',sleep:'sleep',sueno:'sleep','sueño':'sleep'};
-function hpStage(x){ x=String(x||'').trim().toLowerCase(); if(/\brem\b/.test(x))return 'rem'; if(/profund|deep/.test(x))return 'deep'; if(/despiert|awake/.test(x))return 'awake';
-  if(/cama|bed/.test(x))return 'inBed'; if(/n[uú]cleo|core|princip|b[aá]sic|ligero|light/.test(x))return 'core'; return 'asleep'; }
-function hpNum(v,big){ let t=String(v==null?'':v).replace(/\s/g,''); if(!t)return NaN;
-  if(big){ if(/^\d{1,3}([.,]\d{3})+$/.test(t))t=t.replace(/[.,]/g,''); else if(/^\d{1,3}(,\d{3})+\.\d+$/.test(t))t=t.replace(/,/g,''); else if(/^\d{1,3}(\.\d{3})+,\d+$/.test(t))t=t.replace(/\./g,''); }
-  return parseFloat(t.replace(',','.')); }
-function hpDate(x){ x=String(x||'').trim(); let m=x.match(/^(\d{4})-(\d{2})-(\d{2})/); if(m)return m[1]+'-'+m[2]+'-'+m[3]; m=x.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/); if(m)return m[3]+'-'+pad(+m[2])+'-'+pad(+m[1]); return null; }
-function parseHealthPaste(text){ const lines=String(text||'').split(/\r?\n|;/).map(l=>l.trim()).filter(Boolean); if(!lines.length)return null;
-  const hdr=/^trk2\b/i.test(lines[0]); const acc={steps:{},weight:{},rhr:{},hrv:{},act:{},bas:{},fat:{}}, sleep=[]; let n=0;
-  lines.forEach(l=>{ const m=l.match(/^([a-zñáéíóúü]+)\s+(.+)$/i); if(!m)return; const k=HP_KEY[m[1].toLowerCase()]; if(!k)return;
-    if(k==='sleep'){ const q=m[2].match(/^(\S+)\s+(\S+)\s+(.+)$/); if(!q)return; const a=Date.parse(q[1]), b=Date.parse(q[2]), st=hpStage(q[3]);
-      if(isFinite(a)&&isFinite(b)&&b>a&&st&&b-a<16*3600000){ sleep.push([a,b,st]); n++; } return; }
-    const q=m[2].match(/^(\S+)\s+(\d[\d.,\s]*?)\s*(\D*)$/); if(!q)return; const d=hpDate(q[1]); if(!d)return;
-    let v=hpNum(q[2],k==='steps'||k==='act'||k==='bas'); const u=(q[3]||'').trim().toLowerCase(); if(!isFinite(v)||v<=0)return;
-    if(k==='weight'&&/^(lb|libra)/.test(u))v=v*LB; if((k==='act'||k==='bas')&&u==='kj')v=v/4.184; if(k==='fat'&&v<=1)v=v*100;
-    (acc[k][d]=acc[k][d]||[]).push(v); n++; });
+// v285 · fase del sueño tal como la escribe Salud: español de México ("Esencial") y de España ("Principal"), inglés, o el número de HealthKit (0–5)
+function hpStage(x){ x=String(x||'').trim().toLowerCase(); if(/^[0-5]$/.test(x))return ['inBed','asleep','awake','core','deep','rem'][+x]; if(/\brem\b/.test(x))return 'rem'; if(/profund|deep/.test(x))return 'deep'; if(/despiert|awake/.test(x))return 'awake';
+  if(/cama|bed/.test(x))return 'inBed'; if(/n[uú]cleo|core|princip|esencial|b[aá]sic|liger|light/.test(x))return 'core'; return 'asleep'; }
+// v285 · el iPhone usa UN separador decimal en todo el texto: se decide con los números que no dejan duda (61.2 · 0,142 · 1.234,5)
+function hpDecSep(nums){ let dot=0, com=0; nums.forEach(t=>{ const d=t.lastIndexOf('.'), c=t.lastIndexOf(','); if(d<0&&c<0)return;
+    if(d>=0&&c>=0){ if(d>c)dot++; else com++; return; } const sep=d>=0?'.':',', p=t.split(sep);
+    if(p.length>2){ if(sep==='.')com++; else dot++; return; }
+    if(p[1].length!==3||p[0].length>3||/^0+$/.test(p[0])){ if(sep==='.')dot++; else com++; } });
+  return dot>com?'.':com>dot?',':''; }
+// kind 2 = entero (pasos: 8.200 siempre son miles) · 1 = energía (1.650 son miles salvo que ese signo sea el decimal del pegado) · 0 = decimal (peso, FC, HRV, grasa)
+function hpNum(v,kind,dec){ let t=String(v==null?'':v).replace(/\s/g,''); if(!/^\d[\d.,]*$/.test(t))return NaN;
+  const d=t.lastIndexOf('.'), c=t.lastIndexOf(',');
+  if(d>=0&&c>=0){ t=t.split(d>c?',':'.').join('').replace(',','.'); }
+  else if(d>=0||c>=0){ const sep=d>=0?'.':',', p=t.split(sep);
+    if(p.length>2)t=p.join('');
+    else if(kind&&p[1].length===3&&p[0].length<=3&&!/^0+$/.test(p[0]))t=(kind===2||(dec?sep!==dec:p[0].length===1))?p[0]+p[1]:p[0]+'.'+p[1];
+    else t=p[0]+'.'+p[1]; }
+  return parseFloat(t); }
+// v285 · lee una fecha (con o sin hora) al INICIO del texto, en el formato que el iPhone haya puesto: ISO 8601 (el de la receta),
+// 22/09/2026 · 9/22/26 (us) · 22 sept 2026 · Sep 22, 2026, con hora "23:10", "a las 11:10 p.m." o "at 11:10 PM" y zona opcional.
+// Devuelve {d:'AAAA-MM-DD' (el día escrito, sin convertir de zona), ms, t:(traía hora), n:(caracteres leídos)} o null.
+const HP_MON={ene:1,jan:1,feb:2,mar:3,abr:4,apr:4,may:5,jun:6,jul:7,ago:8,aug:8,sep:9,set:9,oct:10,nov:11,dic:12,dec:12};
+function hpStamp(s,us){ s=String(s||''); let m, y, mo, d, ms=null, hh=0, mi=0, ss=0, t=false; const mon=x=>HP_MON[x.toLowerCase().normalize('NFD').replace(/[^a-z]/g,'').slice(0,3)];
+  if((m=/^(\d{4})-(\d{1,2})-(\d{1,2})/.exec(s))){ y=+m[1]; mo=+m[2]; d=+m[3]; }
+  else if((m=/^(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{4}|\d{2})(?!\d)/.exec(s))){ y=+m[3]; if(y<100)y+=2000; mo=+m[us?1:2]; d=+m[us?2:1]; }
+  else if((m=/^(?:[a-zñáéíóú]+\.?,?\s+)?(\d{1,2})\.?\s+(?:de\s+)?([a-zñáéíóú]{3,})\.?,?\s+(?:del?\s+)?(\d{4})/i.exec(s))){ y=+m[3]; mo=mon(m[2]); d=+m[1]; }
+  else if((m=/^(?:[a-z]+\.?,\s+)?([a-z]{3,})\.?\s+(\d{1,2})(?:st|nd|rd|th)?,?\s+(\d{4})/i.exec(s))){ y=+m[3]; mo=mon(m[1]); d=+m[2]; }
+  else return null;
+  if(!(y>=2000&&y<2100&&mo>=1&&mo<=12&&d>=1&&d<=31)||new Date(y,mo-1,d).getDate()!==d)return null;
+  let n=m[0].length; const q=/^(?:T|,?\s+(?:a\s+las?\s+|a\s+la\(s\)\s+|at\s+)?)(\d{1,2}):(\d{2})(?::(\d{2})(?:[.,]\d+)?)?(?:\s*([ap])\.?\s?m\.?(?![a-zñ]))?(?:\s*(Z|[+-]\d{2}:?\d{2})(?![\w:]))?/i.exec(s.slice(n));
+  if(q&&+q[1]<24&&+q[2]<60){ t=true; n+=q[0].length; hh=+q[1]; mi=+q[2]; ss=+q[3]||0; if(q[4])hh=hh%12+(q[4].toLowerCase()==='p'?12:0);
+    if(q[5]){ const z=/^z$/i.test(q[5])?0:(q[5].charAt(0)==='-'?-1:1)*((+q[5].slice(1,3))*60+(+q[5].slice(-2))); ms=Date.UTC(y,mo-1,d,hh,mi,ss)-z*60000; } }
+  if(ms==null)ms=new Date(y,mo-1,d,hh,mi,ss).getTime();
+  return {d:y+'-'+pad(mo)+'-'+pad(d),ms,t,n}; }
+// ¿mes/día/año? Los datos de Salud son recientes: gana la lectura cuyas fechas quedan más cerca de hoy (25/09 solo se puede leer de una forma)
+function hpUS(rests){ const sc=us=>rests.reduce((s,r)=>{ if(!/^\d{1,2}[\/.\-]\d{1,2}[\/.\-]\d{2,4}(?!\d)/.test(r))return s; const a=hpStamp(r,us); return s+(a?Math.min(1e5,Math.abs(a.ms-Date.now())/86400000):1e5); },0); return sc(true)<sc(false); }
+const HP_KINDS=[['steps','pasos'],['weight','peso'],['fat','grasa'],['sleep','sueño'],['rhr','FC'],['hrv','HRV'],['act','activa'],['bas','reposo']];
+function parseHealthPaste(text){ const lines=String(text||'').replace(/[\u200b\u200e\u200f\u202a-\u202e\ufeff]/g,'').replace(/[\u00a0\u2007\u202f]/g,' ').split(/\r\n?|\n|\u2028|;/).map(l=>l.trim()).filter(Boolean); if(!lines.length)return null;
+  const hdr=/^trk\s*2\b/i.test(lines[0]); const acc={steps:{},weight:{},rhr:{},hrv:{},act:{},bas:{},fat:{}}, sleep=[], rows=[], vals=[]; let n=0;
+  lines.forEach(l=>{ const m=l.match(/^([a-zñáéíóúü]+)(?:\s*[:=]\s*|\s+)(.+)$/i); if(!m)return; const k=HP_KEY[m[1].toLowerCase()]; if(k)rows.push({k,rest:m[2]}); });
+  const us=hpUS(rows.map(r=>r.rest)), max=shiftDate(todayISO(),1);   // una fecha de pasado mañana en adelante es un formato mal leído: no entra
+  rows.forEach(r=>{ const a=hpStamp(r.rest,us); if(!a||a.d>max)return; const rest=r.rest.slice(a.n).trim();
+    if(r.k==='sleep'){ const b=hpStamp(rest,us); if(!b||!a.t||!b.t||b.d>max)return; if(b.ms>a.ms&&b.ms-a.ms<16*3600000){ sleep.push([a.ms,b.ms,hpStage(rest.slice(b.n))]); n++; } return; }
+    const q=rest.match(/^(\d[\d.,\s]*?)\s*(\D*)$/); if(!q)return; r.d=a.d; r.ms=a.ms; r.num=q[1].replace(/\s/g,''); r.u=q[2].trim().toLowerCase(); vals.push(r); });
+  const dec=hpDecSep(vals.map(r=>r.num)), ref=+(db&&db.profile&&db.profile.weightKg)||0;
+  vals.forEach(r=>{ const k=r.k, u=r.u; let v=hpNum(r.num,k==='steps'?2:(k==='act'||k==='bas')?1:0,dec); if(!isFinite(v)||v<=0)return;
+    // peso sin unidad: kg, salvo que solo cuadre con tu último peso leído en libras (135 contra 61 kg)
+    if(k==='weight'&&(/^(lb|libra|pound)/.test(u)||(!u&&ref&&Math.abs(v*LB-ref)<ref*0.15&&Math.abs(v-ref)>ref*0.5)))v=v*LB;
+    if((k==='act'||k==='bas')&&/^kj/.test(u))v=v/4.184; if(k==='fat'&&v<=1)v=v*100; if(k==='hrv'&&v<1)v=v*1000;
+    (acc[k][r.d]=acc[k][r.d]||[]).push([r.ms,v]); n++; });
   if(!n||(!hdr&&n<2))return null;
-  const sum=a=>a.reduce((x,y)=>x+y,0), last=a=>a[a.length-1], med=a=>{ const b=a.slice().sort((x,y)=>x-y), i=b.length>>1; return b.length%2?b[i]:(b[i-1]+b[i])/2; };
-  const daily={}, D=d=>daily[d]||(daily[d]={date:d,src:'shortcut'});
-  Object.keys(acc.steps).forEach(d=>{ D(d).steps=Math.round(sum(acc.steps[d])); });
-  Object.keys(acc.act).forEach(d=>{ D(d).activeKcal=Math.round(sum(acc.act[d])); });
-  Object.keys(acc.bas).forEach(d=>{ D(d).basalKcal=Math.round(sum(acc.bas[d])); });
-  Object.keys(acc.rhr).forEach(d=>{ D(d).rhr=Math.round(last(acc.rhr[d])); });
-  Object.keys(acc.hrv).forEach(d=>{ D(d).hrv=Math.round(med(acc.hrv[d])*10)/10; D(d).hrvKind='sdnn'; });
+  // por día: pasos y energía se suman · peso, grasa y FC toman la muestra más tardía (por hora; sin hora, la última línea) · HRV la mediana.
+  // Un total imposible (pasos ≥ 200 mil, más de 15 mil kcal, FC o HRV fuera de rango) es un formato mal leído: se descarta, no se guarda.
+  const sum=a=>a.reduce((x,y)=>x+y[1],0), last=a=>a.reduce((x,y)=>y[0]>=x[0]?y:x)[1], med=a=>{ const b=a.map(x=>x[1]).sort((x,y)=>x-y), i=b.length>>1; return b.length%2?b[i]:(b[i-1]+b[i])/2; };
+  const daily={}, D=d=>daily[d]||(daily[d]={date:d,src:'shortcut'}), each=(k,fn)=>Object.keys(acc[k]).forEach(d=>fn(d,acc[k][d]));
+  each('steps',(d,a)=>{ const v=Math.round(sum(a)); if(v>0&&v<200000)D(d).steps=v; });
+  each('act',(d,a)=>{ const v=Math.round(sum(a)); if(v>0&&v<=15000)D(d).activeKcal=v; });
+  each('bas',(d,a)=>{ const v=Math.round(sum(a)); if(v>0&&v<=15000)D(d).basalKcal=v; });
+  each('rhr',(d,a)=>{ const v=Math.round(last(a)); if(v>=25&&v<=140)D(d).rhr=v; });
+  each('hrv',(d,a)=>{ const v=Math.round(med(a)*10)/10; if(v>=1&&v<=400){ D(d).hrv=v; D(d).hrvKind='sdnn'; } });
   const body=[]; const bd=new Set(Object.keys(acc.weight).concat(Object.keys(acc.fat)));
   bd.forEach(d=>{ const w=acc.weight[d], ft=acc.fat[d]; body.push({date:d,kg:w?Math.round(last(w)*100)/100:null,fat:ft?Math.round(last(ft)*10)/10:null,src:'shortcut'}); });
   // sueño: los tramos se agrupan en noches (hueco de más de 60 min = otro bloque, igual que el sync nativo); "en cama" sale si hay
@@ -6481,28 +6607,59 @@ function parseHealthPaste(text){ const lines=String(text||'').split(/\r?\n|;/).m
     let end=0; const st=[]; b.stages.sort((x,y)=>x[0]-y[0]).forEach(x=>{ const a=Math.max(x[0],end); if(x[1]>a){ st.push([a,x[1],x[2]]); end=x[1]; } else end=Math.max(end,x[1]); });
     b.stages=st; if(st.length){ b.startMs=st[0][0]; b.endMs=st[st.length-1][1]; } });
   const days=new Set(Object.keys(daily).concat(body.map(b=>b.date)).concat(blocks.map(b=>isoOfMs(b.endMs))));
-  const have=[acc.steps,acc.weight,acc.rhr,acc.hrv,acc.act,acc.bas].map(o=>Object.keys(o).length>0);
-  const lbl=['pasos','peso','FC','HRV','energía','reposo'].filter((x,i)=>have[i]).concat(blocks.length?['sueño']:[]);
-  return {payload:{v:1,platform:'shortcut',daily:Object.values(daily),body,sleep:blocks}, days:days.size, labels:lbl, summary:days.size+' días · '+lbl.join(' ')}; }
+  const dl=Object.values(daily); if(!dl.length&&!body.length&&!blocks.length)return null;
+  // v285 · qué clases de dato llegaron de verdad (ya filtradas): alimenta el "llegó ✓ / no llegó —" de la receta
+  const has={steps:dl.some(x=>x.steps),weight:body.some(x=>x.kg>=20&&x.kg<=400),fat:body.some(x=>x.fat>0&&x.fat<80),sleep:blocks.length>0,rhr:dl.some(x=>x.rhr),hrv:dl.some(x=>x.hrv),act:dl.some(x=>x.activeKcal),bas:dl.some(x=>x.basalKcal)};
+  const got=HP_KINDS.filter(x=>has[x[0]]), lbl=got.map(x=>x[1]);
+  return {payload:{v:1,platform:'shortcut',daily:dl,body,sleep:blocks}, days:days.size, labels:lbl, kinds:got.map(x=>x[0]), summary:days.size+' días · '+lbl.join(' ')}; }
 function hpAgo(ms){ const m=Math.round((Date.now()-ms)/60000); return m<60?Math.max(1,m)+' min':m<2880?Math.round(m/60)+' h':Math.round(m/1440)+' d'; }
-function healthPasteApply(t){ const r=parseHealthPaste(t); if(!r)return null; ingestHealth(r.payload); const h=H(); h.shortcut=Object.assign({},h.shortcut,{setup:true,lastPaste:Date.now(),lastSummary:r.summary}); return r; }
+// v285 · el Atajo pide "los últimos 7 días" contados desde la hora en que corre: el día MÁS VIEJO del pegado llega cortado (sus pasos,
+// su energía y su noche, a medias). Ahí un total menor nunca pisa al que ya estaba guardado; los demás días se reemplazan como siempre.
+function hpEdge(p){ const h=H(), ds=(p.daily||[]).map(x=>x.date).sort();
+  if(ds.length>1){ const r=p.daily.find(x=>x.date===ds[0]), o=h.daily[ds[0]]||{};
+    [['steps',+(db.steps&&db.steps[ds[0]])||0],['activeKcal',0],['basalKcal',0]].forEach(x=>{ const old=Math.max(+o[x[0]]||0,x[1]); if(r[x[0]]&&old>r[x[0]])r[x[0]]=old; }); }
+  const ns=Array.from(new Set((p.sleep||[]).map(b=>isoOfMs(b.endMs)))).sort();
+  if(ns.length>1){ const e=ns[0], mins=a=>(a||[]).reduce((s,b)=>s+asleepMin(b),0); if(mins(h.sleep[e])>mins(p.sleep.filter(b=>isoOfMs(b.endMs)===e)))p.sleep=p.sleep.filter(b=>isoOfMs(b.endMs)!==e); }
+  return p; }
+function healthPasteApply(t){ const r=parseHealthPaste(t); if(!r)return null; ingestHealth(hpEdge(r.payload)); const h=H(); h.shortcut=Object.assign({},h.shortcut,{setup:true,lastPaste:Date.now(),lastSummary:r.summary,lastKinds:r.kinds}); return r; }
 function healthPasteNow(){ const done=t=>{ t=String(t||''); const r=healthPasteApply(t); if(r){ savedToast('✓ Salud · '+r.days+(r.days===1?' día':' días')); reRender(); return; }
     let msg=[]; try{ const q=t.trim().replace(/^\?/,''); if(/stepsh=|weighth=|stepsq=|sleeph=|(^|&)steps=|(^|&)weight=|(^|&)sleep=/.test(q))msg=importHealth(new URLSearchParams(q)); }catch(_){}
-    if(msg.length){ savedToast('✓ '+msg.join(' · ')); reRender(); return; } openHealthImport(); };
+    if(msg.length){ savedToast('✓ '+msg.join(' · ')); reRender(); return; } openHealthImport(); if(hpEmpty(t))toast('⚠ Atajo sin datos · desbloquea el iPhone','err'); };
   try{ if(navigator.clipboard&&navigator.clipboard.readText)navigator.clipboard.readText().then(done,()=>openHealthImport()); else openHealthImport(); }catch(_){ openHealthImport(); } }
-function openShortcutSetup(){ const h=H(), sc=h.shortcut||{};
-  const st=(n,t)=>'<div class="hpst"><span class="hpn">'+n+'</span><span>'+t+'</span></div>';
-  openModal('<h3>Atajo de Salud</h3><div class="submeta u-mb10">aún no somos app nativa: el iPhone no deja a una web leer Salud. Un Atajo copia tus datos (peso, pasos, sueño, FC en reposo, HRV, energía) y aquí los pegas con un toque.'+(sc.lastPaste?' · último: '+escTxt(agoTxt(sc.lastPaste)):'')+'</div>'
+// v285 · LA RECETA, acción por acción (nombres de la app Atajos en español de México; en España "Agregar" dice "Añadir").
+// Ocho bloques iguales: Buscar muestras de salud → Repetir con cada (con un Texto dentro) → Agregar a variable `datos` (recibe los
+// Resultados de la repetición, sin arrastrar nada más); al final un Texto con `trk2` + `datos` y Copiar al portapapeles. HP_BLOCKS = palabra · tipo en Salud · ¿se agrupa por día? HP_EXAMPLE es lo que copia
+// un iPhone (fecha ISO 8601 con hora) y _atajoSelfCheck lo mete por el parser: la receta no puede enseñar algo que la app no lea.
+const HP_BLOCKS=[['steps','Pasos',1],['act','Energía activa',1],['bas','Energía en reposo',1],['weight','Peso',0],['fat','Porcentaje de grasa corporal',0],['rhr','Frecuencia cardiaca en reposo',0],['hrv','Variabilidad de la frecuencia cardiaca',0],['sleep','Sueño',0]];
+const HP_EXAMPLE='trk2\nsteps 2026-09-22T00:00:00-06:00 8214\nact 2026-09-22T00:00:00-06:00 512.4\nbas 2026-09-22T00:00:00-06:00 1648.9\nweight 2026-09-23T07:05:00-06:00 61.2 kg\nfat 2026-09-23T07:05:00-06:00 14.2\nrhr 2026-09-23T00:00:00-06:00 55\nhrv 2026-09-23T03:12:00-06:00 48.3\nsleep 2026-09-22T23:10:00-06:00 2026-09-23T00:42:00-06:00 Esencial\nsleep 2026-09-23T00:42:00-06:00 2026-09-23T01:30:00-06:00 Profundo\nsleep 2026-09-23T01:30:00-06:00 2026-09-23T02:05:00-06:00 REM';
+function hpEmpty(t){ return /^[\s\ufeff]*trk\s*2\b/i.test(String(t||'')); }   // traía el encabezado del Atajo, pero ningún dato legible
+// cómo comprobar que funcionó: cuándo fue el último pegado y cuál de las 8 clases de dato llegó (✓) o no (—)
+function hpLastHTML(){ const sc=H().shortcut||{}; if(!sc.lastPaste)return ''; const k=sc.lastKinds;
+  return '<div class="submeta u-mb10">último pegado · '+escTxt(agoTxt(sc.lastPaste))+(Array.isArray(k)?'<br>'+HP_KINDS.map(x=>x[1]+' '+(k.indexOf(x[0])>=0?'✓':'—')).join(' · '):'')+'</div>'; }
+function openShortcutSetup(){
+  const st=(n,t)=>'<div class="hpst"><span class="hpn">'+n+'</span><span>'+t+'</span></div>', kv=(k,t)=>'<div class="hpst kv"><code>'+k+'</code><span>'+t+'</span></div>';
+  const more={weight:' · al final del Texto, un espacio y <b>Unidad</b>',sleep:' · el Texto lleva <code>sleep</code>, <b>Fecha de inicio</b>, <b>Fecha de finalización</b> y <b>Valor</b>'};
+  openModal('<h3>Atajo de Salud</h3><div class="submeta u-mb10">el iPhone no deja a una web leer Salud. Un Atajo copia tus datos y aquí los pegas con un toque.</div>'+hpLastHTML()
     +(SHORTCUT_URL?'<a class="b u-mb10" href="'+SHORTCUT_URL+'" target="_blank" rel="noopener">instalar atajo</a>':'')
-    +'<div class="grp-label">ARMARLO · UNA VEZ · ~5 MIN</div>'
-    +st(1,'Atajos → <b>+</b> → <b>Buscar muestras de Salud</b> (Find Health Samples): <b>Pasos</b> · últimos 7 días · agrupar por <b>día</b>.')
-    +st(2,'<b>Repetir con cada elemento</b> → dentro, un <b>Texto</b>: <code>steps</code> + Fecha de inicio (formato ISO 8601, sin hora) + Valor, separados por espacio.')
-    +st(3,'Después de "Fin de repetir": <b>Combinar texto</b> con <b>nueva línea</b>.')
-    +st(4,'Repite 1–3 con: Peso → <code>weight</code> · FC en reposo → <code>rhr</code> · Variabilidad de la FC → <code>hrv</code> · Energía activa → <code>act</code> · Energía en reposo → <code>bas</code> (las dos energías agrupadas por día).')
-    +st(5,'Sueño: <b>Análisis del sueño</b> · últimos 2 días → Texto <code>sleep</code> + Fecha de inicio + Fecha de finalización (ISO 8601 con hora) + Valor.')
-    +st(6,'Un <b>Texto</b> final que empiece con <code>trk2</code> y debajo cada texto combinado → <b>Copiar al portapapeles</b>.')
-    +st(7,'Automatización: <b>Hora del día</b> 7:30 → ejecutar de inmediato. Luego abre gym//TRK y toca <b>[pegar de Salud]</b>.')
-    +'<div class="grp-label u-mt12">ASÍ SE VE LO COPIADO</div><pre class="hpfmt">trk2\nsteps 2026-09-22 8200\nweight 2026-09-23 61.2 kg\nrhr 2026-09-23 55\nhrv 2026-09-23 48\nact 2026-09-23 520\nsleep 2026-09-22T23:10 2026-09-23T07:02 Núcleo</pre>'
+    +'<div class="grp-label">PRIMER BLOQUE · PASOS</div>'
+    +st(1,'App <b>Atajos</b> › <b>+</b> › nómbralo <code>TRK Salud</code>.')
+    +st(2,'Agrega <b>Buscar muestras de salud</b>. Tipo: <b>Pasos</b>. <b>Agregar filtro</b>: <b>Fecha de inicio</b> · <b>está en los últimos</b> · <b>7 días</b>. <b>Agrupar por</b>: <b>Día</b>.')
+    +st(3,'Agrega <b>Repetir con cada</b>. Toma solo las muestras de arriba.')
+    +st(4,'Agrega <b>Texto</b> y arrástralo arriba de <b>Fin de repetir</b>. Escribe <code>steps</code> y un espacio.')
+    +st(5,'Inserta <b>Elemento de repetición</b>, tócalo y elige <b>Fecha de inicio</b>, con <b>Formato de fecha</b> <b>ISO 8601</b> e <b>Incluir hora</b> activado. Otro espacio.')
+    +st(6,'Inserta otro <b>Elemento de repetición</b>, tócalo y elige <b>Valor</b>.')
+    +st(7,'Agrega <b>Agregar a variable</b>. Queda debajo de <b>Fin de repetir</b>, con <b>Resultados de la repetición</b>. Nombre: <code>datos</code>.')
+    +'<div class="grp-label u-mt12">LOS OTROS 7 · REPITE 2 A 7 · CAMBIA TIPO Y PALABRA</div>'
+    +HP_BLOCKS.slice(1).map(b=>kv(b[0],b[1]+' · '+(b[2]?'agrupar por día':'sin agrupar')+(more[b[0]]||''))).join('')
+    +'<div class="grp-label u-mt12">CERRAR</div>'
+    +st(8,'Agrega <b>Texto</b>, hasta abajo: <code>trk2</code> en la primera línea y la variable <code>datos</code> en la segunda.')
+    +st(9,'Agrega <b>Copiar al portapapeles</b>.')
+    +st(10,'Toca <b>▶</b> y permite cada dato de Salud que pregunte.')
+    +'<div class="grp-label u-mt12">CADA DÍA</div>'
+    +st(11,'Pestaña <b>Automatización</b> › <b>+</b> › <b>Hora del día</b> › tu hora de despertar, <b>Diariamente</b> › <b>Ejecutar inmediatamente</b> › elige <code>TRK Salud</code>. Con el iPhone bloqueado Salud no se lee: si llega vacío, córrelo a mano.')
+    +'<div class="grp-label u-mt12">COMPROBAR</div>'
+    +st(12,'Corre el Atajo, vuelve y toca <b>pegar ahora</b>. Sale <code>✓ Salud · 7 días</code> y esta hoja marca arriba qué llegó.')
+    +'<div class="grp-label u-mt12">ASÍ SE VE LO COPIADO</div><pre class="hpfmt">'+HP_EXAMPLE+'</pre>'
     +'<div class="sheetbtns"><button class="ok" data-act="healthpaste">pegar ahora</button><button class="cancel" data-act="closemodal">cerrar</button></div>'); }
 function healthSync(){
   if(NATIVE_APP){ healthSyncNative('manual'); return; }
