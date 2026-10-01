@@ -11,6 +11,9 @@ const fs = require('fs'), os = require('os'), path = require('path'), cp = requi
 const ROOT = path.resolve(__dirname, '..');
 const MIRROR = 'https://github.com/dxxniel-bot/gymtrk-app.git';
 const SITE_FILES = ['index.html', 'manifest.json', 'sw.js', 'privacy.html'];   // lo único que el sitio necesita (los que no existan se saltan)
+// v287 · el Atajo firmado (tools/shortcut/sign.cjs). Se llama igual que el atajo porque el iPhone le pone al atajo el
+// nombre del archivo, y la app lo corre por nombre: https://gymtrk.app/TRK%20Biometrics.shortcut
+const SHORTCUT_FILE = 'TRK Biometrics.shortcut'; SITE_FILES.push(SHORTCUT_FILE);
 const WORKFLOW = `# Publica https://gymtrk.app desde este repo (solo contiene la app ya armada; lo sube tools/publish-site.cjs del repo fuente).
 name: pages · gymtrk.app
 on:
@@ -48,6 +51,8 @@ const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'gymtrk-site-'));
 const out = [];
 for (const f of SITE_FILES) { let buf; try { buf = git(['show', 'HEAD:' + f], ROOT, { stdio: ['ignore', 'pipe', 'ignore'] }); } catch (_) { continue; } fs.writeFileSync(path.join(tmp, f), buf); out.push(f + ' · ' + buf.length + ' bytes'); }
 if (!out.some(l => l.startsWith('index.html'))) { console.error('HEAD no tiene index.html'); process.exit(1); }
+// un atajo sin firmar no se importa en ningún iPhone: si el archivo está, tiene que ser el firmado (cabecera AEA1)
+if (fs.existsSync(path.join(tmp, SHORTCUT_FILE)) && fs.readFileSync(path.join(tmp, SHORTCUT_FILE)).toString('latin1', 0, 4) !== 'AEA1') { console.error(SHORTCUT_FILE + ' no está firmado (no empieza con AEA1): no se publica. Corre tools/shortcut/sign.cjs.'); process.exit(1); }
 const html = fs.readFileSync(path.join(tmp, 'index.html'), 'utf8');
 const ver = (html.match(/const APP_V='(v\d+)'/) || [])[1] || '?';
 const swv = (fs.readFileSync(path.join(tmp, 'sw.js'), 'utf8').match(/gymtrk-(v\d+)/) || [])[1] || '?';

@@ -2,3 +2,5 @@
 *.sh text eol=lf
 *.yml text eol=lf
 *.entitlements text eol=lf
+# los atajos (el plist sin firmar y el firmado AEA1) viajan byte por byte: sin conversion de fin de linea
+*.shortcut -text
