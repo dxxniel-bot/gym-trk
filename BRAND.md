@@ -233,6 +233,9 @@ caracteres sin perder un dato?
 | 2026-10-01 | **El 1RM estimado no se muestra en ningún lado** y Progress va corto (v285) | "Records 1RM… a mí no me sirve de nada" · "en progreso hay un cagadero" |
 | 2026-10-01 | **`sync biometrics`** es el nombre y va arriba (v285) | "está hasta abajo el pegar salud. Tiene que estar en una parte más accesible y que diga Sync Biometrics" |
 | 2026-10-01 | **Los días del split se pliegan** y coverage es una lista con número (v285) | "los días del split deben de ser desplegables porque quedan súper largos" |
+| 2026-10-01 | **Editar va primero; cambiar es del mismo músculo** (v288): tocar el nombre → `editar ejercicio · historial · cambiar ejercicio`; la lista de cambiar trae solo ese músculo y `[cambiar músculo]` | "tendría que salir de tercera opción y principal el editar ejercicio… en cambiar ejercicio solamente deben de salir los ejercicios del músculo" |
+| 2026-10-01 | **La unidad es del ejercicio en curso: cambiar la lateralidad no la cambia** (v288); una sugerencia en otra unidad no se usa | "cambio de bilateral a unilateral… y me cambiaba las unidades" |
+| 2026-10-01 | **El Atajo se instala desde Safari** (v288) mientras no haya enlace de iCloud; con enlace, un toque | "le doy a instalar atajo y sí me abre como que el archivo, el HTML… no me sale la opción de shortcut" |
 | 2026-10-01 | **El Atajo se descarga, no se arma** (v287): `sync biometrics` instala y corre `TRK Biometrics`; la receta sale de la app | "Esta madre no tiene que ser un tutorial para que lo haga el usuario… crear un shortcut y poderlo compartir… El chiste es minimizar la fricción" |
 | 2026-10-01 | **El catálogo es un árbol con líneas**: ejercicio → variantes `[bi] [uni] [alt]`, con vistas por músculo, por gym y A–Z (v286; las líneas se dibujan con CSS) | "leg extension… que salgan las variantes: unilateral, bilateral… curl de bíceps, bilateral, alternado" · eligió "árbol con líneas" |
 

@@ -1,6 +1,6 @@
 # gym//TRK — DESIGN SYSTEM (referencia del estado actual)
 
-> Referencia del estado actual (v287). **Lee BRAND.md primero**: manda sobre este archivo. Sin historia: DESIGN_CHANGELOG.md.
+> Referencia del estado actual (v288). **Lee BRAND.md primero**: manda sobre este archivo. Sin historia: DESIGN_CHANGELOG.md.
 
 ---
 
@@ -1575,6 +1575,8 @@ Day sí es saltar el día del split". Antes los dos avanzaban la rotación.
   //HEALTH en ajustes `[sync biometrics] [pegar a mano] [importar JSON]` · en el alta (§7.34), el paso `conecta Salud`
   con `[instalar atajo]` (solo en iPhone).
 - **Hojas de `sync biometrics` (v287; cada una con un primario o ninguno, sin texto instructivo de más):**
+  (v288: en la app del ícono el enlace es `x-safari-https://…/?atajo=1`, que abre Safari, y `[copiar enlace]` `[ya lo tengo]`
+  van en un segundo renglón; la pantalla `atajo` de Safari = marca + `▶ descargar atajo` (`a.start`) + dos renglones)
   instalar (`openBioInstall`): una línea + `▶ instalar atajo` (enlace `<a class="ok">` al archivo firmado, o a
   `SHORTCUT_URL` cuando exista) + `[ya lo tengo]` · traer (`openBioFetch`): `▶ traer datos` + `[pegar a mano]`, una vez por
   corrida y nunca encima de otra capa ni en plena sesión · qué llegó (`openBioResult`): `pasos ✓ · peso ✓ · grasa — …` +
@@ -1709,8 +1711,8 @@ notas" (las de su amigo: `#1`, `#2`, `#3`… con fecha y series).
     solo de respaldo, si no hay clave.
   - **Catálogo:** `···` → `historial` (antes `historial · e1RM`, que abría `openLiftDetail()`).
   - **Perfil del ejercicio** (`openExProfile()`): `[historial ›]` bajo el tipo, si el ejercicio tiene sesiones.
-  - **Entreno:** tocar el nombre del ejercicio (`editexname`) abre TRKMenu `historial` · `cambiar ejercicio`; sin
-    historia, cambiar directo.
+  - **Entreno:** tocar el nombre del ejercicio (`editexname`) abre siempre TRKMenu `editar ejercicio` · `historial` (si hay) ·
+    `cambiar ejercicio` (v288).
   - **Historial:** en una sesión abierta, el nombre de cada ejercicio (`.sxn`, `u-tap u-ul`).
 - **Estados:** vacío `sin registros de este ejercicio` (`.empty`) con su `[‹ back]`. Pestaña y periodo viven en `state`
   (en memoria, no se guardan).
