@@ -215,6 +215,14 @@
         I('check', '_v290SelfCheck + _macroVizSelfCheck y _comidaSelfCheck al día', 'hecho'),
       ]),
 
+      P('V291', 'racha con niveles y wrap con atrás/adelante', 'v291', 'hecho', [
+        I('note', 'lo que pediste (1-oct): racha "que se sienta como un logro… que se vaya siendo más intenso" (elegiste número grande + niveles) · wrap "cosas más interesantes… progresos en músculos… solamente clic es para adelante"', 'hecho'),
+        I('hero', 'racha arriba de gym: //STREAK · nivel · mejor / el número a 28 (gris a blanco por nivel, invertido desde el nivel 4) / barra con lo que falta; niveles en 7 · 14 · 30 · 60 · 100 · 200 · 365; la barra de estado ya no repite el número en gym', 'hecho'),
+        I('level', 'aviso de 2 s en terminal al subir de nivel, una vez por nivel, nunca sobre una sesión ni una hoja, se salta tocando', 'hecho'),
+        I('wrap', 'wrap: tercio izquierdo = atrás, resto = adelante, cerrar arriba a la derecha; láminas de músculos, ejercicios, constancia y proteína (se salta la que no tenga datos)', 'hecho'),
+        I('check', '_v291SelfCheck', 'hecho'),
+      ]),
+
       P('V279', 'cuentas', 'v279', 'pendiente', [
         I('onbacct', 'alta: los pasos de cuenta (correo y código) entran al principio del alta paso a paso', 'pendiente'),
         I('records', 'capa de registros, sombra en IndexedDB v2 y código muerto', 'pendiente'),

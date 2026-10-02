@@ -1,6 +1,6 @@
 # gym//TRK — DESIGN SYSTEM (referencia del estado actual)
 
-> Referencia del estado actual (v290). **Lee BRAND.md primero**: manda sobre este archivo. Sin historia: DESIGN_CHANGELOG.md.
+> Referencia del estado actual (v291). **Lee BRAND.md primero**: manda sobre este archivo. Sin historia: DESIGN_CHANGELOG.md.
 
 ---
 
@@ -76,7 +76,8 @@ BRAND §5 define los siete primitivos con los que se arma toda pantalla. Aquí, 
 
 | Primitivo (BRAND §5) | Hoy en el código | Notas |
 |---|---|---|
-| **Línea de prompt** (barra de estado) `u/unlxvd ▾ · 21 sep · 21:29 · streak: 12` | `statusBar()` → `.status` (`.uname`, `.center`, `.streak`, `.sgoal`) | el reloj no avanza y duplica el de iOS (M6-20, objetivo G4: quitarlo) |
+| **Línea de prompt** (barra de estado) `u/unlxvd ▾ · 21 sep · 21:29 · streak: 12` | `statusBar()` → `.status` (`.uname`, `.center`, `.streak`, `.sgoal`). **En gym (v291) no lleva `streak:`**: la racha va en su bloque `.stkh` (ninguna idea dos veces por pantalla) | el reloj no avanza y duplica el de iOS (M6-20, objetivo G4: quitarlo) |
+| **Racha como logro** (v291, R1; el dueño eligió "número grande + niveles") | `streakHeroHTML()` → `button.stkh.lvN` (`streakcal` abre el calendario de siempre), arriba de gym antes de ROTATION | `//STREAK` + `nivel N · mejor M` (`--t-label`) · el número `.stkh-n` a `--t-hero` (28)/800: `--o40` sin nivel, `--o50` · `--o70` · `--fg` en los niveles 1–3 y **invertido** (`--fill` / `--on-fill`) desde el 4 · `[████░░] 24/30 · faltan 6` con `trkBarTxt(…, 12)`. Niveles `STREAK_LV` = 7 · 14 · 30 · 60 · 100 · 200 · 365. Sin color ni confeti |
 | **`//cabecera` + meta a la derecha** | `.section` (`.h` con `<span class="s">//</span>`, `.meta`) · cabecera del día `dayHeadHTML()` → `.whdr` · rótulo de grupo `.grp-label` · TRKLog `.lhd` | un `//` por sección; la meta es 10 |
 | **`clave ···· valor`** | `.line` (`.k` · `.dots` · `.v`) y su variante de detalle `.mdline` | la firma de lectura; §7.5 |
 | **Línea de registro** `#chest  bench press  160lbs×8@0 / 160lbs×6@0` | `.srw` (compartir sesión) | objetivo G4: también en historial y vista previa del día (M3-04, M1-18) |
@@ -1300,7 +1301,8 @@ compartir comida o el panel de macros, v276; excepción `ring`).
 |---|---|---|---|
 | **Arranque "loading gym tracker"** (v268, decisión del dueño 23-sep: "Cada vez que abres la app") | `bootScreen()` → `showOverlay(html, {ms, shader})`; **en cada apertura**, una vez por apertura (`sessionStorage.gymtrk_boot`), con o sin cuenta; tocar lo salta. Ficha abajo | `.bootov` a pantalla completa; shader de fósforo (`startShader()`) detrás a `--op-dim`; `.bboot` con líneas `.bl` que se imprimen una a una | ✓ enviado en v268 (BRAND §4). Queda: marca única en todos los overlays (§7.30) |
 | **Recap de las 21 h** | `snapRecap()` → `showOverlay(…, {ms:5000})`; una vez al día (`?recap=1` lo fuerza); se encadena después del arranque | `//TODAY · fecha` + líneas con `--good`/`--bad`; `[tap para cerrar]` quieto (v268: `.bready` ya no parpadea) | G4: evaluar (capa bloqueante cada noche) |
-| **Wrap mensual** | `wrapMonthData()` + diapositivas `.wstage` | números de 60 y 44 exentos, tarjeta `.ws-card`, "captura para compartir" | G4: es el formato de números grandes que el dueño rechazó ("del pito") |
+| **Wrap mensual** | `wrapMonthData()` + `wrapExtra()` (v291) + diapositivas `.wstage` | números de 60 y 44 exentos, tarjeta `.ws-card`, "captura para compartir". **v291 (WR1):** el tercio izquierdo regresa, el resto avanza y `✕` (`.wx`, 44) cierra en cualquier lámina; láminas nuevas con lo que la app ya calcula (se salta la que no tenga datos): **músculos** (los 3 con más σ del mes y el que más subió contra el mes anterior), **ejercicios** (mejor marca del mes en peso × reps, cuántos van progresando o estancados con `exStatus()`), **constancia** (días registrados, racha más larga del mes, tu día más entrenado) y **proteína** (promedio contra la meta) | G4: es el formato de números grandes que el dueño rechazó ("del pito") |
+| **Subiste de nivel de racha** (v291) | `streakLvMaybe()` → `streakLvShow()` → `showOverlay(…, {ms:2000})`; una vez por nivel (`db.streakLv`, aditivo: la primera vez solo anota el nivel que ya tenías); al abrir (tras el arranque, antes del recap) y al volver a gym; **nunca** sobre una sesión viva, una hoja, un aviso u otro overlay; tocar lo salta | `//STREAK` + líneas de terminal `.bl` (`> streak 30` · `> nivel 3 [███░░░░]` · `> mejor racha: 30 (antes 24)`) y `ready▌` | — |
 | **Escáner** | `openBarcode()` → `.scan-reticle` | marco `.frame2` de 2 con velo, línea que barre (`scanmove`), fijado en verde con rebote y ✓ de 40 | G4: idioma de botones (`look up` / `capturar` / `cancel`), rol de `capturar`, verde |
 | **Compartir un ejercicio** | `openExShare()` → `.exsh` | §7.19 | §7.19 |
 
@@ -2512,6 +2514,11 @@ Línea base del 2026-09-21: todos en 0 salvo `style=""` 89, excepciones 33, lett
   de 44 · `[ver %]` mide 10 px con toque de 44 · tocar la fila despliega la gráfica sin moverla y lo recuerda
   (`db.settings.radarOpen`) · el orden es anillo → balance → aros → `[ver %]` → radar → INTAKE · la tarjeta de compartir
   sigue trayendo radar y aros. Imprime `macro viz self-check OK`.
+- **`_v291SelfCheck()`** (v291, en sandbox): los niveles de racha (7 · 14 · 30 · 60 · 100 · 200 · 365) · el bloque `//STREAK` de gym (nivel,
+  mejor, número a 28, barra `n/meta · faltan k`, arriba de ROTATION) y que la barra de estado ya no repite el número en gym · tocarlo
+  abre el calendario · sin nivel, a un día, invertido desde el nivel 4, nivel máximo · el aviso de nivel: la primera vez solo anota, avisa
+  una vez, se salta tocando, espera con hoja, sesión viva o fuera de gym · `wrapExtra()` (constancia, mejor marca por capacidad, proteína,
+  músculos) y sus láminas; una sin datos se salta · wrap: izquierda regresa, el resto avanza, `✕` cierra. Imprime `v291 self-check OK`.
 - **`_v290SelfCheck()`** (v290, en sandbox con una base de juguete): todo `[verbo]` de gym mide 10 px, sus corchetes los
   pone el CSS y ninguna acción los trae escritos · `[ver rutina]` se toca a 44 y abre sin moverse · la lista de músculos
   baja a 10 y sigue en una fila · recovery / readiness a 10 con el número en negrita · el nombre del día en 20 y un solo
