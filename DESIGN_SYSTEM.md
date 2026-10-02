@@ -1,6 +1,6 @@
 # gym//TRK — DESIGN SYSTEM (referencia del estado actual)
 
-> Referencia del estado actual (v289). **Lee BRAND.md primero**: manda sobre este archivo. Sin historia: DESIGN_CHANGELOG.md.
+> Referencia del estado actual (v290). **Lee BRAND.md primero**: manda sobre este archivo. Sin historia: DESIGN_CHANGELOG.md.
 
 ---
 
@@ -80,7 +80,7 @@ BRAND §5 define los siete primitivos con los que se arma toda pantalla. Aquí, 
 | **`//cabecera` + meta a la derecha** | `.section` (`.h` con `<span class="s">//</span>`, `.meta`) · cabecera del día `dayHeadHTML()` → `.whdr` · rótulo de grupo `.grp-label` · TRKLog `.lhd` | un `//` por sección; la meta es 10 |
 | **`clave ···· valor`** | `.line` (`.k` · `.dots` · `.v`) y su variante de detalle `.mdline` | la firma de lectura; §7.5 |
 | **Línea de registro** `#chest  bench press  160lbs×8@0 / 160lbs×6@0` | `.srw` (compartir sesión) | objetivo G4: también en historial y vista previa del día (M3-04, M1-18) |
-| **`[comando]`** | `.addbtn`, `.ctrls a`, `.section .meta`, `.fa-acts a`, `.mdacts a`; los secundarios `button.b`, `button.cancel`, `.secondary .b`, `.sheetbtns .cancel`, `.footer .abort`/`.undo` (corchetes por CSS, v267) | toque 44 con `.u-hit` (pendiente G4) |
+| **`[comando]`** | **un solo `[verbo]` (v290): 10 px (`--t-label`), texto `--o60`, corchetes `--o40` por CSS, toque de 44.** De caja: `button.b`, `button.cancel`, `.secondary .b`, `.sheetbtns .cancel`, `.footer .abort`/`.undo`. En línea: `.vb` (y con la misma regla `.addbtn`, `.ctrls a`, `.savebar a`, `.mdacts a`, `.fa-acts a`, `.fa-meal a`, `.hbody .hacts a`). Ninguno lleva los corchetes escritos a mano | 44 (`.vb`: `min-height:44` con margen negativo, mide un renglón) |
 | **Rejilla de datos** (cajas de 4) | tabla de sesión: `.thead`, `.srow`, `.pair`, `.inp`, `.pick`, `.fs` | la superficie de referencia de B-05 |
 | **Medidor** `[███████░░░] 72%` | TRKProgress (v268, §7.33): `trkProgressHTML()` → `.tprog` (lectura de etiqueta con OCR, barra del arranque); las proporciones fijas siguen en las barras finas `.bar`/`.vbar`/`.wprog` | `█░` con octavos `▏…▉` en el borde; ▮▯ no existen en JetBrains Mono. Objetivo G3/G4: una sola forma de medidor por uso |
 
@@ -206,7 +206,8 @@ tabla) · a ojo.
 
 - En la cabecera de una comida **manda el nombre** (`.mnm` `--t-section`/800 `--fg`) y el total va segundo (`.mkc`
   `--t-section`/700 en `--o70`, v271; el dueño, 24-sep: "…destaca más… las calorías totales que es el nombre de la
-  meal"), pero el total **siempre** manda sobre sus alimentos (12/400 en `--o50`; decisión del dueño, v256).
+  meal"), pero el total **siempre** manda sobre sus alimentos (12/400 en `--o50`; decisión del dueño, v256). Desde v290 la
+  hora va junto al nombre (`.mtm`, `--t-label` `--o50`) y debajo `P · C · F` con el de más gramos en `--fg`/700.
 - `.tselo` (opción de TRKSelect) no es un campo: va a `--t-section`/700.
 - Las flechas `‹ ›` nunca pesan más que el dato que mueven.
 - Tamaños por pantalla (hoy, v269): gym {10,12,14,20} · sesión {10,12,14} · macros {10,12,14,20} · progreso {10,12,14,20,
@@ -473,8 +474,8 @@ changelog. Estado medido:
   `holdConfirm()` usan `'¿seguro?'` como título por defecto y el OK destructivo de TRKAsk sale como `.cancel.danger`
   (parece un cancelar): objetivo G4.
 - VOZ-6 **Corchetes** `[verbo objeto]` (BRAND §3): minúsculas, sin espacios internos, ≤3 palabras, nunca dentro de una
-  caja, con toque de 44. Hoy quedan `[ ver rutina ▾ ]`, `[ ocultar rutina ▴ ]` y `[tap para cerrar]` (objetivo G3:
-  `[ver rutina ›]`). La revisa: R-BRK.
+  caja, con toque de 44. v290: los corchetes los pone el CSS en toda acción (`[ver rutina]` / `[ocultar rutina]` ya sin
+  espacios ni glifo); queda escrito a mano solo `[tap para cerrar]`, que no es un botón. La revisa: R-BRK · `_v290SelfCheck`.
 
 ### 6.3 Vocabulario de feedback (TRKToast)
 
@@ -552,15 +553,20 @@ en `›` para navegar. Nada más. El árbol para elegir está en §17.3.
 
 #### Acción de texto `[verbo]`
 - **Rol:** acción puntual dentro de los datos (BRAND §3).
-- **Clase / API:** `.addbtn` (`[+ set]`, `[↓ drop set]`), `.ctrls a` (`[change split]`), `.section .meta` (`[settings]`),
-  `.fa-acts a`, `.mdacts a`, `.hbody .hacts a`.
-- **Anatomía:** texto `--t-label`/`--t-data` en `--o60`, sin caja; `[ ]` literales en el texto (en los secundarios
-  `button.b`/`.cancel` los pone el CSS, ver arriba).
+- **Un solo estándar (v290; el dueño, 1-oct: "hay que estandarizar esos botones entre corchetes… los tamaños de todo";
+  la referencia es `[change split]`):** `--t-label` (10) / 400, texto `--o60`, corchetes `--o40` puestos por CSS
+  (`::before` / `::after`), presionado `--fg`, toque de 44. Las **opciones** (`[RIR] RPE`, `[hombre] mujer`: `button.t`)
+  son valores, no acciones: siguen en 12.
+- **Clase / API:** de caja (44 de alto, filas de botones): `button.b`, `button.cancel`, `.secondary .b`,
+  `.sheetbtns .cancel`, `.footer .abort`/`.undo`. En línea con el texto: **`.vb`** (`inline-flex`, `min-height:44` con
+  margen vertical `-16`: ocupa un renglón y su toque crece hacia afuera) en `[ver rutina]`, `[+ log past session]`,
+  `[share]`, `[goals]`, `[edit]`, `[settings]`, `[catalog]`, `[‹ back]`, `[+ food]`, //ESPACIO… La misma regla de
+  corchetes cubre `.addbtn` (`[+ set]`, `[↓ drop set]`), `.ctrls a` (`[change split]`), `.savebar a`, `.mdacts a`,
+  `.fa-acts a`, `.fa-meal a` y `.hbody .hacts a`.
 - **Estados:** presionado = `--fg`.
-- **Toque:** 44×44 con `.u-hit` (pendiente G4); hoy se consigue con padding + margen negativo en algunos (`.addbtn`,
-  `.ctrls a`) y en otros no (`[share]` y `[goals]` miden 42×13).
-- **Sí / No:** sí `[+ set]` `[share]` `[‹ gym]`; no `[ + set ]` con espacios, no un corchete dentro de una caja, no más de
-  3 palabras.
+- **Excepción:** `[deshacer]` del toast (12/700 `--fg`): es la acción del aviso, dentro del chrome.
+- **Sí / No:** sí `[+ set]` `[share]` `[‹ gym]`; no corchetes escritos en el texto, no `[ + set ]` con espacios, no un
+  corchete dentro de una caja, no más de 3 palabras. La revisa: `_v290SelfCheck` (10 px, corchetes por CSS, 44).
 - **La revisa:** R-BRK · `_dsRenderCheck` hit.
 
 #### Acción de sección de log (`.lact`)
@@ -638,7 +644,7 @@ en `›` para navegar. Nada más. El árbol para elegir está en §17.3.
   cuando cambia la pestaña elegida (así "PM" ya no parpadea).
 - **Dónde:** periodos del detalle de métrica, volumen y e1RM; HOY/TODOS del stack; momentos de SUPPS (`.lseg`); vistas de
   compartir un ejercicio; la bitácora de un ejercicio (v274, §7.40: `e1RM · peso top · volumen` y sus periodos); las
-  versiones del panel de macros (v276, §7.28: `.mdtabs.tall.mvtabs`, **debajo** del carril que controlan).
+  versiones del panel de macros de v276 se fueron en v290 (§7.41).
 - **La revisa:** a ojo · self-check de UI.
 
 ### 7.4 Marcas y estados
@@ -986,9 +992,8 @@ rejillas"; compartir es **vertical, a altura natural, nunca un cuadro que recort
   `kcalParts()`).
 - **El panel de macros** (v276, `renderShareMacros()`): rótulo `.shcap` (`// macros · 24 sep`) · el anillo de kcal grande
   centrado en `.shmhero` (`ringHTML(…, 'lg')`, `1,850` y `/ 2,400 kcal` dentro; arco en `--good` o `--bad` con el mismo
-  `macroStatus()` que en la app) · debajo, en `.shviz`, **la versión que tiene elegida en el carrusel** (`macroVizKey()`,
-  §7.41) con `macroVizHTML(k, t, g, {share:true})`: en `aros` los tres anillos se arman aquí (`.cell` con `.cap` y `.sub`
-  `/ 180 g`, sin toque); en `barras` sin `data-bk` (no anima). Vertical y a su altura natural, marca gym//TRK por
+  `macroStatus()` que en la app) · debajo, en `.shviz`, el radar del día (`.macro-rad`) y los tres aros (`.cell` con `.cap` y
+  `.sub` `/ 180 g`, sin toque; v290: ya no hay versiones que elegir). Vertical y a su altura natural, marca gym//TRK por
   `summaryShell()`. Texto copiable `macroShareText()`: `macros · 24 sep` · `1,850 / 2,400 kcal` · `P 142/180 g · C 200/250
   g · F 60/70 g` · `reparto P 30% · C 42% · F 28%` · línea en blanco · `gym//TRK`.
 - **Un ejercicio** (`openExShare()`): capa sólida `.exsh` (`--z-overlay`) con tres vistas en TRKTabs: `igual` (el mismo
@@ -1013,7 +1018,7 @@ rejillas"; compartir es **vertical, a altura natural, nunca un cuadro que recort
   ícono TRK desde v269 (excepción `camera`; el emoji salió y R-GLYE bajó de 4 a 2); si el id no existe, compartir sesión muestra la última sin avisar (G4: `// esa sesión ya no
   existe`); `[uni]`/`[bi]` en compartir es decisión menor pendiente. `renderShareWeight()` no tiene quien lo abra (G4).
 - **La revisa:** `_v257SelfCheck` (marcar la serie no toca `db`) · `_v269SelfCheck` (la marca es un SVG con su punto en
-  `--bad`) · `_macroVizSelfCheck` (v276: cada versión se dibuja) · a ojo con capturas de las 44
+  `--bad`) · `_macroVizSelfCheck` (v290: la tarjeta trae radar y aros) · a ojo con capturas de las 44
   sesiones reales y, en v276, de las 6 versiones del panel y de la imagen generada con el radar.
 
 ### 7.20 Modo enfoque
@@ -1118,16 +1123,28 @@ Decisión del dueño 2026-09-21: macros en orden **SUPPS → MEALS → WATER**, 
     de marca no reescribe los días de antes.
   - **Días anteriores (v275):** un suplemento agregado mientras ves un día pasado en macros empieza ese día (`startDate` =
     el día visto), para que se pueda marcar ahí.
-- **MEALS:** una `.mrec` por comida. Cabecera `.mhd` de 44 en **4 columnas** (v271: nombre | `[+ food]` | kcal | `···`):
-  `.mtg` con `.mchev`, el nombre `.mnm` (`--t-section`/800 `--fg`, **manda**) y la meta `.mmeta` (`hora · P C F`,
-  `--t-label` `--o40`) · `[+ food]` = `button.b` `.madd` (corchetes por CSS, 44 de alto, `--o60`; a la vista aunque
-  la comida esté plegada) → `openFoodAdd(tag, true)` · total `.mkc` (`--t-section`/700 en `--o70`, segundo tras el
-  nombre) que abre el desglose · `.gmore` (columna 4) con `.dots3` → `openMealMenu()`. Alimentos `.mit` de 36: línea `.nm1` (`--t-data`, cantidad en negrita, kcal `--o50`) y
-  debajo `.mmac` `P 31 · C 2 · F 1` (`--t-label` `--o50`, `macroLineHTML()`) con la fuente principal por kcal (P·4, C·4,
-  F·9) en `<b>` `--fg`/700, **sin color** (elección del dueño: "Blanco en negrita, sin color") y `~` delante si es
+- **MEALS:** una `.mrec` por comida. Cabecera `.mhd` en **tres renglones** (v290; el dueño, 1-oct: "si no le pones la hora,
+  se ve un huecote… la hora al renglón del nombre… los macros alineados a la izquierda… el protagonista es el que tiene más
+  gramos"; eligió total a la derecha, `···` debajo y `[+ food]` debajo de los dos):
+  1 · `.mtg` (pliega la comida, ≥44): `.mchev` · nombre `.mnm` (`--t-section`/800 `--fg`, **manda**) con la hora pegada
+  `.mtm` (` · 8:30`, `--t-label` `--o50`; **sin hora no se reserva hueco**) · total `.mkc` a la derecha (`--t-section`/700
+  `--o70`; ya no es un botón aparte: `ver desglose` vive en `···`) · 2 · `.mmac` `P 31 · C 40 · F 12` a la izquierda
+  (`macroLineHTML()`, `--t-label` `--o50`) y `.gmore` con `.dots3` a la derecha → `openMealMenu()` (se ve de 22, su toque
+  de 44 baja al renglón 3 con `::after`) · 3 · `[+ food]` = `.vb.madd` (renglón de 26, toque de 44; a la vista aunque la
+  comida esté plegada) → `openFoodAdd(tag, true)`. Alimentos `.mit` de 36: línea `.nm1` (`--t-data`, cantidad en negrita,
+  kcal `--o50`, alineado con el total de la comida) y debajo `.mmac` `P 31 · C 2 · F 1` con la fuente principal —**la de más
+  gramos** desde v290 (20 P / 19 F → P; antes por kcal)— en `<b>` `--fg`/700, **sin color** (elección del dueño: "Blanco en negrita, sin color") y `~` delante si es
   aproximada; la misma línea sale en la hoja de desglose (`mealFoodRows()`). Tocar un alimento lo abre en su sitio
   (`mealDetailInline()`): solo la marca y `[editar] [mover] [borrar]`. Ya no hay fila `+ food` al final de la comida (el
   dueño: "el add food se pierde mucho… yo le añadiría los corchetes y lo pondría igual del lado derecho de la meal").
+- **Aros de "te queda" (v290; el dueño, 1-oct: "arriba de Add Food siempre aparezcan los rings… que se actualice en tiempo
+  real… un scoop, dos, scoop y medio"):** `foodRingsHTML(add, skipId)` pinta, bajo el título de `add food`, de la porción
+  (`openLog`) y de `meal aproximada`, la etiqueta `TE QUEDA` (con la fecha si no es hoy) y cuatro aros `.ring.sm` de 56
+  (`ring2HTML()`): kcal · P · C · F con lo que **queda** del día que estás viendo (meta − lo comido, `dayLeftBase()`). Lo que
+  estás por agregar entra al aro en `--o40` (`.ring-add`) y el número pasa a lo que quedaría (`u-bad` si te pasas);
+  `foodRingsSet(nut)` los repinta en su lugar al cambiar unidad, cantidad o macros (mismo alto: nada se mueve). Al editar un
+  registro, primero se resta el suyo (`skipId`). De paso: volver de la porción a `add food` conserva `[cambiar]` de comida
+  (`window._faLock`; antes la comida quedaba fija siempre). La revisa: `_v290SelfCheck`.
 - **Hoja de loguear** (`openLog()`, v271): unidad y cantidad, kcal y nutrientes en vivo; con un alimento **nuevo**, una fila
   `guardar en mis alimentos ···· [sí] no` (`.lsv` con `.toggles` `#l_save`, `optpick`; sí por defecto). El primario es
   siempre `loguear` (`guardar cambios` al editar) y `logsave` lee la fila. **`[cancel]` nunca loguea**: vuelve a la
@@ -1228,40 +1245,14 @@ compartir comida o el panel de macros, v276; excepción `ring`).
 - **Hoy (v262, look "1"; radio 4 desde v267):** en un panel de vidrio sutil `.card.kpanel` (`--glass-bg-strong`, borde
   `--glass-edge`, radio `--r-ctl`, excepción `ring`), sin brillo ni punto al 0 % (`.ring-fill.z`); color solo en el arco y
   en `left/over` (BRAND §4).
-- **Panel abierto (v269; el dueño: "la línea divisora de abajo de mantenimiento y donde empieza la gráfica… no tiene los
-  espaciados bien"):** orden fijo `.hbal` (balance vs mantenimiento) → regla → **carrusel de versiones** (v276, abajo; en
-  su versión `aros`, radar `.macro-rad` → anillos `.rings`, lo que antes iba fijo aquí) → sus pestañas →
-  `[ver gramos]` / `[ver %]` en `.kp-unit` (alineado a la derecha, `--s3` arriba) → regla → `INTAKE` (`.grp-label`) y sus
-  barras. Dentro de `.kpanel` **toda** `.rule` va a sangre (margen lateral `-16`, el padding del panel) con el **mismo aire
-  arriba y abajo** (`--s5`), y el radar deja `--s4` antes de los anillos. El cambio `[ver gramos | ver %]` pasó de arriba
-  del radar a debajo de los anillos, junto a lo que convierte. Abrirlo ya no mueve el ancho (LAY-2b, §5.1).
-- **Carrusel de versiones (v276, BRAND §9: el dueño quiere ver las propuestas "en un carrusel" mientras elige):**
-  `mvzHTML(t, g, rings)` reemplaza al radar + anillos fijos del panel abierto (el cerrado no cambia).
-  - **Anatomía:** `.mvz` > `.mvtrack` (`#mvtrack`: fila `flex` con `align-items:flex-start`, `overflow-x:auto`,
-    `overflow-y:hidden`, `scroll-snap-type:x mandatory`, `overscroll-behavior-x:contain`, sin barra de scroll) con una
-    `.mvslide` por versión (`data-v`; `flex:0 0 100%`, `scroll-snap-align:start` y `scroll-snap-stop:always`: un
-    deslizamiento = una lámina; cada una a su alto natural). Las láminas son `macroVizList()`: las 5 de siempre y la dona
-    solo si es la elegida (§7.41). Cada lámina sale de `macroVizHTML()`; en `aros` los anillos son los de siempre
-    (`macroRing()`, con `ringtog` y TRKNum).
-  - **Pestañas abajo:** TRKTabs `.mdtabs.tall.mvtabs` (`data-tk="mvz"`, `role="tablist"`) **debajo** del carril, una
-    pestaña de texto por lámina (`aros · barras · medidor · reparto · tabla`): `span` `role="tab"` con `aria-selected`,
-    `data-act="mvtab"`, 44 de alto (`.tall`), mínimo 44 de ancho, `flex:1 1 auto` y sin tracking (`letter-spacing:0`,
-    para que quepan 5); `--s3` arriba y sin margen abajo, así `[ver gramos | ver %]` queda justo debajo. Tocar una lleva
-    el carril a su lámina (`scrollTo`, suave; con reduced-motion, al instante). Deslizar el carril con el dedo también.
-  - **Persistencia:** la versión a la vista es **la elegida** y se guarda en `db.settings.macroViz` (viaja en el
-    respaldo): un listener de `scroll` pasivo, con 120 de retardo, calcula la lámina al asentarse (`scrollLeft /
-    clientWidth`), la guarda con `save()`, cambia `.on` y `aria-selected` de las pestañas **sin repintar** y mueve la rayita con `slideTabs()`. Un carril que ya salió de la página (re-render o cambio de pantalla dentro de esos 120) no guarda nada: sin esa guarda leía `scrollLeft` 0 y regresaba la elegida a `aros`. Una clave
-    inválida o vacía se lee `aros` (`macroVizKey()`). La misma elección es la que sale al compartir el panel (§7.19).
-  - **Tras cada render:** `render()` llama `mvzSync()` en macros: pone el carril en la versión guardada **sin animación**
-    (`scrollLeft`: `render()` rehace el DOM y el carril nuevo nacería en la primera) y engancha el listener una sola vez
-    por carril (`tr._mvz`).
-  - **Alto:** el carril toma el alto de la lámina a la vista (`style.height` = su `offsetHeight`), al pintar y al
-    asentarse cada deslizamiento; si no, la lámina más alta dejaba huecos enormes bajo las demás. Mientras el dedo
-    desliza conserva el alto anterior (`overflow-y:hidden` recorta) y al asentarse cambia de golpe, sin animar.
-  - **`[ver gramos | ver %]`** solo cambia `aros` (los anillos) y `barras`; `medidor` muestra siempre la barra con su % y los
-    gramos, `reparto` y `tabla` siempre en %.
-  - **Toque:** medido abierto con sus datos, 25 toques chicos en cada una de las 5 versiones, los mismos que en v275
-    (`dsSweep()` mide el panel cerrado, §18.2).
+- **Panel abierto (v290; el dueño, 1-oct: "lo único que me sigue gustando son los aros… que se pudiera colapsar esta
+  gráfica heptagonal… ajustar los espacios"):** orden fijo `.hbal` (balance vs mantenimiento) → regla → **aros** `.rings`
+  (P · C · F, `macroRing()` con `ringtog` y TRKNum) → `[ver gramos]` / `[ver %]` en `.kp-unit` (a la derecha, `button.b`
+  de 10 px) → fila **`radar`** `.kp-rad` (`.line.stat.tap` de 44, `radarfold`: `radar ···· ›`) que despliega `.macro-rad`
+  con `dayRadar()` (7 ejes); viene **plegada** y recuerda cómo la dejaste (`db.settings.radarOpen`, aditivo) → regla →
+  `INTAKE` (`.grp-label`) y sus barras. Dentro de `.kpanel` **toda** `.rule` va a sangre (margen lateral `-16`) con el
+  mismo aire arriba y abajo (`--s5` = 16 entre bloques). Desplegar o plegar el radar no mueve la fila tocada. El carrusel de
+  versiones de v276 (barras · medidor · reparto · tabla · dona, con sus pestañas) se fue: §7.41.
   - **La revisa:** `_macroVizSelfCheck` (§18.2) · a ojo a 393×852 con sus datos.
 - **Sin brinco de scroll (v271; el dueño: "cuando le doy en ver gramos o ver porcentaje, se me scrollea hasta arriba… eso
   está muy molesto"):** `[ver gramos | ver %]` es un `button.b` (`[verbo]` de 44 de alto; antes un enlace chico) y
@@ -1736,57 +1727,21 @@ notas" (las de su amigo: `#1`, `#2`, `#3`… con fecha y series).
   mezclar unidades ni máquinas de otro gym en la línea; no una puntuación.
 - **La revisa:** `_exHistSelfCheck` (§18.2) · a ojo a 393×852 con su respaldo.
 
-### 7.41 Versiones del panel de macros (`macroVizHTML()`, v276)
+### 7.41 Panel de macros: solo aros y radar plegable (v290; antes "versiones del panel", v276)
 
-Decisión del dueño 2026-09-24 (BRAND §9): propuestas de barras de progreso y de reparto de los macros para elegir, verlas
-"en un carrusel" dentro del panel mientras elige, y una versión para compartir.
+Decisión del dueño 2026-10-01 (BRAND §9): "lo único que me sigue gustando son los aros… que se pudiera colapsar esta
+gráfica heptagonal". En v276 había pedido ver propuestas "en un carrusel"; ya eligió.
 
-- **Rol:** la misma lectura del día —P, C y F contra su meta— dibujada de varias formas para que el dueño elija una.
-  Mientras decide, todas viven en el carrusel del panel abierto (§7.28).
-- **Registro:** `MACRO_VIZ` = `[clave, pestaña, solo laboratorio]`: `rings` `aros` · `bars` `barras` · `meter` `medidor` ·
-  `split` `reparto` · `table` `tabla` · `donut` `dona` (tercer campo `1`: solo laboratorio). `macroVizKey()` lee
-  `db.settings.macroViz` (inválida o vacía → `rings`); `macroVizList()` = las que no son de laboratorio más la elegida.
-- **Una sola función:** `macroVizHTML(k, t, g, o)` dibuja una versión con los totales `t` y las metas `g` del día; la usan
-  el carrusel (§7.28), la tarjeta de compartir el panel (§7.19, `o.share`: sin claves de animación) y el laboratorio del
-  estudio (§18.7: propuestas 25 `macroprog` —aros · barras · medidor— y 26 `macrodist` —reparto · tabla · dona—, que
-  pintan cada opción con la función de la app y los números del día en el lugar del carrusel y de la tarjeta). `o.rings`
-  trae los anillos ya armados para `aros`. Una clave desconocida dibuja `aros`.
-- **Reparto:** `macroSplit(t)` = la parte de las kcal que ponen P·4, C·4 y F·9, en tres **enteros que suman 100** (P y C
-  redondeados, F el resto; 142 g · 200 g · 60 g → 30 · 42 · 28); sin kcal, `null` (se lee `—`).
-- **Versiones (anatomía y tokens):**
-  - **`aros`** (por defecto) — `.macro-rad` con `dayRadar()` (§8) + `.rings` con los tres anillos `.md` (TRKRing,
-    §7.28). Es el panel de antes, sin cambios.
-  - **`barras`** — una `.mrow` por macro (la fila de INTAKE: etiqueta `.ml` de 78 en `--o50` · `.bar` TRKBar con
-    `trkBarI('mv:protein', …)` · valor `.mv` `142 / 180 g` con la meta en `.g` `--o40`); con `[ver %]`, `79%`. Pasar el
-    105 % de la meta: relleno `.over` y valor `.ovr` en `--bad`.
-  - **`medidor`** — `.mvmeter` con una `.mvml` por macro (rejilla `64 · auto · 1fr`, `--t-data`, `--s4` entre filas):
-    etiqueta `.ml` `--o50` · TRKProgress de **12 celdas** (`trkProgressHTML(p, {cells:12})`, §7.33:
-    `[█████████▍░░] 79%`) · `142/180 g` a la derecha (`.mv` `--o60`, `/180 g` en `.g` `--o40`). Siempre en gramos.
-  - **`reparto`** — `.mvsplit`: fila `.mvsl` `hoy` (etiqueta de 48) con la barra apilada `.mvstack` (alto 10, pista
-    `--track`) y debajo `meta` con `.mvstack.thin` (alto 4); los tramos van en **escala de opacidad, sin color**: P `.mvp`
-    `--fill` · C `.mvc` `--o60` · F `.mvf` `--o30`. Leyenda `.mvleg` (`--t-data` `--o70`, muestras de 8 sin radio):
-    `P 28% · meta 25` por macro (la meta en `.g`), y una línea `u-label` `--o40`: `% de las kcal · P·4 C·4 F·9`. Siempre
-    en %.
-  - **`tabla`** — `.mvtab`: cabecera `.mvth` (`hoy · meta · %`, `--t-label` `--o40`) y una `.mvtr` por fila (`kcal`,
-    protein, carbs, fat; rejilla `72 · 1fr · 1fr · 48`, números a la derecha, separador `--bw-sep` `--o10`): hoy (con
-    miles) · meta en `.g` (`180 g`) · % de la meta (`77%`, `79%`). Pasar el 105 % pone **solo ese número** en `u-bad`
-    (B-07). Sin meta, `—`.
-  - **`dona`** (solo laboratorio) — `.mvdonut`: SVG de 112 (viewBox 36, radio 15.7) con tres arcos `path` de trazo 1.8
-    (GRA-7) en la misma escala de opacidad (`.mvp`/`.mvc`/`.mvf` pintan también `stroke`), separados por un hueco chico, y
-    la leyenda `.mvleg` en columna a su lado. Sin comida: `sin comida este día` (`.empty`).
-- **La dona, solo laboratorio:** BRAND §4 deja al anillo de kcal como la gráfica circular de la app y §8 dice no a los
-  pasteles; por eso no está en el carrusel por defecto y entra solo si es la elegida (`db.settings.macroViz` =
-  `'donut'`). Se elige en el estudio (propuesta 26): elegir allí **no** escribe `db.settings.macroViz`, viaja en la hoja
-  TRK-PICK y, al hornearse, esa versión queda como la que abre el carrusel y sale al compartir (para la dona sería además
-  una decisión de BRAND §9). Si deslizas fuera de ella, la elegida cambia y en el siguiente render sale del carrusel.
-- **Color:** ninguno por macro (P, C y F se distinguen por opacidad); solo lo que se pasa de la meta, en el relleno de la
-  barra y en el número (`barras`, `tabla`). `medidor` y `reparto` no llevan color. Excepción que ya traía el panel: en
-  `aros` el anillo y su número se ponen `--good` entre 90 y 105 % de la meta, así que el mismo día sale verde en `aros` y
-  neutro en `barras` y `tabla`.
-- **Hoy → objetivo:** en la app todavía nada escribe `'donut'` (el carrusel solo guarda lo que desliza): la dona llega
-  cuando se hornee su elección del estudio. En `medidor` el `%` se acota a 100 y pasarse solo lo dice el `153/150 g` de
-  al lado. Qué versión se queda es pregunta abierta (BRAND §10; propuestas 25 y 26 abiertas).
-- **La revisa:** `_macroVizSelfCheck` (§18.2) · a ojo con capturas de las 6 versiones.
+- **Qué quedó:** los tres aros P · C · F y, plegado, el radar de 7 ejes (§7.28). `radarOpen()` lee
+  `db.settings.radarOpen` (sin el campo: plegado); `radarfold` lo cambia, guarda y repinta con `reRender()`.
+- **Qué se fue:** el carrusel (`mvzHTML()`, `mvzSync()`, `mvtab`), el registro `MACRO_VIZ` con `macroVizKey()` /
+  `macroVizList()` / `macroVizHTML()`, las versiones barras · medidor · reparto · tabla · dona y todo su CSS, y en el
+  estudio los escenarios `macros:viz:*` y las opciones de las propuestas 25 y 26 (cerradas como `shipped v290`).
+  `db.settings.macroViz` (la versión que se había elegido) ya no se lee; **no se borra**.
+- **Reparto:** `macroSplit(t)` = la parte de las kcal que ponen P·4, C·4 y F·9, en tres **enteros que suman 100**; solo
+  lo usa el texto de compartir el panel (`macroShareText()`).
+- **Compartir el panel** (§7.19): anillo de kcal + radar + aros, sin versiones.
+- **La revisa:** `_macroVizSelfCheck` (§18.2).
 
 ### 7.42 Tour por sección (`tourDraw()`, v278)
 
@@ -1874,17 +1829,14 @@ Instrumentación, no infografía (B-02: la gráfica existe solo cuando el texto 
 |---|---|---|---|---|
 | **Línea** | `lineChart(vals, opt)`, `chartNums()` | tiles de Progress, detalle de métrica | ver abajo | "sin registros en este rango" |
 
-| **Barra fina** (TRKBar) | `.bar`, `.vbar`, `.wprog` | ingesta, //STIMULUS, //MUSCLES, progreso de sesión, detalle de músculo, versión `barras` del panel de macros (v276) | §7.15 | la pista sola |
-| **Barra apilada** (reparto, v276) | `.mvstack` (`.thin` para la meta) con `.mvp` `.mvc` `.mvf` | versión `reparto` del panel de macros y su tarjeta | un tramo por macro en escala de opacidad (`--fill` · `--o60` · `--o30`), hoy (10) sobre la meta (4); leyenda escrita con los %; suma 100 (`macroSplit()`), §7.41 | la pista sola y `—` en la leyenda |
+| **Barra fina** (TRKBar) | `.bar`, `.vbar`, `.wprog` | ingesta, //STIMULUS, //MUSCLES, progreso de sesión, detalle de músculo | §7.15 | la pista sola |
 | **Columnas apiladas** | `.slfc` (FASES del sueño) | detalle de sueño | una columna por noche bajo la x de su fecha (mismo margen de eje que la línea), profundo abajo; 4 filas con etiqueta y valor escritos (`.slfr`) | sin columna |
 | **Hipnograma** | `hypnoHTML()` → `.hypno` | registro de sueño | escala de opacidad: profundo `--fg` · core `--o50` · REM `--o30` · despierto `--o12` · sin clasificar `--track`; lo no clasificado se ve, no se reparte | no se dibuja |
-| **Anillo** (TRKRing) | `ringHTML()` | macros, compartir comida, compartir el panel de macros (v276) | §7.28; excepción `ring` | anillo vacío (hoy con punto al 0 %: G3) |
-| **Dona** (solo laboratorio, v276) | `.mvdonut` (SVG de arcos `path`, trazo 1.8) | versión `dona` del panel de macros, solo si es la elegida | la misma escala de opacidad que el reparto; leyenda escrita al lado; no entra al carrusel por defecto (BRAND §4, "no pasteles" abajo), §7.41 | `sin comida este día` |
-| **Radar** | `dayRadar()` → `.macro-rad`, `.msum-rad` | macros (versión `aros` del carrusel y su tarjeta de compartir, v276), desglose de comida | etiquetas SVG a `font-size="7.5"` (≈5.9 reales): objetivo G4 etiquetas HTML a 10 o quitarlo (decisión del dueño) | — |
+| **Anillo** (TRKRing) | `ringHTML()` · `ring2HTML()` (v290: aros `.sm` de 56 con lo que estás por agregar en `--o40`) | macros, compartir comida, compartir el panel de macros (v276), `te queda` en add food / porción / aproximada (v290) | §7.28; excepción `ring` | anillo vacío (hoy con punto al 0 %: G3) |
+| **Radar** | `dayRadar()` → `.macro-rad`, `.msum-rad` | macros (fila `radar` del panel abierto, plegada de entrada, v290; y su tarjeta de compartir), desglose de comida | etiquetas SVG a `font-size="7.5"` (≈5.9 reales): objetivo G4 etiquetas HTML a 10 o quitarlo (decisión del dueño) | — |
 | **Calendario** (TRKCal) | `monthCalHTML()`, `stripCalHTML()` (racha en franja `.strk-row`), `histCalHTML()` (`.hcal`) | racha, historial | un solo blanco en opacidad (`--track` · `--o30` · `--fg`); celda cuadrada `--r-mark`; hoy con contorno `--o40`; **lunes primero** (`L M X J V S D`); sin leyenda; tocar un día lleva a ese día | días vacíos |
 | **FC** | `hrChartSVG()` → `.hrsvg` | hoja de sesión | 56 de alto, `--o60`, marca por serie | no se dibuja |
-| **Medidor de texto** (TRKProgress, v268) | `trkProgressHTML()` → `.tprog` | lectura de etiqueta con OCR, arranque, versión `medidor` del panel de macros (v276, 12 celdas) | primitivo de BRAND §5: `[█░] %` con octavos en el borde, solo con avance real (§7.33); ▮▯ no existen en la fuente | `[░░░] 0%` |
-| **Tabla** (v276) | `.mvtab` (`.mvth`, `.mvtr`) | versión `tabla` del panel de macros | texto antes que gráfica (B-02): hoy · meta · % en columnas; solo el % que se pasa lleva color, §7.41 | `—` |
+| **Medidor de texto** (TRKProgress, v268) | `trkProgressHTML()` → `.tprog` | lectura de etiqueta con OCR, arranque | primitivo de BRAND §5: `[█░] %` con octavos en el borde, solo con avance real (§7.33); ▮▯ no existen en la fuente | `[░░░] 0%` |
 
 **Línea (GRA-1…6):**
 1. **Sin dato = hueco.** La línea se corta; nunca un 0 en el piso (`chartNums()` con `gap0` en las métricas diarias donde 0 =
@@ -1908,7 +1860,7 @@ Instrumentación, no infografía (B-02: la gráfica existe solo cuando el texto 
 
 **No:** gradientes en el detalle, pasteles, barras gigantes redondeadas, brillo, arcoíris, ejes cargados, etiquetas en cada
 punto, escalas de color de otras apps, 0 falso. `miniBars()` convierte huecos en 0 y nadie lo llama (G4). La dona de v276
-existe solo en el laboratorio por esta regla (y por BRAND §4): aparece en el carrusel y en la tarjeta solo si él la elige.
+(solo laboratorio) se fue en v290 con el resto del carrusel.
 
 ---
 
@@ -2077,7 +2029,6 @@ Leyenda de la última columna: ✓ cumple B-09 · ⚠ a revisar con el dueño ·
 | Scrub de gráfica | mantener y deslizar | línea punteada y punto siguen al dedo; se ocultan a los 1600 | directo | — | ✓ |
 | Pellizco de gráfica | dos dedos | cambia el periodo o el zoom vertical (se repinta el sheet; el indicador de TRKTabs viaja) | — | — | ✓ |
 | TRKWheel `trkWheel()` | girar la rueda | `scroll-snap` nativo; el marcado cambia en el evento | nativo | nativo | ✓ |
-| Carrusel de macros `mvzHTML()` / `mvzSync()` (v276, §7.28) | deslizar el carril · tocar una pestaña (`mvtab`) | scroll horizontal con `scroll-snap` (sigue al dedo); la pestaña hace `scrollTo` a su lámina; al asentarse (120) cambia el alto del carril de golpe y la clase de la pestaña | nativo · `smooth` | la pestaña salta sin animar (`reducedMotion()`); `mvzSync()` nunca anima | ✓ al deslizar (sigue al dedo) · ⚠ al tocar una pestaña el contenido viaja más de 4 (§1) |
 | Tour `tourMaybe()` / `tourDraw()` (v278, §7.42) | `afterPaint()` en una sección con tour pendiente | nada se anima: el velo, el anillo y el globo aparecen y se van de golpe; el ancla se centra con `scrollIntoView` instantáneo y un scroll de `#view` los redibuja en su sitio | espera 350 · reintento 800 si está ocupado · siguiente paso 60 | igual (no hay animación) | ✓ chrome que no se mueve |
 | `scrollIntoView` suave | foco tras un ✓ (`state._focusSet`), primer RIR (`state._autoScroll`), `[+ exercise]`, ir a la serie en curso, día del historial | scroll | nativo | los cinco miran `reducedMotion()` (v258) | ✓ |
 
@@ -2104,7 +2055,7 @@ v267) · `_dsRenderCheck` glyph (acepta `GLYPHS_VIZ` desde v268).
 | ⠿ | arrastrar / reordenar | `.dgrip`, `.pgrip` (tiles de //PROGRESS editable, v269), fantasma de arrastre | "arrastrar" / "mover <tile>" |
 | › | entrar / abrir detalle | `.rchev`, `.nvm-x`, `.ptchev`, `.lx`, `.mchev` | "abrir" |
 | ‹ | atrás / anterior | `.dnav`, `.hcnav`, flechas de rotación | "anterior" |
-| ▾ | desplegar / elegir | `.umcaret`, `.sgoal .cv`, `[ ver rutina ▾ ]` | "elegir" |
+| ▾ | desplegar / elegir | `.umcaret`, `.sgoal .cv`, la fila `radar` desplegada | "elegir" |
 | ▶ | empezar / continuar | `▶ start workout`, `▶ resume workout`, `▶ continuar`, `▶ seguir` y `▶ ir al gym` (alta, v277) | "empezar" |
 | ↓ | drop set | `[↓ drop set]`, series de drop | "drop" |
 | ✕ | quitar | toast de error, ✕ de ejercicio, `.lc .x` | "quitar" |
@@ -2274,9 +2225,9 @@ Objetivo G4: completar la tabla con el texto exacto de cada celda vacía y una a
 |---|---|---|---|---|---|
 | `landing` / `login` | primer uso | marca | `.start`, `.field`, `.toggles` | no | M0 sin evaluar (G4): tono de venta, etiquetas en mayúsculas, `← regresar`, marca con `//` en dos opacidades |
 | `onboard` | primer uso (alta paso a paso, v277) | `[‹ atrás]` (`.obback`) + `.obh` `gym//TRK//SETUP 3/10` + barra `.onbbar` + la pregunta `.onbq` y su porqué | un paso de `ONB_STEPS` (10): filas `.obr` (`.obi` de 36, toggles, `.obr.obstack`), listas `.toggles.oblist`, error en línea `.onberr`; pie `.onbfoot` pegado abajo con `▶ seguir` / `▶ ir al gym` y `[más adelante]` en los opcionales | no | §7.34: nada se escribe hasta terminar (`onbApply`); un alta a medias abre en su paso; el atrás del sistema retrocede un paso; con usuario no se ve nunca |
-| `home` (gym) | estado actual | `statusBar` + rotación + `dayHeadHTML` (`//NEXT`) | línea de preparación, músculos del día, vista previa (`[ ver rutina ▾ ]`), primario, `[rest day]` `[skip day]` (o `hoy: descanso ✓`, §7.37; en un descanso del plan o día sin gym, `.restplan` + `[entrenar igual]` sin primario, v273), //STIMULUS (σ por músculo y, si toca, la fila de fatiga acumulada, §7.23), //STATS | sí | con sesión viva solo existe `▶ resume workout` (v258, M1-01/M1-01b) |
+| `home` (gym) | estado actual | `statusBar` + rotación + `dayHeadHTML` (`//NEXT`) | línea de preparación, músculos del día, vista previa (`[ver rutina]`), primario, `[rest day]` `[skip day]` (o `hoy: descanso ✓`, §7.37; en un descanso del plan o día sin gym, `.restplan` + `[entrenar igual]` sin primario, v273), //STIMULUS (σ por músculo y, si toca, la fila de fatiga acumulada, §7.23), //STATS | sí | con sesión viva solo existe `▶ resume workout` (v258, M1-01/M1-01b) |
 | `workout` | registro | `.wline` (modo enfoque) | tabla de sesión, descanso, footer | no | §7.8, §7.20 |
-| `macros` | composición | `statusBar` + día `‹ fecha ›` | anillo en `.card`, detalle (carrusel de versiones con sus pestañas abajo —`aros` = radar y P/C/F—, `[ver gramos \| ver %]`, INTAKE, retención), SUPPS (o su invitación) → MEALS (`[+ food]` en cada cabecera) → WATER; `[share]` → el día o el panel | sí | §7.24, §7.28, §7.36, §7.41 |
+| `macros` | composición | `statusBar` + día `‹ fecha ›` | anillo en `.card`, detalle (aros P · C · F, `[ver gramos \| ver %]`, fila `radar` plegable, INTAKE, retención), SUPPS (o su invitación) → MEALS (`[+ food]` bajo cada cabecera) → WATER; `[share]` → el día o el panel | sí | §7.24, §7.28, §7.36, §7.41 |
 | `progress` | análisis | `.section` //PROGRESS + `[edit]` | racha en franja, tiles `.ptile` en el orden de `db.settings.progLayout`, //STRENGTH, //RECORDS (tocable, v274), //EXERCISES (v274, §7.40), //MUSCLES (σ, §7.23), //RENDIMIENTO | sí (no mientras se edita) | modo editar §7.35; tiles → filas en G3; la tile de e1RM, //STRENGTH, //RECORDS y //EXERCISES abren `exhist` |
 | `exhist` | un ejercicio (v274) | `statusBar` + `[‹ back]` + `dayHeadHTML` (`//EXERCISE`) | línea de estado, TRKTabs `e1RM · peso top · volumen`, línea de detalle en la unidad real, periodos, //LOG numerado (`.elog`, la más nueva arriba) | no | §7.40; `[‹ back]` vuelve al origen |
 | `history` | archivo | `.section` //HISTORY | mes TRKCal, rail por mes, sesión que se abre en su sitio (el nombre de cada ejercicio abre `exhist`, v274) | no | |
@@ -2556,12 +2507,17 @@ Línea base del 2026-09-21: todos en 0 salvo `style=""` 89, excepciones 33, lett
   cierra el frasco · encontrar el dormido por nombre (` Omega-3` sí, `omega-3 extra` no) · otra marca cuenta desde su
   frasco (100 − 1 = 99) · los días viejos usan la nutrición del producto de entonces · deshacer una pausa deja todo igual ·
   todo archivado → vuelve la invitación de //SUPPS · reactivar. Imprime `supplements self-check OK`.
-- **`_macroVizSelfCheck()`** (v276, al final de `?selftest=1`; con un día de muestra —1,850 kcal · P 142 · C 200 · F 60
-  contra 2,400 · 180 · 250 · 70— y restaura `state.macroPct` y `db.settings.macroViz`; **36 self-checks** en total): el
-  reparto por kcal suma 100 y da 30 · 42 · 28 (sin comida, `null`) · cada versión de `MACRO_VIZ` se dibuja · `barras`
-  muestra gramos contra la meta (`142 / 180 g`) · `medidor` es un medidor de terminal (`[` bloques `]`) · `tabla` da el %
-  de la meta (79 % y 77 %) · una clave inválida se lee `aros` y el carrusel tiene 5 · la dona entra solo si es la
-  elegida · por defecto el carrusel son 5 (con `tabla`, sin dona). Imprime `macro viz self-check OK`.
+- **`_macroVizSelfCheck()`** (v276; reescrito en v290, en sandbox): el reparto por kcal suma 100 y da 30 · 42 · 28 (sin
+  comida, `null`) · el panel abierto trae los tres aros y ninguna pestaña ni carrusel · el radar viene plegado en una fila
+  de 44 · `[ver %]` mide 10 px con toque de 44 · tocar la fila despliega la gráfica sin moverla y lo recuerda
+  (`db.settings.radarOpen`) · el orden es anillo → balance → aros → `[ver %]` → radar → INTAKE · la tarjeta de compartir
+  sigue trayendo radar y aros. Imprime `macro viz self-check OK`.
+- **`_v290SelfCheck()`** (v290, en sandbox con una base de juguete): todo `[verbo]` de gym mide 10 px, sus corchetes los
+  pone el CSS y ninguna acción los trae escritos · `[ver rutina]` se toca a 44 y abre sin moverse · la lista de músculos
+  baja a 10 y sigue en una fila · recovery / readiness a 10 con el número en negrita · el nombre del día en 20 y un solo
+  primario · gym, macros y las hojas de comida sin glifos fuera de la fuente · los aros de `te queda`: meta − lo comido,
+  lo que estás por agregar en gris, rojo solo el que se pasa, al editar se resta el propio, en vivo y sin mover nada, en
+  add food / porción / aproximada · `[cambiar]` de comida sobrevive a volver de la porción. Imprime `v290 self-check OK`.
 - **`_onbSelfCheck()`** (v277, al final de `?selftest=1`; sobre bases de juguete y restaura `db` y la pantalla; **37
   self-checks** en total): quien ya tiene perfil nunca ve el alta (`migrate()` le pone `onb.done`) · sin nombre no avanza ·
   el peso se revisa en tu unidad (20 lbs no pasa; 150 pasa en lbs y en kg) · 150 lbs = 68.04 kg · el paso dice

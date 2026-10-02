@@ -204,6 +204,17 @@
         I('studio', 'estudio: tour:home, tour:step2, tour:homeempty, tour:workout, tour:macros, tour:progress y tour:settings — el paso 1 de cada sección (y el 2 de gym) sobre la pantalla real con db.tour en blanco solo en memoria; al salir vuelve tu db.tour y el velo se quita; el entreno en una sesión propia', 'hecho'),
       ]),
 
+      P('V290', 'un solo [verbo], macros con solo aros y comidas', 'v290', 'hecho', [
+        I('note', 'lo que pediste (1-oct): "hay que estandarizar esos botones entre corchetes… los tamaños de todo" · "lo único que me sigue gustando son los aros… que se pudiera colapsar esta gráfica heptagonal" · "la hora al renglón del nombre… los macros alineados a la izquierda… el protagonista es el que tiene más gramos" · "arriba de Add Food siempre aparezcan los rings… en tiempo real"', 'hecho'),
+        I('verbo', 'un solo [verbo]: toda acción entre corchetes a 10 px, texto --o60, corchetes --o40 por CSS, toque de 44 (button.b de caja y .vb en línea); ninguno trae ya los corchetes escritos a mano; las opciones ([RIR] RPE) siguen en 12', 'hecho', { audit: 'home: toques chicos 18 → 13' }),
+        I('gym', 'gym: el nombre del día a 20 y lo demás a 10 (recovery / readiness y la lista de músculos); [ver rutina] y [+ log past session] con el estándar', 'hecho'),
+        I('glyphs', 'fuera los glifos que JetBrains Mono no trae (flechas chicas, lápiz, duplicar, recargar): ▾ › ‹ o texto', 'hecho', { audit: 'R-GLY 52 → 45' }),
+        I('rings', 'panel de macros: solo aros P · C · F, [ver %], y la fila radar que despliega la gráfica de 7 ejes (plegada de entrada, recuerda cómo la dejaste); fuera el carrusel de v276', 'hecho', { proposal: 'macroprog' }),
+        I('meal', 'cabecera de comida: › nombre · hora ……… total / P · C · F ……… ··· / [+ food]; sin hora no queda hueco; el macro de más gramos en blanco (antes por kcal)', 'hecho'),
+        I('left', 'aros de "te queda" (kcal · P · C · F) arriba de add food, de la porción y de aproximada: lo que estás por agregar entra en gris y el número pasa a lo que quedaría (en rojo si te pasas)', 'hecho'),
+        I('check', '_v290SelfCheck + _macroVizSelfCheck y _comidaSelfCheck al día', 'hecho'),
+      ]),
+
       P('V279', 'cuentas', 'v279', 'pendiente', [
         I('onbacct', 'alta: los pasos de cuenta (correo y código) entran al principio del alta paso a paso', 'pendiente'),
         I('records', 'capa de registros, sombra en IndexedDB v2 y código muerto', 'pendiente'),

@@ -4,7 +4,7 @@
 // Fuentes: las 75 de tools/ds-diff.html (S2; allá D era la db → aquí T.db; v269 sin m:mood; v272 + home:stimulus y m:deload;
 // v273 + splitedit:schedule, splitedit:weekly, home:planrest y workout:rpe; v274 + progress:exercises, exhist, exhist:log,
 // exhist:top y workout:exname; v275 + stack:all, m:stackedit:product, m:stackmore, m:stackreadd, m:stackbrand y
-// macros:supplow; v276 + macros:viz:rings/bars/meter/split/table/donut, share:macros y m:sharemenu; v277 + onb:1 … onb:10
+// macros:supplow; v276 + share:macros y m:sharemenu (macros:viz:* se fueron en v290 con el carrusel; v290 + macros:radar); v277 + onb:1 … onb:10
 // y onb:error, y onboard pasa a ser el alta a medias retomada en su paso) + las 17 de dsSweep
 // (tools/ds-inventory.js, sus ids son la línea base de tools/ds-baseline.json; v274 + exhist) + los nuevos de §3. Un id
 // aparece una sola vez.
@@ -42,7 +42,7 @@
   // macros en el último día con comida (dsSweep); curDate() de la app lee state.macroDate
   // macroOpen vuelve a false: runIn no lo reinicia y 'macros:open' lo deja abierto
   // v276 · deslizar el carrusel del panel guarda la lámina en settings.macroViz (la app): al salir vuelve a como estaba
-  const macrosOn = (W, T) => { const md = T.state.macroDate; later(W, () => { T.state.macroDate = md; }); keepViz(W, T); T.state.macroOpen = false; W.go('macros'); const d = foodDay(T); if(d){ T.state.macroDate = d; W.render(); } return d; };
+  const macrosOn = (W, T) => { const md = T.state.macroDate; later(W, () => { T.state.macroDate = md; }); T.state.macroOpen = false; W.go('macros'); const d = foodDay(T); if(d){ T.state.macroDate = d; W.render(); } return d; };
   // v272 · lleva #view (el contenedor con scroll de la app) a una sección: su regla arriba, sin scrollIntoView (ese también
   // movería la página del estudio). Solo posición de scroll; el estudio la reinicia antes de cada escenario (v285: render() ya no la reinicia sola)
   // (v273: `s` también puede ser el elemento de la sección)
@@ -224,24 +224,11 @@
   function quietWarn(W, T){ const s = T.db && T.db.settings; if(!s || typeof W.suppWarnMaybe !== 'function') return; const t = W.todayISO();
     if(s.suppWarnDay !== t) tempKey(W, s, 'suppWarnDay', t); }
 
-  // ---- v276 · macros: las versiones del panel en carrusel y compartir el panel ----
-  // La versión con la que abre el carrusel (y la que sale al compartir el panel) es db.settings.macroViz: aquí se pone SOLO
-  // mientras se mira (tempKey) y al salir vuelve tal cual, o se quita si no existía. keepViz (en macrosOn) hace lo mismo con
-  // lo que deje un deslizamiento en el frame.
-  function keepViz(W, T){ const s = T.db && T.db.settings; if(!s) return; const h = has(s, 'macroViz'), v = s.macroViz;
-    later(W, () => { if(h) s.macroViz = v; else delete s.macroViz; }); }
-  // el panel abierto con el mismo toque que la app (togglemacros) en el último día con comida; render() ya llama a mvzSync
-  // (la lámina elegida a la vista sin animación y el carril a su altura) y se llama otra vez por si el frame aún no tenía
-  // ancho. Se espera a que corra el listener del carrusel (120 ms tras el scroll): con la lámina en su lugar no cambia nada
-  // y no queda un temporizador vivo cuando el siguiente escenario devuelve el valor
-  async function vizOn(W, T, k){ const db = T.db; if(!db.settings) tempKey(W, db, 'settings', {});
-    tempKey(W, db.settings, 'macroViz', k);
-    macrosOn(W, T); if(!click(W, '#view [data-act="togglemacros"]')){ T.state.macroOpen = true; W.render(); }
-    try{ W.mvzSync(); }catch(_){}
-    await wait(200); }
-  // las 6 versiones de MACRO_VIZ de la app ([clave, pestaña]); la dona es solo de laboratorio (BRAND §4: el anillo de kcal
-  // es la única gráfica circular) y entra al carrusel solo si es la elegida, como aquí
-  const VIZ = [['rings', 'aros (radar + anillos)'], ['bars', 'barras'], ['meter', 'medidor'], ['split', 'reparto'], ['table', 'tabla'], ['donut', 'dona (solo laboratorio)']];
+  // ---- v290 · macros: el panel abierto son los aros; el radar va plegado (db.settings.radarOpen) ----
+  // radarOn lo despliega SOLO mientras se mira (tempKey) y al salir vuelve tal cual, o se quita si no existía
+  function radarOn(W, T){ const db = T.db; if(!db.settings) tempKey(W, db, 'settings', {});
+    tempKey(W, db.settings, 'radarOpen', true);
+    macrosOn(W, T); if(!click(W, '#view [data-act="togglemacros"]')){ T.state.macroOpen = true; W.render(); } }
 
   // ---- v277 · alta paso a paso (ONB_STEPS de la app: 10 pantallas) ----
   // Tus datos tienen usuario y db.onb.done (migrate() lo marca a cualquier base con usuario: tú nunca ves el alta). Para
@@ -402,12 +389,8 @@
         st.macroPct = false; later(W, () => { st.macroPct = p0; });
         macrosOn(W, T); if(!click(W, '#view [data-act="togglemacros"]')){ st.macroOpen = true; W.render(); }
         click(W, '#view [data-act="toggleMacroUnit"]'); } },
-    // v276 · el panel abierto es un carrusel (una lámina por versión, se desliza izquierda-derecha, pestañas de texto de 44
-    // abajo y luego [ver gramos|ver %]): cada versión a la vista con settings.macroViz puesto solo mientras se mira. aros = el
-    // radar y los 3 anillos de antes; barras = una fila por macro '142 / 180 g' (o % con [ver %]); medidor = el de terminal de
-    // 12 celdas '153/150 g'; reparto = % de las kcal de hoy (P·4 C·4 F·9) contra una barra fina de la meta, en escala de
-    // opacidad; tabla = hoy / meta / % (más de 105 % en --bad); dona = arcos y leyenda (solo laboratorio)
-    ...VIZ.map(([k, l]) => ({ id:'macros:viz:' + k, g:'pantalla', label:'macros · versión ' + l, async run(W, T){ await vizOn(W, T, k); } })),
+    // v290 · el panel abierto: aros P · C · F, [ver %] y la fila `radar` desplegada (plegada es `macros:open`)
+    { id:'macros:radar', g:'pantalla', label:'macros · panel con el radar desplegado', run(W, T){ radarOn(W, T); } },
     // v269 · cuenta sin suplementos: //SUPPS arriba de las comidas invita a registrarlos ([+ supp] · ··· → ignorar por ahora)
     { id:'m:supps-empty', g:'pantalla', label:'macros · sin suplementos (invitación)', run(W, T){ noSupps(W, T); macrosOn(W, T); } },
     // v275 · //SUPPS con el que está por acabarse: su celda lleva '⚠ ~5 d' (o '⚠ se acabó') en .lc .m, con el ⚠ en --warn
@@ -589,7 +572,7 @@
     { id:'m:shareday', g:'compartir', label:'compartir · el día (botón → el día)', run(W){ W.go('macros'); click(W, '[data-act="share"],[data-act="sharemacros"]'); click(W, '#asklayer .nvm[data-pop="0"]'); } },
     { id:'share:food', g:'compartir', label:'compartir · el día', run(W, T){ T.state.shareType = 'food'; const d = foodDay(T); if(d) T.state.macroDate = d; W.go('share'); } },
     // v276 · el panel de macros para compartir (renderShareMacros): el anillo de kcal grande (verde o rojo como en la app) y
-    // la versión elegida (settings.macroViz), vertical a su altura, con gym//TRK abajo; [copiar texto] usa macroShareText.
+    // el radar y los aros, vertical a su altura, con gym//TRK abajo; [copiar texto] usa macroShareText.
     // shareType y el día (el último con comida) vuelven a como estaban al salir
     { id:'share:macros', g:'compartir', label:'compartir · el panel de macros', run(W, T){ const st = T.state, d = foodDay(T);
         tempKey(W, st, 'shareType', 'macros'); if(d) tempKey(W, st, 'macroDate', d); W.go('share'); } },
