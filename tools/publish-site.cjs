@@ -12,8 +12,8 @@ const ROOT = path.resolve(__dirname, '..');
 const MIRROR = 'https://github.com/dxxniel-bot/gymtrk-app.git';
 const SITE_FILES = ['index.html', 'manifest.json', 'sw.js', 'privacy.html'];   // lo único que el sitio necesita (los que no existan se saltan)
 // v287 · el Atajo firmado (tools/shortcut/sign.cjs). Se llama igual que el atajo porque el iPhone le pone al atajo el
-// nombre del archivo, y la app lo corre por nombre: https://gymtrk.app/TRK%20Biometrics.shortcut
-const SHORTCUT_FILE = 'TRK Biometrics.shortcut'; SITE_FILES.push(SHORTCUT_FILE);
+// nombre del archivo, y la app lo corre por nombre: https://gymtrk.app/TRK%20Sync.shortcut
+const SHORTCUT_FILE = 'TRK Sync.shortcut'; SITE_FILES.push(SHORTCUT_FILE);
 const WORKFLOW = `# Publica https://gymtrk.app desde este repo (solo contiene la app ya armada; lo sube tools/publish-site.cjs del repo fuente).
 name: pages · gymtrk.app
 on:
@@ -51,6 +51,8 @@ const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'gymtrk-site-'));
 const out = [];
 for (const f of SITE_FILES) { let buf; try { buf = git(['show', 'HEAD:' + f], ROOT, { stdio: ['ignore', 'pipe', 'ignore'] }); } catch (_) { continue; } fs.writeFileSync(path.join(tmp, f), buf); out.push(f + ' · ' + buf.length + ' bytes'); }
 if (!out.some(l => l.startsWith('index.html'))) { console.error('HEAD no tiene index.html'); process.exit(1); }
+// v293 · el atajo es obligatorio: sin él, el sitio quedaría sin archivo (el espejo borra lo que no se manda) y ▶ descargar atajo daría un 404
+if (!out.some(l => l.startsWith(SHORTCUT_FILE + ' '))) { console.error('HEAD no tiene ' + SHORTCUT_FILE + ': corre tools/shortcut/build.cjs y sign.cjs, y haz commit.'); process.exit(1); }
 // un atajo sin firmar no se importa en ningún iPhone: si el archivo está, tiene que ser el firmado (cabecera AEA1)
 if (fs.existsSync(path.join(tmp, SHORTCUT_FILE)) && fs.readFileSync(path.join(tmp, SHORTCUT_FILE)).toString('latin1', 0, 4) !== 'AEA1') { console.error(SHORTCUT_FILE + ' no está firmado (no empieza con AEA1): no se publica. Corre tools/shortcut/sign.cjs.'); process.exit(1); }
 const html = fs.readFileSync(path.join(tmp, 'index.html'), 'utf8');
@@ -91,5 +93,10 @@ const waitLive = async secs => { const end = Date.now() + secs * 1000; let got =
   }
   try { fs.rmSync(tmp, { recursive: true, force: true }); } catch (_) {}
   if (!ok) { console.error('NO PUBLICADO: gymtrk.app no sirve ' + ver + ' tras 3 intentos. Revisa Actions en github.com/dxxniel-bot/gymtrk-app'); process.exit(1); }
-  console.log('publicado y comprobado: https://gymtrk.app sirve ' + ver);
+  // v293 · y que sirva el atajo firmado (200, empieza con AEA1)
+  const SC = 'https://gymtrk.app/' + encodeURIComponent(SHORTCUT_FILE);
+  let sc = '';
+  for (let k = 0; k < 5 && sc !== 'AEA1'; k++) { if (k) await sleep(8000); try { const r = await fetch(SC + '?c=' + Date.now(), { cache: 'no-store' }); sc = r.ok ? Buffer.from(await r.arrayBuffer()).toString('latin1', 0, 4) : 'HTTP ' + r.status; } catch (e) { sc = String(e && e.message); } }
+  if (sc !== 'AEA1') { console.error('NO PUBLICADO del todo: ' + SC + ' → ' + sc); process.exit(1); }
+  console.log('publicado y comprobado: https://gymtrk.app sirve ' + ver + ' y el atajo ' + SHORTCUT_FILE);
 })();

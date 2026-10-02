@@ -1,4 +1,4 @@
-# TRK Biometrics · de dónde salió cada identificador del atajo
+# TRK Sync (antes TRK Biometrics) · de dónde salió cada identificador del atajo
 
 Regla: nada del atajo se escribió "de memoria". Cada identificador de `build.cjs` se leyó en un atajo público real
 (bajado sin firmar con `fetch-ref.cjs` del API de registros de Apple, `https://www.icloud.com/shortcuts/api/records/<id>`)
@@ -106,9 +106,29 @@ Fecha: `WFDateFormatVariableAggrandizement` con `WFDateFormatStyle` "ISO 8601" y
 
 El iPhone le pone al atajo importado **el nombre del archivo** (un PR de `hankberger/iPhoneAutomations` lo dice igual:
 "the file is named after the shortcut, so it imports under that name"). La app lo corre por nombre
-(`shortcuts://run-shortcut?name=TRK%20Biometrics`), así que el archivo publicado se llama `TRK Biometrics.shortcut`
-(en la URL, `TRK%20Biometrics.shortcut`) y no `trk-biometrics.shortcut`. `shortcuts://import-shortcut?url=` solo acepta
+(`shortcuts://run-shortcut?name=TRK%20Sync`), así que el archivo publicado se llama `TRK Sync.shortcut`
+(en la URL, `TRK%20Sync.shortcut`) y no `trk-sync.shortcut`. Hasta v292 se llamó `TRK Biometrics`; se cambió porque Safari
+numera las descargas repetidas (`… 2.shortcut`) y el atajo entraba con ese nombre. `shortcuts://import-shortcut?url=` solo acepta
 enlaces de icloud.com (mismo PR): por eso se instala bajando el archivo.
+
+## Por qué bajaba como .html (v293)
+
+El dueño (1 y 2-oct): "sí me abre como que el archivo, el HTML" · "no sale para atajos y sigue en .html". Safari guardaba
+`TRK Biometrics.shortcut.html` y lo llamaba "HTML text", aunque GitHub Pages sirve el archivo como
+`application/octet-stream`. La causa es WebKit + nuestro `sw.js`:
+
+- `Source/WebCore/workers/service/context/ServiceWorkerFetch.cpp` (leído el 2-oct-2026 en `main`): *"In case of main
+  resource and mime type is the default one, we set it to text/html to pass more service worker WPT tests"* →
+  `if (mode == FetchOptions::Mode::Navigate) { if (resourceResponse.mimeType() == defaultMIMEType() && !resourceResponse.isNosniff()) resourceResponse.setMimeType("text/html"_s); }`.
+  El tipo por defecto es `application/octet-stream`.
+- Tocar el enlace del atajo es una navegación; `sw.js` contestaba **todo** GET del mismo origen con `respondWith`. Resultado: la
+  descarga llegaba a Safari como `text/html` y Safari le añadía `.html` al nombre (y dentro de la app del ícono se abría en un visor).
+- **Arreglo:** `sw.js` no llama `respondWith` para una ruta que termina en `.shortcut`: la baja Safari directo de la red, con su
+  tipo. `?html=1` conserva a propósito el camino viejo (`[bajar como antes]`).
+- La página `?atajo=1` espera a que la controle un `sw.js` que sepa contestar su versión (mensaje `ver`); el de v292 o anterior
+  no contesta, y ese todavía convertiría la descarga en `.html`.
+- Sin probar en un iPhone: que la descarga directa (`application/octet-stream`, nombre `TRK Sync.shortcut`) abra "Agregar atajo"
+  al tocarla. El mismo archivo renombrado a mano sí lo abrió el 2-oct.
 
 ## Lo que no se pudo probar sin un iPhone
 

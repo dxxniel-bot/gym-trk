@@ -1,6 +1,6 @@
 # gym//TRK — DESIGN SYSTEM (referencia del estado actual)
 
-> Referencia del estado actual (v292). **Lee BRAND.md primero**: manda sobre este archivo. Sin historia: DESIGN_CHANGELOG.md.
+> Referencia del estado actual (v293). **Lee BRAND.md primero**: manda sobre este archivo. Sin historia: DESIGN_CHANGELOG.md.
 
 ---
 
@@ -1578,10 +1578,13 @@ Day sí es saltar el día del split". Antes los dos avanzaban la rotación.
 - **Hojas de `sync biometrics` (v287; cada una con un primario o ninguno, sin texto instructivo de más):**
   (v288: en la app del ícono el enlace es `x-safari-https://…/?atajo=1`, que abre Safari, y `[copiar enlace]` `[ya lo tengo]`
   van en un segundo renglón; la pantalla `atajo` de Safari = marca + `▶ descargar atajo` (`a.start`) + dos renglones)
-  (v292: los renglones son los pasos que sí funcionan, `BIO_STEPS` = `1 · descargar` · `2 · en Archivos, cámbiale el nombre a TRK
-  Biometrics.shortcut (sin .html)` · `3 · tócalo · agregar atajo`, y `BIO_PERM` = Salud pregunta por cada dato, una sola vez; van
-  en la pantalla `atajo` y en la hoja de instalar. `[compartir archivo]` (`atajoshare` → `bioShare()`) solo sale si
-  `bioPrefetch()` bajó el archivo firmado y el navegador deja compartirlo; el primario sigue siendo descargar)
+  (v293: el atajo se llama `TRK Sync` y baja como atajo, sin renombrar: `sw.js` ya no contesta los `.shortcut`. `BIO_STEPS` =
+  `toca ↓ en la barra de Safari` · `toca TRK Sync · agregar atajo` · `en Atajos debe llamarse TRK Sync`; `BIO_PERM` = Salud pregunta
+  por cada dato, una sola vez; van en la pantalla `atajo` y en la hoja de instalar (que dice `el atajo ahora se llama TRK Sync:
+  instálalo de nuevo` a quien tenía el de antes). Mientras la página siga bajo un `sw.js` viejo (`bioGate()` → `swVer()`), en lugar
+  del primario va `▖ preparando…` (`.atj-wait`) hasta 20 s; si no llega, `▶ recargar` (`atajoreload`) y nunca el botón directo (bajaría
+  .html); se sigue preguntando. `[bajar como antes]` (`atajohtml` → `bioHtml()`) baja el mismo archivo por el camino viejo `?html=1`,
+  con los pasos para ver la extensión en Archivos: `··· › opciones de visualización › mostrar todas las extensiones`)
   instalar (`openBioInstall`): una línea + `▶ instalar atajo` (enlace `<a class="ok">` al archivo firmado, o a
   `SHORTCUT_URL` cuando exista) + `[ya lo tengo]` · traer (`openBioFetch`): `▶ traer datos` + `[pegar a mano]`, una vez por
   corrida y nunca encima de otra capa ni en plena sesión · qué llegó (`openBioResult`): `pasos ✓ · peso ✓ · grasa — …` +
@@ -2518,10 +2521,17 @@ Línea base del 2026-09-21: todos en 0 salvo `style=""` 89, excepciones 33, lett
   de 44 · `[ver %]` mide 10 px con toque de 44 · tocar la fila despliega la gráfica sin moverla y lo recuerda
   (`db.settings.radarOpen`) · el orden es anillo → balance → aros → `[ver %]` → radar → INTAKE · la tarjeta de compartir
   sigue trayendo radar y aros. Imprime `macro viz self-check OK`.
+- **`_v293SelfCheck()`** (v293, en sandbox): el atajo y su archivo se llaman `TRK Sync` · la página lleva la versión (`?atajo=1&v=N`) ·
+  en la prueba la espera no se anota · la pantalla `atajo` con el `sw.js` al día: un primario que baja el archivo, los renglones (sin
+  renombrar, con el nombre que debe tener), el de permisos y `[bajar como antes]` de 44, que baja `?html=1` con su nombre y dice cómo ver
+  la extensión · con un `sw.js` viejo al mando: sin botón, `preparando…`; si no llega, `▶ recargar` como único primario y el camino de
+  antes a la mano; cuando llega, vuelve el botón · la hoja de instalar (y la del ícono a quien tenía el atajo de antes) · un "ya lo
+  tengo" del atajo viejo no cuenta (`bioHas()`). Restaura el espejo de la sesión viva. Imprime `v293 self-check OK`.
+  Fuera del navegador: `node tools/sw-test.cjs` corre el `sw.js` de verdad en un `self` de mentira (un `.shortcut` no se contesta, `?html=1`
+  sí, lo demás igual, `ver` contesta la versión, al activarse recarga solo una pestaña en `?atajo=1`, aunque falle la caché).
 - **`_v292SelfCheck()`** (v292, en sandbox): el ejemplo del atajo trae las 8 clases con HRV al final · quitando cualquiera llegan las otras
-  7 y la lista la marca con `—` (no es un error) · un texto cortado tras el primer dato se lee · solo `trk2` = vacío · la pantalla `atajo`
-  dice el nombre exacto, `(sin .html)` y el renglón de permisos · `[compartir archivo]` solo con archivo listo, de 44, y manda el archivo
-  con su nombre · la hoja de instalar en Safari y en el ícono. Imprime `v292 self-check OK`.
+  7 y la lista la marca con `—` (no es un error) · un texto cortado tras el primer dato se lee · solo `trk2` = vacío. Imprime
+  `v292 self-check OK`.
 - **`_v291SelfCheck()`** (v291, en sandbox): los niveles de racha (7 · 14 · 30 · 60 · 100 · 200 · 365) · el bloque `//STREAK` de gym (nivel,
   mejor, número a 28, barra `n/meta · faltan k`, arriba de ROTATION) y que la barra de estado ya no repite el número en gym · tocarlo
   abre el calendario · sin nivel, a un día, invertido desde el nivel 4, nivel máximo · el aviso de nivel: la primera vez solo anota, avisa

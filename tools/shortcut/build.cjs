@@ -1,6 +1,6 @@
-// gym//TRK · tools/shortcut/build.cjs · arma el Atajo "TRK Biometrics" como archivo (node puro, sin dependencias)
+// gym//TRK · tools/shortcut/build.cjs · arma el Atajo "TRK Sync" como archivo (node puro, sin dependencias)
 //
-//   node tools/shortcut/build.cjs            escribe tools/shortcut/TRK Biometrics.shortcut (plist XML SIN firmar), lo valida
+//   node tools/shortcut/build.cjs            escribe tools/shortcut/TRK Sync.shortcut (plist XML SIN firmar), lo valida
 //                                            y lo corre contra una Salud de mentira (imprime lo que copiaría el iPhone)
 //   node tools/shortcut/build.cjs --check    no escribe: comprueba que el archivo en disco es el que saldría hoy y que
 //                                            HP_EXAMPLE de index.html es, letra por letra, lo que el atajo copia
@@ -22,7 +22,10 @@
 const fs = require('fs'), path = require('path'), crypto = require('crypto');
 const { toXML, parseXML } = require('./plist.cjs');
 
-const NAME = 'TRK Biometrics';            // nombre visible del atajo: la app lo corre con shortcuts://run-shortcut?name=TRK%20Biometrics
+// v293 · se llamaba "TRK Biometrics". El iPhone le pone al atajo el nombre del ARCHIVO, y Safari numera las descargas repetidas
+// ("… 2.shortcut"): con archivos viejos del mismo nombre en Descargas, el atajo nuevo entraba como "TRK Biometrics 2" y la app, que lo
+// corre por nombre, no lo encontraba (o se volvía a agregar el viejo). Nombre nuevo = ningún archivo anterior estorba.
+const NAME = 'TRK Sync';                  // nombre visible del atajo: la app lo corre con shortcuts://run-shortcut?name=TRK%20Sync
 const OUT = path.join(__dirname, NAME + '.shortcut');
 const VAR = 'datos';                      // variable donde se juntan las líneas
 const DAYS = 7;
