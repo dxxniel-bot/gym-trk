@@ -1,6 +1,6 @@
 # gym//TRK — DESIGN SYSTEM (referencia del estado actual)
 
-> Referencia del estado actual (v291). **Lee BRAND.md primero**: manda sobre este archivo. Sin historia: DESIGN_CHANGELOG.md.
+> Referencia del estado actual (v292). **Lee BRAND.md primero**: manda sobre este archivo. Sin historia: DESIGN_CHANGELOG.md.
 
 ---
 
@@ -1578,6 +1578,10 @@ Day sí es saltar el día del split". Antes los dos avanzaban la rotación.
 - **Hojas de `sync biometrics` (v287; cada una con un primario o ninguno, sin texto instructivo de más):**
   (v288: en la app del ícono el enlace es `x-safari-https://…/?atajo=1`, que abre Safari, y `[copiar enlace]` `[ya lo tengo]`
   van en un segundo renglón; la pantalla `atajo` de Safari = marca + `▶ descargar atajo` (`a.start`) + dos renglones)
+  (v292: los renglones son los pasos que sí funcionan, `BIO_STEPS` = `1 · descargar` · `2 · en Archivos, cámbiale el nombre a TRK
+  Biometrics.shortcut (sin .html)` · `3 · tócalo · agregar atajo`, y `BIO_PERM` = Salud pregunta por cada dato, una sola vez; van
+  en la pantalla `atajo` y en la hoja de instalar. `[compartir archivo]` (`atajoshare` → `bioShare()`) solo sale si
+  `bioPrefetch()` bajó el archivo firmado y el navegador deja compartirlo; el primario sigue siendo descargar)
   instalar (`openBioInstall`): una línea + `▶ instalar atajo` (enlace `<a class="ok">` al archivo firmado, o a
   `SHORTCUT_URL` cuando exista) + `[ya lo tengo]` · traer (`openBioFetch`): `▶ traer datos` + `[pegar a mano]`, una vez por
   corrida y nunca encima de otra capa ni en plena sesión · qué llegó (`openBioResult`): `pasos ✓ · peso ✓ · grasa — …` +
@@ -2514,6 +2518,10 @@ Línea base del 2026-09-21: todos en 0 salvo `style=""` 89, excepciones 33, lett
   de 44 · `[ver %]` mide 10 px con toque de 44 · tocar la fila despliega la gráfica sin moverla y lo recuerda
   (`db.settings.radarOpen`) · el orden es anillo → balance → aros → `[ver %]` → radar → INTAKE · la tarjeta de compartir
   sigue trayendo radar y aros. Imprime `macro viz self-check OK`.
+- **`_v292SelfCheck()`** (v292, en sandbox): el ejemplo del atajo trae las 8 clases con HRV al final · quitando cualquiera llegan las otras
+  7 y la lista la marca con `—` (no es un error) · un texto cortado tras el primer dato se lee · solo `trk2` = vacío · la pantalla `atajo`
+  dice el nombre exacto, `(sin .html)` y el renglón de permisos · `[compartir archivo]` solo con archivo listo, de 44, y manda el archivo
+  con su nombre · la hoja de instalar en Safari y en el ícono. Imprime `v292 self-check OK`.
 - **`_v291SelfCheck()`** (v291, en sandbox): los niveles de racha (7 · 14 · 30 · 60 · 100 · 200 · 365) · el bloque `//STREAK` de gym (nivel,
   mejor, número a 28, barra `n/meta · faltan k`, arriba de ROTATION) y que la barra de estado ya no repite el número en gym · tocarlo
   abre el calendario · sin nivel, a un día, invertido desde el nivel 4, nivel máximo · el aviso de nivel: la primera vez solo anota, avisa

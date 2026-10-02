@@ -3,7 +3,8 @@
 Regla: nada del atajo se escribió "de memoria". Cada identificador de `build.cjs` se leyó en un atajo público real
 (bajado sin firmar con `fetch-ref.cjs` del API de registros de Apple, `https://www.icloud.com/shortcuts/api/records/<id>`)
 o en el código de un compilador de atajos que ya firma con HubSign. Lo que no se pudo ver en una acción real está marcado
-**sin confirmar** y en `build.cjs` lleva `soft: true` (corre al final, después de copiar al portapapeles).
+**sin confirmar** y en `build.cjs` lleva `soft: true` (va después de los confirmados; desde v292 se copia al portapapeles
+tras **cada** tipo, así un tipo que detenga el atajo solo se lleva a los que van después de él).
 
 Los atajos de referencia son de sus autores: no están en este repo. Se anota el id, el nombre y qué se leyó.
 
@@ -32,11 +33,26 @@ compilador que firma con HubSign; y su incidencia #214 (un atajo firmado por Hub
 | Buscar muestras de salud | `is.workflow.actions.filter.health.quantity` | `WFContentItemFilter` (`WFContentPredicateTableTemplate`, `WFActionParameterFilterPrefix` 1, `WFContentPredicateBoundedDate` false), `WFContentItemSortProperty` "Start Date", `WFContentItemSortOrder` "Oldest First", `WFContentItemLimitEnabled` false | EX, IC1, IC2, HS, SW, LW, RW |
 | …agrupar por día | `WFHKSampleFilteringGroupBy` "Day", `WFHKSampleFilteringFillMissing` false | | EX, LW (SW agrupa por "Minute" sin unidad) |
 | Repetir con cada | `is.workflow.actions.repeat.each` | inicio: `WFInput` (salida "Health Samples"), `GroupingIdentifier`, `WFControlFlowMode` 0 · fin: `GroupingIdentifier`, `WFControlFlowMode` 2, `UUID` (su salida es "Repeat Results") | EX, HS |
+| Si (v292) | `is.workflow.actions.conditional` | inicio: `WFInput` = `{Type:"Variable", Variable:<adjunto con la salida>}`, `WFControlFlowMode` 0, `GroupingIdentifier`, `WFCondition` · fin: `UUID`, `GroupingIdentifier`, `WFControlFlowMode` 2 · sin "Si no" (el modo 1 es opcional: IC2 #29–#31, SW #287–#289 y LW #177–#181 no lo llevan) | IC2 #29 (condición **100** sobre la salida de una acción), SW #287 y LW #177 (condición 101 sobre la salida **"Health Samples"** de un Buscar) |
 | Texto | `is.workflow.actions.gettext` | `WFTextActionText` (`WFTextTokenString` con `attachmentsByRange`; sin variables, la cadena sola) | EX, SW, LW |
 | Agregar a variable | `is.workflow.actions.appendvariable` | `WFInput`, `WFVariableName` | IC1, SW, LW |
 | Combinar texto | `is.workflow.actions.text.combine` | `WFTextSeparator` "New Lines", `text` | LW (EX e IC1 lo usan con "Custom"; IC1 parte texto con "New Lines") |
 | Copiar al portapapeles | `is.workflow.actions.setclipboard` | `WFInput` | Cherri `actions/sharing.cherri` (`setClipboard(variable value: 'WFInput')`). **No aparece en ninguno de los 10 atajos leídos.** |
 | Comentario | `is.workflow.actions.comment` | `WFCommentActionText` | SW, LW, HL, IC2, CSV |
+
+## El "Si trajo algo" (v292)
+
+- `WFCondition` **100** = "tiene algún valor" · **101** = "no tiene ningún valor". Se lee en lo que cada atajo hace adentro:
+  IC2 #28–#31 saca la clave `error` de una respuesta y, con 100, la enseña en una alerta "Error"; LW #176–#181 busca el peso y,
+  con 101, avisa "It appears no weight measurement have been entered into Apple Health yet" y sale.
+- **Una búsqueda de Salud vacía no detiene el atajo**: ese aviso de LW solo puede salir si el atajo sigue corriendo después de
+  un Buscar sin resultados. SW #286–#289 hace lo mismo con el sueño (si no hay muestras, busca otra vez con otro filtro).
+- `build.cjs` usa el 100 sobre "Health Samples": la combinación de las dos cosas vistas (100 sobre una salida · un Si sobre
+  "Health Samples"). Dentro van el Repetir y el Agregar a variable, así ninguno recibe una lista vacía.
+- **Lo que NO se pudo ver:** qué acción exacta se le detuvo al dueño con HRV sin datos (no hubo captura). Por eso HRV va al
+  final y se copia tras cada tipo: si la búsqueda misma de HRV se detuviera, todo lo demás ya está copiado.
+- **Permisos:** Atajos pide el permiso de Salud por tipo, la primera vez que corre cada Buscar. No hay parámetro en el plist
+  para pedirlos juntos, y en los atajos leídos cada Buscar lleva exactamente un tipo (36 de 36).
 
 ## El filtro
 
@@ -79,7 +95,7 @@ Fecha: `WFDateFormatVariableAggrandizement` con `WFDateFormatStyle` "ISO 8601" y
 - **Con el `fetch` de node respondió `HTTP 403` y la página "Just a moment…" de Cloudflare**; con `curl` (sin cambiarle
   nada) respondió el archivo. Por eso `sign.cjs` usa `curl`. Si un día `curl` también recibe el reto, no se rodea.
 - Qué devolvió, abierto con `aea.cjs`: un Apple Archive con `Shortcut.wflow`; la suma SHA-256 del contenido coincide;
-  cadena de firma `Apple System Integration CA 4 ← Apple Root CA - G3`; **las 49 acciones son idénticas a las enviadas**.
+  cadena de firma `Apple System Integration CA 4 ← Apple Root CA - G3`; **las 49 acciones (v287; 77 desde v292) son idénticas a las enviadas**.
   Lo único que cambió el firmante: `WFWorkflowClientVersion` "3218.0.9" → "1505.3" (su Mac es más vieja; lo mismo que
   reporta la incidencia #214 de Cherri).
 - El certificado de quien firma vence el 26-oct-2027. No se sabe si un archivo firmado deja de importarse después.
@@ -98,6 +114,7 @@ enlaces de icloud.com (mismo PR): por eso se instala bajando el archivo.
 
 1. Que iOS 26/27 importe el archivo firmado por HubSign (hay un reporte ajeno de que sí, en iOS 27.0.1).
 2. Que cada tipo devuelva datos con el iPhone en español, sobre todo `Resting Calories` y `Body Fat Percentage`.
+   Y que un tipo SIN datos (HRV en el iPhone del dueño) se salte sin detener nada (v292).
 3. Que `shortcuts://run-shortcut` abra Atajos desde la app instalada en la pantalla de inicio.
 4. Cómo escribe el iPhone cada valor (separador decimal, unidad, nombre de la fase del sueño). `parseHealthPaste` ya lee
    las variantes en español de México, de España y en inglés.

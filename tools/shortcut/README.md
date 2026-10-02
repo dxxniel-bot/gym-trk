@@ -1,7 +1,8 @@
 # TRK Biometrics · el Atajo de iOS que se descarga
 
 El iPhone no deja que una web lea Salud. Este atajo lee 7 días de Salud, escribe el texto `trk2` que la app ya entiende
-(`parseHealthPaste` en `index.html`) y lo copia al portapapeles. En la app, `sync biometrics` lo corre y `▶ traer datos`
+(`parseHealthPaste` en `index.html`) y lo copia al portapapeles. Un dato sin registros se salta (cada tipo va dentro de
+un "Si trajo algo") y se copia tras cada tipo: lo leído nunca se pierde por lo que venga después (v292). En la app, `sync biometrics` lo corre y `▶ traer datos`
 lo pega. El atajo no abre ninguna página ni manda nada a internet.
 
 ## Archivos
@@ -25,7 +26,7 @@ node tools/shortcut/build.cjs            # reescribe el plist y enseña lo que c
 node tools/shortcut/sign.cjs             # lo firma (sube SOLO el plist a HubSign) y verifica lo que vuelve
 node tools/shortcut/build.cjs --check    # el plist en disco es el de hoy y HP_EXAMPLE de index.html coincide
 node tools/shortcut/sign.cjs --verify    # el firmado de la raíz lleva exactamente esas acciones
-node tools/shortcut/test.cjs             # todo lo anterior + 14 roturas a propósito que el validador y el corredor deben ver
+node tools/shortcut/test.cjs             # todo lo anterior + las roturas a propósito que el validador y el corredor deben ver
 ```
 
 Si cambia lo que el atajo copia, `build.cjs` imprime el `HP_EXAMPLE` nuevo: se pega en `index.html` (la app prueba con ese
@@ -43,9 +44,11 @@ enlace de iCloud. Ese enlace va en `SHORTCUT_URL` (`index.html`) y pasa a ser el
 
 ## Lo que solo se puede comprobar en un iPhone
 
-1. Abrir `https://gymtrk.app/TRK%20Biometrics.shortcut` en Safari → Descargar → tocar el archivo → sale **Agregar atajo**
-   con el nombre `TRK Biometrics`. (Y lo mismo tocando `▶ instalar atajo` dentro de la app instalada.)
-2. En la app, `sync biometrics` → `[ya lo tengo]`: se abre Atajos y corre; la primera vez pide permiso por cada dato de Salud.
+1. Abrir `https://gymtrk.app/?atajo=1` en Safari → `▶ descargar atajo`. **Safari lo guarda como `TRK Biometrics.shortcut.html`**
+   (visto en el iPhone del dueño, 2-oct): en Archivos se le cambia el nombre a `TRK Biometrics.shortcut` → tocarlo → sale
+   **Agregar atajo**. El atajo toma el nombre del archivo: si queda `… 2.shortcut`, la app no lo encuentra.
+2. En la app, `sync biometrics` → `[ya lo tengo]`: se abre Atajos y corre **hasta el final** aunque falte un dato; la
+   primera vez pide permiso por cada dato de Salud (una vez por tipo; no se pueden juntar).
 3. Volver a la app: aparece `▶ traer datos` → **Pegar** → `✓ Salud · N días` y la lista de qué llegó.
 4. En esa lista, qué quedó en `—`. `grasa` y `reposo` son los dos nombres sin confirmar (ver `FUENTES.md`).
 
@@ -53,7 +56,7 @@ enlace de iCloud. Ese enlace va en `SHORTCUT_URL` (`index.html`) y pasa a ser el
 
 Si el archivo firmado dejara de importarse, el mismo atajo se arma una vez en el iPhone. Por cada dato:
 **Buscar muestras de salud** (Tipo; filtro *Fecha de inicio · está en los últimos · 7 días*; pasos y energía con
-*Agrupar por: Día*) → **Repetir con cada** → dentro, un **Texto** con la palabra, un espacio, *Fecha de inicio* del
+*Agrupar por: Día*) → **Si** *Muestras de salud* *tiene algún valor* (lo que sigue va adentro, hasta *Agregar a variable*) → **Repetir con cada** → dentro, un **Texto** con la palabra, un espacio, *Fecha de inicio* del
 *Elemento de repetición* en formato **ISO 8601** con *Incluir hora*, un espacio y *Valor* (peso y energía añaden un espacio
 y *Unidad*; sueño lleva *Fecha de inicio*, *Fecha de finalización* y *Valor*) → **Agregar a variable** `datos` con los
 *Resultados de la repetición*. Palabras: `steps` Pasos · `act` Energía activa · `bas` Energía en reposo · `weight` Peso ·

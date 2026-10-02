@@ -6,13 +6,18 @@
 //                                            HP_EXAMPLE de index.html es, letra por letra, lo que el atajo copia
 //   node tools/shortcut/build.cjs --sample   solo imprime el texto de ejemplo (para meterlo por parseHealthPaste)
 //
-// Qué hace el atajo en el iPhone: lee de Salud los últimos 7 días (pasos, energía activa, peso, FC en reposo, HRV, sueño
-// con fases, % de grasa y energía en reposo), escribe una línea por muestra en el formato `trk2` que la app ya lee
+// Qué hace el atajo en el iPhone: lee de Salud los últimos 7 días (pasos, energía activa, peso, sueño con fases, FC en
+// reposo, % de grasa, energía en reposo y HRV), escribe una línea por muestra en el formato `trk2` que la app ya lee
 // (parseHealthPaste en index.html) y lo copia al portapapeles. No abre ninguna URL ni manda nada a internet.
 //
+// v292 · el dueño: "heart rate variability no tengo data en apple health… que parámetros que estén vacíos haga skip y no
+// se frene el shortcut". Atajos no tiene "intentar y seguir si falla", así que el atajo se arma para no depender de eso:
+//   1) cada tipo va dentro de un "Si [muestras] tiene algún valor": un tipo vacío no repite ni agrega nada;
+//   2) se copia al portapapeles DESPUÉS DE CADA TIPO: si algo se detuviera, lo ya leído está copiado;
+//   3) el orden va de lo más seguro a lo menos: confirmados, luego los `soft`, y HRV (el que se le frenó) al final.
+//
 // De dónde sale cada identificador: FUENTES.md (junto a este archivo). Regla: nada se escribe "de memoria"; lo que no se
-// pudo ver en un atajo real va marcado `soft` y corre DESPUÉS de una copia al portapapeles, así un fallo ahí no se lleva
-// lo que ya se leyó.
+// pudo ver en un atajo real va marcado `soft`.
 'use strict';
 const fs = require('fs'), path = require('path'), crypto = require('crypto');
 const { toXML, parseXML } = require('./plist.cjs');
@@ -25,16 +30,17 @@ const OBJ = '￼';                     // marca de "aquí va una variable" dentr
 
 // key = palabra del formato trk2 · type = nombre del tipo en la acción "Buscar muestras de salud" (inglés: es el valor
 // interno, no la etiqueta) · day = agrupar por día · unit = la línea termina con la unidad · sleep = inicio, fin y fase
-// soft = identificador sin confirmar en una acción Buscar real (ver FUENTES.md): va al final, tras una copia de seguridad
+// soft = identificador sin confirmar en una acción Buscar real (ver FUENTES.md): va después de los confirmados
+// El ORDEN importa: si un tipo detuviera el atajo, se pierden solo los que van después de él.
 const BLOCKS = [
   { key: 'steps', type: 'Steps', day: true },
   { key: 'act', type: 'Active Calories', day: true, unit: true },
   { key: 'weight', type: 'Weight', unit: true },
-  { key: 'rhr', type: 'Resting Heart Rate' },
-  { key: 'hrv', type: 'Heart Rate Variability' },
   { key: 'sleep', type: 'Sleep', sleep: true },
+  { key: 'rhr', type: 'Resting Heart Rate' },
   { key: 'fat', type: 'Body Fat Percentage', soft: true },
   { key: 'bas', type: 'Resting Calories', day: true, unit: true, soft: true },
+  { key: 'hrv', type: 'Heart Rate Variability' },
 ];
 
 // ───────────────────────── piezas del plist ─────────────────────────
@@ -89,15 +95,20 @@ function line(b) {
   if (b.unit) parts.push(' ', item(prop('Unit')));
   return text(parts);
 }
-// un bloque = Buscar → Repetir con cada (Texto) → Fin de repetir → Agregar a variable
+// un bloque = Buscar → Si [muestras] tiene algún valor → Repetir con cada (Texto) → Fin de repetir → Agregar a variable → Fin de si
+// El Si no lleva "Si no": con la búsqueda vacía, nada de lo de adentro corre (ni un Repetir sin elementos ni un Agregar vacío).
+const HAS_VALUE = 100;   // WFCondition: 100 = "tiene algún valor" · 101 = "no tiene ningún valor" (FUENTES.md)
 function block(b) {
-  const g = uuid(b.key + '/group'), find = findSamples(b), end = uuid(b.key + '/end');
+  const g = uuid(b.key + '/group'), ifg = uuid(b.key + '/if'), find = findSamples(b), end = uuid(b.key + '/end');
+  const samples = () => outRef(find.WFWorkflowActionParameters.UUID, 'Health Samples');
   return [
     find,
-    act('repeat.each', { WFInput: attach(outRef(find.WFWorkflowActionParameters.UUID, 'Health Samples')), GroupingIdentifier: g, WFControlFlowMode: 0 }),
+    act('conditional', { WFInput: { Type: 'Variable', Variable: attach(samples()) }, WFControlFlowMode: 0, GroupingIdentifier: ifg, WFCondition: HAS_VALUE }),
+    act('repeat.each', { WFInput: attach(samples()), GroupingIdentifier: g, WFControlFlowMode: 0 }),
     act('gettext', { WFTextActionText: line(b), UUID: uuid(b.key + '/line') }),
     act('repeat.each', { GroupingIdentifier: g, WFControlFlowMode: 2, UUID: end }),
     act('appendvariable', { WFInput: attach(outRef(end, 'Repeat Results')), WFVariableName: VAR, UUID: uuid(b.key + '/append') }),
+    act('conditional', { UUID: uuid(b.key + '/endif'), GroupingIdentifier: ifg, WFControlFlowMode: 2 }),
   ];
 }
 // juntar `datos` con saltos de línea y copiarlo
@@ -110,15 +121,14 @@ function copy(tag) {
 }
 
 function build() {
-  const hard = BLOCKS.filter(b => !b.soft), soft = BLOCKS.filter(b => b.soft), head = uuid('head/text');
+  const head = uuid('head/text');
   let a = [
-    act('comment', { WFCommentActionText: 'gym//TRK · copia tus datos de Salud de los últimos ' + DAYS + ' días para pegarlos en gymtrk.app. No abre ninguna página ni manda nada a internet.' }),
+    act('comment', { WFCommentActionText: 'gym//TRK · copia tus datos de Salud de los últimos ' + DAYS + ' días para pegarlos en gymtrk.app. Un dato sin registros se salta. No abre ninguna página ni manda nada a internet.' }),
     act('gettext', { WFTextActionText: text(['trk2']), UUID: head }),
     act('appendvariable', { WFInput: attach(outRef(head, 'Text')), WFVariableName: VAR, UUID: uuid('head/append') }),
   ];
-  hard.forEach(b => { a = a.concat(block(b)); });
-  a = a.concat(copy('copy/0'));                                     // lo confirmado ya está en el portapapeles
-  soft.forEach((b, i) => { a = a.concat(block(b), copy('copy/' + (i + 1))); });   // cada tipo sin confirmar vuelve a copiar al terminar
+  a = a.concat(copy('copy/head'));                                           // desde el primer momento el portapapeles dice `trk2`: la app sabe que el atajo corrió
+  BLOCKS.forEach(b => { a = a.concat(block(b), copy('copy/' + b.key)); });   // tras cada tipo, lo leído hasta ahí ya está en el portapapeles
   return {
     WFWorkflowMinimumClientVersionString: '900',
     WFWorkflowMinimumClientVersion: 900,
@@ -137,14 +147,14 @@ function build() {
 
 // ───────────────────────── validación ─────────────────────────
 const UUID_RE = /^[0-9A-F]{8}-[0-9A-F]{4}-4[0-9A-F]{3}-[89AB][0-9A-F]{3}-[0-9A-F]{12}$/;
-const KNOWN = { comment: 1, gettext: 1, appendvariable: 1, 'filter.health.quantity': 1, 'repeat.each': 1, 'text.combine': 1, setclipboard: 1 };
+const KNOWN = { comment: 1, gettext: 1, appendvariable: 1, 'filter.health.quantity': 1, 'repeat.each': 1, conditional: 1, 'text.combine': 1, setclipboard: 1 };
 const short = a => a.WFWorkflowActionIdentifier.replace('is.workflow.actions.', '');
 // todas las referencias a variables dentro de un valor (Texto con adjuntos o adjunto suelto), con dónde están
 function refs(v, out) {
   out = out || [];
   if (Array.isArray(v)) v.forEach(x => refs(x, out));
   else if (v && typeof v === 'object' && !Buffer.isBuffer(v)) {
-    if (v.Type === 'ActionOutput' || v.Type === 'Variable') out.push(v);
+    if (v.Type === 'ActionOutput' || (v.Type === 'Variable' && 'VariableName' in v)) out.push(v);   // el WFInput de un Si es {Type:'Variable', Variable:<adjunto>}: no es una referencia, la lleva dentro
     else Object.keys(v).forEach(k => refs(v[k], out));
   }
   return out;
@@ -156,9 +166,9 @@ function validate(wf) {
   A.forEach((a, i) => {
     const id = short(a), p = a.WFWorkflowActionParameters || {}, at = '#' + i + ' ' + id;
     if (!/^is\.workflow\.actions\./.test(a.WFWorkflowActionIdentifier) || !KNOWN[id]) E.push(at + ': acción fuera de la lista confirmada');
-    const start = id === 'repeat.each' && p.WFControlFlowMode === 0;
-    // UUID: toda acción lo lleva, salvo el comentario y el INICIO de Repetir (en los atajos reales no lo llevan: el
-    // Repetir se identifica por GroupingIdentifier)
+    const flow = id === 'repeat.each' || id === 'conditional', start = flow && p.WFControlFlowMode === 0;
+    // UUID: toda acción lo lleva, salvo el comentario y el INICIO de Repetir o de Si (en los atajos reales no lo llevan:
+    // se identifican por GroupingIdentifier)
     if (id !== 'comment' && !start) {
       if (!UUID_RE.test(p.UUID || '')) E.push(at + ': sin UUID válido');
       else if (ids.has(p.UUID)) E.push(at + ': UUID repetido (#' + ids.get(p.UUID) + ')');
@@ -166,7 +176,7 @@ function validate(wf) {
     // referencias: una salida solo se puede usar DESPUÉS de la acción que la produce; una variable, después de crearla
     refs(p).forEach(r => {
       if (r.Type === 'ActionOutput') { if (!ids.has(r.OutputUUID)) E.push(at + ': usa una salida que no existe antes (' + r.OutputName + ' ' + r.OutputUUID + ')'); }
-      else if (r.VariableName === 'Repeat Item') { if (!open.length) E.push(at + ': "Repeat Item" fuera de un Repetir'); }
+      else if (r.VariableName === 'Repeat Item') { if (!open.some(o => o.indexOf('repeat.each ') === 0)) E.push(at + ': "Repeat Item" fuera de un Repetir'); }
       else if (!vars.has(r.VariableName)) E.push(at + ': usa la variable "' + r.VariableName + '" antes de crearla');
       (r.Aggrandizements || []).forEach(g => { if (g.Type !== 'WFPropertyVariableAggrandizement' && g.Type !== 'WFDateFormatVariableAggrandizement') E.push(at + ': ajuste de variable desconocido ' + g.Type); });
     });
@@ -176,11 +186,17 @@ function validate(wf) {
       Object.keys(by).forEach(k => { const m = /^\{(\d+), 1\}$/.exec(k); if (!m || s.charAt(+m[1]) !== OBJ) E.push(at + ': adjunto ' + k + ' no cae en una marca'); });
       for (const ch of s) if (ch === OBJ) n++;
       if (n !== Object.keys(by).length) E.push(at + ': ' + n + ' marcas y ' + Object.keys(by).length + ' adjuntos'); }
-    if (id === 'repeat.each') {
+    if (flow) {   // Repetir y Si se anidan: cada fin cierra el último que se abrió, y del mismo tipo
+      const what = id === 'conditional' ? 'si' : 'repetir';
       if (!UUID_RE.test(p.GroupingIdentifier || '')) E.push(at + ': sin GroupingIdentifier');
-      if (start) open.push(p.GroupingIdentifier);
-      else if (p.WFControlFlowMode === 2) { if (open.pop() !== p.GroupingIdentifier) E.push(at + ': Fin de repetir sin su inicio'); }
-      else E.push(at + ': WFControlFlowMode desconocido');
+      if (start) open.push(id + ' ' + p.GroupingIdentifier);
+      else if (p.WFControlFlowMode === 2) { if (open.pop() !== id + ' ' + p.GroupingIdentifier) E.push(at + ': Fin de ' + what + ' sin su inicio'); }
+      else E.push(at + ': WFControlFlowMode desconocido');   // el "Si no" (modo 1) no se usa
+    }
+    if (id === 'conditional' && start) {
+      const w = p.WFInput, r = w && w.Variable && w.Variable.Value;
+      if (!w || w.Type !== 'Variable' || !w.Variable || w.Variable.WFSerializationType !== 'WFTextTokenAttachment' || !r || r.Type !== 'ActionOutput') E.push(at + ': el Si no mira la salida de una acción');
+      if (p.WFCondition !== HAS_VALUE) E.push(at + ': el Si no es "tiene algún valor" (' + HAS_VALUE + ')');
     }
     if (id === 'filter.health.quantity') {
       const f = p.WFContentItemFilter, T = f && f.Value && f.Value.WFActionParameterFilterTemplates;
@@ -192,7 +208,10 @@ function validate(wf) {
     if (id === 'appendvariable') { if (!p.WFVariableName) E.push(at + ': sin nombre de variable'); else vars.add(p.WFVariableName); }
     if (p.UUID) ids.set(p.UUID, i);
   });
-  if (open.length) E.push('Repetir sin cerrar');
+  if (open.length) E.push((open[open.length - 1].indexOf('conditional ') === 0 ? 'Si' : 'Repetir') + ' sin cerrar');
+  // cada Buscar va seguido de su Si: una búsqueda vacía nunca llega suelta a un Repetir
+  A.forEach((a, i) => { if (short(a) !== 'filter.health.quantity') return; const n = A[i + 1], q = n && n.WFWorkflowActionParameters, r = q && q.WFInput && q.WFInput.Variable && q.WFInput.Variable.Value;
+    if (!n || short(n) !== 'conditional' || q.WFControlFlowMode !== 0 || !r || r.OutputUUID !== a.WFWorkflowActionParameters.UUID) E.push('#' + i + ' filter.health.quantity: sin su "Si trajo algo" justo después'); });
   if (!A.some(a => short(a) === 'setclipboard')) E.push('nunca copia al portapapeles');
   return E;
 }
@@ -200,6 +219,8 @@ function validate(wf) {
 // ───────────────────────── corredor de mentira ─────────────────────────
 // Corre las acciones del plist (ya leído de vuelta del XML) contra una Salud inventada y devuelve lo que quedaría en el
 // portapapeles. No es el iPhone: comprueba que la ESTRUCTURA produce el texto que la app lee. `fail` = tipo que truena.
+// `strict` = el peor iPhone imaginable: un Repetir sin elementos o un Agregar a variable sin nada DETIENEN el atajo. Con el
+// Si, un tipo vacío no debe llegar a ninguno de los dos.
 function run(wf, health, opt) {
   opt = opt || {}; const A = wf.WFWorkflowActions, outs = new Map(), vars = new Map(), st = { clip: null, copies: 0, stoppedAt: null };
   const dayOf = s => s.slice(0, 10), tz = s => s.slice(19), nowMs = Date.parse(opt.now);
@@ -234,13 +255,23 @@ function run(wf, health, opt) {
       if (id === 'comment') continue;
       else if (id === 'gettext') last = tok(p.WFTextActionText, loop);
       else if (id === 'filter.health.quantity') last = find(p);
-      else if (id === 'appendvariable') { const v = tok(p.WFInput, loop), cur = vars.get(p.WFVariableName) || []; vars.set(p.WFVariableName, cur.concat(v == null ? [] : v)); last = vars.get(p.WFVariableName); }
+      else if (id === 'appendvariable') { const v = tok(p.WFInput, loop), cur = vars.get(p.WFVariableName) || [];
+        if (opt.strict && (v == null || (Array.isArray(v) && !v.length))) throw new Error('Agregar a variable sin nada que agregar');
+        vars.set(p.WFVariableName, cur.concat(v == null ? [] : v)); last = vars.get(p.WFVariableName); }
       else if (id === 'text.combine') { if (p.WFTextSeparator !== 'New Lines') throw new Error('separador no previsto'); const v = tok(p.text, loop); last = (Array.isArray(v) ? v : [v]).map(str).join('\n'); }
       else if (id === 'setclipboard') { st.clip = str(tok(p.WFInput, loop)); st.copies++; last = st.clip; }
+      else if (id === 'conditional' && p.WFControlFlowMode === 0) {
+        let j = i + 1; while (j < to && !(short(A[j]) === 'conditional' && A[j].WFWorkflowActionParameters.GroupingIdentifier === p.GroupingIdentifier)) j++;
+        if (j >= to) throw new Error('Si sin fin');
+        if (p.WFCondition !== 100) throw new Error('condición no prevista: ' + p.WFCondition);
+        const v = val(p.WFInput.Variable.Value, loop), has = Array.isArray(v) ? v.length > 0 : (v != null && v !== '');
+        last = has ? exec(i + 1, j, loop) : undefined; outs.set(A[j].WFWorkflowActionParameters.UUID, last); i = j; continue;
+      }
       else if (id === 'repeat.each' && p.WFControlFlowMode === 0) {
         let j = i + 1; while (j < to && !(short(A[j]) === 'repeat.each' && A[j].WFWorkflowActionParameters.GroupingIdentifier === p.GroupingIdentifier)) j++;
         if (j >= to) throw new Error('Repetir sin fin');
-        const list = tok(p.WFInput, loop), res = []; (Array.isArray(list) ? list : [list]).forEach(it => { const r = exec(i + 1, j, { item: it }); if (r !== undefined) res.push(r); });
+        const list = tok(p.WFInput, loop), res = []; if (opt.strict && Array.isArray(list) && !list.length) throw new Error('Repetir sin elementos');
+        (Array.isArray(list) ? list : [list]).forEach(it => { const r = exec(i + 1, j, { item: it }); if (r !== undefined) res.push(r); });
         last = res; outs.set(A[j].WFWorkflowActionParameters.UUID, res); i = j; continue;
       }
       else throw new Error('acción no prevista: ' + id);
@@ -285,11 +316,21 @@ function main() {
   if (lines[0] !== 'trk2') fail('la primera línea no es trk2');
   if (BLOCKS.some(b => keys.indexOf(b.key) < 0)) fail('falta una clave en el texto: ' + keys.join(' '));
   if (/9999|\b71\b/.test(s.clip)) fail('se coló una muestra vieja o de otro tipo');
-  if (s.copies !== 1 + BLOCKS.filter(b => b.soft).length) fail('copias al portapapeles: ' + s.copies);
-  // aislamiento: si Salud no reconoce un tipo sin confirmar, lo ya leído sigue en el portapapeles
-  BLOCKS.filter(b => b.soft).forEach(b => { const r = run(back, HEALTH, { now: NOW, fail: b.type }), got = new Set((r.clip || '').split('\n').slice(1).map(l => l.split(' ')[0]));
+  if (s.copies !== BLOCKS.length + 1) fail('copias al portapapeles: ' + s.copies + ' (debe ser la del encabezado y una por tipo)');
+  const keysOf = r => new Set((r.clip || '').split('\n').slice(1).map(l => l.split(' ')[0]));
+  BLOCKS.forEach((b, i) => {
+    // un tipo sin registros se salta: el atajo llega al final, con todo lo demás y sin renglones en blanco (ni en el peor iPhone)
+    const h = Object.assign({}, HEALTH); delete h[b.type]; const e = run(back, h, { now: NOW, strict: true }), ke = keysOf(e);
+    if (e.stoppedAt) fail('sin datos de ' + b.type + ' el atajo se detiene: ' + e.stoppedAt);
+    if (ke.has(b.key) || BLOCKS.some(x => x !== b && !ke.has(x.key))) fail('sin datos de ' + b.type + ' no llega lo demás: ' + [...ke].join(' '));
+    if (/\n\n|\n$/.test(e.clip)) fail('sin datos de ' + b.type + ' queda un renglón en blanco');
+    // aislamiento: si un tipo DETIENE el atajo, todo lo que va antes ya está en el portapapeles
+    const r = run(back, HEALTH, { now: NOW, fail: b.type }), kr = keysOf(r);
     if (!r.stoppedAt) fail('la falla simulada de ' + b.type + ' no detuvo nada');
-    BLOCKS.filter(x => !x.soft).forEach(x => { if (!got.has(x.key)) fail('si falla ' + b.type + ' se pierde ' + x.key); }); });
+    if ((r.clip || '').split('\n')[0] !== 'trk2') fail('si falla ' + b.type + ' el portapapeles no dice trk2');
+    BLOCKS.slice(0, i).forEach(x => { if (!kr.has(x.key)) fail('si falla ' + b.type + ' se pierde ' + x.key); });
+  });
+  if (BLOCKS[BLOCKS.length - 1].key !== 'hrv') fail('HRV debe ir al final (es el que se le detuvo al dueño)');
   if (arg === '--sample') { process.stdout.write(s.clip + '\n'); return; }
   const index = path.join(__dirname, '..', '..', 'index.html');
   const example = () => { if (!fs.existsSync(index)) return null; const m = /const HP_EXAMPLE='((?:[^'\\]|\\.)*)'/.exec(fs.readFileSync(index, 'utf8')); return m ? m[1].replace(/\\n/g, '\n').replace(/\\'/g, "'").replace(/\\\\/g, '\\') : null; };
@@ -303,7 +344,7 @@ function main() {
   fs.writeFileSync(OUT, xml);
   console.log('escrito: ' + OUT + ' · ' + Buffer.byteLength(xml) + ' bytes · ' + back.WFWorkflowActions.length + ' acciones');
   console.log('tipos: ' + BLOCKS.map(b => b.key + '=' + JSON.stringify(b.type) + (b.soft ? ' (sin confirmar)' : '')).join(' · '));
-  console.log('validación: OK (UUID, referencias, Repetir, filtros, ida y vuelta del XML, aislamiento de los tipos sin confirmar)');
+  console.log('validación: OK (UUID, referencias, Repetir, Si por tipo, filtros, ida y vuelta del XML, un tipo vacío se salta, lo leído antes de una falla se queda)');
   console.log('--- lo que copiaría con la Salud de ejemplo ---\n' + s.clip);
   const ex = example(); if (ex != null && ex !== s.clip) console.log('--- AVISO: HP_EXAMPLE de index.html es distinto; debe ser ---\n' + JSON.stringify(s.clip));
 }
