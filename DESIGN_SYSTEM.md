@@ -1,6 +1,6 @@
 # gym//TRK — DESIGN SYSTEM (referencia del estado actual)
 
-> Referencia del estado actual (v288). **Lee BRAND.md primero**: manda sobre este archivo. Sin historia: DESIGN_CHANGELOG.md.
+> Referencia del estado actual (v289). **Lee BRAND.md primero**: manda sobre este archivo. Sin historia: DESIGN_CHANGELOG.md.
 
 ---
 
@@ -1574,6 +1574,14 @@ Day sí es saltar el día del split". Antes los dos avanzaban la rotación.
 - **Entradas (v287):** la fila `sync biometrics ···· hace 3 h ›` (`syncRowHTML()`) arriba de //PROGRESS y en gym //STATS ·
   //HEALTH en ajustes `[sync biometrics] [pegar a mano] [importar JSON]` · en el alta (§7.34), el paso `conecta Salud`
   con `[instalar atajo]` (solo en iPhone).
+- **Hoja `ajustes del ejercicio` (v289, `openExEdit`):** la misma en la sesión, en el split y en el catálogo. Orden: NAME ·
+  MÚSCULO 1/2 · TYPE · VARIANTE (+ empezar por) · variantes de bodyweight / cardio · GYM (solo fuera de la sesión) ·
+  MACHINE · BRAND, SETUP, `sin máquina en este gym` (casilla `.xsck`, fila de 44) · RESISTANCE · UNIT · NOTE · `[motor ›]`
+  (prime mover, secondary, muscle length) · GYMS (`.xsck`) · `split · días`; en el catálogo, arriba `[historial]` y al final
+  `[unir] [archivar]`. Un primario `save` + `[cancel]`, pegados al fondo de la hoja mientras la recorres (`.sheetbtns.xsave`:
+  sticky, fondo `--sheet-bg`, filete `--o10`). Mover una variante: TRKHold `mover N registros a [alt]` con el detalle en
+  renglones (`días del split` · `series duras: igual` · `σ a → b` · `volumen a → b kg` · `▲▼ de N filas` · con cuántos se
+  junta · lo que no se mueve) y la salida `[solo desde hoy]`.
 - **Hojas de `sync biometrics` (v287; cada una con un primario o ninguno, sin texto instructivo de más):**
   (v288: en la app del ícono el enlace es `x-safari-https://…/?atajo=1`, que abre Safari, y `[copiar enlace]` `[ya lo tengo]`
   van en un segundo renglón; la pantalla `atajo` de Safari = marca + `▶ descargar atajo` (`a.start`) + dos renglones)

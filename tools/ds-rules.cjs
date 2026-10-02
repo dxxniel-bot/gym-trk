@@ -24,7 +24,12 @@ module.exports = function rules(raw, repoDir) {
   // ---- rangos que no son interfaz: self-checks, tablas de datos, panel de diseño ----
   const skip = [];
   const blockEnd = (s, i) => { let d = 0; for (let k = i; k < s.length; k++) { const c = s[k]; if (c === '{') d++; else if (c === '}') { d--; if (!d) return k; } } return s.length; };
-  for (const m of js.matchAll(/function\s+(_\w*(?:SelfCheck|Check|Report)|selfcheck\w*)\s*\([^)]*\)\s*\{/g)) { const a = m.index + m[0].length - 1; skip.push([jsA + m.index, jsA + blockEnd(js, a)]); }
+  // v289 · el fin de una función de nivel superior se toma por SANGRÍA: su cuerpo va sangrado y cierra con `}` en la columna 0 (o cabe
+  // en su primera línea). Contar llaves a ciegas (blockEnd) se desfasa con una llave dentro de un texto o una regex.
+  const fnEnd = (s, i) => { let p = s.indexOf('\n', i); if (p < 0) return s.length;
+    for (;;) { const q = s.indexOf('\n', p + 1), c = s[p + 1];
+      if (c === '}') return p + 1; if (c !== undefined && c !== ' ' && c !== '\t' && c !== '\r' && c !== '\n') return p; if (q < 0) return s.length; p = q; } };
+  for (const m of js.matchAll(/function\s+(_\w*(?:SelfCheck|Check|Report)|selfcheck\w*)\s*\([^)]*\)\s*\{/g)) { const a = m.index + m[0].length - 1; skip.push([jsA + m.index, jsA + fnEnd(js, a)]); }
   for (const m of js.matchAll(/const\s+(BASE_FOODS|MUSCLES|MUSCLE_GROUPS|LABEL_CANON|EX_HINTS|GLOSS|DESIGN_KNOBS|CARDIO_SUBS)\s*=/g)) {
     const a = js.indexOf(m[1] === 'BASE_FOODS' ? '{' : (js[m.index + m[0].length] === '[' ? '[' : '{'), m.index + m[0].length); if (a < 0) continue;
     const open = js[a], close = open === '[' ? ']' : '}'; let d = 0, k = a; for (; k < js.length; k++) { if (js[k] === open) d++; else if (js[k] === close) { d--; if (!d) break; } } skip.push([jsA + m.index, jsA + k]); }
