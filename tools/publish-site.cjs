@@ -99,8 +99,8 @@ const waitLive = async secs => { const end = Date.now() + secs * 1000; let got =
   for (let k = 0; k < 5 && sc !== 'AEA1'; k++) { if (k) await sleep(8000); try { const r = await fetch(SC + '?c=' + Date.now(), { cache: 'no-store' }); sc = r.ok ? Buffer.from(await r.arrayBuffer()).toString('latin1', 0, 4) : 'HTTP ' + r.status; } catch (e) { sc = String(e && e.message); } }
   if (sc !== 'AEA1') { console.error('NO PUBLICADO del todo: ' + SC + ' → ' + sc); process.exit(1); }
   // v295 · y las fichas de sustancias (si el repo las tiene): JSON con sus entradas
-  if (out.some(l => l.startsWith('substances.json '))) { let sj = '';
-    for (let k = 0; k < 5 && !/^ok /.test(sj); k++) { if (k) await sleep(8000); try { const r = await fetch('https://gymtrk.app/substances.json?c=' + Date.now(), { cache: 'no-store' }); const j = r.ok ? await r.json() : null; sj = j && Array.isArray(j.entries) ? 'ok ' + j.entries.length : 'HTTP ' + r.status; } catch (e) { sj = String(e && e.message); } }
+  if (out.some(l => l.startsWith('substances.json '))) { let sj = ''; let want = -1; try { want = JSON.parse(String(git(['show', 'HEAD:substances.json'], ROOT))).entries.length; } catch (_) {}
+    for (let k = 0; k < 5 && !/^ok /.test(sj); k++) { if (k) await sleep(8000); try { const r = await fetch('https://gymtrk.app/substances.json?c=' + Date.now(), { cache: 'no-store' }); const j = r.ok ? await r.json() : null; sj = j && Array.isArray(j.entries) ? (want < 0 || j.entries.length === want ? 'ok ' : 'viejo ') + j.entries.length : 'HTTP ' + r.status; } catch (e) { sj = String(e && e.message); } }
     if (!/^ok /.test(sj)) { console.error('NO PUBLICADO del todo: https://gymtrk.app/substances.json → ' + sj); process.exit(1); }
     console.log('fichas de sustancias: ' + sj.slice(3)); }
   console.log('publicado y comprobado: https://gymtrk.app sirve ' + ver + ' y el atajo ' + SHORTCUT_FILE);
