@@ -246,6 +246,7 @@ caracteres sin perder un dato?
 | 2026-10-01 | **El Atajo se instala desde Safari** (v288) mientras no haya enlace de iCloud; con enlace, un toque | "le doy a instalar atajo y sí me abre como que el archivo, el HTML… no me sale la opción de shortcut" |
 | 2026-10-01 | **El Atajo se descarga, no se arma** (v287): `sync biometrics` instala y corre `TRK Biometrics` (v293 `TRK Sync`; desde v294 `TRK Salud`); la receta sale de la app | "Esta madre no tiene que ser un tutorial para que lo haga el usuario… crear un shortcut y poderlo compartir… El chiste es minimizar la fricción" |
 | 2026-10-01 | **El catálogo es un árbol con líneas**: ejercicio → variantes `[bi] [uni] [alt]`, con vistas por músculo, por gym y A–Z (v286; las líneas se dibujan con CSS) | "leg extension… que salgan las variantes: unilateral, bilateral… curl de bíceps, bilateral, alternado" · eligió "árbol con líneas" |
+| 2026-10-02 | **Cualquier sustancia se registra y se reconoce**: catálogo con categoría (suplemento · fármaco · hormona · péptido · skincare · otra) y una ficha que dice lo que reporta la literatura a tu dosis, sus riesgos y qué vigilar, con fuente; nunca dosis recomendadas, ciclos ni protocolos (v295) | "el traqueo de cualquier sustancia que entre en el cuerpo y ver cómo es que ayuda o interfiere… que lo identifique tal cual, qué sustancia es para saber cuál es el perfil de beneficios y efectos secundarios de acuerdo a la dosis" |
 
 ## 10. Preguntas abiertas (se cierran en el estudio, `tools/studio.html`)
 

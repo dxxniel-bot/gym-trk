@@ -13,16 +13,17 @@ const ORIGIN = 'https://gymtrk.app';
 function boot(net) {   // net(url) → {ok, type, body} | lanza (sin red)
   const H = {}, puts = [], fetched = [], store = new Map(); let skipped = 0, claimed = 0, wins = [], broken = false;
   const resp = (o, url) => ({ ok: o.ok !== false, type: o.type || 'basic', body: o.body || url, clone() { return resp(o, url); } });
-  const cache = { addAll: async () => {}, put: async (k, r) => { puts.push(k); store.set(k, r); } };
+  const added = []; let addFails = false;
+  const cache = { addAll: async L => { (L || []).forEach(r => added.push(r)); }, add: async r => { added.push(r); if (addFails) throw new Error('404'); }, put: async (k, r) => { puts.push(k); store.set(k, r); } };
   const sandbox = {
     self: { addEventListener: (t, f) => { H[t] = f; }, skipWaiting: () => { skipped++; return Promise.resolve(); }, clients: { claim: async () => { claimed++; }, matchAll: async o => (o && o.type === 'window') ? wins : [] } },
     caches: { open: async () => cache, keys: async () => { if (broken) throw new Error('caché rota'); return []; }, delete: async () => true, match: async k => store.get(String(k).replace(/^\.\//, ORIGIN + '/')) },
-    location: { origin: ORIGIN }, URL, Request: function (u) { this.url = u; }, Response: { error: () => ({ error: true }) }, Promise, console,
+    location: { origin: ORIGIN }, URL, Request: function (u, o) { this.url = u; this.opt = o || {}; }, Response: { error: () => ({ error: true }) }, Promise, console,
     fetch: async (url, opt) => { fetched.push({ url, opt }); return resp(net(url), url); },
   };
   vm.createContext(sandbox); vm.runInContext(SRC, sandbox);
   const hit = async (url, o) => { o = o || {}; let p = null; H.fetch({ request: { url, method: o.method || 'GET', mode: o.mode || 'no-cors' }, respondWith: x => { p = x; } }); const r = p ? await p : undefined; await new Promise(z => setTimeout(z, 0)); return { responded: !!p, r }; };
-  return { H, hit, puts, fetched, store, skipped: () => skipped, claimed: () => claimed, setWins: w => { wins = w; }, breakCaches: () => { broken = true; }, ver: (SRC.match(/const C = '([^']+)'/) || [])[1] };
+  return { H, hit, puts, fetched, store, added, failAdd: () => { addFails = true; }, skipped: () => skipped, claimed: () => claimed, setWins: w => { wins = w; }, breakCaches: () => { broken = true; }, ver: (SRC.match(/const C = '([^']+)'/) || [])[1] };
 }
 let bad = 0; const say = (ok, m) => { if (!ok) bad++; console.log((ok ? 'OK   ' : 'MAL  ') + m); };
 (async () => {
@@ -50,6 +51,12 @@ let bad = 0; const say = (ok, m) => { if (!ok) bad++; console.log((ok ? 'OK   ' 
   x = await off.hit(ORIGIN + '/falta.json'); say(x.r && x.r.error === true, 'sin red, un archivo que no está da error (no el HTML de la app)');
   x = await off.hit(ORIGIN + '/TRK%20Sync.shortcut?html=1', { mode: 'navigate' }); say(x.r && x.r.error === true, 'sin red, el atajo por el camino viejo da error (nunca el HTML de la app)');
   x = await off.hit(ORIGIN + '/TRK%20Sync.shortcut', { mode: 'navigate' }); say(!x.responded, 'sin red, el atajo directo tampoco se contesta');
+  // v295 · al instalar se guardan las fichas de sustancias (con no-cache: 304 si no cambiaron); si faltan, la versión se instala igual
+  { const b = boot(() => ({ ok: true })); let w = null; b.H.install({ waitUntil: p => { w = p; } }); await w;
+    const sj = b.added.find(r => /substances.json$/.test(r.url));
+    say(!!sj && sj.opt.cache === 'no-cache' && b.added.some(r => r.url === './index.html') && b.skipped() === 1, 'al instalar guarda substances.json (no-cache) además de la app');
+    const c = boot(() => ({ ok: true })); c.failAdd(); let w2 = null; c.H.install({ waitUntil: p => { w2 = p; } }); await w2;
+    say(c.skipped() === 1, 'si substances.json falta, la versión nueva se instala igual'); }
   // mensajes
   const got = []; on.H.message({ data: 'ver', ports: [{ postMessage: v => got.push(v) }] });
   say(got.join() === on.ver && /^gymtrk-v\d+$/.test(on.ver), '`ver` contesta la versión → ' + got.join());
