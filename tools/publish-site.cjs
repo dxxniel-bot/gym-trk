@@ -12,8 +12,8 @@ const ROOT = path.resolve(__dirname, '..');
 const MIRROR = 'https://github.com/dxxniel-bot/gymtrk-app.git';
 const SITE_FILES = ['index.html', 'manifest.json', 'sw.js', 'privacy.html'];   // lo único que el sitio necesita (los que no existan se saltan)
 // v287 · el Atajo firmado (tools/shortcut/sign.cjs). Se llama igual que el atajo porque el iPhone le pone al atajo el
-// nombre del archivo, y la app lo corre por nombre: https://gymtrk.app/TRK%20Sync.shortcut
-const SHORTCUT_FILE = 'TRK Sync.shortcut'; SITE_FILES.push(SHORTCUT_FILE);
+// nombre del archivo, y la app lo corre por nombre: https://gymtrk.app/TRK%20Salud.shortcut
+const SHORTCUT_FILE = 'TRK Salud.shortcut'; SITE_FILES.push(SHORTCUT_FILE);
 const WORKFLOW = `# Publica https://gymtrk.app desde este repo (solo contiene la app ya armada; lo sube tools/publish-site.cjs del repo fuente).
 name: pages · gymtrk.app
 on:

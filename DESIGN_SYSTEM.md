@@ -1,6 +1,6 @@
 # gym//TRK — DESIGN SYSTEM (referencia del estado actual)
 
-> Referencia del estado actual (v293). **Lee BRAND.md primero**: manda sobre este archivo. Sin historia: DESIGN_CHANGELOG.md.
+> Referencia del estado actual (v294). **Lee BRAND.md primero**: manda sobre este archivo. Sin historia: DESIGN_CHANGELOG.md.
 
 ---
 
@@ -1585,6 +1585,13 @@ Day sí es saltar el día del split". Antes los dos avanzaban la rotación.
   del primario va `▖ preparando…` (`.atj-wait`) hasta 20 s; si no llega, `▶ recargar` (`atajoreload`) y nunca el botón directo (bajaría
   .html); se sigue preguntando. `[bajar como antes]` (`atajohtml` → `bioHtml()`) baja el mismo archivo por el camino viejo `?html=1`,
   con los pasos para ver la extensión en Archivos: `··· › opciones de visualización › mostrar todas las extensiones`)
+  (v294: el atajo se llama `TRK Salud`. `sync biometrics` lo corre con un plan, `bioPlan()` + número de corrida →
+  `shortcuts://run-shortcut?name=TRK%20Salud&input=text&text={json}`: cuántos días de cada dato, 0 = no se busca. La primera vez, el
+  historial (`HP_HIST`: un año; sueño 30 noches); después, desde la última muestra que llegó de cada dato (`shortcut.got`). Al pegar,
+  `hpLearn()` lee las marcas `ok …` y, si se detuvo, la hoja del resultado (`openBioResult()`) dice `se detuvo en grasa: sin datos o sin
+  permiso en Salud. ya no se pide.` con `▶ correr otra vez` como primario. Lo que no se busca sale como `no se busca: grasa · HRV
+  [buscar todo]` (`hpSkipHTML()`) al traer datos, al pegar a mano y en la hoja del resultado. Un atajo de antes: lo dice y ofrece
+  `▶ instalar TRK Salud`)
   instalar (`openBioInstall`): una línea + `▶ instalar atajo` (enlace `<a class="ok">` al archivo firmado, o a
   `SHORTCUT_URL` cuando exista) + `[ya lo tengo]` · traer (`openBioFetch`): `▶ traer datos` + `[pegar a mano]`, una vez por
   corrida y nunca encima de otra capa ni en plena sesión · qué llegó (`openBioResult`): `pasos ✓ · peso ✓ · grasa — …` +
@@ -2521,6 +2528,13 @@ Línea base del 2026-09-21: todos en 0 salvo `style=""` 89, excepciones 33, lett
   de 44 · `[ver %]` mide 10 px con toque de 44 · tocar la fila despliega la gráfica sin moverla y lo recuerda
   (`db.settings.radarOpen`) · el orden es anillo → balance → aros → `[ver %]` → radar → INTAKE · la tarjeta de compartir
   sigue trayendo radar y aros. Imprime `macro viz self-check OK`.
+- **`_v294SelfCheck()`** (v294, en sandbox): `HP_ORDER`/`HP_HIST` · el ejemplo trae `ok in · ok id · ok cfg · ok <dato> · ok end` · la
+  primera vez pide el historial y la URL lleva el plan con su número de corrida · su caso: se detuvo en grasa → entra lo anterior, grasa
+  deja de pedirse, lo demás desde lo último que llegó · la hoja: dónde paró + `▶ correr otra vez` · reposo llega, HRV fuera · corrida
+  completa · `[buscar todo]` también al traer datos y al pegar a mano · el día más viejo de pasos llega cortado y no pisa el completo aunque
+  FC traiga un día más viejo · dos niveles (un mes; a la 2ª, hasta `[buscar todo]`; si sí había llegado, 3 días) · no enseñan nada: otro
+  número de corrida, un pegado sin marcas · sin la app = 7 días · sin `ok in` / sin leer la lista / sin ningún dato (iPhone bloqueado: no
+  deja de pedir nada) / atajo de antes. Imprime `v294 self-check OK`.
 - **`_v293SelfCheck()`** (v293, en sandbox): el atajo y su archivo se llaman `TRK Sync` · la página lleva la versión (`?atajo=1&v=N`) ·
   en la prueba la espera no se anota · la pantalla `atajo` con el `sw.js` al día: un primario que baja el archivo, los renglones (sin
   renombrar, con el nombre que debe tener), el de permisos y `[bajar como antes]` de 44, que baja `?html=1` con su nombre y dice cómo ver

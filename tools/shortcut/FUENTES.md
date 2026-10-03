@@ -1,4 +1,4 @@
-# TRK Sync (antes TRK Biometrics) · de dónde salió cada identificador del atajo
+# TRK Salud (antes TRK Sync y TRK Biometrics) · de dónde salió cada identificador del atajo
 
 Regla: nada del atajo se escribió "de memoria". Cada identificador de `build.cjs` se leyó en un atajo público real
 (bajado sin firmar con `fetch-ref.cjs` del API de registros de Apple, `https://www.icloud.com/shortcuts/api/records/<id>`)
@@ -45,7 +45,7 @@ compilador que firma con HubSign; y su incidencia #214 (un atajo firmado por Hub
 - `WFCondition` **100** = "tiene algún valor" · **101** = "no tiene ningún valor". Se lee en lo que cada atajo hace adentro:
   IC2 #28–#31 saca la clave `error` de una respuesta y, con 100, la enseña en una alerta "Error"; LW #176–#181 busca el peso y,
   con 101, avisa "It appears no weight measurement have been entered into Apple Health yet" y sale.
-- **Una búsqueda de Salud vacía no detiene el atajo**: ese aviso de LW solo puede salir si el atajo sigue corriendo después de
+- ~~**Una búsqueda de Salud vacía no detiene el atajo**~~ **FALSO en iOS de hoy (v294, ver abajo)**: ese aviso de LW solo puede salir si el atajo sigue corriendo después de
   un Buscar sin resultados. SW #286–#289 hace lo mismo con el sueño (si no hay muestras, busca otra vez con otro filtro).
 - `build.cjs` usa el 100 sobre "Health Samples": la combinación de las dos cosas vistas (100 sobre una salida · un Si sobre
   "Health Samples"). Dentro van el Repetir y el Agregar a variable, así ninguno recibe una lista vacía.
@@ -106,9 +106,10 @@ Fecha: `WFDateFormatVariableAggrandizement` con `WFDateFormatStyle` "ISO 8601" y
 
 El iPhone le pone al atajo importado **el nombre del archivo** (un PR de `hankberger/iPhoneAutomations` lo dice igual:
 "the file is named after the shortcut, so it imports under that name"). La app lo corre por nombre
-(`shortcuts://run-shortcut?name=TRK%20Sync`), así que el archivo publicado se llama `TRK Sync.shortcut`
-(en la URL, `TRK%20Sync.shortcut`) y no `trk-sync.shortcut`. Hasta v292 se llamó `TRK Biometrics`; se cambió porque Safari
-numera las descargas repetidas (`… 2.shortcut`) y el atajo entraba con ese nombre. `shortcuts://import-shortcut?url=` solo acepta
+(`shortcuts://run-shortcut?name=TRK%20Salud`), así que el archivo publicado se llama `TRK Salud.shortcut`
+(en la URL, `TRK%20Salud.shortcut`). Se llamó `TRK Biometrics` (hasta v292) y `TRK Sync` (v293); cada cambio de nombre fue porque
+Safari numera las descargas repetidas (`… 2.shortcut`): con el archivo viejo en Descargas, el nuevo entraba como "… 2" y la app
+seguía corriendo el viejo. Con el enlace de iCloud (`SHORTCUT_URL`) esto se acaba. `shortcuts://import-shortcut?url=` solo acepta
 enlaces de icloud.com (mismo PR): por eso se instala bajando el archivo.
 
 ## Por qué bajaba como .html (v293)
@@ -129,6 +130,32 @@ El dueño (1 y 2-oct): "sí me abre como que el archivo, el HTML" · "no sale pa
   no contesta, y ese todavía convertiría la descarga en `.html`.
 - Sin probar en un iPhone: que la descarga directa (`application/octet-stream`, nombre `TRK Sync.shortcut`) abra "Agregar atajo"
   al tocarla. El mismo archivo renombrado a mano sí lo abrió el 2-oct.
+
+## La búsqueda vacía SÍ detiene el atajo, y la entrada (v294)
+
+- **Visto en el iPhone del dueño (2-oct-2026, captura):** con % de grasa sin registros, "Buscar muestras de salud" muestra
+  *"No Samples Found — There are either no Body Fat Percentage samples logged or you need to give Shortcuts access to the samples in
+  the Health app."* [OK] [Open Health] y el atajo se detiene. LW (cliente 1184) muestra que en iOS viejo no se detenía: cambió. Lo
+  copiado antes sí llegó. La misma alerta confirma el tipo `Body Fat Percentage`.
+- Por eso la app decide qué buscar y le manda al atajo un plan por la **entrada**: `shortcuts://run-shortcut?name=…&input=text&text=…`
+  (guía de Atajos de Apple, "Run a shortcut from a URL": *"If input is set to text, then the value of the text parameter is passed as
+  input to the shortcut"*).
+
+| en `build.cjs` | cómo | visto en |
+|---|---|---|
+| la entrada | `{Type:"ExtensionInput"}` en un adjunto | SW #62, #65, #190 |
+| aceptar entrada | `WFWorkflowHasShortcutInputVariables: true` y `WFWorkflowInputContentItemClasses` = la lista completa | SW (true); la lista, HS (cliente 4046) |
+| texto JSON → diccionario | Si [entrada] tiene algún valor (100) → `is.workflow.actions.detect.dictionary` de la entrada / Si no → `detect.dictionary` de otro texto → Fin; lo que sigue usa la salida del Fin, `OutputName` "If Result" | SW #1236–#1241 (idéntico); Apple: *"Use the Get Dictionary from Input action to turn text containing JSON or .plist data into a dictionary item"* |
+| Si no | `conditional` `WFControlFlowMode` 1 con el mismo `GroupingIdentifier`, sin UUID | SW #60, #1238; 6f1a4788 #9 |
+| Guardar variable | `is.workflow.actions.setvariable` `{WFInput, WFVariableName}`, sin UUID | IC2 #2, #4, #9 |
+| el valor de una llave | adjunto de la variable con `WFDictionaryValueVariableAggrandizement` (`DictionaryKey`) | SW #1241 (sobre una variable diccionario) |
+| Si dias > 0 | `WFCondition` 2, `WFNumberValue` "0" | SW #66, #80, #91 |
+| N en una variable | `Values: {Unit: 16, Number: {Value:{VariableName, Type:"Variable"}, WFSerializationType:"WFTextTokenAttachment"}}` | LW #292, #374, #433… |
+
+- Marcas: `ok in` (llegó la entrada), `ok id <n>` (el número de corrida que mandó la app), `ok cfg` (se leyó el plan o los 7 días por
+  omisión; las tres se copian antes de la primera búsqueda), `ok <dato>` tras cada búsqueda que no se detuvo y `ok end` al final.
+- **Sin probar en un iPhone:** que la entrada por URL llegue (se ve con `ok in`), y que "en los últimos [variable] días" acepte la
+  variable (sin `ok <dato>` tras `ok end`, la app dice que no leyó la lista).
 
 ## Lo que no se pudo probar sin un iPhone
 

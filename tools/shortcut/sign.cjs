@@ -1,7 +1,7 @@
 // gym//TRK · tools/shortcut/sign.cjs · firma el atajo con HubSign (RoutineHub) y lo deja en la raíz del repo
 //
-//   node tools/shortcut/sign.cjs            sube tools/shortcut/TRK Sync.shortcut (el plist SIN firmar) y guarda la
-//                                           respuesta en <raíz>/TRK Sync.shortcut si es un archivo firmado de verdad
+//   node tools/shortcut/sign.cjs            sube tools/shortcut/TRK Salud.shortcut (el plist SIN firmar) y guarda la
+//                                           respuesta en <raíz>/TRK Salud.shortcut si es un archivo firmado de verdad
 //   node tools/shortcut/sign.cjs --verify   no sube nada: abre el firmado que ya está en la raíz y lo compara con el plist
 //
 // Por qué un tercero: desde iOS 15 el iPhone solo importa atajos firmados, y la firma de Apple exige una Mac con iCloud.
@@ -10,7 +10,7 @@
 // Lo ÚNICO que sale de esta máquina es el plist del atajo: una lista de acciones, sin un solo dato de nadie.
 //
 // El archivo firmado se llama igual que el atajo A PROPÓSITO: el iPhone le pone al atajo importado el nombre del archivo,
-// y la app lo corre por nombre (shortcuts://run-shortcut?name=TRK%20Sync).
+// y la app lo corre por nombre (shortcuts://run-shortcut?name=TRK%20Salud).
 //
 // No se confía a ciegas en lo que vuelve: se exige cabecera AEA1, se abre el contenedor (aea.cjs) y se compara acción por
 // acción con lo que se mandó. Si el servicio no responde o devuelve otra cosa, NO se escribe nada y se imprime qué dijo.
