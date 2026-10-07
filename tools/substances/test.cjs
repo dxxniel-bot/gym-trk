@@ -82,8 +82,9 @@ db.stack = [{ id: 'c1', name: 'caffeine', category: 'supp', status: 'active' }, 
 const ih2 = E.subInterHits({ inter: [{ with: ['dmaa', 'otros estimulantes'], text: 'x', sev: 'grave' }] }, 'c1', E.subGet('cafeina')); T('tu otro item de cafeína no es una interacción de la cafeína', ih2.length === 0, ih2.map(h => h.who.map(w => w.key)));
 // v296 · un parecido no identifica un item guardado; se ofrece ("¿es esta?") y vale cuando se elige
 const oi = (name, cat, extra) => E.subOfItem(Object.assign({ name, category: cat || 'supp' }, extra));
-{ const g = oi('warfarina', 'meds'); T('warfarina no se identifica como cardarina (se ofrece)', g.items.length === 0 && g.guess === true && g.amb.length > 0, g.items.map(x => x.s.key)); }
-{ const g = oi('warfarina', 'meds', { subPick: 'sb_aspirina' }); T('lo elegido manda, sin arrastrar el parecido', g.items.map(x => x.s.key).join() === 'aspirina', g.items.map(x => x.s.key)); }
+{ const g = oi('creatinina'); T('creatinina no se identifica como creatina (se ofrece)', g.items.length === 0 && g.guess === true && g.amb.some(s => s.key === 'creatina'), g.items.map(x => x.s.key)); }
+T('otra inicial o una palabra corta ni se ofrece (warfarina, noche, boldo, histamina)', ['warfarina', 'a la noche', 'té de boldo', 'histamina'].every(n => { const g = oi(n, 'meds'); return !g.items.length && !g.amb.length; }));
+{ const g = oi('creatinina', 'supp', { subPick: 'sb_aspirina' }); T('lo elegido manda, sin arrastrar el parecido', g.items.map(x => x.s.key).join() === 'aspirina', g.items.map(x => x.s.key)); }
 T('"ashwagand" (a medio escribir) no identifica un item guardado', oi('ashwagand').items.length === 0 && oi('ashwagand').amb.some(s => s.key === 'ashwagandha'));
 T('tiroxina = levotiroxina, no L-tirosina', oi('tiroxina', 'meds').items.map(x => x.s.key).join() === 'levotiroxina', oi('tiroxina', 'meds').items.map(x => x.s.key));
 T('d3 + un parecido: el exacto se queda y el otro se ofrece', oi('d3 5000ui').items.map(x => x.s.key).join() === 'vitd');
@@ -99,6 +100,10 @@ db.stack = [{ id: 'm', name: 'glicinato de magnesio', category: 'supp', status: 
 // v296 · la forma elegida y la dosis sin cifra
 { const fk = Object.keys(E.subGet('magnesio').forms || {}).find(k => /glicinato/.test(k)); const n = E.subItemNutr({ name: 'magnesio', category: 'supp', dose: '2', unit: 'g', form: fk }); T('magnesio 2 g con forma glicinato elegida = 280 mg', n && n.magnesium === 280, n); }
 T('una dosis sin cifra no pinta unidad suelta', E.subRangeTxt({ unit: 'mcg', per: 'dia' }) === '' && /4,?000 UI/.test(E.subRangeTxt({ max: 4000, unit: 'UI', per: 'dia' })));
+// v298 · los rangos de un mineral van en elemental: la sal se convierte siempre (antes solo si el contexto decía 'elemental')
+{ const PM = { human: 'si', doses: [{ kind: 'ul', ctx: 'Solo magnesio de suplementos', max: 350, unit: 'mg', per: 'dia' }, { kind: 'estudiado', ctx: 'ensayos de presión arterial', min: 82, max: 637, unit: 'mg', per: 'dia' }] };
+  const vg = E.subDoseVerdict(PM, E.subGet('magnesio'), it('glicinato de magnesio', '2', 'g'), { n: 2, u: 'g' }); T('2 g de glicinato = 280 mg de magnesio: dentro de lo estudiado, no sobre el límite', vg && vg.k === 'in', vg);
+  const vo = E.subDoseVerdict(PM, E.subGet('magnesio'), it('magnesio', '400', 'mg'), { n: 400, u: 'mg' }); T('400 mg de magnesio (ya elemental) = sobre el límite de 350', vo && vo.k === 'ul', vo); }
 // performance: 300 identificaciones en < 300 ms
 const t0 = Date.now(); for (let i = 0; i < 300; i++) E.subIdentify('producto ' + i + ' ashwagandha ksm-66 600 mg'); const ms = Date.now() - t0; T('300 identificaciones < 400 ms (' + ms + ' ms)', ms < 400);
 
