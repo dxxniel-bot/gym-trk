@@ -7,7 +7,7 @@ const IX = path.resolve(__dirname, '..', '..', 'index.html');
 const h = fs.readFileSync(IX, 'utf8');
 const a = h.indexOf('const MICROS='), z = h.indexOf('/*SUB:END*/');
 if (a < 0 || z < 0) { console.error('✗ no encontré el bloque del catálogo'); process.exit(2); }
-const src = h.slice(a, z) + '\nreturn {subIdentify,subOfItem,subItemNutr,subDoseVerdict,subGet,subDoses,SUBSTANCE_DB,SUB_TK,subInterHits};';
+const src = h.slice(a, z) + '\nreturn {subIdentify,subOfItem,subItemNutr,subDoseVerdict,subGet,subDoses,SUBSTANCE_DB,SUB_TK,subInterHits,subInterMatch,subRangeTxt};';
 const db = { stack: [] };
 const E = new Function('db', 'suppStatus', 'fetch', src)(db, it => it.status || 'active', () => Promise.reject(new Error('sin red')));
 let ok = 0, bad = 0; const fail = [];
@@ -80,6 +80,25 @@ const PI = { inter: [{ with: ['alcohol'], text: 'x', sev: 'grave' }, { with: ['b
 const ih = E.subInterHits(PI, null); T('interacción con alcohol (cerveza en el stack)', ih.some(h => h.iv.with[0] === 'alcohol'), ih.map(h => h.iv.with));
 db.stack = [{ id: 'c1', name: 'caffeine', category: 'supp', status: 'active' }, { id: 'c2', name: 'caffeine', category: 'supp', status: 'active' }];
 const ih2 = E.subInterHits({ inter: [{ with: ['dmaa', 'otros estimulantes'], text: 'x', sev: 'grave' }] }, 'c1', E.subGet('cafeina')); T('tu otro item de cafeína no es una interacción de la cafeína', ih2.length === 0, ih2.map(h => h.who.map(w => w.key)));
+// v296 · un parecido no identifica un item guardado; se ofrece ("¿es esta?") y vale cuando se elige
+const oi = (name, cat, extra) => E.subOfItem(Object.assign({ name, category: cat || 'supp' }, extra));
+{ const g = oi('warfarina', 'meds'); T('warfarina no se identifica como cardarina (se ofrece)', g.items.length === 0 && g.guess === true && g.amb.length > 0, g.items.map(x => x.s.key)); }
+{ const g = oi('warfarina', 'meds', { subPick: 'sb_aspirina' }); T('lo elegido manda, sin arrastrar el parecido', g.items.map(x => x.s.key).join() === 'aspirina', g.items.map(x => x.s.key)); }
+T('"ashwagand" (a medio escribir) no identifica un item guardado', oi('ashwagand').items.length === 0 && oi('ashwagand').amb.some(s => s.key === 'ashwagandha'));
+T('tiroxina = levotiroxina, no L-tirosina', oi('tiroxina', 'meds').items.map(x => x.s.key).join() === 'levotiroxina', oi('tiroxina', 'meds').items.map(x => x.s.key));
+T('d3 + un parecido: el exacto se queda y el otro se ofrece', oi('d3 5000ui').items.map(x => x.s.key).join() === 'vitd');
+T('sus 13 nombres siguen identificándose en la lista', ['tretinoina 0.05%', 'minoxidil 5%', 'facial sunscreen', 'glicinato de magnesio', 'l-teanina', 'ksm-66', 'l-tyrosine', 'caffeine', 'l-arginine', 'd3 5000ui + mk-7', 'omega-3', 'cloruro de potasio', 'Mirtazapina'].every(n => oi(n).items.length > 0 && !oi(n).guess));
+// v296 · con lo que tomas: nombre o alias exacto, o la clase con todas sus palabras
+T('"aceite mineral" no habla del magnesio', !E.subInterMatch('aceite mineral', E.subGet('magnesio')));
+T('"tiroxina" no habla de la L-tirosina y sí de la levotiroxina', !E.subInterMatch('tiroxina', E.subGet('tirosina')) && E.subInterMatch('tiroxina', E.subGet('levotiroxina')));
+T('"suplementos de calcio" habla del calcio', E.subInterMatch('suplementos de calcio', E.subGet('calcio')));
+T('clase: minerales / benzodiacepinas / otros estimulantes / AINEs', E.subInterMatch('minerales', { sub: 'mineral esencial' }) && E.subInterMatch('benzodiacepinas', { sub: 'benzodiacepina' }) && E.subInterMatch('otros estimulantes', { sub: 'estimulante' }) && E.subInterMatch('AINEs', { sub: 'AINE' }) && E.subInterMatch('antidepresivos', { sub: 'antidepresivo tetracíclico' }));
+T('clase: otro inhibidor, otra vitamina y otro antidepresivo no', !E.subInterMatch('inhibidores de la MAO', { sub: 'inhibidor de la bomba de protones' }) && !E.subInterMatch('vitamina k', { sub: 'vitamina liposoluble' }) && !E.subInterMatch('antidepresivos ISRS', { sub: 'antidepresivo tetracíclico' }) && !E.subInterMatch('agua mineral', { sub: 'mineral' }));
+db.stack = [{ id: 'm', name: 'glicinato de magnesio', category: 'supp', status: 'active' }, { id: 't', name: 'l-tyrosine', category: 'supp', status: 'active' }];
+{ const h3 = E.subInterHits({ inter: [{ with: ['aceite mineral'], text: 'x', sev: 'leve' }, { with: ['levotiroxina', 'hormona tiroidea', 'tiroxina'], text: 'y', sev: 'moderada' }, { with: ['magnesio'], text: 'z', sev: 'leve' }] }, null); T('en su stack: ni aceite mineral ni tiroxina; magnesio sí', h3.length === 1 && h3[0].who[0].key === 'magnesio', h3.map(h => h.iv.with[0] + '→' + h.who.map(w => w.key))); }
+// v296 · la forma elegida y la dosis sin cifra
+{ const fk = Object.keys(E.subGet('magnesio').forms || {}).find(k => /glicinato/.test(k)); const n = E.subItemNutr({ name: 'magnesio', category: 'supp', dose: '2', unit: 'g', form: fk }); T('magnesio 2 g con forma glicinato elegida = 280 mg', n && n.magnesium === 280, n); }
+T('una dosis sin cifra no pinta unidad suelta', E.subRangeTxt({ unit: 'mcg', per: 'dia' }) === '' && /4,?000 UI/.test(E.subRangeTxt({ max: 4000, unit: 'UI', per: 'dia' })));
 // performance: 300 identificaciones en < 300 ms
 const t0 = Date.now(); for (let i = 0; i < 300; i++) E.subIdentify('producto ' + i + ' ashwagandha ksm-66 600 mg'); const ms = Date.now() - t0; T('300 identificaciones < 400 ms (' + ms + ' ms)', ms < 400);
 

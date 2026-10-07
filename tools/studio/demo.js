@@ -396,7 +396,7 @@
         const code = ['seed', 'uid', 'migrate', 'fixDuplicateExIds', 'fixLeakedFullStack', 'fixStraySides', 'purgeMood', 'healthShape'].map(grab).join('\n')
           + '\nlet _uidN=0;\nout=migrate(JSON.parse(input));';
         // almacenamiento falso (nombre armado: el linter de seguridad no admite la palabra en este archivo); escribir = fallo
-        const ctx = { input: a, out: null, asCanonical: x => x, computeNutrients: () => ({ alcohol: 0 }), idbSnap: () => {}, JSON, Math, Date, Object, Array };   // v266 · fixStraySides (y v269 purgeMood) guardan una foto en IndexedDB: aquí no hace nada
+        const ctx = { input: a, out: null, asCanonical: x => x, computeNutrients: () => ({ alcohol: 0 }), idbSnap: () => {}, subHygiene: () => null /* v295 · la higiene de sustancias necesita el catálogo entero: aquí no corre */, JSON, Math, Date, Object, Array };   // v266 · fixStraySides (y v269 purgeMood) guardan una foto en IndexedDB: aquí no hace nada
         ctx['local' + 'Storage'] = { getItem: () => null, ['set' + 'Item']: () => { throw new Error('migrate escribió en storage'); } };
         vm.createContext(ctx); vm.runInContext(code, ctx, { timeout: 5000 });
         const o = ctx.out;
