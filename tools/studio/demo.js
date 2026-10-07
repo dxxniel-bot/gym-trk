@@ -411,8 +411,8 @@
         // acabarse con el texto del dueño, creatina de sobra, vitamina D sin frasco (sin cuenta), en pausa y archivado sin aviso
         if(/\nfunction suppStock\(/.test(src)){
           const grabConst = name => { const m = src.match(new RegExp('\\nconst ' + name + '=[^\\n]*')); if(!m) throw new Error('falta const ' + name); return m[0].slice(1); };
-          const scode = ['pad', 'SUPP_FORMS', 'SUPP_WARN_D'].map(grabConst).join('\n') + '\n'
-            + ['todayISO', 'shiftDate', 'tickState', 'tickDone', 'isDueToday', 'suppStatus', 'suppProd', 'suppCont', 'suppPU', 'suppLeft', 'suppDaysLeft', 'suppStock', 'suppStockTxt'].map(grab).join('\n')
+          const scode = ['pad', 'SUPP_FORMS', 'SUPP_WARN_D', 'SUPP_SEG'].map(grabConst).join('\n') + '\n'   // v297 · las tomas (takesOf) leen su momento con SUPP_SEG
+            + ['todayISO', 'shiftDate', 'tickState', 'tickDone', 'isDueToday', 'suppStatus', 'suppProd', 'suppCont', 'suppPU', 'suppSlot', 'takeSlot', 'takesOf', 'takeFactor', 'suppLeft', 'suppDaysLeft', 'suppStock', 'suppStockTxt'].map(grab).join('\n')
             + '\nout=JSON.parse(input).map(x=>{ const k=suppStock(x); return {n:x.name,s:suppStatus(x),k:!!k,low:!!(k&&k.low),out:!!(k&&k.out),d:k?k.d:null,t:suppStockTxt(k)}; });';
           const sctx = { input: JSON.stringify(o.stack), out: null, JSON, Math, Date, Object, Array, String, isFinite };
           vm.createContext(sctx); vm.runInContext(scode, sctx, { timeout: 5000 });
