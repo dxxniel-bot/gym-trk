@@ -134,7 +134,8 @@ peso ······························ 61 kg  ▼ −
 el ✓ amplía su toque con `::after`) · `boot` shader del arranque · `wrap`/`scanner` overlays de un solo mensaje ·
 `vp-lock` zoom bloqueado (app nativa-like; también evita el zoom del iPhone al enfocar un campo, por eso los campos van a
 `--t-field` 14 desde v269) · `camera` ícono TRK de cámara de video con su punto rojo de grabación en compartir-ejercicio
-(lo que el dueño pone en sus historias; v269) · `user-label` emoji dentro de etiquetas del dueño.
+(lo que el dueño pone en sus historias; v269) · `user-label` emoji dentro de etiquetas del dueño · `rest` el reloj del
+descanso en grande (72 px, fuera de la escala, para leerlo con el teléfono lejos; la lista queda a `--op-rest`; v304).
 
 ## 7. Prohibido
 
@@ -248,6 +249,8 @@ caracteres sin perder un dato?
 | 2026-10-01 | **El catálogo es un árbol con líneas**: ejercicio → variantes `[bi] [uni] [alt]`, con vistas por músculo, por gym y A–Z (v286; las líneas se dibujan con CSS) | "leg extension… que salgan las variantes: unilateral, bilateral… curl de bíceps, bilateral, alternado" · eligió "árbol con líneas" |
 | 2026-10-02 | **Cualquier sustancia se registra y se reconoce**: catálogo con categoría (suplemento · fármaco · hormona · péptido · skincare · otra) y una ficha que dice lo que reporta la literatura a tu dosis, sus riesgos y qué vigilar, con fuente; nunca dosis recomendadas, ciclos ni protocolos (v295) | "el traqueo de cualquier sustancia que entre en el cuerpo y ver cómo es que ayuda o interfiere… que lo identifique tal cual, qué sustancia es para saber cuál es el perfil de beneficios y efectos secundarios de acuerdo a la dosis" |
 | 2026-10-07 | **La σ de cada serie es una barra, no un número repetido** (v301): bajo la serie hecha, de 0.5 a 1.0 con curva (cerca de 1.0 los pasos se abren), carga al dar ✓; el ▲▼ % se queda; el número sale al tocarla. Publicada para que la corrija usándola (lo dijo como duda) | "el porcentaje me gusta… pero la señalización de la intensidad de la tensión mecánica es muy repetitivo. No sé si ponerlo como una barra de progreso justo abajo de la serie… el punto mínimo sea el 50% y el máximo sea el 100%… con una curva exponencial… en cuanto le des el check… que cargue" |
+| 2026-10-07 | **Avisos y menús al pulgar** (v303): lo que no lleva teclado abre abajo, el botón principal va a la derecha, lo que borra a la izquierda, y quitar un ejercicio vive dentro del menú del nombre | "todo lo cargaría a que te quedes cerca del lado inferior derecho y del lado derecho, porque lo estás utilizando con un solo dedo… necesito una revaluación en cómo están los botones… qué cosas deben de quedar accesibles y qué otras cosas no para evitar errores" |
+| 2026-10-07 | **Descanso en grande** (v304, excepción `rest`): al marcar una serie la lista queda tenue y el reloj sale al centro con −15 · +15 · skip; cualquier toque o scroll lo baja y a los 5 s vuelve; al terminar dice `ready`. Se apaga en ajustes | "se bajara la opacidad en general de la pantalla y en el centro apareciera en grande el tiempo de descanso y los botones… con el simple hecho de scrollear, que se pase abajo otra vez… en cinco segundos de inactividad que vuelva… que el ready salga más grande… y no que estás rellenando una hoja de Excel" |
 
 ## 10. Preguntas abiertas (se cierran en el estudio, `tools/studio.html`)
 
