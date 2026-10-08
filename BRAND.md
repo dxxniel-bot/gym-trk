@@ -105,7 +105,9 @@ pie de compartir, 34 solo en el landing. Una sola variante.
   `currentColor`) con un **punto rojo de grabación** relleno en `--bad`, de 16 px, a la izquierda de la serie que marcaste
   en compartir-ejercicio; reemplaza al emoji de cámara de fotos. El rojo es la señal de "grabando" que él pidió, no un
   veredicto. Como share, hoy está dibujada a viewBox 16 / trazo 1.4: pasar el set a la rejilla 24 / trazo 1.6 sigue
-  abierto (§10).
+  abierto (§10). **Desde v307** (7-oct, a pedido suyo) ya no lleva punto ni cuelga del margen: es solo la **silueta en
+  `--bad`** (rojo = grabando) y su cuerpo ES el marco del número de la serie grabada (o de la R / L en unilateral); el
+  lente sale a la derecha, dentro del hueco entre columnas (`camNumHTML`, `.camn`).
 - **Arranque.** Shader WebGL de marca (única excepción de fondo animado): **matriz de puntos de fósforo** (rejilla de 6 px,
   onda desde el centro, monocromo), encuadre cover (sin comprimir), cuadro quieto con reduced-motion y apagado en segundo
   plano, detrás del texto a `--op-dim`. **`loading gym tracker` en cada apertura** (decidido el 23-sep, enviado en v268):
@@ -133,7 +135,7 @@ peso ······························ 61 kg  ▼ −
 `ring` anillo de kcal (macros y compartir) · `table36` tabla de sesión con celdas de 36 px (densidad en la serie;
 el ✓ amplía su toque con `::after`) · `boot` shader del arranque · `wrap`/`scanner` overlays de un solo mensaje ·
 `vp-lock` zoom bloqueado (app nativa-like; también evita el zoom del iPhone al enfocar un campo, por eso los campos van a
-`--t-field` 14 desde v269) · `camera` ícono TRK de cámara de video con su punto rojo de grabación en compartir-ejercicio
+`--t-field` 14 desde v269) · `camera` ícono TRK de cámara de video en compartir-ejercicio (desde v307: silueta roja que abraza el número de la serie grabada, sin punto)
 (lo que el dueño pone en sus historias; v269) · `user-label` emoji dentro de etiquetas del dueño · `rest` el reloj del
 descanso en grande (72 px, fuera de la escala, para leerlo con el teléfono lejos; la lista queda a `--op-rest`; v304).
 
@@ -251,6 +253,7 @@ caracteres sin perder un dato?
 | 2026-10-07 | **La σ de cada serie es una barra, no un número repetido** (v301): bajo la serie hecha, de 0.5 a 1.0 con curva (cerca de 1.0 los pasos se abren), carga al dar ✓; el ▲▼ % se queda; el número sale al tocarla. Publicada para que la corrija usándola (lo dijo como duda) | "el porcentaje me gusta… pero la señalización de la intensidad de la tensión mecánica es muy repetitivo. No sé si ponerlo como una barra de progreso justo abajo de la serie… el punto mínimo sea el 50% y el máximo sea el 100%… con una curva exponencial… en cuanto le des el check… que cargue" |
 | 2026-10-07 | **Avisos y menús al pulgar** (v303): lo que no lleva teclado abre abajo, el botón principal va a la derecha, lo que borra a la izquierda, y quitar un ejercicio vive dentro del menú del nombre | "todo lo cargaría a que te quedes cerca del lado inferior derecho y del lado derecho, porque lo estás utilizando con un solo dedo… necesito una revaluación en cómo están los botones… qué cosas deben de quedar accesibles y qué otras cosas no para evitar errores" |
 | 2026-10-07 | **Descanso en grande** (v304, excepción `rest`): al marcar una serie la lista queda tenue y el reloj sale al centro con −15 · +15 · skip; cualquier toque o scroll lo baja y a los 5 s vuelve; al terminar dice `ready`. Se apaga en ajustes | "se bajara la opacidad en general de la pantalla y en el centro apareciera en grande el tiempo de descanso y los botones… con el simple hecho de scrollear, que se pase abajo otra vez… en cinco segundos de inactividad que vuelva… que el ready salga más grande… y no que estás rellenando una hoja de Excel" |
+| 2026-10-08 | **La cámara abraza el número** (v307): la serie grabada se marca con la silueta de la cámara de video en rojo, sin punto, y su cuerpo es el marco del número de la serie (o de la R / L en unilateral); nada cuelga del margen. La marca se guarda en la serie y se conserva al compartir desde el historial | "una cámara con un circulito rojo que no me encanta y aparte como que se queda medio off… el icono de la cámara, no sé si en rojo, solamente la silueta o relleno, pero abrazando el número de la serie que se está grabando… en ejercicios unilaterales… dependiendo si es izquierda o derecha" |
 
 ## 10. Preguntas abiertas (se cierran en el estudio, `tools/studio.html`)
 
