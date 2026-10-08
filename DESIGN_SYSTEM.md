@@ -336,7 +336,7 @@ presionado `.6` de la agenda, `.5` de `.fa-em-step.off`/`.u-dim`, arrastre `.3`,
 (v264: sobre un gris `saturate()` no hace nada; el 1.7 de antes solo saturaba el color dentro del vidrio) · `--glass-edge`
 .14 · `--glass-edge-lo` .06 · `--glass-ring` .10 · `--glass-shadow` `0 8px 30px rgba(0,0,0,.55)`. Radio: `--r-float` 8.
 
-- GLS-1 (B-01): `backdrop-filter` **solo en chrome** (nav, sheet, toast, globo del tour desde v278; popover en G3). Nunca
+- GLS-1 (B-01): `backdrop-filter` **solo en chrome** (nav, sheet, toast, globo del tour desde v278, panel del descanso en grande `#restfocus .rfc` desde v309; popover en G3). Nunca
   en contenido. La revisa: R-BLUR (`tools/ds-rules.cjs` cuenta `.tour`/`.tourb` como chrome desde v278) · `_dsRenderCheck`
   blur (`DS_CHROME` incluye `.tour`).
 - GLS-2: **una sola definición.** Las utilidades `.glass` (nav) y `.glass-strong` (sheet, toast, capa de decisión, globo del
@@ -1124,7 +1124,7 @@ Decisión del dueño 2026-09-21: macros en orden **SUPPS → MEALS → WATER**, 
     de marca no reescribe los días de antes.
   - **Días anteriores (v275):** un suplemento agregado mientras ves un día pasado en macros empieza ese día (`startDate` =
     el día visto), para que se pueda marcar ahí.
-- **MEALS:** una `.mrec` por comida. Cabecera `.mhd` en **tres renglones** (v290; el dueño, 1-oct: "si no le pones la hora,
+- **MEALS:** una `.mrec` por comida. Cabecera `.mhd` en **dos renglones desde v309** (repaso estético del 8-oct: `.mact` con `[time]` y `[+ food]` va en el renglón de los macros, a la derecha y antes de `···`; 44 px por comida en vez de 70; lo que sigue describe los tres renglones de v290, que ya no aplican) (v290; el dueño, 1-oct: "si no le pones la hora,
   se ve un huecote… la hora al renglón del nombre… los macros alineados a la izquierda… el protagonista es el que tiene más
   gramos"; eligió total a la derecha, `···` debajo y `[+ food]` debajo de los dos):
   1 · `.mtg` (pliega la comida, ≥44): `.mchev` · nombre `.mnm` (`--t-section`/800 `--fg`, **manda**) con la hora pegada
@@ -2668,3 +2668,17 @@ pérdidas de datos · accesibilidad = `_dsRenderCheck` hit/txt, roles, contraste
 - **Regla para cualquier agente:** identificar el componente concreto, documentar qué comportamiento se toma, quitar todo
   tratamiento visual incompatible, reemplazar sus valores por los tokens de este documento, implementarlo como componente
   `TRK*` reutilizable (§7.18) y después correr `node tools/ds-audit.cjs`, `tools/ds-diff.html` y el loop de QA.
+
+## Adenda v309 · repaso estético del 8-oct-2026 (manda sobre las fichas de arriba donde difieran)
+
+El dueño juzgó "horrible, sin seguir la línea estética" lo publicado entre v300 y v308. Se rehízo con piezas existentes; anatomías medidas a 393×852:
+
+- **Descanso en grande** (`#restfocus`, excepción `rest`): panel `.rfc.glass-strong` de 357×203 (marco − 2×18), radio `--r-float`, relleno 24 / 12 / 8; rótulo 10 px `--o50` `--ls-ui` en minúsculas (`rest`, `rest · side`); reloj 72/800 tabular; renglón 12 px `--o60` `next · <nombre> · set n/N`; tres `button.b` (`[−15] [+15] [skip]`) con toques contiguos de 68×44; en `ready`: la palabra en `--good`, sin rótulo ni acciones (357×146). Movimiento (`rfAnim`): entra translateY desde la barra + opacidad en `--dur-calm` / `--ease-out`; sale en `--dur-3` / `--ease-in`; la lista solo cambia de opacidad; con movimiento reducido no corre.
+- **Pie de la sesión** (`#wfooter`): cerrado = `···` (`.dots3`, a la izquierda, 48 de toque) + `button.fdone` como `[verbo]` a la derecha (10 px / 400 `--o60`, corchetes `--o40`, 44 de alto; texto `✓ 140lbs × 7 · 1/3`, unidad pegada). Con descanso: `··· rest 3:00 [−15] [+15] [skip]` (la barra usa `button.b`; `···` no cambia de lado: `.restbar.on ~ .wbar{order:-1}`); al vencer dice `ready`. Único primario del pie: `save session`, con el pie abierto. Tras `footdone`, 700 ms en los que `restminus/restplus/restskip/wbar` del pie no responden.
+- **Renglón de σ** (`.setprogline`): barra `.sgb` 56×2, puntaje `.sgv` con `min-width:5ch` y la insignia `.setprog` con `min-width:6ch`, alineados a la derecha: tres huecos fijos; sin insignia su hueco se conserva.
+- **Renglón de lectura con evidencia** (una receta para `▼ por`, `RIR anotado` y `fallo anotado`): `.submeta[data-gloss][data-gv]`, 10 px, UN renglón, el renglón entero es el toque (sin subrayado de lado a lado), punteado de 1 px solo bajo el término (`<span class="u-dash">`); la evidencia completa sale en el globo.
+- **Cámara** (`camSVG(n)`, `camNumHTML`, `.camn` / `.camf`, excepción `camera`): cuerpo de 12 px (un carácter) o 16.4 (dos), alto 12.8, esquina 1, lente 4.3, trazo 1.4 `non-scaling`, color `--bad`; centrada sobre el número con `translate(-50%,-50%)` y dentro de su celda (aire ≥2.5 px a la vecina); en unilateral rodea la R / L; un drop marcado muestra `↓`. Sin instrucción impresa en la capa (va en `aria-description`). `.exshr` fijo arriba a la derecha del nombre; la cabecera no recibe toques en su caja vacía (`pointer-events`).
+- **Cabecera de comida** (`.mhd`): renglón 1 nombre + hora · total; renglón 2 macros a la izquierda y, a la derecha, `.mact` (`[time]` solo sin hora, `[+ food]`) y `···` (`.gmore`, toque de 44 hacia arriba); 44 px por comida. Contador de sección `n / m` como `0 / 15` de //SUPPS.
+- **Botones de hoja** (`.sheetbtns`): con principal, este va a la derecha y lo que borra (`.danger`) hasta la izquierda en rojo; una fila que ya trae el principal al final no se voltea; en la capa de abajo sin principal, la salida a la derecha. Un primario comparte fila con UN `[verbo]` como mucho; con dos o más va solo y los verbos van debajo.
+- **Detalle de músculo** (`openMuscleDetail`): arriba 4 filas (`σ 7 d · tu habitual · cómo va · recovery`), ninguna nota se corta (`tu habitual` = `N series · RIR x`; las semanas en `data-gv`); tras `[más]`, EFFORT en filas `.mdline` de un renglón: `RIR medio`, `a F o RIR 0 · tu costumbre N%`, `zona por tu RIR ···· ~5–10 series · llevas N`, `a RIR x` (solo si difiere ≥0.75), `RIR anotado ···· RIR 1 rinde como RIR 0`, `fallo anotado ···· quedaba alguna · n de m` (solo con señal).
+- Tokens usados y no listados en §4.13: `--op-rest` (.16), `--dur-calm` (420 ms), `--dur-charge` (560 ms).
