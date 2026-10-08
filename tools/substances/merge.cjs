@@ -2,14 +2,16 @@
 // tools/substances/merge.cjs · v295 · junta lo que investigaron y verificaron los agentes (research-workflow.js) en catalog.json.
 //   node tools/substances/merge.cjs <journal.jsonl> [<journal.jsonl> …]
 // Va FICHA POR FICHA (el flujo corre por lotes de 6-8: una familia llega en varios resultados): una ficha verificada reemplaza a
-// la que hubiera; una solo investigada entra como `_verified:false` y NUNCA pisa a una verificada. Lo que no llegó se conserva.
+// la que hubiera. Una solo investigada NO entra (queda en el journal y en su archivo `pre` para verificarse); con
+// `--con-sin-verificar` entra como `_verified:false` y nunca pisa a una verificada. Lo que no llegó se conserva.
 // Guarda por familia el registro de cambios del verificador y lo que dijo que no pudo comprobar.
 'use strict';
 const fs = require('fs'), path = require('path');
 const DIR = __dirname, OUT = path.join(DIR, 'catalog.json');
 const FAM = JSON.parse(fs.readFileSync(path.join(DIR, 'families.json'), 'utf8'));
 const famOf = {}; FAM.forEach(f => f.items.forEach(it => { famOf[it.id] = f.key; }));
-const files = process.argv.slice(2); if (!files.length) { console.error('uso: node merge.cjs <journal.jsonl> …'); process.exit(2); }
+const KEEP = process.argv.includes('--con-sin-verificar');
+const files = process.argv.slice(2).filter(a => a.slice(0, 2) !== '--'); if (!files.length) { console.error('uso: node merge.cjs <journal.jsonl> …'); process.exit(2); }
 const cur = fs.existsSync(OUT) ? JSON.parse(fs.readFileSync(OUT, 'utf8')) : { v: 0, entries: [], log: {} };
 const byId = {}; (cur.entries || []).forEach(e => { byId[e.id] = e; });
 const log = cur.log || {};
@@ -18,6 +20,7 @@ const rep = [], before = JSON.stringify(cur.entries || []);
 files.forEach(f => fs.readFileSync(f, 'utf8').split('\n').filter(Boolean).forEach(l => { let o; try { o = JSON.parse(l); } catch (_) { return; }
   const r = o.type === 'result' && o.result; if (!r || !Array.isArray(r.entries) || !r.entries.length) return;
   const ver = Array.isArray(r.changes), ids = [], fams = {};
+  if (!ver && !KEEP) { const k = r.entries.filter(e => e && famOf[e.id] && !(byId[e.id] && byId[e.id]._verified !== false)); if (k.length) rep.push('~ ' + famOf[k[0].id] + ' · ' + k.length + ' fichas (' + k[0].id + '…' + k[k.length - 1].id + ') · solo investigadas: no entran'); return; }
   r.entries.forEach(e => { const fk = e && famOf[e.id]; if (!fk) { rep.push('  ? id desconocido ' + (e && e.id)); return; }
     if (!ver && byId[e.id] && byId[e.id]._verified !== false) return;   // lo solo investigado no pisa lo verificado
     byId[e.id] = Object.assign({}, e, { _verified: ver }); ids.push(e.id); fams[fk] = 1; });
@@ -30,6 +33,7 @@ files.forEach(f => fs.readFileSync(f, 'utf8').split('\n').filter(Boolean).forEac
     } else if (r.notes && !g.notes.includes(r.notes)) g.notes = (g.notes ? g.notes + '\n' : '') + r.notes; });
   rep.push((ver ? '✓ ' : '~ ') + Object.keys(fams).join('+') + ' · ' + ids.length + ' fichas (' + ids[0] + '…' + ids[ids.length - 1] + ')' + (ver ? ' · ' + r.changes.length + ' cambios del verificador' + ((r.unverified || []).length ? ' · ' + r.unverified.length + ' notas sin comprobar' : '') : ' · solo investigadas'));
 }));
+if (!KEEP) Object.keys(byId).forEach(id => { if (byId[id]._verified === false) delete byId[id]; });   // lo que no pasó por el verificador no vive en el catálogo
 const order = []; FAM.forEach(f => { let n = 0, v = 0; f.items.forEach(it => { const e = byId[it.id]; if (!e) return; order.push(e); n++; if (e._verified !== false) v++; });
   if (n || log[f.key]) { const g = L(f.key); g.n = n; g.verified = v; g.of = f.items.length; } });
 const changed = JSON.stringify(order) !== before;
