@@ -1,6 +1,6 @@
 # gym//TRK — DESIGN SYSTEM (referencia del estado actual)
 
-> Referencia del estado actual (v309). **Lee BRAND.md primero**: manda sobre este archivo. Sin historia: DESIGN_CHANGELOG.md.
+> Referencia del estado actual (v310). **Lee BRAND.md primero**: manda sobre este archivo. Sin historia: DESIGN_CHANGELOG.md.
 
 ---
 
@@ -1490,10 +1490,17 @@ quitar… acomodar tu orden y ya después confirmar… como una screen de widget
   `touch-action:none`. La franja de racha (`.pwide.ed`, sangría `--s6`) solo lleva `−` (no se reordena). Abajo, la barra
   **`.pedbar`** pegada al borde (`sticky`, fondo `--bg`, separador `--bw-sep` `--o10`, padding `--s3` + safe-area):
   `[+ add]` · `[cancel]` (`button.b`) · `✓ done` (`.start.pedok`, el primario de la vista, ocupa el resto).
-- **Arrastrar (⠿):** a los 6 de movimiento nace `.dragghost` con el nombre de la tile, que sigue al dedo; el origen queda
-  `.dragsrc` a `--op-dim`; la tile más cercana (por su centro) marca dónde cae con una barra interior de `--bw-mark`
-  `--fill` a su izquierda (`.dropbefore`) o derecha (`.dropafter`), según el lado del dedo; cerca del borde de `#view`
-  (80) hace scroll de 12 por movimiento; al soltar, `progPlace()` + `reRender()` (TRKRow, `data-rk` `pw:<clave>`).
+- **Arrastrar (⠿), desde v310 como mover widgets en iOS** (el dueño, 30-sep: "lo desplazas y se desplazan los demás como
+  para abrir espacio; que se vea la interacción en el momento y al soltarlo ahí se queda y ya después confirmar"): a los 6 de
+  movimiento la tile misma se levanta (`.ptile.lift`: fondo `--card2`, borde `--fg`, `--shadow-float`, z 2; sin fantasma ni
+  raya de destino) y sigue al dedo con `transform`. Cuando su centro queda más cerca de otro hueco (`progSlotAt`, con ventaja
+  mínima `PROG_DRAG.hyst` 10 y solo hacia donde va el dedo), las vecinas se recorren EN VIVO: `progDomShift` las mueve en el
+  DOM alrededor de ella y `progFlipCapture` / `progFlipPlay` las hacen viajar desde donde estaban (FLIP en X e Y, solo
+  transform, `--dur-2`; como TRKRow, es continuidad de una reordenación directa y recorre más que los 4 px de B-09). La copia
+  de trabajo va al día en cada hueco (`progPlace`); nada se guarda hasta `✓ done`. Cerca del borde de `#view` (72) la pantalla
+  se recorre sola hacia donde va el dedo. La rejilla no encoge mientras arrastras (`min-height` al levantar): el scroll nunca
+  sube solo. `.pgrid.ped>.ptile.ed` va sin transiciones (con movimiento reducido el resultado es el mismo, sin animación).
+  El menú y el `−` reacomodan con `progReflow()`.
   **Tocar ⠿ sin moverlo** abre TRKMenu `mover antes` · `mover después` · `quitar` (la alternativa visible del gesto,
   A11Y-5).
 - **`+ add`:** sheet `agregar a progreso` con lo oculto como filas `nombre ···· + ›` (vacío: `// ya tienes todo a la
