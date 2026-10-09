@@ -45,23 +45,26 @@ const ALL = B.BLOCKS.map(b => b.key), without = (...types) => { const h = Object
 // el corredor: propiedad desconocida
 { const wf = fresh(); par(wf, TXT).WFTextActionText.Value.attachmentsByRange['{8, 1}'].Aggrandizements[0].PropertyName = 'Valor';
   const r = B.run(wf, B.HEALTH, { now: B.NOW }); say(/propiedad desconocida/.test(r.stoppedAt || ''), 'corredor: propiedad desconocida → ' + r.stoppedAt); }
-// su caso (2-oct): sin entrada y sin % grasa, se detiene AHÍ con "No Samples Found", y lo de antes ya está copiado con su marca
-{ const r = B.run(fresh(), without('Body Fat Percentage'), { now: B.NOW }), k = keysOf(r), o = oks(r);
-  say(/No Samples Found/.test(r.stoppedAt || '') && ['steps', 'act', 'weight', 'sleep', 'rhr'].every(x => k.has(x) && o.has(x)) && !o.has('fat') && !k.has('bas'), 'corredor: sin grasa y sin entrada se detiene en grasa con ' + [...k].join(' ')); }
-// la app pide no buscarlo: llega al final
-{ const r = B.run(fresh(), without('Body Fat Percentage', 'Heart Rate Variability'), { now: B.NOW, input: B.cfgOf({ fat: 0, hrv: 0 }) }), k = keysOf(r);
-  say(!r.stoppedAt && [...k].sort().join() === 'act,bas,rhr,sleep,steps,weight' && !/\n\n|\n$/.test(r.clip), 'corredor: pidiendo grasa y HRV en 0 llega al final con ' + [...k].join(' ')); }
-{ const r = B.run(fresh(), without('Body Fat Percentage', 'Heart Rate Variability', 'Resting Heart Rate', 'Sleep'), { now: B.NOW, input: B.cfgOf({ fat: 0, hrv: 0, rhr: 0, sleep: 0 }) }), k = keysOf(r);
-  say(!r.stoppedAt && [...k].sort().join() === 'act,bas,steps,weight', 'corredor: un iPhone sin reloj, pidiendo solo lo que tiene → ' + [...k].join(' ')); }
+// v318 · su caso (8-oct): un reloj que no escribe FC en reposo ni HRV. Corrido a mano (sin entrada) llega al final: los opcionales ni se buscan
+{ const r = B.run(fresh(), without('Resting Heart Rate', 'Heart Rate Variability'), { now: B.NOW }), k = keysOf(r), o = oks(r);
+  say(!r.stoppedAt && ['steps', 'act', 'weight', 'sleep'].every(x => k.has(x) && o.has(x)) && !k.has('rhr') && !k.has('hrv') && o.has('end') && !k.has('fat') && !k.has('bas'), 'corredor: sin FC reposo ni HRV y sin entrada llega al final con ' + [...k].join(' ')); }
+// la app prueba un opcional que tu Salud no tiene: se detiene AHÍ, con lo fijo ya copiado y marcado
+{ const r = B.run(fresh(), without('Resting Heart Rate'), { now: B.NOW, input: B.cfgOf({ hrv: 0 }) }), k = keysOf(r), o = oks(r);
+  say(/No Samples Found/.test(r.stoppedAt || '') && ['steps', 'act', 'weight', 'sleep'].every(x => k.has(x) && o.has(x)) && !o.has('rhr') && !o.has('end'), 'corredor: probando FC reposo sin tenerla se detiene ahí con ' + [...k].join(' ')); }
+// la app pide no buscarlos: llega al final
+{ const r = B.run(fresh(), without('Resting Heart Rate', 'Heart Rate Variability'), { now: B.NOW, input: B.cfgOf({ rhr: 0, hrv: 0 }) }), k = keysOf(r);
+  say(!r.stoppedAt && [...k].sort().join() === 'act,sleep,steps,weight' && !/\n\n|\n$/.test(r.clip), 'corredor: pidiendo FC reposo y HRV en 0 llega al final con ' + [...k].join(' ')); }
+{ const r = B.run(fresh(), without('Heart Rate Variability', 'Resting Heart Rate', 'Sleep'), { now: B.NOW, input: B.cfgOf({ hrv: 0, rhr: 0, sleep: 0, fat: 0, bas: 0 }) }), k = keysOf(r);
+  say(!r.stoppedAt && [...k].sort().join() === 'act,steps,weight', 'corredor: un iPhone sin reloj, pidiendo solo lo que tiene (y con las llaves viejas en 0) → ' + [...k].join(' ')); }
 // el historial: pedir más días trae más (la muestra de hace 13 días)
 { const r7 = B.run(fresh(), B.HEALTH, { now: B.NOW }), r20 = B.run(fresh(), B.HEALTH, { now: B.NOW, input: B.cfgOf({ steps: 20 }) });
   say(!/ 9999$/m.test(r7.clip) && / 9999$/m.test(r20.clip) && !r20.stoppedAt, 'corredor: 7 días no traen la muestra de hace 13; 20 días sí'); }
 { const r = B.run(fresh(), {}, { now: B.NOW, input: B.cfgOf(B.BLOCKS.reduce((m, b) => (m[b.key] = 0, m), {})) }); say(r.clip === 'trk2\nok in\nok id demo\nok cfg\nok end' && !r.stoppedAt, 'corredor: pidiendo nada copia solo ' + JSON.stringify(r.clip)); }
 { const r = B.run(fresh(), B.HEALTH, { now: B.NOW, input: 'esto no es json' }), o = oks(r); say(!r.stoppedAt && o.has('end') && !B.BLOCKS.some(b => o.has(b.key)), 'corredor: una entrada que no es JSON llega al final sin buscar nada (ok end sin ok de datos: la app sabe que no leyó la lista)'); }
-{ const r = B.run(fresh(), B.HEALTH, { now: B.NOW, fail: 'Resting Calories' }), k = keysOf(r);
-  say(/Resting Calories/.test(r.stoppedAt) && ['steps', 'act', 'weight', 'sleep', 'rhr', 'fat'].every(x => k.has(x)) && !k.has('bas') && !k.has('hrv'), 'corredor: si "Resting Calories" truena, el portapapeles ya tiene ' + [...k].join(' ')); }
+{ const r = B.run(fresh(), B.HEALTH, { now: B.NOW, input: B.cfgOf(), fail: 'Heart Rate Variability' }), k = keysOf(r);
+  say(/Heart Rate Variability/.test(r.stoppedAt) && ['steps', 'act', 'weight', 'sleep', 'rhr'].every(x => k.has(x)) && !k.has('hrv'), 'corredor: si "Heart Rate Variability" truena, el portapapeles ya tiene ' + [...k].join(' ')); }
 { const r = B.run(fresh(), {}, { now: B.NOW, input: B.cfgOf() }); say(/No Samples Found: Steps/.test(r.stoppedAt || '') && r.clip === 'trk2\nok in\nok id demo\nok cfg', 'corredor: Salud vacía: se detiene en pasos, pero la app ya ve ok cfg → ' + JSON.stringify(r.clip)); }
-say(ALL[ALL.length - 1] === 'hrv' && ALL[0] === 'steps', 'orden: ' + ALL.join(' · '));
+say(ALL[ALL.length - 1] === 'hrv' && ALL[0] === 'steps' && ALL.length === 6 && ALL.indexOf('fat') < 0 && ALL.indexOf('bas') < 0, 'orden: ' + ALL.join(' · ') + ' (sin grasa ni energía en reposo)');
 for (const args of [['build.cjs', '--check'], ['sign.cjs', '--verify']]) {
   const r = cp.spawnSync(process.execPath, [path.join(__dirname, args[0]), args[1]], { encoding: 'utf8' });
   say(r.status === 0, args.join(' ') + ' → ' + String(r.stdout + r.stderr).trim().split(/\r?\n/).pop());

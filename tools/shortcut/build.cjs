@@ -7,8 +7,9 @@
 //                                            orden de los datos (HP_ORDER) es el mismo en la app y en el atajo
 //   node tools/shortcut/build.cjs --sample   solo imprime el texto de ejemplo (para meterlo por parseHealthPaste)
 //
-// Qué hace el atajo en el iPhone: lee de Salud pasos, energía activa, peso, sueño con fases, FC en reposo, % de grasa,
-// energía en reposo y HRV; escribe una línea por muestra en el formato `trk2` que la app ya lee (parseHealthPaste en
+// Qué hace el atajo en el iPhone: lee de Salud pasos, energía activa, peso, sueño con fases y, si la app los pide (los pide solo
+// cuando tu Salud los tiene), FC en reposo y HRV. v318 · ya NO lee % de grasa ni energía en reposo: ningún número de la app los
+// usaba y eran dos lugares más donde detenerse (el dueño, 8-oct: "no sé por qué está teniendo de input el porcentaje de grasa"). Escribe una línea por muestra en el formato `trk2` que la app ya lee (parseHealthPaste en
 // index.html) y lo copia al portapapeles. No abre ninguna URL ni manda nada a internet.
 //
 // v294 · lo que enseñó el iPhone del dueño (2-oct): "Buscar muestras de Salud" SE DETIENE con un error ("No Samples Found:
@@ -17,7 +18,8 @@
 //   1) la APP le dice al atajo, por la entrada (`shortcuts://run-shortcut?…&input=text&text={"steps":2,…}`), cuántos días
 //      buscar de cada dato; 0 = no buscarlo. La app aprende qué no tienes (punto 3) y pide siempre una ventana que incluye el
 //      último dato que ya tiene, así la búsqueda nunca queda vacía. La primera vez pide un año (el historial).
-//   2) sin entrada (corrido desde Atajos), 7 días de todo;
+//   2) sin entrada (corrido desde Atajos), 7 días de lo fijo (pasos, energía, peso, sueño). Los opcionales (`opt`: FC en reposo,
+//      HRV) solo se buscan si la app los pide: corrido a mano nunca se detiene por ellos (v318);
 //   3) cada dato que se leyó deja una marca `ok <dato>` (y `ok cfg` al leer la entrada): si el atajo se detiene, la app sabe
 //      en cuál y ya no lo pide;
 //   4) se copia al portapapeles tras cada dato: lo leído antes de una falla nunca se pierde (v292).
@@ -51,12 +53,10 @@ const BLOCKS = [
   { key: 'act', type: 'Active Calories', day: true, unit: true },
   { key: 'weight', type: 'Weight', unit: true },
   { key: 'sleep', type: 'Sleep', sleep: true },
-  { key: 'rhr', type: 'Resting Heart Rate' },
-  { key: 'fat', type: 'Body Fat Percentage' },   // confirmado: la alerta de su iPhone dice "Body Fat Percentage"
-  { key: 'bas', type: 'Resting Calories', day: true, unit: true, soft: true },
-  { key: 'hrv', type: 'Heart Rate Variability' },
+  { key: 'rhr', type: 'Resting Heart Rate', opt: true },      // opt = solo si la app lo pide (v318): no todo reloj lo escribe en Salud
+  { key: 'hrv', type: 'Heart Rate Variability', opt: true },
 ];
-const DEFAULT_CFG = '{' + BLOCKS.map(b => '"' + b.key + '":' + DEFAULT_DAYS).join(',') + '}';
+const DEFAULT_CFG = '{' + BLOCKS.map(b => '"' + b.key + '":' + (b.opt ? 0 : DEFAULT_DAYS)).join(',') + '}';
 // lo que la entrada puede pedir: aceptar cualquier cosa, como un atajo nuevo (la lista del cliente más nuevo leído, HS)
 const INPUT_CLASSES = ['WFAppContentItem', 'WFAppStoreAppContentItem', 'WFArticleContentItem', 'WFContactContentItem', 'WFDateContentItem', 'WFEmailAddressContentItem', 'WFFolderContentItem', 'WFGenericFileContentItem', 'WFImageContentItem', 'WFiTunesProductContentItem', 'WFLocationContentItem', 'WFDCMapsLinkContentItem', 'WFAVAssetContentItem', 'WFPDFContentItem', 'WFPhoneNumberContentItem', 'WFRichTextContentItem', 'WFSafariWebPageContentItem', 'WFStringContentItem', 'WFURLContentItem'];
 
@@ -396,19 +396,21 @@ function main() {
   const s = sample(back); if (s.stoppedAt) fail('el atajo se detiene: ' + s.stoppedAt);
   const lines = s.clip.split('\n'), keysOf = r => new Set((r.clip || '').split('\n').slice(1).filter(l => !/^ok /.test(l)).map(l => l.split(' ')[0])), oks = r => new Set((r.clip || '').split('\n').filter(l => /^ok /.test(l)).map(l => l.slice(3)));
   if (lines.slice(0, 4).join('|') !== 'trk2|ok in|ok id demo|ok cfg' || lines[lines.length - 1] !== 'ok end') fail('el texto no empieza con trk2 · ok in · ok id · ok cfg o no termina en ok end');
-  { const d = run(back, HEALTH, { now: NOW }); if (d.stoppedAt || d.clip.split('\n').slice(0, 3).join('|') !== 'trk2|ok id |ok cfg') fail('sin entrada debe correr con 7 días de todo y sin la marca ok in: ' + JSON.stringify(d.clip.slice(0, 40))); }
+  { const d = run(back, HEALTH, { now: NOW }); if (d.stoppedAt || d.clip.split('\n').slice(0, 3).join('|') !== 'trk2|ok id |ok cfg') fail('sin entrada debe correr con 7 días de lo fijo y sin la marca ok in: ' + JSON.stringify(d.clip.slice(0, 40))); }
   if (BLOCKS.some(b => !keysOf(s).has(b.key) || !oks(s).has(b.key))) fail('falta un dato o su marca: ' + [...keysOf(s)].join(' ') + ' / ' + [...oks(s)].join(' '));
   if (/9999|\b71\b/.test(s.clip)) fail('se coló una muestra vieja o de otro tipo');
   if (s.copies !== BLOCKS.length + 3) fail('copias al portapapeles: ' + s.copies + ' (encabezado, entrada, una por dato y el final)');
   BLOCKS.forEach((b, i) => {
     const h = Object.assign({}, HEALTH); delete h[b.type];
     // sin entrada y sin ese dato: el atajo se detiene AHÍ (como en el iPhone), y todo lo anterior ya está copiado con su marca
-    const r = run(back, h, { now: NOW }), kr = keysOf(r), or = oks(r);
+    // un opcional: sin entrada ni se busca (corrido a mano llega al final); pedido por la app y sin datos, se detiene AHÍ con lo anterior copiado
+    if (b.opt) { const m = run(back, h, { now: NOW }); if (m.stoppedAt || keysOf(m).has(b.key) || oks(m).has(b.key) || !oks(m).has('end')) fail('sin entrada no debe buscar ' + b.type + ' (opcional): ' + (m.stoppedAt || 'lo buscó')); }
+    const r = run(back, h, b.opt ? { now: NOW, input: cfgOf() } : { now: NOW }), kr = keysOf(r), or = oks(r);
     if (!/No Samples Found/.test(r.stoppedAt || '')) fail('sin datos de ' + b.type + ' el atajo no se detuvo como en el iPhone');
     if ((r.clip || '').split('\n')[0] !== 'trk2') fail('si se detiene en ' + b.type + ' el portapapeles no dice trk2');
     BLOCKS.slice(0, i).forEach(x => { if (!kr.has(x.key) || !or.has(x.key)) fail('si se detiene en ' + b.type + ' se pierde ' + x.key); });
     if (or.has(b.key) || BLOCKS.slice(i + 1).some(x => or.has(x.key))) fail('si se detiene en ' + b.type + ' quedó una marca de algo que no se leyó');
-    if (or.has('in')) fail('sin entrada no debe salir la marca ok in');
+    if (!b.opt && or.has('in')) fail('sin entrada no debe salir la marca ok in');
     // la app pide no buscarlo (0): llega al final, con todo lo demás y sin renglones en blanco
     const e = run(back, h, { now: NOW, input: cfgOf({ [b.key]: 0 }) }), ke = keysOf(e), oe = oks(e);
     if (e.stoppedAt) fail('pidiendo saltar ' + b.key + ' el atajo se detiene: ' + e.stoppedAt);
@@ -439,7 +441,7 @@ function main() {
   console.log('escrito: ' + OUT + ' · ' + Buffer.byteLength(xml) + ' bytes · ' + back.WFWorkflowActions.length + ' acciones');
   console.log('tipos: ' + BLOCKS.map(b => b.key + '=' + JSON.stringify(b.type) + (b.soft ? ' (sin confirmar)' : '')).join(' · '));
   console.log('validación: OK (UUID, referencias, Si/Si no/Repetir, entrada, filtros, ida y vuelta del XML, un dato vacío detiene como en el iPhone y lo anterior se queda, pedir 0 lo salta, pedir más días trae más)');
-  console.log('--- lo que copiaría con la Salud de ejemplo y la lista de la app (7 días de todo) ---\n' + s.clip);
+  console.log('--- lo que copiaría con la Salud de ejemplo y la lista de la app (7 días de los 6 datos) ---\n' + s.clip);
   const ex = example(); if (ex != null && ex !== s.clip) console.log('--- AVISO: HP_EXAMPLE de index.html es distinto; debe ser ---\n' + JSON.stringify(s.clip));
 }
 if (require.main === module) main();
