@@ -164,7 +164,7 @@
     const quiet = () => {};
     const say = msg => function(){ try{ W.toast(msg); }catch(_){} };
     const OUT = { doExport: say('sandbox · no se exporta'), exportMarkdown: say('sandbox · no se exporta'), doBackupShare: say('sandbox · no se respalda'),
-      saveFileSafe: say('sandbox · no se guarda archivo'), doImport: say('sandbox · no se importa'), openSync: say('sandbox · sin sync'),
+      saveFileSafe: say('sandbox · no se guarda archivo'), doImport: say('sandbox · no se importa'),
       nudgeBackup: quiet, markBackup: quiet, healthSync: say('sandbox · sin salud'), requestPersist: quiet };
     Object.keys(OUT).forEach(k => { try{ if(typeof W[k] === 'function') W[k] = OUT[k]; }catch(_){} });
     try{ const pi = W.promptIdleSession; if(typeof pi === 'function') W.promptIdleSession = function(){ if(idleOK) return pi.apply(this, arguments); }; }catch(_){}
