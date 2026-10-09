@@ -372,8 +372,8 @@
     { id:'m:deload', g:'hoja', label:'hoja · fatiga acumulada', run(W){ W.go('home'); W.openDeloadInfo(); } },
     { id:'m:gympick', g:'hoja', label:'hoja · elegir gym', run(W){ W.openGymPicker(); } },
     { id:'m:sched', g:'hoja', label:'hoja · agenda del día', run(W){ W.openScheduleModal(0); } },
-    // (openAdhocLog = [+ toma puntual] del stack: un suplemento fuera de horario, no una sesión)
-    { id:'m:adhoc', g:'hoja', label:'hoja · toma puntual', run(W){ W.openAdhocLog(); } },
+    // (v326 · openExtraAdd = [+ extra] de //SUPPS y del stack: lo que tomas fuera de plan; antes `toma puntual`)
+    { id:'m:adhoc', g:'hoja', label:'hoja · extra', run(W){ W.openExtraAdd(); } },
     { id:'m:workshop', g:'hoja', label:'hoja · plantillas', run(W){ W.openWorkshop(); } },
     // ---------------- macros ----------------
     { id:'macros', g:'pantalla', label:'macros', run(W, T){ macrosOn(W, T); } },

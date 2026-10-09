@@ -412,9 +412,9 @@
         if(/\nfunction suppStock\(/.test(src)){
           const grabConst = name => { const m = src.match(new RegExp('\\nconst ' + name + '=[^\\n]*')); if(!m) throw new Error('falta const ' + name); return m[0].slice(1); };
           const scode = ['pad', 'SUPP_FORMS', 'SUPP_WARN_D', 'SUPP_SEG'].map(grabConst).join('\n') + '\n'   // v297 · las tomas (takesOf) leen su momento con SUPP_SEG
-            + ['todayISO', 'shiftDate', 'tickState', 'tickDone', 'isDueToday', 'suppStatus', 'suppProd', 'suppCont', 'suppPU', 'suppSlot', 'takeSlot', 'takesOf', 'takeFactor', 'suppProdOn', 'suppDerive', 'suppPer', 'takeUnits', 'takeDayQty', 'takeDayMul', 'suppLeft', 'suppDaysLeft', 'suppStock', 'suppStockTxt'].map(grab).join('\n')
+            + ['todayISO', 'shiftDate', 'tickState', 'tickDone', 'isDueToday', 'suppStatus', 'suppProd', 'suppCont', 'suppPU', 'suppSlot', 'takeSlot', 'takesOf', 'takeFactor', 'suppProdOn', 'suppDerive', 'suppPer', 'takeUnits', 'takeDayQty', 'takeDayMul', 'extraQty', 'suppLeft', 'suppDaysLeft', 'suppStock', 'suppStockTxt'].map(grab).join('\n')
             + '\nout=JSON.parse(input).map(x=>{ const k=suppStock(x); return {n:x.name,s:suppStatus(x),k:!!k,low:!!(k&&k.low),out:!!(k&&k.out),d:k?k.d:null,t:suppStockTxt(k)}; });';
-          const sctx = { input: JSON.stringify(o.stack), out: null, subItemDose: () => null /* v325 · sin catálogo aquí: cuántas es una toma sale de `por toma` */, JSON, Math, Date, Object, Array, String, isFinite };
+          const sctx = { input: JSON.stringify(o.stack), out: null, subItemDose: () => null /* v325 · sin catálogo aquí: cuántas es una toma sale de `por toma` */, db: { adhoc: {} } /* v326 · el frasco también descuenta los extras: aquí no hay ninguno */, JSON, Math, Date, Object, Array, String, isFinite };
           vm.createContext(sctx); vm.runInContext(scode, sctx, { timeout: 5000 });
           const S = {}; (sctx.out || []).forEach(r => { S[r.n] = r; });
           const want = [['omega-3', r => r.s === 'active' && r.low && r.t === 'quedan 10 softgels · ~5 d', 'omega-3 por acabarse: "quedan 10 softgels · ~5 d"'],
