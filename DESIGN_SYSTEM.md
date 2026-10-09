@@ -1,6 +1,6 @@
 # gym//TRK — DESIGN SYSTEM (referencia del estado actual)
 
-> Referencia del estado actual (v310). **Lee BRAND.md primero**: manda sobre este archivo. Sin historia: DESIGN_CHANGELOG.md.
+> Referencia del estado actual (v311). **Lee BRAND.md primero**: manda sobre este archivo. Sin historia: DESIGN_CHANGELOG.md.
 
 ---
 
@@ -1867,8 +1867,10 @@ Instrumentación, no infografía (B-02: la gráfica existe solo cuando el texto 
    no registraste). Un día aislado conserva su punto. El 0 real solo donde existe (semanas de volumen).
 2. Trazo `--o60` 1.4 en tiles · `--fill` 1.8 en detalle; `vector-effect: non-scaling-stroke`; puntos como trazos de largo
    cero; cada gradiente con id propio.
-3. **Detalle:** el rango normal propio (`normalBandFixed()`, p15–p85 de 90 días, un solo par por periodo) son **dos líneas
-   de referencia** de .5 en `--o30`, sin relleno; sin 7 días de historia dice `sin normal · N/7 d`. Promedio punteado (sin
+3. **Detalle:** el rango normal propio, desde v311, es **una franja rellena por día** (`normalBandRolling()`: p15–p85 de los
+   30 días calendario anteriores a cada día, mínimo 7 con dato; `opt.band` + `opt.bandDates`; `path.chband` en `--o20`), que
+   no expande la escala más de ±25 %, deja una tira de 2 px en el borde cuando se sale del cuadro y solo existe en las
+   gráficas de métricas (que además van sin degradado, `noFill`); sin 7 días de historia dice `sin normal · N/7 d`. Promedio punteado (sin
    pastilla dentro de la gráfica: el encabezado ya lo dice); último punto con halo; 3 etiquetas Y a la derecha y 4 fechas
    abajo, en HTML sobre el SVG. Las etiquetas Y pueden tener su forma corta (`opt.tfmt`, v271: sueño en horas redondas
    `7 h`, NUM-2 en §9.3).
