@@ -218,7 +218,8 @@
   // la hoja (.sheet, con su propio scroll) hasta un elemento, sin scrollIntoView (movería la página del estudio)
   const sheetTo = (W, el) => { const s = $(W, '#modal .sheet'); if(!s || !el) return false;
     s.scrollTop += el.getBoundingClientRect().top - s.getBoundingClientRect().top - 12; return true; };
-  const prodLabel = W => Array.from(W.document.querySelectorAll('#modal .grp-label')).find(e => /^PRODUCTO\b/.test((e.textContent || '').trim())) || null;
+  // v327 · `producto y frasco` es una sección que se despliega: se abre (si no lo estaba) y se devuelve su renglón
+  const prodLabel = W => { const b = W.document.querySelector('#modal button.sef[data-k="prod"]'); if(b && b.getAttribute('aria-expanded') !== 'true') b.click(); return b || null; };
   // el aviso de una vez al día (suppWarnMaybe, al pintar macros) es de macros:supplow: en los demás escenarios se da por
   // visto hoy SOLO mientras se mira, así no tapa ni cuenta en su medición
   function quietWarn(W, T){ const s = T.db && T.db.settings; if(!s || typeof W.suppWarnMaybe !== 'function') return; const t = W.todayISO();
@@ -516,11 +517,9 @@
     // (abierto) y ARCHIVADOS · N (cerrado: aquí se abre con el toque real de su summary): nombre (toca = editar) · marca ·
     // motivo · fecha ···· [reactivar]. #view hasta EN PAUSA con toSection
     { id:'stack:all', g:'pantalla', label:'suplementos · todos (en pausa · archivados)', run(W, T){ suppLow(W, T); suppDormant(W, T);
-        tempKey(W, W, '_stackView', 'all'); W.go('stack');
-        const bl = Array.from(W.document.querySelectorAll('#view details.stk-blk')), f = re => bl.find(b => re.test(((b.querySelector('summary') || {}).textContent || '').trim()));
-        const pa = f(/^EN PAUSA\b/), ar = f(/^ARCHIVADOS\b/);
-        if(ar && !ar.open){ const s = ar.querySelector('summary'); if(s) s.click(); if(!ar.open) ar.open = true; }
-        if(pa || ar) toSection(W, pa || ar); } },
+        // v327 · ya no hay HOY / TODOS ni <details>: `en pausa` y `archivados` son renglones que despliegan (state._stkOpen)
+        tempKey(W, W.state, '_stkOpen', { paused:true, archived:true }); W.go('stack');
+        const pa = W.document.querySelector('#view button.sef[data-act="stkfold"]'); if(pa) toSection(W, pa); } },
     // v275 · el editor del que está por acabarse, con la hoja hasta 'PRODUCTO · FRASCO · opcional · para avisarte antes de que
     // se acabe' (después de DOSIS): MARCA (datalist de sus marcas) | PRODUCTO; PRESENTACIÓN | POR TOMA · <unidad>; TRAE EL
     // FRASCO | LO ABRISTE; QUEDAN HOY; la línea '⚠ quedan 10 softgels · ~5 d · abierto el …' y [abrí otro frasco]

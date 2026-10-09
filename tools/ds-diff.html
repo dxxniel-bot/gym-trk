@@ -79,8 +79,7 @@ const S2=[
 // FINAL: sin later(), suppSeed da marca y frasco (quedan 5 tomas · ~5 d) al primer suplemento activo diario —o agrega un
 // omega-3 de muestra— y uno en pausa y uno archivado de muestra si faltan, en la db del frame. Nada se guarda: los menús y
 // la pregunta solo se abren. El aviso de una vez al día sale en macros:supplow (suppWarnDay se quita antes de pintar)
-['stack:all',(W,D)=>{ suppSeed(W,D); W._stackView='all'; W.go('stack'); const f=re=>[...W.document.querySelectorAll('#view details.stk-blk')].find(b=>re.test(((b.querySelector('summary')||{}).textContent||'').trim()));
-  const pa=f(/^EN PAUSA\b/), ar=f(/^ARCHIVADOS\b/); if(ar&&!ar.open)ar.open=true; secTop(W,pa||ar); }],
+['stack:all',(W,D)=>{ suppSeed(W,D); W.state._stkOpen={paused:true,archived:true}; W.go('stack'); secTop(W,W.document.querySelector('#view button.sef[data-act="stkfold"]')); }],
 ['m:stackedit:product',(W,D)=>{ const it=suppSeed(W,D); W._stackView='today'; W.go('stack'); W.openStackEdit(it.id); sheetTop(W,prodLbl(W)); }],
 ['m:stackmore',(W,D)=>{ const it=suppSeed(W,D); W.go('stack'); W.openStackEdit(it.id); const b=W.document.getElementById('se_more'); if(b)b.click(); }],
 ['m:stackreadd',(W,D)=>{ suppSeed(W,D); const it=D.stack.find(x=>W.suppStatus(x)==='archived'); W.go('stack'); W.openStackEdit(null,'supp'); typeIn(W,'se_name',it.name); W.document.getElementById('se_save').click(); }],
@@ -151,7 +150,7 @@ function suppSeed(W,D){ const st=D.stack||(D.stack=[]), t=W.todayISO(), d=k=>W.s
   return it; }
 // la hoja (#modal .sheet, su propio scroll) hasta un elemento; PRODUCTO · FRASCO del editor; una casilla como si se tecleara
 function sheetTop(W,el){ const s=W.document.querySelector('#modal .sheet'); if(s&&el)s.scrollTop+=el.getBoundingClientRect().top-s.getBoundingClientRect().top-12; }
-function prodLbl(W){ return [...W.document.querySelectorAll('#modal .grp-label')].find(e=>/^PRODUCTO\b/.test((e.textContent||'').trim()))||null; }
+function prodLbl(W){ const b=W.document.querySelector('#modal button.sef[data-k="prod"]'); if(b&&b.getAttribute('aria-expanded')!=='true')b.click(); return b||null; }
 function typeIn(W,id,v){ const e=W.document.getElementById(id); if(!e)return; e.value=v; e.dispatchEvent(new W.Event('input',{bubbles:true})); e.dispatchEvent(new W.Event('change',{bubbles:true})); }
 // v274 · #view hasta una sección (su regla arriba), como toSection del estudio; el ejercicio con más sesiones; la bitácora
 // abierta desde progreso con su estado por defecto (e1RM · 6M · solo los recientes)
