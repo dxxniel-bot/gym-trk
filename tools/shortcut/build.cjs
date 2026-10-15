@@ -56,7 +56,9 @@ const BLOCKS = [
   { key: 'rhr', type: 'Resting Heart Rate', opt: true },      // opt = solo si la app lo pide (v318): no todo reloj lo escribe en Salud
   { key: 'hrv', type: 'Heart Rate Variability', opt: true },
 ];
-const DEFAULT_CFG = '{' + BLOCKS.map(b => '"' + b.key + '":' + (b.opt ? 0 : DEFAULT_DAYS)).join(',') + '}';
+// v349 · sin entrada, solo lo fijo: un opcional NO lleva llave (antes iba en 0). Una llave que falta no tiene valor, y así se salta
+// también en un atajo editado a mano con "tiene algún valor" (el dueño, 15-oct: "tuve que cambiar… a has any value").
+const DEFAULT_CFG = '{' + BLOCKS.filter(b => !b.opt).map(b => '"' + b.key + '":' + DEFAULT_DAYS).join(',') + '}';
 // lo que la entrada puede pedir: aceptar cualquier cosa, como un atajo nuevo (la lista del cliente más nuevo leído, HS)
 const INPUT_CLASSES = ['WFAppContentItem', 'WFAppStoreAppContentItem', 'WFArticleContentItem', 'WFContactContentItem', 'WFDateContentItem', 'WFEmailAddressContentItem', 'WFFolderContentItem', 'WFGenericFileContentItem', 'WFImageContentItem', 'WFiTunesProductContentItem', 'WFLocationContentItem', 'WFDCMapsLinkContentItem', 'WFAVAssetContentItem', 'WFPDFContentItem', 'WFPhoneNumberContentItem', 'WFRichTextContentItem', 'WFSafariWebPageContentItem', 'WFStringContentItem', 'WFURLContentItem'];
 
@@ -77,6 +79,11 @@ const asVar = v => ({ Type: 'Variable', Variable: attach(v) });                 
 const prop = name => ({ Type: 'WFPropertyVariableAggrandizement', PropertyName: name });
 const iso = () => ({ Type: 'WFDateFormatVariableAggrandizement', WFDateFormatStyle: 'ISO 8601', WFISO8601IncludeTime: true });
 const asDict = () => ({ Type: 'WFCoercionVariableAggrandizement', CoercionItemClass: 'WFDictionaryContentItem' });   // SW #65
+// v349 · "Si dias es mayor que 0" pide un NÚMERO: Atajos solo ofrece las condiciones del tipo de lo que mira, y un valor de diccionario
+// no tiene tipo. En el iPhone del dueño (iOS 26, 15-oct) salía "es mayor que" en rojo y sin el 0. 55 de 61 Si de atajos públicos que
+// comparan un valor de diccionario contra un número lo convierten a número así (Photo collage 4802cdd7… #278, #350; Apple Health -
+// IfHasValue e75e8ac5… #4–#6; Battery Report, cliente 5037: FUENTES.md)
+const asNum = () => ({ Type: 'WFCoercionVariableAggrandizement', CoercionItemClass: 'WFNumberContentItem' });
 const dictKey = k => ({ Type: 'WFDictionaryValueVariableAggrandizement', DictionaryKey: k });                         // SW #65
 // Texto con variables: las partes son cadenas o referencias; cada referencia ocupa un carácter U+FFFC y se anota su posición
 function text(parts) {
@@ -133,7 +140,7 @@ function block(b) {
   const samples = () => outRef(find.WFWorkflowActionParameters.UUID, 'Health Samples');
   return [
     setVar(DIAS, varRef(CFG, [dictKey(b.key)])),   // cfg ya es un diccionario (Obtener diccionario); el valor por llave, como SW #1241
-    ifStart(req, asVar(varRef(DIAS)), GT, { WFNumberValue: '0' }),
+    ifStart(req, asVar(varRef(DIAS, [asNum()])), GT, { WFNumberValue: '0' }),   // v349 · dias como número: sin esto la condición no existe
     find,
     ifStart(ifg, asVar(samples()), HAS_VALUE),
     act('repeat.each', { WFInput: attach(samples()), GroupingIdentifier: g, WFControlFlowMode: 0 }),
@@ -238,7 +245,7 @@ function validate(wf) {
       else if (!vars.has(r.VariableName)) E.push(at + ': usa la variable "' + r.VariableName + '" antes de crearla');
       (r.Aggrandizements || []).forEach(g => {
         if (!AGGR[g.Type]) E.push(at + ': ajuste de variable desconocido ' + g.Type);
-        if (g.Type === 'WFCoercionVariableAggrandizement' && g.CoercionItemClass !== 'WFDictionaryContentItem') E.push(at + ': coerción no prevista ' + g.CoercionItemClass);
+        if (g.Type === 'WFCoercionVariableAggrandizement' && g.CoercionItemClass !== 'WFDictionaryContentItem' && !(g.CoercionItemClass === 'WFNumberContentItem' && r.VariableName === DIAS)) E.push(at + ': coerción no prevista ' + g.CoercionItemClass);
         if (g.Type === 'WFDictionaryValueVariableAggrandizement' && typeof g.DictionaryKey !== 'string') E.push(at + ': llave de diccionario sin texto'); });
     });
     // Textos: cada adjunto apunta a un U+FFFC y cada U+FFFC tiene su adjunto
@@ -260,7 +267,8 @@ function validate(wf) {
       if (!w || w.Type !== 'Variable' || !w.Variable || w.Variable.WFSerializationType !== 'WFTextTokenAttachment' || !r) E.push(at + ': el Si no mira nada');
       else if (p.WFCondition === HAS_VALUE) { if (r.Type !== 'ActionOutput' && r.Type !== 'ExtensionInput') E.push(at + ': "tiene algún valor" sobre algo que no es una salida ni la entrada'); }
       else if (p.WFCondition === NO_VALUE) { if (r.Type !== 'ExtensionInput') E.push(at + ': "no tiene valor" solo se usa sobre la entrada'); }
-      else if (p.WFCondition === GT) { if (r.VariableName !== DIAS || p.WFNumberValue !== '0') E.push(at + ': "es mayor que" solo se usa como dias > 0'); }
+      else if (p.WFCondition === GT) { if (r.VariableName !== DIAS || p.WFNumberValue !== '0') E.push(at + ': "es mayor que" solo se usa como dias > 0');
+        else if (!(r.Aggrandizements || []).some(g => g.Type === 'WFCoercionVariableAggrandizement' && g.CoercionItemClass === 'WFNumberContentItem')) E.push(at + ': "es mayor que" sobre dias sin convertirlo a número (en el iPhone sale en rojo y sin el 0)'); }
       else E.push(at + ': condición no prevista ' + p.WFCondition);
     }
     if (id === 'setvariable') { if (!p.WFVariableName || !p.WFInput) E.push(at + ': Guardar variable sin nombre o sin valor'); else vars.add(p.WFVariableName); }
@@ -304,6 +312,7 @@ function run(wf, health, opt) {
     (r.Aggrandizements || []).forEach(g => {
       if (g.Type === 'WFPropertyVariableAggrandizement') { if (!(g.PropertyName in P)) throw new Error('propiedad desconocida: ' + g.PropertyName); v = v[P[g.PropertyName]]; }
       else if (g.Type === 'WFDateFormatVariableAggrandizement') { if (g.WFDateFormatStyle !== 'ISO 8601' || !g.WFISO8601IncludeTime) throw new Error('formato de fecha no previsto'); v = String(v); }
+      else if (g.Type === 'WFCoercionVariableAggrandizement' && g.CoercionItemClass === 'WFNumberContentItem') { v = (v == null || v === '' || typeof v === 'object' || !isFinite(+v)) ? null : +v; }   // v349 · a número; lo que no es número no tiene valor
       else if (g.Type === 'WFCoercionVariableAggrandizement') { if (typeof v === 'string') { try { v = JSON.parse(v); } catch (_) { v = null; } } if (v && typeof v !== 'object') v = null; }
       else if (g.Type === 'WFDictionaryValueVariableAggrandizement') v = v && Object.prototype.hasOwnProperty.call(v, g.DictionaryKey) ? v[g.DictionaryKey] : null;
       else throw new Error('ajuste desconocido: ' + g.Type);
@@ -416,6 +425,9 @@ function main() {
     if (e.stoppedAt) fail('pidiendo saltar ' + b.key + ' el atajo se detiene: ' + e.stoppedAt);
     if (ke.has(b.key) || oe.has(b.key) || BLOCKS.some(x => x !== b && (!ke.has(x.key) || !oe.has(x.key)))) fail('pidiendo saltar ' + b.key + ' no llega lo demás: ' + [...ke].join(' '));
     if (/\n\n|\n$/.test(e.clip)) fail('pidiendo saltar ' + b.key + ' queda un renglón en blanco');
+    // v349 · la app ya no manda las llaves en 0 (bioWire): sin la llave también se salta, y llega lo demás
+    { const o = JSON.parse(cfgOf()); delete o[b.key]; const m2 = run(back, h, { now: NOW, input: JSON.stringify(o) });
+      if (m2.stoppedAt || keysOf(m2).has(b.key) || oks(m2).has(b.key) || BLOCKS.some(x => x !== b && (!keysOf(m2).has(x.key) || !oks(m2).has(x.key)))) fail('sin la llave de ' + b.key + ' no se salta: ' + (m2.stoppedAt || [...keysOf(m2)].join(' '))); }
     if (!oe.has('in') || e.clip.split('\n').slice(0, 4).join() !== 'trk2,ok in,ok id demo,ok cfg') fail('con entrada el texto debe empezar trk2 · ok in · ok id · ok cfg');
     // aunque se detenga en el PRIMER dato, la app ya ve ok cfg (se copia antes de buscar)
     if (i === 0) { const f0 = run(back, h, { now: NOW, input: cfgOf() }); if (!/No Samples Found/.test(f0.stoppedAt || '') || f0.clip.split('\n').indexOf('ok cfg') < 0) fail('si se detiene en el primer dato, ok cfg no quedó copiado'); }

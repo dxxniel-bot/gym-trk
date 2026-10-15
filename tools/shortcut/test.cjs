@@ -20,6 +20,7 @@ const cases = {
   'Si sin cerrar': wf => { wf.WFWorkflowActions.splice(ENDIF, 1); },
   'Si con otra condición (101 sobre las muestras)': wf => { par(wf, IF).WFCondition = 101; },
   'Si que mira otra salida': wf => { par(wf, IF).WFInput.Variable.Value.OutputUUID = par(wf, 1).UUID; },
+  'Si dias > 0 sin convertir dias a número (v349: en iOS 26 sale en rojo y sin el 0)': wf => { delete par(wf, REQ).WFInput.Variable.Value.Aggrandizements; },
   'Buscar sin "Si dias > 0"': wf => { wf.WFWorkflowActions.splice(ENDREQ, 1); wf.WFWorkflowActions.splice(REQ, 1); },
   '"Si no" fuera de su Si': wf => { par(wf, ELSE).GroupingIdentifier = par(wf, REQ).GroupingIdentifier; },
   'variable sin crear': wf => { wf.WFWorkflowActions.filter(a => /appendvariable/.test(a.WFWorkflowActionIdentifier)).forEach(a => { a.WFWorkflowActionParameters.WFVariableName = 'otra'; }); },

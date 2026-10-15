@@ -149,13 +149,28 @@ El dueño (1 y 2-oct): "sí me abre como que el archivo, el HTML" · "no sale pa
 | Si no | `conditional` `WFControlFlowMode` 1 con el mismo `GroupingIdentifier`, sin UUID | SW #60, #1238; 6f1a4788 #9 |
 | Guardar variable | `is.workflow.actions.setvariable` `{WFInput, WFVariableName}`, sin UUID | IC2 #2, #4, #9 |
 | el valor de una llave | adjunto de la variable con `WFDictionaryValueVariableAggrandizement` (`DictionaryKey`) | SW #1241 (sobre una variable diccionario) |
-| Si dias > 0 | `WFCondition` 2, `WFNumberValue` "0" | SW #66, #80, #91 |
+| Si dias > 0 | `WFCondition` 2, `WFNumberValue` "0" | SW #66, #80, #91 (ojo: ahí lo que se mira es la salida de un **Contar**, que ya es número) |
+| …dias como número (v349) | el adjunto de `dias` lleva `{Type:"WFCoercionVariableAggrandizement", CoercionItemClass:"WFNumberContentItem"}` | 55 de 61 Si de 356 atajos públicos que comparan un valor de diccionario contra un número: Photo collage `4802cdd7c0cc42fca064fc307b7658d4` #278, #350 (cliente 2605); Apple Health - IfHasValue `e75e8ac5fd9044e8ac9377b10cbff489` #4–#6; Battery Report `1b1f22a7d3784b0b8732fcc811b72f5b` #118 (cliente 5037); System Dashboard `241a05d3df574e37908c2b0d26e085ac` #112 (cliente 4711) |
 | N en una variable | `Values: {Unit: 16, Number: {Value:{VariableName, Type:"Variable"}, WFSerializationType:"WFTextTokenAttachment"}}` | LW #292, #374, #433… |
 
 - Marcas: `ok in` (llegó la entrada), `ok id <n>` (el número de corrida que mandó la app), `ok cfg` (se leyó el plan o los 7 días por
   omisión; las tres se copian antes de la primera búsqueda), `ok <dato>` tras cada búsqueda que no se detuvo y `ok end` al final.
 - **Sin probar en un iPhone:** que la entrada por URL llegue (se ve con `ok in`), y que "en los últimos [variable] días" acepte la
   variable (sin `ok <dato>` tras `ok end`, la app dice que no leyó la lista).
+
+## v349 (15-oct-2026) · lo que enseñó el iPhone del dueño
+
+- Cada "Si dias es mayor que" salía con "es mayor que" **en rojo y sin el 0** (iOS 26). Atajos solo ofrece las condiciones del tipo de
+  lo que mira (Apple: "The available conditions are dependent on the type of input") y `dias` venía de un diccionario, sin tipo. Él lo
+  cambió a mano a "tiene algún valor". Arreglo: `dias` convertido a número (tabla de arriba). Además la app ya no manda las llaves en 0
+  (`bioWire` en index.html) y `DEFAULT_CFG` no lleva los opcionales: una llave que falta no tiene valor, así su atajo editado también
+  salta lo que debe. `WFConditions` (varias condiciones) no hace falta: en los clientes 4xxx/5xxx los Si de una sola condición siguen
+  arriba (`WFInput`/`WFCondition`) y los 80 `WFConditions` vistos tienen 2 o más.
+- **La fuente de cada muestra existe** (sin usar todavía): "Obtener detalles de las muestras de salud" (`is.workflow.actions.properties.health.quantity`)
+  con `WFContentItemPropertyName` "Source" — Humin Export Health Data `dd4816ab408a4db3b1dfa03a87e20bd6` #78, #95, #103–#108 (cliente
+  1146; lee su `Name` con `PropertyUserInfo` "WFItemName"); EX #4–#7 usa la misma acción con el nombre fijo ("Type", "Start Date",
+  "Value", "Unit"). "Source" también es filtro de Buscar (Health Tracker `d5c4153688d0408aaa8856bda409ea8a` #63). Un ajuste de
+  variable `PropertyName:"Source"` directo NO se vio en ningún atajo.
 
 ## Lo que no se pudo probar sin un iPhone
 
