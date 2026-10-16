@@ -1,0 +1,10 @@
+<!-- gym//TRK · plantilla de correo "Confirm signup" (Supabase → Authentication → Emails → Confirm signup)
+     Asunto sugerido:  tu código de gym//TRK
+     Pega SOLO lo de abajo (desde <div> hasta </div>) en el cuerpo del mensaje.
+     {{ .Token }} es el código de 6 dígitos: sin él, Supabase manda un enlace y en el iPhone el enlace abre Safari, no la app. -->
+<div style="font-family:Menlo,Consolas,monospace;background:#000;color:#f3f3f3;padding:24px">
+  <p style="font-size:20px;font-weight:800;margin:0 0 16px">gym<span style="color:#777">//</span>TRK</p>
+  <p style="font-size:14px;margin:0 0 8px">tu código para entrar:</p>
+  <p style="font-size:28px;font-weight:800;letter-spacing:6px;margin:0 0 16px">{{ .Token }}</p>
+  <p style="font-size:12px;color:#999;margin:0">escríbelo en la app. vence en una hora. si no fuiste tú, ignora este correo.</p>
+</div>
