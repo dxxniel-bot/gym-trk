@@ -1,6 +1,6 @@
 # gym//TRK — DESIGN SYSTEM (referencia del estado actual)
 
-> Referencia del estado actual (v356). **Lee BRAND.md primero**: manda sobre este archivo. Sin historia: DESIGN_CHANGELOG.md.
+> Referencia del estado actual (v357). **Lee BRAND.md primero**: manda sobre este archivo. Sin historia: DESIGN_CHANGELOG.md.
 
 ---
 
@@ -1254,7 +1254,7 @@ compartir comida o el panel de macros, v276; excepción `ring`).
   (P · C · F, `macroRing()` con `ringtog` y TRKNum) → `[ver gramos]` / `[ver %]` en `.kp-unit` (a la derecha, `button.b`
   de 10 px) → fila **`radar`** `.kp-rad` (`.line.stat.tap` de 44, `radarfold`: `radar ···· ›`) que despliega `.macro-rad`
   con `dayRadar()` (7 ejes); viene **plegada** y recuerda cómo la dejaste (`db.settings.radarOpen`, aditivo) → regla →
-  `INTAKE` (`.grp-label`) y sus barras. Dentro de `.kpanel` **toda** `.rule` va a sangre (margen lateral `-16`) con el
+  la fila **`nutrients`** (v357 · `nutfold`, su propio pliegue recordado en `db.settings.foldNut`; antes la subsección INTAKE) y sus barras. Dentro de `.kpanel` **toda** `.rule` va a sangre (margen lateral `-16`) con el
   mismo aire arriba y abajo (`--s5` = 16 entre bloques). Desplegar o plegar el radar no mueve la fila tocada. El carrusel de
   versiones de v276 (barras · medidor · reparto · tabla · dona, con sus pestañas) se fue: §7.41.
   - **La revisa:** `_macroVizSelfCheck` (§18.2) · a ojo a 393×852 con sus datos.
@@ -2255,7 +2255,7 @@ Objetivo G4: completar la tabla con el texto exacto de cada celda vacía y una a
 | `onboard` | primer uso (alta paso a paso, v277) | `[‹ atrás]` (`.obback`) + `.obh` `gym//TRK//SETUP 3/10` + barra `.onbbar` + la pregunta `.onbq` y su porqué | un paso de `ONB_STEPS` (10): filas `.obr` (`.obi` de 36, toggles, `.obr.obstack`), listas `.toggles.oblist`, error en línea `.onberr`; pie `.onbfoot` pegado abajo con `▶ seguir` / `▶ ir al gym` y `[más adelante]` en los opcionales | no | §7.34: nada se escribe hasta terminar (`onbApply`); un alta a medias abre en su paso; el atrás del sistema retrocede un paso; con usuario no se ve nunca |
 | `home` (gym) | estado actual | `statusBar` + rotación + `dayHeadHTML` (`//NEXT`) | línea de preparación, músculos del día, vista previa (`[ver rutina]`), primario, `[rest day]` `[skip day]` (o `hoy: descanso ✓`, §7.37; en un descanso del plan o día sin gym, `.restplan` + `[entrenar igual]` sin primario, v273), //STIMULUS (σ por músculo y, si toca, la fila de fatiga acumulada, §7.23), //STATS | sí | con sesión viva solo existe `▶ resume workout` (v258, M1-01/M1-01b) |
 | `workout` | registro | `.wline` (modo enfoque) | tabla de sesión, descanso, footer | no | §7.8, §7.20 |
-| `macros` | composición | `statusBar` + día `‹ fecha ›` | anillo en `.card`, detalle (aros P · C · F, `[ver gramos \| ver %]`, fila `radar` plegable, INTAKE, retención), SUPPS (o su invitación) → MEALS (`[+ food]` bajo cada cabecera) → WATER; `[share]` → el día o el panel | sí | §7.24, §7.28, §7.36, §7.41 |
+| `macros` | composición | `statusBar` + día `‹ fecha ›` | anillo en `.card`, detalle (aros P · C · F, `[ver gramos \| ver %]`, fila `radar` plegable; aparte, la fila `nutrients` plegable con sus barras y la retención · v357), SUPPS (o su invitación) → MEALS (`[+ food]` bajo cada cabecera) → WATER; `[share]` → el día o el panel | sí | §7.24, §7.28, §7.36, §7.41 |
 | `progress` | análisis | `.section` //PROGRESS + `[edit]` | racha en franja, tiles `.ptile` en el orden de `db.settings.progLayout`, //STRENGTH, //RECORDS (tocable, v274), //EXERCISES (v274, §7.40), //MUSCLES (σ, §7.23), //RENDIMIENTO | sí (no mientras se edita) | modo editar §7.35; tiles → filas en G3; la tile de e1RM, //STRENGTH, //RECORDS y //EXERCISES abren `exhist` |
 | `exhist` | un ejercicio (v274) | `statusBar` + `[‹ back]` + `dayHeadHTML` (`//EXERCISE`) | línea de estado, TRKTabs `e1RM · peso top · volumen`, línea de detalle en la unidad real, periodos, //LOG numerado (`.elog`, la más nueva arriba) | no | §7.40; `[‹ back]` vuelve al origen |
 | `history` | archivo | `.section` //HISTORY | mes TRKCal, rail por mes, sesión que se abre en su sitio (el nombre de cada ejercicio abre `exhist`, v274) | no | |
@@ -2538,7 +2538,7 @@ Línea base del 2026-09-21: todos en 0 salvo `style=""` 89, excepciones 33, lett
 - **`_macroVizSelfCheck()`** (v276; reescrito en v290, en sandbox): el reparto por kcal suma 100 y da 30 · 42 · 28 (sin
   comida, `null`) · el panel abierto trae los tres aros y ninguna pestaña ni carrusel · el radar viene plegado en una fila
   de 44 · `[ver %]` mide 10 px con toque de 44 · tocar la fila despliega la gráfica sin moverla y lo recuerda
-  (`db.settings.radarOpen`) · el orden es anillo → balance → aros → `[ver %]` → radar → INTAKE · la tarjeta de compartir
+  (`db.settings.radarOpen`) · el orden es anillo → balance → aros → `[ver %]` → radar → `nutrients` (v357: dos pliegues recordados) · la tarjeta de compartir
   sigue trayendo radar y aros. Imprime `macro viz self-check OK`.
 - **`_v294SelfCheck()`** (v294, en sandbox): `HP_ORDER`/`HP_HIST` · el ejemplo trae `ok in · ok id · ok cfg · ok <dato> · ok end` · la
   primera vez pide el historial y la URL lleva el plan con su número de corrida · su caso: se detuvo en grasa → entra lo anterior, grasa
