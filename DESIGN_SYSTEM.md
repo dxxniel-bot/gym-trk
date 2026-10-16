@@ -1,6 +1,6 @@
 # gym//TRK — DESIGN SYSTEM (referencia del estado actual)
 
-> Referencia del estado actual (v352). **Lee BRAND.md primero**: manda sobre este archivo. Sin historia: DESIGN_CHANGELOG.md.
+> Referencia del estado actual (v353). **Lee BRAND.md primero**: manda sobre este archivo. Sin historia: DESIGN_CHANGELOG.md.
 
 ---
 
@@ -878,9 +878,11 @@ reemplaza, así lo escrito abajo se conserva. Diálogos nativos (`alert`/`confir
 - **Rol:** mostrar una proporción con un solo trazo fino (σ contra su zona objetivo, ingesta, progreso de la sesión).
 - **Clase / API:** `.bar`, `.vbar`, `.wprog`; relleno `trkBarI(clave, pct, cls)` (con `data-bk`, acotado 0–100); marcas
   `trkMark(pct, cls, title)` (por defecto `.mev`, 1 px en `--o40`; el nombre es histórico); `animBars()` en `afterPaint()`.
-  **Barra de σ (v272):** `sigBarHTML(clave, σ)` — escala hasta max(30, σ × 1.1) y dos marcas **neutras** `.mev` en 10 y
-  20 (la zona objetivo, `SIG_BANDS`); la usan //STIMULUS, //MUSCLES y el detalle de músculo. `.mrv` (`--warn`) ya no la
-  emite nadie (CSS muerto).
+  **Barra de σ:** `sigBarHTML(clave, σ, escala, marca)` (una marca neutra `.mev` opcional). **v353 · E10:**
+  `sigBandHTML(clave, σ, habitual, meta, escala)` (`.vbar.vbm`) = la misma línea con sus márgenes: `.vbh` la franja de tu habitual
+  (7 px, mín. 10 de ancho, `--o20`, detrás: cuartil bajo → alto de `muscleHabit`), `.vbg` tu meta como tramo más claro de la línea
+  (3 px, `--o40`: `splitSigGoalRange`, tu split con 1 RIR más o menos) y `.vbgt` la raya que lo cruza (2 × 9 px, `--o70`); escala por
+  fila = max(σ, habitual alto, meta alta) × 1.08. La usan //STIMULUS y el detalle de músculo; `sigBarHTML` quedó sin uso. `.mrv` (`--warn`) ya no la emite nadie (CSS muerto).
 - **Anatomía:** alto 3 (2 en `.wprog`), pista `--track` + relleno `--fill`; exceso `.over` en semántico. Barras de celdas
   permitidas para conteos discretos.
 - **Movimiento:** crece desde su ancho anterior (`--dur-2`) solo si esa clave ya estaba pintada con otro valor.
@@ -1072,10 +1074,10 @@ de la guía RP ("esa madre realmente no sirve"). El modelo vive en `contexto/ten
   tensión mecánica · 7 d` (`data-gloss="stim"`), UNA cabecera de columnas `.stqh.c2.hd` (`músculo · σ · recovery`) y una
   fila `.stq` por **músculo real** (canónico, mostrado con su etiqueta vía `muscleLabel()`), de mayor a menor σ: `.stqh.c2`
   con `.stqn` nombre, `.stqv` σ (`--t-data`/800) y `.stqv.p` el % de recuperación (`recPct(muscleRecAt(id))`, el mismo de
-  gym), y debajo `sigBarHTML(key, v, ce, mark)`: todas las barras comparten escala y en la lista van SIN marca (una marca
-  sin explicación era lo que no entendía en //COVERAGE). En el detalle del músculo la barra lleva UNA marca, tu habitual
-  (`muscleHabit(id)` = mediana de la σ semanal de tus 8 semanas anteriores con entreno de ese músculo; con menos de 3 no
-  hay marca), y se dice: `marca: tu habitual`. Sin pestañas, sin series, sin RIR, sin avisos y sin instrucciones. Tocar la
+  gym), y debajo `sigBandHTML(key, v, habitual, meta, ce)` (v353): la línea de tu σ con la franja de tu habitual y el tramo de tu
+  meta con su raya, sin texto (qué es cada cosa va en el glosario `stim`). En el detalle del músculo, la misma línea con la nota
+  `franja: tu habitual · raya: tu meta` (`muscleHabit(id)` = mediana y cuartiles de la σ semanal de tus 8 semanas anteriores con
+  entreno de ese músculo; con menos de 3 no hay franja). Sin pestañas, sin series, sin RIR, sin avisos y sin instrucciones. Tocar la
   fila abre `openMuscleDetail()`.
 - **Regla (STQ-2, v285):** las observaciones (aviso de fallo o fatiga `stimWarn`, fatiga acumulada `fatigueFlag` →
   `openDeloadInfo()`, diagnóstico) solo se leen dentro del detalle del músculo. Ninguna regla compara contra un número
